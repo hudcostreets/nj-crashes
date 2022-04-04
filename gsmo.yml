@@ -1,4 +1,5 @@
-pip
+pip:
 - beautifulsoup4
+- fastparquet
 - kaleido
 - plotly
