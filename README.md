@@ -1,35 +1,51 @@
-# NJ Traffic Fatality Data
-Analysis of NJSP data from 2008-present: https://nj.gov/njsp/info/fatalacc/index.shtml
+# NJ Traffic Violence Data
+Analysis of NJ State Police traffic violence data (2008-present): https://nj.gov/njsp/info/fatalacc/index.shtml
 
-### Traffic deaths per month <a id="fatalities_by_month"></a>
+### Traffic deaths are 1.5x-2x homicides
 
-![](./fatalities_by_month_bars.png)
+![](./fatalities_vs_homicides_per_year.png)
 
-Same plot but with lines:
+**Traffic deaths spiked by 19% in 2021.**
+
+### Last half of 2021 was the 6 worst months on record:
 
 ![](./fatalities_by_month_lines.png)
 
-**The last 6 months of 2021 were the worst months on record (since 2008).**
-
-### Traffic deaths per year <a id="fatalities_per_year"></a>
-2021 was 19% higher than 2020:
-
-![](./fatalities_per_year.png)
-
-Monthly view w/ 12mo rolling avg:
-
-![](./fatalities_per_month.png)
-
-### "Victim type" subtotals <a id="victim-types"></a>
-Victim type data is available starting in 2020:
-
-![](./fatalities_per_year_by_type.png)
-
-Per-month totals by victim type (restricted to the period where that info is available):
+### Victim types: drivers > pedestrians > passengers > cyclists
 
 ![](./fatalities_per_month_by_type.png)
 
-### Data / Info
-All data c/o NJ State Police: https://nj.gov/njsp/info/fatalacc/index.shtml
+This data is available starting from 2020.
 
-Notebook with analysis: [parse-njsp-xmls.ipynb](./parse-njsp-xmls.ipynb)
+---
+
+## Data / Info
+
+### Data sources:
+- New Jersey State Police
+  - Traffic fatalities: https://nj.gov/njsp/info/fatalacc/index.shtml
+  - Uniform Crime Reports: https://nj.gov/njsp/ucr/uniform-crime-reports.shtml
+- Disaster Center: https://www.disastercenter.com/crime/njcrimn.htm
+
+### Analysis
+- [parse-njsp-xmls.ipynb](./parse-njsp-xmls.ipynb)
+- [nj-crime-stats.ipynb](./nj-crime-stats.ipynb)
+
+---
+
+## Appendix
+
+A few more plots:
+
+#### Month groups, as bars
+
+![](./fatalities_by_month_bars.png)
+
+#### Monthly history w/ 12mo rolling avg
+
+![](./fatalities_per_month.png)
+
+### "Victim type" subtotals
+Victim type data is only available starting since 2020, so most history is unknown:
+
+![](./fatalities_per_year_by_type.png)
