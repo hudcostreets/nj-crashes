@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Apr 04 10:00:04 EDT 2022</RUNDATE>
+  <RUNDATE>Wed May 25 10:00:04 EDT 2022</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,8 +49,1114 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1204" MNAME="East Brunswick Twsp">
+      <ACCIDENT ACCID="11748" DATE="05/24/2022" TIME="0549">
+        <HIGHWAY>527</HIGHWAY>
+        <LOCATION>County 527</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="19" CNAME="Sussex">
+    <MUNICIPALITY MCODE="1911" MNAME="Hardyston Twsp">
+      <ACCIDENT ACCID="11744" DATE="05/21/2022" TIME="1251">
+        <HIGHWAY>23</HIGHWAY>
+        <LOCATION>State Highway 23 MP 27.1</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0415" MNAME="Gloucester Twsp">
+      <ACCIDENT ACCID="11745" DATE="05/21/2022" TIME="0344">
+        <HIGHWAY>42</HIGHWAY>
+        <LOCATION>State Highway 42 MP 6.9</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+      <ACCIDENT ACCID="11743" DATE="05/21/2022" TIME="0327">
+        <STREET>Sicklerville Rd</STREET>
+        <LOCATION>Sicklerville Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0306" MNAME="Burlington Twsp">
+      <ACCIDENT ACCID="11742" DATE="05/20/2022" TIME="0113">
+        <STREET>Sunset Rd</STREET>
+        <LOCATION>Sunset Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="06" CNAME="Cumberland">
+    <MUNICIPALITY MCODE="0609" MNAME="Maurice River Twsp">
+      <ACCIDENT ACCID="11741" DATE="05/19/2022" TIME="2242">
+        <HIGHWAY>47</HIGHWAY>
+        <LOCATION>State Highway 47 MP 27.7</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2018" MNAME="Summit City">
+      <ACCIDENT ACCID="11740" DATE="05/19/2022" TIME="1401">
+        <HIGHWAY>24</HIGHWAY>
+        <LOCATION>State Highway 24 MP 9</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="21" CNAME="Warren">
+    <MUNICIPALITY MCODE="2121" MNAME="Washington Boro">
+      <ACCIDENT ACCID="11738" DATE="05/19/2022" TIME="0851">
+        <HIGHWAY>57</HIGHWAY>
+        <LOCATION>State Highway 57</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="16" CNAME="Passaic">
+    <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
+      <ACCIDENT ACCID="11739" DATE="05/17/2022" TIME="1514">
+        <HIGHWAY>509</HIGHWAY>
+        <LOCATION>County 509</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+    <MUNICIPALITY MCODE="1614" MNAME="Wayne Twsp">
+      <ACCIDENT ACCID="11747" DATE="05/17/2022" TIME="0729">
+        <STREET>Hillside Terr</STREET>
+        <LOCATION>Hillside Terr</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+    <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
+      <ACCIDENT ACCID="11737" DATE="05/16/2022" TIME="1215">
+        <STREET>Arctic Ave</STREET>
+        <LOCATION>Arctic Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="05" CNAME="Cape May">
+    <MUNICIPALITY MCODE="0502" MNAME="Cape May City">
+      <ACCIDENT ACCID="11733" DATE="05/15/2022" TIME="1615">
+        <HIGHWAY>633</HIGHWAY>
+        <LOCATION>County 633</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="21" CNAME="Warren">
+    <MUNICIPALITY MCODE="2101" MNAME="Allamuchy Twsp">
+      <ACCIDENT ACCID="11728" DATE="05/15/2022" TIME="1334">
+        <HIGHWAY>80</HIGHWAY>
+        <LOCATION>Interstate 80 MP 22.2</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="14" CNAME="Morris">
+    <MUNICIPALITY MCODE="1429" MNAME="Parsippany-Troy Hil">
+      <ACCIDENT ACCID="11727" DATE="05/14/2022" TIME="0400">
+        <HIGHWAY>80</HIGHWAY>
+        <LOCATION>Interstate 80 MP 46.2</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="09" CNAME="Hudson">
+    <MUNICIPALITY MCODE="0907" MNAME="Kearny Town">
+      <ACCIDENT ACCID="11729" DATE="05/14/2022" TIME="0117">
+        <STREET>Schuyler Ave</STREET>
+        <LOCATION>Schuyler Ave</LOCATION>
+        <FATALITIES>2</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0805" MNAME="Franklin Twsp">
+      <ACCIDENT ACCID="11726" DATE="05/13/2022" TIME="0544">
+        <HIGHWAY>615</HIGHWAY>
+        <LOCATION>County 615</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0412" MNAME="Cherry Hill Twsp">
+      <ACCIDENT ACCID="11725" DATE="05/12/2022" TIME="1839">
+        <HIGHWAY>561</HIGHWAY>
+        <LOCATION>County 561</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0805" MNAME="Franklin Twsp">
+      <ACCIDENT ACCID="11721" DATE="05/12/2022" TIME="0602">
+        <STREET>Dutch Mill Rd</STREET>
+        <LOCATION>Dutch Mill Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="19" CNAME="Sussex">
+    <MUNICIPALITY MCODE="1924" MNAME="Wantage Twsp">
+      <ACCIDENT ACCID="11723" DATE="05/11/2022" TIME="1827">
+        <HIGHWAY>565</HIGHWAY>
+        <LOCATION>County 565 MP 5.5</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
+    <MUNICIPALITY MCODE="1302" MNAME="Allentown Boro">
+      <ACCIDENT ACCID="11736" DATE="05/11/2022" TIME="1714">
+        <HIGHWAY>524</HIGHWAY>
+        <LOCATION>County 524</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1112" MNAME="Robbinsville Twsp">
+      <ACCIDENT ACCID="11722" DATE="05/10/2022" TIME="1430">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike MP 59.9</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0330" MNAME="Pemberton Twsp">
+      <ACCIDENT ACCID="11719" DATE="05/10/2022" TIME="0648">
+        <HIGHWAY>70</HIGHWAY>
+        <LOCATION>State Highway 70</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0708" MNAME="Glen Ridge Boro">
+      <ACCIDENT ACCID="11718" DATE="05/10/2022" TIME="0434">
+        <HIGHWAY>506</HIGHWAY>
+        <LOCATION>County 506 (Spur (County Routes Only)) MP .25</LOCATION>
+        <FATALITIES>2</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0258" MNAME="Saddle River Boro">
+      <ACCIDENT ACCID="11717" DATE="05/06/2022" TIME="1134">
+        <HIGHWAY>17</HIGHWAY>
+        <LOCATION>State Highway 17 MP 20.2</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+    <MUNICIPALITY MCODE="0212" MNAME="East Rutherford Bor">
+      <ACCIDENT ACCID="11720" DATE="05/06/2022" TIME="0356">
+        <HIGHWAY>3</HIGHWAY>
+        <LOCATION>State Highway 3</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1111" MNAME="Trenton">
+      <ACCIDENT ACCID="11716" DATE="05/06/2022" TIME="0344">
+        <HIGHWAY>622</HIGHWAY>
+        <LOCATION>County 622</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
+      <ACCIDENT ACCID="11714" DATE="05/05/2022" TIME="2227">
+        <HIGHWAY>1</HIGHWAY>
+        <LOCATION>State Highway 1</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+    <MUNICIPALITY MCODE="0113" MNAME="Hammonton Town">
+      <ACCIDENT ACCID="11711" DATE="05/05/2022" TIME="1937">
+        <HIGHWAY>446</HIGHWAY>
+        <LOCATION>Atlantic City Expressway MP 28.5</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="15" CNAME="Ocean">
+    <MUNICIPALITY MCODE="1506" MNAME="Brick Twsp">
+      <ACCIDENT ACCID="11734" DATE="05/05/2022" TIME="1525">
+        <HIGHWAY>70</HIGHWAY>
+        <LOCATION>State Highway 70</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="21" CNAME="Warren">
+    <MUNICIPALITY MCODE="2116" MNAME="Mansfield Twsp">
+      <ACCIDENT ACCID="11710" DATE="05/04/2022" TIME="1022">
+        <HIGHWAY>57</HIGHWAY>
+        <LOCATION>State Highway 57</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="17" CNAME="Salem">
+    <MUNICIPALITY MCODE="1710" MNAME="Pittsgrove Twsp">
+      <ACCIDENT ACCID="11708" DATE="05/04/2022" TIME="0613">
+        <HIGHWAY>553</HIGHWAY>
+        <LOCATION>County 553</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0404" MNAME="Bellmawr Boro">
+      <ACCIDENT ACCID="11706" DATE="05/04/2022" TIME="0304">
+        <HIGHWAY>42</HIGHWAY>
+        <LOCATION>State Highway 42 MP 14.1</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="09" CNAME="Hudson">
+    <MUNICIPALITY MCODE="0901" MNAME="Bayonne City">
+      <ACCIDENT ACCID="11700" DATE="05/03/2022" TIME="0634">
+        <HIGHWAY>501</HIGHWAY>
+        <LOCATION>County 501</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+    <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
+      <ACCIDENT ACCID="11698" DATE="05/02/2022" TIME="2152">
+        <HIGHWAY>1</HIGHWAY>
+        <LOCATION>State Highway 1</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="15" CNAME="Ocean">
+    <MUNICIPALITY MCODE="1530" MNAME="Stafford Twsp">
+      <ACCIDENT ACCID="11707" DATE="05/02/2022" TIME="2143">
+        <HIGHWAY>72</HIGHWAY>
+        <LOCATION>State Highway 72 MP 22</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0802" MNAME="Deptford Twsp">
+      <ACCIDENT ACCID="11713" DATE="05/02/2022" TIME="1350">
+        <HIGHWAY>55</HIGHWAY>
+        <LOCATION>State Highway 55 MP 56</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="21" CNAME="Warren">
+    <MUNICIPALITY MCODE="2111" MNAME="Hope Twsp">
+      <ACCIDENT ACCID="11699" DATE="05/02/2022" TIME="1022">
+        <HIGHWAY>519</HIGHWAY>
+        <LOCATION>County 519 MP 47.7</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0325" MNAME="Mount Laurel Twsp">
+      <ACCIDENT ACCID="11692" DATE="05/02/2022" TIME="0040">
+        <HIGHWAY>295</HIGHWAY>
+        <LOCATION>Interstate 295 MP 38</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="05" CNAME="Cape May">
+    <MUNICIPALITY MCODE="0506" MNAME="Middle Twsp">
+      <ACCIDENT ACCID="11691" DATE="05/01/2022" TIME="2326">
+        <HIGHWAY>620</HIGHWAY>
+        <LOCATION>County 620</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0325" MNAME="Mount Laurel Twsp">
+      <ACCIDENT ACCID="11701" DATE="05/01/2022" TIME="0924">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+    <MUNICIPALITY MCODE="0337" MNAME="Washington Twsp">
+      <ACCIDENT ACCID="11690" DATE="04/30/2022" TIME="1455">
+        <HIGHWAY>542</HIGHWAY>
+        <LOCATION>County 542 MP 10.5</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="15" CNAME="Ocean">
+    <MUNICIPALITY MCODE="1518" MNAME="Manchester Twsp">
+      <ACCIDENT ACCID="11689" DATE="04/30/2022" TIME="1417">
+        <STREET>Pasadena Rd</STREET>
+        <LOCATION>Pasadena Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
+    <MUNICIPALITY MCODE="1352" MNAME="Wall Twsp">
+      <ACCIDENT ACCID="11688" DATE="04/29/2022" TIME="1005">
+        <HIGHWAY>34</HIGHWAY>
+        <LOCATION>State Highway 34</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+    <MUNICIPALITY MCODE="1334" MNAME="Neptune Twsp">
+      <ACCIDENT ACCID="11697" DATE="04/28/2022" TIME="2135">
+        <HIGHWAY>33</HIGHWAY>
+        <LOCATION>State Highway 33</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0710" MNAME="Livingston Twsp">
+      <ACCIDENT ACCID="11687" DATE="04/27/2022" TIME="2327">
+        <HIGHWAY>510</HIGHWAY>
+        <LOCATION>County 510</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+    <MUNICIPALITY MCODE="0119" MNAME="Pleasantville City">
+      <ACCIDENT ACCID="11693" DATE="04/27/2022" TIME="1624">
+        <STREET>Franklin Ave</STREET>
+        <LOCATION>Franklin Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="17" CNAME="Salem">
+    <MUNICIPALITY MCODE="1713" MNAME="Carneys Point Twsp">
+      <ACCIDENT ACCID="11682" DATE="04/24/2022" TIME="2229">
+        <HIGHWAY>295</HIGHWAY>
+        <LOCATION>Interstate 295 MP 5.6</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0337" MNAME="Washington Twsp">
+      <ACCIDENT ACCID="11681" DATE="04/24/2022" TIME="1325">
+        <HIGHWAY>542</HIGHWAY>
+        <LOCATION>County 542 MP 8.4</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="17" CNAME="Salem">
+    <MUNICIPALITY MCODE="1711" MNAME="Quinton Twsp">
+      <ACCIDENT ACCID="11680" DATE="04/24/2022" TIME="0949">
+        <HIGHWAY>49</HIGHWAY>
+        <LOCATION>State Highway 49 MP 10.8</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="19" CNAME="Sussex">
+    <MUNICIPALITY MCODE="1922" MNAME="Vernon Twsp">
+      <ACCIDENT ACCID="11704" DATE="04/24/2022" TIME="0806">
+        <STREET>Warwick Tpk</STREET>
+        <LOCATION>Warwick Tpk</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="15" CNAME="Ocean">
+    <MUNICIPALITY MCODE="1505" MNAME="Berkeley Twsp">
+      <ACCIDENT ACCID="11709" DATE="04/24/2022" TIME="0556">
+        <HIGHWAY>530</HIGHWAY>
+        <LOCATION>County 530</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0714" MNAME="Newark City">
+      <ACCIDENT ACCID="11679" DATE="04/24/2022" TIME="0414">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike MP 105.9</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0408" MNAME="Camden City">
+      <ACCIDENT ACCID="11685" DATE="04/22/2022" TIME="2046">
+        <HIGHWAY>30</HIGHWAY>
+        <LOCATION>State Highway 30</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0802" MNAME="Deptford Twsp">
+      <ACCIDENT ACCID="11712" DATE="04/22/2022" TIME="0627">
+        <HIGHWAY>665</HIGHWAY>
+        <LOCATION>County 665</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1112" MNAME="Robbinsville Twsp">
+      <ACCIDENT ACCID="11677" DATE="04/21/2022" TIME="0343">
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="14" CNAME="Morris">
+    <MUNICIPALITY MCODE="1427" MNAME="Mount Olive Twsp">
+      <ACCIDENT ACCID="11676" DATE="04/21/2022" TIME="0249">
+        <HIGHWAY>80</HIGHWAY>
+        <LOCATION>Interstate 80 MP 26.6</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+    <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
+      <ACCIDENT ACCID="11678" DATE="04/20/2022" TIME="2250">
+        <HIGHWAY>40</HIGHWAY>
+        <LOCATION>State Highway 40</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0436" MNAME="Winslow Twsp">
+      <ACCIDENT ACCID="11675" DATE="04/20/2022" TIME="1230">
+        <HIGHWAY>30</HIGHWAY>
+        <LOCATION>State Highway 30</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
+    <MUNICIPALITY MCODE="1316" MNAME="Freehold Twsp">
+      <ACCIDENT ACCID="11674" DATE="04/19/2022" TIME="2239">
+        <HIGHWAY>9</HIGHWAY>
+        <LOCATION>State Highway 9</LOCATION>
+        <FATALITIES>2</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>2</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2009" MNAME="Linden City">
+      <ACCIDENT ACCID="11684" DATE="04/19/2022" TIME="1839">
+        <STREET>South Wood Ave</STREET>
+        <LOCATION>South Wood Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="17" CNAME="Salem">
+    <MUNICIPALITY MCODE="1713" MNAME="Carneys Point Twsp">
+      <ACCIDENT ACCID="11673" DATE="04/19/2022" TIME="0430">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike MP 2.3</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+      <ACCIDENT ACCID="11672" DATE="04/18/2022" TIME="2303">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike MP 1.6</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="21" CNAME="Warren">
+    <MUNICIPALITY MCODE="2115" MNAME="Lopatcong Twsp">
+      <ACCIDENT ACCID="11686" DATE="04/18/2022" TIME="1736">
+        <HIGHWAY>22</HIGHWAY>
+        <LOCATION>State Highway 22</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+    <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
+      <ACCIDENT ACCID="11671" DATE="04/18/2022" TIME="1603">
+        <HIGHWAY>322</HIGHWAY>
+        <LOCATION>State Highway 322</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0408" MNAME="Camden City">
+      <ACCIDENT ACCID="11668" DATE="04/16/2022" TIME="1859">
+        <STREET>29th St</STREET>
+        <LOCATION>29th St</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1101" MNAME="East Windsor Twsp">
+      <ACCIDENT ACCID="11669" DATE="04/16/2022" TIME="1226">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike MP 68.4</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0434" MNAME="Voorhees Twsp">
+      <ACCIDENT ACCID="11670" DATE="04/15/2022" TIME="2055">
+        <HIGHWAY>73</HIGHWAY>
+        <LOCATION>State Highway 73</LOCATION>
+        <FATALITIES>2</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0811" MNAME="Monroe Twsp">
+      <ACCIDENT ACCID="11667" DATE="04/13/2022" TIME="1545">
+        <HIGHWAY>322</HIGHWAY>
+        <LOCATION>State Highway 322 (Freeway)</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0325" MNAME="Mount Laurel Twsp">
+      <ACCIDENT ACCID="11696" DATE="04/13/2022" TIME="1047">
+        <HIGHWAY>686</HIGHWAY>
+        <LOCATION>County 686</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="06" CNAME="Cumberland">
+    <MUNICIPALITY MCODE="0605" MNAME="Fairfield Twsp">
+      <ACCIDENT ACCID="11663" DATE="04/12/2022" TIME="2241">
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0412" MNAME="Cherry Hill Twsp">
+      <ACCIDENT ACCID="11664" DATE="04/12/2022" TIME="2223">
+        <HIGHWAY>644</HIGHWAY>
+        <LOCATION>County 644</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="15" CNAME="Ocean">
+    <MUNICIPALITY MCODE="1511" MNAME="Jackson Twsp">
+      <ACCIDENT ACCID="11703" DATE="04/12/2022" TIME="1610">
+        <HIGHWAY>571</HIGHWAY>
+        <LOCATION>County 571</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="14" CNAME="Morris">
+    <MUNICIPALITY MCODE="1430" MNAME="Long Hill Twsp">
+      <ACCIDENT ACCID="11702" DATE="04/12/2022" TIME="1032">
+        <HIGHWAY>512</HIGHWAY>
+        <LOCATION>County 512</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="15" CNAME="Ocean">
+    <MUNICIPALITY MCODE="1511" MNAME="Jackson Twsp">
+      <ACCIDENT ACCID="11659" DATE="04/11/2022" TIME="2129">
+        <HIGHWAY>638</HIGHWAY>
+        <LOCATION>County 638</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+    <MUNICIPALITY MCODE="0114" MNAME="Linwood City">
+      <ACCIDENT ACCID="11666" DATE="04/10/2022" TIME="0011">
+        <STREET>Ocean Heights Avenue</STREET>
+        <LOCATION>Ocean Heights Avenue</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="17" CNAME="Salem">
+    <MUNICIPALITY MCODE="1710" MNAME="Pittsgrove Twsp">
+      <ACCIDENT ACCID="11656" DATE="04/09/2022" TIME="1743">
+        <HIGHWAY>621</HIGHWAY>
+        <LOCATION>County 621 MP .4</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0219" MNAME="Fort Lee Boro">
+      <ACCIDENT ACCID="11658" DATE="04/09/2022" TIME="1416">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike MP 121.6</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0706" MNAME="East Orange City">
+      <ACCIDENT ACCID="11657" DATE="04/09/2022" TIME="0325">
+        <HIGHWAY>444</HIGHWAY>
+        <LOCATION>Garden State Parkway MP 148.6</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
+    <MUNICIPALITY MCODE="1319" MNAME="Howell Twsp">
+      <ACCIDENT ACCID="11655" DATE="04/08/2022" TIME="2135">
+        <HIGHWAY>9</HIGHWAY>
+        <LOCATION>State Highway 9</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="18" CNAME="Somerset">
+    <MUNICIPALITY MCODE="1806" MNAME="Bridgewater Twsp">
+      <ACCIDENT ACCID="11665" DATE="04/08/2022" TIME="2112">
+        <STREET>Talamini Rd</STREET>
+        <LOCATION>Talamini Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="15" CNAME="Ocean">
+    <MUNICIPALITY MCODE="1518" MNAME="Manchester Twsp">
+      <ACCIDENT ACCID="11653" DATE="04/07/2022" TIME="2159">
+        <HIGHWAY>70</HIGHWAY>
+        <LOCATION>State Highway 70</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0311" MNAME="Easthampton Twsp">
+      <ACCIDENT ACCID="11654" DATE="04/07/2022" TIME="1804">
+        <HIGHWAY>537</HIGHWAY>
+        <LOCATION>County 537 MP 20.5</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+    <MUNICIPALITY MCODE="0313" MNAME="Evesham Twsp">
+      <ACCIDENT ACCID="11695" DATE="04/07/2022" TIME="0715">
+        <STREET>Meridian Ln</STREET>
+        <LOCATION>Meridian Ln</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="19" CNAME="Sussex">
+    <MUNICIPALITY MCODE="1912" MNAME="Hopatcong Boro">
+      <ACCIDENT ACCID="11705" DATE="04/06/2022" TIME="1604">
+        <HIGHWAY>605</HIGHWAY>
+        <LOCATION>County 605</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1514" MNAME="Lakewood Twsp">
+      <ACCIDENT ACCID="11651" DATE="04/04/2022" TIME="1405">
+        <HIGHWAY>623</HIGHWAY>
+        <LOCATION>County 623</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
+      </ACCIDENT>
       <ACCIDENT ACCID="11643" DATE="04/02/2022" TIME="2054">
         <HIGHWAY>9</HIGHWAY>
         <LOCATION>State Highway 9</LOCATION>
@@ -85,6 +1191,34 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="05" CNAME="Cape May">
+    <MUNICIPALITY MCODE="0511" MNAME="Upper Twsp">
+      <ACCIDENT ACCID="11645" DATE="04/02/2022" TIME="1316">
+        <HIGHWAY>631</HIGHWAY>
+        <LOCATION>County 631 MP 3.5</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="16" CNAME="Passaic">
+    <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
+      <ACCIDENT ACCID="11644" DATE="04/02/2022" TIME="0140">
+        <HIGHWAY>444</HIGHWAY>
+        <LOCATION>Garden State Parkway MP 153.7</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -147,8 +1281,8 @@
       <ACCIDENT ACCID="11635" DATE="03/29/2022" TIME="0715">
         <HIGHWAY>571</HIGHWAY>
         <LOCATION>County 571</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
+        <FATALITIES>2</FATALITIES>
+        <FATAL_D>2</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
@@ -179,6 +1313,20 @@
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1111" MNAME="Trenton">
+      <ACCIDENT ACCID="11662" DATE="03/26/2022" TIME="0158">
+        <HIGHWAY>579</HIGHWAY>
+        <LOCATION>County 579</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -251,13 +1399,14 @@
   <COUNTY CCODE="05" CNAME="Cape May">
     <MUNICIPALITY MCODE="0506" MNAME="Middle Twsp">
       <ACCIDENT ACCID="11636" DATE="03/19/2022" TIME="1400">
-        <STREET>Magnolia Dr</STREET>
-        <LOCATION>Magnolia Dr</LOCATION>
+        <HIGHWAY>673</HIGHWAY>
+        <LOCATION>County 673 MP .2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -314,11 +1463,37 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0317" MNAME="Willingboro Twsp">
+      <ACCIDENT ACCID="11650" DATE="03/18/2022" TIME="0207">
+        <STREET>Garfield Dr</STREET>
+        <LOCATION>Garfield Dr</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0223" MNAME="Hackensack City">
       <ACCIDENT ACCID="11616" DATE="03/17/2022" TIME="0744">
         <STREET>337 Passaic Street</STREET>
         <LOCATION>337 Passaic Street</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1111" MNAME="Trenton">
+      <ACCIDENT ACCID="11661" DATE="03/16/2022" TIME="2338">
+        <HIGHWAY>1</HIGHWAY>
+        <LOCATION>State Highway 1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -390,6 +1565,33 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1111" MNAME="Trenton">
+      <ACCIDENT ACCID="11660" DATE="03/14/2022" TIME="1757">
+        <STREET>Bridge St</STREET>
+        <LOCATION>Bridge St</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="09" CNAME="Hudson">
+    <MUNICIPALITY MCODE="0901" MNAME="Bayonne City">
+      <ACCIDENT ACCID="11649" DATE="03/13/2022" TIME="1242">
+        <STREET>West 25th St</STREET>
+        <LOCATION>West 25th St</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -511,6 +1713,20 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0411" MNAME="Collingswood Boro">
+      <ACCIDENT ACCID="11648" DATE="03/10/2022" TIME="0126">
+        <HIGHWAY>30</HIGHWAY>
+        <LOCATION>State Highway 30 MP 4.25</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1514" MNAME="Lakewood Twsp">
       <ACCIDENT ACCID="11600" DATE="03/09/2022" TIME="0812">
@@ -564,6 +1780,19 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1216" MNAME="Perth Amboy City">
+      <ACCIDENT ACCID="11646" DATE="03/07/2022" TIME="1839">
+        <HIGHWAY>656</HIGHWAY>
+        <LOCATION>County 656 MP 25</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="11598" DATE="03/07/2022" TIME="1557">
@@ -600,6 +1829,20 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0235" MNAME="Midland Park Boro">
+      <ACCIDENT ACCID="11652" DATE="03/03/2022" TIME="1147">
+        <HIGHWAY>81</HIGHWAY>
+        <LOCATION>County 81 MP .35</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -665,20 +1908,6 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="01" CNAME="Atlantic">
-    <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
-      <ACCIDENT ACCID="11589" DATE="02/27/2022" TIME="1859">
-        <HIGHWAY>668</HIGHWAY>
-        <LOCATION>County 668 MP .29</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -923,7 +2152,7 @@
     <MUNICIPALITY MCODE="0614" MNAME="Vineland City">
       <ACCIDENT ACCID="11560" DATE="02/12/2022" TIME="1812">
         <HIGHWAY>47</HIGHWAY>
-        <LOCATION>State Highway 47 (Business)</LOCATION>
+        <LOCATION>State Highway 47</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1265,7 +2494,7 @@
     <MUNICIPALITY MCODE="0436" MNAME="Winslow Twsp">
       <ACCIDENT ACCID="11523" DATE="01/27/2022" TIME="0704">
         <HIGHWAY>536</HIGHWAY>
-        <LOCATION>County 536</LOCATION>
+        <LOCATION>County 536 MP 29.16</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -1341,19 +2570,6 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <COUNTY CCODE="13" CNAME="Monmouth">
-    <MUNICIPALITY MCODE="1319" MNAME="Howell Twsp">
-      <ACCIDENT ACCID="11513" DATE="01/24/2022" TIME="1423">
-        <STREET>Carrie Dr</STREET>
-        <LOCATION>Carrie Dr</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0202" MNAME="Alpine Boro">
       <ACCIDENT ACCID="11547" DATE="01/24/2022" TIME="0149">
@@ -1371,7 +2587,7 @@
     <MUNICIPALITY MCODE="1328" MNAME="Marlboro Twsp">
       <ACCIDENT ACCID="11507" DATE="01/21/2022" TIME="0632">
         <HIGHWAY>18</HIGHWAY>
-        <LOCATION>18 (Freeway)</LOCATION>
+        <LOCATION>18</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1396,8 +2612,8 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0427" MNAME="Pennsauken Twsp">
       <ACCIDENT ACCID="11504" DATE="01/19/2022" TIME="1906">
-        <STREET>RT 130 S AND GARDEN AV</STREET>
-        <LOCATION>RT 130 S AND GARDEN AV</LOCATION>
+        <HIGHWAY>130</HIGHWAY>
+        <LOCATION>State Highway 130</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1409,19 +2625,6 @@
       <ACCIDENT ACCID="11503" DATE="01/19/2022" TIME="0954">
         <HIGHWAY>30</HIGHWAY>
         <LOCATION>State Highway 30</LOCATION>
-        <FATALITIES>2</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>1</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="12" CNAME="Middlesex">
-    <MUNICIPALITY MCODE="1217" MNAME="Piscataway Twsp">
-      <ACCIDENT ACCID="11501" DATE="01/18/2022" TIME="0535">
-        <STREET>Lakeview Ave</STREET>
-        <LOCATION>Lakeview Ave</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -1494,7 +2697,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-        <INJURIES>2</INJURIES>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1555,8 +2758,8 @@
   <COUNTY CCODE="05" CNAME="Cape May">
     <MUNICIPALITY MCODE="0508" MNAME="Ocean City">
       <ACCIDENT ACCID="11493" DATE="01/13/2022" TIME="1128">
-        <STREET>Asbury Ave</STREET>
-        <LOCATION>Asbury Ave</LOCATION>
+        <STREET>Asbury Avenue</STREET>
+        <LOCATION>Asbury Avenue</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1570,7 +2773,7 @@
     <MUNICIPALITY MCODE="0421" MNAME="Lawnside Boro">
       <ACCIDENT ACCID="11491" DATE="01/13/2022" TIME="0530">
         <HIGHWAY>30</HIGHWAY>
-        <LOCATION>State Highway 30</LOCATION>
+        <LOCATION>State Highway 30 MP 8.36</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1885,7 +3088,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>139</TOTACCIDENTS>
-  <TOTFATALITIES>145</TOTFATALITIES>
-  <TOTINJURIES>17</TOTINJURIES>
+  <TOTACCIDENTS>231</TOTACCIDENTS>
+  <TOTFATALITIES>241</TOTFATALITIES>
+  <TOTINJURIES>28</TOTINJURIES>
 </FAUQSTATS>
