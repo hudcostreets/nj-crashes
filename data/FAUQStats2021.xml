@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Jul 13 10:00:13 EDT 2022</RUNDATE>
+  <RUNDATE>Wed Nov 16 10:00:15 EST 2022</RUNDATE>
   <STATSYEAR>2021</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -52,8 +52,8 @@
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
       <ACCIDENT ACCID="11485" DATE="12/31/2021" TIME="1513">
-        <STREET>Temple Street</STREET>
-        <LOCATION>Temple Street</LOCATION>
+        <STREET>Temple St</STREET>
+        <LOCATION>Temple St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -107,9 +107,9 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="11456" DATE="12/29/2021" TIME="0432">
+      <ACCIDENT ACCID="11456" DATE="12/29/2021" TIME="0433">
         <HIGHWAY>95</HIGHWAY>
-        <LOCATION>New Jersey Turnpike MP 105.8</LOCATION>
+        <LOCATION>New Jersey Turnpike MP 105.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -163,7 +163,7 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
     <MUNICIPALITY MCODE="2113" MNAME="Knowlton Twsp">
-      <ACCIDENT ACCID="11449" DATE="12/27/2021" TIME="0301">
+      <ACCIDENT ACCID="11449" DATE="12/27/2021" TIME="0302">
         <HIGHWAY>80</HIGHWAY>
         <LOCATION>Interstate 80 MP 1.8</LOCATION>
         <FATALITIES>2</FATALITIES>
@@ -193,12 +193,13 @@
     <MUNICIPALITY MCODE="0810" MNAME="Mantua Twsp">
       <ACCIDENT ACCID="11452" DATE="12/25/2021" TIME="2346">
         <HIGHWAY>676</HIGHWAY>
-        <LOCATION>County 676</LOCATION>
+        <LOCATION>County 676 MP 2.17</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0804" MNAME="Elk Twsp">
@@ -224,6 +225,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -251,6 +253,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -264,6 +267,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>6</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -271,7 +275,7 @@
     <MUNICIPALITY MCODE="0610" MNAME="Millville City">
       <ACCIDENT ACCID="11439" DATE="12/23/2021" TIME="1753">
         <HIGHWAY>552</HIGHWAY>
-        <LOCATION>County 552 MP 1.1</LOCATION>
+        <LOCATION>County 552 (Spur (County Routes Only)) MP 1.1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -284,13 +288,14 @@
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0801" MNAME="Clayton Boro">
       <ACCIDENT ACCID="11475" DATE="12/22/2021" TIME="2124">
-        <STREET>Carpenter St</STREET>
-        <LOCATION>Carpenter St</LOCATION>
+        <STREET>Carpenter Ave</STREET>
+        <LOCATION>Carpenter Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>3</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -298,7 +303,7 @@
     <MUNICIPALITY MCODE="1111" MNAME="Trenton">
       <ACCIDENT ACCID="11512" DATE="12/22/2021" TIME="1716">
         <HIGHWAY>635</HIGHWAY>
-        <LOCATION>County 635</LOCATION>
+        <LOCATION>County 635 MP 1.13</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -310,7 +315,7 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0713" MNAME="Montclair Town">
-      <ACCIDENT ACCID="11447" DATE="12/22/2021" TIME="1005">
+      <ACCIDENT ACCID="11447" DATE="12/22/2021" TIME="0938">
         <STREET>Brookfield Rd</STREET>
         <LOCATION>Brookfield Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -318,6 +323,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -339,7 +345,7 @@
     <MUNICIPALITY MCODE="2020" MNAME="Westfield Town">
       <ACCIDENT ACCID="11467" DATE="12/21/2021" TIME="1907">
         <HIGHWAY>613</HIGHWAY>
-        <LOCATION>County 613</LOCATION>
+        <LOCATION>County 613 MP 2.58</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -351,7 +357,7 @@
   </COUNTY>
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1106" MNAME="Hopewell Twsp">
-      <ACCIDENT ACCID="11438" DATE="12/21/2021" TIME="1340">
+      <ACCIDENT ACCID="11438" DATE="12/21/2021" TIME="1342">
         <HIGHWAY>295</HIGHWAY>
         <LOCATION>Interstate 295 MP 71.6</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -415,7 +421,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -423,7 +429,7 @@
     <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
       <ACCIDENT ACCID="11511" DATE="12/18/2021" TIME="0708">
         <HIGHWAY>624</HIGHWAY>
-        <LOCATION>County 624 MP .5</LOCATION>
+        <LOCATION>County 624 MP .52</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -449,12 +455,13 @@
     <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
       <ACCIDENT ACCID="11425" DATE="12/17/2021" TIME="2316">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 36.92</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -468,6 +475,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -487,7 +495,7 @@
   </COUNTY>
   <COUNTY CCODE="06" CNAME="Cumberland">
     <MUNICIPALITY MCODE="0610" MNAME="Millville City">
-      <ACCIDENT ACCID="11423" DATE="12/16/2021" TIME="2131">
+      <ACCIDENT ACCID="11423" DATE="12/16/2021" TIME="2132">
         <HIGHWAY>55</HIGHWAY>
         <LOCATION>State Highway 55 MP 25.2</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -523,6 +531,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -558,26 +567,13 @@
     <MUNICIPALITY MCODE="0818" MNAME="Washington Twsp">
       <ACCIDENT ACCID="11581" DATE="12/09/2021" TIME="2344">
         <HIGHWAY>651</HIGHWAY>
-        <LOCATION>County 651</LOCATION>
+        <LOCATION>County 651 MP 2.9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="07" CNAME="Essex">
-    <MUNICIPALITY MCODE="0709" MNAME="Irvington Town">
-      <ACCIDENT ACCID="11432" DATE="12/09/2021" TIME="0238">
-        <HIGHWAY>619</HIGHWAY>
-        <LOCATION>County 619</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -591,6 +587,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -598,7 +595,7 @@
     <MUNICIPALITY MCODE="1008" MNAME="East Amwell Tws">
       <ACCIDENT ACCID="11413" DATE="12/08/2021" TIME="1239">
         <HIGHWAY>31</HIGHWAY>
-        <LOCATION>State Highway 31 MP 15</LOCATION>
+        <LOCATION>State Highway 31 MP 14.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -640,12 +637,13 @@
     <MUNICIPALITY MCODE="0805" MNAME="Franklin Twsp">
       <ACCIDENT ACCID="11407" DATE="12/07/2021" TIME="2345">
         <HIGHWAY>40</HIGHWAY>
-        <LOCATION>State Highway 40</LOCATION>
+        <LOCATION>State Highway 40 MP 27.8</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -686,6 +684,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -768,6 +767,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -788,7 +788,7 @@
     <MUNICIPALITY MCODE="1201" MNAME="Carteret Boro">
       <ACCIDENT ACCID="11464" DATE="12/03/2021" TIME="2128">
         <HIGHWAY>602</HIGHWAY>
-        <LOCATION>County 602 MP .98</LOCATION>
+        <LOCATION>County 602 MP .96</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -835,19 +835,21 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0304" MNAME="Bordentown Twsp">
-      <ACCIDENT ACCID="11419" DATE="11/29/2021" TIME="2008">
+      <ACCIDENT ACCID="11419" DATE="11/29/2021" TIME="2005">
         <HIGHWAY>130</HIGHWAY>
-        <LOCATION>State Highway 130</LOCATION>
+        <LOCATION>State Highway 130 MP 53.83</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -855,7 +857,7 @@
     <MUNICIPALITY MCODE="0218" MNAME="Fairview Boro">
       <ACCIDENT ACCID="11417" DATE="11/29/2021" TIME="1711">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 61.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -885,8 +887,9 @@
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>1</FATAL_B>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -894,12 +897,13 @@
     <MUNICIPALITY MCODE="0818" MNAME="Washington Twsp">
       <ACCIDENT ACCID="11386" DATE="11/28/2021" TIME="2232">
         <HIGHWAY>42</HIGHWAY>
-        <LOCATION>State Highway 42</LOCATION>
+        <LOCATION>State Highway 42 MP 5.31</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -955,7 +959,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -983,12 +987,13 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>3</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0339" MNAME="Woodland Twsp">
-      <ACCIDENT ACCID="11380" DATE="11/26/2021" TIME="0705">
+      <ACCIDENT ACCID="11380" DATE="11/26/2021" TIME="0704">
         <HIGHWAY>532</HIGHWAY>
         <LOCATION>County 532 MP 17.2</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -1004,12 +1009,13 @@
     <MUNICIPALITY MCODE="1215" MNAME="North Brunswick Tws">
       <ACCIDENT ACCID="11376" DATE="11/25/2021" TIME="2353">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 24.68</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>2</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>4</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1023,6 +1029,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1043,8 +1050,8 @@
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1512" MNAME="Lacey Twsp">
       <ACCIDENT ACCID="11383" DATE="11/24/2021" TIME="1903">
-        <STREET>Beach Blvd</STREET>
-        <LOCATION>Beach Blvd</LOCATION>
+        <HIGHWAY>8</HIGHWAY>
+        <LOCATION>County 8 MP .08</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1098,7 +1105,7 @@
   </COUNTY>
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0907" MNAME="Kearny Town">
-      <ACCIDENT ACCID="11372" DATE="11/22/2021" TIME="1354">
+      <ACCIDENT ACCID="11372" DATE="11/22/2021" TIME="1355">
         <HIGHWAY>95</HIGHWAY>
         <LOCATION>New Jersey Turnpike MP 108.1</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -1134,6 +1141,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1154,8 +1162,8 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0414" MNAME="Gloucester City">
       <ACCIDENT ACCID="11367" DATE="11/19/2021" TIME="0726">
-        <STREET>Somerset Street</STREET>
-        <LOCATION>Somerset Street</LOCATION>
+        <STREET>Somerset St</STREET>
+        <LOCATION>Somerset St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1163,7 +1171,7 @@
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
-    <MUNICIPALITY MCODE="0412" MNAME="Cherry Hill Twsp">
+    <MUNICIPALITY MCODE="0434" MNAME="Voorhees Twsp">
       <ACCIDENT ACCID="11366" DATE="11/18/2021" TIME="1523">
         <HIGHWAY>544</HIGHWAY>
         <LOCATION>County 544 MP 7.75</LOCATION>
@@ -1193,13 +1201,14 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="11362" DATE="11/17/2021" TIME="0834">
-        <STREET>Sussex Ave</STREET>
-        <LOCATION>Sussex Ave</LOCATION>
+        <STREET>Jay St</STREET>
+        <LOCATION>Jay St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1277,12 +1286,13 @@
     <MUNICIPALITY MCODE="0808" MNAME="Harrison Twsp">
       <ACCIDENT ACCID="11350" DATE="11/12/2021" TIME="2029">
         <HIGHWAY>322</HIGHWAY>
-        <LOCATION>State Highway 322</LOCATION>
+        <LOCATION>State Highway 322 MP 15.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1290,20 +1300,7 @@
     <MUNICIPALITY MCODE="1216" MNAME="Perth Amboy City">
       <ACCIDENT ACCID="11354" DATE="11/12/2021" TIME="1752">
         <HIGHWAY>611</HIGHWAY>
-        <LOCATION>County 611</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="18" CNAME="Somerset">
-    <MUNICIPALITY MCODE="1806" MNAME="Bridgewater Twsp">
-      <ACCIDENT ACCID="11403" DATE="11/12/2021" TIME="1408">
-        <STREET>Waugh Court</STREET>
-        <LOCATION>Waugh Court</LOCATION>
+        <LOCATION>County 611 MP 1.17</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1315,14 +1312,29 @@
   </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1331" MNAME="Middletown Twsp">
-      <ACCIDENT ACCID="11352" DATE="11/12/2021" TIME="0535">
+      <ACCIDENT ACCID="11352" DATE="11/12/2021" TIME="1735">
         <HIGHWAY>36</HIGHWAY>
-        <LOCATION>State Highway 36</LOCATION>
+        <LOCATION>State Highway 36 MP 17.82</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="18" CNAME="Somerset">
+    <MUNICIPALITY MCODE="1806" MNAME="Bridgewater Twsp">
+      <ACCIDENT ACCID="11403" DATE="11/12/2021" TIME="1408">
+        <STREET>Traci Rd</STREET>
+        <LOCATION>Traci Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1330,12 +1342,13 @@
     <MUNICIPALITY MCODE="1111" MNAME="Trenton">
       <ACCIDENT ACCID="11387" DATE="11/11/2021" TIME="2215">
         <HIGHWAY>129</HIGHWAY>
-        <LOCATION>State Highway 129</LOCATION>
+        <LOCATION>State Highway 129 MP 1.08</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1410,8 +1423,8 @@
   <COUNTY CCODE="14" CNAME="Morris">
     <MUNICIPALITY MCODE="1401" MNAME="Boonton Town">
       <ACCIDENT ACCID="11414" DATE="11/09/2021" TIME="1240">
-        <STREET>West Main St</STREET>
-        <LOCATION>West Main St</LOCATION>
+        <HIGHWAY>618</HIGHWAY>
+        <LOCATION>County 618 MP 2.27</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1424,21 +1437,22 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="11346" DATE="11/09/2021" TIME="0418">
-        <STREET>1st St</STREET>
-        <LOCATION>1st St</LOCATION>
+        <HIGHWAY>508</HIGHWAY>
+        <LOCATION>County 508 MP 10.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="19" CNAME="Sussex">
     <MUNICIPALITY MCODE="1918" MNAME="Sparta Twsp">
       <ACCIDENT ACCID="11373" DATE="11/08/2021" TIME="1414">
-        <HIGHWAY>517</HIGHWAY>
-        <LOCATION>County 517 MP 34</LOCATION>
+        <HIGHWAY>181</HIGHWAY>
+        <LOCATION>State Highway 181 MP 5.75</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1463,13 +1477,14 @@
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1221" MNAME="South Brunswick Tws">
       <ACCIDENT ACCID="11357" DATE="11/08/2021" TIME="0811">
-        <STREET>New Rd</STREET>
-        <LOCATION>New Rd</LOCATION>
+        <STREET>New Road</STREET>
+        <LOCATION>New Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1489,14 +1504,15 @@
   </COUNTY>
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2013" MNAME="Rahway City">
-      <ACCIDENT ACCID="11337" DATE="11/08/2021" TIME="0357">
+      <ACCIDENT ACCID="11337" DATE="11/08/2021" TIME="0320">
         <HIGHWAY>35</HIGHWAY>
-        <LOCATION>State Highway 35</LOCATION>
+        <LOCATION>State Highway 35 MP 58.05</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1518,7 +1534,7 @@
     <MUNICIPALITY MCODE="1110" MNAME="Princeton">
       <ACCIDENT ACCID="11338" DATE="11/07/2021" TIME="1309">
         <HIGHWAY>27</HIGHWAY>
-        <LOCATION>State Highway 27</LOCATION>
+        <LOCATION>State Highway 27 MP 2.01</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>2</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1532,7 +1548,7 @@
     <MUNICIPALITY MCODE="1511" MNAME="Jackson Twsp">
       <ACCIDENT ACCID="11333" DATE="11/06/2021" TIME="1812">
         <HIGHWAY>638</HIGHWAY>
-        <LOCATION>County 638 MP 5.23</LOCATION>
+        <LOCATION>County 638 MP 5.37</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1572,14 +1588,15 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="11363" DATE="11/05/2021" TIME="1028">
-        <STREET>Washington Ave</STREET>
-        <LOCATION>Washington Ave</LOCATION>
+      <ACCIDENT ACCID="11363" DATE="11/05/2021" TIME="1029">
+        <STREET>Washington St</STREET>
+        <LOCATION>Washington St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1629,18 +1646,19 @@
     <MUNICIPALITY MCODE="1328" MNAME="Marlboro Twsp">
       <ACCIDENT ACCID="11328" DATE="11/04/2021" TIME="0600">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9</LOCATION>
+        <LOCATION>State Highway 9 MP 119.3</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
-      <ACCIDENT ACCID="11326" DATE="11/03/2021" TIME="2225">
+      <ACCIDENT ACCID="11326" DATE="11/03/2021" TIME="2136">
         <HIGHWAY>440</HIGHWAY>
         <LOCATION>State Highway 440 MP 26.05</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -1676,6 +1694,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1725,7 +1744,7 @@
     <MUNICIPALITY MCODE="0260" MNAME="Teaneck Twsp">
       <ACCIDENT ACCID="11318" DATE="11/01/2021" TIME="0519">
         <HIGHWAY>4</HIGHWAY>
-        <LOCATION>State Highway 4 MP 7</LOCATION>
+        <LOCATION>State Highway 4 MP 7.37</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1745,12 +1764,13 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0220" MNAME="Franklin Lakes Boro">
-      <ACCIDENT ACCID="11316" DATE="10/31/2021" TIME="1410">
+      <ACCIDENT ACCID="11316" DATE="10/31/2021" TIME="1411">
         <HIGHWAY>287</HIGHWAY>
         <LOCATION>Interstate 287 MP 60.4</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -1786,6 +1806,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1806,8 +1827,8 @@
   <COUNTY CCODE="19" CNAME="Sussex">
     <MUNICIPALITY MCODE="1922" MNAME="Vernon Twsp">
       <ACCIDENT ACCID="11340" DATE="10/30/2021" TIME="1714">
-        <STREET>County Route 515</STREET>
-        <LOCATION>County Route 515</LOCATION>
+        <HIGHWAY>515</HIGHWAY>
+        <LOCATION>County 515 MP 18.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1875,14 +1896,15 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="11314" DATE="10/28/2021" TIME="1911">
-        <STREET>Springfield Ave</STREET>
-        <LOCATION>Springfield Ave</LOCATION>
+      <ACCIDENT ACCID="11314" DATE="10/28/2021" TIME="1914">
+        <HIGHWAY>603</HIGHWAY>
+        <LOCATION>County 603 MP 3.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1890,12 +1912,13 @@
     <MUNICIPALITY MCODE="1215" MNAME="North Brunswick Tws">
       <ACCIDENT ACCID="11308" DATE="10/28/2021" TIME="1848">
         <HIGHWAY>26</HIGHWAY>
-        <LOCATION>State Highway 26</LOCATION>
+        <LOCATION>State Highway 26 MP 2.27</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1917,7 +1940,7 @@
     <MUNICIPALITY MCODE="1331" MNAME="Middletown Twsp">
       <ACCIDENT ACCID="11359" DATE="10/27/2021" TIME="1926">
         <HIGHWAY>35</HIGHWAY>
-        <LOCATION>State Highway 35 MP 36.69</LOCATION>
+        <LOCATION>State Highway 35 MP 38.69</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1943,7 +1966,7 @@
   </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1326" MNAME="Manalapan Twsp">
-      <ACCIDENT ACCID="11283" DATE="10/26/2021" TIME="0612">
+      <ACCIDENT ACCID="11283" DATE="10/26/2021" TIME="0610">
         <HIGHWAY>33</HIGHWAY>
         <LOCATION>State Highway 33 MP 22.6</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -2011,12 +2034,13 @@
     <MUNICIPALITY MCODE="0816" MNAME="South Harrison Twsp">
       <ACCIDENT ACCID="11281" DATE="10/23/2021" TIME="1411">
         <HIGHWAY>581</HIGHWAY>
-        <LOCATION>County 581</LOCATION>
+        <LOCATION>County 581 MP 13.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2050,7 +2074,7 @@
   </COUNTY>
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
-      <ACCIDENT ACCID="11309" DATE="10/22/2021" TIME="0756">
+      <ACCIDENT ACCID="11309" DATE="10/22/2021" TIME="0710">
         <HIGHWAY>139</HIGHWAY>
         <LOCATION>State Highway 139 (Upper (State Route 139 Only)) MP .58</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -2065,27 +2089,13 @@
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1111" MNAME="Trenton">
       <ACCIDENT ACCID="11280" DATE="10/21/2021" TIME="1939">
-        <HIGHWAY>627</HIGHWAY>
-        <LOCATION>County 627</LOCATION>
+        <STREET>Prospect St</STREET>
+        <LOCATION>Prospect St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="09" CNAME="Hudson">
-    <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
-      <ACCIDENT ACCID="11294" DATE="10/20/2021" TIME="1615">
-        <STREET>Bergen Ave</STREET>
-        <LOCATION>Bergen Ave</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2100,6 +2110,20 @@
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>3</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="09" CNAME="Hudson">
+    <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
+      <ACCIDENT ACCID="11294" DATE="10/20/2021" TIME="1432">
+        <STREET>Bergen Ave</STREET>
+        <LOCATION>Bergen Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2121,20 +2145,21 @@
     <MUNICIPALITY MCODE="1213" MNAME="Monroe Twsp">
       <ACCIDENT ACCID="11273" DATE="10/20/2021" TIME="1241">
         <HIGHWAY>33</HIGHWAY>
-        <LOCATION>State Highway 33</LOCATION>
+        <LOCATION>State Highway 33 MP 17.54</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0307" MNAME="Chesterfield Twsp">
       <ACCIDENT ACCID="11279" DATE="10/20/2021" TIME="1102">
-        <STREET>Sykesville Road</STREET>
-        <LOCATION>Sykesville Road</LOCATION>
+        <STREET>Sykesville Rd</STREET>
+        <LOCATION>Sykesville Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2148,12 +2173,13 @@
     <MUNICIPALITY MCODE="2009" MNAME="Linden City">
       <ACCIDENT ACCID="11282" DATE="10/20/2021" TIME="0948">
         <HIGHWAY>514</HIGHWAY>
-        <LOCATION>County 514</LOCATION>
+        <LOCATION>County 514 MP 41.46</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2187,7 +2213,7 @@
   </COUNTY>
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0427" MNAME="Pennsauken Twsp">
-      <ACCIDENT ACCID="11270" DATE="10/19/2021" TIME="0008">
+      <ACCIDENT ACCID="11270" DATE="10/19/2021" TIME="0006">
         <HIGHWAY>130</HIGHWAY>
         <LOCATION>State Highway 130 MP 31.34</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -2202,12 +2228,13 @@
     <MUNICIPALITY MCODE="1222" MNAME="South Plainfield Bo">
       <ACCIDENT ACCID="11272" DATE="10/18/2021" TIME="1800">
         <HIGHWAY>605</HIGHWAY>
-        <LOCATION>County 605</LOCATION>
+        <LOCATION>County 605 MP .44</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2249,6 +2276,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>3</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2256,12 +2284,13 @@
     <MUNICIPALITY MCODE="0820" MNAME="West Deptford Twsp">
       <ACCIDENT ACCID="11278" DATE="10/17/2021" TIME="1829">
         <HIGHWAY>644</HIGHWAY>
-        <LOCATION>County 644</LOCATION>
+        <LOCATION>County 644 MP 2.49</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2275,6 +2304,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2321,7 +2351,7 @@
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="08" CNAME="Gloucester">
-    <MUNICIPALITY MCODE="0801" MNAME="Clayton Boro">
+    <MUNICIPALITY MCODE="0804" MNAME="Elk Twsp">
       <ACCIDENT ACCID="11263" DATE="10/16/2021" TIME="1128">
         <HIGHWAY>55</HIGHWAY>
         <LOCATION>State Highway 55 MP 44.8</LOCATION>
@@ -2330,6 +2360,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2357,32 +2388,35 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="17" CNAME="Salem">
     <MUNICIPALITY MCODE="1710" MNAME="Pittsgrove Twsp">
-      <ACCIDENT ACCID="11262" DATE="10/15/2021" TIME="1601">
+      <ACCIDENT ACCID="11262" DATE="10/15/2021" TIME="1602">
         <HIGHWAY>540</HIGHWAY>
-        <LOCATION>County 540</LOCATION>
+        <LOCATION>County 540 MP 28.5</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>2</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>3</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1216" MNAME="Perth Amboy City">
       <ACCIDENT ACCID="11292" DATE="10/15/2021" TIME="1215">
-        <HIGHWAY>440</HIGHWAY>
-        <LOCATION>State Highway 440</LOCATION>
+        <HIGHWAY>624</HIGHWAY>
+        <LOCATION>County 624 MP .85</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2441,8 +2475,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="11257" DATE="10/13/2021" TIME="1518">
-        <STREET>Morris Avenue</STREET>
-        <LOCATION>Morris Avenue</LOCATION>
+        <HIGHWAY>508</HIGHWAY>
+        <LOCATION>County 508 MP 10.25</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2468,7 +2502,7 @@
   </COUNTY>
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
-      <ACCIDENT ACCID="11251" DATE="10/12/2021" TIME="1921">
+      <ACCIDENT ACCID="11251" DATE="10/12/2021" TIME="1831">
         <HIGHWAY>1</HIGHWAY>
         <LOCATION>State Highway 1 (Truck (Rt. 1 and 9 Only)) MP 3.09</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -2484,12 +2518,13 @@
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="11267" DATE="10/12/2021" TIME="1328">
         <HIGHWAY>28</HIGHWAY>
-        <LOCATION>State Highway 28</LOCATION>
+        <LOCATION>State Highway 28 MP 25.66</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2537,9 +2572,9 @@
   </COUNTY>
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1107" MNAME="Lawrence Twsp">
-      <ACCIDENT ACCID="11247" DATE="10/11/2021" TIME="0555">
+      <ACCIDENT ACCID="11247" DATE="10/11/2021" TIME="0638">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 5.9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2552,7 +2587,7 @@
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="11546" DATE="10/10/2021" TIME="1857">
         <HIGHWAY>509</HIGHWAY>
-        <LOCATION>County 509</LOCATION>
+        <LOCATION>County 509 MP 18.57</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2566,7 +2601,7 @@
     <MUNICIPALITY MCODE="0810" MNAME="Mantua Twsp">
       <ACCIDENT ACCID="11244" DATE="10/10/2021" TIME="1223">
         <HIGHWAY>609</HIGHWAY>
-        <LOCATION>County 609</LOCATION>
+        <LOCATION>County 609 MP 6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2593,13 +2628,14 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1336" MNAME="Tinton Falls Boro">
       <ACCIDENT ACCID="11241" DATE="10/09/2021" TIME="1927">
-        <STREET>Asbury Ave</STREET>
-        <LOCATION>Asbury Ave</LOCATION>
+        <HIGHWAY>16</HIGHWAY>
+        <LOCATION>County 16 MP 2</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2646,7 +2682,7 @@
     <MUNICIPALITY MCODE="1806" MNAME="Bridgewater Twsp">
       <ACCIDENT ACCID="11240" DATE="10/08/2021" TIME="1554">
         <HIGHWAY>202</HIGHWAY>
-        <LOCATION>State/Interstate Authority 202 MP 28.31</LOCATION>
+        <LOCATION>State Highway 202 MP 28.31</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2672,9 +2708,9 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="11296" DATE="10/07/2021" TIME="1843">
+      <ACCIDENT ACCID="11296" DATE="10/07/2021" TIME="1817">
         <HIGHWAY>21</HIGHWAY>
-        <LOCATION>State Highway 21</LOCATION>
+        <LOCATION>State Highway 21 MP 1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2688,7 +2724,7 @@
     <MUNICIPALITY MCODE="1108" MNAME="Pennington Boro">
       <ACCIDENT ACCID="11290" DATE="10/06/2021" TIME="1008">
         <HIGHWAY>31</HIGHWAY>
-        <LOCATION>State Highway 31</LOCATION>
+        <LOCATION>State Highway 31 MP 7.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2714,13 +2750,14 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="11233" DATE="10/05/2021" TIME="1836">
-        <STREET>6th Ave</STREET>
-        <LOCATION>6th Ave</LOCATION>
+        <STREET>6th Ave W</STREET>
+        <LOCATION>6th Ave W</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2728,7 +2765,7 @@
     <MUNICIPALITY MCODE="1111" MNAME="Trenton">
       <ACCIDENT ACCID="11393" DATE="10/05/2021" TIME="0133">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 1.34</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2740,8 +2777,8 @@
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1612" MNAME="Totowa Boro">
       <ACCIDENT ACCID="11250" DATE="10/03/2021" TIME="1920">
-        <STREET>Shepherds Lane</STREET>
-        <LOCATION>Shepherds Lane</LOCATION>
+        <STREET>Shepherds Ln</STREET>
+        <LOCATION>Shepherds Ln</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2783,7 +2820,7 @@
     <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
       <ACCIDENT ACCID="11224" DATE="10/02/2021" TIME="2005">
         <HIGHWAY>35</HIGHWAY>
-        <LOCATION>State Highway 35</LOCATION>
+        <LOCATION>State Highway 35 MP 46.56</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2809,7 +2846,7 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="11229" DATE="10/01/2021" TIME="1500">
+      <ACCIDENT ACCID="11229" DATE="10/01/2021" TIME="1436">
         <STREET>Somerset St</STREET>
         <LOCATION>Somerset St</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -2839,12 +2876,13 @@
     <MUNICIPALITY MCODE="0722" MNAME="West Orange Town">
       <ACCIDENT ACCID="11227" DATE="09/30/2021" TIME="1917">
         <HIGHWAY>660</HIGHWAY>
-        <LOCATION>County 660 MP .42</LOCATION>
+        <LOCATION>County 660 MP .4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2894,12 +2932,13 @@
     <MUNICIPALITY MCODE="0810" MNAME="Mantua Twsp">
       <ACCIDENT ACCID="11210" DATE="09/27/2021" TIME="1602">
         <HIGHWAY>678</HIGHWAY>
-        <LOCATION>County 678</LOCATION>
+        <LOCATION>County 678 MP 6.3</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2934,8 +2973,8 @@
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
       <ACCIDENT ACCID="11538" DATE="09/26/2021" TIME="2021">
-        <STREET>Clinton Street</STREET>
-        <LOCATION>Clinton Street</LOCATION>
+        <STREET>Clinton St</STREET>
+        <LOCATION>Clinton St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2947,7 +2986,7 @@
   </COUNTY>
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1533" MNAME="Barnegat Twsp">
-      <ACCIDENT ACCID="11198" DATE="09/25/2021" TIME="1446">
+      <ACCIDENT ACCID="11198" DATE="09/25/2021" TIME="1426">
         <HIGHWAY>444</HIGHWAY>
         <LOCATION>Garden State Parkway MP 67.2</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -2987,7 +3026,7 @@
     <MUNICIPALITY MCODE="1221" MNAME="South Brunswick Tws">
       <ACCIDENT ACCID="11196" DATE="09/24/2021" TIME="1916">
         <HIGHWAY>130</HIGHWAY>
-        <LOCATION>State Highway 130 MP 78.07</LOCATION>
+        <LOCATION>State Highway 130 MP 78.09</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3000,13 +3039,14 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2017" MNAME="Springfield Twsp">
       <ACCIDENT ACCID="11289" DATE="09/24/2021" TIME="1754">
-        <STREET>Hillside Ave</STREET>
-        <LOCATION>Hillside Ave</LOCATION>
+        <HIGHWAY>635</HIGHWAY>
+        <LOCATION>County 635 MP .57</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3066,11 +3106,25 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0301" MNAME="Bass River Twsp">
+      <ACCIDENT ACCID="11216" DATE="09/19/2021" TIME="1131">
+        <STREET>Munion Field Rd</STREET>
+        <LOCATION>Munion Field Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1319" MNAME="Howell Twsp">
       <ACCIDENT ACCID="11238" DATE="09/19/2021" TIME="1103">
         <HIGHWAY>547</HIGHWAY>
-        <LOCATION>County 547 MP 18.22</LOCATION>
+        <LOCATION>County 547 MP 18.21</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3084,12 +3138,13 @@
     <MUNICIPALITY MCODE="1214" MNAME="New Brunswick City">
       <ACCIDENT ACCID="11188" DATE="09/19/2021" TIME="0633">
         <HIGHWAY>91</HIGHWAY>
-        <LOCATION>State Highway 91</LOCATION>
+        <LOCATION>State Highway 91 MP 1.77</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1221" MNAME="South Brunswick Tws">
@@ -3101,6 +3156,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3122,7 +3178,7 @@
     <MUNICIPALITY MCODE="2122" MNAME="Washington Twsp">
       <ACCIDENT ACCID="11191" DATE="09/18/2021" TIME="1154">
         <HIGHWAY>31</HIGHWAY>
-        <LOCATION>State Highway 31 MP 40.1</LOCATION>
+        <LOCATION>State Highway 31 MP 40.3</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3150,7 +3206,7 @@
     <MUNICIPALITY MCODE="0261" MNAME="Tenafly Boro">
       <ACCIDENT ACCID="11180" DATE="09/16/2021" TIME="0846">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9 (Western Alignment (NJ Turnpike Only)) MP 4.5</LOCATION>
+        <LOCATION>State Highway 9 MP 4.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3174,9 +3230,9 @@
   </COUNTY>
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
-      <ACCIDENT ACCID="11178" DATE="09/15/2021" TIME="2042">
-        <STREET>Straight Street</STREET>
-        <LOCATION>Straight Street</LOCATION>
+      <ACCIDENT ACCID="11178" DATE="09/15/2021" TIME="2003">
+        <STREET>Straight St</STREET>
+        <LOCATION>Straight St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3202,7 +3258,7 @@
   </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1345" MNAME="Shrewsbury Boro">
-      <ACCIDENT ACCID="11172" DATE="09/14/2021" TIME="0018">
+      <ACCIDENT ACCID="11172" DATE="09/14/2021" TIME="0054">
         <HIGHWAY>35</HIGHWAY>
         <LOCATION>State Highway 35 MP 32.31</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -3216,7 +3272,7 @@
   </COUNTY>
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0408" MNAME="Camden City">
-      <ACCIDENT ACCID="11166" DATE="09/13/2021" TIME="2233">
+      <ACCIDENT ACCID="11166" DATE="09/13/2021" TIME="2208">
         <STREET>South 8th St</STREET>
         <LOCATION>South 8th St</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -3224,6 +3280,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0436" MNAME="Winslow Twsp">
@@ -3240,14 +3297,15 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="11169" DATE="09/12/2021" TIME="2117">
-        <STREET>S. 18th St</STREET>
-        <LOCATION>S. 18th St</LOCATION>
+      <ACCIDENT ACCID="11169" DATE="09/12/2021" TIME="2116">
+        <STREET>South 18th St</STREET>
+        <LOCATION>South 18th St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3261,6 +3319,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0315" MNAME="Florence Twsp">
@@ -3306,12 +3365,13 @@
     <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
       <ACCIDENT ACCID="11175" DATE="09/11/2021" TIME="0231">
         <HIGHWAY>35</HIGHWAY>
-        <LOCATION>State Highway 35</LOCATION>
+        <LOCATION>State Highway 35 MP 46.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1215" MNAME="North Brunswick Tws">
@@ -3344,8 +3404,8 @@
   <COUNTY CCODE="06" CNAME="Cumberland">
     <MUNICIPALITY MCODE="0614" MNAME="Vineland City">
       <ACCIDENT ACCID="11154" DATE="09/09/2021" TIME="1122">
-        <STREET>West Chestnut Avenue</STREET>
-        <LOCATION>West Chestnut Avenue</LOCATION>
+        <STREET>West Chestnut Ave</STREET>
+        <LOCATION>West Chestnut Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3359,12 +3419,13 @@
     <MUNICIPALITY MCODE="1101" MNAME="East Windsor Twsp">
       <ACCIDENT ACCID="11194" DATE="09/09/2021" TIME="1052">
         <HIGHWAY>130</HIGHWAY>
-        <LOCATION>State Highway 130</LOCATION>
+        <LOCATION>State Highway 130 MP 68.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3378,12 +3439,13 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0213" MNAME="Edgewater Boro">
-      <ACCIDENT ACCID="11152" DATE="09/08/2021" TIME="1354">
+      <ACCIDENT ACCID="11152" DATE="09/08/2021" TIME="1349">
         <HIGHWAY>505</HIGHWAY>
         <LOCATION>County 505 MP 4.16</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -3454,13 +3516,14 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2013" MNAME="Rahway City">
       <ACCIDENT ACCID="11176" DATE="09/07/2021" TIME="0742">
-        <HIGHWAY>514</HIGHWAY>
-        <LOCATION>County 514</LOCATION>
+        <STREET>Elizabeth Ave</STREET>
+        <LOCATION>Elizabeth Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3488,6 +3551,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3508,8 +3572,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
       <ACCIDENT ACCID="11174" DATE="09/05/2021" TIME="0218">
-        <HIGHWAY>690</HIGHWAY>
-        <LOCATION>County 690</LOCATION>
+        <HIGHWAY>520</HIGHWAY>
+        <LOCATION>County 520 MP .64</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3535,14 +3599,15 @@
   </COUNTY>
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
-      <ACCIDENT ACCID="11142" DATE="09/04/2021" TIME="2129">
+      <ACCIDENT ACCID="11142" DATE="09/04/2021" TIME="2128">
         <HIGHWAY>606</HIGHWAY>
-        <LOCATION>County 606</LOCATION>
+        <LOCATION>County 606 MP 2.67</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3550,7 +3615,7 @@
     <MUNICIPALITY MCODE="2003" MNAME="Cranford Twsp">
       <ACCIDENT ACCID="11141" DATE="09/04/2021" TIME="1202">
         <HIGHWAY>444</HIGHWAY>
-        <LOCATION>Garden State Parkway MP 137</LOCATION>
+        <LOCATION>Garden State Parkway MP 138.9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3576,7 +3641,7 @@
   </COUNTY>
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1615" MNAME="West Milford Twsp">
-      <ACCIDENT ACCID="11138" DATE="09/03/2021" TIME="2200">
+      <ACCIDENT ACCID="11138" DATE="09/03/2021" TIME="2135">
         <STREET>Lincoln Ave</STREET>
         <LOCATION>Lincoln Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -3598,6 +3663,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3605,18 +3671,19 @@
     <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
       <ACCIDENT ACCID="11136" DATE="09/02/2021" TIME="1256">
         <HIGHWAY>501</HIGHWAY>
-        <LOCATION>County 501</LOCATION>
+        <LOCATION>County 501 MP 1.55</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2016" MNAME="Scotch Plains Twsp">
-      <ACCIDENT ACCID="11211" DATE="09/02/2021" TIME="0920">
+      <ACCIDENT ACCID="11211" DATE="09/02/2021" TIME="0924">
         <STREET>Henry St</STREET>
         <LOCATION>Henry St</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -3642,34 +3709,10 @@
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="10" CNAME="Hunterdon">
-    <MUNICIPALITY MCODE="1021" MNAME="Raritan Twsp">
-      <ACCIDENT ACCID="11213" DATE="09/02/2021" TIME="0828">
-        <STREET>Everitts Rd</STREET>
-        <LOCATION>Everitts Rd</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
-      </ACCIDENT>
-    </MUNICIPALITY>
     <MUNICIPALITY MCODE="1015" MNAME="Holland Twsp">
-      <ACCIDENT ACCID="11190" DATE="09/02/2021" TIME="0721">
-        <STREET>Javes Rd.</STREET>
-        <LOCATION>Javes Rd.</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
-      </ACCIDENT>
-    </MUNICIPALITY>
-    <MUNICIPALITY MCODE="1021" MNAME="Raritan Twsp">
-      <ACCIDENT ACCID="11212" DATE="09/02/2021" TIME="0432">
-        <STREET>Hampton Corner Rd</STREET>
-        <LOCATION>Hampton Corner Rd</LOCATION>
+      <ACCIDENT ACCID="11190" DATE="09/02/2021" TIME="0722">
+        <STREET>Javes Rd</STREET>
+        <LOCATION>Javes Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3695,9 +3738,19 @@
   </COUNTY>
   <COUNTY CCODE="10" CNAME="Hunterdon">
     <MUNICIPALITY MCODE="1021" MNAME="Raritan Twsp">
-      <ACCIDENT ACCID="11214" DATE="09/02/2021" TIME="0341">
-        <STREET>Barton Hollow Road</STREET>
-        <LOCATION>Barton Hollow Road</LOCATION>
+      <ACCIDENT ACCID="11212" DATE="09/01/2021" TIME="2327">
+        <HIGHWAY>202</HIGHWAY>
+        <LOCATION>State Highway 202 MP 9.38</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+      <ACCIDENT ACCID="11213" DATE="09/01/2021" TIME="2015">
+        <STREET>Everitts Rd</STREET>
+        <LOCATION>Everitts Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3717,6 +3770,21 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="10" CNAME="Hunterdon">
+    <MUNICIPALITY MCODE="1021" MNAME="Raritan Twsp">
+      <ACCIDENT ACCID="11214" DATE="09/01/2021" TIME="1850">
+        <STREET>Barton Hollow Rd</STREET>
+        <LOCATION>Barton Hollow Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3763,8 +3831,8 @@
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0610" MNAME="Millville City">
       <ACCIDENT ACCID="11126" DATE="08/30/2021" TIME="1603">
-        <STREET>North 3rd Street</STREET>
-        <LOCATION>North 3rd Street</LOCATION>
+        <STREET>North 3rd St</STREET>
+        <LOCATION>North 3rd St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3791,13 +3859,14 @@
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0261" MNAME="Tenafly Boro">
       <ACCIDENT ACCID="11134" DATE="08/29/2021" TIME="1554">
-        <STREET>Highwood Ave</STREET>
-        <LOCATION>Highwood Ave</LOCATION>
+        <STREET>Hillside Ave</STREET>
+        <LOCATION>Hillside Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3833,7 +3902,7 @@
     <MUNICIPALITY MCODE="1111" MNAME="Trenton">
       <ACCIDENT ACCID="11156" DATE="08/29/2021" TIME="0518">
         <HIGHWAY>129</HIGHWAY>
-        <LOCATION>State Highway 129</LOCATION>
+        <LOCATION>State Highway 129 MP 1.08</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3844,14 +3913,15 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="11132" DATE="08/29/2021" TIME="0226">
-        <STREET>Lyons Ave</STREET>
-        <LOCATION>Lyons Ave</LOCATION>
+      <ACCIDENT ACCID="11132" DATE="08/29/2021" TIME="0222">
+        <HIGHWAY>602</HIGHWAY>
+        <LOCATION>County 602 MP 1.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0717" MNAME="Orange City">
@@ -3863,6 +3933,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3883,8 +3954,8 @@
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
       <ACCIDENT ACCID="11146" DATE="08/26/2021" TIME="0025">
-        <STREET>Bramhall Avenue</STREET>
-        <LOCATION>Bramhall Avenue</LOCATION>
+        <STREET>Bramhall Ave</STREET>
+        <LOCATION>Bramhall Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3912,7 +3983,7 @@
     <MUNICIPALITY MCODE="1110" MNAME="Princeton">
       <ACCIDENT ACCID="11120" DATE="08/25/2021" TIME="0803">
         <HIGHWAY>604</HIGHWAY>
-        <LOCATION>County 604</LOCATION>
+        <LOCATION>County 604 MP 1.84</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3931,6 +4002,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3991,14 +4063,15 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="11104" DATE="08/24/2021" TIME="0328">
+      <ACCIDENT ACCID="11104" DATE="08/24/2021" TIME="0254">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 51.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
       <ACCIDENT ACCID="11103" DATE="08/22/2021" TIME="0223">
         <HIGHWAY>78</HIGHWAY>
@@ -4097,13 +4170,14 @@
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0816" MNAME="South Harrison Twsp">
       <ACCIDENT ACCID="11090" DATE="08/17/2021" TIME="1433">
-        <STREET>Mullica Hill Rd</STREET>
-        <LOCATION>Mullica Hill Rd</LOCATION>
+        <HIGHWAY>617</HIGHWAY>
+        <LOCATION>County 617 MP 1.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4139,7 +4213,7 @@
     <MUNICIPALITY MCODE="0325" MNAME="Mount Laurel Twsp">
       <ACCIDENT ACCID="11107" DATE="08/17/2021" TIME="0229">
         <HIGHWAY>295</HIGHWAY>
-        <LOCATION>Interstate 295 MP 36.8</LOCATION>
+        <LOCATION>Interstate 295 MP 36.86</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4177,7 +4251,7 @@
   </COUNTY>
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
-      <ACCIDENT ACCID="11096" DATE="08/15/2021" TIME="1240">
+      <ACCIDENT ACCID="11096" DATE="08/15/2021" TIME="1239">
         <HIGHWAY>501</HIGHWAY>
         <LOCATION>County 501 MP 32.54</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -4191,7 +4265,7 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0717" MNAME="Orange City">
-      <ACCIDENT ACCID="11167" DATE="08/15/2021" TIME="0430">
+      <ACCIDENT ACCID="11167" DATE="08/15/2021" TIME="0441">
         <HIGHWAY>508</HIGHWAY>
         <LOCATION>County 508 MP 7.5</LOCATION>
         <FATALITIES>2</FATALITIES>
@@ -4207,12 +4281,13 @@
     <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
       <ACCIDENT ACCID="11083" DATE="08/15/2021" TIME="0344">
         <HIGHWAY>35</HIGHWAY>
-        <LOCATION>State Highway 35</LOCATION>
+        <LOCATION>State Highway 35 MP 48.14</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4290,18 +4365,19 @@
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="11085" DATE="08/11/2021" TIME="1600">
         <HIGHWAY>21</HIGHWAY>
-        <LOCATION>State Highway 21</LOCATION>
+        <LOCATION>State Highway 21 MP 3.9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1507" MNAME="Toms River">
-      <ACCIDENT ACCID="11193" DATE="08/11/2021" TIME="1345">
+      <ACCIDENT ACCID="11193" DATE="08/11/2021" TIME="1354">
         <HIGHWAY>527</HIGHWAY>
         <LOCATION>County 527 MP 5.74</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -4315,7 +4391,7 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="11151" DATE="08/10/2021" TIME="2050">
+      <ACCIDENT ACCID="11151" DATE="08/10/2021" TIME="2051">
         <HIGHWAY>280</HIGHWAY>
         <LOCATION>Interstate 280 MP 14.5</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -4385,7 +4461,7 @@
   </COUNTY>
   <COUNTY CCODE="10" CNAME="Hunterdon">
     <MUNICIPALITY MCODE="1013" MNAME="Hampton Boro">
-      <ACCIDENT ACCID="11074" DATE="08/07/2021" TIME="0311">
+      <ACCIDENT ACCID="11074" DATE="08/07/2021" TIME="0312">
         <HIGHWAY>31</HIGHWAY>
         <LOCATION>State Highway 31 MP 39.4</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -4400,13 +4476,14 @@
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0804" MNAME="Elk Twsp">
       <ACCIDENT ACCID="11072" DATE="08/06/2021" TIME="2130">
-        <STREET>Clems Run Rd</STREET>
-        <LOCATION>Clems Run Rd</LOCATION>
+        <HIGHWAY>623</HIGHWAY>
+        <LOCATION>County 623 MP 3.77</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4492,9 +4569,9 @@
   </COUNTY>
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0908" MNAME="North Bergen Twsp">
-      <ACCIDENT ACCID="11064" DATE="08/04/2021" TIME="0212">
-        <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9 (Truck (Rt. 1 and 9 Only))</LOCATION>
+      <ACCIDENT ACCID="11064" DATE="08/04/2021" TIME="0213">
+        <HIGHWAY>1</HIGHWAY>
+        <LOCATION>State Highway 1 (Truck (Rt. 1 and 9 Only)) MP 57.75</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -4531,7 +4608,7 @@
     <MUNICIPALITY MCODE="2014" MNAME="Roselle Boro">
       <ACCIDENT ACCID="11087" DATE="08/03/2021" TIME="1207">
         <HIGHWAY>27</HIGHWAY>
-        <LOCATION>State Highway 27</LOCATION>
+        <LOCATION>State Highway 27 MP 32.33</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -4551,6 +4628,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4572,12 +4650,13 @@
     <MUNICIPALITY MCODE="0821" MNAME="Westville Boro">
       <ACCIDENT ACCID="11058" DATE="07/31/2021" TIME="2120">
         <HIGHWAY>45</HIGHWAY>
-        <LOCATION>State Highway 45</LOCATION>
+        <LOCATION>State Highway 45 MP 27.9</LOCATION>
         <FATALITIES>4</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>3</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4598,8 +4677,8 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0408" MNAME="Camden City">
       <ACCIDENT ACCID="11541" DATE="07/30/2021" TIME="1630">
-        <STREET>South 7th Street</STREET>
-        <LOCATION>South 7th Street</LOCATION>
+        <STREET>Atlantic Ave</STREET>
+        <LOCATION>Atlantic Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4612,8 +4691,8 @@
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1107" MNAME="Lawrence Twsp">
       <ACCIDENT ACCID="11057" DATE="07/30/2021" TIME="0630">
-        <STREET>Province Line Road</STREET>
-        <LOCATION>Province Line Road</LOCATION>
+        <STREET>Province Line Rd</STREET>
+        <LOCATION>Province Line Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4646,19 +4725,21 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0212" MNAME="East Rutherford Bor">
-      <ACCIDENT ACCID="11437" DATE="07/28/2021" TIME="1721">
+      <ACCIDENT ACCID="11437" DATE="07/28/2021" TIME="1709">
         <HIGHWAY>120</HIGHWAY>
-        <LOCATION>State Highway 120 MP .1</LOCATION>
+        <LOCATION>State Highway 120 MP .01</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4717,8 +4798,8 @@
   <COUNTY CCODE="18" CNAME="Somerset">
     <MUNICIPALITY MCODE="1806" MNAME="Bridgewater Twsp">
       <ACCIDENT ACCID="11049" DATE="07/26/2021" TIME="0923">
-        <STREET>Garretson Road</STREET>
-        <LOCATION>Garretson Road</LOCATION>
+        <STREET>Garretson Rd</STREET>
+        <LOCATION>Garretson Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4730,7 +4811,7 @@
   </COUNTY>
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
-      <ACCIDENT ACCID="11047" DATE="07/26/2021" TIME="0508">
+      <ACCIDENT ACCID="11047" DATE="07/26/2021" TIME="0528">
         <HIGHWAY>440</HIGHWAY>
         <LOCATION>State Highway 440 MP .01</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -4738,6 +4819,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4786,12 +4868,13 @@
     <MUNICIPALITY MCODE="0818" MNAME="Washington Twsp">
       <ACCIDENT ACCID="11042" DATE="07/23/2021" TIME="2255">
         <HIGHWAY>651</HIGHWAY>
-        <LOCATION>County 651</LOCATION>
+        <LOCATION>County 651 MP 4.43</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4841,7 +4924,7 @@
     <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
       <ACCIDENT ACCID="11039" DATE="07/21/2021" TIME="1541">
         <HIGHWAY>615</HIGHWAY>
-        <LOCATION>County 615 MP 22.84</LOCATION>
+        <LOCATION>County 615 MP 22.83</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4888,17 +4971,19 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
       <ACCIDENT ACCID="11031" DATE="07/18/2021" TIME="0428">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9</LOCATION>
+        <LOCATION>State Highway 9 MP 121.74</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>4</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4976,12 +5061,13 @@
     <MUNICIPALITY MCODE="1217" MNAME="Piscataway Twsp">
       <ACCIDENT ACCID="11027" DATE="07/17/2021" TIME="0003">
         <HIGHWAY>622</HIGHWAY>
-        <LOCATION>County 622</LOCATION>
+        <LOCATION>County 622 MP 5.93</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4995,6 +5081,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5236,8 +5323,8 @@
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1610" MNAME="Prospect Park Boro">
       <ACCIDENT ACCID="11436" DATE="07/07/2021" TIME="1242">
-        <STREET>Brown Avenue</STREET>
-        <LOCATION>Brown Avenue</LOCATION>
+        <STREET>Brown Ave</STREET>
+        <LOCATION>Brown Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5320,13 +5407,14 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1217" MNAME="Piscataway Twsp">
       <ACCIDENT ACCID="10986" DATE="07/04/2021" TIME="1416">
-        <STREET>New Brunswick Ave</STREET>
-        <LOCATION>New Brunswick Ave</LOCATION>
+        <HIGHWAY>647</HIGHWAY>
+        <LOCATION>County 647 MP 1.61</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5388,7 +5476,7 @@
   </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0334" MNAME="Southampton Twsp">
-      <ACCIDENT ACCID="10984" DATE="07/03/2021" TIME="0336">
+      <ACCIDENT ACCID="10984" DATE="07/03/2021" TIME="0337">
         <STREET>Hilliards Bridge Rd</STREET>
         <LOCATION>Hilliards Bridge Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -5450,6 +5538,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5483,9 +5572,9 @@
   </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1331" MNAME="Middletown Twsp">
-      <ACCIDENT ACCID="10973" DATE="06/29/2021" TIME="1327">
-        <STREET>Center Avenue</STREET>
-        <LOCATION>Center Avenue</LOCATION>
+      <ACCIDENT ACCID="10973" DATE="06/29/2021" TIME="1328">
+        <STREET>Center Ave</STREET>
+        <LOCATION>Center Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5499,12 +5588,13 @@
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
       <ACCIDENT ACCID="11732" DATE="06/29/2021" TIME="1256">
         <HIGHWAY>440</HIGHWAY>
-        <LOCATION>State Highway 440</LOCATION>
+        <LOCATION>State Highway 440 MP 25</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5540,12 +5630,13 @@
     <MUNICIPALITY MCODE="0811" MNAME="Monroe Twsp">
       <ACCIDENT ACCID="10962" DATE="06/27/2021" TIME="2119">
         <HIGHWAY>322</HIGHWAY>
-        <LOCATION>State Highway 322</LOCATION>
+        <LOCATION>State Highway 322 MP 29.1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5566,13 +5657,14 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="10966" DATE="06/27/2021" TIME="0108">
-        <STREET>South Orange Ave</STREET>
-        <LOCATION>South Orange Ave</LOCATION>
+        <HIGHWAY>510</HIGHWAY>
+        <LOCATION>County 510 MP 28.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5580,7 +5672,7 @@
     <MUNICIPALITY MCODE="0805" MNAME="Franklin Twsp">
       <ACCIDENT ACCID="11005" DATE="06/26/2021" TIME="1555">
         <HIGHWAY>615</HIGHWAY>
-        <LOCATION>County 615</LOCATION>
+        <LOCATION>County 615 MP 2.46</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5632,20 +5724,21 @@
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="11068" DATE="06/25/2021" TIME="1610">
-        <STREET>Jefferson St</STREET>
-        <LOCATION>Jefferson St</LOCATION>
+      <ACCIDENT ACCID="11068" DATE="06/25/2021" TIME="1609">
+        <STREET>Chestnut St</STREET>
+        <LOCATION>Chestnut St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1507" MNAME="Toms River">
-      <ACCIDENT ACCID="10963" DATE="06/25/2021" TIME="1411">
+      <ACCIDENT ACCID="10963" DATE="06/25/2021" TIME="1412">
         <HIGHWAY>444</HIGHWAY>
         <LOCATION>Garden State Parkway MP 82</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -5667,6 +5760,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5796,7 +5890,7 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="10950" DATE="06/19/2021" TIME="0403">
+      <ACCIDENT ACCID="10950" DATE="06/19/2021" TIME="0413">
         <HIGHWAY>280</HIGHWAY>
         <LOCATION>Interstate 280 MP 13.5</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -5804,6 +5898,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>4</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5811,7 +5906,7 @@
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="11009" DATE="06/19/2021" TIME="0316">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 45.74</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5845,6 +5940,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5905,13 +6001,14 @@
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="2012" MNAME="Plainfield City">
       <ACCIDENT ACCID="11014" DATE="06/14/2021" TIME="2232">
-        <STREET>East Front St</STREET>
-        <LOCATION>East Front St</LOCATION>
+        <HIGHWAY>620</HIGHWAY>
+        <LOCATION>County 620 MP 1.96</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5959,12 +6056,13 @@
     <MUNICIPALITY MCODE="1924" MNAME="Wantage Twsp">
       <ACCIDENT ACCID="10944" DATE="06/13/2021" TIME="0131">
         <HIGHWAY>519</HIGHWAY>
-        <LOCATION>County 519</LOCATION>
+        <LOCATION>County 519 MP 82.12</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5972,7 +6070,7 @@
     <MUNICIPALITY MCODE="0215" MNAME="Englewood City">
       <ACCIDENT ACCID="10941" DATE="06/13/2021" TIME="0056">
         <HIGHWAY>4</HIGHWAY>
-        <LOCATION>State Highway 4 MP 8.5</LOCATION>
+        <LOCATION>State Highway 4 MP 8.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6013,12 +6111,13 @@
     <MUNICIPALITY MCODE="1111" MNAME="Trenton">
       <ACCIDENT ACCID="10961" DATE="06/12/2021" TIME="0354">
         <HIGHWAY>129</HIGHWAY>
-        <LOCATION>State Highway 129</LOCATION>
+        <LOCATION>State Highway 129 MP 1.61</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6054,7 +6153,7 @@
     <MUNICIPALITY MCODE="0437" MNAME="Woodlynne Boro">
       <ACCIDENT ACCID="10940" DATE="06/09/2021" TIME="2257">
         <HIGHWAY>168</HIGHWAY>
-        <LOCATION>State Highway 168 MP 10.6</LOCATION>
+        <LOCATION>State Highway 168 MP 10.65</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6078,13 +6177,14 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0722" MNAME="West Orange Town">
       <ACCIDENT ACCID="10936" DATE="06/07/2021" TIME="2220">
-        <STREET>Central Ave</STREET>
-        <LOCATION>Central Ave</LOCATION>
+        <HIGHWAY>508</HIGHWAY>
+        <LOCATION>County 508 MP 7.95</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6240,19 +6340,6 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <COUNTY CCODE="11" CNAME="Mercer">
-    <MUNICIPALITY MCODE="1111" MNAME="Trenton">
-      <ACCIDENT ACCID="10925" DATE="05/29/2021" TIME="2100">
-        <STREET>South Clinton Ave</STREET>
-        <LOCATION>South Clinton Ave</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
       <ACCIDENT ACCID="10924" DATE="05/29/2021" TIME="0511">
@@ -6297,12 +6384,13 @@
     <MUNICIPALITY MCODE="0216" MNAME="Englewood Cliffs Bo">
       <ACCIDENT ACCID="10926" DATE="05/27/2021" TIME="2033">
         <HIGHWAY>445</HIGHWAY>
-        <LOCATION>Palisades Interstate Parkway</LOCATION>
+        <LOCATION>Palisades Interstate Parkway MP 2.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>3</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6350,12 +6438,13 @@
     <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="10927" DATE="05/25/2021" TIME="2105">
         <HIGHWAY>33</HIGHWAY>
-        <LOCATION>State Highway 33</LOCATION>
+        <LOCATION>State Highway 33 MP 5.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6411,6 +6500,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>4</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6457,8 +6547,8 @@
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0912" MNAME="West New York Town">
       <ACCIDENT ACCID="10913" DATE="05/21/2021" TIME="0939">
-        <STREET>Bergenline Avenue</STREET>
-        <LOCATION>Bergenline Avenue</LOCATION>
+        <STREET>Bergenline Ave</STREET>
+        <LOCATION>Bergenline Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6500,7 +6590,7 @@
     <MUNICIPALITY MCODE="0802" MNAME="Deptford Twsp">
       <ACCIDENT ACCID="10905" DATE="05/19/2021" TIME="0605">
         <HIGHWAY>295</HIGHWAY>
-        <LOCATION>Interstate 295 MP 23</LOCATION>
+        <LOCATION>Interstate 295 MP 22.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6540,13 +6630,14 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="10934" DATE="05/17/2021" TIME="2320">
-        <STREET>Spring St</STREET>
-        <LOCATION>Spring St</LOCATION>
+        <HIGHWAY>1</HIGHWAY>
+        <LOCATION>State Highway 1 MP 45.85</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6663,7 +6754,7 @@
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="11" CNAME="Mercer">
-    <MUNICIPALITY MCODE="1105" MNAME="Hopewell Boro">
+    <MUNICIPALITY MCODE="1106" MNAME="Hopewell Twsp">
       <ACCIDENT ACCID="10887" DATE="05/13/2021" TIME="1611">
         <HIGHWAY>518</HIGHWAY>
         <LOCATION>County 518 MP 10.5</LOCATION>
@@ -6706,13 +6797,14 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="10869" DATE="05/11/2021" TIME="0315">
-        <STREET>Frelinghuysen Ave</STREET>
-        <LOCATION>Frelinghuysen Ave</LOCATION>
+        <HIGHWAY>27</HIGHWAY>
+        <LOCATION>State Highway 27 MP 36.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6859,8 +6951,8 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0412" MNAME="Cherry Hill Twsp">
       <ACCIDENT ACCID="10865" DATE="04/30/2021" TIME="1653">
-        <STREET>2160 State Highway 70 - Parking Lot</STREET>
-        <LOCATION>2160 State Highway 70 - Parking Lot</LOCATION>
+        <HIGHWAY>70</HIGHWAY>
+        <LOCATION>State Highway 70 MP 2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6902,7 +6994,7 @@
     <MUNICIPALITY MCODE="0335" MNAME="Springfield Twsp">
       <ACCIDENT ACCID="10855" DATE="04/29/2021" TIME="0950">
         <HIGHWAY>68</HIGHWAY>
-        <LOCATION>State Highway 68</LOCATION>
+        <LOCATION>State Highway 68 MP 2.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -6929,13 +7021,14 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0706" MNAME="East Orange City">
       <ACCIDENT ACCID="10859" DATE="04/28/2021" TIME="2231">
-        <STREET>Central Ave</STREET>
-        <LOCATION>Central Ave</LOCATION>
+        <HIGHWAY>508</HIGHWAY>
+        <LOCATION>County 508 MP 8.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7083,12 +7176,13 @@
     <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
       <ACCIDENT ACCID="10843" DATE="04/20/2021" TIME="2233">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9</LOCATION>
+        <LOCATION>State Highway 9 MP 127.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7255,7 +7349,7 @@
     <MUNICIPALITY MCODE="1215" MNAME="North Brunswick Tws">
       <ACCIDENT ACCID="10833" DATE="04/09/2021" TIME="0721">
         <HIGHWAY>130</HIGHWAY>
-        <LOCATION>State Highway 130 MP 81.27</LOCATION>
+        <LOCATION>State Highway 130 MP 81.25</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7307,19 +7401,6 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <COUNTY CCODE="20" CNAME="Union">
-    <MUNICIPALITY MCODE="2009" MNAME="Linden City">
-      <ACCIDENT ACCID="10890" DATE="04/05/2021" TIME="0144">
-        <HIGHWAY>27</HIGHWAY>
-        <LOCATION>State Highway 27</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0412" MNAME="Cherry Hill Twsp">
       <ACCIDENT ACCID="10808" DATE="04/04/2021" TIME="2143">
@@ -7350,12 +7431,13 @@
     <MUNICIPALITY MCODE="1111" MNAME="Trenton">
       <ACCIDENT ACCID="11731" DATE="04/03/2021" TIME="2031">
         <HIGHWAY>29</HIGHWAY>
-        <LOCATION>State Highway 29</LOCATION>
+        <LOCATION>State Highway 29 MP 5.01</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7391,12 +7473,13 @@
     <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
       <ACCIDENT ACCID="10815" DATE="04/03/2021" TIME="0340">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9</LOCATION>
+        <LOCATION>State Highway 9 MP 123.18</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7471,8 +7554,8 @@
   <COUNTY CCODE="06" CNAME="Cumberland">
     <MUNICIPALITY MCODE="0613" MNAME="Upper Deerfield Tws">
       <ACCIDENT ACCID="10838" DATE="03/30/2021" TIME="1222">
-        <STREET>1130 State Highway 77</STREET>
-        <LOCATION>1130 State Highway 77</LOCATION>
+        <HIGHWAY>77</HIGHWAY>
+        <LOCATION>State Highway 77 MP 3.1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7603,7 +7686,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7958,12 +8041,13 @@
     <MUNICIPALITY MCODE="0254" MNAME="Rochelle Park Twsp">
       <ACCIDENT ACCID="10767" DATE="03/09/2021" TIME="2042">
         <HIGHWAY>17</HIGHWAY>
-        <LOCATION>State Highway 17</LOCATION>
+        <LOCATION>State Highway 17 MP 11.25</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7998,13 +8082,14 @@
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1111" MNAME="Trenton">
       <ACCIDENT ACCID="10761" DATE="03/07/2021" TIME="1819">
-        <HIGHWAY>129</HIGHWAY>
-        <LOCATION>State Highway 129</LOCATION>
+        <HIGHWAY>650</HIGHWAY>
+        <LOCATION>County 650 MP .29</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8228,7 +8313,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-        <INJURIES>4</INJURIES>
+        <INJURIES>5</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8278,12 +8363,13 @@
     <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
       <ACCIDENT ACCID="10778" DATE="02/24/2021" TIME="0451">
         <HIGHWAY>20</HIGHWAY>
-        <LOCATION>State Highway 20</LOCATION>
+        <LOCATION>State Highway 20 MP 1.3</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>3</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8291,7 +8377,7 @@
     <MUNICIPALITY MCODE="1111" MNAME="Trenton">
       <ACCIDENT ACCID="10757" DATE="02/22/2021" TIME="1610">
         <HIGHWAY>29</HIGHWAY>
-        <LOCATION>State Highway 29</LOCATION>
+        <LOCATION>State Highway 29 MP 4.3</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -8722,7 +8808,7 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="10691" DATE="01/23/2021" TIME="2240">
+      <ACCIDENT ACCID="10691" DATE="01/23/2021" TIME="2241">
         <STREET>Elizabeth Ave</STREET>
         <LOCATION>Elizabeth Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -9160,7 +9246,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>669</TOTACCIDENTS>
-  <TOTFATALITIES>699</TOTFATALITIES>
-  <TOTINJURIES>321</TOTINJURIES>
+  <TOTACCIDENTS>667</TOTACCIDENTS>
+  <TOTFATALITIES>697</TOTFATALITIES>
+  <TOTINJURIES>397</TOTINJURIES>
 </FAUQSTATS>
