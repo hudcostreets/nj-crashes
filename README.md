@@ -9,11 +9,12 @@ Analysis of NJ State Police traffic violence data (2008-present): https://nj.gov
 
 ![](./fatalities_per_year_by_type.png)
 
-- Projection details:
-  - As of 2022-11-16, there have been 618 traffic fatalities in 2022.
-  - Extrapolating linearly over the remainder of the year yields 708 expected fatalities for 2022
-  - This exceeds the record of 697, set in 2021. 
-- Victim type data is only available starting since 2020, so most history is unknown
+(Victim type data is only available starting since 2020, so most history is unknown)
+
+#### Projection details:
+- As of 2022-11-16, there have been 618 traffic fatalities in 2022.
+- Extrapolating linearly over the remainder of the year yields 708 expected fatalities for 2022
+- This exceeds the record of 697, set in 2021. 
 
 ### In NJ, traffic deaths are 1.5x-2x homicides
 
