@@ -1,0 +1,24 @@
+name: Daily refresh
+on:
+  schedule:
+    - cron: "0 11 * * *"
+  push:
+    branches:
+      - main
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+          cache: 'pip'
+      - run: git remote -vv
+      - run: git branch -vv
+      - run: git symbolic-ref -q --short HEAD
+      - run: pip install -r requirements.txt
+      - run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'ryan-williams@users.noreply.github.com'
+          ./gha.py -p

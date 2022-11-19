@@ -46,8 +46,14 @@ This data is available starting from 2020.
 - [parse-njsp-xmls.ipynb](./parse-njsp-xmls.ipynb)
 - [nj-crime-stats.ipynb](./nj-crime-stats.ipynb)
 
-
+Refresh data:
 ```bash
+./refresh-data.sh  # By default: 2020, 2021, and 2022
+```
+
+Execute notebook:
+```bash
+papermill parse-njsp-xmls.ipynb out/parse-njsp-xmls.ipynb  # Update data, plots
 ```
 
 ---
