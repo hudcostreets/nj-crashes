@@ -1,6 +1,9 @@
 beautifulsoup4
 fastparquet
 kaleido
+jupyter
 openpyxl
+pandas
+papermill
 plotly
 sqlalchemy
