@@ -3,6 +3,7 @@ click
 fastparquet
 kaleido
 jupyter
+lxml
 openpyxl
 pandas
 papermill
