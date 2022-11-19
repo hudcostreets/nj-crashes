@@ -51,7 +51,7 @@ def main(do_configure_author, force, push):
 
     commit('GHA: update data/plots')
     if push:
-        run('git', 'push')
+        run('git', 'push', 'origin')
 
 
 if __name__ == '__main__':
