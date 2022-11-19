@@ -28,14 +28,13 @@ def main(do_configure_author, force, push):
 
     def commit(msg):
         nonlocal do_configure_author
-        if not git_is_clean:
-            if do_configure_author:
-                configure_author('GitHub Actions', 'ryan-williams@users.noreply.github.com')
-                do_configure_author = False
+        if do_configure_author:
+            configure_author('GitHub Actions', 'ryan-williams@users.noreply.github.com')
+            do_configure_author = False
+        run('git', 'commit', '-am', msg)
 
-            run('git', 'commit', '-am', msg)
-
-    commit('GHA: update data')
+    if not git_is_clean:
+        commit('GHA: update data')
 
     run('papermill', nb, out)
     changed_files = [ line[3:] for line in process.lines('git', 'status', '--porcelain') ]
