@@ -15,4 +15,4 @@ jobs:
           python-version: 3.9
           cache: 'pip'
       - run: pip install -r requirements.txt
-      - run: ./gha.py -pf
+      - run: ./gha.py -cfp
