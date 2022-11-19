@@ -1,0 +1,6 @@
+beautifulsoup4
+fastparquet
+kaleido
+openpyxl
+plotly
+sqlalchemy
