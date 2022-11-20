@@ -38,19 +38,18 @@ def main(do_configure_author, force, push):
         commit('GHA: update data')
 
     run('papermill', nb, out)
-    git_is_clean = check('git', 'diff', '--quiet', 'HEAD')
-    if git_is_clean:
-        print('No plot/data changes found')
-    else:
-        changed_files = [ line[3:] for line in process.lines('git', 'status', '--porcelain') ]
+    no_data_changes = check('git', 'diff', '--quiet', 'HEAD', '--', 'data')
+    changed_files = [ line[3:] for line in process.lines('git', 'status', '--porcelain') ]
+    if changed_files:
         print(f'{len(changed_files)} changed files:')
         for f in changed_files:
             print(f'\t{f}')
 
-        if changed_files == ['njsp.db']:
-            print('Skipping spurious DB change')
-        else:
-            commit('GHA: update data/plots')
+    if no_data_changes:
+        print('No data changes found')
+    else:
+        commit('GHA: update data/plots')
+
     if push:
         if did_commit:
             run('git', 'push', 'origin')
