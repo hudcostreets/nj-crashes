@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+from os import makedirs
+from os.path import dirname
+
 import click
 from utz import check, process, run
 
@@ -37,6 +40,7 @@ def main(do_configure_author, force, push):
     if not git_is_clean:
         commit('GHA: update data')
 
+    makedirs(dirname(out), exist_ok=True)
     run('papermill', nb, out)
     no_data_changes = check('git', 'diff', '--quiet', 'HEAD', '--', 'data')
     changed_files = [ line[3:] for line in process.lines('git', 'status', '--porcelain') ]
