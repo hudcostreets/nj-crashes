@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Nov 19 10:00:06 EST 2022</RUNDATE>
+  <RUNDATE>Sun Nov 20 10:00:06 EST 2022</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -6831,12 +6831,13 @@
     <MUNICIPALITY MCODE="1328" MNAME="Marlboro Twsp">
       <ACCIDENT ACCID="11559" DATE="02/13/2022" TIME="0221">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9</LOCATION>
+        <LOCATION>State Highway 9 MP 120.97</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
