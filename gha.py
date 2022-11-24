@@ -29,13 +29,17 @@ def main(do_configure_author, force, push):
             return
 
     did_commit = False
-    def commit(msg):
+    def commit(msg, amend=True):
         nonlocal do_configure_author, did_commit
         if do_configure_author:
             configure_author('GitHub Actions', 'ryan-williams@users.noreply.github.com')
             do_configure_author = False
-        run('git', 'commit', '-am', msg)
-        did_commit = True
+        if did_commit and amend:
+            print('Amending commit')
+            run('git', 'commit', '--amend', '-am', msg)
+        else:
+            run('git', 'commit', '-am', msg)
+            did_commit = True
 
     if not git_is_clean:
         commit('GHA: update data')
