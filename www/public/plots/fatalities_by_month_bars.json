@@ -1566,8 +1566,7 @@
       ],
       "title": {
         "text": "Traffic deaths"
-      },
-      "gridcolor": "#ccc"
+      }
     },
     "legend": {
       "title": {
@@ -1580,7 +1579,7 @@
     },
     "barmode": "group",
     "title": {
-      "text": "NJ traffic fatalities by month",
+      "text": "NJ Traffic Fatalities, by Month",
       "x": 0.5
     },
     "paper_bgcolor": "white",
