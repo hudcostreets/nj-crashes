@@ -9,6 +9,7 @@ const Plotly = dynamic(() => import("react-plotly.js"), { ssr: false, })
 import {PlotParams} from 'react-plotly.js';
 import {Font, Padding} from "plotly.js";
 import A from "next-utils/a";
+import {Nav} from "next-utils/nav";
 
 type TitleObj = {
     text: string;
@@ -95,7 +96,7 @@ function Plot({ id, title, subtitle, plot, children, }: Plot) {
 }
 
 const Home = ({ plotsDict }: Props) => {
-    console.log("Home plots:", plotsDict)
+    // console.log("Home plots:", plotsDict)
     const plots: Plot[] = plotSpecs.map(
         ({ name, ...rest }) => {
             const { title, plot } = plotsDict[name]
@@ -103,22 +104,29 @@ const Home = ({ plotsDict }: Props) => {
         }
     )
 
+    const title = "NJ Fatal Traffic Crash Data"
     return (
         <div className={styles.container}>
             <Head
-                title={""}
-                url={""}
-                description={""}
-                thumbnail={""}
+                title={title}
+                description={"Analysis & Visualization of data published by NJ State Police"}
+                url={"https://neighbor-ryan.org/njsp"}
+                thumbnail={""}  // TODO
+            />
+
+            <Nav
+                id={"nav"}
+                classes={"collapsed"}
+                menus={plots.map(({ id, title }) => ({ id, name: title, }))}
             />
 
             <main className={styles.main}>
-                <h1>NJ Fatal Traffic Crash Data </h1>
-                <p>Source: <A href={"https://nj.gov/njsp/info/fatalacc/"}>NJSP</A></p>
+                <h1>{title}</h1>
+                <p>Data: <A href={"https://nj.gov/njsp/info/fatalacc/"}>NJSP</A>, code: <A href={"https://github.com/neighbor-ryan/nj-fatal-crashes"}>GitHub</A></p>
                 <hr/>
-                <ul className={styles.menu}>{
-                    plots.map(({ id, title, }) => <li key={id}><a href={`#${id}`}>{title}</a></li>)
-                }</ul>
+                {/*<ul className={styles.menu}>{*/}
+                {/*    plots.map(({ id, title, }) => <li key={id}><a href={`#${id}`}>{title}</a></li>)*/}
+                {/*}</ul>*/}
                 <hr/>
                 {
                     /*Object.entries(plots)*/
