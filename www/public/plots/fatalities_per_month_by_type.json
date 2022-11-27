@@ -1,8 +1,7 @@
 {
   "data": [
     {
-      "hovertemplate": "=drivers<br>Month=%{x}<br>Fatalities=%{y}<extra></extra>",
-      "legendgroup": "drivers",
+      "legendgroup": "Drivers",
       "line": {
         "color": "#000004",
         "dash": "solid",
@@ -12,7 +11,7 @@
         "symbol": "circle"
       },
       "mode": "lines",
-      "name": "drivers",
+      "name": "Drivers",
       "orientation": "v",
       "showlegend": true,
       "x": [
@@ -92,8 +91,7 @@
       "type": "scatter"
     },
     {
-      "hovertemplate": "=pedestrians<br>Month=%{x}<br>Fatalities=%{y}<extra></extra>",
-      "legendgroup": "pedestrians",
+      "legendgroup": "Pedestrians",
       "line": {
         "color": "#320c56",
         "dash": "solid",
@@ -103,7 +101,7 @@
         "symbol": "circle"
       },
       "mode": "lines",
-      "name": "pedestrians",
+      "name": "Pedestrians",
       "orientation": "v",
       "showlegend": true,
       "x": [
@@ -183,8 +181,7 @@
       "type": "scatter"
     },
     {
-      "hovertemplate": "=passengers<br>Month=%{x}<br>Fatalities=%{y}<extra></extra>",
-      "legendgroup": "passengers",
+      "legendgroup": "Passengers",
       "line": {
         "color": "#781c6d",
         "dash": "solid",
@@ -194,7 +191,7 @@
         "symbol": "circle"
       },
       "mode": "lines",
-      "name": "passengers",
+      "name": "Passengers",
       "orientation": "v",
       "showlegend": true,
       "x": [
@@ -274,8 +271,7 @@
       "type": "scatter"
     },
     {
-      "hovertemplate": "=cyclists<br>Month=%{x}<br>Fatalities=%{y}<extra></extra>",
-      "legendgroup": "cyclists",
+      "legendgroup": "Cyclists",
       "line": {
         "color": "#ba3853",
         "dash": "solid",
@@ -285,7 +281,7 @@
         "symbol": "circle"
       },
       "mode": "lines",
-      "name": "cyclists",
+      "name": "Cyclists",
       "orientation": "v",
       "showlegend": true,
       "x": [
@@ -1218,6 +1214,7 @@
       "x": 0.5
     },
     "paper_bgcolor": "white",
-    "plot_bgcolor": "white"
+    "plot_bgcolor": "white",
+    "hovermode": "x"
   }
 }

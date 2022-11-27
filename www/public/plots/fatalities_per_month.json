@@ -1567,6 +1567,7 @@
       "b": 40
     },
     "paper_bgcolor": "white",
-    "plot_bgcolor": "white"
+    "plot_bgcolor": "white",
+    "hovermode": "x"
   }
 }

@@ -2,7 +2,6 @@
   "data": [
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=Unknown<br>Year=%{x}<br>Fatalities=%{y}<extra></extra>",
       "legendgroup": "Unknown",
       "marker": {
         "color": "#000004",
@@ -55,16 +54,15 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=Driver<br>Year=%{x}<br>Fatalities=%{y}<extra></extra>",
-      "legendgroup": "Driver",
+      "legendgroup": "Drivers",
       "marker": {
         "color": "#200c46",
         "pattern": {
           "shape": ""
         }
       },
-      "name": "Driver",
-      "offsetgroup": "Driver",
+      "name": "Drivers",
+      "offsetgroup": "Drivers",
       "orientation": "v",
       "showlegend": true,
       "textposition": "auto",
@@ -101,23 +99,22 @@
         0,
         295,
         354,
-        344
+        346
       ],
       "yaxis": "y",
       "type": "bar"
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=Passenger<br>Year=%{x}<br>Fatalities=%{y}<extra></extra>",
-      "legendgroup": "Passenger",
+      "legendgroup": "Passengers",
       "marker": {
         "color": "#55106b",
         "pattern": {
           "shape": ""
         }
       },
-      "name": "Passenger",
-      "offsetgroup": "Passenger",
+      "name": "Passengers",
+      "offsetgroup": "Passengers",
       "orientation": "v",
       "showlegend": true,
       "textposition": "auto",
@@ -161,16 +158,15 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=Cyclist<br>Year=%{x}<br>Fatalities=%{y}<extra></extra>",
-      "legendgroup": "Cyclist",
+      "legendgroup": "Cyclists",
       "marker": {
         "color": "#882268",
         "pattern": {
           "shape": ""
         }
       },
-      "name": "Cyclist",
-      "offsetgroup": "Cyclist",
+      "name": "Cyclists",
+      "offsetgroup": "Cyclists",
       "orientation": "v",
       "showlegend": true,
       "textposition": "auto",
@@ -214,16 +210,15 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=Pedestrian<br>Year=%{x}<br>Fatalities=%{y}<extra></extra>",
-      "legendgroup": "Pedestrian",
+      "legendgroup": "Pedestrians",
       "marker": {
         "color": "#ba3853",
         "pattern": {
           "shape": ""
         }
       },
-      "name": "Pedestrian",
-      "offsetgroup": "Pedestrian",
+      "name": "Pedestrians",
+      "offsetgroup": "Pedestrians",
       "orientation": "v",
       "showlegend": true,
       "textposition": "auto",
@@ -267,7 +262,6 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=Projected<br>Year=%{x}<br>Fatalities=%{y}<extra></extra>",
       "legendgroup": "Projected",
       "marker": {
         "color": "#e15b31",
@@ -313,7 +307,7 @@
         0,
         0,
         0,
-        72
+        66
       ],
       "yaxis": "y",
       "type": "bar"
@@ -1168,10 +1162,11 @@
     },
     "barmode": "stack",
     "title": {
-      "text": "NJ Traffic Fatalities per Year (by victim type)<br><sup>2021 was the deadliest year on record; 2022 is on pace to exceed it. Data ca. 2022-11-24",
+      "text": "NJ Traffic Fatalities per Year (by victim type)<br><sup>2021 was the deadliest year on record; 2022 is on pace to exceed it. Data ca. 2022-11-27",
       "x": 0.5
     },
     "paper_bgcolor": "white",
-    "plot_bgcolor": "white"
+    "plot_bgcolor": "white",
+    "hovermode": "x"
   }
 }

@@ -1,15 +1,20 @@
 .container {
-  padding: 0 0.5em;
+  padding: 0 0 0 0.5em;
+  /*margin: 0 1em;*/
   width: 100%;
   text-align: center;
 }
 
-.plot-container {
+/*.plot-container {*/
+/*  margin: 0 2em;*/
+/*}*/
+.plot-container, .plot-body, .plot {
   width: 100%;
 }
 
-.plot {
-  width: 100%;
+.menu {
+  list-style: none;
+  line-height: 1.4em;
 }
 
 .main {
@@ -20,6 +25,10 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+
+.main p > a {
+  text-decoration: underline;
 }
 
 .footer {
@@ -36,23 +45,6 @@
   justify-content: center;
   align-items: center;
   flex-grow: 1;
-}
-
-.title a {
-  color: #0070f3;
-  text-decoration: none;
-}
-
-.title a:hover,
-.title a:focus,
-.title a:active {
-  text-decoration: underline;
-}
-
-.title {
-  margin: 0;
-  line-height: 1.15;
-  font-size: 4rem;
 }
 
 .title,
