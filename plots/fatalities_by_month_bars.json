@@ -1,0 +1,1590 @@
+{
+  "data": [
+    {
+      "alignmentgroup": "True",
+      "hovertemplate": "=2008<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
+      "legendgroup": "2008",
+      "marker": {
+        "color": "#fcffa4",
+        "pattern": {
+          "shape": ""
+        }
+      },
+      "name": "2008",
+      "offsetgroup": "2008",
+      "orientation": "v",
+      "showlegend": true,
+      "textposition": "auto",
+      "x": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "xaxis": "x",
+      "y": [
+        54.0,
+        40.0,
+        32.0,
+        44.0,
+        44.0,
+        49.0,
+        55.0,
+        47.0,
+        43.0,
+        55.0,
+        50.0,
+        45.0
+      ],
+      "yaxis": "y",
+      "type": "bar"
+    },
+    {
+      "alignmentgroup": "True",
+      "hovertemplate": "=2009<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
+      "legendgroup": "2009",
+      "marker": {
+        "color": "#f8e161",
+        "pattern": {
+          "shape": ""
+        }
+      },
+      "name": "2009",
+      "offsetgroup": "2009",
+      "orientation": "v",
+      "showlegend": true,
+      "textposition": "auto",
+      "x": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "xaxis": "x",
+      "y": [
+        52.0,
+        44.0,
+        33.0,
+        45.0,
+        39.0,
+        45.0,
+        54.0,
+        53.0,
+        52.0,
+        38.0,
+        43.0,
+        48.0
+      ],
+      "yaxis": "y",
+      "type": "bar"
+    },
+    {
+      "alignmentgroup": "True",
+      "hovertemplate": "=2010<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
+      "legendgroup": "2010",
+      "marker": {
+        "color": "#f8c12d",
+        "pattern": {
+          "shape": ""
+        }
+      },
+      "name": "2010",
+      "offsetgroup": "2010",
+      "orientation": "v",
+      "showlegend": true,
+      "textposition": "auto",
+      "x": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "xaxis": "x",
+      "y": [
+        33.0,
+        28.0,
+        45.0,
+        50.0,
+        39.0,
+        51.0,
+        59.0,
+        39.0,
+        55.0,
+        49.0,
+        38.0,
+        47.0
+      ],
+      "yaxis": "y",
+      "type": "bar"
+    },
+    {
+      "alignmentgroup": "True",
+      "hovertemplate": "=2011<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
+      "legendgroup": "2011",
+      "marker": {
+        "color": "#fa9e09",
+        "pattern": {
+          "shape": ""
+        }
+      },
+      "name": "2011",
+      "offsetgroup": "2011",
+      "orientation": "v",
+      "showlegend": true,
+      "textposition": "auto",
+      "x": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "xaxis": "x",
+      "y": [
+        34.0,
+        41.0,
+        44.0,
+        55.0,
+        55.0,
+        47.0,
+        56.0,
+        43.0,
+        49.0,
+        60.0,
+        51.0,
+        59.0
+      ],
+      "yaxis": "y",
+      "type": "bar"
+    },
+    {
+      "alignmentgroup": "True",
+      "hovertemplate": "=2012<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
+      "legendgroup": "2012",
+      "marker": {
+        "color": "#f37e17",
+        "pattern": {
+          "shape": ""
+        }
+      },
+      "name": "2012",
+      "offsetgroup": "2012",
+      "orientation": "v",
+      "showlegend": true,
+      "textposition": "auto",
+      "x": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "xaxis": "x",
+      "y": [
+        52.0,
+        39.0,
+        41.0,
+        42.0,
+        43.0,
+        44.0,
+        57.0,
+        43.0,
+        50.0,
+        53.0,
+        48.0,
+        47.0
+      ],
+      "yaxis": "y",
+      "type": "bar"
+    },
+    {
+      "alignmentgroup": "True",
+      "hovertemplate": "=2013<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
+      "legendgroup": "2013",
+      "marker": {
+        "color": "#e6612c",
+        "pattern": {
+          "shape": ""
+        }
+      },
+      "name": "2013",
+      "offsetgroup": "2013",
+      "orientation": "v",
+      "showlegend": true,
+      "textposition": "auto",
+      "x": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "xaxis": "x",
+      "y": [
+        41.0,
+        21.0,
+        54.0,
+        30.0,
+        45.0,
+        51.0,
+        39.0,
+        55.0,
+        40.0,
+        42.0,
+        47.0,
+        48.0
+      ],
+      "yaxis": "y",
+      "type": "bar"
+    },
+    {
+      "alignmentgroup": "True",
+      "hovertemplate": "=2014<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
+      "legendgroup": "2014",
+      "marker": {
+        "color": "#d34941",
+        "pattern": {
+          "shape": ""
+        }
+      },
+      "name": "2014",
+      "offsetgroup": "2014",
+      "orientation": "v",
+      "showlegend": true,
+      "textposition": "auto",
+      "x": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "xaxis": "x",
+      "y": [
+        38.0,
+        31.0,
+        46.0,
+        42.0,
+        49.0,
+        49.0,
+        45.0,
+        56.0,
+        46.0,
+        36.0,
+        40.0,
+        54.0
+      ],
+      "yaxis": "y",
+      "type": "bar"
+    },
+    {
+      "alignmentgroup": "True",
+      "hovertemplate": "=2015<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
+      "legendgroup": "2015",
+      "marker": {
+        "color": "#ba3853",
+        "pattern": {
+          "shape": ""
+        }
+      },
+      "name": "2015",
+      "offsetgroup": "2015",
+      "orientation": "v",
+      "showlegend": true,
+      "textposition": "auto",
+      "x": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "xaxis": "x",
+      "y": [
+        38.0,
+        35.0,
+        37.0,
+        29.0,
+        47.0,
+        50.0,
+        44.0,
+        45.0,
+        55.0,
+        41.0,
+        51.0,
+        61.0
+      ],
+      "yaxis": "y",
+      "type": "bar"
+    },
+    {
+      "alignmentgroup": "True",
+      "hovertemplate": "=2016<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
+      "legendgroup": "2016",
+      "marker": {
+        "color": "#9e2961",
+        "pattern": {
+          "shape": ""
+        }
+      },
+      "name": "2016",
+      "offsetgroup": "2016",
+      "orientation": "v",
+      "showlegend": true,
+      "textposition": "auto",
+      "x": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "xaxis": "x",
+      "y": [
+        39.0,
+        38.0,
+        39.0,
+        37.0,
+        46.0,
+        46.0,
+        57.0,
+        60.0,
+        45.0,
+        54.0,
+        48.0,
+        53.0
+      ],
+      "yaxis": "y",
+      "type": "bar"
+    },
+    {
+      "alignmentgroup": "True",
+      "hovertemplate": "=2017<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
+      "legendgroup": "2017",
+      "marker": {
+        "color": "#811f6a",
+        "pattern": {
+          "shape": ""
+        }
+      },
+      "name": "2017",
+      "offsetgroup": "2017",
+      "orientation": "v",
+      "showlegend": true,
+      "textposition": "auto",
+      "x": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "xaxis": "x",
+      "y": [
+        44.0,
+        25.0,
+        43.0,
+        42.0,
+        43.0,
+        55.0,
+        60.0,
+        51.0,
+        57.0,
+        62.0,
+        58.0,
+        55.0
+      ],
+      "yaxis": "y",
+      "type": "bar"
+    },
+    {
+      "alignmentgroup": "True",
+      "hovertemplate": "=2018<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
+      "legendgroup": "2018",
+      "marker": {
+        "color": "#64156c",
+        "pattern": {
+          "shape": ""
+        }
+      },
+      "name": "2018",
+      "offsetgroup": "2018",
+      "orientation": "v",
+      "showlegend": true,
+      "textposition": "auto",
+      "x": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "xaxis": "x",
+      "y": [
+        50.0,
+        40.0,
+        23.0,
+        42.0,
+        47.0,
+        50.0,
+        57.0,
+        35.0,
+        41.0,
+        57.0,
+        52.0,
+        43.0
+      ],
+      "yaxis": "y",
+      "type": "bar"
+    },
+    {
+      "alignmentgroup": "True",
+      "hovertemplate": "=2019<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
+      "legendgroup": "2019",
+      "marker": {
+        "color": "#460c68",
+        "pattern": {
+          "shape": ""
+        }
+      },
+      "name": "2019",
+      "offsetgroup": "2019",
+      "orientation": "v",
+      "showlegend": true,
+      "textposition": "auto",
+      "x": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "xaxis": "x",
+      "y": [
+        45.0,
+        39.0,
+        32.0,
+        38.0,
+        44.0,
+        45.0,
+        43.0,
+        48.0,
+        61.0,
+        59.0,
+        31.0,
+        49.0
+      ],
+      "yaxis": "y",
+      "type": "bar"
+    },
+    {
+      "alignmentgroup": "True",
+      "hovertemplate": "=2020<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
+      "legendgroup": "2020",
+      "marker": {
+        "color": "#280c4d",
+        "pattern": {
+          "shape": ""
+        }
+      },
+      "name": "2020",
+      "offsetgroup": "2020",
+      "orientation": "v",
+      "showlegend": true,
+      "textposition": "auto",
+      "x": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "xaxis": "x",
+      "y": [
+        46.0,
+        30.0,
+        33.0,
+        28.0,
+        50.0,
+        45.0,
+        59.0,
+        54.0,
+        54.0,
+        54.0,
+        59.0,
+        44.0
+      ],
+      "yaxis": "y",
+      "type": "bar"
+    },
+    {
+      "alignmentgroup": "True",
+      "hovertemplate": "=2021<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
+      "legendgroup": "2021",
+      "marker": {
+        "color": "#11072b",
+        "pattern": {
+          "shape": ""
+        }
+      },
+      "name": "2021",
+      "offsetgroup": "2021",
+      "orientation": "v",
+      "showlegend": true,
+      "textposition": "auto",
+      "x": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "xaxis": "x",
+      "y": [
+        45.0,
+        26.0,
+        54.0,
+        39.0,
+        42.0,
+        58.0,
+        64.0,
+        63.0,
+        63.0,
+        78.0,
+        67.0,
+        59.0
+      ],
+      "yaxis": "y",
+      "type": "bar"
+    },
+    {
+      "alignmentgroup": "True",
+      "hovertemplate": "=2022<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
+      "legendgroup": "2022",
+      "marker": {
+        "color": "#000004",
+        "pattern": {
+          "shape": ""
+        }
+      },
+      "name": "2022",
+      "offsetgroup": "2022",
+      "orientation": "v",
+      "showlegend": true,
+      "textposition": "auto",
+      "x": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "xaxis": "x",
+      "y": [
+        48.0,
+        39.0,
+        47.0,
+        47.0,
+        64.0,
+        66.0,
+        79.0,
+        53.0,
+        69.0,
+        58.0,
+        36.0
+      ],
+      "yaxis": "y",
+      "type": "bar"
+    }
+  ],
+  "layout": {
+    "template": {
+      "data": {
+        "histogram2dcontour": [
+          {
+            "type": "histogram2dcontour",
+            "colorbar": {
+              "outlinewidth": 0,
+              "ticks": ""
+            },
+            "colorscale": [
+              [
+                0.0,
+                "#0d0887"
+              ],
+              [
+                0.1111111111111111,
+                "#46039f"
+              ],
+              [
+                0.2222222222222222,
+                "#7201a8"
+              ],
+              [
+                0.3333333333333333,
+                "#9c179e"
+              ],
+              [
+                0.4444444444444444,
+                "#bd3786"
+              ],
+              [
+                0.5555555555555556,
+                "#d8576b"
+              ],
+              [
+                0.6666666666666666,
+                "#ed7953"
+              ],
+              [
+                0.7777777777777778,
+                "#fb9f3a"
+              ],
+              [
+                0.8888888888888888,
+                "#fdca26"
+              ],
+              [
+                1.0,
+                "#f0f921"
+              ]
+            ]
+          }
+        ],
+        "choropleth": [
+          {
+            "type": "choropleth",
+            "colorbar": {
+              "outlinewidth": 0,
+              "ticks": ""
+            }
+          }
+        ],
+        "histogram2d": [
+          {
+            "type": "histogram2d",
+            "colorbar": {
+              "outlinewidth": 0,
+              "ticks": ""
+            },
+            "colorscale": [
+              [
+                0.0,
+                "#0d0887"
+              ],
+              [
+                0.1111111111111111,
+                "#46039f"
+              ],
+              [
+                0.2222222222222222,
+                "#7201a8"
+              ],
+              [
+                0.3333333333333333,
+                "#9c179e"
+              ],
+              [
+                0.4444444444444444,
+                "#bd3786"
+              ],
+              [
+                0.5555555555555556,
+                "#d8576b"
+              ],
+              [
+                0.6666666666666666,
+                "#ed7953"
+              ],
+              [
+                0.7777777777777778,
+                "#fb9f3a"
+              ],
+              [
+                0.8888888888888888,
+                "#fdca26"
+              ],
+              [
+                1.0,
+                "#f0f921"
+              ]
+            ]
+          }
+        ],
+        "heatmap": [
+          {
+            "type": "heatmap",
+            "colorbar": {
+              "outlinewidth": 0,
+              "ticks": ""
+            },
+            "colorscale": [
+              [
+                0.0,
+                "#0d0887"
+              ],
+              [
+                0.1111111111111111,
+                "#46039f"
+              ],
+              [
+                0.2222222222222222,
+                "#7201a8"
+              ],
+              [
+                0.3333333333333333,
+                "#9c179e"
+              ],
+              [
+                0.4444444444444444,
+                "#bd3786"
+              ],
+              [
+                0.5555555555555556,
+                "#d8576b"
+              ],
+              [
+                0.6666666666666666,
+                "#ed7953"
+              ],
+              [
+                0.7777777777777778,
+                "#fb9f3a"
+              ],
+              [
+                0.8888888888888888,
+                "#fdca26"
+              ],
+              [
+                1.0,
+                "#f0f921"
+              ]
+            ]
+          }
+        ],
+        "heatmapgl": [
+          {
+            "type": "heatmapgl",
+            "colorbar": {
+              "outlinewidth": 0,
+              "ticks": ""
+            },
+            "colorscale": [
+              [
+                0.0,
+                "#0d0887"
+              ],
+              [
+                0.1111111111111111,
+                "#46039f"
+              ],
+              [
+                0.2222222222222222,
+                "#7201a8"
+              ],
+              [
+                0.3333333333333333,
+                "#9c179e"
+              ],
+              [
+                0.4444444444444444,
+                "#bd3786"
+              ],
+              [
+                0.5555555555555556,
+                "#d8576b"
+              ],
+              [
+                0.6666666666666666,
+                "#ed7953"
+              ],
+              [
+                0.7777777777777778,
+                "#fb9f3a"
+              ],
+              [
+                0.8888888888888888,
+                "#fdca26"
+              ],
+              [
+                1.0,
+                "#f0f921"
+              ]
+            ]
+          }
+        ],
+        "contourcarpet": [
+          {
+            "type": "contourcarpet",
+            "colorbar": {
+              "outlinewidth": 0,
+              "ticks": ""
+            }
+          }
+        ],
+        "contour": [
+          {
+            "type": "contour",
+            "colorbar": {
+              "outlinewidth": 0,
+              "ticks": ""
+            },
+            "colorscale": [
+              [
+                0.0,
+                "#0d0887"
+              ],
+              [
+                0.1111111111111111,
+                "#46039f"
+              ],
+              [
+                0.2222222222222222,
+                "#7201a8"
+              ],
+              [
+                0.3333333333333333,
+                "#9c179e"
+              ],
+              [
+                0.4444444444444444,
+                "#bd3786"
+              ],
+              [
+                0.5555555555555556,
+                "#d8576b"
+              ],
+              [
+                0.6666666666666666,
+                "#ed7953"
+              ],
+              [
+                0.7777777777777778,
+                "#fb9f3a"
+              ],
+              [
+                0.8888888888888888,
+                "#fdca26"
+              ],
+              [
+                1.0,
+                "#f0f921"
+              ]
+            ]
+          }
+        ],
+        "surface": [
+          {
+            "type": "surface",
+            "colorbar": {
+              "outlinewidth": 0,
+              "ticks": ""
+            },
+            "colorscale": [
+              [
+                0.0,
+                "#0d0887"
+              ],
+              [
+                0.1111111111111111,
+                "#46039f"
+              ],
+              [
+                0.2222222222222222,
+                "#7201a8"
+              ],
+              [
+                0.3333333333333333,
+                "#9c179e"
+              ],
+              [
+                0.4444444444444444,
+                "#bd3786"
+              ],
+              [
+                0.5555555555555556,
+                "#d8576b"
+              ],
+              [
+                0.6666666666666666,
+                "#ed7953"
+              ],
+              [
+                0.7777777777777778,
+                "#fb9f3a"
+              ],
+              [
+                0.8888888888888888,
+                "#fdca26"
+              ],
+              [
+                1.0,
+                "#f0f921"
+              ]
+            ]
+          }
+        ],
+        "mesh3d": [
+          {
+            "type": "mesh3d",
+            "colorbar": {
+              "outlinewidth": 0,
+              "ticks": ""
+            }
+          }
+        ],
+        "scatter": [
+          {
+            "fillpattern": {
+              "fillmode": "overlay",
+              "size": 10,
+              "solidity": 0.2
+            },
+            "type": "scatter"
+          }
+        ],
+        "parcoords": [
+          {
+            "type": "parcoords",
+            "line": {
+              "colorbar": {
+                "outlinewidth": 0,
+                "ticks": ""
+              }
+            }
+          }
+        ],
+        "scatterpolargl": [
+          {
+            "type": "scatterpolargl",
+            "marker": {
+              "colorbar": {
+                "outlinewidth": 0,
+                "ticks": ""
+              }
+            }
+          }
+        ],
+        "bar": [
+          {
+            "error_x": {
+              "color": "#2a3f5f"
+            },
+            "error_y": {
+              "color": "#2a3f5f"
+            },
+            "marker": {
+              "line": {
+                "color": "#E5ECF6",
+                "width": 0.5
+              },
+              "pattern": {
+                "fillmode": "overlay",
+                "size": 10,
+                "solidity": 0.2
+              }
+            },
+            "type": "bar"
+          }
+        ],
+        "scattergeo": [
+          {
+            "type": "scattergeo",
+            "marker": {
+              "colorbar": {
+                "outlinewidth": 0,
+                "ticks": ""
+              }
+            }
+          }
+        ],
+        "scatterpolar": [
+          {
+            "type": "scatterpolar",
+            "marker": {
+              "colorbar": {
+                "outlinewidth": 0,
+                "ticks": ""
+              }
+            }
+          }
+        ],
+        "histogram": [
+          {
+            "marker": {
+              "pattern": {
+                "fillmode": "overlay",
+                "size": 10,
+                "solidity": 0.2
+              }
+            },
+            "type": "histogram"
+          }
+        ],
+        "scattergl": [
+          {
+            "type": "scattergl",
+            "marker": {
+              "colorbar": {
+                "outlinewidth": 0,
+                "ticks": ""
+              }
+            }
+          }
+        ],
+        "scatter3d": [
+          {
+            "type": "scatter3d",
+            "line": {
+              "colorbar": {
+                "outlinewidth": 0,
+                "ticks": ""
+              }
+            },
+            "marker": {
+              "colorbar": {
+                "outlinewidth": 0,
+                "ticks": ""
+              }
+            }
+          }
+        ],
+        "scattermapbox": [
+          {
+            "type": "scattermapbox",
+            "marker": {
+              "colorbar": {
+                "outlinewidth": 0,
+                "ticks": ""
+              }
+            }
+          }
+        ],
+        "scatterternary": [
+          {
+            "type": "scatterternary",
+            "marker": {
+              "colorbar": {
+                "outlinewidth": 0,
+                "ticks": ""
+              }
+            }
+          }
+        ],
+        "scattercarpet": [
+          {
+            "type": "scattercarpet",
+            "marker": {
+              "colorbar": {
+                "outlinewidth": 0,
+                "ticks": ""
+              }
+            }
+          }
+        ],
+        "carpet": [
+          {
+            "aaxis": {
+              "endlinecolor": "#2a3f5f",
+              "gridcolor": "white",
+              "linecolor": "white",
+              "minorgridcolor": "white",
+              "startlinecolor": "#2a3f5f"
+            },
+            "baxis": {
+              "endlinecolor": "#2a3f5f",
+              "gridcolor": "white",
+              "linecolor": "white",
+              "minorgridcolor": "white",
+              "startlinecolor": "#2a3f5f"
+            },
+            "type": "carpet"
+          }
+        ],
+        "table": [
+          {
+            "cells": {
+              "fill": {
+                "color": "#EBF0F8"
+              },
+              "line": {
+                "color": "white"
+              }
+            },
+            "header": {
+              "fill": {
+                "color": "#C8D4E3"
+              },
+              "line": {
+                "color": "white"
+              }
+            },
+            "type": "table"
+          }
+        ],
+        "barpolar": [
+          {
+            "marker": {
+              "line": {
+                "color": "#E5ECF6",
+                "width": 0.5
+              },
+              "pattern": {
+                "fillmode": "overlay",
+                "size": 10,
+                "solidity": 0.2
+              }
+            },
+            "type": "barpolar"
+          }
+        ],
+        "pie": [
+          {
+            "automargin": true,
+            "type": "pie"
+          }
+        ]
+      },
+      "layout": {
+        "autotypenumbers": "strict",
+        "colorway": [
+          "#636efa",
+          "#EF553B",
+          "#00cc96",
+          "#ab63fa",
+          "#FFA15A",
+          "#19d3f3",
+          "#FF6692",
+          "#B6E880",
+          "#FF97FF",
+          "#FECB52"
+        ],
+        "font": {
+          "color": "#2a3f5f"
+        },
+        "hovermode": "closest",
+        "hoverlabel": {
+          "align": "left"
+        },
+        "paper_bgcolor": "white",
+        "plot_bgcolor": "#E5ECF6",
+        "polar": {
+          "bgcolor": "#E5ECF6",
+          "angularaxis": {
+            "gridcolor": "white",
+            "linecolor": "white",
+            "ticks": ""
+          },
+          "radialaxis": {
+            "gridcolor": "white",
+            "linecolor": "white",
+            "ticks": ""
+          }
+        },
+        "ternary": {
+          "bgcolor": "#E5ECF6",
+          "aaxis": {
+            "gridcolor": "white",
+            "linecolor": "white",
+            "ticks": ""
+          },
+          "baxis": {
+            "gridcolor": "white",
+            "linecolor": "white",
+            "ticks": ""
+          },
+          "caxis": {
+            "gridcolor": "white",
+            "linecolor": "white",
+            "ticks": ""
+          }
+        },
+        "coloraxis": {
+          "colorbar": {
+            "outlinewidth": 0,
+            "ticks": ""
+          }
+        },
+        "colorscale": {
+          "sequential": [
+            [
+              0.0,
+              "#0d0887"
+            ],
+            [
+              0.1111111111111111,
+              "#46039f"
+            ],
+            [
+              0.2222222222222222,
+              "#7201a8"
+            ],
+            [
+              0.3333333333333333,
+              "#9c179e"
+            ],
+            [
+              0.4444444444444444,
+              "#bd3786"
+            ],
+            [
+              0.5555555555555556,
+              "#d8576b"
+            ],
+            [
+              0.6666666666666666,
+              "#ed7953"
+            ],
+            [
+              0.7777777777777778,
+              "#fb9f3a"
+            ],
+            [
+              0.8888888888888888,
+              "#fdca26"
+            ],
+            [
+              1.0,
+              "#f0f921"
+            ]
+          ],
+          "sequentialminus": [
+            [
+              0.0,
+              "#0d0887"
+            ],
+            [
+              0.1111111111111111,
+              "#46039f"
+            ],
+            [
+              0.2222222222222222,
+              "#7201a8"
+            ],
+            [
+              0.3333333333333333,
+              "#9c179e"
+            ],
+            [
+              0.4444444444444444,
+              "#bd3786"
+            ],
+            [
+              0.5555555555555556,
+              "#d8576b"
+            ],
+            [
+              0.6666666666666666,
+              "#ed7953"
+            ],
+            [
+              0.7777777777777778,
+              "#fb9f3a"
+            ],
+            [
+              0.8888888888888888,
+              "#fdca26"
+            ],
+            [
+              1.0,
+              "#f0f921"
+            ]
+          ],
+          "diverging": [
+            [
+              0,
+              "#8e0152"
+            ],
+            [
+              0.1,
+              "#c51b7d"
+            ],
+            [
+              0.2,
+              "#de77ae"
+            ],
+            [
+              0.3,
+              "#f1b6da"
+            ],
+            [
+              0.4,
+              "#fde0ef"
+            ],
+            [
+              0.5,
+              "#f7f7f7"
+            ],
+            [
+              0.6,
+              "#e6f5d0"
+            ],
+            [
+              0.7,
+              "#b8e186"
+            ],
+            [
+              0.8,
+              "#7fbc41"
+            ],
+            [
+              0.9,
+              "#4d9221"
+            ],
+            [
+              1,
+              "#276419"
+            ]
+          ]
+        },
+        "xaxis": {
+          "gridcolor": "white",
+          "linecolor": "white",
+          "ticks": "",
+          "title": {
+            "standoff": 15
+          },
+          "zerolinecolor": "white",
+          "automargin": true,
+          "zerolinewidth": 2
+        },
+        "yaxis": {
+          "gridcolor": "white",
+          "linecolor": "white",
+          "ticks": "",
+          "title": {
+            "standoff": 15
+          },
+          "zerolinecolor": "white",
+          "automargin": true,
+          "zerolinewidth": 2
+        },
+        "scene": {
+          "xaxis": {
+            "backgroundcolor": "#E5ECF6",
+            "gridcolor": "white",
+            "linecolor": "white",
+            "showbackground": true,
+            "ticks": "",
+            "zerolinecolor": "white",
+            "gridwidth": 2
+          },
+          "yaxis": {
+            "backgroundcolor": "#E5ECF6",
+            "gridcolor": "white",
+            "linecolor": "white",
+            "showbackground": true,
+            "ticks": "",
+            "zerolinecolor": "white",
+            "gridwidth": 2
+          },
+          "zaxis": {
+            "backgroundcolor": "#E5ECF6",
+            "gridcolor": "white",
+            "linecolor": "white",
+            "showbackground": true,
+            "ticks": "",
+            "zerolinecolor": "white",
+            "gridwidth": 2
+          }
+        },
+        "shapedefaults": {
+          "line": {
+            "color": "#2a3f5f"
+          }
+        },
+        "annotationdefaults": {
+          "arrowcolor": "#2a3f5f",
+          "arrowhead": 0,
+          "arrowwidth": 1
+        },
+        "geo": {
+          "bgcolor": "white",
+          "landcolor": "#E5ECF6",
+          "subunitcolor": "white",
+          "showland": true,
+          "showlakes": true,
+          "lakecolor": "white"
+        },
+        "title": {
+          "x": 0.05
+        },
+        "mapbox": {
+          "style": "light"
+        }
+      }
+    },
+    "xaxis": {
+      "anchor": "y",
+      "domain": [
+        0.0,
+        1.0
+      ],
+      "title": {
+        "text": "Month"
+      },
+      "tickmode": "array",
+      "tickvals": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "ticktext": [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      ]
+    },
+    "yaxis": {
+      "anchor": "x",
+      "domain": [
+        0.0,
+        1.0
+      ],
+      "title": {
+        "text": "Traffic deaths"
+      }
+    },
+    "legend": {
+      "title": {
+        "text": ""
+      },
+      "tracegroupgap": 0
+    },
+    "margin": {
+      "t": 60
+    },
+    "barmode": "group",
+    "title": {
+      "text": "NJ Traffic Fatalities, by Month",
+      "x": 0.5
+    },
+    "paper_bgcolor": "white",
+    "plot_bgcolor": "white"
+  }
+}
