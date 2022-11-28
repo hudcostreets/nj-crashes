@@ -2,9 +2,6 @@ name: Daily refresh
 on:
   schedule:
     - cron: "0 15 * * *"
-  push:
-    branches:
-      - main
 jobs:
   refresh:
     runs-on: ubuntu-latest

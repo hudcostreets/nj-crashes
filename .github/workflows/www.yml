@@ -5,8 +5,7 @@ on:
       - main
 jobs:
   run:
-    name: Build + Deploy to GitHub Pages
-    description: (if any files under www/ were changed in the current commit)
+    name: Build + Deploy to GitHub Pages (if any files under www/ were changed in the current commit)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
