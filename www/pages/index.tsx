@@ -105,13 +105,14 @@ const Home = ({ plotsDict }: Props) => {
     )
 
     const title = "NJ Fatal Traffic Crash Data"
+    const url = "https://neighbor-ryan.org/nj-fatal-crashes"
     return (
         <div className={styles.container}>
             <Head
                 title={title}
                 description={"Analysis & Visualization of data published by NJ State Police"}
-                url={"https://neighbor-ryan.org/njsp"}
-                thumbnail={""}  // TODO
+                url={url}
+                thumbnail={`${url}/thumbnail.png`}
             />
 
             <Nav
@@ -123,11 +124,6 @@ const Home = ({ plotsDict }: Props) => {
             <main className={styles.main}>
                 <h1>{title}</h1>
                 <p>Data: <A href={"https://nj.gov/njsp/info/fatalacc/"}>NJSP</A>, code: <A href={"https://github.com/neighbor-ryan/nj-fatal-crashes"}>GitHub</A></p>
-                <hr/>
-                {/*<ul className={styles.menu}>{*/}
-                {/*    plots.map(({ id, title, }) => <li key={id}><a href={`#${id}`}>{title}</a></li>)*/}
-                {/*}</ul>*/}
-                <hr/>
                 {
                     /*Object.entries(plots)*/
                     plots.map(
