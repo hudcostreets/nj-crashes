@@ -5,7 +5,7 @@ on:
       - main
 jobs:
   run:
-    name: Build + Deploy to GitHub Pages (if any files under www/ were changed in the current commit)
+    name: Build + Deploy to GitHub Pages (iff www/ has changed since last gh-pages push)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -13,24 +13,31 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - id: base-sha
-        run: echo "::set-output name=BASE_SHA::$(./parse-ghp-base-sha.py -d HEAD^)"
+        run: echo "::set-output name=BASE_SHA::$(./parse-ghp-base-sha.py -d root)"
       - name: Check whether www was changed
         id: www-changed
-        run: echo "::set-output name=WWW_CHANGED::$(git diff --quiet "${{ steps.base-sha.outputs.BASE_SHA }}" && echo 'false' || echo 'true')"
+        env:
+          BASE_SHA: ${{ steps.base-sha.outputs.BASE_SHA }}
+        run: |
+          echo "BASE_SHA: $BASE_SHA" 
+          echo "::set-output name=WWW_CHANGED::$([ $BASE_SHA != 'root' ] && git diff --quiet $BASE_SHA && echo 'false' || echo 'true')"
 #      - name: Check whether www was changed
 #        id: www-changed
 #        uses: tj-actions/changed-files@v34
 #        with:
 #          files: www/**
 #          base_sha: "${{ steps.base-sha.outputs.BASE_SHA }}"
+      - run: |
+          echo "WWW_CHANGED: ${{ steps.www-changed.outputs.WWW_CHANGED }}"
       - if: steps.www-changed.outputs.WWW_CHANGED == 'true'
         uses: actions/setup-node@v3
         with:
           node-version: 16
           cache: 'npm'
-          cache-dependency-path: yarn.lock
+          cache-dependency-path: www/yarn.lock
       - if: steps.www-changed.outputs.WWW_CHANGED == 'true'
         run: |
+          cd www
           npm install
           npm run gha-export
       - if: steps.www-changed.outputs.WWW_CHANGED == 'true'
@@ -38,4 +45,4 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@4.1.1
         with:
           branch: gh-pages
-          folder: out
+          folder: www/out
