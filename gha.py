@@ -9,6 +9,7 @@ from utz import check, process, run
 nb = 'parse-njsp-xmls.ipynb'
 out = f'out/{nb}'
 
+
 def configure_author(name, email):
     run('git', 'config', '--global', 'user.name', name)
     run('git', 'config', '--global', 'user.email', email)
@@ -46,17 +47,17 @@ def main(do_configure_author, force, push):
 
     makedirs(dirname(out), exist_ok=True)
     run('papermill', nb, out)
-    no_data_changes = check('git', 'diff', '--quiet', 'HEAD', '--', 'data')
+    data_changed = not check('git', 'diff', '--quiet', 'HEAD', '--', 'data')
     changed_files = [ line[3:] for line in process.lines('git', 'status', '--porcelain') ]
     if changed_files:
         print(f'{len(changed_files)} changed files:')
         for f in changed_files:
             print(f'\t{f}')
 
-    if no_data_changes:
-        print('No data changes found')
-    else:
+    if data_changed:
         commit('GHA: update data/plots')
+    else:
+        print('No data changes found')
 
     if push:
         if did_commit:
