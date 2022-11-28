@@ -76,7 +76,7 @@ function Plot({ id, title, subtitle, plot, children, }: Plot) {
     if (yaxis) { /*yaxis.fixedrange = true ;*/ delete yaxis?.title }
     return (
         <div id={id} key={id} className={styles["plot-body"]}>
-            <h2><a href={`#${id}`}>{(typeof title === 'string') ? title : title?.text}</a></h2>
+            <h2><a href={`#${id}`}>{title}</a></h2>
             {subtitle}
             <Plotly
                 className={styles.plot}
