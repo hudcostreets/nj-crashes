@@ -99,7 +99,7 @@
         0,
         295,
         354,
-        348
+        349
       ],
       "yaxis": "y",
       "type": "bar"
@@ -255,7 +255,7 @@
         0,
         167,
         204,
-        159
+        160
       ],
       "yaxis": "y",
       "type": "bar"
@@ -307,7 +307,7 @@
         0,
         0,
         0,
-        62
+        60
       ],
       "yaxis": "y",
       "type": "bar"
@@ -1162,7 +1162,7 @@
     },
     "barmode": "stack",
     "title": {
-      "text": "NJ Traffic Fatalities per Year (by victim type)<br><sup>2021 was the deadliest year on record; 2022 is on pace to exceed it. Data ca. 2022-11-29",
+      "text": "NJ Traffic Fatalities per Year (by victim type)<br><sup>2021 was the deadliest year on record; 2022 is on pace to exceed it. Data ca. 2022-11-30",
       "x": 0.5
     },
     "paper_bgcolor": "white",
