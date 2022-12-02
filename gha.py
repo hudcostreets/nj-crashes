@@ -20,7 +20,8 @@ def configure_author(name, email):
 @click.option('-c', '--configure-author', 'do_configure_author', is_flag=True)
 @click.option('-f', '--force', count=True, help=f'Continue past initial no-op data update')
 @click.option('-p', '--push', is_flag=True)
-def main(branch, do_configure_author, force, push):
+@click.option('-P', '--no-papermill', is_flag=True)
+def main(branch, do_configure_author, force, push, no_papermill):
     run('./refresh-data.sh')
     git_is_clean = check('git', 'diff', '--quiet', 'HEAD')
     if git_is_clean:
@@ -46,19 +47,20 @@ def main(branch, do_configure_author, force, push):
     if not git_is_clean:
         commit('GHA: update data')
 
-    makedirs(dirname(out), exist_ok=True)
-    run('papermill', nb, out)
-    data_changed = not check('git', 'diff', '--quiet', 'HEAD', '--', 'data')
-    changed_files = [ line[3:] for line in process.lines('git', 'status', '--porcelain') ]
-    if changed_files:
-        print(f'{len(changed_files)} changed files:')
-        for f in changed_files:
-            print(f'\t{f}')
+    if not no_papermill:
+        makedirs(dirname(out), exist_ok=True)
+        run('papermill', nb, out)
+        data_changed = not check('git', 'diff', '--quiet', 'HEAD', '--', 'data')
+        changed_files = [ line[3:] for line in process.lines('git', 'status', '--porcelain') ]
+        if changed_files:
+            print(f'{len(changed_files)} changed files:')
+            for f in changed_files:
+                print(f'\t{f}')
 
-    if data_changed:
-        commit('GHA: update data/plots')
-    else:
-        print('No data changes found')
+        if data_changed:
+            commit('GHA: update data/plots')
+        else:
+            print('No data changes found')
 
     if push:
         if did_commit:
@@ -66,6 +68,12 @@ def main(branch, do_configure_author, force, push):
             if branch:
                 cmd += [f'HEAD:{branch}']
             run(*cmd)
+        elif branch:
+            branch_sha = process.line('git', 'log', '-1', '--format=%H', f'origin/{branch}', err_ok=True)
+            cur_sha = process.line('git', 'log', '-1', '--format=%H')
+            print(f'Branch {branch}: {branch_sha}, cur: {cur_sha}')
+            if cur_sha != branch_sha:
+                run('git', 'push', 'origin', f'HEAD:{branch}')
         else:
             print('Nothing to push')
 
