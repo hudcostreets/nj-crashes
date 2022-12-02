@@ -2,7 +2,7 @@ name: Build + Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - www
 jobs:
   run:
     name: Build + Deploy to GitHub Pages (iff www/ has changed since last gh-pages push)
