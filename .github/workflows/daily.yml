@@ -2,11 +2,16 @@ name: Daily refresh
 on:
   schedule:
     - cron: "0 15 * * *"
+  push:
+    branches:
+      - main
 jobs:
   refresh:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.GHA_DEPLOY_KEY }}
