@@ -1,0 +1,152 @@
+{
+    "2008": {
+        "Drivers": 0,
+        "Pedestrians": 0,
+        "Passengers": 0,
+        "Cyclists": 0,
+        "Unknown": 590,
+        "Total": 590,
+        "Projected": 0,
+        "Projected Total": 590
+    },
+    "2009": {
+        "Drivers": 0,
+        "Pedestrians": 0,
+        "Passengers": 0,
+        "Cyclists": 0,
+        "Unknown": 584,
+        "Total": 584,
+        "Projected": 0,
+        "Projected Total": 584
+    },
+    "2010": {
+        "Drivers": 0,
+        "Pedestrians": 0,
+        "Passengers": 0,
+        "Cyclists": 0,
+        "Unknown": 556,
+        "Total": 556,
+        "Projected": 0,
+        "Projected Total": 556
+    },
+    "2011": {
+        "Drivers": 0,
+        "Pedestrians": 0,
+        "Passengers": 0,
+        "Cyclists": 0,
+        "Unknown": 627,
+        "Total": 627,
+        "Projected": 0,
+        "Projected Total": 627
+    },
+    "2012": {
+        "Drivers": 0,
+        "Pedestrians": 0,
+        "Passengers": 0,
+        "Cyclists": 0,
+        "Unknown": 589,
+        "Total": 589,
+        "Projected": 0,
+        "Projected Total": 589
+    },
+    "2013": {
+        "Drivers": 0,
+        "Pedestrians": 0,
+        "Passengers": 0,
+        "Cyclists": 0,
+        "Unknown": 542,
+        "Total": 542,
+        "Projected": 0,
+        "Projected Total": 542
+    },
+    "2014": {
+        "Drivers": 0,
+        "Pedestrians": 0,
+        "Passengers": 0,
+        "Cyclists": 0,
+        "Unknown": 556,
+        "Total": 556,
+        "Projected": 0,
+        "Projected Total": 556
+    },
+    "2015": {
+        "Drivers": 0,
+        "Pedestrians": 0,
+        "Passengers": 0,
+        "Cyclists": 0,
+        "Unknown": 562,
+        "Total": 562,
+        "Projected": 0,
+        "Projected Total": 562
+    },
+    "2016": {
+        "Drivers": 0,
+        "Pedestrians": 0,
+        "Passengers": 0,
+        "Cyclists": 0,
+        "Unknown": 602,
+        "Total": 602,
+        "Projected": 0,
+        "Projected Total": 602
+    },
+    "2017": {
+        "Drivers": 0,
+        "Pedestrians": 0,
+        "Passengers": 0,
+        "Cyclists": 0,
+        "Unknown": 624,
+        "Total": 624,
+        "Projected": 0,
+        "Projected Total": 624
+    },
+    "2018": {
+        "Drivers": 0,
+        "Pedestrians": 0,
+        "Passengers": 0,
+        "Cyclists": 0,
+        "Unknown": 563,
+        "Total": 563,
+        "Projected": 0,
+        "Projected Total": 563
+    },
+    "2019": {
+        "Drivers": 0,
+        "Pedestrians": 0,
+        "Passengers": 0,
+        "Cyclists": 0,
+        "Unknown": 558,
+        "Total": 558,
+        "Projected": 0,
+        "Projected Total": 558
+    },
+    "2020": {
+        "Drivers": 295,
+        "Pedestrians": 167,
+        "Passengers": 77,
+        "Cyclists": 17,
+        "Unknown": 31,
+        "Total": 587,
+        "Projected": 0,
+        "Projected Total": 587
+    },
+    "2021": {
+        "Drivers": 354,
+        "Pedestrians": 204,
+        "Passengers": 78,
+        "Cyclists": 22,
+        "Unknown": 39,
+        "Total": 697,
+        "Projected": 0,
+        "Projected Total": 697
+    },
+    "2022": {
+        "Drivers": 347,
+        "Pedestrians": 165,
+        "Passengers": 89,
+        "Cyclists": 16,
+        "Unknown": 27,
+        "Total": 644,
+        "Projected": 56,
+        "Projected Total": 700
+    }
+}

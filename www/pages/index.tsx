@@ -24,19 +24,51 @@ type TitleObj = {
 }
 type Title = string | Partial<TitleObj>;
 
+function extractDataDate({title}: { title: string }) {
+    const regex = /.*Data ca\. (\d{4}-\d\d-\d\d).*/
+    const match = regex.exec(title)
+    if (!match) {
+        throw new Error(`No data date found: ${title}`)
+    }
+    return match[1]
+}
+
+type NodeFn = ReactNode | (({ title }: { title?: string } & HasTotals) => ReactNode)
 type PlotSpec = {
     id: string
     name: string
     title?: string  // taken from plot, by default
-    subtitle?: ReactNode
-    children?: ReactNode
+    subtitle?: NodeFn
+    children?: NodeFn
 }
 type Plot = PlotSpec & {
     plot: PlotParams
     title: string
 }
 const plotSpecs: PlotSpec[] = [
-    { id: "per-year", name: "fatalities_per_year_by_type", title: "NJ Traffic Fatalities per Year", subtitle: <p>2021 was the deadliest year on record; 2022 is on pace to exceed it</p>, children: <p>Victim types have been published since 2020</p> },
+    {
+        id: "per-year", name: "fatalities_per_year_by_type", title: "NJ Traffic Fatalities per Year",
+        subtitle: ({ projectedTotals }: HasTotals) => {
+            const total2021 = projectedTotals["2021"]["Projected Total"]
+            const total2022 = projectedTotals["2022"]["Projected Total"]
+            if (total2022 > total2021) {
+                return <>
+                    <p>2021 was the deadliest year on record, with {total2021} fatalities.</p>
+                    <p>2022 is on pace to exceed it, with {total2022}.</p>
+                </>
+            } else {
+                return <>
+                    <p>2021 was the deadliest year on record, with {total2021} fatalities.</p>
+                    <p>2022 is on pace to for {total2022}.</p>
+                </>
+            }
+        },
+        children: ({ title }: { title: string }) =>
+            <>
+                <p>Victim types have been published since 2020.</p>
+                <p>Data updated {extractDataDate({title})}.</p>
+            </>
+    },
     { id: "per-month", name: "fatalities_per_month", },
     { id: "per-month-type", name: "fatalities_per_month_by_type", },
     // { id: "", name: "fatalities_by_month_lines", },
@@ -44,7 +76,12 @@ const plotSpecs: PlotSpec[] = [
 ]
 
 type PlotsDict = { [k: string]: { title: string, plot: PlotParams } }
-type Props = { plotsDict: PlotsDict }
+type Year = "2021" | "2022"
+type YearTotals = { "Projected Total": number }
+type ProjectedTotals = { [k in Year]: YearTotals }
+type HasTotals = { projectedTotals: ProjectedTotals }
+
+type Props = { plotsDict: PlotsDict } & HasTotals
 
 const { fromEntries } = Object
 
@@ -61,10 +98,12 @@ export const getStaticProps: GetStaticProps = async (context) => {
             return [ name, { title: plotTitle, plot } ]
         })
     )
-    return { props: { plotsDict }, }
+    const projectedTotalsPath = path.join(plotsDirectory, `projected_totals.json`)
+    const projectedTotals = JSON.parse(fs.readFileSync(projectedTotalsPath, 'utf8')) as ProjectedTotals
+    return { props: { plotsDict, projectedTotals }, }
 }
 
-function Plot({ id, title, subtitle, plot, children, }: Plot) {
+function Plot({ id, title, subtitle, plot, children, projectedTotals }: Plot & HasTotals) {
     const {
         data,
         layout: {
@@ -74,10 +113,13 @@ function Plot({ id, title, subtitle, plot, children, }: Plot) {
     } = plot
     if (xaxis) { /*xaxis.fixedrange = true ;*/ delete xaxis?.title }
     if (yaxis) { /*yaxis.fixedrange = true ;*/ delete yaxis?.title }
+    const plotTitleText = typeof plotTitle == 'string' ? plotTitle : plotTitle?.text
+    const renderedSubtitle = subtitle instanceof Function ? subtitle({ title: plotTitleText, projectedTotals }) : subtitle
+    const renderedChildren = children instanceof Function ? children({ title: plotTitleText, projectedTotals }) : children
     return (
         <div id={id} key={id} className={styles["plot-body"]}>
             <h2><a href={`#${id}`}>{title}</a></h2>
-            {subtitle}
+            {renderedSubtitle}
             <Plotly
                 className={styles.plot}
                 data={data}
@@ -90,12 +132,12 @@ function Plot({ id, title, subtitle, plot, children, }: Plot) {
                 }}
                 config={{ displayModeBar: false, }}
             />
-            {children}
+            {renderedChildren}
         </div>
     )
 }
 
-const Home = ({ plotsDict }: Props) => {
+const Home = ({ plotsDict, projectedTotals }: Props) => {
     // console.log("Home plots:", plotsDict)
     const plots: Plot[] = plotSpecs.map(
         ({ name, ...rest }) => {
@@ -129,7 +171,7 @@ const Home = ({ plotsDict }: Props) => {
                     plots.map(
                         ({ id, ...rest }) => (
                             <div key={id} className={styles["plot-container"]}>
-                                <Plot id={id} {...rest} />
+                                <Plot id={id} {...rest} projectedTotals={projectedTotals} />
                                 <hr/>
                             </div>
                         )
