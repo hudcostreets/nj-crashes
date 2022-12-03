@@ -2,7 +2,6 @@
   "data": [
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=2008<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
       "legendgroup": "2008",
       "marker": {
         "color": "#fcffa4",
@@ -49,7 +48,6 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=2009<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
       "legendgroup": "2009",
       "marker": {
         "color": "#f8e161",
@@ -96,7 +94,6 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=2010<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
       "legendgroup": "2010",
       "marker": {
         "color": "#f8c12d",
@@ -143,7 +140,6 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=2011<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
       "legendgroup": "2011",
       "marker": {
         "color": "#fa9e09",
@@ -190,7 +186,6 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=2012<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
       "legendgroup": "2012",
       "marker": {
         "color": "#f37e17",
@@ -237,7 +232,6 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=2013<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
       "legendgroup": "2013",
       "marker": {
         "color": "#e6612c",
@@ -284,7 +278,6 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=2014<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
       "legendgroup": "2014",
       "marker": {
         "color": "#d34941",
@@ -331,7 +324,6 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=2015<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
       "legendgroup": "2015",
       "marker": {
         "color": "#ba3853",
@@ -378,7 +370,6 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=2016<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
       "legendgroup": "2016",
       "marker": {
         "color": "#9e2961",
@@ -425,7 +416,6 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=2017<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
       "legendgroup": "2017",
       "marker": {
         "color": "#811f6a",
@@ -472,7 +462,6 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=2018<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
       "legendgroup": "2018",
       "marker": {
         "color": "#64156c",
@@ -519,7 +508,6 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=2019<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
       "legendgroup": "2019",
       "marker": {
         "color": "#460c68",
@@ -566,7 +554,6 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=2020<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
       "legendgroup": "2020",
       "marker": {
         "color": "#280c4d",
@@ -613,7 +600,6 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=2021<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
       "legendgroup": "2021",
       "marker": {
         "color": "#11072b",
@@ -660,7 +646,6 @@
     },
     {
       "alignmentgroup": "True",
-      "hovertemplate": "=2022<br>Month=%{x}<br>Traffic deaths=%{y}<extra></extra>",
       "legendgroup": "2022",
       "marker": {
         "color": "#000004",
@@ -684,8 +669,7 @@
         8,
         9,
         10,
-        11,
-        12
+        11
       ],
       "xaxis": "x",
       "y": [
@@ -699,8 +683,7 @@
         53.0,
         69.0,
         58.0,
-        46.0,
-        3.0
+        46.0
       ],
       "yaxis": "y",
       "type": "bar"
@@ -1570,7 +1553,8 @@
       ],
       "title": {
         "text": "Traffic deaths"
-      }
+      },
+      "gridcolor": "#ccc"
     },
     "legend": {
       "title": {
