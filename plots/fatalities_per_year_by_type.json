@@ -1148,7 +1148,8 @@
       ],
       "title": {
         "text": "Fatalities"
-      }
+      },
+      "gridcolor": "#ccc"
     },
     "legend": {
       "title": {
