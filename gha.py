@@ -62,10 +62,8 @@ def main(branch, do_configure_author, force, push):
 
     if push:
         if did_commit:
-            cmd = [ 'git', 'push', 'origin', ]
-            if branch:
-                cmd += [f'HEAD:{branch}']
-            run(*cmd)
+            run('git', 'push', 'origin')
+            run('git', 'push', 'origin', f'HEAD:{branch}')
         else:
             print('Nothing to push')
 
