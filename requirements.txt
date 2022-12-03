@@ -9,4 +9,4 @@ pandas
 papermill
 plotly
 sqlalchemy
-utz==0.3.19
+utz==0.3.20
