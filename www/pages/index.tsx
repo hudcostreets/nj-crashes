@@ -48,7 +48,7 @@ type Plot = PlotSpec & {
 const plotSpecs: PlotSpec[] = [
     {
         id: "per-year", name: "fatalities_per_year_by_type", title: "NJ Traffic Fatalities per Year",
-        subtitle: ({ projectedTotals }: HasTotals) => {
+        subtitle: ({ title, projectedTotals }: { title: string } & HasTotals) => {
             const total2021 = projectedTotals["2021"]["Projected Total"]
             const total2022 = projectedTotals["2022"]["Projected Total"]
             if (total2022 > total2021) {
@@ -59,15 +59,11 @@ const plotSpecs: PlotSpec[] = [
             } else {
                 return <>
                     <p>2021 was the deadliest year on record, with {total2021} fatalities.</p>
-                    <p>2022 is on pace to for {total2022}.</p>
+                    <p>As of {extractDataDate({title})} 2022 is on pace for {total2022}.</p>
                 </>
             }
         },
-        children: ({ title }: { title: string }) =>
-            <>
-                <p>Victim types have been published since 2020.</p>
-                <p>Data updated {extractDataDate({title})}.</p>
-            </>
+        children: <p>Victim types have been published since 2020.</p>,
     },
     { id: "per-month", name: "fatalities_per_month", },
     { id: "per-month-type", name: "fatalities_per_month_by_type", },
