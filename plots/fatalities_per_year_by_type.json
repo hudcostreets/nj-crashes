@@ -1156,7 +1156,10 @@
         "text": ""
       },
       "tracegroupgap": 0,
-      "traceorder": "reversed"
+      "traceorder": "reversed",
+      "orientation": "h",
+      "x": 0.5,
+      "xanchor": "center"
     },
     "margin": {
       "t": 60
