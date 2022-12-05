@@ -150,7 +150,7 @@ const Home = ({ plotsDict, projectedTotals }: Props) => {
                 title={title}
                 description={"Analysis & Visualization of data published by NJ State Police"}
                 url={url}
-                thumbnail={`${url}/thumbnail.png`}
+                thumbnail={`${url}/fatalities_per_year_by_type.png`}
             />
 
             <Nav

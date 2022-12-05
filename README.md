@@ -6,11 +6,11 @@ Analysis of NJ State Police traffic violence data (2008-present)
 
 ### NJ traffic deaths w/ 12mo rolling avg
 
-![](./fatalities_per_month.png)
+![](www/public/fatalities_per_month.png)
 
 ### 2021 was the worst year on record, and 2022 is on pace to exceed it
 
-![](./fatalities_per_year_by_type.png)
+![](www/public/fatalities_per_year_by_type.png)
 
 (Victim type data is only available starting since 2020, so most history is unknown)
 
@@ -21,17 +21,17 @@ Analysis of NJ State Police traffic violence data (2008-present)
 
 ### In NJ, traffic deaths are 1.5x-2x homicides
 
-![](./fatalities_vs_homicides_per_year.png)
+![](fatalities_vs_homicides_per_year.png)
 
 **Traffic deaths spiked by 19% in 2021.**
 
 ### The 9 deadliest months on record were in 2021 and 2022:
 
-![](./fatalities_by_month_lines.png)
+![](www/public/fatalities_by_month_lines.png)
 
 ### Victim types: drivers > pedestrians > passengers > cyclists
 
-![](./fatalities_per_month_by_type.png)
+![](www/public/fatalities_per_month_by_type.png)
 
 This data is available starting from 2020.
 
