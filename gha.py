@@ -48,7 +48,7 @@ def main(branches, do_configure_author, force, push):
 
     makedirs(dirname(out), exist_ok=True)
     run('papermill', nb, out)
-    data_changed = not check('git', 'diff', '--quiet', 'HEAD', '--', 'data', 'www')
+    data_changed = not check('git', 'diff', '--quiet', 'HEAD', '--', 'data', 'www', 'fatalities_per_year_by_type.png')
     changed_files = [ line[3:] for line in process.lines('git', 'status', '--porcelain') ]
     if changed_files:
         print(f'{len(changed_files)} changed files:')
