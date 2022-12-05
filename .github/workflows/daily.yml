@@ -20,4 +20,4 @@ jobs:
           python-version: 3.9
           cache: 'pip'
       - run: pip install -r requirements.txt
-      - run: ./gha.py -cfpb www
+      - run: ./gha.py -cfp -b main -b www

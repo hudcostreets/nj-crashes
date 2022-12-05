@@ -16,11 +16,11 @@ def configure_author(name, email):
 
 
 @click.command()
-@click.option('-b', '--branch')
+@click.option('-b', '--branch', 'branches', multiple=True)
 @click.option('-c', '--configure-author', 'do_configure_author', is_flag=True)
 @click.option('-f', '--force', count=True, help=f'Continue past initial no-op data update')
 @click.option('-p', '--push', is_flag=True)
-def main(branch, do_configure_author, force, push):
+def main(branches, do_configure_author, force, push):
     run('./refresh-data.sh')
     git_is_clean = check('git', 'diff', '--quiet', 'HEAD')
     if git_is_clean:
@@ -62,8 +62,8 @@ def main(branch, do_configure_author, force, push):
 
     if push:
         if did_commit:
-            run('git', 'push', 'origin')
-            run('git', 'push', 'origin', f'HEAD:{branch}')
+            for branch in branches:
+                run('git', 'push', 'origin', f'HEAD:{branch}')
         else:
             print('Nothing to push')
 
