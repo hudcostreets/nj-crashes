@@ -59,7 +59,7 @@ const plotSpecs: PlotSpec[] = [
             } else {
                 return <>
                     <p>2021 was the deadliest year on record, with {total2021} fatalities.</p>
-                    <p>As of {extractDataDate({title})} 2022 is on pace for {total2022}.</p>
+                    <p>As of {extractDataDate({title})}, 2022 is on pace for {total2022}.</p>
                 </>
             }
         },
