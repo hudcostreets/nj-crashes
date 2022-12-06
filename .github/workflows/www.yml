@@ -9,11 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          persist-credentials: false
+      - run: git fetch origin gh-pages
       - id: base-sha
-        run: echo "::set-output name=BASE_SHA::$(./parse-ghp-base-sha.py -d root)"
+        run: echo "::set-output name=BASE_SHA::$(./parse-ghp-base-sha.py -d root origin/gh-pages)"
       - name: Check whether www was changed
         id: www-changed
         env:
