@@ -9,6 +9,7 @@ import click
 import pandas as pd
 import requests
 from click import option
+from numpy import nan
 from tabula import read_pdf
 
 # Download datasets from https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm
@@ -189,12 +190,6 @@ def parse_row(f, idx, fields):
     for fidx, field in enumerate(fields):
         fname, flen = field['Field'], field['Length']
         fval = f.read(flen)
-        # try:
-        #     fval = fvalb.decode('utf-8')
-        # except UnicodeDecodeError as e:
-        #     print(f'{e}: {fvalb}')
-        #     fval = '???'
-        #     raise RuntimeError(f'row {idx} fidx {fidx} {fname} ({flen}), empty read. {row}')
         if not fval:
             if fidx:
                 raise RuntimeError(f'row {idx} fidx {fidx} {fname} ({flen}), empty read. {row}')
@@ -250,6 +245,21 @@ def pqt(counties, types, years, overwrite):
                             break
 
                 df = pd.DataFrame(rows)
+                ints = [ 'Total Killed', 'Total Injured', 'Pedestrians Killed', 'Pedestrians Injured', 'Total Vehicles Involved', ]
+                floats = [ 'Latitude', 'Longitude', 'MilePost', ]
+                bools = [ 'Alcohol Involved', 'HazMat Involved', ]
+
+                df['Date'] = pd.to_datetime(df['Crash Date'] + ' ' + df['Crash Time'])
+                df = df.drop(columns=['Year', 'Crash Time', 'Crash Date', 'Crash Day Of Week'])
+
+                for k in floats:
+                    df[k] = df[k].replace('', nan).astype(float)
+
+                for k in bools:
+                    df[k] = df[k].replace('Y', True).replace('N', False).astype(bool)
+
+                df = df.astype(dict(**{ k: int for k in ints },))
+
                 print(f'Writing {pqt_path}')
                 df.to_parquet(pqt_path, index=None)
 
