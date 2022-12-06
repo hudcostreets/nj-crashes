@@ -8,5 +8,7 @@ openpyxl
 pandas
 papermill
 plotly
+requests
 sqlalchemy
+tabula-py
 utz==0.3.20
