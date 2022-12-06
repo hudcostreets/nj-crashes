@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 import time
 from os import makedirs
-from os.path import exists, dirname, splitext, basename
+from os.path import exists, dirname, basename
+from sys import stderr
 from zipfile import ZipFile
 
 import click
 import pandas as pd
 import requests
 from click import option
-from requests import HTTPError
 from tabula import read_pdf
 
 # Download datasets from https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm
@@ -85,7 +85,7 @@ def cmd(*opts):
 @cmd(
     option('-C', '--cache-path', default=DEFAULT_CACHE_PATH),
     option('-f', '--force', count=True),
-    option('-s', '--sleep', type=int, default=0.2),
+    option('-s', '--sleep', type=float, default=0.2),
 )
 def zip(counties, cache_path, force, sleep, types, years):
     cache = pd.read_parquet(cache_path) if exists(cache_path) else None
@@ -175,10 +175,13 @@ def txt(counties, types, years, overwrite):
 
                 with ZipFile(zip_path, 'r') as zip_ref:
                     namelist = zip_ref.namelist()
-                    if namelist != [ basename(txt_path) ]:
-                        raise RuntimeError(f"{zip_path}: unexpected namelist {namelist}")
+                    txt_name = basename(txt_path)
+                    if txt_name not in namelist:
+                        raise RuntimeError(f"{zip_path}: {txt_name} not found in namelist {namelist}\n")
+                    if namelist != [ txt_name ]:
+                        stderr.write(f"{zip_path}: unexpected namelist {namelist}\n")
                     print(f'Extracting: {zip_path} → {txt_path}')
-                    zip_ref.extractall(parent_dir)
+                    zip_ref.extract(txt_name, parent_dir)
 
 
 def parse_row(f, idx, fields):
