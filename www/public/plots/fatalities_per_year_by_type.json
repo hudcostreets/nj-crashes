@@ -307,7 +307,7 @@
         0,
         0,
         0,
-        48
+        46
       ],
       "yaxis": "y",
       "type": "bar"
@@ -1166,7 +1166,7 @@
     },
     "barmode": "stack",
     "title": {
-      "text": "NJ Traffic Fatalities per Year (by victim type)<br><sup>2021 was the deadliest year on record, with 697 traffic fatalities. 2022 is on pace for 696. Data ca. 2022-12-06",
+      "text": "NJ Traffic Fatalities per Year (by victim type)<br><sup>2021 was the deadliest year on record, with 697 traffic fatalities. 2022 is on pace for 694. Data ca. 2022-12-07",
       "x": 0.5
     },
     "paper_bgcolor": "white",

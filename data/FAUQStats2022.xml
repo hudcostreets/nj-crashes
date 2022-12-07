@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Dec 06 10:00:11 EST 2022</RUNDATE>
+  <RUNDATE>Wed Dec 07 10:00:07 EST 2022</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -112,6 +112,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4831,7 +4832,7 @@
     <MUNICIPALITY MCODE="0802" MNAME="Deptford Twsp">
       <ACCIDENT ACCID="11756" DATE="05/30/2022" TIME="1308">
         <HIGHWAY>42</HIGHWAY>
-        <LOCATION>State Highway 42</LOCATION>
+        <LOCATION>State Highway 42 MP 11.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4895,7 +4896,7 @@
     <MUNICIPALITY MCODE="0336" MNAME="Tabernacle Twsp">
       <ACCIDENT ACCID="11755" DATE="05/29/2022" TIME="0606">
         <HIGHWAY>532</HIGHWAY>
-        <LOCATION>County 532</LOCATION>
+        <LOCATION>County 532 MP 11.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
