@@ -1,7 +1,10 @@
 #!/usr/bin/env python
+import json
+import shutil
 import time
 from os import makedirs
-from os.path import exists, dirname, basename
+from os.path import exists, dirname, basename, splitext
+from re import fullmatch
 from sys import stderr
 from zipfile import ZipFile
 
@@ -22,7 +25,7 @@ COUNTIES = [
     'Bergen',
     'Burlington',
     'Camden',
-    # 'CapeMay',
+    'CapeMay',
     'Cumberland',
     'Essex',
     'Gloucester',
@@ -41,7 +44,7 @@ COUNTIES = [
     'Warren',
 ]
 
-YEARS = list(range(2001, 2021))
+YEARS = list(map(str, range(2001, 2021)))
 
 TYPES = [
     "Accidents",
@@ -54,6 +57,13 @@ TYPES = [
 
 DEFAULT_CACHE_PATH = '.cache.pqt'
 CACHE_HEADERS = [ 'Date', 'Content-Length', 'Content-type', 'Last-modified', 'Etag', ]
+
+
+def maybe_capemay_space(county, year):
+    if county == 'CapeMay' and year in { '2001', '2002', '2003', '2020', }:
+        return 'Cape May'
+    else:
+        return county
 
 
 @click.group()
@@ -94,9 +104,11 @@ def zip(counties, cache_path, force, sleep, types, years):
     try:
         for county in counties:
             for year in years:
+                url_county = maybe_capemay_space(county, year)
                 for typ in types:
                     name = f'{year}/{county}{year}{typ}.zip'
-                    url = f'https://www.state.nj.us/transportation/refdata/accident/{name}'
+                    url_name = f'{year}/{url_county}{year}{typ}.zip'
+                    url = f'https://www.state.nj.us/transportation/refdata/accident/{url_name}'
                     out_path = name
                     if exists(out_path):
                         if force:
@@ -143,7 +155,10 @@ def zip(counties, cache_path, force, sleep, types, years):
                             needs_download = False
 
                     if needs_download:
-                        print(f'{url} downloading (cache miss)')
+                        if force == 2:
+                            print(f'{url} downloading (forced)')
+                        else:
+                            print(f'{url} downloading (cache miss)')
                         download()
                         cache = pd.concat([ cache, new_row_df])
                         updated_paths.append(out_path)
@@ -176,13 +191,24 @@ def txt(counties, types, years, overwrite):
 
                 with ZipFile(zip_path, 'r') as zip_ref:
                     namelist = zip_ref.namelist()
-                    txt_name = basename(txt_path)
+                    txt_name = f'{county}{year}{typ}.txt'
+                    mv = False
                     if txt_name not in namelist:
-                        raise RuntimeError(f"{zip_path}: {txt_name} not found in namelist {namelist}\n")
+                        if county == 'CapeMay':
+                            txt_name = f'Cape May{year}{typ}.txt'
+                            mv = True
+                            if txt_name not in namelist:
+                                raise RuntimeError(f"{zip_path}: {txt_name} not found in namelist {namelist}\n")
+                        else:
+                            raise RuntimeError(f"{zip_path}: {txt_name} not found in namelist {namelist}\n")
                     if namelist != [ txt_name ]:
                         stderr.write(f"{zip_path}: unexpected namelist {namelist}\n")
                     print(f'Extracting: {zip_path} → {txt_path}')
                     zip_ref.extract(txt_name, parent_dir)
+                    if mv:
+                        src = f'{parent_dir}/{txt_name}'
+                        print(f'Fixing "Cape ?May" path: {src} → {txt_path}')
+                        shutil.move(src, txt_path)
 
 
 def parse_row(f, idx, fields):
@@ -200,26 +226,87 @@ def parse_row(f, idx, fields):
             row[fname] = fval
     last = f.read(1)
     if last != '\n':
-        raise RuntimeError(f'Row {idx}: expected newline, found "{last}", row {row}')
+        raise RuntimeError(f'Row {idx}: expected newline at position {f.tell()}, found "{last}", row {row}')
     return row
+
+
+def parse_rows(txt_path, fields):
+    rows = []
+    idx = 0
+    with open(txt_path, 'r', encoding='ISO-8859-1') as f:
+        while True:
+            row = parse_row(f, idx=idx, fields=fields)
+            if row:
+                rows.append(row)
+                idx += 1
+            else:
+                break
+    return pd.DataFrame(rows)
+
+
+@cli.command('rect')
+@option('-2', '--2017', 'version2017', is_flag=True)
+@option('-f', '--overwrite', is_flag=True)
+def rect(version2017, overwrite):
+    if version2017:
+        rect = {
+            "x1": 43.222500000000004,
+            "x2": 564.1875,
+            "y1": 91.4175,
+            "y2": 750.0825,
+        }
+        pdf_path = '2017CrashTable.pdf'
+    else:
+        rect = {
+            "x1": 25.6275,
+            "x2": 587.1375,
+            "y1": 81.4725,
+            "y2": 750.0825,
+        }
+        pdf_path = 'CrashTable.pdf'
+
+    json_path = f'{splitext(pdf_path)[0]}.json'
+    if exists(json_path):
+        if overwrite:
+            print(f'Overwriting {json_path}')
+        else:
+            return
+
+    tbls = read_pdf(pdf_path, area=[ rect[k] for k in [ 'y1', 'x1', 'y2', 'x2', ] ], pages='all',)
+    fields = pd.concat(tbls)
+    fields = fields.to_dict('records')
+    with open(json_path, 'w') as f:
+        json.dump(fields, f, indent=4)
+
+
+def build_dt(r):
+    crash_time = r['Crash Time']
+    if crash_time and not fullmatch(r'\d{4}', crash_time):
+        stderr.write(f'Dropping unrecognized "Crash Time": "{crash_time}"\n')
+        return pd.to_datetime(r['Crash Date'])
+    else:
+        return pd.to_datetime(r['Crash Date'] + ' ' + crash_time)
 
 
 @cmd(
     option('-f', '--overwrite', is_flag=True),
 )
 def pqt(counties, types, years, overwrite):
-    rect = {
-        "x1": 43.222500000000004,
-        "x2": 564.1875,
-        "y1": 91.4175,
-        "y2": 750.0825,
-    }
-    pdf = '2017CrashTable.pdf'
-    tbls = read_pdf(pdf, area=[ rect[k] for k in [ 'y1', 'x1', 'y2', 'x2', ] ], pages='all',)
-    fields = pd.concat(tbls)
-    fields = fields.to_dict('records')
-    for county in counties:
-        for year in years:
+    fields_dict = {}
+    for year in years:
+        # Load `fields` dict for `year`
+        v2017 = int(year) >= 2017
+        for county in counties:
+            if v2017 in fields_dict:
+                fields = fields_dict[v2017]
+            else:
+                json_path = f'{2017 if v2017 else ""}CrashTable.json'
+                with open(json_path, 'r') as f:
+                    fields = json.load(f)
+                    fields_dict[v2017] = fields
+                if year == '2013' and county == 'Atlantic':
+                    # For some reason, "Reporting Badge No." in Atlantic2013[Accidents…?] is 18 chars long, not 5
+                    fields[-1]['Length'] = 18
             for typ in types:
                 parent_dir = f'{year}'
                 name = f'{parent_dir}/{county}{year}{typ}'
@@ -233,23 +320,13 @@ def pqt(counties, types, years, overwrite):
                         continue
 
                 print(f'Parsing {txt_path}')
-                rows = []
-                idx = 0
-                with open(txt_path, 'r', encoding='ISO-8859-1') as f:
-                    while True:
-                        row = parse_row(f, idx=idx, fields=fields)
-                        if row:
-                            rows.append(row)
-                            idx += 1
-                        else:
-                            break
+                df = parse_rows(txt_path, fields)
 
-                df = pd.DataFrame(rows)
                 ints = [ 'Total Killed', 'Total Injured', 'Pedestrians Killed', 'Pedestrians Injured', 'Total Vehicles Involved', ]
-                floats = [ 'Latitude', 'Longitude', 'MilePost', ]
+                floats = [ 'Latitude', 'Longitude', ('MilePost' if v2017 else 'Mile Post')]
                 bools = [ 'Alcohol Involved', 'HazMat Involved', ]
 
-                df['Date'] = pd.to_datetime(df['Crash Date'] + ' ' + df['Crash Time'])
+                df['Date'] = df.apply(build_dt, axis=1)
                 df = df.drop(columns=['Year', 'Crash Time', 'Crash Date', 'Crash Day Of Week'])
 
                 for k in floats:
