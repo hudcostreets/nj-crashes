@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import json
 import shutil
+import sys
 import time
 from os import makedirs
 from os.path import exists, dirname, basename, splitext
@@ -339,6 +340,52 @@ def pqt(counties, types, years, overwrite):
 
                 print(f'Writing {pqt_path}')
                 df.to_parquet(pqt_path, index=None)
+
+
+@cli.command('check-nj-agg')
+@option('-y', '--year', 'years')
+def check_nj_agg(years):
+    years = years.split(',') if years else YEARS
+    for year in years:
+        nj = pd.read_parquet(f'{year}/NewJersey{year}Accidents.pqt')
+        counties = COUNTIES[1:]
+        cs = pd.concat([
+            pd.read_parquet(f'{year}/{county}{year}Accidents.pqt')
+            for county in counties
+        ])
+
+        errors = []
+        def err(msg):
+            nonlocal errors
+            stderr.write(f'{year}: {msg}\n')
+            errors.append(msg)
+
+        if len(nj) != len(cs):
+            err(f'{len(nj)} NJ, {len(cs)} counties')
+        combined = pd.concat([ nj, cs ])
+
+        nj_cs_isdup = combined.duplicated(keep='first')
+        nj_cs_isdup1, nj_cs_isdup2 = nj_cs_isdup.iloc[:len(nj)], nj_cs_isdup.iloc[len(nj):]
+        if nj_cs_isdup1.any():
+            intra_nj_dups = nj[nj_cs_isdup1]
+            err(f'{len(intra_nj_dups)} intra-NJ dupes:\n{intra_nj_dups}')
+        if not nj_cs_isdup2.all():
+            cs_only = cs[~nj_cs_isdup2]
+            err(f'{len(cs_only)} counties-only rows:\n{cs_only}')
+
+        cs_nj_isdup = combined.duplicated(keep='last')
+        cs_nj_isdup1, cs_nj_isdup2 = cs_nj_isdup.iloc[:len(nj)], cs_nj_isdup.iloc[len(nj):]
+        if cs_nj_isdup2.any():
+            intra_cs_dups = cs[cs_nj_isdup2]
+            err(f'{len(intra_cs_dups)} intra-county dupes:\n{intra_cs_dups}')
+        if not cs_nj_isdup1.all():
+            nj_only = nj[~cs_nj_isdup1]
+            err(f'{len(nj_only)} NJ-only rows:\n{nj_only}')
+
+        if errors:
+            sys.exit(1)
+        else:
+            print(f'{year}: {len(nj)} NJ records match {len(cs)} county-level records')
 
 
 if __name__ == '__main__':
