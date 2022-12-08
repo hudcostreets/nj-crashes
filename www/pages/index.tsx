@@ -54,7 +54,7 @@ const plotSpecs: PlotSpec[] = [
             if (total2022 > total2021) {
                 return <>
                     <p>2021 was the deadliest year on record, with {total2021} fatalities.</p>
-                    <p>2022 is on pace to exceed it, with {total2022}.</p>
+                    <p>As of {extractDataDate({title})}, 2022 is on pace to exceed it, with {total2022}.</p>
                 </>
             } else {
                 return <>
