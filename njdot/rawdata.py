@@ -72,7 +72,7 @@ def cli():
     pass
 
 
-def cmd(*opts):
+def cmd(*opts, help=None):
     def wrapper(fn):
         def _fn(counties, types, years, *args, **kwargs):
             counties = counties.split(',') if counties else COUNTIES
@@ -81,7 +81,7 @@ def cmd(*opts):
             return fn(*args, counties=counties, types=types, years=years, **kwargs)
 
         decos = (
-            cli.command(fn.__name__),
+            cli.command(fn.__name__, short_help=help),
             click.option('-c', '--counties'),
             click.option('-t', '--types'),
             click.option('-y', '--years'),
@@ -98,6 +98,7 @@ def cmd(*opts):
     option('-C', '--cache-path', default=DEFAULT_CACHE_PATH),
     option('-f', '--force', count=True),
     option('-s', '--sleep', type=float, default=0.2),
+    help='Download 1 or more {year, county} .zip file(s)'
 )
 def zip(counties, cache_path, force, sleep, types, years):
     cache = pd.read_parquet(cache_path) if exists(cache_path) else None
@@ -174,6 +175,7 @@ def zip(counties, cache_path, force, sleep, types, years):
 
 @cmd(
     option('-f', '--overwrite', is_flag=True),
+    help='Convert 1 or more {year, county} .zip files (convert each .zip to a single .txt)'
 )
 def txt(counties, types, years, overwrite):
     for county in counties:
@@ -245,10 +247,10 @@ def parse_rows(txt_path, fields):
     return pd.DataFrame(rows)
 
 
-@cli.command('rect')
+@cli.command('parse-fields-pdf', short_help="Parse fields+lengths from one of the `*CrashTable.pdf`s, using Tabula")
 @option('-2', '--2017', 'version2017', is_flag=True)
 @option('-f', '--overwrite', is_flag=True)
-def rect(version2017, overwrite):
+def parse_fields_pdf(version2017, overwrite):
     if version2017:
         rect = {
             "x1": 43.222500000000004,
@@ -291,6 +293,7 @@ def build_dt(r):
 
 @cmd(
     option('-f', '--overwrite', is_flag=True),
+    help='Convert 1 or more unzipped {year, county} `.txt` files to `.pqt`s, with some dtypes and cleanup'
 )
 def pqt(counties, types, years, overwrite):
     fields_dict = {}
@@ -342,7 +345,7 @@ def pqt(counties, types, years, overwrite):
                 df.to_parquet(pqt_path, index=None)
 
 
-@cli.command('check-nj-agg')
+@cli.command('check-nj-agg', short_help='For one or more years, verify the `NewJersey` file is a concatenation of the county-specific files')
 @option('-y', '--year', 'years')
 def check_nj_agg(years):
     years = years.split(',') if years else YEARS
