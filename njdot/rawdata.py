@@ -56,7 +56,9 @@ TYPES = [
 ]
 
 
-DEFAULT_CACHE_PATH = '.cache.pqt'
+DATA_DIR = 'data'
+FIELDS_DIR = f'{DATA_DIR}/fields'
+DEFAULT_CACHE_PATH = f'{DATA_DIR}/.cache.pqt'
 CACHE_HEADERS = [ 'Date', 'Content-Length', 'Content-type', 'Last-modified', 'Etag', ]
 
 
@@ -111,7 +113,7 @@ def zip(counties, cache_path, force, sleep, types, years):
                     name = f'{year}/{county}{year}{typ}.zip'
                     url_name = f'{year}/{url_county}{year}{typ}.zip'
                     url = f'https://www.state.nj.us/transportation/refdata/accident/{url_name}'
-                    out_path = name
+                    out_path = f'{DATA_DIR}/{name}'
                     if exists(out_path):
                         if force:
                             print(f'{url}: force-checking HEAD for extant zip {name}')
@@ -128,7 +130,7 @@ def zip(counties, cache_path, force, sleep, types, years):
                         r = requests.get(url)
                         r.raise_for_status()
                         makedirs(dirname(name), exist_ok=True)
-                        with open(name, 'wb') as f:
+                        with open(out_path, 'wb') as f:
                             f.write(r.content)
 
                     needs_download = True
@@ -181,7 +183,7 @@ def txt(counties, types, years, overwrite):
     for county in counties:
         for year in years:
             for typ in types:
-                parent_dir = f'{year}'
+                parent_dir = f'{DATA_DIR}/{year}'
                 name = f'{parent_dir}/{county}{year}{typ}'
                 zip_path = f'{name}.zip'
                 txt_path = f'{name}.txt'
@@ -258,7 +260,7 @@ def parse_fields_pdf(version2017, overwrite):
             "y1": 91.4175,
             "y2": 750.0825,
         }
-        pdf_path = '2017CrashTable.pdf'
+        pdf_name = '2017CrashTable.pdf'
     else:
         rect = {
             "x1": 25.6275,
@@ -266,8 +268,8 @@ def parse_fields_pdf(version2017, overwrite):
             "y1": 81.4725,
             "y2": 750.0825,
         }
-        pdf_path = 'CrashTable.pdf'
-
+        pdf_name = 'CrashTable.pdf'
+    pdf_path = f'{FIELDS_DIR}/{pdf_name}'
     json_path = f'{splitext(pdf_path)[0]}.json'
     if exists(json_path):
         if overwrite:
@@ -304,15 +306,17 @@ def pqt(counties, types, years, overwrite):
             if v2017 in fields_dict:
                 fields = fields_dict[v2017]
             else:
-                json_path = f'{2017 if v2017 else ""}CrashTable.json'
+                json_name = f'{2017 if v2017 else ""}CrashTable.json'
+                json_path = f'{FIELDS_DIR}/{json_name}'
                 with open(json_path, 'r') as f:
                     fields = json.load(f)
                     fields_dict[v2017] = fields
                 if year == '2013' and county == 'Atlantic':
                     # For some reason, "Reporting Badge No." in Atlantic2013[Accidents…?] is 18 chars long, not 5
                     fields[-1]['Length'] = 18
+
             for typ in types:
-                parent_dir = f'{year}'
+                parent_dir = f'{DATA_DIR}/{year}'
                 name = f'{parent_dir}/{county}{year}{typ}'
                 txt_path = f'{name}.txt'
                 pqt_path = f'{name}.pqt'
@@ -350,7 +354,7 @@ def pqt(counties, types, years, overwrite):
 def check_nj_agg(years):
     years = years.split(',') if years else YEARS
     for year in years:
-        nj = pd.read_parquet(f'{year}/NewJersey{year}Accidents.pqt')
+        nj = pd.read_parquet(f'{DATA_DIR}/{year}/NewJersey{year}Accidents.pqt')
         counties = COUNTIES[1:]
         cs = pd.concat([
             pd.read_parquet(f'{year}/{county}{year}Accidents.pqt')

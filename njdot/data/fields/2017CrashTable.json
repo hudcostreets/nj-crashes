@@ -1,0 +1,818 @@
+[
+    {
+        "Field": "Year",
+        "Right\rJustify": NaN,
+        "From": 1,
+        "To": 4,
+        "Length": 4,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "County Code",
+        "Right\rJustify": NaN,
+        "From": 5,
+        "To": 6,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Municipality Code",
+        "Right\rJustify": NaN,
+        "From": 7,
+        "To": 8,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Department Case Number",
+        "Right\rJustify": NaN,
+        "From": 9,
+        "To": 31,
+        "Length": 23,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 32,
+        "To": 32,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "County Name",
+        "Right\rJustify": NaN,
+        "From": 33,
+        "To": 44,
+        "Length": 12,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 45,
+        "To": 45,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Municipality Name",
+        "Right\rJustify": NaN,
+        "From": 46,
+        "To": 69,
+        "Length": 24,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 70,
+        "To": 70,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Crash Date",
+        "Right\rJustify": NaN,
+        "From": 71,
+        "To": 80,
+        "Length": 10,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 81,
+        "To": 81,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Crash Day Of Week",
+        "Right\rJustify": NaN,
+        "From": 82,
+        "To": 83,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 84,
+        "To": 84,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Crash Time",
+        "Right\rJustify": NaN,
+        "From": 85,
+        "To": 88,
+        "Length": 4,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 89,
+        "To": 89,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Police Dept Code",
+        "Right\rJustify": NaN,
+        "From": 90,
+        "To": 91,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 92,
+        "To": 92,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Police Department",
+        "Right\rJustify": NaN,
+        "From": 93,
+        "To": 117,
+        "Length": 25,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 118,
+        "To": 118,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Police Station",
+        "Right\rJustify": NaN,
+        "From": 119,
+        "To": 133,
+        "Length": 15,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 134,
+        "To": 134,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Total Killed",
+        "Right\rJustify": "Y",
+        "From": 135,
+        "To": 136,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 137,
+        "To": 137,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Total Injured",
+        "Right\rJustify": "Y",
+        "From": 138,
+        "To": 139,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 140,
+        "To": 140,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Pedestrians Killed",
+        "Right\rJustify": "Y",
+        "From": 141,
+        "To": 142,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 143,
+        "To": 143,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Pedestrians Injured",
+        "Right\rJustify": "Y",
+        "From": 144,
+        "To": 145,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 146,
+        "To": 146,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Severity",
+        "Right\rJustify": NaN,
+        "From": 147,
+        "To": 147,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 148,
+        "To": 148,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Intersection",
+        "Right\rJustify": NaN,
+        "From": 149,
+        "To": 149,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 150,
+        "To": 150,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Alcohol Involved",
+        "Right\rJustify": NaN,
+        "From": 151,
+        "To": 151,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 152,
+        "To": 152,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "HazMat Involved",
+        "Right\rJustify": NaN,
+        "From": 153,
+        "To": 153,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 154,
+        "To": 154,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Crash Type Code",
+        "Right\rJustify": NaN,
+        "From": 155,
+        "To": 156,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 157,
+        "To": 157,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Total Vehicles Involved",
+        "Right\rJustify": "Y",
+        "From": 158,
+        "To": 159,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 160,
+        "To": 160,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Crash Location",
+        "Right\rJustify": NaN,
+        "From": 161,
+        "To": 210,
+        "Length": 50,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 211,
+        "To": 211,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Location Direction",
+        "Right\rJustify": NaN,
+        "From": 212,
+        "To": 212,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 213,
+        "To": 213,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Route",
+        "Right\rJustify": "Y",
+        "From": 214,
+        "To": 217,
+        "Length": 4,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 218,
+        "To": 218,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Route Suffix",
+        "Right\rJustify": NaN,
+        "From": 219,
+        "To": 219,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 220,
+        "To": 220,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "SRI (Std Rte Identifier)",
+        "Right\rJustify": NaN,
+        "From": 221,
+        "To": 236,
+        "Length": 16,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 237,
+        "To": 237,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "MilePost",
+        "Right\rJustify": "Y",
+        "From": 238,
+        "To": 244,
+        "Length": 7,
+        "Comments / Notes": "999.999"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 245,
+        "To": 245,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Road System",
+        "Right\rJustify": NaN,
+        "From": 246,
+        "To": 247,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 248,
+        "To": 248,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Road Character",
+        "Right\rJustify": NaN,
+        "From": 249,
+        "To": 250,
+        "Length": 2,
+        "Comments / Notes": "Starting in 2017, this field was replaced by the\rfollowing two fields;  This field is being kept for\rhistorical purposes, therefore there will be no data\rafter 2016."
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 251,
+        "To": 251,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Road Horizontal Alignment",
+        "Right\rJustify": NaN,
+        "From": 252,
+        "To": 253,
+        "Length": 2,
+        "Comments / Notes": "New Field."
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 254,
+        "To": 254,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Road Grade",
+        "Right\rJustify": NaN,
+        "From": 255,
+        "To": 256,
+        "Length": 2,
+        "Comments / Notes": "New Field."
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 257,
+        "To": 257,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Road Surface Type",
+        "Right\rJustify": NaN,
+        "From": 258,
+        "To": 259,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 260,
+        "To": 260,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Surface Condition",
+        "Right\rJustify": NaN,
+        "From": 261,
+        "To": 262,
+        "Length": 2,
+        "Comments / Notes": "Code Change."
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 263,
+        "To": 263,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Light Condition",
+        "Right\rJustify": NaN,
+        "From": 264,
+        "To": 265,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 266,
+        "To": 266,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Environmental Condition",
+        "Right\rJustify": NaN,
+        "From": 267,
+        "To": 268,
+        "Length": 2,
+        "Comments / Notes": "Code Change."
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 269,
+        "To": 269,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Road Divided By",
+        "Right\rJustify": NaN,
+        "From": 270,
+        "To": 271,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 272,
+        "To": 272,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Temporary Traffic Control Zone",
+        "Right\rJustify": NaN,
+        "From": 273,
+        "To": 274,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 275,
+        "To": 275,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Distance To Cross Street",
+        "Right\rJustify": "Y",
+        "From": 276,
+        "To": 279,
+        "Length": 4,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 280,
+        "To": 280,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Unit Of Measurement",
+        "Right\rJustify": NaN,
+        "From": 281,
+        "To": 282,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 283,
+        "To": 283,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Directn From Cross Street",
+        "Right\rJustify": NaN,
+        "From": 284,
+        "To": 284,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 285,
+        "To": 285,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Cross Street Name",
+        "Right\rJustify": NaN,
+        "From": 286,
+        "To": 320,
+        "Length": 35,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 321,
+        "To": 321,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Is Ramp",
+        "Right\rJustify": NaN,
+        "From": 322,
+        "To": 322,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 323,
+        "To": 323,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Ramp To/From Route Name",
+        "Right\rJustify": NaN,
+        "From": 324,
+        "To": 348,
+        "Length": 25,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 349,
+        "To": 349,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Ramp To/From Route Direction",
+        "Right\rJustify": NaN,
+        "From": 350,
+        "To": 351,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 352,
+        "To": 352,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Posted Speed",
+        "Right\rJustify": "Y",
+        "From": 353,
+        "To": 354,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 355,
+        "To": 355,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Posted Speed Cross Street",
+        "Right\rJustify": "Y",
+        "From": 356,
+        "To": 357,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 358,
+        "To": 358,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "First Harmful Event",
+        "Right\rJustify": NaN,
+        "From": 359,
+        "To": 360,
+        "Length": 2,
+        "Comments / Notes": "New Field;"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 361,
+        "To": 361,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Latitude",
+        "Right\rJustify": "Y",
+        "From": 362,
+        "To": 370,
+        "Length": 9,
+        "Comments / Notes": "Increased to 6 decimal places;"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 371,
+        "To": 371,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Longitude",
+        "Right\rJustify": "Y",
+        "From": 372,
+        "To": 380,
+        "Length": 9,
+        "Comments / Notes": "Increased to 6 decimal places;"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 381,
+        "To": 381,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Cell Phone In Use Flag",
+        "Right\rJustify": NaN,
+        "From": 382,
+        "To": 382,
+        "Length": 1,
+        "Comments / Notes": "Set to 'Y' if any driver, pedestrian or pedalcyclist\rwas using a cell phone"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 383,
+        "To": 383,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Other Property Damage",
+        "Right\rJustify": NaN,
+        "From": 384,
+        "To": 463,
+        "Length": 80,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 464,
+        "To": 464,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Reporting Badge No.",
+        "Right\rJustify": NaN,
+        "From": 465,
+        "To": 469,
+        "Length": 5,
+        "Comments / Notes": NaN
+    }
+]
