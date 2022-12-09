@@ -1,4 +1,3 @@
-
 const {
   createVanillaExtractPlugin
 } = require('@vanilla-extract/next-plugin');

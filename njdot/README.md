@@ -35,54 +35,54 @@ There is a marked decrease in "injury" and "property damage" crashes since the o
 ### Crashes per Month (Statewide) <a id="state-month"></a>
 
 #### Injuries per Month (Statewide) <a id="state-month-injuries"></a>
-![](../www/public/njdot/im.png)
+![](../www/public/plots/njdot/ism.png)
 
 #### Property Damage Crashes per Month (Statewide) <a id="state-month-crashes"></a>
-![](../www/public/njdot/pm.png)
+![](../www/public/plots/njdot/psm.png)
 
 #### Deaths per Month (Statewide) <a id="state-month-deaths"></a>
-![](../www/public/njdot/dm.png)
+![](../www/public/plots/njdot/dsm.png)
 
 ### Crashes per {County, Month} <a id="counties-month"></a>
 
 #### Injuries per {County, Month} <a id="counties-month-injuries"></a>
-![](../www/public/njdot/icm.png)
+![](../www/public/plots/njdot/icm.png)
 
 #### Property Damage Crashes per {County, Month} <a id="counties-month-crashes"></a>
-![](../www/public/njdot/pcm.png)
+![](../www/public/plots/njdot/pcm.png)
 
 #### Deaths per {County, Month} <a id="counties-month-deaths"></a>
-![](../www/public/njdot/dcm.png)
+![](../www/public/plots/njdot/dcm.png)
 
 ### Crashes per Year (Statewide) <a id="state-year"></a>
 
 #### Injuries per Year (Statewide) <a id="state-year-injuries"></a>
-![](../www/public/njdot/iy.png)
+![](../www/public/plots/njdot/isy.png)
 
 #### Property Damage Crashes per Year (Statewide) <a id="state-year-crashes"></a>
-![](../www/public/njdot/py.png)
+![](../www/public/plots/njdot/psy.png)
 
 #### Deaths per Year (Statewide) <a id="state-year-deaths"></a>
-![](../www/public/njdot/dy.png)
+![](../www/public/plots/njdot/dsy.png)
 
 ### Crashes per {County, Year} <a id="counties-year"></a>
 
 #### Injuries per {County, Year} <a id="counties-year-injuries"></a>
-![](../www/public/njdot/icy.png)
+![](../www/public/plots/njdot/icy.png)
 
 #### Property Damage Crashes per {County, Year} <a id="counties-year-crashes"></a>
-![](../www/public/njdot/pcy.png)
+![](../www/public/plots/njdot/pcy.png)
 
 #### Deaths per {County, Year} <a id="counties-year-deaths"></a>
-![](../www/public/njdot/dcy.png)
+![](../www/public/plots/njdot/dcy.png)
 
 ### Crash-Type Percentages <a id="pcts"></a>
 
 #### Injuries, Property Damage, Deaths (as Percentage of All Crashes) <a id="pcts-all"></a>
-![](../www/public/njdot/pcts_by_type_month.png)
+![](../www/public/plots/njdot/pcts_by_type_month.png)
 
 #### Deaths (as Percentage of All Crashes) <a id="pct-deaths"></a>
-![](../www/public/njdot/pct_fatal_by_month.png)
+![](../www/public/plots/njdot/pct_fatal_by_month.png)
 
 ## Methods <a id="methods"></a>
 [`./rawdata.py`](rawdata.py) is a CLI for downloading+caching `.zip`s, extracting `.txt`s, cleaning+converting to `.pqt` ([Parquet](https://parquet.apache.org/)).

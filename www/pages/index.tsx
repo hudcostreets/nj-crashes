@@ -7,9 +7,9 @@ import * as fs from "fs";
 import dynamic from "next/dynamic";
 const Plotly = dynamic(() => import("react-plotly.js"), { ssr: false, })
 import {PlotParams} from 'react-plotly.js';
-import {Font, Padding} from "plotly.js";
+import {Font, Legend, Padding} from "plotly.js";
 import A from "next-utils/a";
-import {Nav} from "next-utils/nav";
+import {Menu, Nav} from "next-utils/nav";
 
 type TitleObj = {
     text: string;
@@ -38,6 +38,8 @@ type PlotSpec = {
     id: string
     name: string
     title?: string  // taken from plot, by default
+    style?: React.CSSProperties
+    legend?: "inherit" | Legend
     subtitle?: NodeFn
     children?: NodeFn
 }
@@ -45,6 +47,26 @@ type Plot = PlotSpec & {
     plot: PlotParams
     title: string
 }
+
+const EMPTY: PlotSpec[] = []
+const SC_MY_IPD_SPECS: PlotSpec[] =
+    EMPTY.concat(...['m', 'y'].map(my =>
+        EMPTY.concat(...['s', 'c'].map(sc =>
+            EMPTY.concat(...['i', 'p', 'd'].map(t => {
+                const id = `${t}${sc}${my}`
+                const name = `njdot/${id}`
+                const region = { 's': 'State', 'c': 'County' }[sc]
+                const freq = { 'y': 'Year', 'm': 'Month' }[my]
+                const type = { 'i': 'Injuries', 'p': 'Property Damage Crashes', 'd': 'Deaths' }[t]
+                let title = region == 'State' ? `${type} per ${freq} (Statewide)` : `${type} per {${region}, ${freq}}`
+                if (id == 'dcm') {
+                    title += ` (12mo avgs)`
+                }
+                return { id, name, title, style: region == 'County' && { height: 580 }/*, legend: "inherit"*/, } as PlotSpec
+            }))
+        ))
+    ))
+
 const plotSpecs: PlotSpec[] = [
     {
         id: "per-year", name: "fatalities_per_year_by_type", title: "NJ Traffic Fatalities per Year",
@@ -53,12 +75,12 @@ const plotSpecs: PlotSpec[] = [
             const total2022 = projectedTotals["2022"]["Projected Total"]
             if (total2022 > total2021) {
                 return <>
-                    <p>2021 was the deadliest year on record, with {total2021} fatalities.</p>
+                    <p>2021 was the deadliest year on record, with {total2021} deaths.</p>
                     <p>As of {extractDataDate({title})}, 2022 is on pace to exceed it, with {total2022}.</p>
                 </>
             } else {
                 return <>
-                    <p>2021 was the deadliest year on record, with {total2021} fatalities.</p>
+                    <p>2021 was the deadliest year on record, with {total2021} deaths.</p>
                     <p>As of {extractDataDate({title})}, 2022 is on pace for {total2022}.</p>
                 </>
             }
@@ -68,7 +90,8 @@ const plotSpecs: PlotSpec[] = [
     { id: "per-month", name: "fatalities_per_month", },
     { id: "per-month-type", name: "fatalities_per_month_by_type", },
     // { id: "", name: "fatalities_by_month_lines", },
-    { id: "by-month-bars", name: "fatalities_by_month_bars", title: "NJ Traffic Fatalities, grouped by month", },
+    { id: "by-month-bars", name: "fatalities_by_month_bars", title: "NJ Traffic Deaths, grouped by month", },
+    ...SC_MY_IPD_SPECS
 ]
 
 type PlotsDict = { [k: string]: { title: string, plot: PlotParams } }
@@ -84,9 +107,19 @@ const { fromEntries } = Object
 export const getStaticProps: GetStaticProps = async (context) => {
     const plotsDirectory = path.join(process.cwd(), 'public', 'plots')
     const plotsDict = fromEntries(
-        plotSpecs.map(({name, title, }) => {
+        plotSpecs.map(({name, title, style, legend }) => {
             const plotPath = path.join(plotsDirectory, `${name}.json`)
             const plot = JSON.parse(fs.readFileSync(plotPath, 'utf8')) as PlotParams
+            if (style) {
+                plot.style = style
+            }
+            if (legend == "inherit") {
+                // pass
+            } else if (legend) {
+                plot.layout.legend = legend
+            } else {
+                plot.layout.legend = { orientation: "h", x: 0.5, xanchor: "center", yanchor: "top", itemwidth: 0, }
+            }
             const plotTitle = title || (typeof plot.layout.title == 'string' ? plot.layout.title : plot.layout.title?.text)
             if (!plotTitle) {
                 throw new Error(`No title found for plot ${name}`)
@@ -103,9 +136,10 @@ function Plot({ id, title, subtitle, plot, children, projectedTotals }: Plot & H
     const {
         data,
         layout: {
-            title: plotTitle, margin, legend, xaxis, yaxis,
+            title: plotTitle, margin, xaxis, yaxis,
             ...rest
-        }
+        },
+        style
     } = plot
     if (xaxis) { /*xaxis.fixedrange = true ;*/ delete xaxis?.title }
     if (yaxis) { /*yaxis.fixedrange = true ;*/ delete yaxis?.title }
@@ -120,13 +154,14 @@ function Plot({ id, title, subtitle, plot, children, projectedTotals }: Plot & H
                 className={styles.plot}
                 data={data}
                 layout={{
-                    margin: { t: 0, b: 10, l: 0, r: 25, },
-                    legend: { orientation: "h", x: 0.5, xanchor: "center", yanchor: "top", itemwidth: 0, },
+                    margin: { t: 0, b: 30, l: 0, r: 25, },
                     ...(xaxis ? { xaxis } : {}),
                     yaxis,
+                    dragmode: false,
                     ...rest
                 }}
-                config={{ displayModeBar: false, }}
+                config={{ displayModeBar: false, scrollZoom: false, }}
+                style={style}
             />
             {renderedChildren}
         </div>
@@ -141,6 +176,14 @@ const Home = ({ plotsDict, projectedTotals }: Props) => {
             return ({ name: name, title, plot, ...rest } as Plot)
         }
     )
+    const sections = plots.map(({ id, title }) => ({ id, name: title, }))
+    const menus = [
+        { id: "NJSP", name: "NJSP", sections: sections.slice(0, 4) },
+        { id: "state-months", name: "State x Months", sections: sections.slice(4, 7) },
+        { id: "county-months", name: "Counties x Months", sections: sections.slice(7, 10) },
+        { id: "state-years", name: "State x Years", sections: sections.slice(10, 13) },
+        { id: "county-years", name: "Counties x Years", sections: sections.slice(13, 16) },
+    ]
 
     const title = "NJ Fatal Traffic Crash Data"
     const url = "https://neighbor-ryan.org/nj-fatal-crashes"
@@ -156,14 +199,16 @@ const Home = ({ plotsDict, projectedTotals }: Props) => {
             <Nav
                 id={"nav"}
                 classes={"collapsed"}
-                menus={plots.map(({ id, title }) => ({ id, name: title, }))}
-            />
+                menus={menus}
+                hover={false}
+            >
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+            </Nav>
 
             <main className={styles.main}>
                 <h1>{title}</h1>
                 <p>Data: <A href={"https://nj.gov/njsp/info/fatalacc/"}>NJSP</A>, code: <A href={"https://github.com/neighbor-ryan/nj-fatal-crashes"}>GitHub</A></p>
                 {
-                    /*Object.entries(plots)*/
                     plots.map(
                         ({ id, ...rest }) => (
                             <div key={id} className={styles["plot-container"]}>
