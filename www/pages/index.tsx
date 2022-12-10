@@ -1,15 +1,21 @@
+import React, {ReactNode, useState} from 'react'
 import type {GetStaticProps} from 'next'
 import {Head} from 'next-utils/head'
 import styles from '../styles/Home.module.css'
-import React, {ReactNode} from 'react';
 import path from "path";
 import * as fs from "fs";
 import dynamic from "next/dynamic";
-const Plotly = dynamic(() => import("react-plotly.js"), { ssr: false, })
 import {PlotParams} from 'react-plotly.js';
 import {Font, Legend, Padding} from "plotly.js";
 import A from "next-utils/a";
-import {Menu, Nav} from "next-utils/nav";
+import {Nav} from "next-utils/nav";
+import getConfig from "next/config";
+import Image from "next/image"
+import index from "./index.module.css"
+
+const Plotly = dynamic(() => import("react-plotly.js"), { ssr: false })
+
+const GitHub = 'https://github.com/neighbor-ryan/nj-fatal-crashes'
 
 type TitleObj = {
     text: string;
@@ -30,7 +36,7 @@ function extractDataDate({title}: { title: string }) {
     if (!match) {
         throw new Error(`No data date found: ${title}`)
     }
-    return match[1]
+    return new Date(match[1]).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
 }
 
 type NodeFn = ReactNode | (({ title }: { title?: string } & HasTotals) => ReactNode)
@@ -40,6 +46,7 @@ type PlotSpec = {
     title?: string  // taken from plot, by default
     style?: React.CSSProperties
     legend?: "inherit" | Legend
+    src?: string
     subtitle?: NodeFn
     children?: NodeFn
 }
@@ -62,35 +69,32 @@ const SC_MY_IPD_SPECS: PlotSpec[] =
                 if (id == 'dcm') {
                     title += ` (12mo avgs)`
                 }
-                return { id, name, title, style: region == 'County' && { height: 580 }/*, legend: "inherit"*/, } as PlotSpec
+                return {
+                    id, name, title,
+                    src: `plots/njdot/${id}.png`,
+                    style: region == 'County' && { height: 580 },
+                    /*, legend: "inherit",*/
+                } as PlotSpec
             }))
         ))
     ))
 
 const plotSpecs: PlotSpec[] = [
     {
-        id: "per-year", name: "fatalities_per_year_by_type", title: "NJ Traffic Fatalities per Year",
-        subtitle: ({ title, projectedTotals }: { title: string } & HasTotals) => {
+        id: "per-year", name: "fatalities_per_year_by_type", title: "NJ Traffic Deaths per Year", src: "fatalities_per_year_by_type.png",
+        children: ({ title, projectedTotals }: { title: string } & HasTotals) => {
             const total2021 = projectedTotals["2021"]["Projected Total"]
             const total2022 = projectedTotals["2022"]["Projected Total"]
-            if (total2022 > total2021) {
-                return <>
-                    <p>2021 was the deadliest year on record, with {total2021} deaths.</p>
-                    <p>As of {extractDataDate({title})}, 2022 is on pace to exceed it, with {total2022}.</p>
-                </>
-            } else {
-                return <>
-                    <p>2021 was the deadliest year on record, with {total2021} deaths.</p>
-                    <p>As of {extractDataDate({title})}, 2022 is on pace for {total2022}.</p>
-                </>
-            }
+            return <>
+                <p>2021 was the worst year in the NJSP dataset (since 2008), with {total2021} deaths.</p>
+                <p><A href={`${GitHub}/commits/main`}>As of {extractDataDate({title})}</A>, 2022 is on pace {total2022 > total2021 ? `to exceed it, with` : `for`} {total2022}.</p>
+                <p>Victim types have been published since 2020.</p>
+            </>
         },
-        children: <p>Victim types have been published since 2020.</p>,
     },
-    { id: "per-month", name: "fatalities_per_month", },
-    { id: "per-month-type", name: "fatalities_per_month_by_type", },
-    // { id: "", name: "fatalities_by_month_lines", },
-    { id: "by-month-bars", name: "fatalities_by_month_bars", title: "NJ Traffic Deaths, grouped by month", },
+    { id: "per-month", name: "fatalities_per_month", title: "NJ Traffic Deaths per Month", src: "fatalities_per_month.png", },
+    { id: "per-month-type", name: "fatalities_per_month_by_type", title: "NJ Traffic Deaths per Month (by Victim Type)", src: "fatalities_per_month_by_type.png", },
+    { id: "by-month-bars", name: "fatalities_by_month_bars", src: "fatalities_by_month_bars.png", title: "NJ Traffic Deaths, grouped by month", },
     ...SC_MY_IPD_SPECS
 ]
 
@@ -132,7 +136,8 @@ export const getStaticProps: GetStaticProps = async (context) => {
     return { props: { plotsDict, projectedTotals }, }
 }
 
-function Plot({ id, title, subtitle, plot, children, projectedTotals }: Plot & HasTotals) {
+function Plot({ id, title, subtitle, plot, basePath, src, children, projectedTotals }: Plot & HasTotals & { basePath: string }) {
+    const [ initialized, setInitialized ] = useState(false)
     const {
         data,
         layout: {
@@ -146,23 +151,40 @@ function Plot({ id, title, subtitle, plot, children, projectedTotals }: Plot & H
     const plotTitleText = typeof plotTitle == 'string' ? plotTitle : plotTitle?.text
     const renderedSubtitle = subtitle instanceof Function ? subtitle({ title: plotTitleText, projectedTotals }) : subtitle
     const renderedChildren = children instanceof Function ? children({ title: plotTitleText, projectedTotals }) : children
+    const height = style?.height || 450
     return (
         <div id={id} key={id} className={styles["plot-body"]}>
             <h2><a href={`#${id}`}>{title}</a></h2>
             {renderedSubtitle}
-            <Plotly
-                className={styles.plot}
-                data={data}
-                layout={{
-                    margin: { t: 0, b: 30, l: 0, r: 25, },
-                    ...(xaxis ? { xaxis } : {}),
-                    yaxis,
-                    dragmode: false,
-                    ...rest
-                }}
-                config={{ displayModeBar: false, scrollZoom: false, }}
-                style={style}
-            />
+                <Plotly
+                    onInitialized={() => { console.log(`plot ${id} initialized`); setInitialized(true) }}
+                    className={styles.plot}
+                    data={data}
+                    layout={{
+                        margin: { t: 0, b: 30, l: 0, r: 25, },
+                        ...(xaxis ? { xaxis } : {}),
+                        yaxis,
+                        autosize: true,
+                        dragmode: false,
+                        ...rest
+                    }}
+                    config={{ displayModeBar: false, scrollZoom: false, }}
+                    style={{ ...style, display: initialized ? "" : "none", width: "100%" }}
+                    // onClick={() => setInitialized(false)}
+                />
+            {
+                src &&
+                <div className={`${index.fallback} ${initialized ? index.hidden : ""}`} style={{ height: `${height}px`, maxHeight: `${height}px` }}>
+                    <Image
+                        src={`${basePath}/${src}`}
+                        width={800} height={height}
+                        // layout="responsive"
+                        loading="lazy"
+                        // onClick={() => setInitialized(true)}
+                    />
+                    <div className={index.spinner}></div>
+                </div>
+            }
             {renderedChildren}
         </div>
     )
@@ -170,6 +192,9 @@ function Plot({ id, title, subtitle, plot, children, projectedTotals }: Plot & H
 
 const Home = ({ plotsDict, projectedTotals }: Props) => {
     // console.log("Home plots:", plotsDict)
+    const { publicRuntimeConfig: config } = getConfig()
+    const { basePath = "" } = config
+
     const plots: Plot[] = plotSpecs.map(
         ({ name, ...rest }) => {
             const { title, plot } = plotsDict[name]
@@ -185,7 +210,7 @@ const Home = ({ plotsDict, projectedTotals }: Props) => {
         { id: "county-years", name: "Counties x Years", sections: sections.slice(13, 16) },
     ]
 
-    const title = "NJ Fatal Traffic Crash Data"
+    const title = "NJ Traffic Crash Data"
     const url = "https://neighbor-ryan.org/nj-fatal-crashes"
     return (
         <div className={styles.container}>
@@ -206,18 +231,34 @@ const Home = ({ plotsDict, projectedTotals }: Props) => {
             </Nav>
 
             <main className={styles.main}>
-                <h1>{title}</h1>
-                <p>Data: <A href={"https://nj.gov/njsp/info/fatalacc/"}>NJSP</A>, code: <A href={"https://github.com/neighbor-ryan/nj-fatal-crashes"}>GitHub</A></p>
+                <h1 className={index.title}>{title}</h1>
+                {/*<h1>NJSP Fatal Crash Data</h1>*/}
+                <p>
+                    <A title={"NJ State Police fatal crash data"} href={"https://nj.gov/njsp/info/fatalacc/"}>NJ State Police publish fatal crash data</A> going back to 2008. It's usually current to the previous day, though things also show up weeks or months after the fact. The first 4 plots below are from that data.
+                </p>
+                <p>
+                    <a href={"#njdot"}>Below that</a> is some analysis of <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}>NJ DOT raw crash data</A>, which includes injury and property-damage crashes going back to 2001 (≈6MM records). It's released in annual tranches, roughly each Spring for the year ending 15mos prior (i.e. 2021 data should arrive in early 2023).
+                </p>
                 {
                     plots.map(
-                        ({ id, ...rest }) => (
+                        ({ id, ...rest }, idx) => (<>
+                            {
+                                idx == 4 && <h1 id={"njdot"}>NJ DOT Raw Crash Data</h1>
+                            }
                             <div key={id} className={styles["plot-container"]}>
-                                <Plot id={id} {...rest} projectedTotals={projectedTotals} />
+                                <Plot id={id} basePath={basePath} {...rest} projectedTotals={projectedTotals} />
                                 <hr/>
                             </div>
-                        )
+                        </>)
                     )
                 }
+                <p>
+                    <A title={"Source code and documentation on GitHub"} href={GitHub}><img className={index.logo} src={`${basePath}/gh.png`} /></A>
+                    {" "}
+                    <A title={"NJ State Police fatal crash data"} href={"https://nj.gov/njsp/info/fatalacc/"}><img className={index.logo} src={`${basePath}/njsp.png`}/></A>
+                    {" "}
+                    <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}><img className={index.logo} src={`${basePath}/njdot-s.png`}/></A>
+                </p>
             </main>
         </div>
     )
