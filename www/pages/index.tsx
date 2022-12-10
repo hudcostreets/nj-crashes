@@ -233,10 +233,10 @@ const Home = ({ plotsDict, projectedTotals }: Props) => {
             <main className={styles.main}>
                 <h1 className={index.title}>{title}</h1>
                 <p>
-                    <A title={"NJ State Police fatal crash data"} href={"https://nj.gov/njsp/info/fatalacc/"}>NJ State Police publish fatal crash data</A> going back to 2008. It's usually current to the previous day, though things also show up weeks or months after the fact. The first 4 plots below are from that data.
+                    <A title={"NJ State Police fatal crash data"} href={"https://nj.gov/njsp/info/fatalacc/"}>NJ State Police publish fatal crash data</A> going back to 2008. {"It's usually current to the previous day, though things also show up weeks or months after the fact. The first 4 plots below are from that data."}
                 </p>
                 <p>
-                    <a href={"#njdot"}>Below that</a> is some analysis of <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}>NJ DOT raw crash data</A>, which includes injury and property-damage crashes going back to 2001 (≈6MM records). It's released in annual tranches, roughly each Spring for the year ending 15mos prior (i.e. 2021 data should arrive in early 2023).
+                    <a href={"#njdot"}>Below that</a> is some analysis of <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}>NJ DOT raw crash data</A>, which includes injury and property-damage crashes going back to 2001 (≈6MM records). {"It's released in annual tranches, roughly each Spring for the year ending 15mos prior (i.e. 2021 data should arrive in early 2023)."}
                 </p>
                 {
                     plots.map(
