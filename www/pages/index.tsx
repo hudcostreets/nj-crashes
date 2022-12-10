@@ -161,7 +161,7 @@ function Plot({ id, title, subtitle, plot, basePath, src, children, projectedTot
                     className={styles.plot}
                     data={data}
                     layout={{
-                        margin: { t: 0, b: 30, l: 0, r: 25, },
+                        margin: { t: 0, r: 25, b: 30, l: 0, },
                         ...(xaxis ? { xaxis } : {}),
                         yaxis,
                         autosize: true,
