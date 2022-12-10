@@ -21,6 +21,8 @@ type NodeFn = ReactNode | (({ title, rundate }: { title?: string, rundate: strin
 type PlotSpec = {
     id: string
     name: string
+    menuName?: string
+    dropdownSection?: string,
     title?: string  // taken from plot, by default
     style?: React.CSSProperties
     legend?: "inherit" | Legend
@@ -42,13 +44,15 @@ const SC_MY_IPD_SPECS: PlotSpec[] =
                 const name = `njdot/${id}`
                 const region = { 's': 'State', 'c': 'County' }[sc]
                 const freq = { 'y': 'Year', 'm': 'Month' }[my]
+                const section = `${{ 's': 'State', 'c': 'Counties' }[sc]} x ${freq}s`
                 const type = { 'i': 'Injuries', 'p': 'Property Damage Crashes', 'd': 'Deaths' }[t]
+                const menuName = { 'i': 'Injuries', 'p': 'Property Damage', 'd': 'Deaths' }[t]
                 let title = region == 'State' ? `${type} per ${freq} (Statewide)` : `${type} per {${region}, ${freq}}`
                 if (id == 'dcm') {
                     title += ` (12mo avgs)`
                 }
                 return {
-                    id, name, title,
+                    id, name, title, menuName, dropdownSection: section,
                     style: region == 'County' && { height: 580 },
                     /*, legend: "inherit",*/
                 } as PlotSpec
@@ -58,7 +62,7 @@ const SC_MY_IPD_SPECS: PlotSpec[] =
 
 const plotSpecs: PlotSpec[] = [
     {
-        id: "per-year", name: "fatalities_per_year_by_type", title: "NJ Traffic Deaths per Year",
+        id: "per-year", name: "fatalities_per_year_by_type", title: "NJ Traffic Deaths per Year", menuName: "Traffic Deaths / Year", dropdownSection: "NJSP",
         children: ({ rundate, projectedTotals }: { rundate: string, } & HasTotals) => {
             const total2021 = projectedTotals["2021"]["Projected Total"]
             const total2022 = projectedTotals["2022"]["Projected Total"]
@@ -70,10 +74,17 @@ const plotSpecs: PlotSpec[] = [
             </>
         },
     },
-    { id: "per-month", name: "fatalities_per_month", title: "NJ Traffic Deaths per Month", },
-    { id: "per-month-type", name: "fatalities_per_month_by_type", title: "NJ Traffic Deaths per Month (by Victim Type)", },
-    { id: "by-month-bars", name: "fatalities_by_month_bars", title: "NJ Traffic Deaths, grouped by month", },
-    ...SC_MY_IPD_SPECS
+    {
+        id: "vs-homicides", name: "crash_homicide_cmp", title: "NJ Traffic Deaths vs. Homicides", menuName: "Traffic Deaths vs. Homicides", dropdownSection: "NJSP",
+        children: <>
+            <p>Traffic crashes kill 1.5-2x as many people as homicides in NJ.</p>
+            <p>Homicide data comes from <A href={"https://nj.gov/njsp/ucr/uniform-crime-reports.shtml"}>NJ State Police</A> and <A href={"https://www.disastercenter.com/crime/njcrimn.htm"}>Disaster Center</A>.</p>
+        </>
+    },
+    { id: "per-month", name: "fatalities_per_month", title: "NJ Traffic Deaths per Month", menuName: "Traffic Deaths / Month", dropdownSection: "NJSP", },
+    { id: "per-month-type", name: "fatalities_per_month_by_type", title: "NJ Traffic Deaths per Month (by Victim Type)", menuName: "By Victim Type", dropdownSection: "NJSP", },
+    { id: "by-month-bars", name: "fatalities_by_month_bars", title: "NJ Traffic Deaths, grouped by month", menuName: "Grouped by Month", dropdownSection: "NJSP", },
+    ...SC_MY_IPD_SPECS,
 ]
 
 type PlotsDict = { [k: string]: { title: string, plot: PlotParams } }
@@ -128,8 +139,8 @@ function Plot({ id, title, subtitle, plot, basePath, rundate, src, children, pro
         },
         style
     } = plot
-    if (xaxis) { /*xaxis.fixedrange = true ;*/ delete xaxis?.title }
-    if (yaxis) { /*yaxis.fixedrange = true ;*/ delete yaxis?.title }
+    // if (xaxis) { /*xaxis.fixedrange = true ;*/ delete xaxis?.title }
+    // if (yaxis) { /*yaxis.fixedrange = true ;*/ delete yaxis?.title }
     const plotTitleText = typeof plotTitle == 'string' ? plotTitle : plotTitle?.text
     const renderedSubtitle = subtitle instanceof Function ? subtitle({ title: plotTitleText, projectedTotals, rundate }) : subtitle
     const renderedChildren = children instanceof Function ? children({ title: plotTitleText, projectedTotals, rundate }) : children
@@ -183,14 +194,17 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
             return ({ name: name, src: src || `plots/${name}.png`, title, plot, ...rest } as Plot)
         }
     )
-    const sections = plots.map(({ id, title }) => ({ id, name: title, }))
+    const sections = plots.map(({ id, title, menuName, dropdownSection, }) => ({ id, name: menuName || title, dropdownSection: dropdownSection }))
     const menus = [
-        { id: "NJSP", name: "NJSP", sections: sections.slice(0, 4) },
-        { id: "state-months", name: "State x Months", sections: sections.slice(4, 7) },
-        { id: "county-months", name: "Counties x Months", sections: sections.slice(7, 10) },
-        { id: "state-years", name: "State x Years", sections: sections.slice(10, 13) },
-        { id: "county-years", name: "Counties x Years", sections: sections.slice(13, 16) },
-    ]
+        { id: "NJSP", name: "NJSP", },
+        { id: "state-months", name: "State x Months", },
+        { id: "county-months", name: "Counties x Months", },
+        { id: "state-years", name: "State x Years", },
+        { id: "county-years", name: "Counties x Years", },
+    ].map(s => ({
+        ...s,
+        sections: sections.filter(({ name, dropdownSection }) => s.name == dropdownSection)
+    }))
 
     const title = "NJ Traffic Crash Data"
     const url = "https://neighbor-ryan.org/nj-crashes"
@@ -227,7 +241,13 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
                     plots.map(
                         ({ id, ...rest }, idx) => (<Fragment key={id}>
                             {
-                                idx == 4 && <h1 id={"njdot"}>NJ DOT Raw Crash Data</h1>
+                                idx == menus[0].sections.length && <>
+                                    <h1 id={"njdot"}>NJ DOT Raw Crash Data</h1>
+                                    <p>
+                                        NJ DOT <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}>publishes raw crash data</A>, including injury and property-damage crashes, going back to 2001 (≈6MM records).
+                                    </p>
+                                    <p>{"It generally shows a downward trend over the last few decades, which is good, though it ends at 2020, just before we regressed by 10-15yrs (based on the NJSP data above). 2021 data should land in early 2023."}</p>
+                                </>
                             }
                             <div key={id} className={styles["plot-container"]}>
                                 <Plot id={id} basePath={basePath} rundate={rundate} {...rest} projectedTotals={projectedTotals} />
@@ -236,6 +256,7 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
                         </Fragment>)
                     )
                 }
+                <p>Check out the code and data (or <A href={`${GitHub}/issues/new`}>leave some feedback</A>) <A href={GitHub}>on GitHub</A>.</p>
                 <p>
                     <A title={"Source code and documentation on GitHub"} href={GitHub}><img alt={"GitHub Logo"} className={index.logo} src={`${basePath}/gh.png`} /></A>
                     {" "}

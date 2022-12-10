@@ -30,9 +30,9 @@ def save(
         xanchor='center',
         yanchor='top',
     )
-    layout['xaxis_title'] = xtitle or ''
-    layout['yaxis_title'] = ytitle or ''
-    layout['legend_title'] = ltitle or ''
+    layout['xaxis_title'] = layout.get('xaxis_title', xtitle or '')
+    layout['yaxis_title'] = layout.get('yaxis_title', ytitle or '')
+    layout['legend_title'] = layout.get('legend_title', ltitle or '')
     if bg:
         layout['plot_bgcolor'] = 'white'
         layout['paper_bgcolor'] = 'white'
@@ -64,7 +64,6 @@ def save(
             legend=bottom_legend_kwargs,
         )
     saved.update_layout(margin=margin or MARGIN)
-    saved.update_yaxes(title='')
     saved.write_json(f'{dir}/{name}.json', pretty=pretty)
     saved.write_image(f'{dir}/{name}.png', width=w, height=h)
 
