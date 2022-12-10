@@ -1,7 +1,7 @@
 # NJ Traffic Violence Data
 Analysis of NJ State Police traffic violence data (2008-present)
 
-- Web view: [neighbor-ryan.org/nj-fatal-crashes](https://neighbor-ryan.org/nj-fatal-crashes/)
+- Web view: [neighbor-ryan.org/nj-crashes](https://neighbor-ryan.org/nj-crashes/)
 - NJSP data: [nj.gov/njsp/info/fatalacc](https://nj.gov/njsp/info/fatalacc/index.shtml)
 
 ### NJ traffic deaths w/ 12mo rolling avg

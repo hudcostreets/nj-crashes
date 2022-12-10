@@ -6,7 +6,7 @@ const withVanillaExtract = createVanillaExtractPlugin();
 const createTranspileModulesPlugin = require("next-transpile-modules");
 const withTranspileModules = createTranspileModulesPlugin(["next-utils"]);
 
-const basePath = "/nj-fatal-crashes"
+const basePath = "/nj-crashes"
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

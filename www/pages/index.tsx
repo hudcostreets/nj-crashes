@@ -15,7 +15,7 @@ import index from "./index.module.css"
 
 const Plotly = dynamic(() => import("react-plotly.js"), { ssr: false })
 
-const GitHub = 'https://github.com/neighbor-ryan/nj-fatal-crashes'
+const GitHub = 'https://github.com/neighbor-ryan/nj-crashes'
 
 type TitleObj = {
     text: string;
@@ -211,7 +211,7 @@ const Home = ({ plotsDict, projectedTotals }: Props) => {
     ]
 
     const title = "NJ Traffic Crash Data"
-    const url = "https://neighbor-ryan.org/nj-fatal-crashes"
+    const url = "https://neighbor-ryan.org/nj-crashes"
     return (
         <div className={styles.container}>
             <Head
