@@ -1,4 +1,4 @@
-import React, {ReactNode, useState} from 'react'
+import React, {ReactNode, useState, Fragment} from 'react'
 import type {GetStaticProps} from 'next'
 import {Head} from 'next-utils/head'
 import styles from '../styles/Home.module.css'
@@ -232,7 +232,6 @@ const Home = ({ plotsDict, projectedTotals }: Props) => {
 
             <main className={styles.main}>
                 <h1 className={index.title}>{title}</h1>
-                {/*<h1>NJSP Fatal Crash Data</h1>*/}
                 <p>
                     <A title={"NJ State Police fatal crash data"} href={"https://nj.gov/njsp/info/fatalacc/"}>NJ State Police publish fatal crash data</A> going back to 2008. It's usually current to the previous day, though things also show up weeks or months after the fact. The first 4 plots below are from that data.
                 </p>
@@ -241,7 +240,7 @@ const Home = ({ plotsDict, projectedTotals }: Props) => {
                 </p>
                 {
                     plots.map(
-                        ({ id, ...rest }, idx) => (<>
+                        ({ id, ...rest }, idx) => (<Fragment key={id}>
                             {
                                 idx == 4 && <h1 id={"njdot"}>NJ DOT Raw Crash Data</h1>
                             }
@@ -249,15 +248,15 @@ const Home = ({ plotsDict, projectedTotals }: Props) => {
                                 <Plot id={id} basePath={basePath} {...rest} projectedTotals={projectedTotals} />
                                 <hr/>
                             </div>
-                        </>)
+                        </Fragment>)
                     )
                 }
                 <p>
-                    <A title={"Source code and documentation on GitHub"} href={GitHub}><img className={index.logo} src={`${basePath}/gh.png`} /></A>
+                    <A title={"Source code and documentation on GitHub"} href={GitHub}><img alt={"GitHub Logo"} className={index.logo} src={`${basePath}/gh.png`} /></A>
                     {" "}
-                    <A title={"NJ State Police fatal crash data"} href={"https://nj.gov/njsp/info/fatalacc/"}><img className={index.logo} src={`${basePath}/njsp.png`}/></A>
+                    <A title={"NJ State Police fatal crash data"} href={"https://nj.gov/njsp/info/fatalacc/"}><img alt={"NJSP Logo"} className={index.logo} src={`${basePath}/njsp.png`}/></A>
                     {" "}
-                    <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}><img className={index.logo} src={`${basePath}/njdot-s.png`}/></A>
+                    <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}><img alt={"NJ DOT Logo"} className={index.logo} src={`${basePath}/njdot-s.png`}/></A>
                 </p>
             </main>
         </div>
