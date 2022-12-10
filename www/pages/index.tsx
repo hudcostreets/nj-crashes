@@ -212,7 +212,7 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
         <div className={styles.container}>
             <Head
                 title={title}
-                description={"Analysis & Visualization of data published by NJ State Police"}
+                description={"Analysis & Visualization of traffic crash data published by NJ State Police and NJ DOT"}
                 url={url}
                 thumbnail={`${url}/fatalities_per_year_by_type.png`}
             />
@@ -234,15 +234,14 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
                 <p>
                     <a href={"#njdot"}>Below that</a> is some analysis of <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}>NJ DOT raw crash data</A>, which includes injury and property-damage crashes going back to 2001 (≈6MM records). {"It's released in annual tranches, ≈15mos after each year end (i.e. 2021 data should arrive in early 2023)."}
                 </p>
-                <p>
-                    Code and cleaned data are on GitHub <A href={GitHub}>here</A>.
-                </p>
+                <p>{`Tap plots to see specific values, single- or double-tap legend entries to toggle or "solo" them.`}</p>
+                <p>Code and cleaned data are on GitHub <A href={GitHub}>here</A>.</p>
                 {
                     plots.map(
                         ({ id, ...rest }, idx) => (<Fragment key={id}>
                             {
                                 idx == menus[0].sections.length && <>
-                                    <h1 id={"njdot"}>NJ DOT Raw Crash Data</h1>
+                                    <h1 id={"njdot"}><a href={`#njdot`}>NJ DOT Raw Crash Data</a></h1>
                                     <p>
                                         NJ DOT <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}>publishes raw crash data</A>, including injury and property-damage crashes, going back to 2001 (≈6MM records).
                                     </p>
