@@ -141,12 +141,12 @@
     },
     "2022": {
         "Drivers": 349,
-        "Pedestrians": 170,
+        "Pedestrians": 172,
         "Passengers": 91,
         "Cyclists": 16,
         "Unknown": 27,
-        "Total": 653,
-        "Projected": 45,
+        "Total": 655,
+        "Projected": 43,
         "Projected Total": 698
     }
 }
