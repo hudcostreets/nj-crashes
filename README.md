@@ -6,18 +6,13 @@ Analysis of NJ State Police traffic violence data (2008-present)
 
 ### NJ traffic deaths w/ 12mo rolling avg
 
-![](www/public/fatalities_per_month.png)
+[![](www/public/plots/fatalities_per_month.png)](https://neighbor-ryan.org/nj-crashes/#per-month)
 
 ### 2021 was the worst year on record, and 2022 is on pace to exceed it
 
-![](www/public/fatalities_per_year_by_type.png)
+[![](www/public/plots/fatalities_per_year_by_type.png)](https://neighbor-ryan.org/nj-crashes/#per-year)
 
 (Victim type data is only available starting since 2020, so most history is unknown)
-
-#### Projection details:
-- As of 2022-11-16, there have been 618 traffic fatalities in 2022.
-- Extrapolating linearly over the remainder of the year yields 708 expected fatalities for 2022
-- This exceeds the record of 697, set in 2021. 
 
 ### In NJ, traffic deaths are 1.5x-2x homicides
 
@@ -27,11 +22,11 @@ Analysis of NJ State Police traffic violence data (2008-present)
 
 ### The 9 deadliest months on record were in 2021 and 2022:
 
-![](www/public/fatalities_by_month_lines.png)
+[![](www/public/plots/fatalities_by_month_bars.png)](https://neighbor-ryan.org/nj-crashes/#by-month-bars)
 
 ### Victim types: drivers > pedestrians > passengers > cyclists
 
-![](www/public/fatalities_per_month_by_type.png)
+[![](www/public/plots/fatalities_per_month_by_type.png)](https://neighbor-ryan.org/nj-crashes/#per-month-type)
 
 This data is available starting from 2020.
 
@@ -41,9 +36,9 @@ This data is available starting from 2020.
 
 ### Data sources:
 - New Jersey State Police
-  - Traffic fatalities: https://nj.gov/njsp/info/fatalacc/index.shtml
-  - Uniform Crime Reports: https://nj.gov/njsp/ucr/uniform-crime-reports.shtml
-- Disaster Center: https://www.disastercenter.com/crime/njcrimn.htm
+  - Traffic fatalities: [nj.gov/njsp/info/fatalacc/index.shtml](https://nj.gov/njsp/info/fatalacc/index.shtml)
+  - Uniform Crime Reports: [nj.gov/njsp/ucr/uniform-crime-reports.shtml](https://nj.gov/njsp/ucr/uniform-crime-reports.shtml)
+- Disaster Center: [www.disastercenter.com/crime/njcrimn.htm](https://www.disastercenter.com/crime/njcrimn.htm)
 
 ### Analysis
 - [parse-njsp-xmls.ipynb](./parse-njsp-xmls.ipynb)

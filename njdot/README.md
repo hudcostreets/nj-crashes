@@ -113,8 +113,7 @@ There is a marked decrease in "injury" and "property damage" crashes since the o
 ```
 
 ### Notebooks <a id="notebooks"></a>
-- [analyze-crashes.ipynb](analyze-crashes.ipynb): load all crashes, generate plots above
-- 
+- [njdot-plots.ipynb](../njdot-plots.ipynb): load all crashes, generate plots above
 
 ### Caveats / TODOs <a id="todos"></a>
 

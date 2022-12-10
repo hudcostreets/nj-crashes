@@ -1,4 +1,4 @@
-import React, {ReactNode, useState, Fragment} from 'react'
+import React, {Fragment, ReactNode, useState} from 'react'
 import type {GetStaticProps} from 'next'
 import {Head} from 'next-utils/head'
 import styles from '../styles/Home.module.css'
@@ -6,7 +6,7 @@ import path from "path";
 import * as fs from "fs";
 import dynamic from "next/dynamic";
 import {PlotParams} from 'react-plotly.js';
-import {Font, Legend, Padding} from "plotly.js";
+import {Legend} from "plotly.js";
 import A from "next-utils/a";
 import {Nav} from "next-utils/nav";
 import getConfig from "next/config";
@@ -17,29 +17,7 @@ const Plotly = dynamic(() => import("react-plotly.js"), { ssr: false })
 
 const GitHub = 'https://github.com/neighbor-ryan/nj-crashes'
 
-type TitleObj = {
-    text: string;
-    font: Partial<Font>;
-    xref: 'container' | 'paper';
-    yref: 'container' | 'paper';
-    x: number;
-    y: number;
-    xanchor: 'auto' | 'left' | 'center' | 'right';
-    yanchor: 'auto' | 'top' | 'middle' | 'bottom';
-    pad: Partial<Padding>
-}
-type Title = string | Partial<TitleObj>;
-
-function extractDataDate({title}: { title: string }) {
-    const regex = /.*Data ca\. (\d{4}-\d\d-\d\d).*/
-    const match = regex.exec(title)
-    if (!match) {
-        throw new Error(`No data date found: ${title}`)
-    }
-    return new Date(match[1]).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
-}
-
-type NodeFn = ReactNode | (({ title }: { title?: string } & HasTotals) => ReactNode)
+type NodeFn = ReactNode | (({ title, rundate }: { title?: string, rundate: string } & HasTotals) => ReactNode)
 type PlotSpec = {
     id: string
     name: string
@@ -71,7 +49,6 @@ const SC_MY_IPD_SPECS: PlotSpec[] =
                 }
                 return {
                     id, name, title,
-                    src: `plots/njdot/${id}.png`,
                     style: region == 'County' && { height: 580 },
                     /*, legend: "inherit",*/
                 } as PlotSpec
@@ -81,20 +58,21 @@ const SC_MY_IPD_SPECS: PlotSpec[] =
 
 const plotSpecs: PlotSpec[] = [
     {
-        id: "per-year", name: "fatalities_per_year_by_type", title: "NJ Traffic Deaths per Year", src: "fatalities_per_year_by_type.png",
-        children: ({ title, projectedTotals }: { title: string } & HasTotals) => {
+        id: "per-year", name: "fatalities_per_year_by_type", title: "NJ Traffic Deaths per Year",
+        children: ({ rundate, projectedTotals }: { rundate: string, } & HasTotals) => {
             const total2021 = projectedTotals["2021"]["Projected Total"]
             const total2022 = projectedTotals["2022"]["Projected Total"]
+            const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
             return <>
                 <p>2021 was the worst year in the NJSP dataset (since 2008), with {total2021} deaths.</p>
-                <p><A href={`${GitHub}/commits/main`}>As of {extractDataDate({title})}</A>, 2022 is on pace {total2022 > total2021 ? `to exceed it, with` : `for`} {total2022}.</p>
+                <p><A href={`${GitHub}/commits/main`}>As of {shortDate}</A>, 2022 is on pace {total2022 > total2021 ? `to exceed it, with` : `for`} {total2022}.</p>
                 <p>Victim types have been published since 2020.</p>
             </>
         },
     },
-    { id: "per-month", name: "fatalities_per_month", title: "NJ Traffic Deaths per Month", src: "fatalities_per_month.png", },
-    { id: "per-month-type", name: "fatalities_per_month_by_type", title: "NJ Traffic Deaths per Month (by Victim Type)", src: "fatalities_per_month_by_type.png", },
-    { id: "by-month-bars", name: "fatalities_by_month_bars", src: "fatalities_by_month_bars.png", title: "NJ Traffic Deaths, grouped by month", },
+    { id: "per-month", name: "fatalities_per_month", title: "NJ Traffic Deaths per Month", },
+    { id: "per-month-type", name: "fatalities_per_month_by_type", title: "NJ Traffic Deaths per Month (by Victim Type)", },
+    { id: "by-month-bars", name: "fatalities_by_month_bars", title: "NJ Traffic Deaths, grouped by month", },
     ...SC_MY_IPD_SPECS
 ]
 
@@ -104,12 +82,16 @@ type YearTotals = { "Projected Total": number }
 type ProjectedTotals = { [k in Year]: YearTotals }
 type HasTotals = { projectedTotals: ProjectedTotals }
 
-type Props = { plotsDict: PlotsDict } & HasTotals
+type Props = { plotsDict: PlotsDict, rundate: string, } & HasTotals
 
 const { fromEntries } = Object
 
 export const getStaticProps: GetStaticProps = async (context) => {
-    const plotsDirectory = path.join(process.cwd(), 'public', 'plots')
+    const publicDirectory = path.join(process.cwd(), 'public')
+    const rundatePath = path.join(publicDirectory, 'rundate.json')
+    const rundate = JSON.parse(fs.readFileSync(rundatePath, 'utf8')).rundate
+    console.log(`rundate: ${rundate}`)
+    const plotsDirectory = path.join(publicDirectory, 'plots')
     const plotsDict = fromEntries(
         plotSpecs.map(({name, title, style, legend }) => {
             const plotPath = path.join(plotsDirectory, `${name}.json`)
@@ -133,10 +115,10 @@ export const getStaticProps: GetStaticProps = async (context) => {
     )
     const projectedTotalsPath = path.join(plotsDirectory, `projected_totals.json`)
     const projectedTotals = JSON.parse(fs.readFileSync(projectedTotalsPath, 'utf8')) as ProjectedTotals
-    return { props: { plotsDict, projectedTotals }, }
+    return { props: { plotsDict, projectedTotals, rundate, }, }
 }
 
-function Plot({ id, title, subtitle, plot, basePath, src, children, projectedTotals }: Plot & HasTotals & { basePath: string }) {
+function Plot({ id, title, subtitle, plot, basePath, rundate, src, children, projectedTotals }: Plot & HasTotals & { basePath: string, rundate: string, }) {
     const [ initialized, setInitialized ] = useState(false)
     const {
         data,
@@ -149,8 +131,8 @@ function Plot({ id, title, subtitle, plot, basePath, src, children, projectedTot
     if (xaxis) { /*xaxis.fixedrange = true ;*/ delete xaxis?.title }
     if (yaxis) { /*yaxis.fixedrange = true ;*/ delete yaxis?.title }
     const plotTitleText = typeof plotTitle == 'string' ? plotTitle : plotTitle?.text
-    const renderedSubtitle = subtitle instanceof Function ? subtitle({ title: plotTitleText, projectedTotals }) : subtitle
-    const renderedChildren = children instanceof Function ? children({ title: plotTitleText, projectedTotals }) : children
+    const renderedSubtitle = subtitle instanceof Function ? subtitle({ title: plotTitleText, projectedTotals, rundate }) : subtitle
+    const renderedChildren = children instanceof Function ? children({ title: plotTitleText, projectedTotals, rundate }) : children
     const height = style?.height || 450
     return (
         <div id={id} key={id} className={styles["plot-body"]}>
@@ -190,15 +172,15 @@ function Plot({ id, title, subtitle, plot, basePath, src, children, projectedTot
     )
 }
 
-const Home = ({ plotsDict, projectedTotals }: Props) => {
+const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
     // console.log("Home plots:", plotsDict)
     const { publicRuntimeConfig: config } = getConfig()
     const { basePath = "" } = config
 
     const plots: Plot[] = plotSpecs.map(
-        ({ name, ...rest }) => {
+        ({ name, src, ...rest }) => {
             const { title, plot } = plotsDict[name]
-            return ({ name: name, title, plot, ...rest } as Plot)
+            return ({ name: name, src: src || `plots/${name}.png`, title, plot, ...rest } as Plot)
         }
     )
     const sections = plots.map(({ id, title }) => ({ id, name: title, }))
@@ -233,10 +215,13 @@ const Home = ({ plotsDict, projectedTotals }: Props) => {
             <main className={styles.main}>
                 <h1 className={index.title}>{title}</h1>
                 <p>
-                    <A title={"NJ State Police fatal crash data"} href={"https://nj.gov/njsp/info/fatalacc/"}>NJ State Police publish fatal crash data</A> going back to 2008. {"It's usually current to the previous day, though things also show up weeks or months after the fact. The first 4 plots below are from that data."}
+                    The NJ State Police <A title={"NJ State Police fatal crash data"} href={"https://nj.gov/njsp/info/fatalacc/"}>publish fatal crash data</A> going back to 2008. {"It's usually current to the previous day, though things also show up weeks or months after the fact. The first 4 plots below are from that data."}
                 </p>
                 <p>
-                    <a href={"#njdot"}>Below that</a> is some analysis of <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}>NJ DOT raw crash data</A>, which includes injury and property-damage crashes going back to 2001 (≈6MM records). {"It's released in annual tranches, roughly each Spring for the year ending 15mos prior (i.e. 2021 data should arrive in early 2023)."}
+                    <a href={"#njdot"}>Below that</a> is some analysis of <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}>NJ DOT raw crash data</A>, which includes injury and property-damage crashes going back to 2001 (≈6MM records). {"It's released in annual tranches, ≈15mos after each year end (i.e. 2021 data should arrive in early 2023)."}
+                </p>
+                <p>
+                    Code and cleaned data are on GitHub <A href={GitHub}>here</A>.
                 </p>
                 {
                     plots.map(
@@ -245,7 +230,7 @@ const Home = ({ plotsDict, projectedTotals }: Props) => {
                                 idx == 4 && <h1 id={"njdot"}>NJ DOT Raw Crash Data</h1>
                             }
                             <div key={id} className={styles["plot-container"]}>
-                                <Plot id={id} basePath={basePath} {...rest} projectedTotals={projectedTotals} />
+                                <Plot id={id} basePath={basePath} rundate={rundate} {...rest} projectedTotals={projectedTotals} />
                                 <hr/>
                             </div>
                         </Fragment>)
