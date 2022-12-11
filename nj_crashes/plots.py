@@ -15,7 +15,7 @@ MARGIN = { 't': 0, 'r': 25, 'b': 30, 'l': 0, }
 
 def save(
         fig, title, name,
-        bg=None, hoverx=False, png_title=False,
+        bg=None, hoverx=False, hovertemplate=None, png_title=False,
         yrange='tozero', bottom_legend='all',
         pretty=False, margin=None,
         dir=None, w=None, h=None,
@@ -38,7 +38,9 @@ def save(
         layout['paper_bgcolor'] = 'white'
     if hoverx:
         layout['hovermode'] = 'x'
-        fig.update_traces(hovertemplate=None)
+        fig.update_traces(hovertemplate=hovertemplate)
+    elif hovertemplate:
+        fig.update_traces(hovertemplate=hovertemplate)
     if yrange:
         layout['yaxis_rangemode'] = yrange
     if bottom_legend == 'all':
