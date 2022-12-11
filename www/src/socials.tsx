@@ -1,6 +1,6 @@
 import A from "next-utils/a";
 import React from "react";
-import CssAny from "socials.module.css"
+import CssAny from "./socials.module.css"
 import {getBasePath} from "next-utils/basePath"
 
 type Css = {
