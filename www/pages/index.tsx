@@ -9,13 +9,12 @@ import {PlotParams} from 'react-plotly.js';
 import {Legend} from "plotly.js";
 import A from "next-utils/a";
 import {Nav} from "next-utils/nav";
-import getConfig from "next/config";
 import Image from "next/image"
 import index from "./index.module.css"
+import {getBasePath} from "next-utils/basePath"
+import {GitHub, Social, Socials} from "../src/socials";
 
 const Plotly = dynamic(() => import("react-plotly.js"), { ssr: false })
-
-const GitHub = 'https://github.com/neighbor-ryan/nj-crashes'
 
 type NodeFn = ReactNode | (({ title, rundate }: { title?: string, rundate: string } & HasTotals) => ReactNode)
 type PlotSpec = {
@@ -69,7 +68,7 @@ const plotSpecs: PlotSpec[] = [
             const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
             return <>
                 <p>2021 was the worst year in the NJSP dataset (since 2008), with {total2021} deaths.</p>
-                <p><A href={`${GitHub}/commits/main`}>As of {shortDate}</A>, 2022 is on pace {total2022 > total2021 ? `to exceed it, with` : `for`} {total2022}.</p>
+                <p><A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, 2022 is on pace {total2022 > total2021 ? `to exceed it, with` : `for`} {total2022}.</p>
                 <p>Victim types have been published since 2020.</p>
             </>
         },
@@ -169,6 +168,7 @@ function Plot({ id, title, subtitle, plot, basePath, rundate, src, children, pro
                 src &&
                 <div className={`${index.fallback} ${initialized ? index.hidden : ""}`} style={{ height: `${height}px`, maxHeight: `${height}px` }}>
                     <Image
+                        alt={title}
                         src={`${basePath}/${src}`}
                         width={800} height={height}
                         // layout="responsive"
@@ -185,8 +185,7 @@ function Plot({ id, title, subtitle, plot, basePath, rundate, src, children, pro
 
 const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
     // console.log("Home plots:", plotsDict)
-    const { publicRuntimeConfig: config } = getConfig()
-    const { basePath = "" } = config
+    const basePath = getBasePath()
 
     const plots: Plot[] = plotSpecs.map(
         ({ name, src, ...rest }) => {
@@ -235,7 +234,7 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
                     <a href={"#njdot"}>Below that</a> is some analysis of <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}>NJ DOT raw crash data</A>, which includes injury and property-damage crashes going back to 2001 (≈6MM records). {"It's released in annual tranches, ≈15mos after each year end (i.e. 2021 data should arrive in early 2023)."}
                 </p>
                 <p>{`Tap plots to see specific values, single- or double-tap legend entries to toggle or "solo" them.`}</p>
-                <p>Code and cleaned data are on GitHub <A href={GitHub}>here</A>.</p>
+                <p>Code and cleaned data are on GitHub <A href={GitHub.href}>here</A>.</p>
                 {
                     plots.map(
                         ({ id, ...rest }, idx) => (<Fragment key={id}>
@@ -255,14 +254,14 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
                         </Fragment>)
                     )
                 }
-                <p>Check out the code and data (or <A href={`${GitHub}/issues/new`}>leave some feedback</A>) <A href={GitHub}>on GitHub</A>.</p>
-                <p>
-                    <A title={"Source code and documentation on GitHub"} href={GitHub}><img alt={"GitHub Logo"} className={index.logo} src={`${basePath}/gh.png`} /></A>
-                    {" "}
-                    <A title={"NJ State Police fatal crash data"} href={"https://nj.gov/njsp/info/fatalacc/"}><img alt={"NJSP Logo"} className={index.logo} src={`${basePath}/njsp.png`}/></A>
-                    {" "}
-                    <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}><img alt={"NJ DOT Logo"} className={index.logo} src={`${basePath}/njdot-s.png`}/></A>
-                </p>
+                <p>Check out the code and data <A href={GitHub.href}>on GitHub</A> (or <A href={`${GitHub.href}/issues/new`}>leave some feedback</A>).</p>
+                <Socials
+                    socials={[
+                        GitHub,
+                        { name: "NJSP", title: "NJ State Police fatal crash data", href: "https://nj.gov/njsp/info/fatalacc/", src: `/njsp.png`, },
+                        { name: "NJDOT", title: "NJ DOT raw crash data", href: "https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm", src: `/njdot-s.png`, },
+                    ]}
+                />
             </main>
         </div>
     )

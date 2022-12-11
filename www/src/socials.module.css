@@ -1,0 +1,14 @@
+.socials {
+    list-style: none;
+    display: inline-block;
+    padding: 0;
+}
+
+.social {
+    display: inline-block;
+    margin: 0 0.3em;
+}
+
+.logo {
+    width: 3em;
+}
