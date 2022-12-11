@@ -42,7 +42,7 @@ def main(branches, do_configure_author, force, push):
     if not git_is_clean:
         commit('GHA: update data')
 
-    for nb in ['parse-njsp-xmls.ipynb', 'njsp-plots']:
+    for nb in ['parse-njsp-xmls.ipynb', 'njsp-plots.ipynb']:
         out = f'out/{nb}'
         makedirs(dirname(out), exist_ok=True)
         run('papermill', nb, out)
