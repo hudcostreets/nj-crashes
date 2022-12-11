@@ -12,7 +12,8 @@ import {Nav} from "next-utils/nav";
 import Image from "next/image"
 import index from "./index.module.css"
 import {getBasePath} from "next-utils/basePath"
-import {GitHub, Social, Socials} from "../src/socials";
+import {Socials} from "next-utils/socials"
+import {GitHub, url} from "../src/socials"
 
 const Plotly = dynamic(() => import("react-plotly.js"), { ssr: false })
 
@@ -138,8 +139,6 @@ function Plot({ id, title, subtitle, plot, basePath, rundate, src, children, pro
         },
         style
     } = plot
-    // if (xaxis) { /*xaxis.fixedrange = true ;*/ delete xaxis?.title }
-    // if (yaxis) { /*yaxis.fixedrange = true ;*/ delete yaxis?.title }
     const plotTitleText = typeof plotTitle == 'string' ? plotTitle : plotTitle?.text
     const renderedSubtitle = subtitle instanceof Function ? subtitle({ title: plotTitleText, projectedTotals, rundate }) : subtitle
     const renderedChildren = children instanceof Function ? children({ title: plotTitleText, projectedTotals, rundate }) : children
@@ -149,7 +148,7 @@ function Plot({ id, title, subtitle, plot, basePath, rundate, src, children, pro
             <h2><a href={`#${id}`}>{title}</a></h2>
             {renderedSubtitle}
                 <Plotly
-                    onInitialized={() => { console.log(`plot ${id} initialized`); setInitialized(true) }}
+                    onInitialized={() => { setInitialized(true) }}
                     className={styles.plot}
                     data={data}
                     layout={{
@@ -206,7 +205,6 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
     }))
 
     const title = "NJ Traffic Crash Data"
-    const url = "https://neighbor-ryan.org/nj-crashes"
     return (
         <div className={styles.container}>
             <Head

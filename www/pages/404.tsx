@@ -2,8 +2,9 @@ import styles from "../styles/Home.module.css";
 import {Head} from "next-utils/head";
 import index from "./index.module.css";
 import React from "react";
-import {Socials, url} from "../src/socials";
 import {getBasePath} from "next-utils/basePath"
+import {Socials} from "next-utils/socials"
+import {socials, url} from "../src/socials"
 
 const Home = () => {
     const title = "Page Not Found"
@@ -19,7 +20,8 @@ const Home = () => {
             <main className={styles.main}>
                 <h1 className={index.title}>{title}</h1>
                 <p>Maybe you wanted <a href={basePath}>{basePath}</a>?</p>
-                <Socials />
+                <p>Or <a href={"https://neighbor-ryan.org"}>neighbor-ryan.org</a></p>
+                <Socials socials={socials} />
             </main>
         </div>
     )
