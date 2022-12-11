@@ -231,7 +231,7 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
                     The NJ State Police <A title={"NJ State Police fatal crash data"} href={"https://nj.gov/njsp/info/fatalacc/"}>publish fatal crash data</A> going back to 2008. {"It's usually current to the previous day, though things also show up weeks or months after the fact. The first 5 plots below are from that data."}
                 </p>
                 <p>
-                    <a href={"#njdot"}>Below that</a> is some analysis of <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}>NJ DOT raw crash data</A>, which includes injury and property-damage crashes going back to 2001 (≈6MM records). {"It's released in annual tranches, ≈15mos after each year end (i.e. 2021 data should arrive in early 2023)."}
+                    <a href={"#njdot"}>Below that</a> is some analysis of <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}>NJ DOT raw crash data</A>, which includes injury and property-damage crashes from 2001-2020 (≈6MM records). {`It's a richer dataset, but less up to date (it currently ends in 2020, just before things regressed dramatically in 2021). 2021 data should arrive in early 2023.`}
                 </p>
                 <p>{`Tap plots to see specific values, single- or double-tap legend entries to toggle or "solo" them.`}</p>
                 <p>Code and cleaned data are on GitHub <A href={GitHub.href}>here</A>.</p>
