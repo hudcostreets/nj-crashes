@@ -47,14 +47,16 @@ def main(branches, do_configure_author, force, push):
         makedirs(dirname(out), exist_ok=True)
         run('papermill', nb, out)
 
-    data_changed = not check('git', 'diff', '--quiet', 'HEAD', '--', 'data', 'www')
+    data_changed = not check('git', 'diff', '--quiet', 'HEAD', '--', 'data')
+    www_changed = not check('git', 'diff', '--quiet', 'origin/www', '--', 'www')
+    do_commit = data_changed or www_changed
     changed_files = [ line[3:] for line in process.lines('git', 'status', '--porcelain') ]
     if changed_files:
         print(f'{len(changed_files)} changed files:')
         for f in changed_files:
             print(f'\t{f}')
 
-    if data_changed:
+    if do_commit:
         commit('GHA: update data/plots')
     else:
         print('No data/plot change found')
