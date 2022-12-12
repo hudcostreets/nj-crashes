@@ -211,7 +211,7 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
                 title={title}
                 description={"Analysis & Visualization of traffic crash data published by NJ State Police and NJ DOT"}
                 url={url}
-                thumbnail={`${url}/fatalities_per_year_by_type.png`}
+                thumbnail={`${url}/plots/fatalities_per_year_by_type.png`}
             />
 
             <Nav
