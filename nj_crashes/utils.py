@@ -42,3 +42,11 @@ def parse_file(path):
         fatalities=total_fatalities,
     )])
     return dict(crashes=df, totals=totals_df, rundate=rundate)
+
+
+def normalized_ytd_days(dt):
+    """Combine 2/29 and 2/28, count YTD days as if in non-leap years."""
+    days = int((dt - pd.to_datetime(f'{dt.year}')).days + 1)
+    if dt.year % 4 == 0 and dt.month >= 3:
+        days -= 1
+    return days
