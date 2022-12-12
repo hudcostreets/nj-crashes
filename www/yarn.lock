@@ -415,7 +415,7 @@
   dependencies:
     "glob" "7.1.7"
 
-"@next/mdx@^13.0.5":
+"@next/mdx@^13.0.5", "@next/mdx@^13.0.6":
   "integrity" "sha512-iR6DLMwB9ZUo5/C0EWByFMftjnPrYWfSwcw+OPo/be2F9yRmiZfuftyhlqgDDoOTDgubwkFhA2SogYUWATvGbQ=="
   "resolved" "https://registry.npmjs.org/@next/mdx/-/mdx-13.0.6.tgz"
   "version" "13.0.6"
@@ -573,15 +573,15 @@
   dependencies:
     "@types/estree" "*"
 
-"@types/estree@*", "@types/estree@^0.0.51":
-  "integrity" "sha512-CuPgU6f3eT/XgKKPqKd/gLZV1Xmvf1a2R5POBOGQa6uv82xpls89HU5zKeVoyR8XzHd1RGNOlQlvUe3CFkjWNQ=="
-  "resolved" "https://registry.npmjs.org/@types/estree/-/estree-0.0.51.tgz"
-  "version" "0.0.51"
-
-"@types/estree@^1.0.0":
+"@types/estree@*", "@types/estree@^1.0.0":
   "integrity" "sha512-WulqXMDUTYAXCjZnk6JtIHPigp55cVtDgDrO2gHRwhyJto21+1zbVCtOYB2L1F9w4qCQ0rOGWBnBe0FNTiEJIQ=="
   "resolved" "https://registry.npmjs.org/@types/estree/-/estree-1.0.0.tgz"
   "version" "1.0.0"
+
+"@types/estree@^0.0.51":
+  "integrity" "sha512-CuPgU6f3eT/XgKKPqKd/gLZV1Xmvf1a2R5POBOGQa6uv82xpls89HU5zKeVoyR8XzHd1RGNOlQlvUe3CFkjWNQ=="
+  "resolved" "https://registry.npmjs.org/@types/estree/-/estree-0.0.51.tgz"
+  "version" "0.0.51"
 
 "@types/hast@^2.0.0":
   "integrity" "sha512-wLEm0QvaoawEDoTRwzTXp4b4jpwiJDvR5KMnFnVodm3scufTlBOWRD6N1OBf9TZMhjlNsSfcO5V+7AF4+Vy+9g=="
@@ -3902,9 +3902,9 @@
   dependencies:
     "enhanced-resolve" "^5.10.0"
 
-"next-utils@https://gitpkg.now.sh/runsascoded/next-utils/dist?d47b517":
-  "integrity" "sha512-HyZg5BzPN+icXk1lh5dHCe6Dh2iWL5QvYiuj3mA5+0Dj+NkWyCGYE6N3Yw+mj8YFvhQ/OpzverhCQWKzDiH6SA=="
-  "resolved" "https://gitpkg.now.sh/runsascoded/next-utils/dist?d47b517"
+"next-utils@https://gitpkg.now.sh/runsascoded/next-utils/dist?bc1c739":
+  "integrity" "sha512-LBRVO4hhCvy2+jejPnfG3bSjK3VEf598vog7VnHA5p1r7YUXLRcQlqQsYTcpk+5V6Xq8AOoPltowOm6RpcbhfQ=="
+  "resolved" "https://gitpkg.now.sh/runsascoded/next-utils/dist?bc1c739"
   "version" "0.1.0"
   dependencies:
     "@mdx-js/loader" "^2.1.5"
