@@ -76,6 +76,10 @@ const plotSpecs: PlotSpec[] = [
     },
     {
         id: "ytd", name: "ytd-deaths", title: "NJ Traffic Deaths per Year", menuName: "YTD", dropdownSection: "NJSP",
+        children: <>
+            <p>These are based on actual crash records in the NJSP data (which are ≈5% lower than the totals used in the first plot).</p>
+            <p>Some data arrives weeks or months after the fact, so current year numbers are especially subject to change.</p>
+        </>
     },
     {
         id: "vs-homicides", name: "crash_homicide_cmp", title: "NJ Traffic Deaths vs. Homicides", menuName: "vs. Homicides", dropdownSection: "NJSP",
