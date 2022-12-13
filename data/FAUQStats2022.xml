@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Dec 12 10:00:06 EST 2022</RUNDATE>
+  <RUNDATE>Tue Dec 13 10:00:15 EST 2022</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,6 +49,46 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
+      <ACCIDENT ACCID="12206" DATE="12/12/2022" TIME="1245">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0706" MNAME="East Orange City">
+      <ACCIDENT ACCID="12205" DATE="12/12/2022" TIME="0813">
+        <STREET>Freeway Dr</STREET>
+        <LOCATION>Freeway Dr</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1202" MNAME="Cranbury Twsp">
+      <ACCIDENT ACCID="12199" DATE="12/10/2022" TIME="1542">
+        <HIGHWAY>615</HIGHWAY>
+        <LOCATION>County 615 MP 4.66</LOCATION>
+        <FATALITIES>2</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1330" MNAME="Aberdeen Twsp">
       <ACCIDENT ACCID="12197" DATE="12/10/2022" TIME="1044">
@@ -70,6 +110,33 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="09" CNAME="Hudson">
+    <MUNICIPALITY MCODE="0908" MNAME="North Bergen Twsp">
+      <ACCIDENT ACCID="12201" DATE="12/09/2022" TIME="1204">
+        <HIGHWAY>1</HIGHWAY>
+        <LOCATION>State Highway 1</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
+    <MUNICIPALITY MCODE="1337" MNAME="Ocean Twsp">
+      <ACCIDENT ACCID="12202" DATE="12/09/2022" TIME="0829">
+        <STREET>Deal Rd</STREET>
+        <LOCATION>Deal Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -110,6 +177,20 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0257" MNAME="Saddle Brook Twsp">
+      <ACCIDENT ACCID="12203" DATE="12/04/2022" TIME="1145">
+        <STREET>Rosol Ln</STREET>
+        <LOCATION>Rosol Ln</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -182,7 +263,7 @@
   </COUNTY>
   <COUNTY CCODE="05" CNAME="Cape May">
     <MUNICIPALITY MCODE="0511" MNAME="Upper Twsp">
-      <ACCIDENT ACCID="12193" DATE="12/01/2022" TIME="0456">
+      <ACCIDENT ACCID="12193" DATE="12/01/2022" TIME="1707">
         <HIGHWAY>9</HIGHWAY>
         <LOCATION>State Highway 9 MP 27.8</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -457,6 +538,19 @@
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0228" MNAME="Hohokus Boro">
+      <ACCIDENT ACCID="12204" DATE="11/18/2022" TIME="1746">
+        <HIGHWAY>17</HIGHWAY>
+        <LOCATION>State Highway 17 MP 18.55</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1401,7 +1495,7 @@
     <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
       <ACCIDENT ACCID="12066" DATE="10/10/2022" TIME="2136">
         <HIGHWAY>30</HIGHWAY>
-        <LOCATION>State Highway 30</LOCATION>
+        <LOCATION>State Highway 30 MP 54.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5876,8 +5970,8 @@
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0119" MNAME="Pleasantville City">
       <ACCIDENT ACCID="11693" DATE="04/27/2022" TIME="1624">
-        <STREET>North Franklin Blvd</STREET>
-        <LOCATION>North Franklin Blvd</LOCATION>
+        <STREET>North Franklin Boulevard</STREET>
+        <LOCATION>North Franklin Boulevard</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -8217,7 +8311,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>617</TOTACCIDENTS>
-  <TOTFATALITIES>658</TOTFATALITIES>
+  <TOTACCIDENTS>624</TOTACCIDENTS>
+  <TOTFATALITIES>666</TOTFATALITIES>
   <TOTINJURIES>132</TOTINJURIES>
 </FAUQSTATS>
