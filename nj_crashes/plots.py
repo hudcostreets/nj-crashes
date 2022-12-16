@@ -10,7 +10,7 @@ PLOTS_DIR = f'{PUBLIC_DIR}/plots'
 RUNDATE_PATH = f'{PUBLIC_DIR}/rundate.json'
 DB_PATH = f'{ROOT_DIR}/njsp.db'
 DB_URI = f'sqlite:///{DB_PATH}'
-MARGIN = { 't': 0, 'r': 25, 'b': 30, 'l': 0, }
+DEFAULT_PNG_MARGIN = { 't': 0, 'r': 25, 'b': 0, 'l': 0, }
 
 
 def save(
@@ -65,8 +65,11 @@ def save(
         saved.update_layout(
             legend=bottom_legend_kwargs,
         )
-    saved.update_layout(margin=margin or MARGIN)
+    if margin:
+        saved.update_layout(margin=margin)
     saved.write_json(f'{dir}/{name}.json', pretty=pretty)
+    if not margin:
+        saved.update_layout(margin=DEFAULT_PNG_MARGIN)
     saved.write_image(f'{dir}/{name}.png', width=w, height=h)
 
     return fig
