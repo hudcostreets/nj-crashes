@@ -4,18 +4,16 @@ import {Head} from 'next-utils/head'
 import styles from '../styles/Home.module.css'
 import path from "path";
 import * as fs from "fs";
-import dynamic from "next/dynamic";
 import {PlotParams} from 'react-plotly.js';
 import A from "next-utils/a";
 import {Nav} from "next-utils/nav";
-import Image from "next/image"
 import index from "./index.module.css"
 import {getBasePath} from "next-utils/basePath"
 import {Socials} from "next-utils/socials"
 import {GitHub, url} from "../src/socials"
-import {plotSpecs, Plot, HasTotals, ProjectedTotals} from "../src/plotSpecs";
+import {Plot} from "../src/plot"
+import {plotSpecs, HasTotals, ProjectedTotals} from "../src/plotSpecs";
 const { fromEntries } = Object
-const Plotly = dynamic(() => import("react-plotly.js"), { ssr: false })
 
 type PlotsDict = { [k: string]: { title: string, plot: PlotParams } }
 type Props = { plotsDict: PlotsDict, rundate: string, } & HasTotals
@@ -50,59 +48,6 @@ export const getStaticProps: GetStaticProps = async () => {
     const projectedTotalsPath = path.join(plotsDirectory, `projected_totals.json`)
     const projectedTotals = JSON.parse(fs.readFileSync(projectedTotalsPath, 'utf8')) as ProjectedTotals
     return { props: { plotsDict, projectedTotals, rundate, }, }
-}
-
-function Plot({ id, title, subtitle, plot, basePath, rundate, src, children, projectedTotals }: Plot & HasTotals & { basePath: string, rundate: string, }) {
-    const [ initialized, setInitialized ] = useState(false)
-    const {
-        data,
-        layout: {
-            title: plotTitle, margin, xaxis, yaxis,
-            ...rest
-        },
-        style
-    } = plot
-    const plotTitleText = typeof plotTitle == 'string' ? plotTitle : plotTitle?.text
-    const renderedSubtitle = subtitle instanceof Function ? subtitle({ title: plotTitleText, projectedTotals, rundate }) : subtitle
-    const renderedChildren = children instanceof Function ? children({ title: plotTitleText, projectedTotals, rundate }) : children
-    const height = style?.height || 450
-    return (
-        <div id={id} key={id} className={styles["plot-body"]}>
-            <h2><a href={`#${id}`}>{title}</a></h2>
-            {renderedSubtitle}
-                <Plotly
-                    onInitialized={() => { setInitialized(true) }}
-                    className={styles.plot}
-                    data={data}
-                    layout={{
-                        margin: { t: 0, r: 25, b: 30, l: 0, },
-                        ...(xaxis ? { xaxis } : {}),
-                        yaxis,
-                        autosize: true,
-                        dragmode: false,
-                        ...rest
-                    }}
-                    config={{ displayModeBar: false, scrollZoom: false, }}
-                    style={{ ...style, display: initialized ? "" : "none", width: "100%" }}
-                    // onClick={() => setInitialized(false)}
-                />
-            {
-                src &&
-                <div className={`${index.fallback} ${initialized ? index.hidden : ""}`} style={{ height: `${height}px`, maxHeight: `${height}px` }}>
-                    <Image
-                        alt={title}
-                        src={`${basePath}/${src}`}
-                        width={800} height={height}
-                        // layout="responsive"
-                        loading="lazy"
-                        // onClick={() => setInitialized(true)}
-                    />
-                    <div className={index.spinner}></div>
-                </div>
-            }
-            {renderedChildren}
-        </div>
-    )
 }
 
 const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {

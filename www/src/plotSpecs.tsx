@@ -1,6 +1,5 @@
 import React, {ReactNode} from "react";
 import {Legend} from "plotly.js";
-import {PlotParams} from "react-plotly.js";
 import A from "next-utils/a";
 import {GitHub} from "./socials";
 
@@ -21,10 +20,6 @@ export type PlotSpec = {
     src?: string
     subtitle?: NodeFn
     children?: NodeFn
-}
-export type Plot = PlotSpec & {
-    plot: PlotParams
-    title: string
 }
 
 export const EMPTY: PlotSpec[] = []
