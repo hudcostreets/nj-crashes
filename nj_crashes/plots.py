@@ -65,8 +65,7 @@ def save(
         saved.update_layout(
             legend=bottom_legend_kwargs,
         )
-    if margin:
-        saved.update_layout(margin=margin)
+    saved.update_layout(margin=margin or {})
     saved.write_json(f'{dir}/{name}.json', pretty=pretty)
     if not margin:
         saved.update_layout(margin=DEFAULT_PNG_MARGIN)

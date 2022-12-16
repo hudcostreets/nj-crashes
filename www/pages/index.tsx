@@ -1,4 +1,4 @@
-import React, {Fragment, useState} from 'react'
+import React, {Fragment} from 'react'
 import type {GetStaticProps} from 'next'
 import {Head} from 'next-utils/head'
 import styles from '../styles/Home.module.css'
@@ -11,8 +11,8 @@ import index from "./index.module.css"
 import {getBasePath} from "next-utils/basePath"
 import {Socials} from "next-utils/socials"
 import {GitHub, url} from "../src/socials"
-import {Plot} from "../src/plot"
-import {plotSpecs, HasTotals, ProjectedTotals} from "../src/plotSpecs";
+import {HasTotals, Plot, plotSpecs, ProjectedTotals} from "../src/plotSpecs";
+
 const { fromEntries } = Object
 
 type PlotsDict = { [k: string]: { title: string, plot: PlotParams } }
@@ -114,7 +114,7 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
                                 </>
                             }
                             <div key={id} className={styles["plot-container"]}>
-                                <Plot id={id} basePath={basePath} rundate={rundate} {...rest} projectedTotals={projectedTotals} />
+                                <Plot id={id} basePath={basePath} {...rest} data={{ rundate, projectedTotals }} />
                                 <hr/>
                             </div>
                         </Fragment>)

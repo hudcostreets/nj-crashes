@@ -1,26 +1,17 @@
-import React, {ReactNode} from "react";
-import {Legend} from "plotly.js";
+import React from "react";
 import A from "next-utils/a";
 import {GitHub} from "./socials";
+import * as Plots from "./plot";
 
 export type Year = "2021" | "2022"
 export type YearTotals = { "Projected Total": number }
 export type ProjectedTotals = { [k in Year]: YearTotals }
 export type HasTotals = { projectedTotals: ProjectedTotals }
 
-export type NodeFn = ReactNode | (({ title, rundate }: { title?: string, rundate: string } & HasTotals) => ReactNode)
-export type PlotSpec = {
-    id: string
-    name: string
-    menuName?: string
-    dropdownSection?: string,
-    title?: string  // taken from plot, by default
-    style?: React.CSSProperties
-    legend?: "inherit" | Legend
-    src?: string
-    subtitle?: NodeFn
-    children?: NodeFn
-}
+export type T = { rundate: string } & HasTotals
+export type PlotSpec = Plots.PlotSpec<T>
+export type Plot = Plots.Plot<T>
+export const Plot = (args: Plot) => Plots.Plot<T>(args)
 
 export const EMPTY: PlotSpec[] = []
 export const YM_SC_PID_SPECS: PlotSpec[] =
