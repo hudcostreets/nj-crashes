@@ -1,4 +1,4 @@
-import React, {Fragment, ReactNode, useState} from 'react'
+import React, {Fragment, useState} from 'react'
 import type {GetStaticProps} from 'next'
 import {Head} from 'next-utils/head'
 import styles from '../styles/Home.module.css'
@@ -6,7 +6,6 @@ import path from "path";
 import * as fs from "fs";
 import dynamic from "next/dynamic";
 import {PlotParams} from 'react-plotly.js';
-import {Legend} from "plotly.js";
 import A from "next-utils/a";
 import {Nav} from "next-utils/nav";
 import Image from "next/image"
@@ -14,97 +13,14 @@ import index from "./index.module.css"
 import {getBasePath} from "next-utils/basePath"
 import {Socials} from "next-utils/socials"
 import {GitHub, url} from "../src/socials"
-
+import {plotSpecs, Plot, HasTotals, ProjectedTotals} from "../src/plotSpecs";
+const { fromEntries } = Object
 const Plotly = dynamic(() => import("react-plotly.js"), { ssr: false })
 
-type NodeFn = ReactNode | (({ title, rundate }: { title?: string, rundate: string } & HasTotals) => ReactNode)
-type PlotSpec = {
-    id: string
-    name: string
-    menuName?: string
-    dropdownSection?: string,
-    title?: string  // taken from plot, by default
-    style?: React.CSSProperties
-    legend?: "inherit" | Legend
-    src?: string
-    subtitle?: NodeFn
-    children?: NodeFn
-}
-type Plot = PlotSpec & {
-    plot: PlotParams
-    title: string
-}
-
-const EMPTY: PlotSpec[] = []
-const SC_MY_IPD_SPECS: PlotSpec[] =
-    EMPTY.concat(...['y', 'm'].map(my =>
-        EMPTY.concat(...['s', 'c'].map(sc =>
-            EMPTY.concat(...['p', 'i', 'd'].map(t => {
-                const id = `${t}${sc}${my}`
-                const name = `njdot/${id}`
-                const region = { 's': 'State', 'c': 'County' }[sc]
-                const freq = { 'y': 'Year', 'm': 'Month' }[my]
-                const section = `${{ 's': 'State', 'c': 'Counties' }[sc]} x ${freq}s`
-                const type = { 'i': 'Injuries', 'p': 'Property Damage Crashes', 'd': 'Deaths' }[t]
-                const menuName = { 'i': 'Injuries', 'p': 'Property Damage', 'd': 'Deaths' }[t]
-                let title = region == 'State' ? `${type} per ${freq} (Statewide)` : `${type} per {${region}, ${freq}}`
-                if (id == 'dcm') {
-                    title += ` (12mo avgs)`
-                }
-                return {
-                    id, name, title, menuName, dropdownSection: section,
-                    style: region == 'County' && { height: 580 },
-                    /*, legend: "inherit",*/
-                } as PlotSpec
-            }))
-        ))
-    ))
-
-const plotSpecs: PlotSpec[] = [
-    {
-        id: "per-year", name: "fatalities_per_year_by_type", title: "NJ Traffic Deaths per Year", menuName: "Traffic Deaths / Year", dropdownSection: "NJSP",
-        children: ({ rundate, projectedTotals }: { rundate: string, } & HasTotals) => {
-            const total2021 = projectedTotals["2021"]["Projected Total"]
-            const total2022 = projectedTotals["2022"]["Projected Total"]
-            const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
-            return <>
-                <p>2021 was the worst year in the NJSP dataset (since 2008), with {total2021} deaths.</p>
-                <p><A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, 2022 is on pace {total2022 > total2021 ? `to exceed it, with` : `for`} {total2022}.</p>
-                <p>Victim types have been published since 2020.</p>
-            </>
-        },
-    },
-    {
-        id: "ytd", name: "ytd-deaths", title: "NJ Traffic Deaths per Year", menuName: "YTD", dropdownSection: "NJSP",
-        children: <>
-            <p>These are based on actual crash records in the NJSP data (which are ≈5% lower than the totals used in the first plot).</p>
-            <p>Some data arrives weeks or months after the fact, so current year numbers are especially subject to change.</p>
-        </>
-    },
-    {
-        id: "vs-homicides", name: "crash_homicide_cmp", title: "NJ Traffic Deaths vs. Homicides", menuName: "vs. Homicides", dropdownSection: "NJSP",
-        children: <>
-            <p>Traffic crashes kill 1.5-2x as many people as homicides in NJ.</p>
-            <p>Homicide data comes from <A href={"https://nj.gov/njsp/ucr/uniform-crime-reports.shtml"}>NJ State Police</A> and <A href={"https://www.disastercenter.com/crime/njcrimn.htm"}>Disaster Center</A>.</p>
-        </>
-    },
-    { id: "per-month", name: "fatalities_per_month", title: "NJ Traffic Deaths per Month", menuName: "Per Month", dropdownSection: "NJSP", },
-    { id: "per-month-type", name: "fatalities_per_month_by_type", title: "NJ Traffic Deaths per Month (by Victim Type)", menuName: "By Victim Type", dropdownSection: "NJSP", },
-    { id: "by-month-bars", name: "fatalities_by_month_bars", title: "NJ Traffic Deaths, grouped by month", menuName: "Grouped by Month", dropdownSection: "NJSP", },
-    ...SC_MY_IPD_SPECS,
-]
-
 type PlotsDict = { [k: string]: { title: string, plot: PlotParams } }
-type Year = "2021" | "2022"
-type YearTotals = { "Projected Total": number }
-type ProjectedTotals = { [k in Year]: YearTotals }
-type HasTotals = { projectedTotals: ProjectedTotals }
-
 type Props = { plotsDict: PlotsDict, rundate: string, } & HasTotals
 
-const { fromEntries } = Object
-
-export const getStaticProps: GetStaticProps = async (context) => {
+export const getStaticProps: GetStaticProps = async () => {
     const publicDirectory = path.join(process.cwd(), 'public')
     const rundatePath = path.join(publicDirectory, 'rundate.json')
     const rundate = JSON.parse(fs.readFileSync(rundatePath, 'utf8')).rundate
@@ -208,7 +124,7 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
         { id: "county-months", name: "Counties x Months", },
     ].map(s => ({
         ...s,
-        sections: sections.filter(({ name, dropdownSection }) => s.name == dropdownSection)
+        sections: sections.filter(({ dropdownSection }) => s.name == dropdownSection)
     }))
 
     const title = "NJ Traffic Crash Data"
