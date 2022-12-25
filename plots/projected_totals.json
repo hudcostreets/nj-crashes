@@ -4,7 +4,8 @@
         "Pedestrians": 0,
         "Passengers": 0,
         "Cyclists": 0,
-        "Unknown": 590,
+        "Unknown": 558,
+        "Missing": 32,
         "Total": 590,
         "Projected": 0,
         "Projected Total": 590
@@ -14,7 +15,8 @@
         "Pedestrians": 0,
         "Passengers": 0,
         "Cyclists": 0,
-        "Unknown": 584,
+        "Unknown": 546,
+        "Missing": 38,
         "Total": 584,
         "Projected": 0,
         "Projected Total": 584
@@ -24,7 +26,8 @@
         "Pedestrians": 0,
         "Passengers": 0,
         "Cyclists": 0,
-        "Unknown": 556,
+        "Unknown": 533,
+        "Missing": 23,
         "Total": 556,
         "Projected": 0,
         "Projected Total": 556
@@ -34,7 +37,8 @@
         "Pedestrians": 0,
         "Passengers": 0,
         "Cyclists": 0,
-        "Unknown": 627,
+        "Unknown": 594,
+        "Missing": 33,
         "Total": 627,
         "Projected": 0,
         "Projected Total": 627
@@ -44,7 +48,8 @@
         "Pedestrians": 0,
         "Passengers": 0,
         "Cyclists": 0,
-        "Unknown": 589,
+        "Unknown": 559,
+        "Missing": 30,
         "Total": 589,
         "Projected": 0,
         "Projected Total": 589
@@ -54,7 +59,8 @@
         "Pedestrians": 0,
         "Passengers": 0,
         "Cyclists": 0,
-        "Unknown": 542,
+        "Unknown": 513,
+        "Missing": 29,
         "Total": 542,
         "Projected": 0,
         "Projected Total": 542
@@ -64,7 +70,8 @@
         "Pedestrians": 0,
         "Passengers": 0,
         "Cyclists": 0,
-        "Unknown": 556,
+        "Unknown": 532,
+        "Missing": 24,
         "Total": 556,
         "Projected": 0,
         "Projected Total": 556
@@ -74,7 +81,8 @@
         "Pedestrians": 0,
         "Passengers": 0,
         "Cyclists": 0,
-        "Unknown": 562,
+        "Unknown": 533,
+        "Missing": 29,
         "Total": 562,
         "Projected": 0,
         "Projected Total": 562
@@ -84,7 +92,8 @@
         "Pedestrians": 0,
         "Passengers": 0,
         "Cyclists": 0,
-        "Unknown": 602,
+        "Unknown": 562,
+        "Missing": 40,
         "Total": 602,
         "Projected": 0,
         "Projected Total": 602
@@ -94,7 +103,8 @@
         "Pedestrians": 0,
         "Passengers": 0,
         "Cyclists": 0,
-        "Unknown": 624,
+        "Unknown": 595,
+        "Missing": 29,
         "Total": 624,
         "Projected": 0,
         "Projected Total": 624
@@ -104,7 +114,8 @@
         "Pedestrians": 0,
         "Passengers": 0,
         "Cyclists": 0,
-        "Unknown": 563,
+        "Unknown": 537,
+        "Missing": 26,
         "Total": 563,
         "Projected": 0,
         "Projected Total": 563
@@ -114,7 +125,8 @@
         "Pedestrians": 0,
         "Passengers": 0,
         "Cyclists": 0,
-        "Unknown": 558,
+        "Unknown": 534,
+        "Missing": 24,
         "Total": 558,
         "Projected": 0,
         "Projected Total": 558
@@ -124,7 +136,8 @@
         "Pedestrians": 167,
         "Passengers": 77,
         "Cyclists": 17,
-        "Unknown": 31,
+        "Unknown": 0,
+        "Missing": 31,
         "Total": 587,
         "Projected": 0,
         "Projected Total": 587
@@ -134,7 +147,8 @@
         "Pedestrians": 204,
         "Passengers": 78,
         "Cyclists": 22,
-        "Unknown": 39,
+        "Unknown": 0,
+        "Missing": 39,
         "Total": 697,
         "Projected": 0,
         "Projected Total": 697
@@ -144,7 +158,8 @@
         "Pedestrians": 179,
         "Passengers": 95,
         "Cyclists": 17,
-        "Unknown": 28,
+        "Unknown": 0,
+        "Missing": 28,
         "Total": 687,
         "Projected": 26,
         "Projected Total": 713
