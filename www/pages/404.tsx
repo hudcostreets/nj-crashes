@@ -1,4 +1,4 @@
-import styles from "../styles/Home.module.css";
+import home from "../styles/Home.module.css";
 import {Head} from "next-utils/head";
 import index from "./index.module.css";
 import React from "react";
@@ -10,14 +10,14 @@ const Home = () => {
     const title = "Page Not Found"
     const basePath = getBasePath()
     return (
-        <div className={styles.container}>
+        <div className={home.container}>
             <Head
                 title={title}
                 description={"Analysis & Visualization of traffic crash data published by NJ State Police and NJ DOT"}
                 url={url}
                 thumbnail={`${url}/fatalities_per_year_by_type.png`}
             />
-            <main className={styles.main}>
+            <main className={home.main}>
                 <h1 className={index.title}>{title}</h1>
                 <p>Maybe you wanted <a href={basePath}>{basePath}</a>?</p>
                 <p>Or <a href={"https://neighbor-ryan.org"}>neighbor-ryan.org</a></p>

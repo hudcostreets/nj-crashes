@@ -1,7 +1,7 @@
 import React from "react";
 import A from "next-utils/a";
+import * as Plots from "next-utils/plot";
 import {GitHub} from "./socials";
-import * as Plots from "./plot";
 
 export type Year = "2021" | "2022"
 export type YearTotals = { "Projected Total": number }

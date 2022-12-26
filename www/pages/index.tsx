@@ -1,17 +1,17 @@
-import React, {Fragment} from 'react'
+import React, {CSSProperties, Fragment} from 'react'
 import type {GetStaticProps} from 'next'
 import {Head} from 'next-utils/head'
-import styles from '../styles/Home.module.css'
+import home from "../styles/Home.module.css"
+import css from './index.module.css'
 import path from "path";
 import * as fs from "fs";
 import {PlotParams} from 'react-plotly.js';
 import A from "next-utils/a";
 import {Nav} from "next-utils/nav";
-import index from "./index.module.css"
 import {getBasePath} from "next-utils/basePath"
 import {Socials} from "next-utils/socials"
 import {GitHub, url} from "../src/socials"
-import {HasTotals, Plot, plotSpecs, ProjectedTotals} from "../src/plotSpecs";
+import {HasTotals, Plot, PlotSpec, plotSpecs, ProjectedTotals} from "../src/plotSpecs";
 
 const { fromEntries } = Object
 
@@ -25,11 +25,11 @@ export const getStaticProps: GetStaticProps = async () => {
     console.log(`rundate: ${rundate}`)
     const plotsDirectory = path.join(publicDirectory, 'plots')
     const plotsDict = fromEntries(
-        plotSpecs.map(({name, title, style, legend }) => {
+        plotSpecs.map(({name, title, style, legend }: PlotSpec) => {
             const plotPath = path.join(plotsDirectory, `${name}.json`)
             const plot = JSON.parse(fs.readFileSync(plotPath, 'utf8')) as PlotParams
             if (style) {
-                plot.style = style
+                plot.style = style as (CSSProperties | undefined)
             }
             if (legend == "inherit") {
                 // pass
@@ -74,7 +74,7 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
 
     const title = "NJ Traffic Crash Data"
     return (
-        <div className={styles.container}>
+        <div className={home.container}>
             <Head
                 title={title}
                 description={"Analysis & Visualization of traffic crash data published by NJ State Police and NJ DOT"}
@@ -91,8 +91,8 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
             </Nav>
 
-            <main className={styles.main}>
-                <h1 className={index.title}>{title}</h1>
+            <main className={home.main}>
+                <h1 className={css.title}>{title}</h1>
                 <p>
                     The NJ State Police <A title={"NJ State Police fatal crash data"} href={"https://nj.gov/njsp/info/fatalacc/"}>publish fatal crash data</A> going back to 2008. {"It's usually current to the previous day, though things also show up weeks or months after the fact. The first 5 plots below are from that data."}
                 </p>
@@ -113,7 +113,7 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
                                     <p>{"The data currently ends in 2020, after a drop in all types of crashes due to COVID, and just before a spike in all crash types in 2021 and 2022 (based on the NJSP data above, and other sources). 2021 data should land in early 2023."}</p>
                                 </>
                             }
-                            <div key={id} className={styles["plot-container"]}>
+                            <div key={id} className={css["plot-container"]}>
                                 <Plot id={id} basePath={basePath} {...rest} data={{ rundate, projectedTotals }} />
                                 <hr/>
                             </div>

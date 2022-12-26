@@ -6,18 +6,6 @@
   text-align: center;
 }
 
-.plot-container, .plot-body, .plot {
-  width: 100%;
-}
-.plot {
-  position: absolute;
-  top: 0;
-}
-
-.plots-wrapper {
-  position: relative;
-}
-
 .menu {
   list-style: none;
   line-height: 1.4em;
