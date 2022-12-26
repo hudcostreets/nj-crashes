@@ -48,7 +48,7 @@ export const plotSpecs: PlotSpec[] = [
             return <>
                 <p>2021 was the worst year in the NJSP dataset (since 2008), with {total2021} deaths.</p>
                 <p><A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, 2022 is on pace {total2022 > total2021 ? `to exceed it, with` : `for`} {total2022}.</p>
-                <p>Victim types have been published since 2020.</p>
+                <p>{`Victim types have been published since 2020; prior years are shown as "Unknown". Additionally, NJSP reports a traffic death total that is ≈5% higher than their crash records account for; that discrepancy is labeled "Missing" above.`}</p>
             </>
         },
     },
