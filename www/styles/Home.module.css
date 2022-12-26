@@ -6,11 +6,16 @@
   text-align: center;
 }
 
-/*.plot-container {*/
-/*  margin: 0 2em;*/
-/*}*/
 .plot-container, .plot-body, .plot {
   width: 100%;
+}
+.plot {
+  position: absolute;
+  top: 0;
+}
+
+.plots-wrapper {
+  position: relative;
 }
 
 .menu {

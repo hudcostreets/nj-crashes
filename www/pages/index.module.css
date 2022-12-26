@@ -6,6 +6,7 @@
 
 .fallback {
     position: relative;
+    top: 0;
     width: 100%;
     background-color: rgba(250,250,250,0.8)
 }
@@ -41,5 +42,5 @@
 }
 
 .hidden {
-    display: none;
+    visibility: hidden;
 }

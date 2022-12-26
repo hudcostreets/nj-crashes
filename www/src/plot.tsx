@@ -64,42 +64,42 @@ export function Plot<T>(
     const renderedSubtitle = subtitle instanceof Function ? subtitle(nodeArg) : subtitle
     const renderedChildren = children instanceof Function ? children(nodeArg) : children
     height = style?.height || height
-    console.log(`${id} margins:`, DEFAULT_MARGIN, plotMargin, margin)
     margin = { ...DEFAULT_MARGIN, ...plotMargin, ...margin }
     return (
         <div id={id} key={id} className={styles["plot-body"]}>
             <h2><a href={`#${id}`}>{title}</a></h2>
             {renderedSubtitle}
-            <Plotly
-                onInitialized={() => { setInitialized(true) }}
-                className={styles.plot}
-                data={plotData}
-                layout={{
-                    margin,
-                    ...(xaxis ? { xaxis } : {}),
-                    yaxis,
-                    autosize: true,
-                    dragmode: false,
-                    ...rest
-                }}
-                config={{ displayModeBar: false, scrollZoom: false, }}
-                style={{ ...style, display: initialized ? "" : "none", width: "100%" }}
-                // onClick={() => setInitialized(false)}
-            />
-            {
-                src &&
-                <div className={`${index.fallback} ${initialized ? index.hidden : ""}`} style={{ height: `${height}px`, maxHeight: `${height}px` }}>
-                    <Image
-                        alt={title}
-                        src={`${basePath}/${src}`}
-                        width={width} height={height}
-                        // layout="responsive"
-                        loading="lazy"
-                        // onClick={() => setInitialized(true)}
-                    />
-                    <div className={index.spinner}></div>
-                </div>
-            }
+            <div className={styles["plots-wrapper"]}>
+                {
+                    src &&
+                    <div className={`${index.fallback} ${initialized ? index.hidden : ""}`} style={{ height: `${height}px`, maxHeight: `${height}px` }}>
+                        <Image
+                            alt={title}
+                            src={`${basePath}/${src}`}
+                            width={width} height={height}
+                            // layout="responsive"
+                            loading="lazy"
+                            // onClick={() => setInitialized(true)}
+                        />
+                        <div className={index.spinner}></div>
+                    </div>
+                }
+                <Plotly
+                    onInitialized={() => { setInitialized(true) }}
+                    className={styles.plot}
+                    data={plotData}
+                    layout={{
+                        margin,
+                        ...(xaxis ? { xaxis } : {}),
+                        yaxis,
+                        autosize: true,
+                        dragmode: false,
+                        ...rest
+                    }}
+                    config={{ displayModeBar: false, scrollZoom: false, responsive: true, }}
+                    style={{ ...style, visibility: initialized ? undefined : "hidden", width: "100%" }}
+                    // onClick={() => setInitialized(false)}
+                />            </div>
             {renderedChildren}
         </div>
     )
