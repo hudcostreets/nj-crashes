@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Dec 28 10:00:11 EST 2022</RUNDATE>
+  <RUNDATE>Thu Dec 29 10:00:10 EST 2022</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -50,6 +50,17 @@
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0714" MNAME="Newark City">
+      <ACCIDENT ACCID="12237" DATE="12/28/2022" TIME="0543">
+        <HIGHWAY>27</HIGHWAY>
+        <LOCATION>State Highway 27</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
     <MUNICIPALITY MCODE="0701" MNAME="Belleville Town">
       <ACCIDENT ACCID="12233" DATE="12/27/2022" TIME="0437">
         <HIGHWAY>21</HIGHWAY>
@@ -60,6 +71,19 @@
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
+      <ACCIDENT ACCID="12236" DATE="12/26/2022" TIME="0229">
+        <HIGHWAY>1</HIGHWAY>
+        <LOCATION>State Highway 1</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -113,6 +137,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -245,20 +270,6 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="20" CNAME="Union">
-    <MUNICIPALITY MCODE="2014" MNAME="Roselle Boro">
-      <ACCIDENT ACCID="12212" DATE="12/15/2022" TIME="0305">
-        <STREET>Park Dr</STREET>
-        <LOCATION>Park Dr</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -874,6 +885,18 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+    <MUNICIPALITY MCODE="0818" MNAME="Washington Twsp">
+      <ACCIDENT ACCID="12235" DATE="11/18/2022" TIME="2054">
+        <HIGHWAY>42</HIGHWAY>
+        <LOCATION>State Highway 42 MP 5.11</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
       </ACCIDENT>
@@ -8663,7 +8686,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>649</TOTACCIDENTS>
-  <TOTFATALITIES>693</TOTFATALITIES>
+  <TOTACCIDENTS>651</TOTACCIDENTS>
+  <TOTFATALITIES>695</TOTFATALITIES>
   <TOTINJURIES>152</TOTINJURIES>
 </FAUQSTATS>
