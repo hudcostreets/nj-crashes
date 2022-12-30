@@ -154,14 +154,14 @@
         "Projected Total": 697
     },
     "2022": {
-        "Drivers": 370,
-        "Pedestrians": 181,
+        "Drivers": 372,
+        "Pedestrians": 182,
         "Passengers": 97,
         "Cyclists": 17,
         "Unknown": 0,
         "Missing": 30,
-        "Total": 695,
-        "Projected": 13,
+        "Total": 698,
+        "Projected": 10,
         "Projected Total": 708
     }
 }
