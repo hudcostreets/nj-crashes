@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Dec 29 10:00:10 EST 2022</RUNDATE>
+  <RUNDATE>Fri Dec 30 10:00:13 EST 2022</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,45 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0415" MNAME="Gloucester Twsp">
+      <ACCIDENT ACCID="12240" DATE="12/29/2022" TIME="1736">
+        <STREET>little gloucester rd</STREET>
+        <LOCATION>little gloucester rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1215" MNAME="North Brunswick Tws">
+      <ACCIDENT ACCID="12239" DATE="12/29/2022" TIME="0518">
+        <STREET>route 1</STREET>
+        <LOCATION>route 1</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="05" CNAME="Cape May">
+    <MUNICIPALITY MCODE="0506" MNAME="Middle Twsp">
+      <ACCIDENT ACCID="12238" DATE="12/28/2022" TIME="1423">
+        <STREET>Route 9</STREET>
+        <LOCATION>Route 9</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
@@ -8686,7 +8725,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>651</TOTACCIDENTS>
-  <TOTFATALITIES>695</TOTFATALITIES>
+  <TOTACCIDENTS>654</TOTACCIDENTS>
+  <TOTFATALITIES>698</TOTFATALITIES>
   <TOTINJURIES>152</TOTINJURIES>
 </FAUQSTATS>
