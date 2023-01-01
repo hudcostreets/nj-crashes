@@ -1,52 +1,24 @@
-import React, {CSSProperties, Fragment} from 'react'
+import React, {Fragment} from 'react'
 import type {GetStaticProps} from 'next'
 import {Head} from 'next-utils/head'
-import home from "../styles/Home.module.css"
 import css from './index.module.css'
-import path from "path";
-import * as fs from "fs";
-import {PlotParams} from 'react-plotly.js';
 import A from "next-utils/a";
 import {Nav} from "next-utils/nav";
 import {getBasePath} from "next-utils/basePath"
 import {Socials} from "next-utils/socials"
 import {GitHub, url} from "../src/socials"
-import {HasTotals, Plot, PlotSpec, plotSpecs, ProjectedTotals} from "../src/plotSpecs";
+import {HasTotals, Plot, plotSpecs, ProjectedTotals} from "../src/plotSpecs";
+import {loadSync} from "next-utils/load";
+import {build, PlotsDict} from "next-utils/plot";
+import PlotsLoad from "next-utils/plot-load";
 
-const { fromEntries } = Object
-
-type PlotsDict = { [k: string]: { title: string, plot: PlotParams } }
 type Props = { plotsDict: PlotsDict, rundate: string, } & HasTotals
 
 export const getStaticProps: GetStaticProps = async () => {
-    const publicDirectory = path.join(process.cwd(), 'public')
-    const rundatePath = path.join(publicDirectory, 'rundate.json')
-    const rundate = JSON.parse(fs.readFileSync(rundatePath, 'utf8')).rundate
+    const { rundate } = loadSync<{ rundate: string }>(`public/rundate.json`)
     console.log(`rundate: ${rundate}`)
-    const plotsDirectory = path.join(publicDirectory, 'plots')
-    const plotsDict = fromEntries(
-        plotSpecs.map(({name, title, style, legend }: PlotSpec) => {
-            const plotPath = path.join(plotsDirectory, `${name}.json`)
-            const plot = JSON.parse(fs.readFileSync(plotPath, 'utf8')) as PlotParams
-            if (style) {
-                plot.style = style as (CSSProperties | undefined)
-            }
-            if (legend == "inherit") {
-                // pass
-            } else if (legend) {
-                plot.layout.legend = legend
-            } else {
-                plot.layout.legend = { orientation: "h", x: 0.5, xanchor: "center", yanchor: "top", itemwidth: 0, }
-            }
-            const plotTitle = title || (typeof plot.layout.title == 'string' ? plot.layout.title : plot.layout.title?.text)
-            if (!plotTitle) {
-                throw new Error(`No title found for plot ${name}`)
-            }
-            return [ name, { title: plotTitle, plot } ]
-        })
-    )
-    const projectedTotalsPath = path.join(plotsDirectory, `projected_totals.json`)
-    const projectedTotals = JSON.parse(fs.readFileSync(projectedTotalsPath, 'utf8')) as ProjectedTotals
+    const plotsDict: PlotsDict = PlotsLoad(plotSpecs)
+    const projectedTotals = loadSync<ProjectedTotals>(`public/plots/projected_totals.json`)
     return { props: { plotsDict, projectedTotals, rundate, }, }
 }
 
@@ -54,12 +26,7 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
     // console.log("Home plots:", plotsDict)
     const basePath = getBasePath()
 
-    const plots: Plot[] = plotSpecs.map(
-        ({ name, src, ...rest }) => {
-            const { title, plot } = plotsDict[name]
-            return ({ name: name, src: src || `plots/${name}.png`, title, plot, ...rest } as Plot)
-        }
-    )
+    const plots: Plot[] = build(plotSpecs, plotsDict)
     const sections = plots.map(({ id, title, menuName, dropdownSection, }) => ({ id, name: menuName || title, dropdownSection: dropdownSection }))
     const menus = [
         { id: "NJSP", name: "NJSP", },
@@ -74,7 +41,7 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
 
     const title = "NJ Traffic Crash Data"
     return (
-        <div className={home.container}>
+        <div className={css.container}>
             <Head
                 title={title}
                 description={"Analysis & Visualization of traffic crash data published by NJ State Police and NJ DOT"}
@@ -91,7 +58,7 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
             </Nav>
 
-            <main className={home.main}>
+            <main className={css.main}>
                 <h1 className={css.title}>{title}</h1>
                 <p>
                     The NJ State Police <A title={"NJ State Police fatal crash data"} href={"https://nj.gov/njsp/info/fatalacc/"}>publish fatal crash data</A> going back to 2008. {"It's usually current to the previous day, though things also show up weeks or months after the fact. The first 5 plots below are from that data."}

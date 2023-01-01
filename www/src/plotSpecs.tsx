@@ -32,7 +32,6 @@ export const YM_SC_PID_SPECS: PlotSpec[] =
                 return {
                     id, name, title, menuName, dropdownSection: section,
                     style: region == 'County' && { height: 580 },
-                    /*, legend: "inherit",*/
                 } as PlotSpec
             }))
         ))
