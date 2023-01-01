@@ -4,7 +4,7 @@ set -e
 
 if [ $# -eq 0 ]; then
     # Only the current and previous year seem to update; check one prior for good measure
-    set -- 2020 2021 2022
+    set -- 2021 2022 2023
 fi
 
 echo "Refreshing years: $@"
