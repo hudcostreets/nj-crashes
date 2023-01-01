@@ -26,7 +26,7 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
     // console.log("Home plots:", plotsDict)
     const basePath = getBasePath()
 
-    const plots: Plot[] = build(plotSpecs, plotsDict)
+    const plots: Plot[] = build(plotSpecs, plotsDict, { rundate, projectedTotals })
     const sections = plots.map(({ id, title, menuName, dropdownSection, }) => ({ id, name: menuName || title, dropdownSection: dropdownSection }))
     const menus = [
         { id: "NJSP", name: "NJSP", },
