@@ -163,16 +163,5 @@
         "Total": 704,
         "Projected": 0,
         "Projected Total": 704
-    },
-    "2023": {
-        "Drivers": NaN,
-        "Pedestrians": NaN,
-        "Passengers": NaN,
-        "Cyclists": NaN,
-        "Unknown": NaN,
-        "Missing": NaN,
-        "Total": 0,
-        "Projected": 0,
-        "Projected Total": 0
     }
 }
