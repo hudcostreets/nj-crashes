@@ -155,24 +155,24 @@
     },
     "2022": {
         "Drivers": 375,
-        "Pedestrians": 185,
+        "Pedestrians": 184,
         "Passengers": 98,
         "Cyclists": 17,
         "Unknown": 0,
         "Missing": 31,
-        "Total": 706,
+        "Total": 705,
         "Projected": 0,
-        "Projected Total": 706
+        "Projected Total": 705
     },
     "2023": {
-        "Drivers": 1,
+        "Drivers": 2,
         "Pedestrians": 1,
         "Passengers": 0,
         "Cyclists": 0,
         "Unknown": 0,
         "Missing": 0,
-        "Total": 2,
-        "Projected": 174,
-        "Projected Total": 176
+        "Total": 3,
+        "Projected": 232,
+        "Projected Total": 235
     }
 }
