@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Jan 05 10:00:17 EST 2023</RUNDATE>
+  <RUNDATE>Fri Jan 06 10:00:17 EST 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -150,20 +150,6 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="05" CNAME="Cape May">
-    <MUNICIPALITY MCODE="0506" MNAME="Middle Twsp">
-      <ACCIDENT ACCID="12238" DATE="12/28/2022" TIME="1423">
-        <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7840,13 +7826,14 @@
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0908" MNAME="North Bergen Twsp">
       <ACCIDENT ACCID="11562" DATE="02/14/2022" TIME="0812">
-        <STREET>New York Ave</STREET>
-        <LOCATION>New York Ave</LOCATION>
+        <STREET>New York Avenue</STREET>
+        <LOCATION>New York Avenue</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7969,6 +7956,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8060,6 +8048,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8564,8 +8553,8 @@
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0901" MNAME="Bayonne City">
       <ACCIDENT ACCID="11487" DATE="01/08/2022" TIME="0747">
-        <HIGHWAY>501</HIGHWAY>
-        <LOCATION>County 501</LOCATION>
+        <STREET>West 23rd Street</STREET>
+        <LOCATION>West 23rd Street</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -8821,7 +8810,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>661</TOTACCIDENTS>
-  <TOTFATALITIES>705</TOTFATALITIES>
-  <TOTINJURIES>154</TOTINJURIES>
+  <TOTACCIDENTS>660</TOTACCIDENTS>
+  <TOTFATALITIES>704</TOTFATALITIES>
+  <TOTINJURIES>155</TOTINJURIES>
 </FAUQSTATS>
