@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Jan 07 10:00:08 EST 2023</RUNDATE>
+  <RUNDATE>Sun Jan 08 10:00:06 EST 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2029,7 +2029,7 @@
     <MUNICIPALITY MCODE="0505" MNAME="Lower Twsp">
       <ACCIDENT ACCID="12095" DATE="10/08/2022" TIME="2028">
         <HIGHWAY>603</HIGHWAY>
-        <LOCATION>County 603 MP 5.2</LOCATION>
+        <LOCATION>County 603 MP 5.25</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
