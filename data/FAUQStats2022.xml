@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Jan 12 10:00:10 EST 2023</RUNDATE>
+  <RUNDATE>Fri Jan 13 10:00:13 EST 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -4798,7 +4798,7 @@
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
-    <MUNICIPALITY MCODE="0306" MNAME="Burlington Twsp">
+    <MUNICIPALITY MCODE="0338" MNAME="Westampton Twsp">
       <ACCIDENT ACCID="11836" DATE="06/26/2022" TIME="0000">
         <HIGHWAY>95</HIGHWAY>
         <LOCATION>New Jersey Turnpike MP 45.1</LOCATION>
@@ -4807,6 +4807,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6648,7 +6649,7 @@
     <MUNICIPALITY MCODE="0436" MNAME="Winslow Twsp">
       <ACCIDENT ACCID="11675" DATE="04/20/2022" TIME="1230">
         <HIGHWAY>30</HIGHWAY>
-        <LOCATION>State Highway 30</LOCATION>
+        <LOCATION>State Highway 30 MP 25.31</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6763,7 +6764,7 @@
     <MUNICIPALITY MCODE="0434" MNAME="Voorhees Twsp">
       <ACCIDENT ACCID="11670" DATE="04/15/2022" TIME="2055">
         <HIGHWAY>73</HIGHWAY>
-        <LOCATION>State Highway 73</LOCATION>
+        <LOCATION>State Highway 73 MP 21.1</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -6969,12 +6970,13 @@
     <MUNICIPALITY MCODE="0407" MNAME="Brooklawn Boro">
       <ACCIDENT ACCID="11642" DATE="04/02/2022" TIME="1950">
         <HIGHWAY>551</HIGHWAY>
-        <LOCATION>County 551</LOCATION>
+        <LOCATION>County 551 MP .3</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7253,13 +7255,14 @@
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0317" MNAME="Willingboro Twsp">
       <ACCIDENT ACCID="11650" DATE="03/18/2022" TIME="0207">
-        <STREET>Garfield Dr</STREET>
-        <LOCATION>Garfield Dr</LOCATION>
+        <STREET>Garfield Drive</STREET>
+        <LOCATION>Garfield Drive</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7605,12 +7608,13 @@
     <MUNICIPALITY MCODE="0412" MNAME="Cherry Hill Twsp">
       <ACCIDENT ACCID="11592" DATE="03/02/2022" TIME="0245">
         <HIGHWAY>70</HIGHWAY>
-        <LOCATION>State Highway 70</LOCATION>
+        <LOCATION>State Highway 70 MP 3.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0408" MNAME="Camden City">
