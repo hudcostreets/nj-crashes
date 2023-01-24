@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Jan 23 10:00:08 EST 2023</RUNDATE>
+  <RUNDATE>Tue Jan 24 10:00:09 EST 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -7336,6 +7336,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7868,8 +7869,8 @@
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1514" MNAME="Lakewood Twsp">
       <ACCIDENT ACCID="11565" DATE="02/14/2022" TIME="0347">
-        <STREET>Shorrock Street</STREET>
-        <LOCATION>Shorrock Street</LOCATION>
+        <STREET>Shorrock St</STREET>
+        <LOCATION>Shorrock St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -8073,12 +8074,13 @@
     <MUNICIPALITY MCODE="2122" MNAME="Washington Twsp">
       <ACCIDENT ACCID="11551" DATE="02/06/2022" TIME="0204">
         <HIGHWAY>57</HIGHWAY>
-        <LOCATION>State Highway 57</LOCATION>
+        <LOCATION>State Highway 57 MP 12.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8325,6 +8327,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>4</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8833,5 +8836,5 @@
   </COUNTY>
   <TOTACCIDENTS>660</TOTACCIDENTS>
   <TOTFATALITIES>704</TOTFATALITIES>
-  <TOTINJURIES>170</TOTINJURIES>
+  <TOTINJURIES>178</TOTINJURIES>
 </FAUQSTATS>
