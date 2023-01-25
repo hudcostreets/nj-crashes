@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Jan 24 10:00:09 EST 2023</RUNDATE>
+  <RUNDATE>Wed Jan 25 10:00:12 EST 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -5319,6 +5319,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7044,7 +7045,7 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="11639" DATE="03/31/2022" TIME="0446">
+      <ACCIDENT ACCID="11639" DATE="03/31/2022" TIME="0433">
         <STREET>Elizabeth Ave</STREET>
         <LOCATION>Elizabeth Ave</LOCATION>
         <FATALITIES>2</FATALITIES>
@@ -7052,6 +7053,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>3</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7479,12 +7481,13 @@
     <MUNICIPALITY MCODE="2122" MNAME="Washington Twsp">
       <ACCIDENT ACCID="11613" DATE="03/10/2022" TIME="0814">
         <HIGHWAY>57</HIGHWAY>
-        <LOCATION>State Highway 57</LOCATION>
+        <LOCATION>State Highway 57 MP 9.74</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>3</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7588,12 +7591,13 @@
     <MUNICIPALITY MCODE="1713" MNAME="Carneys Point Twsp">
       <ACCIDENT ACCID="11611" DATE="03/06/2022" TIME="2122">
         <HIGHWAY>48</HIGHWAY>
-        <LOCATION>State Highway 48</LOCATION>
+        <LOCATION>State Highway 48 MP 2.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8128,8 +8132,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2017" MNAME="Springfield Twsp">
       <ACCIDENT ACCID="11534" DATE="02/04/2022" TIME="0116">
-        <HIGHWAY>24</HIGHWAY>
-        <LOCATION>State Highway 24 MP 10</LOCATION>
+        <HIGHWAY>78</HIGHWAY>
+        <LOCATION>Interstate 78 MP 10</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -8775,6 +8779,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8836,5 +8841,5 @@
   </COUNTY>
   <TOTACCIDENTS>660</TOTACCIDENTS>
   <TOTFATALITIES>704</TOTFATALITIES>
-  <TOTINJURIES>178</TOTINJURIES>
+  <TOTINJURIES>185</TOTINJURIES>
 </FAUQSTATS>
