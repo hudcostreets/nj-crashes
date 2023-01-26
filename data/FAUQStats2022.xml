@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Jan 25 10:00:12 EST 2023</RUNDATE>
+  <RUNDATE>Thu Jan 26 10:00:08 EST 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1144,12 +1144,13 @@
     <MUNICIPALITY MCODE="1809" MNAME="Green Brook Twsp">
       <ACCIDENT ACCID="12143" DATE="11/12/2022" TIME="0049">
         <HIGHWAY>22</HIGHWAY>
-        <LOCATION>State Highway 22</LOCATION>
+        <LOCATION>State Highway 22 MP 40.04</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1945,20 +1946,6 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="13" CNAME="Monmouth">
-    <MUNICIPALITY MCODE="1331" MNAME="Middletown Twsp">
-      <ACCIDENT ACCID="12107" DATE="10/12/2022" TIME="1735">
-        <STREET>Thompson Ave</STREET>
-        <LOCATION>Thompson Ave</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3671,6 +3658,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3957,12 +3945,13 @@
     <MUNICIPALITY MCODE="1810" MNAME="Hillsborough Twsp">
       <ACCIDENT ACCID="11917" DATE="07/22/2022" TIME="1607">
         <HIGHWAY>514</HIGHWAY>
-        <LOCATION>County 514</LOCATION>
+        <LOCATION>County 514 MP 9.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6847,8 +6836,8 @@
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0114" MNAME="Linwood City">
       <ACCIDENT ACCID="11666" DATE="04/10/2022" TIME="0011">
-        <STREET>Ocean Heights Avenue</STREET>
-        <LOCATION>Ocean Heights Avenue</LOCATION>
+        <HIGHWAY>559</HIGHWAY>
+        <LOCATION>County 559 (Alternate) MP .15</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7149,6 +7138,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7189,6 +7179,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7224,12 +7215,13 @@
     <MUNICIPALITY MCODE="2122" MNAME="Washington Twsp">
       <ACCIDENT ACCID="11621" DATE="03/18/2022" TIME="2155">
         <HIGHWAY>31</HIGHWAY>
-        <LOCATION>State Highway 31</LOCATION>
+        <LOCATION>State Highway 31 MP 40.18</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7619,7 +7611,7 @@
     <MUNICIPALITY MCODE="0412" MNAME="Cherry Hill Twsp">
       <ACCIDENT ACCID="11592" DATE="03/02/2022" TIME="0245">
         <HIGHWAY>70</HIGHWAY>
-        <LOCATION>State Highway 70 MP 3.8</LOCATION>
+        <LOCATION>State Highway 70 MP 3.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7664,6 +7656,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8216,12 +8209,13 @@
     <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
       <ACCIDENT ACCID="11525" DATE="01/28/2022" TIME="0125">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9</LOCATION>
+        <LOCATION>State Highway 9 MP 123.17</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8312,12 +8306,13 @@
     <MUNICIPALITY MCODE="2019" MNAME="Union Twsp">
       <ACCIDENT ACCID="11514" DATE="01/24/2022" TIME="1732">
         <HIGHWAY>439</HIGHWAY>
-        <LOCATION>State Highway 439 MP 2.71</LOCATION>
+        <LOCATION>State Highway 439 MP 2.72</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8353,12 +8348,13 @@
     <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
       <ACCIDENT ACCID="11510" DATE="01/20/2022" TIME="2225">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 28.18</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8477,6 +8473,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8839,7 +8836,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>660</TOTACCIDENTS>
-  <TOTFATALITIES>704</TOTFATALITIES>
-  <TOTINJURIES>185</TOTINJURIES>
+  <TOTACCIDENTS>659</TOTACCIDENTS>
+  <TOTFATALITIES>703</TOTFATALITIES>
+  <TOTINJURIES>192</TOTINJURIES>
 </FAUQSTATS>
