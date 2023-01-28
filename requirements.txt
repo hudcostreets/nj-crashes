@@ -10,6 +10,6 @@ pandas
 papermill
 plotly
 requests
-sqlalchemy
+sqlalchemy<2
 tabula-py
 utz==0.3.21
