@@ -3,13 +3,16 @@ click
 dask[dataframe]
 fastparquet
 kaleido
+ipython==8.8.0
 jupyter
+jupyter-client==7.4.9
 lxml
+nbclassic==0.4.8
 openpyxl
 pandas
 papermill
 plotly
 requests
-sqlalchemy<2
+sqlalchemy==1.4.46
 tabula-py
 utz==0.3.21
