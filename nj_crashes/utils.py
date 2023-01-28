@@ -46,7 +46,7 @@ def parse_file(path):
 
 def normalized_ytd_days(dt):
     """Combine 2/29 and 2/28, count YTD days as if in non-leap years."""
-    days = int((dt - pd.to_datetime(f'{dt.year}')).days + 1)
+    days = int((dt - pd.to_datetime(f'{dt.year}').tz_localize(dt.tz)).days + 1)
     if dt.year % 4 == 0 and dt.month >= 3:
         days -= 1
     return days
