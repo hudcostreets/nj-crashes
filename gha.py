@@ -5,6 +5,8 @@ from os.path import dirname
 import click
 from utz import check, process, run
 
+import parse_njsp_xmls
+
 
 def configure_author(name, email):
     run('git', 'config', '--global', 'user.name', name)
@@ -42,7 +44,10 @@ def main(branches, do_configure_author, force, push):
     if not git_is_clean:
         commit('GHA: update data')
 
-    for nb in ['parse-njsp-xmls.ipynb', 'njsp-plots.ipynb']:
+    print("Calling parse_njsp_xmls.main()")
+    parse_njsp_xmls.main()
+
+    for nb in ['njsp-plots.ipynb']:
         out = f'out/{nb}'
         makedirs(dirname(out), exist_ok=True)
         run('papermill', nb, out)
