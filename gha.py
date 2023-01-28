@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 from os import makedirs
 from os.path import dirname
+from sys import stderr
 
 import click
 from utz import check, process, run
 
+import njsp_plots
 import parse_njsp_xmls
 
 
@@ -45,7 +47,12 @@ def main(branches, do_configure_author, force, push):
         commit('GHA: update data')
 
     print("Calling parse_njsp_xmls.main()")
+    stderr.write("Calling parse_njsp_xmls.main()\n")
     parse_njsp_xmls.main()
+
+    print("Calling njsp_plots.main()")
+    stderr.write("Calling njsp_plots.main()\n")
+    njsp_plots.main()
 
     for nb in ['njsp-plots.ipynb']:
         out = f'out/{nb}'
