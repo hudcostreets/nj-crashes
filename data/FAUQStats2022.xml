@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Jan 30 10:00:13 EST 2023</RUNDATE>
+  <RUNDATE>Tue Jan 31 10:00:08 EST 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1827,6 +1827,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2284,7 +2285,7 @@
     <MUNICIPALITY MCODE="1404" MNAME="Chatham Boro">
       <ACCIDENT ACCID="12070" DATE="09/26/2022" TIME="1953">
         <HIGHWAY>124</HIGHWAY>
-        <LOCATION>State Highway 124</LOCATION>
+        <LOCATION>State Highway 124 MP 6.59</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3267,7 +3268,7 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="11968" DATE="08/19/2022" TIME="1613">
+      <ACCIDENT ACCID="11968" DATE="08/19/2022" TIME="1614">
         <HIGHWAY>95</HIGHWAY>
         <LOCATION>New Jersey Turnpike MP 107.1</LOCATION>
         <FATALITIES>2</FATALITIES>
@@ -3275,6 +3276,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7032,6 +7034,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7384,12 +7387,13 @@
     <MUNICIPALITY MCODE="1221" MNAME="South Brunswick Tws">
       <ACCIDENT ACCID="11604" DATE="03/12/2022" TIME="0042">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 18</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7767,12 +7771,13 @@
     <MUNICIPALITY MCODE="1216" MNAME="Perth Amboy City">
       <ACCIDENT ACCID="11571" DATE="02/16/2022" TIME="1913">
         <HIGHWAY>616</HIGHWAY>
-        <LOCATION>County 616</LOCATION>
+        <LOCATION>County 616 MP 1.53</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7980,6 +7985,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1507" MNAME="Toms River">
@@ -8200,7 +8206,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-        <INJURIES>3</INJURIES>
+        <INJURIES>4</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8242,6 +8248,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>3</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8350,6 +8357,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>3</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0412" MNAME="Cherry Hill Twsp">
@@ -8809,5 +8817,5 @@
   </COUNTY>
   <TOTACCIDENTS>656</TOTACCIDENTS>
   <TOTFATALITIES>699</TOTFATALITIES>
-  <TOTINJURIES>204</TOTINJURIES>
+  <TOTINJURIES>213</TOTINJURIES>
 </FAUQSTATS>
