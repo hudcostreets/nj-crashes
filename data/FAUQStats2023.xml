@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Jan 31 10:00:04 EST 2023</RUNDATE>
+  <RUNDATE>Wed Feb 01 10:00:07 EST 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -52,8 +52,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1316" MNAME="Freehold Twsp">
       <ACCIDENT ACCID="12294" DATE="01/30/2023" TIME="1849">
-        <STREET>US Highway 9 Soiuth bound 4039 US 9 N</STREET>
-        <LOCATION>US Highway 9 Soiuth bound 4039 US 9 N</LOCATION>
+        <HIGHWAY>9</HIGHWAY>
+        <LOCATION>State Highway 9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -66,12 +66,13 @@
     <MUNICIPALITY MCODE="1512" MNAME="Lacey Twsp">
       <ACCIDENT ACCID="12295" DATE="01/30/2023" TIME="1759">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>9</LOCATION>
+        <LOCATION>State Highway 9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -79,7 +80,20 @@
     <MUNICIPALITY MCODE="1414" MNAME="Jefferson Twsp">
       <ACCIDENT ACCID="12293" DATE="01/30/2023" TIME="1413">
         <HIGHWAY>15</HIGHWAY>
-        <LOCATION>15</LOCATION>
+        <LOCATION>State Highway 15</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+    <MUNICIPALITY MCODE="0113" MNAME="Hammonton Town">
+      <ACCIDENT ACCID="12297" DATE="01/28/2023" TIME="1739">
+        <STREET>N Washington St / 12th St</STREET>
+        <LOCATION>N Washington St / 12th St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -564,7 +578,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>39</TOTACCIDENTS>
-  <TOTFATALITIES>41</TOTFATALITIES>
+  <TOTACCIDENTS>40</TOTACCIDENTS>
+  <TOTFATALITIES>42</TOTFATALITIES>
   <TOTINJURIES>0</TOTINJURIES>
 </FAUQSTATS>
