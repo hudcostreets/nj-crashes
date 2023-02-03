@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Feb 02 10:00:08 EST 2023</RUNDATE>
+  <RUNDATE>Fri Feb 03 10:00:09 EST 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -7163,7 +7163,7 @@
     <MUNICIPALITY MCODE="1334" MNAME="Neptune Twsp">
       <ACCIDENT ACCID="11627" DATE="03/21/2022" TIME="0858">
         <HIGHWAY>17</HIGHWAY>
-        <LOCATION>County 17 MP 2.4</LOCATION>
+        <LOCATION>County 17 MP 2.33</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -8185,8 +8185,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2019" MNAME="Union Twsp">
       <ACCIDENT ACCID="11535" DATE="01/29/2022" TIME="2158">
-        <STREET>Morris Avenue</STREET>
-        <LOCATION>Morris Avenue</LOCATION>
+        <STREET>Morris Ave</STREET>
+        <LOCATION>Morris Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -8529,7 +8529,7 @@
     <MUNICIPALITY MCODE="0610" MNAME="Millville City">
       <ACCIDENT ACCID="11488" DATE="01/13/2022" TIME="0508">
         <HIGHWAY>678</HIGHWAY>
-        <LOCATION>County 678</LOCATION>
+        <LOCATION>County 678 MP 1.32</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
