@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Feb 07 10:00:08 EST 2023</RUNDATE>
+  <RUNDATE>Wed Feb 08 10:00:07 EST 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -4681,12 +4681,13 @@
     <MUNICIPALITY MCODE="0256" MNAME="Rutherford Boro">
       <ACCIDENT ACCID="11845" DATE="06/29/2022" TIME="2154">
         <HIGHWAY>3</HIGHWAY>
-        <LOCATION>State Highway 3</LOCATION>
+        <LOCATION>State Highway 3 MP 5.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4883,6 +4884,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5240,13 +5242,14 @@
   <COUNTY CCODE="21" CNAME="Warren">
     <MUNICIPALITY MCODE="2117" MNAME="Oxford Twsp">
       <ACCIDENT ACCID="11792" DATE="06/10/2022" TIME="1858">
-        <HIGHWAY>57</HIGHWAY>
-        <LOCATION>State Highway 57</LOCATION>
+        <STREET>Washington Avenue</STREET>
+        <LOCATION>Washington Avenue</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8860,5 +8863,5 @@
   </COUNTY>
   <TOTACCIDENTS>658</TOTACCIDENTS>
   <TOTFATALITIES>701</TOTFATALITIES>
-  <TOTINJURIES>222</TOTINJURIES>
+  <TOTINJURIES>223</TOTINJURIES>
 </FAUQSTATS>
