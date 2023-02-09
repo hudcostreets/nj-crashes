@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Feb 08 10:00:04 EST 2023</RUNDATE>
+  <RUNDATE>Thu Feb 09 10:00:06 EST 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -758,7 +758,7 @@
     <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="12251" DATE="01/02/2023" TIME="0926">
         <HIGHWAY>322</HIGHWAY>
-        <LOCATION>State Highway 322</LOCATION>
+        <LOCATION>State Highway 322 MP 46.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
