@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Feb 13 10:00:07 EST 2023</RUNDATE>
+  <RUNDATE>Tue Feb 14 10:00:08 EST 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -53,7 +53,7 @@
     <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
       <ACCIDENT ACCID="12325" DATE="02/12/2023" TIME="2131">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>9 (Truck (Rt. 1 and 9 Only))</LOCATION>
+        <LOCATION>State Highway 9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -62,14 +62,53 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0406" MNAME="Berlin Twsp">
+      <ACCIDENT ACCID="12328" DATE="02/12/2023" TIME="1403">
+        <STREET>300 Old Egg Harbor Road</STREET>
+        <LOCATION>300 Old Egg Harbor Road</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2013" MNAME="Rahway City">
+      <ACCIDENT ACCID="12327" DATE="02/12/2023" TIME="0326">
+        <STREET>Capobianco Plaza</STREET>
+        <LOCATION>Capobianco Plaza</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0811" MNAME="Monroe Twsp">
       <ACCIDENT ACCID="12324" DATE="02/11/2023" TIME="1841">
         <HIGHWAY>42</HIGHWAY>
-        <LOCATION>42 (Freeway)</LOCATION>
+        <LOCATION>State Highway 42</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="21" CNAME="Warren">
+    <MUNICIPALITY MCODE="2111" MNAME="Hope Twsp">
+      <ACCIDENT ACCID="12326" DATE="02/10/2023" TIME="1721">
+        <HIGHWAY>80</HIGHWAY>
+        <LOCATION>Interstate 80 MP 11.6</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
@@ -79,7 +118,7 @@
     <MUNICIPALITY MCODE="0614" MNAME="Vineland City">
       <ACCIDENT ACCID="12323" DATE="02/10/2023" TIME="0705">
         <HIGHWAY>47</HIGHWAY>
-        <LOCATION>47 (Business)</LOCATION>
+        <LOCATION>State Highway 47</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -834,7 +873,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>59</TOTACCIDENTS>
-  <TOTFATALITIES>62</TOTFATALITIES>
+  <TOTACCIDENTS>62</TOTACCIDENTS>
+  <TOTFATALITIES>65</TOTFATALITIES>
   <TOTINJURIES>4</TOTINJURIES>
 </FAUQSTATS>
