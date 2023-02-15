@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Feb 14 10:00:11 EST 2023</RUNDATE>
+  <RUNDATE>Wed Feb 15 10:00:12 EST 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -3817,7 +3817,7 @@
     <MUNICIPALITY MCODE="1107" MNAME="Lawrence Twsp">
       <ACCIDENT ACCID="11920" DATE="07/26/2022" TIME="2352">
         <HIGHWAY>583</HIGHWAY>
-        <LOCATION>County 583</LOCATION>
+        <LOCATION>County 583 MP 4.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5717,8 +5717,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2015" MNAME="Roselle Park Boro">
       <ACCIDENT ACCID="11790" DATE="05/25/2022" TIME="1929">
-        <STREET>W. Clay Ave</STREET>
-        <LOCATION>W. Clay Ave</LOCATION>
+        <STREET>W. Clay Avenue</STREET>
+        <LOCATION>W. Clay Avenue</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5803,10 +5803,10 @@
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
-    <MUNICIPALITY MCODE="0306" MNAME="Burlington Twsp">
+    <MUNICIPALITY MCODE="0317" MNAME="Willingboro Twsp">
       <ACCIDENT ACCID="11742" DATE="05/20/2022" TIME="0113">
         <HIGHWAY>634</HIGHWAY>
-        <LOCATION>County 634 MP 1.5</LOCATION>
+        <LOCATION>County 634 MP 1.17</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
