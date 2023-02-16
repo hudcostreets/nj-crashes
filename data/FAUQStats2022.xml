@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Feb 15 10:00:12 EST 2023</RUNDATE>
+  <RUNDATE>Thu Feb 16 10:00:12 EST 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1914,8 +1914,8 @@
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="12076" DATE="10/13/2022" TIME="0629">
-        <STREET>E. Partk Ave</STREET>
-        <LOCATION>E. Partk Ave</LOCATION>
+        <STREET>East Park Avenue</STREET>
+        <LOCATION>East Park Avenue</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6502,9 +6502,9 @@
   </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0337" MNAME="Washington Twsp">
-      <ACCIDENT ACCID="11681" DATE="04/24/2022" TIME="1325">
+      <ACCIDENT ACCID="11681" DATE="04/24/2022" TIME="1326">
         <HIGHWAY>542</HIGHWAY>
-        <LOCATION>County 542 MP 8.4</LOCATION>
+        <LOCATION>County 542 MP 8.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
