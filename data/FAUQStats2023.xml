@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Feb 20 10:10:53 EST 2023</RUNDATE>
+  <RUNDATE>Wed Feb 22 10:00:04 EST 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,6 +49,32 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0822" MNAME="Woodbury City">
+      <ACCIDENT ACCID="12345" DATE="02/21/2023" TIME="1849">
+        <STREET>E Red Bank Avenue</STREET>
+        <LOCATION>E Red Bank Avenue</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="06" CNAME="Cumberland">
+    <MUNICIPALITY MCODE="0613" MNAME="Upper Deerfield Tws">
+      <ACCIDENT ACCID="12338" DATE="02/19/2023" TIME="0211">
+        <HIGHWAY>522</HIGHWAY>
+        <LOCATION>County 522 MP 2</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="12337" DATE="02/18/2023" TIME="1207">
@@ -63,6 +89,33 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="16" CNAME="Passaic">
+    <MUNICIPALITY MCODE="1604" MNAME="Hawthorne Boro">
+      <ACCIDENT ACCID="12344" DATE="02/17/2023" TIME="2037">
+        <HIGHWAY>659</HIGHWAY>
+        <LOCATION>County 659</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
+      <ACCIDENT ACCID="12343" DATE="02/17/2023" TIME="1756">
+        <STREET>West Greystone Rd</STREET>
+        <LOCATION>West Greystone Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1351" MNAME="Upper Freehold Twsp">
       <ACCIDENT ACCID="12335" DATE="02/17/2023" TIME="0746">
@@ -74,6 +127,17 @@
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+    <MUNICIPALITY MCODE="1319" MNAME="Howell Twsp">
+      <ACCIDENT ACCID="12340" DATE="02/16/2023" TIME="1630">
+        <HIGHWAY>195</HIGHWAY>
+        <LOCATION>Interstate 195 MP 28.8</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -221,6 +285,20 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0249" MNAME="Ridgefield Boro">
+      <ACCIDENT ACCID="12339" DATE="02/08/2023" TIME="0820">
+        <STREET>Van Renssalaer Ct</STREET>
+        <LOCATION>Van Renssalaer Ct</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0412" MNAME="Cherry Hill Twsp">
       <ACCIDENT ACCID="12331" DATE="02/08/2023" TIME="0506">
@@ -267,6 +345,19 @@
       <ACCIDENT ACCID="12321" DATE="02/03/2023" TIME="1904">
         <STREET>KELLY DR</STREET>
         <LOCATION>KELLY DR</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="16" CNAME="Passaic">
+    <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
+      <ACCIDENT ACCID="12342" DATE="02/03/2023" TIME="1608">
+        <STREET>E. 37th St</STREET>
+        <LOCATION>E. 37th St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -459,6 +550,19 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2012" MNAME="Plainfield City">
+      <ACCIDENT ACCID="12315" DATE="01/27/2023" TIME="1148">
+        <HIGHWAY>28</HIGHWAY>
+        <LOCATION>State Highway 28</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -725,6 +829,19 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0215" MNAME="Englewood City">
+      <ACCIDENT ACCID="12341" DATE="01/11/2023" TIME="1958">
+        <STREET>W. Englewood Ave</STREET>
+        <LOCATION>W. Englewood Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1507" MNAME="Toms River">
       <ACCIDENT ACCID="12270" DATE="01/11/2023" TIME="0228">
@@ -980,7 +1097,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>70</TOTACCIDENTS>
-  <TOTFATALITIES>73</TOTFATALITIES>
+  <TOTACCIDENTS>79</TOTACCIDENTS>
+  <TOTFATALITIES>82</TOTFATALITIES>
   <TOTINJURIES>8</TOTINJURIES>
 </FAUQSTATS>
