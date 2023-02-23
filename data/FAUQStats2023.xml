@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Feb 22 10:00:04 EST 2023</RUNDATE>
+  <RUNDATE>Thu Feb 23 10:00:04 EST 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -52,8 +52,8 @@
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0822" MNAME="Woodbury City">
       <ACCIDENT ACCID="12345" DATE="02/21/2023" TIME="1849">
-        <STREET>E Red Bank Avenue</STREET>
-        <LOCATION>E Red Bank Avenue</LOCATION>
+        <HIGHWAY>644</HIGHWAY>
+        <LOCATION>County 644</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
