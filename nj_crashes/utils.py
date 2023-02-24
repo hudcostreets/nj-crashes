@@ -23,16 +23,17 @@ def parse_file(path):
     print(f'{len(counties)} "COUNTY" entries, {len(crash_counties)} containing "MUNICIPALITY"/crash info, {total_accidents} accidents, {total_injuries} injuries, {total_fatalities} fatalities')
     records = []
     for county in crash_counties:
-        municipality = county.MUNICIPALITY
-        assert municipality.name == 'MUNICIPALITY'
-        children = get_children(municipality)
-        accidents = municipality.find_all('ACCIDENT', recursive=False)
-        if len(children) != len(accidents):
-            raise ValueError(f'Found {len(children)} municipality children, but {len(accidents)} accidents: {county}. {accidents}')
-        for accident in accidents:
-            obj = { child.name: child.text for child in get_children(accident) }
-            obj = dict(**county.attrs, **municipality.attrs, **accident.attrs, **obj, )
-            records.append(obj)
+        municipalities = county.find_all('MUNICIPALITY')
+        for municipality in municipalities:
+            assert municipality.name == 'MUNICIPALITY'
+            children = get_children(municipality)
+            accidents = municipality.find_all('ACCIDENT', recursive=False)
+            if len(children) != len(accidents):
+                raise ValueError(f'Found {len(children)} municipality children, but {len(accidents)} accidents: {county}. {accidents}')
+            for accident in accidents:
+                obj = { child.name: child.text for child in get_children(accident) }
+                obj = dict(**county.attrs, **municipality.attrs, **accident.attrs, **obj, )
+                records.append(obj)
 
     df = pd.DataFrame(records)
     totals_df = pd.DataFrame([dict(
@@ -50,3 +51,8 @@ def normalized_ytd_days(dt):
     if dt.year % 4 == 0 and dt.month >= 3:
         days -= 1
     return days
+
+
+if __name__ == '__main__':
+    result = parse_file('data/FAUQStats2023.xml')
+    print(result)
