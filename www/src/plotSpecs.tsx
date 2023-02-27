@@ -47,14 +47,13 @@ export const plotSpecs: PlotSpec[] = [
             return <>
                 <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
                 {/*<p><A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, 2022 is on pace {total2022 > total2021 ? `to exceed it, with` : `for`} {total2022}.</p>*/}
-                <p>{`Victim types have been published since 2020; prior years are shown as "Unknown". Additionally, NJSP reports a traffic death total that is ≈5% higher than their crash records account for; that discrepancy is labeled "Missing" above.`}</p>
+                <p>{`Victim types have been published since 2020; prior years are shown as "Unknown".`}</p>
             </>
         },
     },
     {
         id: "ytd", name: "ytd-deaths", title: "NJ Traffic Deaths per Year", menuName: "YTD", dropdownSection: "NJSP",
         children: <>
-            <p>These are based on actual crash records in the NJSP data (which are ≈5% lower than the totals used in the first plot).</p>
             <p>Some data arrives weeks or months after the fact, so current year numbers are especially subject to change.</p>
         </>
     },
