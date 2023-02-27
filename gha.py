@@ -20,7 +20,8 @@ def configure_author(name, email):
 @click.option('-c', '--configure-author', 'do_configure_author', is_flag=True)
 @click.option('-f', '--force', count=True, help=f'Continue past initial no-op data update')
 @click.option('-p', '--push', is_flag=True)
-def main(branches, do_configure_author, force, push):
+@click.option('-r/-R', '--rebase/--no-rebase', is_flag=True, default=None)
+def main(branches, do_configure_author, force, push, rebase):
     run('./refresh-data.sh')
     git_is_clean = check('git', 'diff', '--quiet', 'HEAD')
     if git_is_clean:
@@ -75,6 +76,12 @@ def main(branches, do_configure_author, force, push):
 
     if push:
         if did_commit:
+            if rebase is not False:
+                # None -> merge, True -> rebase, False -> skip
+                run('git', 'config', 'pull.rebase', str(bool(rebase)).lower())
+                for branch in branches:
+                    run('git', 'pull', 'origin', branch)
+
             for branch in branches:
                 run('git', 'push', 'origin', f'HEAD:{branch}')
         else:
