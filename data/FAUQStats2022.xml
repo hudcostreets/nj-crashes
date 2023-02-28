@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Feb 27 10:00:10 EST 2023</RUNDATE>
+  <RUNDATE>Tue Feb 28 10:00:12 EST 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -6764,12 +6764,13 @@
     <MUNICIPALITY MCODE="0325" MNAME="Mount Laurel Twsp">
       <ACCIDENT ACCID="11696" DATE="04/13/2022" TIME="1047">
         <HIGHWAY>686</HIGHWAY>
-        <LOCATION>County 686</LOCATION>
+        <LOCATION>County 686 MP 6.05</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6907,8 +6908,8 @@
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0313" MNAME="Evesham Twsp">
       <ACCIDENT ACCID="11695" DATE="04/07/2022" TIME="0715">
-        <STREET>Meridian Ln</STREET>
-        <LOCATION>Meridian Ln</LOCATION>
+        <STREET>Meridian Lane</STREET>
+        <LOCATION>Meridian Lane</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
