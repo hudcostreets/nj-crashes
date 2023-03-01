@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Feb 28 10:00:12 EST 2023</RUNDATE>
+  <RUNDATE>Wed Mar 01 10:00:07 EST 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -3300,7 +3300,7 @@
     <MUNICIPALITY MCODE="1507" MNAME="Toms River">
       <ACCIDENT ACCID="11962" DATE="08/16/2022" TIME="0545">
         <HIGHWAY>37</HIGHWAY>
-        <LOCATION>State Highway 37</LOCATION>
+        <LOCATION>State Highway 37 MP 7.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6724,12 +6724,13 @@
     <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
       <ACCIDENT ACCID="11765" DATE="04/16/2022" TIME="0416">
         <HIGHWAY>20</HIGHWAY>
-        <LOCATION>State Highway 20</LOCATION>
+        <LOCATION>State Highway 20 MP .96</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
