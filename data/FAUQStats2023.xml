@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Mar 02 10:00:03 EST 2023</RUNDATE>
+  <RUNDATE>Fri Mar 03 10:00:03 EST 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,41 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="18" CNAME="Somerset">
+    <MUNICIPALITY MCODE="1806" MNAME="Bridgewater Twsp">
+      <ACCIDENT ACCID="12356" DATE="03/02/2023" TIME="0229">
+        <HIGHWAY>287</HIGHWAY>
+        <LOCATION>Interstate 287 MP 16</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+    <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
+      <ACCIDENT ACCID="12359" DATE="03/01/2023" TIME="2330">
+        <HIGHWAY>30</HIGHWAY>
+        <LOCATION>State Highway 30 MP 55</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+      <ACCIDENT ACCID="12358" DATE="03/01/2023" TIME="1903">
+        <STREET>Virgina Ave &amp; Pacific Ave</STREET>
+        <LOCATION>Virgina Ave &amp; Pacific Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0408" MNAME="Camden City">
@@ -140,6 +175,20 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
+    <MUNICIPALITY MCODE="1326" MNAME="Manalapan Twsp">
+      <ACCIDENT ACCID="12357" DATE="02/21/2023" TIME="1609">
+        <HIGHWAY>33</HIGHWAY>
+        <LOCATION>State Highway 33 (Business) MP .5</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1204,7 +1253,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>87</TOTACCIDENTS>
-  <TOTFATALITIES>90</TOTFATALITIES>
+  <TOTACCIDENTS>91</TOTACCIDENTS>
+  <TOTFATALITIES>94</TOTFATALITIES>
   <TOTINJURIES>10</TOTINJURIES>
 </FAUQSTATS>
