@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Mar 06 10:00:07 EST 2023</RUNDATE>
+  <RUNDATE>Tue Mar 07 10:00:07 EST 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -562,6 +562,19 @@
       <ACCIDENT ACCID="12194" DATE="12/08/2022" TIME="1742">
         <HIGHWAY>30</HIGHWAY>
         <LOCATION>State Highway 30</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="18" CNAME="Somerset">
+    <MUNICIPALITY MCODE="1820" MNAME="Warren Twsp">
+      <ACCIDENT ACCID="12362" DATE="12/06/2022" TIME="1453">
+        <HIGHWAY>651</HIGHWAY>
+        <LOCATION>651 (Spur (County Routes Only))</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4819,13 +4832,14 @@
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1518" MNAME="Manchester Twsp">
       <ACCIDENT ACCID="11830" DATE="06/24/2022" TIME="1958">
-        <STREET>Commonwealth Blvd</STREET>
-        <LOCATION>Commonwealth Blvd</LOCATION>
+        <STREET>Commonwealth Boulevard</STREET>
+        <LOCATION>Commonwealth Boulevard</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5045,6 +5059,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5546,8 +5561,8 @@
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0313" MNAME="Evesham Twsp">
       <ACCIDENT ACCID="11758" DATE="05/29/2022" TIME="1033">
-        <STREET>Hopewell Rd</STREET>
-        <LOCATION>Hopewell Rd</LOCATION>
+        <STREET>Hopewell Road</STREET>
+        <LOCATION>Hopewell Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6161,7 +6176,7 @@
     <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
       <ACCIDENT ACCID="11714" DATE="05/05/2022" TIME="2227">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1 MP 33.63</LOCATION>
+        <LOCATION>State Highway 1 MP 33.57</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6188,8 +6203,8 @@
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0325" MNAME="Mount Laurel Twsp">
       <ACCIDENT ACCID="11786" DATE="05/05/2022" TIME="1839">
-        <STREET>N. Lake Dr</STREET>
-        <LOCATION>N. Lake Dr</LOCATION>
+        <STREET>N. Lake Drive</STREET>
+        <LOCATION>N. Lake Drive</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6203,12 +6218,13 @@
     <MUNICIPALITY MCODE="1506" MNAME="Brick Twsp">
       <ACCIDENT ACCID="11734" DATE="05/05/2022" TIME="1525">
         <HIGHWAY>70</HIGHWAY>
-        <LOCATION>State Highway 70</LOCATION>
+        <LOCATION>State Highway 70 MP 56.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8844,7 +8860,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>655</TOTACCIDENTS>
-  <TOTFATALITIES>698</TOTFATALITIES>
-  <TOTINJURIES>240</TOTINJURIES>
+  <TOTACCIDENTS>656</TOTACCIDENTS>
+  <TOTFATALITIES>699</TOTFATALITIES>
+  <TOTINJURIES>242</TOTINJURIES>
 </FAUQSTATS>
