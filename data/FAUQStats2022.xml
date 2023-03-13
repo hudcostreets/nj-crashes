@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Mar 12 10:00:06 EDT 2023</RUNDATE>
+  <RUNDATE>Mon Mar 13 10:00:07 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1566,6 +1566,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2156,13 +2157,13 @@
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12050" DATE="10/02/2022" TIME="0340">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1 (Truck (Rt. 1 and 9 Only))</LOCATION>
+        <LOCATION>State Highway 1 (Truck (Rt. 1 and 9 Only)) MP .4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4371,6 +4372,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8855,5 +8857,5 @@
   </COUNTY>
   <TOTACCIDENTS>654</TOTACCIDENTS>
   <TOTFATALITIES>697</TOTFATALITIES>
-  <TOTINJURIES>257</TOTINJURIES>
+  <TOTINJURIES>258</TOTINJURIES>
 </FAUQSTATS>
