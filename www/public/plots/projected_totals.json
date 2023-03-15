@@ -153,10 +153,10 @@
         "Drivers": 49,
         "Pedestrians": 41,
         "Passengers": 9,
-        "Cyclists": 2,
+        "Cyclists": 3,
         "Unknown": 0,
-        "Total": 101,
-        "Projected": 527,
-        "Projected Total": 628
+        "Total": 102,
+        "Projected": 521,
+        "Projected Total": 623
     }
 }
