@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Mar 23 10:00:05 EDT 2023</RUNDATE>
+  <RUNDATE>Fri Mar 24 10:00:11 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -247,21 +247,6 @@
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="13" CNAME="Monmouth">
-    <MUNICIPALITY MCODE="1304" MNAME="Colts Neck Twsp">
-      <ACCIDENT ACCID="12229" DATE="12/24/2022" TIME="1118">
-        <HIGHWAY>18</HIGHWAY>
-        <LOCATION>State Highway 18</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1529" MNAME="South Toms River Bo">
       <ACCIDENT ACCID="12228" DATE="12/23/2022" TIME="1838">
         <HIGHWAY>444</HIGHWAY>
@@ -980,6 +965,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1655,8 +1641,8 @@
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="12097" DATE="10/21/2022" TIME="2038">
-        <STREET>4403 E. Black Horse Pike (Parking Lot)</STREET>
-        <LOCATION>4403 E. Black Horse Pike (Parking Lot)</LOCATION>
+        <STREET>4403 E. Black Horse Pk (Parking Lot)</STREET>
+        <LOCATION>4403 E. Black Horse Pk (Parking Lot)</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2845,8 +2831,8 @@
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
       <ACCIDENT ACCID="11999" DATE="09/04/2022" TIME="0337">
-        <STREET>Atlantic Avenue</STREET>
-        <LOCATION>Atlantic Avenue</LOCATION>
+        <STREET>Atlantic Ave</STREET>
+        <LOCATION>Atlantic Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3513,8 +3499,8 @@
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1511" MNAME="Jackson Twsp">
       <ACCIDENT ACCID="11947" DATE="08/07/2022" TIME="1551">
-        <STREET>Indiero Road</STREET>
-        <LOCATION>Indiero Road</LOCATION>
+        <STREET>Indiero Rd</STREET>
+        <LOCATION>Indiero Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3769,9 +3755,9 @@
   </COUNTY>
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
-      <ACCIDENT ACCID="11926" DATE="07/29/2022" TIME="1410">
-        <STREET>South Carolina Avenue</STREET>
-        <LOCATION>South Carolina Avenue</LOCATION>
+      <ACCIDENT ACCID="11926" DATE="07/29/2022" TIME="1408">
+        <STREET>South Carolina Ave</STREET>
+        <LOCATION>South Carolina Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3919,8 +3905,8 @@
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1514" MNAME="Lakewood Twsp">
       <ACCIDENT ACCID="11905" DATE="07/22/2022" TIME="2022">
-        <STREET>South Lake Drive</STREET>
-        <LOCATION>South Lake Drive</LOCATION>
+        <STREET>South Lake Dr</STREET>
+        <LOCATION>South Lake Dr</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -4569,8 +4555,8 @@
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
       <ACCIDENT ACCID="11853" DATE="07/01/2022" TIME="2330">
-        <STREET>Pacific Avenue</STREET>
-        <LOCATION>Pacific Avenue</LOCATION>
+        <STREET>Pacific Ave</STREET>
+        <LOCATION>Pacific Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4855,8 +4841,8 @@
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1518" MNAME="Manchester Twsp">
       <ACCIDENT ACCID="11830" DATE="06/24/2022" TIME="1958">
-        <STREET>Commonwealth Boulevard</STREET>
-        <LOCATION>Commonwealth Boulevard</LOCATION>
+        <STREET>Commonwealth Blvd</STREET>
+        <LOCATION>Commonwealth Blvd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5358,8 +5344,8 @@
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1506" MNAME="Brick Twsp">
       <ACCIDENT ACCID="11809" DATE="06/07/2022" TIME="0009">
-        <STREET>Yorktowne Boulevard</STREET>
-        <LOCATION>Yorktowne Boulevard</LOCATION>
+        <STREET>Yorktowne Blvd</STREET>
+        <LOCATION>Yorktowne Blvd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6121,8 +6107,8 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0401" MNAME="Audubon Boro">
       <ACCIDENT ACCID="11764" DATE="05/09/2022" TIME="0853">
-        <STREET>West Nicholson Road</STREET>
-        <LOCATION>West Nicholson Road</LOCATION>
+        <STREET>West Nicholson Rd</STREET>
+        <LOCATION>West Nicholson Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6284,8 +6270,8 @@
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
       <ACCIDENT ACCID="11737" DATE="05/03/2022" TIME="2250">
-        <STREET>Arctic Avenue</STREET>
-        <LOCATION>Arctic Avenue</LOCATION>
+        <STREET>Arctic Ave</STREET>
+        <LOCATION>Arctic Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6826,12 +6812,13 @@
     <MUNICIPALITY MCODE="0412" MNAME="Cherry Hill Twsp">
       <ACCIDENT ACCID="11664" DATE="04/12/2022" TIME="2223">
         <HIGHWAY>644</HIGHWAY>
-        <LOCATION>County 644</LOCATION>
+        <LOCATION>County 644 MP 2.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7007,8 +6994,8 @@
   <COUNTY CCODE="18" CNAME="Somerset">
     <MUNICIPALITY MCODE="1806" MNAME="Bridgewater Twsp">
       <ACCIDENT ACCID="11641" DATE="04/02/2022" TIME="1808">
-        <STREET>Fulton Street</STREET>
-        <LOCATION>Fulton Street</LOCATION>
+        <STREET>Fulton St</STREET>
+        <LOCATION>Fulton St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7259,7 +7246,7 @@
     <MUNICIPALITY MCODE="0701" MNAME="Belleville Town">
       <ACCIDENT ACCID="11630" DATE="03/18/2022" TIME="1908">
         <HIGHWAY>506</HIGHWAY>
-        <LOCATION>County 506 MP 2.25</LOCATION>
+        <LOCATION>County 506 (Spur (County Routes Only)) MP 2.25</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7383,8 +7370,8 @@
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1111" MNAME="Trenton">
       <ACCIDENT ACCID="11660" DATE="03/14/2022" TIME="1757">
-        <STREET>Bridge St</STREET>
-        <LOCATION>Bridge St</LOCATION>
+        <STREET>Bridge Street</STREET>
+        <LOCATION>Bridge Street</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7687,8 +7674,8 @@
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
       <ACCIDENT ACCID="11922" DATE="02/28/2022" TIME="1936">
-        <STREET>North 3rd Street</STREET>
-        <LOCATION>North 3rd Street</LOCATION>
+        <STREET>North 3rd St</STREET>
+        <LOCATION>North 3rd St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -8890,7 +8877,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>655</TOTACCIDENTS>
-  <TOTFATALITIES>698</TOTFATALITIES>
-  <TOTINJURIES>290</TOTINJURIES>
+  <TOTACCIDENTS>654</TOTACCIDENTS>
+  <TOTFATALITIES>697</TOTFATALITIES>
+  <TOTINJURIES>291</TOTINJURIES>
 </FAUQSTATS>

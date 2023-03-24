@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Mar 23 10:00:02 EDT 2023</RUNDATE>
+  <RUNDATE>Fri Mar 24 10:00:05 EDT 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -881,12 +881,13 @@
     <MUNICIPALITY MCODE="0113" MNAME="Hammonton Town">
       <ACCIDENT ACCID="12297" DATE="01/28/2023" TIME="1739">
         <HIGHWAY>54</HIGHWAY>
-        <LOCATION>State Highway 54</LOCATION>
+        <LOCATION>State Highway 54 MP 10.55</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
