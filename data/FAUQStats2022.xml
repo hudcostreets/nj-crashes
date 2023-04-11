@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Apr 10 10:00:05 EDT 2023</RUNDATE>
+  <RUNDATE>Tue Apr 11 10:00:08 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1330,13 +1330,13 @@
     <MUNICIPALITY MCODE="0325" MNAME="Mount Laurel Twsp">
       <ACCIDENT ACCID="12128" DATE="11/04/2022" TIME="0119">
         <HIGHWAY>73</HIGHWAY>
-        <LOCATION>State Highway 73 MP 27.4</LOCATION>
+        <LOCATION>State Highway 73 MP 27.34</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-        <INJURIES>1</INJURIES>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1438,12 +1438,13 @@
     <MUNICIPALITY MCODE="0325" MNAME="Mount Laurel Twsp">
       <ACCIDENT ACCID="12114" DATE="10/29/2022" TIME="2215">
         <HIGHWAY>38</HIGHWAY>
-        <LOCATION>State Highway 38</LOCATION>
+        <LOCATION>State Highway 38 MP 9.55</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1491,7 +1492,7 @@
     <MUNICIPALITY MCODE="0318" MNAME="Lumberton Twsp">
       <ACCIDENT ACCID="12118" DATE="10/28/2022" TIME="0502">
         <HIGHWAY>38</HIGHWAY>
-        <LOCATION>State Highway 38 MP 3.3</LOCATION>
+        <LOCATION>State Highway 38 MP 16.14</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2097,12 +2098,13 @@
     <MUNICIPALITY MCODE="0326" MNAME="New Hanover Twsp">
       <ACCIDENT ACCID="12072" DATE="10/05/2022" TIME="1858">
         <HIGHWAY>616</HIGHWAY>
-        <LOCATION>County 616</LOCATION>
+        <LOCATION>County 616 MP 26.32</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6304,20 +6306,6 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <COUNTY CCODE="09" CNAME="Hudson">
-    <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
-      <ACCIDENT ACCID="11698" DATE="05/02/2022" TIME="2152">
-        <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1 (Truck (Rt. 1 and 9 Only)) MP 2.8</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1530" MNAME="Stafford Twsp">
       <ACCIDENT ACCID="11707" DATE="05/02/2022" TIME="2143">
@@ -6328,6 +6316,20 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="09" CNAME="Hudson">
+    <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
+      <ACCIDENT ACCID="11698" DATE="05/02/2022" TIME="2140">
+        <HIGHWAY>1</HIGHWAY>
+        <LOCATION>State Highway 1 (Truck (Rt. 1 and 9 Only)) MP 2.8</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -6746,13 +6748,14 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0408" MNAME="Camden City">
       <ACCIDENT ACCID="11668" DATE="04/16/2022" TIME="1859">
-        <STREET>29th St</STREET>
-        <LOCATION>29th St</LOCATION>
+        <STREET>Von Nieda Park</STREET>
+        <LOCATION>Von Nieda Park</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6944,6 +6947,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0313" MNAME="Evesham Twsp">
@@ -8886,5 +8890,5 @@
   </COUNTY>
   <TOTACCIDENTS>652</TOTACCIDENTS>
   <TOTFATALITIES>695</TOTFATALITIES>
-  <TOTINJURIES>309</TOTINJURIES>
+  <TOTINJURIES>311</TOTINJURIES>
 </FAUQSTATS>
