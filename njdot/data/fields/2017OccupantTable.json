@@ -1,0 +1,258 @@
+[
+    {
+        "Field": "Year",
+        "Right\rJustify": NaN,
+        "From": 1,
+        "To": 4,
+        "Length": 4,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "County Code",
+        "Right\rJustify": NaN,
+        "From": 5,
+        "To": 6,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Municipality Code",
+        "Right\rJustify": NaN,
+        "From": 7,
+        "To": 8,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Department Case Number",
+        "Right\rJustify": NaN,
+        "From": 9,
+        "To": 31,
+        "Length": 23,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 32,
+        "To": 32,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Vehicle Number",
+        "Right\rJustify": "Y",
+        "From": 33,
+        "To": 34,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 35,
+        "To": 35,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Occupant Number",
+        "Right\rJustify": "Y",
+        "From": 36,
+        "To": 37,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 38,
+        "To": 38,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Physical Condition",
+        "Right\rJustify": NaN,
+        "From": 39,
+        "To": 40,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 41,
+        "To": 41,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Position In/On Vehicle",
+        "Right\rJustify": NaN,
+        "From": 42,
+        "To": 43,
+        "Length": 2,
+        "Comments / Notes": "Additional Code added in 2017:\r12 - Bus Seating"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 44,
+        "To": 44,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Ejection Code",
+        "Right\rJustify": NaN,
+        "From": 45,
+        "To": 46,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 47,
+        "To": 47,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Age",
+        "Right\rJustify": "Y",
+        "From": 48,
+        "To": 50,
+        "Length": 3,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 51,
+        "To": 51,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Sex",
+        "Right\rJustify": NaN,
+        "From": 52,
+        "To": 52,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 53,
+        "To": 53,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Location of Most Severe Injury",
+        "Right\rJustify": NaN,
+        "From": 54,
+        "To": 55,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 56,
+        "To": 56,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Type of Most Severe Phys Injury",
+        "Right\rJustify": NaN,
+        "From": 57,
+        "To": 58,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 59,
+        "To": 59,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Refused Medical Attention",
+        "Right\rJustify": NaN,
+        "From": 60,
+        "To": 61,
+        "Length": 2,
+        "Comments / Notes": "Increased to 2 bytes;"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 62,
+        "To": 62,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Safety Equipment Available",
+        "Right\rJustify": NaN,
+        "From": 63,
+        "To": 64,
+        "Length": 2,
+        "Comments / Notes": "Code Changes starting in 2017."
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 65,
+        "To": 65,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Safety Equipment Used",
+        "Right\rJustify": NaN,
+        "From": 66,
+        "To": 67,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 68,
+        "To": 68,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Airbag Deployment",
+        "Right\rJustify": NaN,
+        "From": 69,
+        "To": 70,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 71,
+        "To": 71,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Hospital Code",
+        "Right\rJustify": NaN,
+        "From": 72,
+        "To": 75,
+        "Length": 4,
+        "Comments / Notes": NaN
+    }
+]
