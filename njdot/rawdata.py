@@ -442,7 +442,7 @@ def load(txt_path, fields, ints=None, floats=None, bools=None):
     for k in floats or []:
         df[k] = df[k].replace('', nan).astype(float)
     for k in bools or []:
-        df[k] = df[k].replace('Y', True).replace('N', False).replace('', False).astype(bool)
+        df[k] = df[k].apply(lambda s: { 'Y': True, 'N': False, '': False }[s]).astype(bool)
     return df
 
 
@@ -463,14 +463,14 @@ def pqt(regions, types, years, overwrite, dry_run):
                 name = f'{parent_dir}/{region}{year}{table}'
                 txt_path = f'{name}.txt'
                 pqt_path = f'{name}.pqt'
-                if v2017 in fields_dict:
-                    fields = fields_dict[v2017]
+                json_name = f'{2017 if v2017 else 2001}{typ}Table.json'
+                json_path = f'{FIELDS_DIR}/{json_name}'
+                if json_path in fields_dict:
+                    fields = fields_dict[json_path]
                 else:
-                    json_name = f'{2017 if v2017 else 2001}{typ}Table.json'
-                    json_path = f'{FIELDS_DIR}/{json_name}'
                     with open(json_path, 'r') as f:
                         fields = json.load(f)
-                        fields_dict[v2017] = fields
+                        fields_dict[json_path] = fields
                     if typ == 'Crash' and year == '2013' and region == 'Atlantic':
                         # For some reason, "Reporting Badge No." in Atlantic2013[Accidents] is 18 chars long, not 5
                         [ *fields, rest ] = fields
@@ -490,10 +490,8 @@ def pqt(regions, types, years, overwrite, dry_run):
                     df = df.drop(columns=['Year', 'Crash Time', 'Crash Date', 'Crash Day Of Week'])
                 elif typ == 'Vehicle':
                     df = load(txt_path, fields, bools=[ 'Hit & Run Driver Flag', ])
-                elif type == 'Driver':
-                    df = load(txt_path, fields, bools=[ 'Hit & Run Driver Flag', ])
                 else:
-                    raise NotImplementedError(f"Types other than [\"Crash\", \"Vehicle\"] not supported yet")
+                    df = load(txt_path, fields)
                 err(f'Writing {pqt_path}')
                 df.to_parquet(pqt_path, index=None)
 
