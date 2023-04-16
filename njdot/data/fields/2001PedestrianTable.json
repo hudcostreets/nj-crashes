@@ -1,0 +1,466 @@
+[
+    {
+        "Field": "Year",
+        "Right\rJustify": NaN,
+        "From": 1,
+        "To": 4,
+        "Length": 4,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "County Code",
+        "Right\rJustify": NaN,
+        "From": 5,
+        "To": 6,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Municipality Code",
+        "Right\rJustify": NaN,
+        "From": 7,
+        "To": 8,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Department Case Number",
+        "Right\rJustify": NaN,
+        "From": 9,
+        "To": 31,
+        "Length": 23,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 32,
+        "To": 32,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Pedestrian Number",
+        "Right\rJustify": "Y",
+        "From": 33,
+        "To": 34,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 35,
+        "To": 35,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Physical Condition",
+        "Right\rJustify": NaN,
+        "From": 36,
+        "To": 37,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 38,
+        "To": 38,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Address City",
+        "Right\rJustify": NaN,
+        "From": 39,
+        "To": 63,
+        "Length": 25,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 64,
+        "To": 64,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Address State",
+        "Right\rJustify": NaN,
+        "From": 65,
+        "To": 66,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 67,
+        "To": 67,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Address Zip",
+        "Right\rJustify": NaN,
+        "From": 68,
+        "To": 72,
+        "Length": 5,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 73,
+        "To": 73,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Date of Birth",
+        "Right\rJustify": NaN,
+        "From": 74,
+        "To": 83,
+        "Length": 10,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 84,
+        "To": 84,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Age",
+        "Right\rJustify": "Y",
+        "From": 85,
+        "To": 87,
+        "Length": 3,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 88,
+        "To": 88,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Sex",
+        "Right\rJustify": NaN,
+        "From": 89,
+        "To": 89,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 90,
+        "To": 90,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Alcohol Test Given",
+        "Right\rJustify": NaN,
+        "From": 91,
+        "To": 91,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 92,
+        "To": 92,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Alcohol Test Type",
+        "Right\rJustify": NaN,
+        "From": 93,
+        "To": 94,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 95,
+        "To": 95,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Alcohol Test Results",
+        "Right\rJustify": "Y",
+        "From": 96,
+        "To": 98,
+        "Length": 3,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 99,
+        "To": 99,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Charge",
+        "Right\rJustify": NaN,
+        "From": 100,
+        "To": 129,
+        "Length": 30,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 130,
+        "To": 130,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Summons",
+        "Right\rJustify": NaN,
+        "From": 131,
+        "To": 160,
+        "Length": 30,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 161,
+        "To": 161,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Multi Charge Flag",
+        "Right\rJustify": NaN,
+        "From": 162,
+        "To": 162,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 163,
+        "To": 163,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Traffic Controls",
+        "Right\rJustify": NaN,
+        "From": 164,
+        "To": 165,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 166,
+        "To": 166,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Contributing Circumstances 1",
+        "Right\rJustify": NaN,
+        "From": 167,
+        "To": 168,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 169,
+        "To": 169,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Contributing Circumstances 2",
+        "Right\rJustify": NaN,
+        "From": 170,
+        "To": 171,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 172,
+        "To": 172,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Direction of Travel",
+        "Right\rJustify": NaN,
+        "From": 173,
+        "To": 174,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 175,
+        "To": 175,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Pre- Crash Action",
+        "Right\rJustify": NaN,
+        "From": 176,
+        "To": 177,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 178,
+        "To": 178,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Location of Most Severe Injury",
+        "Right\rJustify": NaN,
+        "From": 179,
+        "To": 180,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 181,
+        "To": 181,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Type of Most Severe Physical Injury",
+        "Right\rJustify": NaN,
+        "From": 182,
+        "To": 183,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 184,
+        "To": 184,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Refused Medical Attention",
+        "Right\rJustify": NaN,
+        "From": 185,
+        "To": 185,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 186,
+        "To": 186,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Safety Equipment Used",
+        "Right\rJustify": NaN,
+        "From": 187,
+        "To": 188,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 189,
+        "To": 189,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Hospital Code",
+        "Right\rJustify": NaN,
+        "From": 190,
+        "To": 193,
+        "Length": 4,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 194,
+        "To": 194,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Physical Status",
+        "Right\rJustify": NaN,
+        "From": 195,
+        "To": 196,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 197,
+        "To": 197,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Is Bycyclist?",
+        "Right\rJustify": NaN,
+        "From": 198,
+        "To": 198,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 199,
+        "To": 199,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Is Other?",
+        "Right\rJustify": NaN,
+        "From": 200,
+        "To": 200,
+        "Length": 1,
+        "Comments / Notes": NaN
+    }
+]

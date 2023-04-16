@@ -1,20 +1,20 @@
 #!/usr/bin/env python
+from os import makedirs
+from os.path import exists, dirname, splitext
+
+import click
 import json
+import pandas as pd
+import requests
 import shutil
 import sys
 import time
-from os import makedirs
-from os.path import exists, dirname, basename, splitext
-from re import fullmatch
-from sys import stderr
-from zipfile import ZipFile
-
-import click
-import pandas as pd
-import requests
 from click import option
 from numpy import nan
+from re import fullmatch
+from sys import stderr
 from tabula import read_pdf
+from zipfile import ZipFile
 
 # Download datasets from https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm
 # The download action on that page doesn't seem to work, but we can access the data directly at URLs like
@@ -249,39 +249,67 @@ def parse_rows(txt_path, fields):
     return pd.DataFrame(rows)
 
 
-@cli.command('parse-fields-pdf', short_help="Parse fields+lengths from one of the `*CrashTable.pdf`s, using Tabula")
-@option('-2', '--2017', 'version2017', is_flag=True)
-@option('-f', '--overwrite', is_flag=True)
-def parse_fields_pdf(version2017, overwrite):
-    if version2017:
-        rect = {
-            "x1": 43.222500000000004,
-            "x2": 564.1875,
-            "y1": 91.4175,
-            "y2": 750.0825,
-        }
-        pdf_name = '2017CrashTable.pdf'
-    else:
-        rect = {
-            "x1": 25.6275,
-            "x2": 587.1375,
-            "y1": 81.4725,
-            "y2": 750.0825,
-        }
-        pdf_name = 'CrashTable.pdf'
-    pdf_path = f'{FIELDS_DIR}/{pdf_name}'
-    json_path = f'{splitext(pdf_path)[0]}.json'
-    if exists(json_path):
-        if overwrite:
-            print(f'Overwriting {json_path}')
-        else:
-            return
+TABLE_TYPES = ['Crash', 'Driver', 'Occupant', 'Pedestrian', 'Vehicle', ]
+TABLE_TYPES_MAP = {
+    **{ t.lower(): t for t in TABLE_TYPES },
+    **{ t.lower()[0]: t for t in TABLE_TYPES },
+}
+TABLE_TYPE_KEYS = list(TABLE_TYPES_MAP.keys())
 
-    tbls = read_pdf(pdf_path, area=[ rect[k] for k in [ 'y1', 'x1', 'y2', 'x2', ] ], pages='all',)
-    fields = pd.concat(tbls)
-    fields = fields.to_dict('records')
-    with open(json_path, 'w') as f:
-        json.dump(fields, f, indent=4)
+
+def parse_type(type_str):
+    if type_str not in TABLE_TYPES_MAP:
+        raise ValueError(f"Unrecognized type {type_str}; expected one of {TABLE_TYPE_KEYS}")
+    return TABLE_TYPES_MAP[type_str]
+
+
+@cli.command('parse-fields-pdf', short_help="Parse fields+lengths from one or more schema PDFs, using Tabula")
+@option('-2', '--2017', 'version2017', count=True, help='One or more year-versions to process: 0x: 2001, 1x: 2017, 2x: [2001, 2017]')
+@option('-f', '--overwrite', is_flag=True, help="Overwrite the output json file, if it exists (default: no-op/skip)")
+@option('-t', '--type', 'type_strs', help=f"Comma-separated list of table types ({TABLE_TYPE_KEYS})")
+def parse_fields_pdf(version2017, overwrite, type_strs):
+    types = [ parse_type(type_str) for type_str in type_strs.split(',') ]
+    if version2017 == 0:
+        versions = [ 2001 ]
+    elif version2017 == 1:
+        versions = [ 2017 ]
+    else:
+        versions = [ 2001, 2017 ]
+
+    for tpe in types:
+        for version in versions:
+            if version == 2017:
+                rect = {
+                    "x1": 27.54,
+                    "x2": 586,
+                    "y1": 91.4175,
+                    "y2": 750.0825,
+                }
+                pdf_name = f'2017{tpe}Table.pdf'
+            else:
+                rect = {
+                    "x1": 25.6275,
+                    "x2": 587.1375,
+                    "y1": 81.4725,
+                    "y2": 750.0825,
+                }
+                pdf_name = f'2001{tpe}Table.pdf'
+
+            pdf_path = f'{FIELDS_DIR}/{pdf_name}'
+            json_path = f'{splitext(pdf_path)[0]}.json'
+            if exists(json_path):
+                if overwrite:
+                    stderr.write(f'Converting (overwriting) {pdf_path} to {json_path}\n')
+                else:
+                    stderr.write(f'Found {json_path}; skipping\n')
+                    continue
+            else:
+                stderr.write(f'Converting {pdf_path} to {json_path}\n')
+
+            tbls = read_pdf(pdf_path, area=[ rect[k] for k in [ 'y1', 'x1', 'y2', 'x2', ] ], pages='all',)
+            fields = pd.concat(tbls).to_dict('records')
+            with open(json_path, 'w') as f:
+                json.dump(fields, f, indent=4)
 
 
 def build_dt(r):
@@ -306,7 +334,7 @@ def pqt(counties, types, years, overwrite):
             if v2017 in fields_dict:
                 fields = fields_dict[v2017]
             else:
-                json_name = f'{2017 if v2017 else ""}CrashTable.json'
+                json_name = f'{2017 if v2017 else 2001}CrashTable.json'
                 json_path = f'{FIELDS_DIR}/{json_name}'
                 with open(json_path, 'r') as f:
                     fields = json.load(f)

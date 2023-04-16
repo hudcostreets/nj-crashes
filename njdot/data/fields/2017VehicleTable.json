@@ -1,0 +1,658 @@
+[
+    {
+        "Field": "Year",
+        "Right\rJustify": NaN,
+        "From": 1,
+        "To": 4,
+        "Length": 4,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "County Code",
+        "Right\rJustify": NaN,
+        "From": 5,
+        "To": 6,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Municipality Code",
+        "Right\rJustify": NaN,
+        "From": 7,
+        "To": 8,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Department Case Number",
+        "Right\rJustify": NaN,
+        "From": 9,
+        "To": 31,
+        "Length": 23,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 32,
+        "To": 32,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Vehicle Number",
+        "Right\rJustify": "Y",
+        "From": 33,
+        "To": 34,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 35,
+        "To": 35,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Insurance Company Code",
+        "Right\rJustify": NaN,
+        "From": 36,
+        "To": 39,
+        "Length": 4,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 40,
+        "To": 40,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Owner State",
+        "Right\rJustify": NaN,
+        "From": 41,
+        "To": 42,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 43,
+        "To": 43,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Make of Vehicle",
+        "Right\rJustify": NaN,
+        "From": 44,
+        "To": 73,
+        "Length": 30,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 74,
+        "To": 74,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Model of Vehicle",
+        "Right\rJustify": NaN,
+        "From": 75,
+        "To": 94,
+        "Length": 20,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 95,
+        "To": 95,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Color of Vehicle",
+        "Right\rJustify": NaN,
+        "From": 96,
+        "To": 98,
+        "Length": 3,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 99,
+        "To": 99,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Year of Vehicle",
+        "Right\rJustify": NaN,
+        "From": 100,
+        "To": 103,
+        "Length": 4,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 104,
+        "To": 104,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "License Plate State",
+        "Right\rJustify": NaN,
+        "From": 105,
+        "To": 106,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 107,
+        "To": 107,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Vehicle Weight Rating",
+        "Right\rJustify": NaN,
+        "From": 108,
+        "To": 108,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 109,
+        "To": 109,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Towed",
+        "Right\rJustify": NaN,
+        "From": 110,
+        "To": 110,
+        "Length": 1,
+        "Comments / Notes": "Field has been merged with another field\rinto field named Driven/Left at\rScene/Towed...being kept for historical\rpurposes, therefore no data after 2016."
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 111,
+        "To": 111,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Removed By",
+        "Right\rJustify": NaN,
+        "From": 112,
+        "To": 113,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 114,
+        "To": 114,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Driven/Left at Scene/Towed",
+        "Right\rJustify": NaN,
+        "From": 115,
+        "To": 115,
+        "Length": 1,
+        "Comments / Notes": "New Field;   1 - Driven;   2 - Left at Scene;\r3 - Towed Disabled;    4 - Towed Impounded;\r5 - Towed Disabled & Impounded;"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 116,
+        "To": 116,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Initial Impact Location",
+        "Right\rJustify": NaN,
+        "From": 117,
+        "To": 118,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 119,
+        "To": 119,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Principal Damage Location",
+        "Right\rJustify": NaN,
+        "From": 120,
+        "To": 121,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 122,
+        "To": 122,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Extent of Damage",
+        "Right\rJustify": NaN,
+        "From": 123,
+        "To": 124,
+        "Length": 2,
+        "Comments / Notes": "New Field;"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 125,
+        "To": 125,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Traffic Controls Present",
+        "Right\rJustify": NaN,
+        "From": 126,
+        "To": 127,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 128,
+        "To": 128,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Vehicle Type",
+        "Right\rJustify": NaN,
+        "From": 129,
+        "To": 130,
+        "Length": 2,
+        "Comments / Notes": "Code Changes starting in 2017."
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 131,
+        "To": 131,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Vehicle Use",
+        "Right\rJustify": NaN,
+        "From": 132,
+        "To": 133,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 134,
+        "To": 134,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Special Function Vehicles",
+        "Right\rJustify": NaN,
+        "From": 135,
+        "To": 136,
+        "Length": 2,
+        "Comments / Notes": "Code Changes starting in 2017."
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 137,
+        "To": 137,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Cargo Body Type",
+        "Right\rJustify": NaN,
+        "From": 138,
+        "To": 139,
+        "Length": 2,
+        "Comments / Notes": "Additional Code added in 2017:\r14 - Vehicle Towing Another Vehicle"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 140,
+        "To": 140,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Contributing Circumstances 1",
+        "Right\rJustify": NaN,
+        "From": 141,
+        "To": 142,
+        "Length": 2,
+        "Comments / Notes": "Code Changes starting in 2017."
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 143,
+        "To": 143,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Contributing Circumstances 2",
+        "Right\rJustify": NaN,
+        "From": 144,
+        "To": 145,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 146,
+        "To": 146,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Direction of Travel",
+        "Right\rJustify": NaN,
+        "From": 147,
+        "To": 148,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 149,
+        "To": 149,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Pre-Crash Action",
+        "Right\rJustify": NaN,
+        "From": 150,
+        "To": 151,
+        "Length": 2,
+        "Comments / Notes": "Code Changes starting in 2017."
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 152,
+        "To": 152,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "First Sequence of Events",
+        "Right\rJustify": NaN,
+        "From": 153,
+        "To": 154,
+        "Length": 2,
+        "Comments / Notes": "Code Changes starting in 2017."
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 155,
+        "To": 155,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Second Sequence of Events",
+        "Right\rJustify": NaN,
+        "From": 156,
+        "To": 157,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 158,
+        "To": 158,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Third Sequence of Events",
+        "Right\rJustify": NaN,
+        "From": 159,
+        "To": 160,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 161,
+        "To": 161,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Fourth Sequence of Events",
+        "Right\rJustify": NaN,
+        "From": 162,
+        "To": 163,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 164,
+        "To": 164,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Most Harmful Event",
+        "Right\rJustify": NaN,
+        "From": 165,
+        "To": 166,
+        "Length": 2,
+        "Comments / Notes": "New Field;"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 167,
+        "To": 167,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Oversize/Overweight Permit",
+        "Right\rJustify": NaN,
+        "From": 168,
+        "To": 169,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 170,
+        "To": 170,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "HazMat Status",
+        "Right\rJustify": NaN,
+        "From": 171,
+        "To": 171,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 172,
+        "To": 172,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "HazMat Class",
+        "Right\rJustify": NaN,
+        "From": 173,
+        "To": 173,
+        "Length": 1,
+        "Comments / Notes": "New Field;"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 174,
+        "To": 174,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "HazMat Placard",
+        "Right\rJustify": NaN,
+        "From": 175,
+        "To": 184,
+        "Length": 10,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 185,
+        "To": 185,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "USDOT Number",
+        "Right\rJustify": NaN,
+        "From": 186,
+        "To": 195,
+        "Length": 10,
+        "Comments / Notes": "New Field;"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 196,
+        "To": 196,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "MC/MX Number",
+        "Right\rJustify": NaN,
+        "From": 197,
+        "To": 206,
+        "Length": 10,
+        "Comments / Notes": "New Field;"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 207,
+        "To": 207,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "USDOT / Other Flag",
+        "Right\rJustify": NaN,
+        "From": 208,
+        "To": 208,
+        "Length": 1,
+        "Comments / Notes": "These fields have been replaced by the two\rprevious fields.  Being kept for historical\rpurposes, therefore no data after 2016."
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 209,
+        "To": 209,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "USDOT / OTHER Number",
+        "Right\rJustify": NaN,
+        "From": 210,
+        "To": 219,
+        "Length": 10,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 220,
+        "To": 220,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Carrier Name",
+        "Right\rJustify": NaN,
+        "From": 221,
+        "To": 270,
+        "Length": 50,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 271,
+        "To": 271,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Hit & Run Driver Flag",
+        "Right\rJustify": NaN,
+        "From": 272,
+        "To": 272,
+        "Length": 1,
+        "Comments / Notes": NaN
+    }
+]

@@ -3,7 +3,7 @@ click
 dask[dataframe]
 fastparquet
 kaleido
-ipython==8.8.0
+ipython
 jupyter
 jupyter-client==7.4.9
 lxml
@@ -15,4 +15,4 @@ plotly
 requests
 sqlalchemy==1.4.46
 tabula-py
-utz==0.3.21
+utz==0.3.25

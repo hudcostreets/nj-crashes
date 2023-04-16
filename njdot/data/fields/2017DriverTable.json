@@ -1,0 +1,370 @@
+[
+    {
+        "Field": "Year",
+        "Right\rJustify": NaN,
+        "From": 1,
+        "To": 4,
+        "Length": 4,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "County Code",
+        "Right\rJustify": NaN,
+        "From": 5,
+        "To": 6,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Municipality Code",
+        "Right\rJustify": NaN,
+        "From": 7,
+        "To": 8,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Department Case Number",
+        "Right\rJustify": NaN,
+        "From": 9,
+        "To": 31,
+        "Length": 23,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 32,
+        "To": 32,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Vehicle Number",
+        "Right\rJustify": "Y",
+        "From": 33,
+        "To": 34,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 35,
+        "To": 35,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Driver City",
+        "Right\rJustify": NaN,
+        "From": 36,
+        "To": 60,
+        "Length": 25,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 61,
+        "To": 61,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Driver State",
+        "Right\rJustify": NaN,
+        "From": 62,
+        "To": 63,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 64,
+        "To": 64,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Driver Zip Code",
+        "Right\rJustify": NaN,
+        "From": 65,
+        "To": 69,
+        "Length": 5,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 70,
+        "To": 70,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Driver License State",
+        "Right\rJustify": NaN,
+        "From": 71,
+        "To": 72,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 73,
+        "To": 73,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Driver DOB",
+        "Right\rJustify": NaN,
+        "From": 74,
+        "To": 83,
+        "Length": 10,
+        "Comments / Notes": "MM/DD/YYYY"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 84,
+        "To": 84,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Driver Sex",
+        "Right\rJustify": NaN,
+        "From": 85,
+        "To": 85,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 86,
+        "To": 86,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Alcohol Test Given",
+        "Right\rJustify": NaN,
+        "From": 87,
+        "To": 87,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 88,
+        "To": 88,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Alcohol Test Type",
+        "Right\rJustify": NaN,
+        "From": 89,
+        "To": 90,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 91,
+        "To": 91,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Alcohol Test Results",
+        "Right\rJustify": "Y",
+        "From": 92,
+        "To": 94,
+        "Length": 3,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 95,
+        "To": 95,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Charge 1",
+        "Right\rJustify": NaN,
+        "From": 96,
+        "To": 125,
+        "Length": 30,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 126,
+        "To": 126,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Summons 1",
+        "Right\rJustify": NaN,
+        "From": 127,
+        "To": 156,
+        "Length": 30,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 157,
+        "To": 157,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Charge 2",
+        "Right\rJustify": NaN,
+        "From": 158,
+        "To": 187,
+        "Length": 30,
+        "Comments / Notes": "New Field;  No data previous to 2017;"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 188,
+        "To": 188,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Summons 2",
+        "Right\rJustify": NaN,
+        "From": 189,
+        "To": 218,
+        "Length": 30,
+        "Comments / Notes": "New Field;  No data previous to 2017;"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 219,
+        "To": 219,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Charge 3",
+        "Right\rJustify": NaN,
+        "From": 220,
+        "To": 249,
+        "Length": 30,
+        "Comments / Notes": "New Field;  No data previous to 2017;"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 250,
+        "To": 250,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Summons 3",
+        "Right\rJustify": NaN,
+        "From": 251,
+        "To": 280,
+        "Length": 30,
+        "Comments / Notes": "New Field;  No data previous to 2017;"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 281,
+        "To": 281,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Charge 4",
+        "Right\rJustify": NaN,
+        "From": 282,
+        "To": 311,
+        "Length": 30,
+        "Comments / Notes": "New Field;  No data previous to 2017;"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 312,
+        "To": 312,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Summons 4",
+        "Right\rJustify": NaN,
+        "From": 313,
+        "To": 342,
+        "Length": 30,
+        "Comments / Notes": "New Field;  No data previous to 2017;"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 343,
+        "To": 343,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Multi Charge Flag",
+        "Right\rJustify": NaN,
+        "From": 344,
+        "To": 344,
+        "Length": 1,
+        "Comments / Notes": "Field is no longer used;  Only being kept for"
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 345,
+        "To": 345,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Driver Physical Status 1",
+        "Right\rJustify": NaN,
+        "From": 346,
+        "To": 347,
+        "Length": 2,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Comma",
+        "Right\rJustify": NaN,
+        "From": 348,
+        "To": 348,
+        "Length": 1,
+        "Comments / Notes": NaN
+    },
+    {
+        "Field": "Driver Physical Status 2",
+        "Right\rJustify": NaN,
+        "From": 349,
+        "To": 350,
+        "Length": 2,
+        "Comments / Notes": "New Field;  No data previous to 2017;"
+    }
+]

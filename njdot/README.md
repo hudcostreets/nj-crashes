@@ -85,7 +85,7 @@ There is a marked decrease in "injury" and "property damage" crashes since the o
 ![](../www/public/plots/njdot/pct_fatal_by_month.png)
 
 ## Methods <a id="methods"></a>
-[`./rawdata.py`](rawdata.py) is a CLI for downloading+caching `.zip`s, extracting `.txt`s, cleaning+converting to `.pqt` ([Parquet](https://parquet.apache.org/)).
+[`rawdata.py`](rawdata.py) is a CLI for downloading+caching `.zip`s, extracting `.txt`s, cleaning+converting to `.pqt` ([Parquet](https://parquet.apache.org/)).
 ```bash
 ./rawdata.py --help
 # Usage: rawdata.py [OPTIONS] COMMAND [ARGS]...
@@ -113,7 +113,7 @@ There is a marked decrease in "injury" and "property damage" crashes since the o
 ```
 
 ### Notebooks <a id="notebooks"></a>
-- [njdot-plots.ipynb](../njdot-plots.ipynb): load all crashes, generate plots above
+- [crash-plots.ipynb](crash-plots.ipynb): load all crashes, generate plots above
 
 ### Caveats / TODOs <a id="todos"></a>
 
