@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Apr 15 10:00:07 EDT 2023</RUNDATE>
+  <RUNDATE>Sun Apr 16 10:00:09 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -5975,8 +5975,8 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0428" MNAME="Pine Hill Boro">
       <ACCIDENT ACCID="11768" DATE="05/13/2022" TIME="2157">
-        <STREET>Blackwood-Clementon Rd</STREET>
-        <LOCATION>Blackwood-Clementon Rd</LOCATION>
+        <HIGHWAY>534</HIGHWAY>
+        <LOCATION>County 534 MP 6.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6196,13 +6196,14 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0428" MNAME="Pine Hill Boro">
       <ACCIDENT ACCID="11762" DATE="05/06/2022" TIME="0002">
-        <STREET>East 11th Ave</STREET>
-        <LOCATION>East 11th Ave</LOCATION>
+        <STREET>East 11th Avenue</STREET>
+        <LOCATION>East 11th Avenue</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8903,5 +8904,5 @@
   </COUNTY>
   <TOTACCIDENTS>652</TOTACCIDENTS>
   <TOTFATALITIES>695</TOTFATALITIES>
-  <TOTINJURIES>329</TOTINJURIES>
+  <TOTINJURIES>330</TOTINJURIES>
 </FAUQSTATS>
