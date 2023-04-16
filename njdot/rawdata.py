@@ -435,6 +435,17 @@ def build_dt(r):
         return pd.to_datetime(r['Crash Date'] + ' ' + crash_time)
 
 
+def load(txt_path, fields, ints=None, floats=None, bools=None):
+    df = parse_rows(txt_path, fields)
+    for k in ints or []:
+        df[k] = df[k].astype(int)
+    for k in floats or []:
+        df[k] = df[k].replace('', nan).astype(float)
+    for k in bools or []:
+        df[k] = df[k].replace('Y', True).replace('N', False).replace('', False).astype(bool)
+    return df
+
+
 @cmd(
     overwrite_opt,
     dry_run_opt,
@@ -447,6 +458,11 @@ def pqt(regions, types, years, overwrite, dry_run):
         v2017 = int(year) >= 2017
         for region in regions:
             for typ in types:
+                parent_dir = f'{DATA_DIR}/{year}'
+                table = TABLE_TYPES_MAP[typ]
+                name = f'{parent_dir}/{region}{year}{table}'
+                txt_path = f'{name}.txt'
+                pqt_path = f'{name}.pqt'
                 if v2017 in fields_dict:
                     fields = fields_dict[v2017]
                 else:
@@ -456,38 +472,30 @@ def pqt(regions, types, years, overwrite, dry_run):
                         fields = json.load(f)
                         fields_dict[v2017] = fields
                     if typ == 'Crash' and year == '2013' and region == 'Atlantic':
-                        # For some reason, "Reporting Badge No." in Atlantic2013[Accidents…?] is 18 chars long, not 5
-                        fields[-1]['Length'] = 18
-                parent_dir = f'{DATA_DIR}/{year}'
-                table = TABLE_TYPES_MAP[typ]
-                name = f'{parent_dir}/{region}{year}{table}'
-                txt_path = f'{name}.txt'
-                pqt_path = f'{name}.pqt'
+                        # For some reason, "Reporting Badge No." in Atlantic2013[Accidents] is 18 chars long, not 5
+                        [ *fields, rest ] = fields
+                        fields = [ *fields, { **rest, 'Length': 18 } ]
+                        err(f'{pqt_path}: overwrote final field length to 18 (was: {rest})')
                 if dry_run_skip(txt_path, pqt_path, dry_run=dry_run, overwrite=overwrite):
                     continue
 
                 if typ == 'Crash':
-                    df = parse_rows(txt_path, fields)
-
-                    ints = [ 'Total Killed', 'Total Injured', 'Pedestrians Killed', 'Pedestrians Injured', 'Total Vehicles Involved', ]
-                    floats = [ 'Latitude', 'Longitude', ('MilePost' if v2017 else 'Mile Post')]
-                    bools = [ 'Alcohol Involved', 'HazMat Involved', ]
-
+                    df = load(
+                        txt_path, fields,
+                        ints=[ 'Total Killed', 'Total Injured', 'Pedestrians Killed', 'Pedestrians Injured', 'Total Vehicles Involved', ],
+                        floats=[ 'Latitude', 'Longitude', ('MilePost' if v2017 else 'Mile Post')],
+                        bools=[ 'Alcohol Involved', 'HazMat Involved', ],
+                    )
                     df['Date'] = df.apply(build_dt, axis=1)
                     df = df.drop(columns=['Year', 'Crash Time', 'Crash Date', 'Crash Day Of Week'])
-
-                    for k in floats:
-                        df[k] = df[k].replace('', nan).astype(float)
-
-                    for k in bools:
-                        df[k] = df[k].replace('Y', True).replace('N', False).astype(bool)
-
-                    df = df.astype(dict(**{ k: int for k in ints },))
-
-                    err(f'Writing {pqt_path}')
-                    df.to_parquet(pqt_path, index=None)
+                elif typ == 'Vehicle':
+                    df = load(txt_path, fields, bools=[ 'Hit & Run Driver Flag', ])
+                elif type == 'Driver':
+                    df = load(txt_path, fields, bools=[ 'Hit & Run Driver Flag', ])
                 else:
-                    raise NotImplementedError(f"Types other than \"Crash\" not supported yet")
+                    raise NotImplementedError(f"Types other than [\"Crash\", \"Vehicle\"] not supported yet")
+                err(f'Writing {pqt_path}')
+                df.to_parquet(pqt_path, index=None)
 
 
 @cli.command('check-nj-agg', short_help='For one or more years, verify the `NewJersey` file is a concatenation of the county-specific files')
