@@ -81,12 +81,17 @@ class Data:
             for year in self.years
         ])
 
-    @property
-    def df(self) -> pd.DataFrame:
-        return self.ddf.compute().set_index(PK)
+    def df(self, cols=None) -> pd.DataFrame:
+        if cols is None:
+            return self.ddf.compute().set_index(PK)
+        else:
+            if isinstance(cols, str):
+                return self.cols(YPK + [cols]).df()[cols]
+            else:
+                return self.cols(YPK + cols).df()
 
     def series(self, col):
-        return self.cols(YPK + [col]).df[col]
+        return self.cols(YPK + [col]).df()[col]
 
     def __getitem__(self, k):
         if k in self.types:
