@@ -19,48 +19,12 @@ import utz
 from utz import err
 from zipfile import ZipFile
 
+from njdot.data import TABLE_TYPES, DATA_DIR, COUNTIES, YEARS, FIELDS_DIR, TABLE_TYPES_MAP
 
 # Download datasets from https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm
 # The download action on that page doesn't seem to work, but we can access the data directly at URLs like
 # "https://www.state.nj.us/transportation/refdata/accident/2020/Burlington2020Accidents.zip".
 
-START_YEAR, END_YEAR = 2001, 2021
-COUNTIES = [
-    'Atlantic',
-    'Bergen',
-    'Burlington',
-    'Camden',
-    'CapeMay',
-    'Cumberland',
-    'Essex',
-    'Gloucester',
-    'Hudson',
-    'Hunterdon',
-    'Mercer',
-    'Middlesex',
-    'Monmouth',
-    'Morris',
-    'Ocean',
-    'Passaic',
-    'Salem',
-    'Somerset',
-    'Sussex',
-    'Union',
-    'Warren',
-]
-REGIONS = ['NewJersey'] + COUNTIES
-YEARS = list(map(str, range(START_YEAR, END_YEAR)))
-TABLE_TYPES_MAP = {
-    'Crash': 'Accidents',
-    'Driver': 'Drivers',
-    'Occupant': 'Occupants',
-    'Pedestrian': 'Pedestrians',
-    'Vehicle': 'Vehicles',
-}
-TABLE_TYPES = list(TABLE_TYPES_MAP.keys())
-
-DATA_DIR = 'data'
-FIELDS_DIR = f'{DATA_DIR}/fields'
 DEFAULT_CACHE_PATH = f'{DATA_DIR}/.cache.pqt'
 CACHE_HEADERS = [ 'Date', 'Content-Length', 'Content-type', 'Last-modified', 'Etag', ]
 
