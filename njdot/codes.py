@@ -299,6 +299,14 @@ physical_condition = {
     # injury and the person does not report any change in normal function.
     '05': 'NO APPARENT INJURY',
 }
+physical_condition2 = {
+    'FATAL INJURY': 'Fatality',
+    'SUSPECTED SERIOUS INJURY': 'Serious Injury',
+    'SUSPECTED MINOR INJURY': 'Minor Injury',
+    'POSSIBLE INJURY': 'Possible Injury',
+    'NO APPARENT INJURY': 'No Apparent Injury',
+    'UNKNOWN': 'Unknown',
+}
 
 # https://www.state.nj.us/transportation/refdata/accident/pdf/NJTR-1CrashReportManual.pdf, pg. 50
 # POSITION IN/ON VEHICLE DEFINITIONS
@@ -317,4 +325,17 @@ vehicle_position = {
     '10': 'Passenger (cargo area)',
     '11': 'Riding/Hanging on outside',
     '12': 'Bus Passenger',
+}
+
+# https://www.state.nj.us/transportation/refdata/accident/pdf/NJTR-1CrashReportManual.pdf pg. 91
+# Ejection From Vehicle: enter the code to identify if a driver or passenger was ejected from a vehicle e.g., car, motorcycle, etc. This does not apply to pedestrians.
+ejection_code = {
+    # The person was not ejected from the vehicle. Note: A passenger with only his or her arms protruding out of a window is not a partial ejection.
+    '01': 'Not Ejected',
+    # When a portion of the person’s torso or head protrudes from the vehicle. Note: A passenger with his or her arms protruding out of a window is not a partial ejection.
+    '02': 'Partial Ejection',
+    # Person was fully ejected from the vehicle.
+    '03': 'Ejected',
+    # When mechanical force is used to free a person from the vehicle, such as a pry-bar or the Jaws of Life.
+    '04': 'Trapped',
 }
