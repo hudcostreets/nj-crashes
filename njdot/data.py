@@ -47,6 +47,21 @@ DATA_DIR = 'data'
 FIELDS_DIR = f'{DATA_DIR}/fields'
 
 
+def hist(df, code, desc=None):
+    df = df.value_counts()
+    if desc is None:
+        df = df.sort_index()
+    elif desc is False:
+        pass
+    elif desc is True:
+        df = df.sort_values(ascending=False)
+    else:
+        raise
+    if code:
+        df.index = df.index.to_series().apply(lambda v: code[v])
+    return df
+
+
 @dataclass
 class Data:
     years: list[str] = field(default_factory=lambda: [*YEARS])
@@ -68,7 +83,10 @@ class Data:
 
     @property
     def df(self) -> pd.DataFrame:
-        return self.ddf.compute()
+        return self.ddf.compute().set_index(PK)
+
+    def series(self, col):
+        return self.cols(YPK + [col]).df[col]
 
     def __getitem__(self, k):
         if k in self.types:
