@@ -206,3 +206,96 @@ vehicle_departure = {
     '4': 'Towed Impounded',
     '5': 'Towed Disabled & Impounded',
 }
+
+physical_status = {
+    '': '',
+    '00': 'Unknown',
+    '01': 'Apparently Normal',
+    '02': 'Alcohol Use',
+    '03': 'Drug Use (Illicit)',
+    '04': 'Medication',
+    '05': 'Alcohol and Drug Use',
+    '06': 'Physical Handicaps',
+    '07': 'Illness',
+    '08': 'Fatigued',
+    '09': 'Fell Asleep',
+    '99': 'Other',
+}
+
+injury_location = {
+    '': '',
+    '00': 'Unknown',
+    '01': 'Head',
+    '02': 'Face',
+    '03': 'Eye',
+    '04': 'Neck',
+    '05': 'Chest',
+    '06': 'Back',
+    '07': 'Shoulder/ Upper Arm',
+    '08': 'Elbow/ Lower Arm/ Hand',
+    '09': 'Abdomen/ Pelvis',
+    '10': 'Hip/ Upper Leg',
+    '11': 'Knee/ Lower Leg/ Foot',
+    '12': 'Entire Body',
+}
+
+injury_severity = {
+    '': '',
+    '00': 'Unknown',
+    '01': 'Amputation',  # Severed parts
+    '02': 'Concussion',  # Dazed condition as a result to a blow to the head
+    '03': 'Internal',  # NO visible injury but signs Of anxiety. internal pain and thirst
+    '04': 'Bleeding',  # Obvious discharge of blood
+    '05': 'Contusion / Bruise / Abrasion',  # Discoloration of skin over a portion of the body
+    '06': 'Burn',  # Reddening. blistering or charring of skin over a of the
+    '07': 'Fracture / Dislocation',  # Swelling or evidence of displaced bones
+    '08': 'Complaint of Pain',  # No visible injury noted, but victim complains of pain
+}
+
+# Definitions of Physical Condition:
+physical_condition = {
+    '': '',
+    '00': 'UNKNOWN',
+
+    # If a person is killed, enter code "01-Fatal Injury" where column (Box) 86 (Victim's
+    # Physical Condition) intersects with its corresponding row. A fatal injury is any injury that results in
+    # death within 30 days after the motor vehicle crash in which the injury occurred. If the person did not
+    # die at the scene but died within 30 days of the motor vehicle crash in which the injury occurred, the
+    # injury classification should be changed from the attribute previously assigned to the attribute “Fatal
+    # Injury.”
+    # Verify that an "X" is placed in the Box (Fatal) located at the top center-left of the report. Also, verify
+    # that a number entered in Box 8 (Total Killed) corresponds with the total number of persons killed as a
+    # result of the crash. Lastly, verify that the name/address/date and time of death is entered in the
+    # unnumbered Box to the right of Box 95 known as column Box (Names & Addresses of Occupants – If
+    # Deceased, Date & Time of Death).
+    # NOTE: The "30 days" is typically calculated by a measure of 720 hours (i.e. 30, 24hr. periods) from the crash
+    # time.
+    '01': 'FATAL INJURY',
+
+    # If victim has a serious non-fatal injury which includes:
+    # o Severe laceration resulting in exposure of underlying tissues/muscle/organs or resulting in
+    # significant loss of blood
+    # o Broken or distorted extremity (arm or leg)
+    # o Crush injuries
+    # o Suspected skull, chest or abdominal injury other than bruises or minor lacerations
+    # o Significant burns (second and third degree burns over 10% or more of the body)
+    # o Unconsciousness when taken from the crash scene
+    # o Paralysis
+    '02': 'SUSPECTED SERIOUS INJURY',
+
+    # If there is an evident injury, other than fatal and serious injuries.
+    # Examples include lump on the head, abrasions, bruises, minor lacerations (cuts on the skin surface
+    # with minimal bleeding and no exposure of deeper tissue/muscle).
+    '03': 'SUSPECTED MINOR INJURY',
+
+    # For a reported or claims of injury that is not fatal, serious or minor. Examples
+    # include momentary loss of consciousness, claim of injury, limping, or complaint of pain or nausea.
+    # Possible injuries are those which are reported by the person or are indicated by his/her behavior,
+    # but no wounds or injuries are readily evident.
+    '04': 'POSSIBLE INJURY',
+
+    # No apparent injury is a situation where there is no reason to believe that
+    # the person received any bodily harm from the motor vehicle crash. There is no physical evidence of
+    # injury and the person does not report any change in normal function.
+    '05': 'NO APPARENT INJURY',
+}

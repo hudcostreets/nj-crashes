@@ -490,6 +490,8 @@ def pqt(regions, types, years, overwrite, dry_run):
                     df = df.drop(columns=['Year', 'Crash Time', 'Crash Date', 'Crash Day Of Week'])
                 elif typ == 'Vehicle':
                     df = load(txt_path, fields, bools=[ 'Hit & Run Driver Flag', ])
+                elif typ == 'Pedestrian':
+                    df = load(txt_path, fields, bools=[ 'Is Bycyclist?', 'Is Other?', ]).rename(columns={'Is Bycyclist?': 'Is Bicyclist?'})
                 else:
                     df = load(txt_path, fields)
                 err(f'Writing {pqt_path}')
