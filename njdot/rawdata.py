@@ -435,6 +435,9 @@ def build_dt(r):
         return pd.to_datetime(r['Crash Date'] + ' ' + crash_time)
 
 
+BOOLS = { 'Y': True, 'N': False, '1': True, '0': False, '': False }
+
+
 def load(txt_path, fields, ints=None, floats=None, bools=None):
     df = parse_rows(txt_path, fields)
     for k in ints or []:
@@ -442,7 +445,7 @@ def load(txt_path, fields, ints=None, floats=None, bools=None):
     for k in floats or []:
         df[k] = df[k].replace('', nan).astype(float)
     for k in bools or []:
-        df[k] = df[k].apply(lambda s: { 'Y': True, 'N': False, '': False }[s]).astype(bool)
+        df[k] = df[k].apply(lambda s: BOOLS[s]).astype(bool)
     return df
 
 
