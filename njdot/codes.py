@@ -299,3 +299,22 @@ physical_condition = {
     # injury and the person does not report any change in normal function.
     '05': 'NO APPARENT INJURY',
 }
+
+# https://www.state.nj.us/transportation/refdata/accident/pdf/NJTR-1CrashReportManual.pdf, pg. 50
+# POSITION IN/ON VEHICLE DEFINITIONS
+vehicle_position = {
+    '': '',
+    '00': 'Unknown',
+    '01': 'Driver',
+    '02': 'Passenger (front middle)',
+    '03': 'Passenger (front right)',
+    '04': 'Passenger (row 2 left)',
+    '05': 'Passenger (row 2 middle)',
+    '06': 'Passenger (row 2 right)',
+    '07': 'Passenger (row 3 left)',
+    '08': 'Passenger (row 3 middle)',
+    '09': 'Passenger (row 3 right)',
+    '10': 'Passenger (cargo area)',
+    '11': 'Riding/Hanging on outside',
+    '12': 'Bus Passenger',
+}
