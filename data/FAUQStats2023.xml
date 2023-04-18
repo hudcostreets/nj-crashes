@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Apr 17 10:00:02 EDT 2023</RUNDATE>
+  <RUNDATE>Tue Apr 18 10:00:05 EDT 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,16 +49,44 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="09" CNAME="Hudson">
+    <MUNICIPALITY MCODE="0908" MNAME="North Bergen Twsp">
+      <ACCIDENT ACCID="12415" DATE="04/15/2023" TIME="0253">
+        <STREET>Bergenline Ave</STREET>
+        <LOCATION>Bergenline Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0108" MNAME="Egg Harbor Twsp">
       <ACCIDENT ACCID="12412" DATE="04/15/2023" TIME="0041">
-        <STREET>Hartford Rd</STREET>
-        <LOCATION>Hartford Rd</LOCATION>
+        <STREET>Hartford Dr</STREET>
+        <LOCATION>Hartford Dr</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0266" MNAME="Washington Twsp">
+      <ACCIDENT ACCID="12414" DATE="04/14/2023" TIME="1643">
+        <HIGHWAY>444</HIGHWAY>
+        <LOCATION>Garden State Parkway</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -337,6 +365,21 @@
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0714" MNAME="Newark City">
+      <ACCIDENT ACCID="12416" DATE="03/29/2023" TIME="1812">
+        <STREET>Monroe St</STREET>
+        <LOCATION>Monroe St</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1215" MNAME="North Brunswick Tws">
       <ACCIDENT ACCID="12384" DATE="03/29/2023" TIME="0645">
         <STREET>Noah Rd</STREET>
@@ -1863,7 +1906,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>137</TOTACCIDENTS>
-  <TOTFATALITIES>141</TOTFATALITIES>
+  <TOTACCIDENTS>140</TOTACCIDENTS>
+  <TOTFATALITIES>144</TOTFATALITIES>
   <TOTINJURIES>17</TOTINJURIES>
 </FAUQSTATS>
