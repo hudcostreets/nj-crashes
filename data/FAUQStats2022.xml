@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Apr 19 10:00:06 EDT 2023</RUNDATE>
+  <RUNDATE>Thu Apr 20 10:00:05 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2297,8 +2297,8 @@
   <COUNTY CCODE="05" CNAME="Cape May">
     <MUNICIPALITY MCODE="0514" MNAME="Wildwood City">
       <ACCIDENT ACCID="12040" DATE="09/24/2022" TIME="2136">
-        <STREET>Atlantic Avenue</STREET>
-        <LOCATION>Atlantic Avenue</LOCATION>
+        <STREET>Atlantic Ave</STREET>
+        <LOCATION>Atlantic Ave</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
