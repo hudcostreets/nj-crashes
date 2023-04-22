@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Apr 21 10:00:06 EDT 2023</RUNDATE>
+  <RUNDATE>Sat Apr 22 10:00:07 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1907,13 +1907,14 @@
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1530" MNAME="Stafford Twsp">
       <ACCIDENT ACCID="12073" DATE="10/12/2022" TIME="1444">
-        <STREET>Hilliard Blvd</STREET>
-        <LOCATION>Hilliard Blvd</LOCATION>
+        <HIGHWAY>14</HIGHWAY>
+        <LOCATION>County 14 MP .2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6193,8 +6194,8 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0428" MNAME="Pine Hill Boro">
       <ACCIDENT ACCID="11762" DATE="05/06/2022" TIME="0002">
-        <STREET>East 11th Avenue</STREET>
-        <LOCATION>East 11th Avenue</LOCATION>
+        <STREET>East 11th Ave</STREET>
+        <LOCATION>East 11th Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
