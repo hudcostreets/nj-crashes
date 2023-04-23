@@ -15,6 +15,7 @@ papermill
 plotly
 pyarrow
 pygithub
+pyshp
 requests
 slack_sdk
 sqlalchemy==1.4.46
