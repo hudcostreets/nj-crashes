@@ -1,6 +1,8 @@
 channels:
 - conda-forge
 dependencies:
+- python==3.10.10
+- datashader==0.14.4
 - geopandas
 - pip:
-    - jupyter
+    - -r requirements.txt
