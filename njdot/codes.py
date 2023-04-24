@@ -21,6 +21,12 @@ crash_types = {
     '16': 'Railcar Vehicle',
 }
 
+
+class CrashSeverity:
+    CH2Name = {'P': 'Property Damage', 'I': 'Injury', 'F': 'Fatal'}
+    ch2Name = {'p': 'Property Damage', 'i': 'Injury', 'f': 'Fatal'}
+
+
 # Pre-Crash Action, <a href="https://www.state.nj.us/transportation/refdata/accident/pdf/NJTR-1CrashReportManual.pdf">2017 manual</a>, pg 86:
 pre_crash_actions = {
     # Vehicle/Pedalcyclist Action (01-29)
