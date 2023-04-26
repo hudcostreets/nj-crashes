@@ -1,7 +1,6 @@
 import React from "react";
-import A from "next-utils/a";
 import * as Plots from "next-utils/plot";
-import {GitHub} from "./socials";
+const { HalfRoundWiden, filterIdxs, filterValues } = Plots
 
 export type Year = "2021" | "2022"
 export type YearTotals = { "Projected Total": number }
@@ -38,8 +37,18 @@ export const YM_SC_PID_SPECS: PlotSpec[] =
     ))
 
 export const plotSpecs: PlotSpec[] = [
+    // {
+    //     id: "crash-map",
+    //     name: "njdot/hudson-pif-crashes",
+    //     title: "Hudson County Crashes (2020)",
+    //     //plot: crashMapPlot,
+    //     //src: "",
+    //     style: { height: 1100, },
+    // },
     {
-        id: "per-year", name: "fatalities_per_year_by_type", title: "NJ Traffic Deaths per Year", menuName: "Traffic Deaths / Year", dropdownSection: "NJSP",
+        title: "NJ Traffic Deaths per Year", id: "per-year", name: "fatalities_per_year_by_type",
+        menuName: "Traffic Deaths / Year", dropdownSection: "NJSP",
+        filter: filterValues({ mapRange: HalfRoundWiden }),
         children: ({ rundate, projectedTotals }: { rundate: string, } & HasTotals) => {
             const total2021 = projectedTotals["2021"]["Projected Total"]
             const total2022 = projectedTotals["2022"]["Projected Total"]
@@ -53,19 +62,20 @@ export const plotSpecs: PlotSpec[] = [
     },
     {
         id: "ytd", name: "ytd-deaths", title: "NJ Traffic Deaths per Year", menuName: "YTD", dropdownSection: "NJSP",
+        filter: filterIdxs,
         children: <>
             <p>Some data arrives weeks or months after the fact, so current year numbers are especially subject to change.</p>
         </>
     },
-    {
-        id: "vs-homicides", name: "crash_homicide_cmp", title: "NJ Traffic Deaths vs. Homicides", menuName: "vs. Homicides", dropdownSection: "NJSP",
-        children: <>
-            <p>Traffic crashes kill 1.5-2x as many people as homicides in NJ.</p>
-            <p>Homicide data comes from <A href={"https://nj.gov/njsp/ucr/uniform-crime-reports.shtml"}>NJ State Police</A> and <A href={"https://www.disastercenter.com/crime/njcrimn.htm"}>Disaster Center</A>.</p>
-        </>
-    },
-    { id: "per-month", name: "fatalities_per_month", title: "NJ Traffic Deaths per Month", menuName: "Per Month", dropdownSection: "NJSP", },
-    { id: "per-month-type", name: "fatalities_per_month_by_type", title: "NJ Traffic Deaths per Month (by Victim Type)", menuName: "By Victim Type", dropdownSection: "NJSP", },
-    { id: "by-month-bars", name: "fatalities_by_month_bars", title: "NJ Traffic Deaths, grouped by month", menuName: "Grouped by Month", dropdownSection: "NJSP", },
-    ...YM_SC_PID_SPECS,
+    // {
+    //     id: "vs-homicides", name: "crash_homicide_cmp", title: "NJ Traffic Deaths vs. Homicides", menuName: "vs. Homicides", dropdownSection: "NJSP",
+    //     children: <>
+    //         <p>Traffic crashes kill 1.5-2x as many people as homicides in NJ.</p>
+    //         <p>Homicide data comes from <A href={"https://nj.gov/njsp/ucr/uniform-crime-reports.shtml"}>NJ State Police</A> and <A href={"https://www.disastercenter.com/crime/njcrimn.htm"}>Disaster Center</A>.</p>
+    //     </>
+    // },
+    // { id: "per-month", name: "fatalities_per_month", title: "NJ Traffic Deaths per Month", menuName: "Per Month", dropdownSection: "NJSP", },
+    // { id: "per-month-type", name: "fatalities_per_month_by_type", title: "NJ Traffic Deaths per Month (by Victim Type)", menuName: "By Victim Type", dropdownSection: "NJSP", },
+    // { id: "by-month-bars", name: "fatalities_by_month_bars", title: "NJ Traffic Deaths, grouped by month", menuName: "Grouped by Month", dropdownSection: "NJSP", },
+    // ...YM_SC_PID_SPECS,
 ]
