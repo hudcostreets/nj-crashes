@@ -1,19 +1,19 @@
-import numpy as np
-from time import sleep
-
-import click
 from functools import lru_cache
-
 import json
 from os.path import join, exists
 from sqlite3 import connect
-
-import requests
-from pandas import isna
+from time import sleep
 from urllib.parse import urlencode
 
+from click import argument, group, option, pass_context
+import numpy as np
 import pandas as pd
+from pandas import isna
+import requests
 from utz import err, sxs
+
+import nj_crashes
+
 
 SRI_FETCH_CACHE_DIR = '.sri'
 SRI_DB_PATH = 'nj_sri_mp.db'
@@ -169,14 +169,18 @@ def get_sri_mp_lls(df, cols=None, out_cols=None, conn=None, append=True):
         return sxs(lon, lat)
 
 
-@click.group()
+overwrite_opt = option('-f', '--overwrite', is_flag=True)
+year_opt = option('-y', '--year', type=int, default=2020)
+
+
+@group(help="Various tools related to geocoding Standard Road ID / Mile Post coordinates")
 def main():
     pass
 
 
-@main.command('sri-mps')
-@click.option('-f', '--overwrite', is_flag=True)
-@click.argument('sris', nargs=-1)
+@main.command('sri-mps', help="Fetch + Display milepost→{lon,lat} mappings for a given SRI")
+@overwrite_opt
+@argument('sris', nargs=-1)
 def cli_sri_mps(sris, overwrite):
     for sri in sris:
         mps = get_sri_mp_map(sri, refetch=overwrite)
@@ -185,34 +189,34 @@ def cli_sri_mps(sris, overwrite):
             print(f'\t{mp}: {ll}')
 
 
-@main.group('county')
-@click.pass_context
-@click.argument('county')
+@main.group('county', help="County-specific utilities")
+@pass_context
+@argument('county')
 def cli_county(ctx, county):
     ctx.obj = { 'county': county }
 
 
-@cli_county.command('sris')
-@click.pass_context
-def cli_county_sris(ctx):
+@cli_county.command('sris', help="Display SRIs in a given {county,year}'s crash data")
+@pass_context
+@year_opt
+def cli_county_sris(ctx, year):
     county = ctx.obj['county']
-    from nj_crashes.crashes import c20
-    crashes = c20[c20['County Name'] == county]
+    crashes = nj_crashes.crashes.load(year=year, county=county)
     sris = crashes.SRI.unique().tolist()
     print(f'{county}: {len(sris)} SRIs: {sris}')
 
 
-@cli_county.command('fetch-sris')
-@click.option('-f', '--overwrite', is_flag=True)
-@click.option('-n', '--max-num', type=int, default=1000)
-@click.option('-s', '--sleep-s', type=float, default=0.5)
-@click.option('-j', '--sleep-jitter', type=float, default=0.1)
-@click.pass_context
-def cli_county_fetch_sris(ctx, overwrite, max_num, sleep_s, sleep_jitter):
+@cli_county.command('fetch-sris', help="Geocode {SRI,MP} coordinates found in a given {county,year}'s crash records")
+@pass_context
+@overwrite_opt
+@option('-n', '--max-num', type=int, default=1000)
+@option('-s', '--sleep-s', type=float, default=0.5)
+@option('-j', '--sleep-jitter', type=float, default=0.1)
+@year_opt
+def cli_county_fetch_sris(ctx, overwrite, max_num, sleep_s, sleep_jitter, year):
     counties = ctx.obj['county'].split(',')
     for county in counties:
-        from nj_crashes.crashes import c20
-        crashes = c20[c20['County Name'] == county]
+        crashes = nj_crashes.crashes.load(year=year, county=county)
         sris = crashes.SRI.unique().tolist()
         conn = connect(SRI_DB_PATH)
         fetches = 0
@@ -232,13 +236,13 @@ def cli_county_fetch_sris(ctx, overwrite, max_num, sleep_s, sleep_jitter):
             else:
                 err(f"Fetching SRI {sri}")
             sri_map = get_sri_mp_map(sri, conn=conn, refetch=overwrite)
+            fetches += 1
+            fetches_str = f'{fetches}/{max_num}' if max_num > 0 else f'{fetches}'
             if sri_map is None:
                 err(f"Fetched {fetches_str}: SRI {sri}, no MPs; sleeping for {slp}s")
             else:
                 keys = list(sri_map.keys())
                 sri_name = get_sri_sld_name(sri)
-                fetches += 1
-                fetches_str = f'{fetches}/{max_num}' if max_num > 0 else f'{fetches}'
                 slp = max(0, round(sleep_s + np.random.normal() * sleep_jitter, 2))
                 err(f"Fetched {fetches_str}: SRI {sri} ({sri_name}), {len(keys)} MPs ∈ [{min(keys)}, {max(keys)}]; sleeping for {slp}s")
             if max_num > 0 and fetches >= max_num:
@@ -246,17 +250,16 @@ def cli_county_fetch_sris(ctx, overwrite, max_num, sleep_s, sleep_jitter):
             sleep(slp)
 
 
-@cli_county.command('crash-lls')
-@click.option('-h', '--height', type=int, default=1000)
-@click.option('-w', '--width', type=int, default=1000)
-@click.pass_context
-def cli_county_fetch_sris(ctx, width, height):
+@cli_county.command('crash-lls', help="Generate a Plotly Mapbox scatterplot of crashes in a given {county,year}")
+@pass_context
+@option('-h', '--height', type=int, default=1000)
+@option('-w', '--width', type=int, default=1000)
+@year_opt
+def cli_county_fetch_sris(ctx, width, height, year):
     county = ctx.obj['county']
-    from nj_crashes.crashes import c20
-    cc20 = c20[c20['County Name'] == county]
+    crashes = nj_crashes.crashes.load(year=year, county=county)
     conn = connect(SRI_DB_PATH)
-    # cc20sm = cc20[(cc20.SRI != '') & (~cc20.MP.isna())]
-    cc_lls = get_sri_mp_lls(cc20, conn=conn)
+    cc_lls = get_sri_mp_lls(crashes, conn=conn)
     path = f'{county}-crashes.png'
     err(f"Got county {county} LLs, plotting to {path}")
     import plotly.express as px

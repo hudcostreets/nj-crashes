@@ -10,6 +10,7 @@ jupyter
 jupyter-client==7.4.9
 lxml
 nbclassic==0.4.8
+numpy
 openpyxl
 pandas
 papermill
