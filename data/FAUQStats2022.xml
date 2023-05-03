@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue May 02 10:00:06 EDT 2023</RUNDATE>
+  <RUNDATE>Wed May 03 10:00:08 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -245,6 +245,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1529" MNAME="South Toms River Bo">
@@ -2667,8 +2668,8 @@
   <COUNTY CCODE="19" CNAME="Sussex">
     <MUNICIPALITY MCODE="1911" MNAME="Hardyston Twsp">
       <ACCIDENT ACCID="12011" DATE="09/08/2022" TIME="0657">
-        <STREET>Holland Mountain Road</STREET>
-        <LOCATION>Holland Mountain Road</LOCATION>
+        <STREET>Holland Mountain Rd</STREET>
+        <LOCATION>Holland Mountain Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4214,7 +4215,7 @@
     <MUNICIPALITY MCODE="2019" MNAME="Union Twsp">
       <ACCIDENT ACCID="11875" DATE="07/13/2022" TIME="0313">
         <HIGHWAY>82</HIGHWAY>
-        <LOCATION>State Highway 82</LOCATION>
+        <LOCATION>State Highway 82 MP 3.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5228,6 +5229,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8913,5 +8915,5 @@
   </COUNTY>
   <TOTACCIDENTS>651</TOTACCIDENTS>
   <TOTFATALITIES>694</TOTFATALITIES>
-  <TOTINJURIES>342</TOTINJURIES>
+  <TOTINJURIES>343</TOTINJURIES>
 </FAUQSTATS>
