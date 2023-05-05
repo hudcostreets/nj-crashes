@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu May 04 10:00:07 EDT 2023</RUNDATE>
+  <RUNDATE>Fri May 05 10:00:09 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2449,7 +2449,7 @@
   </COUNTY>
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
-      <ACCIDENT ACCID="12024" DATE="09/17/2022" TIME="1938">
+      <ACCIDENT ACCID="12024" DATE="09/17/2022" TIME="1958">
         <HIGHWAY>552</HIGHWAY>
         <LOCATION>County 552 MP 27.4</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -2696,13 +2696,14 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0415" MNAME="Gloucester Twsp">
       <ACCIDENT ACCID="12005" DATE="09/06/2022" TIME="1851">
-        <STREET>Johnson Rd</STREET>
-        <LOCATION>Johnson Rd</LOCATION>
+        <STREET>Johnson Road</STREET>
+        <LOCATION>Johnson Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
