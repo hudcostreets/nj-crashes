@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon May 15 10:00:07 EDT 2023</RUNDATE>
+  <RUNDATE>Tue May 16 10:00:07 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1189,12 +1189,13 @@
     <MUNICIPALITY MCODE="1110" MNAME="Princeton">
       <ACCIDENT ACCID="12145" DATE="11/08/2022" TIME="1352">
         <HIGHWAY>27</HIGHWAY>
-        <LOCATION>State Highway 27 MP 2</LOCATION>
+        <LOCATION>State Highway 27 MP 1.93</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1476,6 +1477,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1888,13 +1890,14 @@
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="12076" DATE="10/13/2022" TIME="0629">
-        <STREET>East Park Avenue</STREET>
-        <LOCATION>East Park Avenue</LOCATION>
+        <STREET>East Park Ave</STREET>
+        <LOCATION>East Park Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3739,6 +3742,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3815,25 +3819,27 @@
     <MUNICIPALITY MCODE="1107" MNAME="Lawrence Twsp">
       <ACCIDENT ACCID="11920" DATE="07/26/2022" TIME="2352">
         <HIGHWAY>583</HIGHWAY>
-        <LOCATION>County 583 MP 4.7</LOCATION>
+        <LOCATION>County 583 MP 4.79</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1326" MNAME="Manalapan Twsp">
-      <ACCIDENT ACCID="11915" DATE="07/25/2022" TIME="0736">
+      <ACCIDENT ACCID="11915" DATE="07/25/2022" TIME="0246">
         <HIGHWAY>3</HIGHWAY>
-        <LOCATION>County 3</LOCATION>
+        <LOCATION>County 3 MP .94</LOCATION>
         <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8932,5 +8938,5 @@
   </COUNTY>
   <TOTACCIDENTS>651</TOTACCIDENTS>
   <TOTFATALITIES>694</TOTFATALITIES>
-  <TOTINJURIES>355</TOTINJURIES>
+  <TOTINJURIES>357</TOTINJURIES>
 </FAUQSTATS>
