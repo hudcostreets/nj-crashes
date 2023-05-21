@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat May 20 10:00:09 EDT 2023</RUNDATE>
+  <RUNDATE>Sun May 21 10:00:10 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2192,7 +2192,7 @@
     <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
       <ACCIDENT ACCID="12048" DATE="09/29/2022" TIME="1053">
         <HIGHWAY>444</HIGHWAY>
-        <LOCATION>Garden State Parkway</LOCATION>
+        <LOCATION>Garden State Parkway MP 123.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
