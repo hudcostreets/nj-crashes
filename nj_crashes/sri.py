@@ -20,13 +20,41 @@ SRI_DB_PATH = 'nj_sri_mp.db'
 SRI_DB_URL = f'sqlite:///{SRI_DB_PATH}'
 SRI_DB_TABLE = 'sri_mp'
 
+COUNTIES = [
+    'ATLANTIC',
+    'BURLINGTON',
+    'CAMDEN',
+    'CAPE MAY',
+    'CUMBERLAND',
+    'BERGEN',
+    'ESSEX',
+    'GLOUCESTER',
+    'HUDSON',
+    'HUNTERDON',
+    'MERCER',
+    'MIDDLESEX',
+    'MONMOUTH',
+    'MORRIS',
+    'OCEAN',
+    'PASSAIC',
+    'SALEM',
+    'SOMERSET',
+    'SUSSEX',
+    'UNION',
+    'WARREN',
+]
+ALL_ALIASES = ['all', '*']
 
 def check_sri_mps(sri):
     path = join(f'{SRI_FETCH_CACHE_DIR}', sri)
     return exists(path)
 
 
-def fetch_sri_mps(sri, overwrite=False, log=err, sleep_s=0.5):
+class FetchError(RuntimeError):
+    pass
+
+
+def fetch_sri_mps(sri, overwrite=False, log=err, sleep_s=0.5, on_err='warn'):
     path = join(f'{SRI_FETCH_CACHE_DIR}', sri)
     if overwrite or not exists(path):
         page = 0
@@ -67,7 +95,21 @@ def fetch_sri_mps(sri, overwrite=False, log=err, sleep_s=0.5):
             json.dump(responses, f)
     with open(path, 'r') as f:
         responses = json.load(f)
-    features = [ feature for response in responses for feature in response['features'] ]
+    features = []
+    for response in responses:
+        if 'features' not in response:
+            if 'error' in response:
+                msg = f'Error fetching SRI {sri}'
+                if on_err == 'raise':
+                    raise FetchError(msg)
+                elif on_err == 'warn':
+                    err(msg)
+                    continue
+                else:
+                    raise ValueError(f"Unrecognized `on_err`: {on_err}")
+            else:
+                raise ValueError(f'SRI {sri}: missing "features" and "error": {response}')
+        features += response['features']
     return features
 
 
@@ -170,7 +212,7 @@ def get_sri_mp_lls(df, cols=None, out_cols=None, conn=None, append=True):
 
 
 overwrite_opt = option('-f', '--overwrite', is_flag=True)
-year_opt = option('-y', '--year', type=int, default=2020)
+years_opt = option('-y', '--years', default='2020')
 
 
 @group(help="Various tools related to geocoding Standard Road ID / Mile Post coordinates")
@@ -198,10 +240,10 @@ def cli_county(ctx, county):
 
 @cli_county.command('sris', help="Display SRIs in a given {county,year}'s crash data")
 @pass_context
-@year_opt
-def cli_county_sris(ctx, year):
+@years_opt
+def cli_county_sris(ctx, years):
     county = ctx.obj['county']
-    crashes = nj_crashes.crashes.load(year=year, county=county)
+    crashes = nj_crashes.crashes.load(years=years, county=county)
     sris = crashes.SRI.unique().tolist()
     print(f'{county}: {len(sris)} SRIs: {sris}')
 
@@ -212,11 +254,12 @@ def cli_county_sris(ctx, year):
 @option('-n', '--max-num', type=int, default=1000)
 @option('-s', '--sleep-s', type=float, default=0.5)
 @option('-j', '--sleep-jitter', type=float, default=0.1)
-@year_opt
-def cli_county_fetch_sris(ctx, overwrite, max_num, sleep_s, sleep_jitter, year):
-    counties = ctx.obj['county'].split(',')
+@years_opt
+def cli_county_fetch_sris(ctx, overwrite, max_num, sleep_s, sleep_jitter, years):
+    counties = ctx.obj['county']
+    counties = COUNTIES if counties.lower() in ALL_ALIASES else counties.split(',')
     for county in counties:
-        crashes = nj_crashes.crashes.load(year=year, county=county)
+        crashes = nj_crashes.crashes.load(years=years, county=county)
         sris = crashes.SRI.unique().tolist()
         conn = connect(SRI_DB_PATH)
         fetches = 0
@@ -238,12 +281,12 @@ def cli_county_fetch_sris(ctx, overwrite, max_num, sleep_s, sleep_jitter, year):
             sri_map = get_sri_mp_map(sri, conn=conn, refetch=overwrite)
             fetches += 1
             fetches_str = f'{fetches}/{max_num}' if max_num > 0 else f'{fetches}'
+            slp = max(0, round(sleep_s + np.random.normal() * sleep_jitter, 2))
             if sri_map is None:
                 err(f"Fetched {fetches_str}: SRI {sri}, no MPs; sleeping for {slp}s")
             else:
                 keys = list(sri_map.keys())
                 sri_name = get_sri_sld_name(sri)
-                slp = max(0, round(sleep_s + np.random.normal() * sleep_jitter, 2))
                 err(f"Fetched {fetches_str}: SRI {sri} ({sri_name}), {len(keys)} MPs ∈ [{min(keys)}, {max(keys)}]; sleeping for {slp}s")
             if max_num > 0 and fetches >= max_num:
                 break
@@ -254,10 +297,10 @@ def cli_county_fetch_sris(ctx, overwrite, max_num, sleep_s, sleep_jitter, year):
 @pass_context
 @option('-h', '--height', type=int, default=1000)
 @option('-w', '--width', type=int, default=1000)
-@year_opt
-def cli_county_fetch_sris(ctx, width, height, year):
+@years_opt
+def cli_county_fetch_sris(ctx, width, height, years):
     county = ctx.obj['county']
-    crashes = nj_crashes.crashes.load(year=year, county=county)
+    crashes = nj_crashes.crashes.load(years=years, county=county)
     conn = connect(SRI_DB_PATH)
     cc_lls = get_sri_mp_lls(crashes, conn=conn)
     path = f'{county}-crashes.png'
@@ -269,8 +312,8 @@ def cli_county_fetch_sris(ctx, width, height, year):
         color='Severity',
         color_discrete_sequence=['yellow', 'orange', 'red'],
         hover_data=['Date', 'Crash Location', 'SRI', 'MP'],
-        #center=dict(lon=-74.042037, lat=40.725527),
-        #zoom=13.5,
+        # center=dict(lon=-74.042037, lat=40.725527),
+        # zoom=13.5,
         height=600,
     )
     legend_bgcolor = '50'

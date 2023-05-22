@@ -3,6 +3,8 @@ channels:
 dependencies:
 - python==3.10.10
 - datashader==0.14.4
-- geopandas
+- gdal==3.6.4[build=py310*]
+- geopandas==0.12.2
+- fiona==1.9.3[build=py310*]
 - pip:
     - -r requirements.txt
