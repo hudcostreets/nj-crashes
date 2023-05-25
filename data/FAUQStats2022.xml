@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed May 24 10:00:08 EDT 2023</RUNDATE>
+  <RUNDATE>Thu May 25 10:00:08 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1515,7 +1515,7 @@
   </COUNTY>
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0211" MNAME="Elmwood Park Boro">
-      <ACCIDENT ACCID="12105" DATE="10/24/2022" TIME="0556">
+      <ACCIDENT ACCID="12105" DATE="10/24/2022" TIME="0557">
         <HIGHWAY>444</HIGHWAY>
         <LOCATION>Garden State Parkway MP 159.7</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -1523,6 +1523,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2749,12 +2750,13 @@
     <MUNICIPALITY MCODE="0908" MNAME="North Bergen Twsp">
       <ACCIDENT ACCID="12006" DATE="09/06/2022" TIME="0555">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 59.41</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3274,7 +3276,7 @@
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="12016" DATE="08/18/2022" TIME="2347">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 45.44</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3795,8 +3797,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="11949" DATE="07/27/2022" TIME="1537">
-        <STREET>Newark Ave</STREET>
-        <LOCATION>Newark Ave</LOCATION>
+        <HIGHWAY>27</HIGHWAY>
+        <LOCATION>State Highway 27 MP 35.07</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
