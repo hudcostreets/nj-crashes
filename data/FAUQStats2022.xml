@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu May 25 10:00:08 EDT 2023</RUNDATE>
+  <RUNDATE>Fri May 26 10:00:09 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2530,8 +2530,6 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2018" MNAME="Summit City">
       <ACCIDENT ACCID="12085" DATE="09/15/2022" TIME="0953">
-        <HIGHWAY>657</HIGHWAY>
-        <LOCATION>County 657</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2707,8 +2705,8 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0415" MNAME="Gloucester Twsp">
       <ACCIDENT ACCID="12005" DATE="09/06/2022" TIME="1851">
-        <STREET>Johnson Road</STREET>
-        <LOCATION>Johnson Road</LOCATION>
+        <STREET>Johnson Rd</STREET>
+        <LOCATION>Johnson Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4738,8 +4736,8 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0408" MNAME="Camden City">
       <ACCIDENT ACCID="11918" DATE="06/28/2022" TIME="0007">
-        <STREET>834 Grant Street</STREET>
-        <LOCATION>834 Grant Street</LOCATION>
+        <STREET>Grant St</STREET>
+        <LOCATION>Grant St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
