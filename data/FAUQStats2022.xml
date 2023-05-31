@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue May 30 10:00:05 EDT 2023</RUNDATE>
+  <RUNDATE>Wed May 31 10:00:08 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1586,8 +1586,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2002" MNAME="Clark Twsp">
       <ACCIDENT ACCID="12112" DATE="10/22/2022" TIME="1136">
-        <STREET>Westfield Ave</STREET>
-        <LOCATION>Westfield Ave</LOCATION>
+        <HIGHWAY>606</HIGHWAY>
+        <LOCATION>County 606 MP 3.82</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -2004,9 +2004,9 @@
   </COUNTY>
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
-      <ACCIDENT ACCID="12069" DATE="10/08/2022" TIME="0247">
+      <ACCIDENT ACCID="12069" DATE="10/08/2022" TIME="0248">
         <HIGHWAY>27</HIGHWAY>
-        <LOCATION>State Highway 27</LOCATION>
+        <LOCATION>State Highway 27 MP 35.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
