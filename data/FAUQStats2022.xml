@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Jun 02 16:00:05 EDT 2023</RUNDATE>
+  <RUNDATE>Mon Jun 05 10:00:12 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2842,13 +2842,14 @@
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0907" MNAME="Kearny Town">
       <ACCIDENT ACCID="12000" DATE="09/03/2022" TIME="2134">
-        <HIGHWAY>7</HIGHWAY>
-        <LOCATION>State Highway 7</LOCATION>
+        <HIGHWAY>508</HIGHWAY>
+        <LOCATION>State Highway 508 MP 16.14</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2980,13 +2981,14 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1336" MNAME="Tinton Falls Boro">
       <ACCIDENT ACCID="11990" DATE="09/01/2022" TIME="1907">
-        <HIGHWAY>547</HIGHWAY>
-        <LOCATION>County 547</LOCATION>
+        <HIGHWAY>16</HIGHWAY>
+        <LOCATION>County 16 MP 1.11</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>2</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3134,6 +3136,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
