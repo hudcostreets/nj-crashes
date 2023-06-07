@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Jun 06 10:00:15 EDT 2023</RUNDATE>
+  <RUNDATE>Wed Jun 07 10:00:08 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -3529,12 +3529,13 @@
     <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
       <ACCIDENT ACCID="11943" DATE="08/06/2022" TIME="2121">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 30.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>4</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3562,6 +3563,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3583,12 +3585,13 @@
     <MUNICIPALITY MCODE="1339" MNAME="Hazlet Boro">
       <ACCIDENT ACCID="11980" DATE="08/05/2022" TIME="1117">
         <HIGHWAY>36</HIGHWAY>
-        <LOCATION>State Highway 36</LOCATION>
+        <LOCATION>State Highway 36 MP 23.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5517,6 +5520,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>5</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8954,5 +8958,5 @@
   </COUNTY>
   <TOTACCIDENTS>651</TOTACCIDENTS>
   <TOTFATALITIES>694</TOTFATALITIES>
-  <TOTINJURIES>383</TOTINJURIES>
+  <TOTINJURIES>394</TOTINJURIES>
 </FAUQSTATS>
