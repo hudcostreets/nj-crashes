@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Jun 08 10:00:17 EDT 2023</RUNDATE>
+  <RUNDATE>Fri Jun 09 10:00:09 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -744,6 +744,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2239,6 +2240,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2383,12 +2385,13 @@
     <MUNICIPALITY MCODE="1221" MNAME="South Brunswick Tws">
       <ACCIDENT ACCID="12033" DATE="09/19/2022" TIME="2232">
         <HIGHWAY>130</HIGHWAY>
-        <LOCATION>State Highway 130</LOCATION>
+        <LOCATION>State Highway 130 MP 77.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8958,5 +8961,5 @@
   </COUNTY>
   <TOTACCIDENTS>651</TOTACCIDENTS>
   <TOTFATALITIES>694</TOTFATALITIES>
-  <TOTINJURIES>394</TOTINJURIES>
+  <TOTINJURIES>396</TOTINJURIES>
 </FAUQSTATS>
