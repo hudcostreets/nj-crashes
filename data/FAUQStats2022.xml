@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Jun 09 10:00:09 EDT 2023</RUNDATE>
+  <RUNDATE>Sat Jun 10 10:00:07 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -736,7 +736,7 @@
   </COUNTY>
   <COUNTY CCODE="17" CNAME="Salem">
     <MUNICIPALITY MCODE="1714" MNAME="Upper Pittsgrove Tw">
-      <ACCIDENT ACCID="12195" DATE="11/29/2022" TIME="1410">
+      <ACCIDENT ACCID="12195" DATE="11/29/2022" TIME="1411">
         <HIGHWAY>614</HIGHWAY>
         <LOCATION>County 614 MP 1.9</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -4259,6 +4259,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4387,20 +4388,6 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <COUNTY CCODE="12" CNAME="Middlesex">
-    <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
-      <ACCIDENT ACCID="11873" DATE="07/09/2022" TIME="1246">
-        <STREET>Talmadge Road</STREET>
-        <LOCATION>Talmadge Road</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1339" MNAME="Hazlet Boro">
       <ACCIDENT ACCID="11862" DATE="07/09/2022" TIME="0947">
@@ -4424,6 +4411,20 @@
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
+      <ACCIDENT ACCID="11873" DATE="07/09/2022" TIME="0046">
+        <STREET>Talmadge Road</STREET>
+        <LOCATION>Talmadge Road</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
       </ACCIDENT>
