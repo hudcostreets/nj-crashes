@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Jun 13 10:00:06 EDT 2023</RUNDATE>
+  <RUNDATE>Wed Jun 14 10:00:06 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2876,8 +2876,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1213" MNAME="Monroe Twsp">
       <ACCIDENT ACCID="11996" DATE="09/03/2022" TIME="0650">
-        <STREET>Mounts Mills Rd</STREET>
-        <LOCATION>Mounts Mills Rd</LOCATION>
+        <STREET>Mounts Mills Road</STREET>
+        <LOCATION>Mounts Mills Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3177,12 +3177,13 @@
     <MUNICIPALITY MCODE="1221" MNAME="South Brunswick Tws">
       <ACCIDENT ACCID="12012" DATE="08/23/2022" TIME="1940">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 14.12</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3360,6 +3361,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3977,7 +3979,7 @@
   </COUNTY>
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0121" MNAME="Somers Point City">
-      <ACCIDENT ACCID="11910" DATE="07/21/2022" TIME="2108">
+      <ACCIDENT ACCID="11910" DATE="07/21/2022" TIME="2109">
         <HIGHWAY>444</HIGHWAY>
         <LOCATION>Garden State Parkway MP 30.1</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -3985,6 +3987,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8963,5 +8966,5 @@
   </COUNTY>
   <TOTACCIDENTS>651</TOTACCIDENTS>
   <TOTFATALITIES>694</TOTFATALITIES>
-  <TOTINJURIES>396</TOTINJURIES>
+  <TOTINJURIES>398</TOTINJURIES>
 </FAUQSTATS>
