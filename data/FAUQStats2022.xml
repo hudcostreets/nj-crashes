@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Jun 19 10:00:07 EDT 2023</RUNDATE>
+  <RUNDATE>Tue Jun 20 10:14:57 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2726,7 +2726,7 @@
     <MUNICIPALITY MCODE="1204" MNAME="East Brunswick Twsp">
       <ACCIDENT ACCID="12021" DATE="09/06/2022" TIME="1539">
         <HIGHWAY>613</HIGHWAY>
-        <LOCATION>County 613</LOCATION>
+        <LOCATION>County 613 MP 8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -2768,7 +2768,7 @@
     <MUNICIPALITY MCODE="1216" MNAME="Perth Amboy City">
       <ACCIDENT ACCID="12008" DATE="09/05/2022" TIME="2209">
         <HIGHWAY>653</HIGHWAY>
-        <LOCATION>County 653 MP 1.03</LOCATION>
+        <LOCATION>County 653 MP 1.04</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3563,8 +3563,8 @@
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0337" MNAME="Washington Twsp">
       <ACCIDENT ACCID="11944" DATE="08/06/2022" TIME="1747">
-        <STREET>Godfrey Bridge Rd</STREET>
-        <LOCATION>Godfrey Bridge Rd</LOCATION>
+        <STREET>Godfrey Bridge Road</STREET>
+        <LOCATION>Godfrey Bridge Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3759,8 +3759,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1319" MNAME="Howell Twsp">
       <ACCIDENT ACCID="11928" DATE="07/29/2022" TIME="2227">
-        <STREET>Norse Dr</STREET>
-        <LOCATION>Norse Dr</LOCATION>
+        <STREET>Norse Drive</STREET>
+        <LOCATION>Norse Drive</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3857,7 +3857,7 @@
     <MUNICIPALITY MCODE="1326" MNAME="Manalapan Twsp">
       <ACCIDENT ACCID="11915" DATE="07/25/2022" TIME="0246">
         <HIGHWAY>3</HIGHWAY>
-        <LOCATION>County 3 MP .94</LOCATION>
+        <LOCATION>County 3 MP 1.04</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -3994,7 +3994,7 @@
   </COUNTY>
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1507" MNAME="Toms River">
-      <ACCIDENT ACCID="11921" DATE="07/20/2022" TIME="2258">
+      <ACCIDENT ACCID="11921" DATE="07/20/2022" TIME="2259">
         <HIGHWAY>444</HIGHWAY>
         <LOCATION>Garden State Parkway MP 87.5</LOCATION>
         <FATALITIES>1</FATALITIES>
