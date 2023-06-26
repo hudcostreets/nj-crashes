@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Jun 25 10:00:08 EDT 2023</RUNDATE>
+  <RUNDATE>Mon Jun 26 10:00:05 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2192,7 +2192,7 @@
   </COUNTY>
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
-      <ACCIDENT ACCID="12048" DATE="09/29/2022" TIME="1053">
+      <ACCIDENT ACCID="12048" DATE="09/29/2022" TIME="1054">
         <HIGHWAY>444</HIGHWAY>
         <LOCATION>Garden State Parkway MP 123.8</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -2219,14 +2219,15 @@
   </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1351" MNAME="Upper Freehold Twsp">
-      <ACCIDENT ACCID="12047" DATE="09/28/2022" TIME="1041">
-        <STREET>Jonathan Holmes Rd</STREET>
-        <LOCATION>Jonathan Holmes Rd</LOCATION>
+      <ACCIDENT ACCID="12047" DATE="09/28/2022" TIME="1042">
+        <STREET>Jonathan Holmes Road</STREET>
+        <LOCATION>Jonathan Holmes Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2568,6 +2569,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8977,5 +8979,5 @@
   </COUNTY>
   <TOTACCIDENTS>651</TOTACCIDENTS>
   <TOTFATALITIES>694</TOTFATALITIES>
-  <TOTINJURIES>411</TOTINJURIES>
+  <TOTINJURIES>412</TOTINJURIES>
 </FAUQSTATS>
