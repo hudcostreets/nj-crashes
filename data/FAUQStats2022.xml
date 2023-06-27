@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Jun 26 10:00:05 EDT 2023</RUNDATE>
+  <RUNDATE>Tue Jun 27 10:00:08 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -385,14 +385,15 @@
   </COUNTY>
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
-      <ACCIDENT ACCID="12215" DATE="12/15/2022" TIME="1443">
+      <ACCIDENT ACCID="12215" DATE="12/15/2022" TIME="0430">
         <HIGHWAY>3</HIGHWAY>
-        <LOCATION>State Highway 3</LOCATION>
+        <LOCATION>State Highway 3 MP 4.9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -522,12 +523,13 @@
     <MUNICIPALITY MCODE="0908" MNAME="North Bergen Twsp">
       <ACCIDENT ACCID="12201" DATE="12/09/2022" TIME="1204">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 60.53</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -923,13 +925,14 @@
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1614" MNAME="Wayne Twsp">
       <ACCIDENT ACCID="12160" DATE="11/22/2022" TIME="1449">
-        <STREET>Vallet Rd</STREET>
-        <LOCATION>Vallet Rd</LOCATION>
+        <HIGHWAY>681</HIGHWAY>
+        <LOCATION>County 681 MP 1.87</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1064,6 +1067,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1206,8 +1210,8 @@
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
       <ACCIDENT ACCID="12133" DATE="11/08/2022" TIME="0850">
-        <HIGHWAY>509</HIGHWAY>
-        <LOCATION>County 509</LOCATION>
+        <HIGHWAY>602</HIGHWAY>
+        <LOCATION>County 602 MP .03</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1320,6 +1324,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2672,14 +2677,15 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="12018" DATE="09/09/2022" TIME="0220">
-        <STREET>Bergen St</STREET>
-        <LOCATION>Bergen St</LOCATION>
+      <ACCIDENT ACCID="12018" DATE="09/09/2022" TIME="0217">
+        <STREET>Avon Avenue</STREET>
+        <LOCATION>Avon Avenue</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2810,7 +2816,7 @@
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12004" DATE="09/05/2022" TIME="0254">
         <HIGHWAY>21</HIGHWAY>
-        <LOCATION>State Highway 21</LOCATION>
+        <LOCATION>State Highway 21 MP 1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3298,6 +3304,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8979,5 +8986,5 @@
   </COUNTY>
   <TOTACCIDENTS>651</TOTACCIDENTS>
   <TOTFATALITIES>694</TOTFATALITIES>
-  <TOTINJURIES>412</TOTINJURIES>
+  <TOTINJURIES>414</TOTINJURIES>
 </FAUQSTATS>
