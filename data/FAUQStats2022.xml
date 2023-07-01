@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Jun 30 10:00:05 EDT 2023</RUNDATE>
+  <RUNDATE>Sat Jul 01 10:00:10 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -408,6 +408,20 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0323" MNAME="Moorestown Twsp">
+      <ACCIDENT ACCID="12232" DATE="12/13/2022" TIME="1338">
+        <STREET>400 State HIghway 38</STREET>
+        <LOCATION>400 State HIghway 38</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2515,21 +2529,6 @@
         <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="07" CNAME="Essex">
-    <MUNICIPALITY MCODE="0711" MNAME="Maplewood Twsp">
-      <ACCIDENT ACCID="12044" DATE="09/17/2022" TIME="1247">
-        <STREET>616 South Orange Ave (Parking Garage)</STREET>
-        <LOCATION>616 South Orange Ave (Parking Garage)</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="19" CNAME="Sussex">
     <MUNICIPALITY MCODE="1911" MNAME="Hardyston Twsp">
       <ACCIDENT ACCID="12023" DATE="09/16/2022" TIME="1619">
         <HIGHWAY>23</HIGHWAY>
@@ -3242,18 +3241,6 @@
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>1</INJURIES>
-      </ACCIDENT>
-    </MUNICIPALITY>
-    <MUNICIPALITY MCODE="0805" MNAME="Franklin Twsp">
-      <ACCIDENT ACCID="11966" DATE="08/19/2022" TIME="2350">
-        <STREET>Little Mill Rd</STREET>
-        <LOCATION>Little Mill Rd</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8990,7 +8977,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>651</TOTACCIDENTS>
-  <TOTFATALITIES>695</TOTFATALITIES>
+  <TOTACCIDENTS>650</TOTACCIDENTS>
+  <TOTFATALITIES>694</TOTFATALITIES>
   <TOTINJURIES>416</TOTINJURIES>
 </FAUQSTATS>
