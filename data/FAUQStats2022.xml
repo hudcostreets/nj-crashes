@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Jul 02 10:00:08 EDT 2023</RUNDATE>
+  <RUNDATE>Mon Jul 03 10:00:07 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2451,12 +2451,13 @@
     <MUNICIPALITY MCODE="1902" MNAME="Andover Twsp">
       <ACCIDENT ACCID="12049" DATE="09/18/2022" TIME="1321">
         <HIGHWAY>616</HIGHWAY>
-        <LOCATION>County 616</LOCATION>
+        <LOCATION>County 616 MP 1.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
