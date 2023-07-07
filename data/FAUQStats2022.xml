@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Jul 06 10:00:06 EDT 2023</RUNDATE>
+  <RUNDATE>Fri Jul 07 10:00:06 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1256,12 +1256,13 @@
     <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
       <ACCIDENT ACCID="12132" DATE="11/07/2022" TIME="2048">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9</LOCATION>
+        <LOCATION>State Highway 9 MP 135.14</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5534,9 +5535,9 @@
   </COUNTY>
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0818" MNAME="Washington Twsp">
-      <ACCIDENT ACCID="11785" DATE="06/04/2022" TIME="1627">
+      <ACCIDENT ACCID="11785" DATE="06/04/2022" TIME="1036">
         <HIGHWAY>42</HIGHWAY>
-        <LOCATION>State Highway 42</LOCATION>
+        <LOCATION>State Highway 42 MP 5.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
