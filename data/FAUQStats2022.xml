@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Jul 08 10:00:07 EDT 2023</RUNDATE>
+  <RUNDATE>Sun Jul 09 10:00:09 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1679,13 +1679,14 @@
   <COUNTY CCODE="19" CNAME="Sussex">
     <MUNICIPALITY MCODE="1915" MNAME="Newton Town">
       <ACCIDENT ACCID="12163" DATE="10/21/2022" TIME="1640">
-        <HIGHWAY>517</HIGHWAY>
-        <LOCATION>County 517</LOCATION>
+        <HIGHWAY>616</HIGHWAY>
+        <LOCATION>County 616 MP .22</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4316,6 +4317,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
