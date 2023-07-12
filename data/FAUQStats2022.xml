@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Jul 11 10:00:06 EDT 2023</RUNDATE>
+  <RUNDATE>Wed Jul 12 10:00:05 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1546,8 +1546,8 @@
         <HIGHWAY>444</HIGHWAY>
         <LOCATION>Garden State Parkway MP 157.9</LOCATION>
         <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>2</INJURIES>
@@ -2676,8 +2676,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12018" DATE="09/09/2022" TIME="0217">
-        <STREET>Avon Avenue</STREET>
-        <LOCATION>Avon Avenue</LOCATION>
+        <STREET>Avon Ave</STREET>
+        <LOCATION>Avon Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -2758,7 +2758,7 @@
   </COUNTY>
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0908" MNAME="North Bergen Twsp">
-      <ACCIDENT ACCID="12006" DATE="09/06/2022" TIME="0555">
+      <ACCIDENT ACCID="12006" DATE="09/06/2022" TIME="0554">
         <HIGHWAY>1</HIGHWAY>
         <LOCATION>State Highway 1 MP 59.41</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -2826,9 +2826,9 @@
   </COUNTY>
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0908" MNAME="North Bergen Twsp">
-      <ACCIDENT ACCID="12007" DATE="09/04/2022" TIME="0456">
+      <ACCIDENT ACCID="12007" DATE="09/04/2022" TIME="0500">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 56.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
