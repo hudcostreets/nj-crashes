@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Jul 17 10:00:08 EDT 2023</RUNDATE>
+  <RUNDATE>Tue Jul 18 10:00:06 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2620,15 +2620,16 @@
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="10" CNAME="Hunterdon">
-    <MUNICIPALITY MCODE="1001" MNAME="Alexandria Twsp">
+    <MUNICIPALITY MCODE="1002" MNAME="Bethlehem Twsp">
       <ACCIDENT ACCID="12014" DATE="09/10/2022" TIME="1437">
         <HIGHWAY>579</HIGHWAY>
-        <LOCATION>County 579 MP 34.77</LOCATION>
+        <LOCATION>County 579 MP 34.75</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
