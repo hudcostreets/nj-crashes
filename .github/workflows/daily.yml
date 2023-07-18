@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - daily
+  workflow_dispatch:
 jobs:
   refresh:
     runs-on: ubuntu-latest
