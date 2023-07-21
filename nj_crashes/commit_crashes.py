@@ -203,6 +203,19 @@ class CommitCrashes:
         lines += [ f'• {line}' for line in descriptions ]
         return '\n'.join(lines)
 
+    @property
+    def slack_json(self) -> dict:
+        return {
+            "text": self.title,
+            "blocks": [{
+                "type": "mrkdwn",
+                "text": self.mrkdwn,
+            }]
+        }
+
+    def slack_json_str(self, indent: Optional[int] = 2) -> str:
+        return json.dumps(self.slack_json, indent=indent)
+
     @cached_property
     def rundate_json(self):
         rundate_blob = self.tree['www/public/rundate.json']
@@ -268,9 +281,9 @@ class CommitCrashes:
 
 
 @click.command()
-@click.option('-m', '--mrkdwn', is_flag=True)
+@click.option('-s', '--slack', is_flag=True)
 @click.argument('commits', nargs=-1)
-def main(mrkdwn, commits):
+def main(slack, commits):
     if commits:
         commits = list(commits)
     else:
@@ -278,8 +291,8 @@ def main(mrkdwn, commits):
 
     ccs = [ CommitCrashes(commit) for commit in commits ]
     for cc in ccs:
-        if mrkdwn:
-            print(cc.mrkdwn)
+        if slack:
+            print(cc.slack_json_str())
         else:
             print(cc.md)
 

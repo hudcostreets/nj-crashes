@@ -27,26 +27,13 @@ jobs:
       - name: Compute commit summaries
         id: summaries
         run: |
-          echo 'summaries<<EOF' >> $GITHUB_OUTPUT
-          commit_crashes ${{ inputs.commits }} >> $GITHUB_OUTPUT
+          echo 'slack_payload<<EOF' >> $GITHUB_OUTPUT
+          commit_crashes --slack ${{ inputs.commits }} >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
-      - name: Post to Slack
-        id: slack
+      - id: slack
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-          payload: |
-            {
-              "text": "${{ steps.summaries.outputs.summaries }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ steps.summaries.outputs.summaries }}"
-                  }
-                }
-              ]
-            }
+          payload: "${{ steps.summaries.outputs.slack_payload }}"
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
