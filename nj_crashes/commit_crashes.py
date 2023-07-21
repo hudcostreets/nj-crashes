@@ -281,7 +281,7 @@ class CommitCrashes:
         try:
             rundate_blob = self.tree[path]
             rundate_bytes = rundate_blob.data_stream.read()
-        except BadName:
+        except (ValueError, BadName):
             rundate_bytes = get_github_repo().get_contents(path, ref=self.ref).decoded_content
         return json.loads(rundate_bytes.decode())
 
