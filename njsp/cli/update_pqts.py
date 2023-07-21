@@ -31,7 +31,6 @@ def update_pqts():
     print(totals)
 
     rundate = to_dt(parsed_files[cur_year]['rundate'])
-    rundate_str = rundate.strftime('%Y-%m-%d')
     with open(RUNDATE_PATH, 'w') as f:
         json.dump({ 'rundate': str(rundate), }, f)
 
