@@ -2,7 +2,6 @@ beautifulsoup4
 click
 dask[dataframe]
 fastparquet
-GitPython
 kaleido
 ipython
 jupyter
@@ -14,7 +13,6 @@ pandas
 papermill
 plotly
 pyarrow
-pygithub
 requests
 sqlalchemy==1.4.46
 tabula-py

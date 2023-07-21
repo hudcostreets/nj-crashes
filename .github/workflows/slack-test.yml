@@ -1,33 +1,28 @@
-name: Print commit summaries
+name: Post commit summaries to Slack
 on:
   workflow_dispatch:
     inputs:
       commits:
         description: Commit refs to print summaries for
         default: 22b52f3 3e6d22a 39a673b
-      depth:
-        default: 10
-        type: number
-        description: Checkout depth
 jobs:
   post:
-    name: Publish to Slack
+    name: Post commit summaries to Slack
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: ${{ inputs.depth }}
+          ref: pub
       - uses: actions/setup-python@v4
         with:
           cache: pip
-      - run: |
-          git fetch origin --depth=1 $(git log --no-walk --format=%H ${{ inputs.commits }})
       - run: pip install -e .
+      - run: pip list
       - name: Compute commit summaries
         id: summaries
         run: |
           echo 'slack_payload<<EOF' >> $GITHUB_OUTPUT
-          commit_crashes --slack ${{ inputs.commits }} >> $GITHUB_OUTPUT
+          commit-crashes --slack ${{ inputs.commits }} >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
       - id: slack
         uses: slackapi/slack-github-action@v1.24.0
