@@ -11,8 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
       - uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.GHA_DEPLOY_KEY }}
@@ -48,12 +46,12 @@ jobs:
           branch: gh-pages
           folder: www/out
     outputs:
-      sha: ${{ steps.update_plots.outputs.sha }}
+      update_pqts: ${{ steps.update_pqts.outputs.sha }}
   post:
     name: Call Slack-post workflow
     needs: refresh
-    if: needs.refresh.outputs.sha != ''
+    if: needs.refresh.outputs.update_pqts != ''
     uses: ./.github/workflows/slack-test.yml
     with:
-      commits: ${{ needs.refresh.outputs.sha }}
+      commits: ${{ needs.refresh.outputs.update_pqts }}
     secrets: inherit
