@@ -25,8 +25,12 @@ jobs:
       - run: ./gha.py -cfp -b main -b www
         id: update
         timeout-minutes: 10
-      - name: Post to Slack
-        if: steps.update.outputs.sha != ''
-        uses: ./.github/workflows/slack-test
-        with:
-          commits: ${{ steps.update.outputs.sha }}
+    outputs:
+      sha: ${{ steps.update.outputs.sha }}
+  post:
+    name: Call Slack-post workflow
+    if: jobs.refresh.outputs.sha != ''
+    uses: ./.github/workflows/slack-test.yml
+    with:
+      commits: ${{ jobs.refresh.outputs.sha }}
+    secrets: inherit

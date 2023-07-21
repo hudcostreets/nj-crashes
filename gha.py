@@ -10,9 +10,6 @@ import njsp_plots
 import parse_njsp_xmls
 
 
-REPO = "neighbor-ryan/nj-crashes"
-
-
 def configure_author(name, email):
     run('git', 'config', '--global', 'user.name', name)
     run('git', 'config', '--global', 'user.email', email)
@@ -99,7 +96,6 @@ def main(branches, do_configure_author, do_dispatch, force, push, rebase):
                     err(f"Dispatching to {workflow}")
                     cmd = [
                         "gh", "workflow",
-                        "-R", REPO,
                         "run", workflow,
                         "-f", f"commits={sha}",
                     ]

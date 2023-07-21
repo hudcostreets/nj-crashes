@@ -1,0 +1,16 @@
+name: Test dispatching Slack-post workflow
+on:
+  workflow_dispatch:
+    inputs:
+      commits:
+        description: "Commits"
+        default: 22b52f3
+jobs:
+  dispatch:
+    name: Dispatch to slack-test.yml
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          gh workflow run slack-test.yml -R neighbor-ryan/nj-crashes -f "commits=${{ inputs.commits }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
