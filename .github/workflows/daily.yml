@@ -23,7 +23,7 @@ jobs:
           cache: pip
       - run: pip install -e .
       - id: refresh_data
-        run: njsp -c refresh_data
+        run: njsp -ac refresh_data
       - id: update_pqts
         if: steps.refresh_data.outputs.sha
         run: njsp -c update_pqts
@@ -34,7 +34,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: www/yarn.lock
       - if: steps.update_plots.outputs.sha
         name: npm install, build, export
@@ -49,7 +49,7 @@ jobs:
           branch: gh-pages
           folder: www/out
     outputs:
-      sha: ${{ steps.update.outputs.sha }}
+      sha: ${{ steps.update_plots.outputs.sha }}
   post:
     name: Call Slack-post workflow
     needs: refresh

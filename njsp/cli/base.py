@@ -1,3 +1,5 @@
+from functools import wraps
+
 import click
 from git import Repo
 from utz import process, env, err
@@ -5,9 +7,13 @@ from utz import process, env, err
 
 @click.group('njsp')
 @click.pass_context
-@click.option('-c', '--commit', 'do_commit', multiple=True)
-def njsp(ctx, do_commit):
-    ctx.obj = { 'do_commit': do_commit }
+@click.option('-a', '--configure-author', 'do_configure_author', is_flag=True)
+@click.option('-c', '--commit', 'do_commit', count=True)
+def njsp(ctx, do_configure_author, do_commit):
+    ctx.obj = dict(
+        do_configure_author=do_configure_author,
+        do_commit=do_commit,
+    )
 
 
 def step_output(key, value):
@@ -19,9 +25,15 @@ def step_output(key, value):
             err(f"Step output: {kv}")
 
 
+def configure_author(name, email):
+    process.run('git', 'config', '--global', 'user.name', name)
+    process.run('git', 'config', '--global', 'user.email', email)
+
+
 def command(fn):
     @njsp.command(fn.__name__)
     @click.pass_context
+    @wraps(fn)
     def _fn(ctx, *args, **kwargs):
         do_commit = ctx.obj['do_commit']
         if do_commit:
@@ -32,6 +44,12 @@ def command(fn):
         msg = fn(*args, **kwargs)
         if do_commit:
             if repo.is_dirty():
+                do_configure_author = ctx.obj['do_configure_author']
+                if do_configure_author:
+                    configure_author(
+                        env.get('GIT_AUTHOR_NAME', 'GitHub Actions'),
+                        env.get('GIT_AUTHOR_EMAIL', 'ryan-williams@users.noreply.github.com'),
+                    )
                 process.run('git', 'commit', '-am', msg)
                 step_output('sha', repo.commit().hexsha)
                 if do_commit > 1:
