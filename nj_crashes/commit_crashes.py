@@ -256,8 +256,11 @@ class CommitCrashes:
         return {
             "text": self.short_subject,
             "blocks": [{
-                "type": "mrkdwn",
-                "text": self.mrkdwn,
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": self.mrkdwn,
+                },
             }]
         }
 
@@ -350,8 +353,8 @@ def main(slack, commits):
     if slack:
         jsons = [ cc.slack_json for cc in ccs ]
         text = ', '.join([ obj['text'] for obj in jsons ])
-        # blocks = [ block for obj in jsons for block in obj['blocks'] ]
-        blocks = [{ 'type': 'mrkdwn', 'text': '\n'.join([ obj['blocks'][0]['text'] for obj in jsons ]) }]
+        blocks = [ block for obj in jsons for block in obj['blocks'] ]
+        # blocks = [{ 'type': 'mrkdwn', 'text': '\n'.join([ obj['blocks'][0]['text'] for obj in jsons ]) }]
         slack_json = { 'text': text, 'blocks': blocks, }
         print(json.dumps(slack_json))
     else:
