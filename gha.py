@@ -21,10 +21,11 @@ def configure_author(name, email):
 @click.command()
 @click.option('-b', '--branch', 'branches', multiple=True)
 @click.option('-c', '--configure-author', 'do_configure_author', is_flag=True)
+@click.option('-d', '--do-dispatch', is_flag=True)
 @click.option('-f', '--force', count=True, help=f'Continue past initial no-op data update')
 @click.option('-p', '--push', is_flag=True)
 @click.option('-r/-R', '--rebase/--no-rebase', is_flag=True, default=None)
-def main(branches, do_configure_author, force, push, rebase):
+def main(branches, do_configure_author, do_dispatch, force, push, rebase):
     run('./refresh-data.sh')
     git_is_clean = check('git', 'diff', '--quiet', 'HEAD')
     if git_is_clean:
@@ -93,14 +94,16 @@ def main(branches, do_configure_author, force, push, rebase):
                     f.write(f'sha={sha}\n')
                 err(f"Wrote SHA {sha} to $GITHUB_OUTPUT")
 
-                cmd = [
-                    "gh", "workflow",
-                    "-R", REPO,
-                    "run", "slack-test.yml",
-                    f"commits={sha}",
-                ]
-                process.run(cmd)
-
+                if do_dispatch:
+                    workflow = "slack-test.yml"
+                    err(f"Dispatching to {workflow}")
+                    cmd = [
+                        "gh", "workflow",
+                        "-R", REPO,
+                        "run", workflow,
+                        "-f", f"commits={sha}",
+                    ]
+                    process.run(cmd)
         else:
             err('Nothing to push')
 

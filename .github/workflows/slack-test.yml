@@ -1,10 +1,14 @@
 name: Post commit summaries to Slack
 on:
+  workflow_call:
+    inputs:
+      commits:
+        type: string
+        description: Commit refs to post summaries of
   workflow_dispatch:
     inputs:
       commits:
-        description: Commit refs to print summaries for
-        default: 22b52f3 3e6d22a 39a673b
+        description: Commit refs to post summaries of
 jobs:
   post:
     name: Post commit summaries to Slack

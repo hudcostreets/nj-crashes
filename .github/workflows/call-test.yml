@@ -1,0 +1,14 @@
+name: Call Slack-post workflow
+on:
+  workflow_dispatch:
+    inputs:
+      commits:
+        description: "Commits"
+        default: 22b52f3
+jobs:
+  post:
+    name: Call Slack-post workflow
+    uses: ./.github/workflows/slack-test.yml
+    with:
+      commits: ${{ inputs.commits }}
+    secrets: inherit
