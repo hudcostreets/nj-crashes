@@ -113,7 +113,7 @@ def crash_str(r: pd.Series, fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p')
 
 @dataclass
 class CommitCrashes:
-    ref: str = None
+    ref: Optional[str] = None
 
     CRASHES_PATH = 'data/crashes.pqt'
     RUNDATE_JSON_PATH = 'www/public/rundate.json'
@@ -299,7 +299,11 @@ class CommitCrashes:
 
     @property
     def commit_link(self):
-        return f'<{self.url}|{self.short_sha}>'
+        return f'<{self.commit_url}|{self.short_sha}>'
+
+    @property
+    def commit_url(self) -> str:
+        return f'https://github.com/{REPO}/commit/{self.sha}'
 
     @property
     def title(self) -> str:
@@ -345,10 +349,6 @@ class CommitCrashes:
     def short_subject(self) -> str:
         return f'*{self.run_date_str}* ({self.commit_link}), {", ".join(self.crash_type_pcs)}'
 
-    @property
-    def url(self) -> str:
-        return f'https://github.com/{REPO}/tree/{self.sha}'
-
     def __str__(self):
         return self.subject
 
@@ -363,7 +363,7 @@ def main(slack, commits):
     if commits:
         commits = list(commits)
     else:
-        commits = ['HEAD']
+        commits = [None]
 
     ccs = [ CommitCrashes(commit) for commit in commits ]
     if slack:
