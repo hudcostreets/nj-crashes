@@ -8,6 +8,8 @@ from typing import Union, Optional, Tuple, Callable
 
 import click
 import pandas as pd
+from gitdb.exc import BadName
+from github import Github, Repository
 from pandas import isna
 from utz import process, cached_property
 
@@ -23,6 +25,31 @@ def get_repo() -> Repo:
     return _repo
 
 
+_gh: Optional[Github] = None
+_gh_repo: Optional[Repository] = None
+
+
+def get_github_repo() -> Repository:
+    global _gh
+    global _gh_repo
+    if _gh is None:
+        _gh = Github()
+    if _gh_repo is None:
+        _gh_repo = _gh.get_repo('neighbor-ryan/nj-crashes')
+    return _gh_repo
+
+
+def load_pqt_github(
+        path: str,
+        ref: str = None,
+        repo: Optional[Repository] = None,
+) -> pd.DataFrame:
+    if repo is None:
+        repo = get_github_repo()
+    content_bytes = repo.get_contents(path, ref=ref).decoded_content
+    return pd.read_parquet(BytesIO(content_bytes))
+
+
 def load_pqt(
         path: str,
         commit: Union[None, str, Commit] = None,
@@ -30,10 +57,16 @@ def load_pqt(
 ) -> pd.DataFrame:
     if repo is None:
         repo = get_repo()
+    elif isinstance(repo, Github):
+        return load_pqt_github(path, ref=commit)
+
     if commit is None:
         commit = repo.head.ref
     elif isinstance(commit, str):
-        commit = repo.commit(commit)
+        try:
+            commit = repo.commit(commit)
+        except BadName:
+            return load_pqt_github(path, ref=commit)
     else:
         assert isinstance(commit, Commit), commit
     data = commit.tree[path].data_stream.read()

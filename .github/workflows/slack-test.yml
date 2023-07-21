@@ -23,7 +23,6 @@ jobs:
       - run: |
           git fetch origin --depth=1 $(git log --no-walk --format=%H ${{ inputs.commits }})
       - run: pip install -e .
-      - run: commit_crashes --help
       - name: Compute commit summaries
         id: summaries
         run: |
