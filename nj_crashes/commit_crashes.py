@@ -244,17 +244,17 @@ class CommitCrashes:
     @cached_property
     def mrkdwn(self) -> str:
         descriptions = self.descriptions(fmt=lambda dt: f"*{dt.strftime('%-I:%M%p').lower()}*")
-        title = f'*{self.run_date_str}*, {", ".join(self.crash_type_pcs)}'
+        subject = self.short_subject
         if descriptions:
-            title += ':'
-        lines = [title]
+            subject += ':'
+        lines = [subject]
         lines += [ f'• {line}' for line in descriptions ]
         return '\n'.join(lines)
 
     @property
     def slack_json(self) -> dict:
         return {
-            "text": self.title,
+            "text": self.short_subject,
             "blocks": [{
                 "type": "mrkdwn",
                 "text": self.mrkdwn,
@@ -326,6 +326,10 @@ class CommitCrashes:
     def subject(self) -> str:
         return f'{self.title}: ' + ', '.join(self.crash_type_pcs)
 
+    @property
+    def short_subject(self) -> str:
+        return f'*{self.run_date_str}*, {", ".join(self.crash_type_pcs)}'
+
     def __str__(self):
         return self.subject
 
@@ -343,10 +347,14 @@ def main(slack, commits):
         commits = ['HEAD']
 
     ccs = [ CommitCrashes(commit) for commit in commits ]
-    for cc in ccs:
-        if slack:
-            print(cc.slack_json_str())
-        else:
+    if slack:
+        jsons = [ cc.slack_json for cc in ccs ]
+        text = ', '.join([ obj['text'] for obj in jsons ])
+        blocks = [ block for obj in jsons for block in obj['blocks'] ]
+        slack_json = { 'text': text, 'blocks': blocks, }
+        print(json.dumps(slack_json, indent=2))
+    else:
+        for cc in ccs:
             print(cc.md)
 
 
