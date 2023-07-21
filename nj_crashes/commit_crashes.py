@@ -4,6 +4,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 from io import BytesIO
+from subprocess import CalledProcessError
 from typing import Union, Optional, Tuple, Callable
 
 import click
@@ -11,6 +12,7 @@ import pandas as pd
 from gitdb.exc import BadName
 from github import Github
 from github.Repository import Repository
+from github.Commit import Commit as GithubCommit
 from pandas import isna
 from utz import process, cached_property
 
@@ -28,6 +30,7 @@ def get_repo() -> Repo:
 
 _gh: Optional[Github] = None
 _gh_repo: Optional[Repository] = None
+SHORT_SHA_LEN = 7
 
 
 def get_github_repo() -> Repository:
@@ -66,7 +69,7 @@ def load_pqt(
     elif isinstance(commit, str):
         try:
             commit = repo.commit(commit)
-        except BadName:
+        except (BadName, ValueError):
             return load_pqt_github(path, ref=commit)
     else:
         assert isinstance(commit, Commit), commit
@@ -105,17 +108,28 @@ class CommitCrashes:
     ref: str = None
 
     CRASHES_PATH = 'data/crashes.pqt'
+    RUNDATE_JSON_PATH = 'www/public/rundate.json'
 
     def fmt(self, fmt: str) -> str:
         return process.line('git', 'log', '-1', f'--format={fmt}', *([self.ref] if self.ref else []))
 
     @cached_property
+    def github_commit(self) -> GithubCommit:
+        return get_github_repo().get_commit(self.ref)
+
+    @cached_property
     def sha(self) -> str:
-        return self.fmt('%H')
+        try:
+            return self.fmt('%H')
+        except CalledProcessError:
+            return self.github_commit.sha
 
     @cached_property
     def short_sha(self) -> str:
-        return self.fmt('%h')
+        try:
+            return self.fmt('%h')
+        except CalledProcessError:
+            return self.github_commit.sha[:SHORT_SHA_LEN]
 
     @cached_property
     def parent_ref(self) -> str:
@@ -252,8 +266,13 @@ class CommitCrashes:
 
     @cached_property
     def rundate_json(self):
-        rundate_blob = self.tree['www/public/rundate.json']
-        return json.loads(rundate_blob.data_stream.read().decode())
+        path = self.RUNDATE_JSON_PATH
+        try:
+            rundate_blob = self.tree[path]
+            rundate_bytes = rundate_blob.data_stream.read()
+        except BadName:
+            rundate_bytes = get_github_repo().get_contents(path, ref=self.ref).decoded_content
+        return json.loads(rundate_bytes.decode())
 
     @cached_property
     def run_dt(self) -> pd.Timestamp:
