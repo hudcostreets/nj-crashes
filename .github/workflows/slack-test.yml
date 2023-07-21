@@ -20,6 +20,8 @@ jobs:
       - run: pip list
       - name: Compute commit summaries
         id: summaries
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo 'slack_payload<<EOF' >> $GITHUB_OUTPUT
           commit-crashes --slack ${{ inputs.commits }} >> $GITHUB_OUTPUT
