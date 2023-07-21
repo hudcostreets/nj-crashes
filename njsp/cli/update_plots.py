@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import plotly.express as px
 import plotly.graph_objects as go
 from utz import *
@@ -8,11 +9,13 @@ from utz.colors import colors_lengthen, swatches
 from nj_crashes.colors import get_colors, gridcolor, px_colors
 from nj_crashes.paths import PLOTS_DIR, RUNDATE_PATH, DB_URI
 from nj_crashes.utils import normalized_ytd_days
+from njsp.cli.base import command
 
 save = partial(plots.save, bg='white')
 
 
-def main():
+@command
+def update_plots():
     totals = read_sql_table("totals", DB_URI).set_index('year')
     crashes = read_sql_table("crashes", DB_URI)
 
@@ -403,6 +406,4 @@ def main():
         w=1200, h=700,
     )
 
-
-if __name__ == '__main__':
-    main()
+    return "Update NJSP plots"

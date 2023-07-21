@@ -1,0 +1,12 @@
+on:
+  workflow_dispatch:
+  workflow_call:
+jobs:
+  refresh-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: refresh-data
+      - run: pip install -e .
+      - run: njsp-refresh-data

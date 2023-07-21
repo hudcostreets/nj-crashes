@@ -22,15 +22,39 @@ jobs:
           python-version: 3.9
           cache: pip
       - run: pip install -e .
-      - run: ./gha.py -cfp -b main -b www
-        id: update
-        timeout-minutes: 10
+      - id: refresh_data
+        run: njsp -c refresh_data
+      - id: update_pqts
+        if: steps.refresh_data.outputs.sha
+        run: njsp -c update_pqts
+      - id: update_plots
+        if: steps.update_pqts.outputs.sha
+        run: njsp -cc update_plots
+      - if: steps.update_plots.outputs.sha
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'npm'
+          cache-dependency-path: www/yarn.lock
+      - if: steps.update_plots.outputs.sha
+        name: npm install, build, export
+        run: |
+          cd www
+          npm install
+          npm run gha-export
+      - if: steps.update_plots.outputs.sha
+        name: Deploy to GH Pages
+        uses: JamesIves/github-pages-deploy-action@4.4.1
+        with:
+          branch: gh-pages
+          folder: www/out
     outputs:
       sha: ${{ steps.update.outputs.sha }}
   post:
     name: Call Slack-post workflow
-    if: jobs.refresh.outputs.sha != ''
+    needs: refresh
+    if: needs.refresh.outputs.sha != ''
     uses: ./.github/workflows/slack-test.yml
     with:
-      commits: ${{ jobs.refresh.outputs.sha }}
+      commits: ${{ needs.refresh.outputs.sha }}
     secrets: inherit

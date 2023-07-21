@@ -46,12 +46,9 @@ This data is available starting from 2020.
 
 Refresh data:
 ```bash
-./refresh-data.sh  # By default: 2020, 2021, and 2022
-```
-
-Execute notebook:
-```bash
-papermill parse-njsp-xmls.ipynb out/parse-njsp-xmls.ipynb  # Update data, plots
+njsp refresh_data  # By default, current year and 2 preceding
+njsp update_data
+njsp update_plots
 ```
 
 ---

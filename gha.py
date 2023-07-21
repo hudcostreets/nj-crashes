@@ -8,6 +8,7 @@ from utz import check, process, run, err
 
 import njsp_plots
 import parse_njsp_xmls
+import refresh_data
 
 
 def configure_author(name, email):
@@ -23,12 +24,12 @@ def configure_author(name, email):
 @click.option('-p', '--push', is_flag=True)
 @click.option('-r/-R', '--rebase/--no-rebase', is_flag=True, default=None)
 def main(branches, do_configure_author, do_dispatch, force, push, rebase):
-    run('./refresh-data.sh')
+    refresh_data.main()
     git_is_clean = check('git', 'diff', '--quiet', 'HEAD')
     if git_is_clean:
-        print('No data changes found')
+        err('No data changes found')
         if force:
-            print(f'force={force}; continuing')
+            err(f'force={force}; continuing')
         else:
             return
 
@@ -36,10 +37,13 @@ def main(branches, do_configure_author, do_dispatch, force, push, rebase):
     def commit(msg, amend=True):
         nonlocal do_configure_author, did_commit
         if do_configure_author:
-            configure_author('GitHub Actions', 'ryan-williams@users.noreply.github.com')
+            configure_author(
+                env.get('GIT_AUTHOR_NAME', 'GitHub Actions'),
+                env.get('GIT_AUTHOR_EMAIL', 'ryan-williams@users.noreply.github.com'),
+            )
             do_configure_author = False
         if did_commit and amend:
-            print('Amending commit')
+            err('Amending commit')
             run('git', 'commit', '--amend', '-am', msg)
         else:
             run('git', 'commit', '-am', msg)
@@ -53,11 +57,6 @@ def main(branches, do_configure_author, do_dispatch, force, push, rebase):
 
     err("Calling njsp_plots.main()")
     njsp_plots.main()
-
-    for nb in ['njsp-plots.ipynb']:
-        out = f'out/{nb}'
-        makedirs(dirname(out), exist_ok=True)
-        run('papermill', nb, out)
 
     data_changed = not check('git', 'diff', '--quiet', 'HEAD', '--', 'data')
     www_changed = not check('git', 'diff', '--quiet', 'origin/www', '--', 'www')

@@ -1,18 +1,17 @@
-#!/usr/bin/env python
-
 # # Parse/Clean NJSP Fatal Crash XMLs
 # - Load XMLs
 # - Clean / Assign some dtypes
 # - Write to parquet and SQLite
 
 from utz import *
+
 from nj_crashes.paths import RUNDATE_PATH
 from nj_crashes.utils import parse_file
+from .base import command
 
 
-# ### Load+Parse NJSP fatal crash data (2008-2023)
-
-def main():
+@command
+def update_pqts():
     cur_month = to_dt(now().strftime('%Y-%m'))
     cur_year = cur_month.year
 
@@ -116,6 +115,4 @@ def main():
         table.to_sql(name, con=engine, if_exists='replace',)
         table.to_parquet(f'data/{name}.pqt')
 
-
-if __name__ == '__main__':
-    main()
+    return "Update NJSP data"
