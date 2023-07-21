@@ -4,13 +4,14 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 from io import BytesIO
+from os import environ as env
 from subprocess import CalledProcessError
 from typing import Union, Optional, Tuple, Callable
 
 import click
 import pandas as pd
 from gitdb.exc import BadName
-from github import Github
+from github import Auth, Github
 from github.Repository import Repository
 from github.Commit import Commit as GithubCommit
 from pandas import isna
@@ -31,15 +32,22 @@ def get_repo() -> Repo:
 _gh: Optional[Github] = None
 _gh_repo: Optional[Repository] = None
 SHORT_SHA_LEN = 7
+REPO = 'neighbor-ryan/nj-crashes'
 
 
 def get_github_repo() -> Repository:
     global _gh
     global _gh_repo
     if _gh is None:
-        _gh = Github()
+        GITHUB_TOKEN = env.get('GITHUB_TOKEN')
+        if GITHUB_TOKEN:
+            auth = Auth.Token(GITHUB_TOKEN)
+            auth_kwargs = dict(auth=auth)
+        else:
+            auth_kwargs = dict()
+        _gh = Github(**auth_kwargs)
     if _gh_repo is None:
-        _gh_repo = _gh.get_repo('neighbor-ryan/nj-crashes')
+        _gh_repo = _gh.get_repo(REPO)
     return _gh_repo
 
 
@@ -290,8 +298,12 @@ class CommitCrashes:
         return self.run_date.strftime('%a %b %-d %Y')
 
     @property
+    def commit_link(self):
+        return f'<{self.url}|{self.short_sha}>'
+
+    @property
     def title(self) -> str:
-        return f'Commit {self.short_sha} (run date {self.run_date_str})'
+        return f'{self.commit_link} ({self.run_date_str})'
 
     @property
     def crash_type_pcs(self) -> list[str]:
@@ -331,7 +343,11 @@ class CommitCrashes:
 
     @property
     def short_subject(self) -> str:
-        return f'*{self.run_date_str}*, {", ".join(self.crash_type_pcs)}'
+        return f'*{self.run_date_str}* ({self.commit_link}), {", ".join(self.crash_type_pcs)}'
+
+    @property
+    def url(self) -> str:
+        return f'https://github.com/{REPO}/tree/{self.sha}'
 
     def __str__(self):
         return self.subject
@@ -356,7 +372,7 @@ def main(slack, commits):
         blocks = [ block for obj in jsons for block in obj['blocks'] ]
         # blocks = [{ 'type': 'mrkdwn', 'text': '\n'.join([ obj['blocks'][0]['text'] for obj in jsons ]) }]
         slack_json = { 'text': text, 'blocks': blocks, }
-        print(json.dumps(slack_json))
+        print(json.dumps(slack_json, indent=2))
     else:
         for cc in ccs:
             print(cc.md)
