@@ -1,13 +1,16 @@
 #!/usr/bin/env python
-from os import makedirs
+
+from os import environ as env, makedirs
 from os.path import dirname
-from sys import stderr
 
 import click
-from utz import check, process, run
+from utz import check, process, run, err
 
 import njsp_plots
 import parse_njsp_xmls
+
+
+REPO = "neighbor-ryan/nj-crashes"
 
 
 def configure_author(name, email):
@@ -47,12 +50,10 @@ def main(branches, do_configure_author, force, push, rebase):
     if not git_is_clean:
         commit('GHA: update data')
 
-    print("Calling parse_njsp_xmls.main()")
-    stderr.write("Calling parse_njsp_xmls.main()\n")
+    err("Calling parse_njsp_xmls.main()")
     parse_njsp_xmls.main()
 
-    print("Calling njsp_plots.main()")
-    stderr.write("Calling njsp_plots.main()\n")
+    err("Calling njsp_plots.main()")
     njsp_plots.main()
 
     for nb in ['njsp-plots.ipynb']:
@@ -65,14 +66,14 @@ def main(branches, do_configure_author, force, push, rebase):
     do_commit = data_changed or www_changed
     changed_files = [ line[3:] for line in process.lines('git', 'status', '--porcelain') ]
     if changed_files:
-        print(f'{len(changed_files)} changed files:')
+        err(f'{len(changed_files)} changed files:')
         for f in changed_files:
-            print(f'\t{f}')
+            err(f'\t{f}')
 
     if do_commit:
         commit('GHA: update data/plots')
     else:
-        print('No data/plot change found')
+        err('No data/plot change found')
 
     if push:
         if did_commit:
@@ -84,8 +85,24 @@ def main(branches, do_configure_author, force, push, rebase):
 
             for branch in branches:
                 run('git', 'push', 'origin', f'HEAD:{branch}')
+
+            GITHUB_OUTPUT = env.get('GITHUB_OUTPUT')
+            if GITHUB_OUTPUT:
+                sha = process.line('git', 'log', '-1', '--format=%h')
+                with open(GITHUB_OUTPUT, 'a') as f:
+                    f.write(f'sha={sha}\n')
+                err(f"Wrote SHA {sha} to $GITHUB_OUTPUT")
+
+                cmd = [
+                    "gh", "workflow",
+                    "-R", REPO,
+                    "run", "slack-test.yml",
+                    f"commits={sha}",
+                ]
+                process.run(cmd)
+
         else:
-            print('Nothing to push')
+            err('Nothing to push')
 
 
 if __name__ == '__main__':
