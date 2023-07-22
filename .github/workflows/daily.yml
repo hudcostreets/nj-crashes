@@ -6,6 +6,11 @@ on:
     branches:
       - daily
   workflow_dispatch:
+    inputs:
+      short_circuit:
+        type: boolean
+        description: "When set, skip stages when their inputs haven't run or changed"
+        default: true
 jobs:
   refresh:
     runs-on: ubuntu-latest
@@ -22,24 +27,27 @@ jobs:
       - id: refresh_data
         run: njsp -acc refresh_data
       - id: update_pqts
-        if: steps.refresh_data.outputs.sha
+        if: steps.refresh_data.outputs.sha || inputs.short_circuit != 'true'
         run: njsp -cc update_pqts
       - id: update_plots
-        if: steps.update_pqts.outputs.sha
+        if: steps.update_pqts.outputs.sha || inputs.short_circuit != 'true'
         run: njsp -cc update_plots
-      - if: steps.update_plots.outputs.sha
+      - id: build_www
+        if: steps.update_plots.outputs.sha || inputs.short_circuit != 'true'
+        run: echo "run=1" >> $GITHUB_OUTPUT
+      - if: steps.build_www.outputs.run
         uses: actions/setup-node@v3
         with:
           node-version: 16
           cache: npm
           cache-dependency-path: www/yarn.lock
-      - if: steps.update_plots.outputs.sha
+      - if: steps.build_www.outputs.run
         name: npm install, build, export
         run: |
           cd www
           npm install
           npm run gha-export
-      - if: steps.update_plots.outputs.sha
+      - if: steps.build_www.outputs.run
         name: Deploy to GH Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
