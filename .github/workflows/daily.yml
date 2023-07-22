@@ -24,8 +24,12 @@ jobs:
           python-version: 3.9
           cache: pip
       - run: pip install -e .
+      - name: Configure Git author
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'ryan-williams@users.noreply.github.com'
       - id: refresh_data
-        run: njsp -acc refresh_data
+        run: njsp -cc refresh_data
       - id: update_pqts
         if: steps.refresh_data.outputs.sha || inputs.short_circuit != 'true'
         run: njsp -cc update_pqts
