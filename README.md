@@ -4,11 +4,13 @@ Analysis of NJ State Police traffic violence data (2008-present)
 - Web view: [neighbor-ryan.org/nj-crashes](https://neighbor-ryan.org/nj-crashes/)
 - NJSP data: [nj.gov/njsp/info/fatalacc](https://nj.gov/njsp/info/fatalacc/index.shtml)
 
+Data updates daily via [GitHub Action](https://github.com/neighbor-ryan/nj-crashes/actions), plots below are current through either the most recent month or year.
+
 ### NJ traffic deaths w/ 12mo rolling avg
 
 [![](www/public/plots/fatalities_per_month.png)](https://neighbor-ryan.org/nj-crashes/#per-month)
 
-### 2021 was the worst year on record, and 2022 is on pace to exceed it
+### 2021 and 2022 were the worst years on record
 
 [![](www/public/plots/fatalities_per_year_by_type.png)](https://neighbor-ryan.org/nj-crashes/#per-year)
 
@@ -16,7 +18,7 @@ Analysis of NJ State Police traffic violence data (2008-present)
 
 ### In NJ, traffic deaths are 1.5x-2x homicides
 
-![](fatalities_vs_homicides_per_year.png)
+![](www/public/plots/crash_homicide_cmp.png)
 
 **Traffic deaths spiked by 19% in 2021.**
 
