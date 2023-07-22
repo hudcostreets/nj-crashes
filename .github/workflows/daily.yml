@@ -20,10 +20,10 @@ jobs:
           cache: pip
       - run: pip install -e .
       - id: refresh_data
-        run: njsp -ac refresh_data
+        run: njsp -acc refresh_data
       - id: update_pqts
         if: steps.refresh_data.outputs.sha
-        run: njsp -c update_pqts
+        run: njsp -cc update_pqts
       - id: update_plots
         if: steps.update_pqts.outputs.sha
         run: njsp -cc update_plots

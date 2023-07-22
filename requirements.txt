@@ -16,4 +16,4 @@ pyarrow
 requests
 sqlalchemy==1.4.46
 tabula-py
-utz==0.3.25
+utz>=0.3.26
