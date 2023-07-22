@@ -11,6 +11,22 @@ on:
         type: boolean
         description: "When set, skip stages when their inputs haven't run or changed"
         default: true
+      refresh_data:
+        type: boolean
+        description: "Enable `refresh_data` step"
+        default: true
+      update_pqts:
+        type: boolean
+        description: "Enable `update_pqts` step"
+        default: true
+      update_plots:
+        type: boolean
+        description: "Enable `update_plots` step"
+        default: true
+      build_www:
+        type: boolean
+        description: "Enable www build steps"
+        default: true
 jobs:
   refresh:
     runs-on: ubuntu-latest
@@ -29,15 +45,16 @@ jobs:
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'ryan-williams@users.noreply.github.com'
       - id: refresh_data
+        if: inputs.refresh_data
         run: njsp -cc refresh_data
       - id: update_pqts
-        if: steps.refresh_data.outputs.sha || inputs.short_circuit != 'true'
+        if: inputs.update_pqts && (steps.refresh_data.outputs.sha || !inputs.short_circuit)
         run: njsp -cc update_pqts
       - id: update_plots
-        if: steps.update_pqts.outputs.sha || inputs.short_circuit != 'true'
+        if: inputs.update_plots && (steps.update_pqts.outputs.sha || !inputs.short_circuit)
         run: njsp -cc update_plots
       - id: build_www
-        if: steps.update_plots.outputs.sha || inputs.short_circuit != 'true'
+        if: inputs.build_www && (steps.update_plots.outputs.sha || !inputs.short_circuit)
         run: echo "run=1" >> $GITHUB_OUTPUT
       - if: steps.build_www.outputs.run
         uses: actions/setup-node@v3
