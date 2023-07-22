@@ -130,7 +130,6 @@ def update_plots():
             ticktext=month_starts,
         ),
         legend=dict(traceorder='reversed',),
-        #bottom_legend=False,
         title='YTD Traffic Deaths',
         name='ytd-deaths',
         hoverx='x',
@@ -230,7 +229,8 @@ def update_plots():
         [ type_cols + [ 'Missing', 'Total', ] ]
         .rename(columns=type_cols_map)
     )
-    value_cols = list(type_cols_map.values())
+    assert (missing == 0).all(), missing
+    year_types = year_types.drop(columns='Missing')
     print(year_types)
 
     total_errors = sxs(year_types.Total, njsp_totals['NJSP total'])[year_types.Total != njsp_totals['NJSP total']]
@@ -243,7 +243,6 @@ def update_plots():
     cur_total = year_types.loc[cur_year, 'Total']
     prv_total = year_types.loc[prv_year, 'Total']
     projected_total = prv_total * prv_ytd_ratio
-    #projected_total = cur_total * prv_roy_ratio
     projected_remaining = int(projected_total - cur_total)
     year_types.loc[cur_year, 'Projected'] = projected_remaining
     year_types['Projected Total'] = year_types.Total + year_types.Projected
@@ -251,7 +250,6 @@ def update_plots():
 
     total_2021 = year_types.loc[2021, 'Total']
     total_2022 = year_types.loc[2022, 'Total']
-    projected_total_2023 = year_types.loc[2023, 'Projected Total']
 
     with open(f'{PLOTS_DIR}/projected_totals.json', 'w') as f:
         json.dump(year_types.dropna().to_dict('index'), f, indent=4,)
@@ -259,20 +257,10 @@ def update_plots():
     # ### Fatalities per year (by type)
     ytc = colors_lengthen(px_colors, 9)
 
-    # def avg(c1, c2):
-    #     return (RGB.from_css(c1) + RGB.from_css(c2) / 2).css
-
-    # idx = 1
-    # unknown_color = '#2a2a2a'
-    # unknown_color = avg(ytc[idx-1], ytc[idx])
-    # ytc = ytc[:idx] + [unknown_color] + ytc[idx:]
-    missing_color = '#666'
-    ytc = [missing_color] + ytc
     print(' '.join(ytc))
     print(swatches(ytc))
 
     type_labels_map = [
-        'Missing',
         'Unknown',
         'Drivers',
         'Passengers',
@@ -383,10 +371,37 @@ def update_plots():
         w=1200, h=700,
     )
 
+    sq_month_cutoff = 10
+    end_mon = to_dt(f'{sq_month_cutoff}/1/2023').strftime('%b')
+    h1 = pivoted[pivoted.month <= sq_month_cutoff]
+    fig = px.bar(
+        x=h1.month,
+        y=h1.FATALITIES,
+        color=h1.year.astype(str),
+        color_discrete_sequence=year_colors,
+        labels=dict(color='', x='', y='',),
+        barmode='group',
+    ).update_yaxes(
+        gridcolor=gridcolor,
+    )
+    save(
+        fig,
+        title=f'NJ Traffic Deaths, by Month (Jan-{end_mon})',
+        name='fatalities_by_month_bars_sq',
+        legend=dict(traceorder='reversed'),
+        xaxis=dict(
+            tickmode='array',
+            tickvals=list(range(1, sq_month_cutoff+1)),
+            ticktext=month_names,
+        ),
+        hoverx=True,
+        w=1200, h=1200,
+    )
+
     fig = px.line(
-        x = pivoted.month,
-        y = pivoted.FATALITIES,
-        color = pivoted.year,
+        x=pivoted.month,
+        y=pivoted.FATALITIES,
+        color=pivoted.year,
         color_discrete_sequence=year_colors,
         labels={ 'color': '', 'x': '', 'y': '' },
     ).update_yaxes(
