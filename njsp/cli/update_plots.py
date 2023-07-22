@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import json
+from os import makedirs
 from typing import Union, Optional
 
 import papermill
@@ -41,7 +42,9 @@ def clean_notebook(nb: Union[str, dict], nb_out_path: Optional[str] = None) -> d
 def update_plots():
     nb_path = 'njsp-plots.ipynb'
     env[PLOT_DISPLAY_IMG] = '1'
-    nb_out_path = f'out/{nb_path}'
+    out_dir = 'out'
+    makedirs(out_dir, exist_ok=True)
+    nb_out_path = f'{out_dir}/{nb_path}'
     papermill.execute_notebook(nb_path, nb_out_path)
     clean_notebook(nb_out_path, nb_path)
     return "Update NJSP plots"
