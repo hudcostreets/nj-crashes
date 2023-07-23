@@ -45,16 +45,16 @@ jobs:
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'ryan-williams@users.noreply.github.com'
       - id: refresh_data
-        if: inputs.refresh_data
+        if: github.event.schedule || inputs.refresh_data
         run: njsp -cc refresh_data
       - id: update_pqts
-        if: inputs.update_pqts && (steps.refresh_data.outputs.sha || !inputs.short_circuit)
+        if: (github.event.schedule || inputs.update_pqts) && (steps.refresh_data.outputs.sha || !inputs.short_circuit)
         run: njsp -cc update_pqts
       - id: update_plots
-        if: inputs.update_plots && (steps.update_pqts.outputs.sha || !inputs.short_circuit)
+        if: (github.event.schedule || inputs.update_plots) && (steps.update_pqts.outputs.sha || !inputs.short_circuit)
         run: njsp -cc update_plots
       - id: build_www
-        if: inputs.build_www && (steps.update_plots.outputs.sha || !inputs.short_circuit)
+        if: (github.event.schedule || inputs.build_www) && (steps.update_plots.outputs.sha || !inputs.short_circuit)
         run: echo "run=1" >> $GITHUB_OUTPUT
       - if: steps.build_www.outputs.run
         uses: actions/setup-node@v3
