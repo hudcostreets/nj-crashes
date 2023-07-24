@@ -1,51 +1,32 @@
 import json
 from os import makedirs
 from os.path import exists, dirname
-from typing import Union, Callable, Optional
+from typing import Optional
 
 import pandas as pd
 from click import option
-from pandas import isna
 from slack_sdk import WebClient
 from utz import env, err
 from utz.ymd import dates, YMD
 
-from njsp.cli.base import njsp
-
-VICTIM_TYPES = {
-    'D': 'driver',
-    'P': 'passenger',
-    'T': 'pedestrian',
-    'B': 'cyclist',
-}
+from .base import slack
+from ...commit_crashes import crash_str, CommitCrashes
 
 
-def crash_str(r: pd.Series, fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p') -> str:
-    victim_pcs = []
-    for suffix, name in VICTIM_TYPES.items():
-        num = r[f'FATAL_{suffix}']
-        if not isna(num) and num > 0:
-            num = int(num)
-            noun = name if num == 1 else f'{name}s'
-            victim_pcs.append(f'{num} {noun}')
-
-    victim_str = ', '.join(victim_pcs)
-    dt = r['dt']
-    if callable(fmt):
-        dt_str = fmt(dt)
+@slack.command('sync')
+@option('-c', '--commit', 'commits', multiple=True, help='Commits to parse new crashes from')
+@dates(default_start=YMD(2008), help='Date range to filter crashes to, e.g. `202307-`, `20230710-202308')
+@option('-m', '--fetch-messages', type=int, help="Fetch messages from Slack and update cache (as opposed to just reading cached messages")
+@option('-n', '--dry-run', count=True, help="Avoid Slack API requests, cache updates, etc.")
+def sync(commits, start: YMD, end: YMD, fetch_messages: Optional[int], dry_run: int):
+    if commits:
+        ccs = [ CommitCrashes(commit) for commit in commits ]
+        crashes = pd.concat([ cc.new_df for cc in ccs ])
     else:
-        dt_str = dt.strftime(fmt)
-    return f'*{dt_str} (ID {r.name})*: {r.MNAME} ({r.CNAME} County), {r.LOCATION}: {victim_str} deceased'
+        crashes = pd.read_parquet('data/crashes.pqt')
 
-
-@njsp.command('slack_sync')
-@dates(default_start=YMD(2008))
-@option('-m', '--fetch-messages', type=int)
-@option('-n', '--dry-run', count=True)
-def slack_sync(start: YMD, end: YMD, fetch_messages: Optional[int], dry_run: int):
-    # print(f'{start=}, {end=}')
-    crashes = pd.read_parquet('data/crashes.pqt')
-    crashes = crashes[crashes.dt.dt.date >= start.date]
+    if start:
+        crashes = crashes[crashes.dt.dt.date >= start.date]
     if end:
         crashes = crashes[crashes.dt.dt.date < end.date]
     err(f"{len(crashes)} crashes:")
