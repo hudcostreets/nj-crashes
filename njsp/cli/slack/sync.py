@@ -13,12 +13,16 @@ from .base import slack
 from ...commit_crashes import crash_str, CommitCrashes
 
 
+SLACK_CHANNEL_ID = 'SLACK_CHANNEL_ID'
+
+
 @slack.command('sync')
 @option('-c', '--commit', 'commits', multiple=True, help='Commits to parse new crashes from')
 @dates(default_start=YMD(2008), help='Date range to filter crashes to, e.g. `202307-`, `20230710-202308')
+@option('-h', '--channel', help='Slack channel ID to post to; defaults to $SLACK_CHANNEL_ID')
 @option('-m', '--fetch-messages', type=int, help="Fetch messages from Slack and update cache (as opposed to just reading cached messages")
 @option('-n', '--dry-run', count=True, help="Avoid Slack API requests, cache updates, etc.")
-def sync(commits, start: YMD, end: YMD, fetch_messages: Optional[int], dry_run: int):
+def sync(commits, start: YMD, end: YMD, channel, fetch_messages: Optional[int], dry_run: int):
     if commits:
         ccs = [ CommitCrashes(commit) for commit in commits ]
         crashes = pd.concat([ cc.new_df for cc in ccs ])
@@ -32,7 +36,11 @@ def sync(commits, start: YMD, end: YMD, fetch_messages: Optional[int], dry_run: 
     err(f"{len(crashes)} crashes:")
     err(str(crashes))
 
-    channel = 'C05JZ0C5LEL'  # #crash-bot
+    if not channel:
+        channel = env.get(SLACK_CHANNEL_ID)
+        if not channel:
+            raise ValueError("No $SLACK_CHANNEL or -h/--channel-id found")
+
     slack_config_dir = '.slack'
     token = env.get('SLACK_BOT_TOKEN')
     if not token:

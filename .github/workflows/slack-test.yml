@@ -2,38 +2,24 @@ name: Post commit summaries to Slack
 on:
   workflow_call:
     inputs:
-      commits:
+      commit:
         type: string
-        description: Commit refs to post summaries of
+        description: Commit ref to post summaries of to Slack
   workflow_dispatch:
     inputs:
-      commits:
-        description: Commit refs to post summaries of
+      commit:
+        description: Commit ref to post summaries of to Slack
 jobs:
   post:
     name: Post commit summaries to Slack
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          ref: pub
       - uses: actions/setup-python@v4
         with:
           cache: pip
       - run: pip install -e .
-      - run: pip list
-      - name: Compute commit summaries
-        id: summaries
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo 'slack_payload<<EOF' >> $GITHUB_OUTPUT
-          commit-crashes --slack ${{ inputs.commits }} >> $GITHUB_OUTPUT
-          echo 'EOF' >> $GITHUB_OUTPUT
-      - id: slack
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-          payload: "${{ steps.summaries.outputs.slack_payload }}"
+      - run: njsp slack sync -m100 -c ${{ inputs.commit }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
