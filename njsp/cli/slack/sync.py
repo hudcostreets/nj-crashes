@@ -157,6 +157,44 @@ def sync(commits, start: YMD, end: YMD, overwrite_existing, channel, fetch_messa
 
     accid_to_msg = {}
 
+    skip_cache_keys = [ 'blocks', 'edited' ]
+
+    def update_cache(msg):
+        nonlocal accid2msg_cache_updated
+        accid = msg.get('metadata', {}).get('event_payload', {}).get('ACCID')
+        if not accid:
+            return
+        msg = {
+            k: v
+            for k, v in msg.items()
+            if k not in skip_cache_keys
+        }
+        accid_to_msg[accid] = msg
+        cached_msg = channel_cache.get(accid)
+        if not cached_msg:
+            err(f"ACCID {accid}: caching msg")
+            channel_cache[accid] = msg
+            accid2msg_cache_updated = True
+        elif msg != cached_msg:
+            err(f"ACCID {accid}: updating cached msg:")
+            try:
+                from deepdiff import DeepDiff
+                from pprint import pprint
+                pprint(DeepDiff(cached_msg, msg), indent=2)
+            except ImportError:
+                for k, v0 in cached_msg.items():
+                    if k in msg:
+                        v1 = msg[k]
+                        if v0 != v1:
+                            err(f"\t{k}: {v0} -> {v1}")
+                    else:
+                        err(f"\t{k} deleted: {v0}")
+                for k, v1 in msg.items():
+                    if k not in cached_msg:
+                        err(f"\t{k} added: {v1}")
+            channel_cache[accid] = msg
+            accid2msg_cache_updated = True
+
     if fetch_messages:
         msg = f"Slack: fetching {fetch_messages} messages"
         if dry_run > 1:
@@ -167,35 +205,7 @@ def sync(commits, start: YMD, end: YMD, overwrite_existing, channel, fetch_messa
             msgs = resp.data['messages']
             err(f'Slack: fetched {len(msgs)} messages')
             for msg in msgs:
-                accid = msg.get('metadata', {}).get('event_payload', {}).get('ACCID')
-                if 'blocks' in msg:
-                    del msg['blocks']  # Each block's `block_id` field seems to change spuriously / with each fetch
-                if accid:
-                    accid_to_msg[accid] = msg
-                    cached_msg = channel_cache.get(accid)
-                    if not cached_msg:
-                        err(f"ACCID {accid}: caching msg")
-                        channel_cache[accid] = msg
-                        accid2msg_cache_updated = True
-                    elif msg != cached_msg:
-                        err(f"ACCID {accid}: updating cached msg:")
-                        try:
-                            from deepdiff import DeepDiff
-                            from pprint import pprint
-                            pprint(DeepDiff(cached_msg, msg), indent=2)
-                        except ImportError:
-                            for k, v0 in cached_msg.items():
-                                if k in msg:
-                                    v1 = msg[k]
-                                    if v0 != v1:
-                                        err(f"\t{k}: {v0} -> {v1}")
-                                else:
-                                    err(f"\t{k} deleted: {v0}")
-                            for k, v1 in msg.items():
-                                if k not in cached_msg:
-                                    err(f"\t{k} added: {v1}")
-                        channel_cache[accid] = msg
-                        accid2msg_cache_updated = True
+                update_cache(msg)
 
     def sync_crash(r):
         nonlocal accid2msg_cache_updated
@@ -210,38 +220,34 @@ def sync(commits, start: YMD, end: YMD, overwrite_existing, channel, fetch_messa
                 msg = cached_msg
                 err(f"ACCID {accid}: using cached msg {msg['ts']}")
 
-        def msg_kwargs(event_type: str, **kwargs):
-            return dict(
-                channel=channel,
-                text=new_text,
-                unfurl_links=False,
-                unfurl_media=False,
-                metadata={
-                    'event_type': event_type,
-                    'event_payload': { 'ACCID': accid, },
-                },
-                **kwargs,
-            )
+        msg_kwargs = dict(
+            channel=channel,
+            text=new_text,
+            unfurl_links=False,
+            unfurl_media=False,
+            metadata={
+                'event_type': 'new_crash',
+                'event_payload': { 'ACCID': accid, },
+            },
+        )
 
         def post_message():
             nonlocal accid2msg_cache_updated
-            post_kwargs = msg_kwargs('new_crash')
             m = '\n\t'.join([
                 f"ACCID {accid} posting new message:",
                 *[
                     f'{k}={v}'
-                    for k, v in post_kwargs.items()
+                    for k, v in msg_kwargs.items()
                 ]
             ])
             if dry_run:
                 err(f"DRY RUN {m}")
             else:
                 err(m)
-                resp = client.chat_postMessage(**post_kwargs)
+                resp = client.chat_postMessage(**msg_kwargs)
                 msg = resp.data['message']
-                channel_cache[accid] = msg
-                accid2msg_cache_updated = True
                 err(f"ACCID {accid}: sent message {msg['ts']}")
+                update_cache(msg)
 
         if msg:
             text = msg['text']
@@ -258,7 +264,7 @@ def sync(commits, start: YMD, end: YMD, overwrite_existing, channel, fetch_messa
                         accid2msg_cache_updated = True
                 post_message()
             elif new_text != text or overwrite_existing:
-                update_kwargs = msg_kwargs('updated_crash', ts=ts)
+                update_kwargs = dict(**msg_kwargs, ts=ts)
                 if new_text != text:
                     m = f"ACCID {accid} text doesn't match:\n-{text}\n+{new_text}"
                 else:
@@ -267,7 +273,14 @@ def sync(commits, start: YMD, end: YMD, overwrite_existing, channel, fetch_messa
                     err(f"DRY RUN {m}")
                 else:
                     err(m)
-                    client.chat_update(**update_kwargs)
+                    resp = client.chat_update(**update_kwargs)
+                    data = resp.data
+                    new_msg = data['message']
+                    new_ts = data['ts']
+                    if ts != new_ts:
+                        raise RuntimeError(f"Message {ts} updated to {new_ts}")
+                    new_msg['ts'] = ts  # Not included in chat.update `message` payload
+                    update_cache(new_msg)
             else:
                 err(f"ACCID {accid} text matches: {text}")
         else:

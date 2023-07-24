@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from io import BytesIO
 from os import environ as env
+from os.path import exists
 from subprocess import CalledProcessError
 from typing import Union, Optional, Tuple, Callable
 
@@ -40,6 +41,11 @@ def get_github_repo() -> Repository:
     global _gh_repo
     if _gh is None:
         GITHUB_TOKEN = env.get('GITHUB_TOKEN')
+        if not GITHUB_TOKEN:
+            github_token_path = '.github_token'
+            if exists(github_token_path):
+                with open(github_token_path, 'r') as f:
+                    GITHUB_TOKEN = f.read()
         if GITHUB_TOKEN:
             auth = Auth.Token(GITHUB_TOKEN)
             auth_kwargs = dict(auth=auth)
@@ -51,14 +57,22 @@ def get_github_repo() -> Repository:
     return _gh_repo
 
 
+def load_github(
+        path: str,
+        ref: str = None,
+        repo: Optional[Repository] = None,
+) -> bytes:
+    if repo is None:
+        repo = get_github_repo()
+    return repo.get_contents(path, ref=ref).decoded_content
+
+
 def load_pqt_github(
         path: str,
         ref: str = None,
         repo: Optional[Repository] = None,
 ) -> pd.DataFrame:
-    if repo is None:
-        repo = get_github_repo()
-    content_bytes = repo.get_contents(path, ref=ref).decoded_content
+    content_bytes = load_github(path, ref, repo)
     return pd.read_parquet(BytesIO(content_bytes))
 
 
@@ -119,6 +133,10 @@ def crash_str(r: pd.Series, fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p',
     return f'*{dt_str} ({id_str})*: {r.MNAME} ({r.CNAME} County), {location}: {victim_str} deceased'
 
 
+def git_fmt(*refs: str, fmt: str = '%h') -> str:
+    return process.line('git', 'log', '-1', f'--format={fmt}', *refs)
+
+
 @dataclass
 class CommitCrashes:
     ref: Optional[str] = None
@@ -127,7 +145,7 @@ class CommitCrashes:
     RUNDATE_JSON_PATH = 'www/public/rundate.json'
 
     def fmt(self, fmt: str) -> str:
-        return process.line('git', 'log', '-1', f'--format={fmt}', *([self.ref] if self.ref else []))
+        return git_fmt(self.ref, fmt=fmt)
 
     @cached_property
     def github_commit(self) -> GithubCommit:

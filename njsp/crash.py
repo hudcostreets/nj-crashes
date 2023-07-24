@@ -5,9 +5,8 @@ from os.path import exists
 from typing import Optional
 
 import click
-from utz import cached_property
 
-from njsp.commit_crashes import REPO
+from njsp.commit_crashes import REPO, load_github, git_fmt
 
 
 def get_xml_path(year: int) -> str:
@@ -16,9 +15,10 @@ def get_xml_path(year: int) -> str:
 
 class SourcemapParser(HTMLParser):
     @staticmethod
-    def load(path: str) -> dict:
-        with open(path, 'r') as f:
-            xml = f.read()
+    def load(path: str, xml: str = None) -> dict:
+        if not xml:
+            with open(path, 'r') as f:
+                xml = f.read()
         parser = SourcemapParser(path=path)
         parser.feed(xml)
         return parser.accid_map
@@ -48,7 +48,7 @@ class SourcemapParser(HTMLParser):
 class Crashes:
     START = 2008
 
-    def __init__(self, start_year: int = START, end_year: int = None):
+    def __init__(self, ref: str, start_year: int = START, end_year: int = None):
         year = start_year
         accid_map = {}
         while True:
@@ -62,7 +62,8 @@ class Crashes:
                 else:
                     raise RuntimeError(f"Couldn't find {xml_path}")
 
-            year_accid_map = SourcemapParser.load(xml_path)
+            xml = load_github(path=xml_path, ref=ref).decode()
+            year_accid_map = SourcemapParser.load(xml_path, xml=xml)
             extant_keys = set(accid_map).intersection(set(year_accid_map))
             if extant_keys:
                 raise RuntimeError(f"ACCIDs would be overwritten by year {year}: {list(extant_keys)}")
@@ -71,24 +72,26 @@ class Crashes:
         self.accid_map = accid_map
 
 
+_all_crashes: dict[str, Crashes] = {}
+
+
 @dataclass
 class Crash:
     accid: str
 
-    _crashes: Optional[Crashes] = None
-
-    @cached_property
-    def crashes(self) -> Crashes:
-        if not self._crashes:
-            self._crashes = Crashes()
-        return self._crashes
+    @staticmethod
+    def crashes(ref: str) -> Crashes:
+        if ref not in _all_crashes:
+            _all_crashes[ref] = Crashes(ref=ref)
+        return _all_crashes[ref]
 
     def xml_url(self, ref: Optional[str] = None):
-        accid_map = self.crashes.accid_map
+        if not ref:
+            ref = git_fmt()
+        accid_map = self.crashes(ref=ref).accid_map
         rng = accid_map[self.accid]
         (start_line, _), (end_line, _) = rng['start'], rng['end']
         path = rng['path']
-        ref = ref or 'main'
         return f'https://github.com/{REPO}/blob/{ref}/{path}#L{start_line}-L{end_line}'
 
 
