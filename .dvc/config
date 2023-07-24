@@ -1,0 +1,2 @@
+['remote "s3"']
+    url = s3://nj-crashes/.dvc
