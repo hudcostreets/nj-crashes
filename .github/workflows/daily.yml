@@ -9,7 +9,7 @@ on:
     inputs:
       short_circuit:
         type: boolean
-        description: "When set, skip stages when their inputs haven't run or changed"
+        description: "Short-circuit unchanged stages"
         default: true
       refresh_data:
         type: boolean
