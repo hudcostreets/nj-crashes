@@ -93,7 +93,7 @@ VICTIM_TYPES = {
 }
 
 
-def crash_str(r: pd.Series, fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p') -> str:
+def crash_str(r: pd.Series, fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p', xml_url: Optional[str] = None) -> str:
     victim_pcs = []
     for suffix, name in VICTIM_TYPES.items():
         num = r[f'FATAL_{suffix}']
@@ -108,7 +108,15 @@ def crash_str(r: pd.Series, fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p')
         dt_str = fmt(dt)
     else:
         dt_str = dt.strftime(fmt)
-    return f'*{dt_str} (ID {r.name})*: {r.MNAME} ({r.CNAME} County), {r.LOCATION}: {victim_str} deceased'
+
+    accid = r.name
+    if xml_url:
+        id_str = f'<{xml_url}|{accid}>'
+    else:
+        id_str = accid
+
+    location = r.LOCATION.replace('&', '&amp;')
+    return f'*{dt_str} ({id_str})*: {r.MNAME} ({r.CNAME} County), {location}: {victim_str} deceased'
 
 
 @dataclass
