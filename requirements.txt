@@ -16,6 +16,7 @@ plotly
 pyarrow
 pygithub
 requests
+slack_sdk
 sqlalchemy==1.4.46
 tabula-py
 utz>=0.3.27
