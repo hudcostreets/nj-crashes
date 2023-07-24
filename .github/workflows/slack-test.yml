@@ -5,10 +5,15 @@ on:
       commit:
         type: string
         description: Commit ref to post summaries of to Slack
+      slack_channel_id:
+        type: string
+        description: "Slack channel override"
   workflow_dispatch:
     inputs:
       commit:
         description: Commit ref to post summaries of to Slack
+      slack_channel_id:
+        description: "Slack channel override"
 jobs:
   post:
     name: Post commit summaries to Slack
@@ -22,4 +27,4 @@ jobs:
       - run: njsp slack sync -m100 -c ${{ inputs.commit }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          SLACK_CHANNEL_ID: ${{ inputs.slack_channel_id || secrets.SLACK_CHANNEL_ID }}
