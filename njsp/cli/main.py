@@ -2,7 +2,7 @@ from njsp.cli.base import njsp
 from .refresh_data import refresh_data
 from .update_pqts import update_pqts
 from .update_plots import update_plots
-from .slack import slack, commit, sync
+from .slack import slack, sync
 
 
 def main():
