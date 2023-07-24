@@ -33,6 +33,8 @@ def sync(commits, start: YMD, end: YMD, channel, fetch_messages: Optional[int], 
         crashes = crashes[crashes.dt.dt.date >= start.date]
     if end:
         crashes = crashes[crashes.dt.dt.date < end.date]
+
+    crashes = crashes.sort_values('dt')
     err(f"{len(crashes)} crashes:")
     err(str(crashes))
 
