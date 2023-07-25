@@ -19,6 +19,8 @@ on:
         type: boolean
         description: "Update parquets (in this repo)"
         default: true
+      update_pqts_sha:
+        description: "\"Update NJSP data\" commit hash (for posting to Slack and rebuilding www)"
       update_plots:
         type: boolean
         description: "Update plots"
@@ -56,12 +58,15 @@ jobs:
       - id: update_pqts
         if: (github.event.schedule || inputs.update_pqts) && (steps.refresh_data.outputs.sha || !inputs.short_circuit)
         run: njsp -cc update_pqts
+      - id: update_pqts_sha
+        if: inputs.update_pqts_sha || steps.update_pqts.outputs.sha
+        run: echo "sha=${{ inputs.update_pqts_sha || steps.update_pqts.outputs.sha }}" >> $GITHUB_OUTPUT
       - id: update_plots
-        if: (github.event.schedule || inputs.update_plots) && (steps.update_pqts.outputs.sha || !inputs.short_circuit)
+        if: (github.event.schedule || inputs.update_plots) && (steps.update_pqts_sha.outputs.sha || !inputs.short_circuit)
         run: njsp -cc update_plots
       - id: post_to_slack
-        if: (github.event.schedule || inputs.post_to_slack) && (steps.update_pqts.outputs.sha || !inputs.short_circuit)
-        run: njsp slack sync -m100 -c ${{ steps.update_pqts.outputs.sha }}
+        if: (github.event.schedule || inputs.post_to_slack) && (steps.update_pqts_sha.outputs.sha || !inputs.short_circuit)
+        run: njsp slack sync -m100 -c ${{ steps.update_pqts_sha.outputs.sha }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ inputs.slack_channel_id || secrets.SLACK_CHANNEL_ID }}
