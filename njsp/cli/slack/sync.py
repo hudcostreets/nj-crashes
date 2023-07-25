@@ -107,7 +107,7 @@ def sync(commits, start: YMD, end: YMD, overwrite_existing, channel, fetch_messa
     def load_slack_config(env: str, basename: str, value: Optional[str] = None, opts: Optional[Iterable[str]] = None) -> str:
         if value:
             return value
-        value = environ.get(SLACK_CHANNEL_ID)
+        value = environ.get(env)
         if value:
             return value
 
