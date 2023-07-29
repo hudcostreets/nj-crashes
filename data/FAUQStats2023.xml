@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Jul 28 10:00:03 EDT 2023</RUNDATE>
+  <RUNDATE>Sat Jul 29 10:00:02 EDT 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -52,8 +52,8 @@
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0818" MNAME="Washington Twsp">
       <ACCIDENT ACCID="12585" DATE="07/27/2023" TIME="2232">
-        <STREET>Egg Harbor Rd</STREET>
-        <LOCATION>Egg Harbor Rd</LOCATION>
+        <HIGHWAY>630</HIGHWAY>
+        <LOCATION>County 630</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
