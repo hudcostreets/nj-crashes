@@ -1,7 +1,7 @@
 name: Daily refresh
 on:
   schedule:
-    - cron: "30 14 * * *"
+    - cron: "10 14 * * *"
   push:
     branches:
       - daily
@@ -66,7 +66,7 @@ jobs:
         run: njsp -cc update_plots
       - id: post_to_slack
         if: (github.event.schedule || inputs.post_to_slack) && (steps.update_pqts_sha.outputs.sha || !inputs.short_circuit)
-        run: njsp slack sync -m100 -c ${{ steps.update_pqts_sha.outputs.sha }}
+        run: njsp slack sync -m500 -c ${{ steps.update_pqts_sha.outputs.sha }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ inputs.slack_channel_id || secrets.SLACK_CHANNEL_ID }}

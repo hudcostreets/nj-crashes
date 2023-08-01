@@ -9,7 +9,6 @@ from os.path import exists
 from subprocess import CalledProcessError
 from typing import Union, Optional, Tuple, Callable
 
-import click
 import pandas as pd
 from gitdb.exc import BadName
 from github import Auth, Github
