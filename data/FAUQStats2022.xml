@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Jul 31 10:00:08 EDT 2023</RUNDATE>
+  <RUNDATE>Tue Aug 01 10:00:07 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -72,12 +72,13 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1217" MNAME="Piscataway Twsp">
       <ACCIDENT ACCID="12244" DATE="12/29/2022" TIME="1946">
         <HIGHWAY>622</HIGHWAY>
-        <LOCATION>County 622</LOCATION>
+        <LOCATION>County 622 MP 3.04</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -307,12 +308,13 @@
     <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
       <ACCIDENT ACCID="12224" DATE="12/20/2022" TIME="0635">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9 MP 131.3</LOCATION>
+        <LOCATION>State Highway 9 MP 131.33</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -477,6 +479,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -504,6 +507,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2546,6 +2550,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2018" MNAME="Summit City">
       <ACCIDENT ACCID="12085" DATE="09/15/2022" TIME="0953">
+        <STREET>Summit Avenue</STREET>
+        <LOCATION>Summit Avenue</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -8995,5 +9001,5 @@
   </COUNTY>
   <TOTACCIDENTS>650</TOTACCIDENTS>
   <TOTFATALITIES>694</TOTFATALITIES>
-  <TOTINJURIES>421</TOTINJURIES>
+  <TOTINJURIES>425</TOTINJURIES>
 </FAUQSTATS>
