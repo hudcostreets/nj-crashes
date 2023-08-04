@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Aug 03 10:00:02 EDT 2023</RUNDATE>
+  <RUNDATE>Fri Aug 04 10:00:03 EDT 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -50,6 +50,17 @@
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
   <COUNTY CCODE="15" CNAME="Ocean">
+    <MUNICIPALITY MCODE="1518" MNAME="Manchester Twsp">
+      <ACCIDENT ACCID="12599" DATE="08/03/2023" TIME="2204">
+        <HIGHWAY>37</HIGHWAY>
+        <LOCATION>State Highway 37</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
     <MUNICIPALITY MCODE="1511" MNAME="Jackson Twsp">
       <ACCIDENT ACCID="12595" DATE="08/02/2023" TIME="1038">
         <STREET>Don Connor Blvd</STREET>
@@ -274,6 +285,19 @@
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
+    <MUNICIPALITY MCODE="1311" MNAME="Eatontown Boro">
+      <ACCIDENT ACCID="12597" DATE="07/22/2023" TIME="0228">
+        <HIGHWAY>36</HIGHWAY>
+        <LOCATION>State Highway 36</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -586,19 +610,6 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="12" CNAME="Middlesex">
-    <MUNICIPALITY MCODE="1222" MNAME="South Plainfield Bo">
-      <ACCIDENT ACCID="12596" DATE="07/05/2023" TIME="1543">
-        <STREET>913 Oak Tree Rd (Parking lot)</STREET>
-        <LOCATION>913 Oak Tree Rd (Parking lot)</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -1225,8 +1236,8 @@
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0119" MNAME="Pleasantville City">
       <ACCIDENT ACCID="12594" DATE="06/10/2023" TIME="2138">
-        <STREET>Church Street</STREET>
-        <LOCATION>Church Street</LOCATION>
+        <STREET>Church St</STREET>
+        <LOCATION>Church St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -1271,6 +1282,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4092,7 +4104,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>306</TOTACCIDENTS>
-  <TOTFATALITIES>321</TOTFATALITIES>
-  <TOTINJURIES>50</TOTINJURIES>
+  <TOTACCIDENTS>307</TOTACCIDENTS>
+  <TOTFATALITIES>322</TOTFATALITIES>
+  <TOTINJURIES>51</TOTINJURIES>
 </FAUQSTATS>
