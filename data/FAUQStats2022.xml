@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Aug 04 10:00:06 EDT 2023</RUNDATE>
+  <RUNDATE>Mon Aug 07 10:00:06 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1614,12 +1614,13 @@
     <MUNICIPALITY MCODE="2002" MNAME="Clark Twsp">
       <ACCIDENT ACCID="12112" DATE="10/22/2022" TIME="1136">
         <HIGHWAY>606</HIGHWAY>
-        <LOCATION>County 606 MP 3.82</LOCATION>
+        <LOCATION>County 606 MP 3.84</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1764,7 +1765,7 @@
     <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
       <ACCIDENT ACCID="12088" DATE="10/19/2022" TIME="0624">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9 MP 124.67</LOCATION>
+        <LOCATION>State Highway 9 MP 124.61</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1885,8 +1886,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1330" MNAME="Aberdeen Twsp">
       <ACCIDENT ACCID="12108" DATE="10/14/2022" TIME="1757">
-        <STREET>Gordon St</STREET>
-        <LOCATION>Gordon St</LOCATION>
+        <STREET>Gordon Street</STREET>
+        <LOCATION>Gordon Street</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
