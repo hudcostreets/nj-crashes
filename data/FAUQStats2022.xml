@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Aug 11 10:00:06 EDT 2023</RUNDATE>
+  <RUNDATE>Sat Aug 12 10:00:08 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -433,7 +433,7 @@
     <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
       <ACCIDENT ACCID="12206" DATE="12/12/2022" TIME="1245">
         <HIGHWAY>95</HIGHWAY>
-        <LOCATION>New Jersey Turnpike MP 42.8</LOCATION>
+        <LOCATION>New Jersey Turnpike MP 88.1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
