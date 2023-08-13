@@ -68,6 +68,7 @@ jobs:
         if: (github.event.schedule || inputs.post_to_slack) && (steps.update_pqts_sha.outputs.sha || !inputs.short_circuit)
         run: njsp slack sync -m500 -c ${{ steps.update_pqts_sha.outputs.sha }}
         env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ inputs.slack_channel_id || secrets.SLACK_CHANNEL_ID }}
       - id: build_www
