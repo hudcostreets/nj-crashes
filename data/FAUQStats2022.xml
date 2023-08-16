@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Aug 15 10:00:13 EDT 2023</RUNDATE>
+  <RUNDATE>Wed Aug 16 10:00:05 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -208,6 +208,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -557,8 +558,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1337" MNAME="Ocean Twsp">
       <ACCIDENT ACCID="12202" DATE="12/09/2022" TIME="0829">
-        <STREET>Deal Rd</STREET>
-        <LOCATION>Deal Rd</LOCATION>
+        <STREET>Deal Road</STREET>
+        <LOCATION>Deal Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -585,7 +586,7 @@
     <MUNICIPALITY MCODE="1315" MNAME="Freehold Boro">
       <ACCIDENT ACCID="12191" DATE="12/06/2022" TIME="1647">
         <HIGHWAY>522</HIGHWAY>
-        <LOCATION>County 522 MP 20.36</LOCATION>
+        <LOCATION>County 522 MP 20.39</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -651,8 +652,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1318" MNAME="Holmdel Twsp">
       <ACCIDENT ACCID="12216" DATE="12/02/2022" TIME="1149">
-        <STREET>Middletown Rd</STREET>
-        <LOCATION>Middletown Rd</LOCATION>
+        <STREET>Middletown Road</STREET>
+        <LOCATION>Middletown Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -3793,8 +3794,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1319" MNAME="Howell Twsp">
       <ACCIDENT ACCID="11928" DATE="07/29/2022" TIME="2227">
-        <STREET>Norse Drive</STREET>
-        <LOCATION>Norse Drive</LOCATION>
+        <STREET>Norse Dr</STREET>
+        <LOCATION>Norse Dr</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -9011,5 +9012,5 @@
   </COUNTY>
   <TOTACCIDENTS>650</TOTACCIDENTS>
   <TOTFATALITIES>693</TOTFATALITIES>
-  <TOTINJURIES>430</TOTINJURIES>
+  <TOTINJURIES>431</TOTINJURIES>
 </FAUQSTATS>
