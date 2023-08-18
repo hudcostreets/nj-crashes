@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Aug 17 10:00:06 EDT 2023</RUNDATE>
+  <RUNDATE>Fri Aug 18 10:00:11 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2907,8 +2907,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1213" MNAME="Monroe Twsp">
       <ACCIDENT ACCID="11996" DATE="09/03/2022" TIME="0650">
-        <STREET>Mounts Mills Road</STREET>
-        <LOCATION>Mounts Mills Road</LOCATION>
+        <STREET>Mounts Mills Rd</STREET>
+        <LOCATION>Mounts Mills Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3019,8 +3019,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1336" MNAME="Tinton Falls Boro">
       <ACCIDENT ACCID="11990" DATE="09/01/2022" TIME="1907">
-        <HIGHWAY>16</HIGHWAY>
-        <LOCATION>County 16 MP 1.11</LOCATION>
+        <HIGHWAY>547</HIGHWAY>
+        <LOCATION>County 547 MP 23.18</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>2</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3098,7 +3098,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="2013" MNAME="Rahway City">
-      <ACCIDENT ACCID="11992" DATE="08/29/2022" TIME="0258">
+      <ACCIDENT ACCID="11992" DATE="08/29/2022" TIME="0259">
         <HIGHWAY>27</HIGHWAY>
         <LOCATION>State Highway 27 MP 27.62</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -3263,8 +3263,8 @@
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0805" MNAME="Franklin Twsp">
       <ACCIDENT ACCID="11966" DATE="08/19/2022" TIME="2258">
-        <STREET>Little Mills Rd</STREET>
-        <LOCATION>Little Mills Rd</LOCATION>
+        <STREET>Little Mill Rd</STREET>
+        <LOCATION>Little Mill Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3598,8 +3598,8 @@
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0337" MNAME="Washington Twsp">
       <ACCIDENT ACCID="11944" DATE="08/06/2022" TIME="1747">
-        <STREET>Godfrey Bridge Road</STREET>
-        <LOCATION>Godfrey Bridge Road</LOCATION>
+        <STREET>Godfrey Bridge Rd</STREET>
+        <LOCATION>Godfrey Bridge Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4239,7 +4239,7 @@
   </COUNTY>
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0805" MNAME="Franklin Twsp">
-      <ACCIDENT ACCID="11883" DATE="07/15/2022" TIME="0104">
+      <ACCIDENT ACCID="11883" DATE="07/15/2022" TIME="0154">
         <HIGHWAY>55</HIGHWAY>
         <LOCATION>State Highway 55 MP 41.8</LOCATION>
         <FATALITIES>1</FATALITIES>
