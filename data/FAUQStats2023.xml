@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Aug 18 10:00:03 EDT 2023</RUNDATE>
+  <RUNDATE>Sat Aug 19 10:00:02 EDT 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,11 +49,24 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1218" MNAME="Plainsboro Twsp">
+      <ACCIDENT ACCID="12629" DATE="08/17/2023" TIME="0828">
+        <HIGHWAY>1</HIGHWAY>
+        <LOCATION>State Highway 1 (Freeway)</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="06" CNAME="Cumberland">
     <MUNICIPALITY MCODE="0601" MNAME="Bridgeton City">
       <ACCIDENT ACCID="12628" DATE="08/17/2023" TIME="0008">
-        <STREET>North Burlington Road</STREET>
-        <LOCATION>North Burlington Road</LOCATION>
+        <HIGHWAY>669</HIGHWAY>
+        <LOCATION>County 669 MP .88</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -65,8 +78,8 @@
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
       <ACCIDENT ACCID="12627" DATE="08/16/2023" TIME="2324">
-        <STREET>Albany Avenue</STREET>
-        <LOCATION>Albany Avenue</LOCATION>
+        <STREET>Albany Ave</STREET>
+        <LOCATION>Albany Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4400,7 +4413,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>329</TOTACCIDENTS>
-  <TOTFATALITIES>347</TOTFATALITIES>
+  <TOTACCIDENTS>330</TOTACCIDENTS>
+  <TOTFATALITIES>348</TOTFATALITIES>
   <TOTINJURIES>57</TOTINJURIES>
 </FAUQSTATS>
