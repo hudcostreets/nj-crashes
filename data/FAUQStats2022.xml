@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Aug 22 10:00:07 EDT 2023</RUNDATE>
+  <RUNDATE>Wed Aug 23 10:00:12 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -53,12 +53,13 @@
     <MUNICIPALITY MCODE="0336" MNAME="Tabernacle Twsp">
       <ACCIDENT ACCID="12248" DATE="12/31/2022" TIME="1322">
         <HIGHWAY>532</HIGHWAY>
-        <LOCATION>County 532 MP 3.5</LOCATION>
+        <LOCATION>County 532 MP 3.52</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>4</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -66,7 +67,7 @@
     <MUNICIPALITY MCODE="1221" MNAME="South Brunswick Tws">
       <ACCIDENT ACCID="12247" DATE="12/31/2022" TIME="0021">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1 MP 17.21</LOCATION>
+        <LOCATION>State Highway 1 MP 17.24</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -120,7 +121,7 @@
     <MUNICIPALITY MCODE="1215" MNAME="North Brunswick Tws">
       <ACCIDENT ACCID="12239" DATE="12/29/2022" TIME="0518">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1 MP 21.08</LOCATION>
+        <LOCATION>State Highway 1 MP 21.11</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -414,6 +415,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -860,7 +862,7 @@
     <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
       <ACCIDENT ACCID="12169" DATE="11/24/2022" TIME="2152">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1 MP 36.25</LOCATION>
+        <LOCATION>State Highway 1 MP 36.28</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2258,8 +2260,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1351" MNAME="Upper Freehold Twsp">
       <ACCIDENT ACCID="12047" DATE="09/28/2022" TIME="1042">
-        <STREET>Jonathan Holmes Road</STREET>
-        <LOCATION>Jonathan Holmes Road</LOCATION>
+        <STREET>Jonathan Holmes Rd</STREET>
+        <LOCATION>Jonathan Holmes Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2964,8 +2966,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="12017" DATE="09/02/2022" TIME="0227">
-        <STREET>Elizabeth Avenue</STREET>
-        <LOCATION>Elizabeth Avenue</LOCATION>
+        <STREET>Elizabeth Ave</STREET>
+        <LOCATION>Elizabeth Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -9013,5 +9015,5 @@
   </COUNTY>
   <TOTACCIDENTS>650</TOTACCIDENTS>
   <TOTFATALITIES>694</TOTFATALITIES>
-  <TOTINJURIES>432</TOTINJURIES>
+  <TOTINJURIES>438</TOTINJURIES>
 </FAUQSTATS>
