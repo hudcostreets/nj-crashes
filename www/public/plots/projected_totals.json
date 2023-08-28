@@ -150,13 +150,13 @@
         "Projected Total": 694
     },
     "2023": {
-        "Drivers": 210,
+        "Drivers": 211,
         "Pedestrians": 92,
-        "Passengers": 49,
+        "Passengers": 51,
         "Cyclists": 12,
         "Unknown": 0,
-        "Total": 363,
-        "Projected": 191,
-        "Projected Total": 554
+        "Total": 366,
+        "Projected": 192,
+        "Projected Total": 558
     }
 }
