@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Sep 06 10:00:07 EDT 2023</RUNDATE>
+  <RUNDATE>Thu Sep 07 10:00:06 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -506,8 +506,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1214" MNAME="New Brunswick City">
       <ACCIDENT ACCID="12209" DATE="12/09/2022" TIME="2248">
-        <STREET>Suydam Street</STREET>
-        <LOCATION>Suydam Street</LOCATION>
+        <STREET>Suydam St</STREET>
+        <LOCATION>Suydam St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -656,8 +656,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1318" MNAME="Holmdel Twsp">
       <ACCIDENT ACCID="12216" DATE="12/02/2022" TIME="1149">
-        <STREET>Middletown Road</STREET>
-        <LOCATION>Middletown Road</LOCATION>
+        <STREET>Middletown Rd</STREET>
+        <LOCATION>Middletown Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
