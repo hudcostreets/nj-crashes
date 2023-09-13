@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Sep 11 10:00:05 EDT 2023</RUNDATE>
+  <RUNDATE>Wed Sep 13 10:00:06 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -161,14 +161,15 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="12237" DATE="12/28/2022" TIME="0543">
+      <ACCIDENT ACCID="12237" DATE="12/28/2022" TIME="0600">
         <HIGHWAY>27</HIGHWAY>
-        <LOCATION>State Highway 27</LOCATION>
+        <LOCATION>State Highway 27 MP 37.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2454,7 +2455,7 @@
   </COUNTY>
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
-      <ACCIDENT ACCID="12031" DATE="09/19/2022" TIME="0026">
+      <ACCIDENT ACCID="12031" DATE="09/19/2022" TIME="0027">
         <HIGHWAY>444</HIGHWAY>
         <LOCATION>Garden State Parkway MP 121.6</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -2462,6 +2463,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4865,6 +4867,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5334,8 +5337,8 @@
   <COUNTY CCODE="21" CNAME="Warren">
     <MUNICIPALITY MCODE="2117" MNAME="Oxford Twsp">
       <ACCIDENT ACCID="11792" DATE="06/10/2022" TIME="1858">
-        <STREET>Washington Avenue</STREET>
-        <LOCATION>Washington Avenue</LOCATION>
+        <STREET>Washington Ave</STREET>
+        <LOCATION>Washington Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5863,6 +5866,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6052,6 +6056,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -9017,5 +9022,5 @@
   </COUNTY>
   <TOTACCIDENTS>650</TOTACCIDENTS>
   <TOTFATALITIES>694</TOTFATALITIES>
-  <TOTINJURIES>440</TOTINJURIES>
+  <TOTINJURIES>441</TOTINJURIES>
 </FAUQSTATS>
