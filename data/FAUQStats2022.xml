@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Sep 13 10:00:06 EDT 2023</RUNDATE>
+  <RUNDATE>Thu Sep 14 10:00:05 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2290,8 +2290,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0708" MNAME="Glen Ridge Boro">
       <ACCIDENT ACCID="12051" DATE="09/27/2022" TIME="1600">
-        <HIGHWAY>506</HIGHWAY>
-        <LOCATION>County 506 MP 7.65</LOCATION>
+        <STREET>Bloomfield Ave</STREET>
+        <LOCATION>Bloomfield Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
