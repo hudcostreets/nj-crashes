@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Sep 14 10:00:05 EDT 2023</RUNDATE>
+  <RUNDATE>Fri Sep 15 10:00:08 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -3621,10 +3621,10 @@
         <STREET>Ward St</STREET>
         <LOCATION>Ward St</LOCATION>
         <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
+        <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
-        <FATAL_B>1</FATAL_B>
+        <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -3717,7 +3717,7 @@
     <MUNICIPALITY MCODE="0219" MNAME="Fort Lee Boro">
       <ACCIDENT ACCID="11934" DATE="08/03/2022" TIME="2146">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9 (Western Alignment (NJ Turnpike Only)) MP .9</LOCATION>
+        <LOCATION>State Highway 9 MP .9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3821,7 +3821,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-        <INJURIES>1</INJURIES>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4957,7 +4957,7 @@
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="11976" DATE="06/23/2022" TIME="2051">
         <HIGHWAY>510</HIGHWAY>
-        <LOCATION>County 510 MP 26.7</LOCATION>
+        <LOCATION>County 510 MP 26.68</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -9022,5 +9022,5 @@
   </COUNTY>
   <TOTACCIDENTS>650</TOTACCIDENTS>
   <TOTFATALITIES>694</TOTFATALITIES>
-  <TOTINJURIES>441</TOTINJURIES>
+  <TOTINJURIES>440</TOTINJURIES>
 </FAUQSTATS>
