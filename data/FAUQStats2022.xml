@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Sep 16 10:00:07 EDT 2023</RUNDATE>
+  <RUNDATE>Sun Sep 17 10:00:07 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -4111,7 +4111,7 @@
     <MUNICIPALITY MCODE="0614" MNAME="Vineland City">
       <ACCIDENT ACCID="11892" DATE="07/19/2022" TIME="0758">
         <HIGHWAY>552</HIGHWAY>
-        <LOCATION>County 552</LOCATION>
+        <LOCATION>County 552 MP 16.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
