@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Sep 20 10:00:06 EDT 2023</RUNDATE>
+  <RUNDATE>Thu Sep 21 10:00:08 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -893,8 +893,8 @@
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0814" MNAME="Paulsboro Boro">
       <ACCIDENT ACCID="12178" DATE="11/23/2022" TIME="2124">
-        <HIGHWAY>44</HIGHWAY>
-        <LOCATION>State Highway 44</LOCATION>
+        <HIGHWAY>667</HIGHWAY>
+        <LOCATION>County 667 MP 15.1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1005,7 +1005,7 @@
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12222" DATE="11/21/2022" TIME="0110">
         <HIGHWAY>510</HIGHWAY>
-        <LOCATION>County 510 MP 29</LOCATION>
+        <LOCATION>County 510 MP 29.02</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
