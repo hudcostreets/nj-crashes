@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Sep 22 10:00:08 EDT 2023</RUNDATE>
+  <RUNDATE>Sat Sep 23 10:00:08 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -233,7 +233,7 @@
     <MUNICIPALITY MCODE="0248" MNAME="Ramsey Boro">
       <ACCIDENT ACCID="12250" DATE="12/24/2022" TIME="1955">
         <HIGHWAY>17</HIGHWAY>
-        <LOCATION>State Highway 17 MP 23.7</LOCATION>
+        <LOCATION>State Highway 17 MP 23.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
