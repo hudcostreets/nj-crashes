@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Sep 25 10:00:08 EDT 2023</RUNDATE>
+  <RUNDATE>Tue Sep 26 10:00:07 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1339,7 +1339,7 @@
     <MUNICIPALITY MCODE="0706" MNAME="East Orange City">
       <ACCIDENT ACCID="12131" DATE="11/05/2022" TIME="1825">
         <HIGHWAY>508</HIGHWAY>
-        <LOCATION>County 508 MP 8.7</LOCATION>
+        <LOCATION>County 508 MP 8.68</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1422,8 +1422,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12121" DATE="11/01/2022" TIME="2231">
-        <STREET>Second Ave</STREET>
-        <LOCATION>Second Ave</LOCATION>
+        <STREET>Summer Ave</STREET>
+        <LOCATION>Summer Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -3422,13 +3422,14 @@
   <COUNTY CCODE="06" CNAME="Cumberland">
     <MUNICIPALITY MCODE="0614" MNAME="Vineland City">
       <ACCIDENT ACCID="11967" DATE="08/14/2022" TIME="1708">
-        <STREET>South Main Rd</STREET>
-        <LOCATION>South Main Rd</LOCATION>
+        <HIGHWAY>555</HIGHWAY>
+        <LOCATION>County 555 MP 12.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5379,7 +5380,7 @@
     <MUNICIPALITY MCODE="0614" MNAME="Vineland City">
       <ACCIDENT ACCID="11789" DATE="06/08/2022" TIME="2040">
         <HIGHWAY>56</HIGHWAY>
-        <LOCATION>State Highway 56</LOCATION>
+        <LOCATION>State Highway 56 MP 7.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
