@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Sep 27 10:00:06 EDT 2023</RUNDATE>
+  <RUNDATE>Thu Sep 28 10:00:06 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -581,12 +581,13 @@
     <MUNICIPALITY MCODE="0422" MNAME="Lindenwold Boro">
       <ACCIDENT ACCID="12194" DATE="12/08/2022" TIME="1742">
         <HIGHWAY>30</HIGHWAY>
-        <LOCATION>State Highway 30</LOCATION>
+        <LOCATION>State Highway 30 MP 13.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3663,7 +3664,7 @@
     <MUNICIPALITY MCODE="0610" MNAME="Millville City">
       <ACCIDENT ACCID="11973" DATE="08/05/2022" TIME="1040">
         <HIGHWAY>555</HIGHWAY>
-        <LOCATION>County 555</LOCATION>
+        <LOCATION>County 555 MP 11.59</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5388,6 +5389,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
