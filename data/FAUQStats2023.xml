@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Oct 04 10:00:02 EDT 2023</RUNDATE>
+  <RUNDATE>Thu Oct 05 10:00:02 EDT 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -5014,7 +5014,7 @@
     <MUNICIPALITY MCODE="1214" MNAME="New Brunswick City">
       <ACCIDENT ACCID="12286" DATE="01/24/2023" TIME="2340">
         <HIGHWAY>18</HIGHWAY>
-        <LOCATION>State Highway 18 MP 40.3</LOCATION>
+        <LOCATION>State Highway 18 MP 40.1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
