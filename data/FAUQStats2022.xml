@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Oct 06 10:00:05 EDT 2023</RUNDATE>
+  <RUNDATE>Sat Oct 07 10:00:06 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -4590,7 +4590,7 @@
   </COUNTY>
   <COUNTY CCODE="06" CNAME="Cumberland">
     <MUNICIPALITY MCODE="0614" MNAME="Vineland City">
-      <ACCIDENT ACCID="11857" DATE="07/04/2022" TIME="2159">
+      <ACCIDENT ACCID="11857" DATE="07/04/2022" TIME="2152">
         <STREET>W. Chestnut Ave</STREET>
         <LOCATION>W. Chestnut Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
