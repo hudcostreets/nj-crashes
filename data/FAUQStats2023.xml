@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Oct 13 10:00:02 EDT 2023</RUNDATE>
+  <RUNDATE>Sat Oct 14 10:00:02 EDT 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -4686,7 +4686,7 @@
     <MUNICIPALITY MCODE="1326" MNAME="Manalapan Twsp">
       <ACCIDENT ACCID="12357" DATE="02/21/2023" TIME="1609">
         <HIGHWAY>33</HIGHWAY>
-        <LOCATION>State Highway 33 (Business) MP .5</LOCATION>
+        <LOCATION>State Highway 33 (Business) MP .47</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5564,7 +5564,7 @@
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="12260" DATE="01/08/2023" TIME="0349">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 43.51</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
