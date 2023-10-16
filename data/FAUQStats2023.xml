@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Oct 15 10:00:02 EDT 2023</RUNDATE>
+  <RUNDATE>Mon Oct 16 10:00:02 EDT 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -52,8 +52,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1319" MNAME="Howell Twsp">
       <ACCIDENT ACCID="12742" DATE="10/14/2023" TIME="1441">
-        <STREET>Fort Plains Road</STREET>
-        <LOCATION>Fort Plains Road</LOCATION>
+        <STREET>Fort Plains Rd</STREET>
+        <LOCATION>Fort Plains Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -5268,13 +5268,14 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1334" MNAME="Neptune Twsp">
       <ACCIDENT ACCID="12287" DATE="01/24/2023" TIME="2154">
-        <STREET>2200 RT 66 EB</STREET>
-        <LOCATION>2200 RT 66 EB</LOCATION>
+        <HIGHWAY>66</HIGHWAY>
+        <LOCATION>State Highway 66 MP 3.37</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
