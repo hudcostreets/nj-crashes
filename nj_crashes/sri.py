@@ -45,13 +45,41 @@ COUNTIES = [
 ]
 ALL_ALIASES = ['all', '*']
 
-def check_sri_mps(sri):
-    path = join(f'{SRI_FETCH_CACHE_DIR}', sri)
-    return exists(path)
-
 
 class FetchError(RuntimeError):
     pass
+
+
+class MalformedSRIJSON(RuntimeError):
+    pass
+
+
+def get_sri_path(sri):
+    return join(f'{SRI_FETCH_CACHE_DIR}', sri)
+
+
+def load_sri_features(sri, path=None, on_err='warn'):
+    path = path or get_sri_path(sri)
+    with open(path, 'r') as f:
+        responses = json.load(f)
+    features = []
+    if isinstance(responses, dict):
+        responses = [ responses ]
+    for idx, response in enumerate(responses):
+        if 'features' not in response:
+            if 'error' in response:
+                msg = f'Error fetching SRI {sri}, response {idx}'
+                if on_err == 'raise':
+                    raise FetchError(msg)
+                elif on_err == 'warn':
+                    err(msg)
+                    continue
+                else:
+                    raise ValueError(f"Unrecognized `on_err`: {on_err}")
+            else:
+                raise MalformedSRIJSON(f'SRI {sri} response {idx} missing "features" and "error": {response}')
+        features += response['features']
+    return features
 
 
 def fetch_sri_mps(sri, overwrite=False, log=err, sleep_s=0.5, on_err='warn'):
@@ -93,24 +121,20 @@ def fetch_sri_mps(sri, overwrite=False, log=err, sleep_s=0.5, on_err='warn'):
                 break
         with open(path, 'w') as f:
             json.dump(responses, f)
-    with open(path, 'r') as f:
-        responses = json.load(f)
-    features = []
-    for response in responses:
-        if 'features' not in response:
-            if 'error' in response:
-                msg = f'Error fetching SRI {sri}'
-                if on_err == 'raise':
-                    raise FetchError(msg)
-                elif on_err == 'warn':
-                    err(msg)
-                    continue
-                else:
-                    raise ValueError(f"Unrecognized `on_err`: {on_err}")
-            else:
-                raise ValueError(f'SRI {sri}: missing "features" and "error": {response}')
-        features += response['features']
-    return features
+    return load_sri_features(sri, path=path, on_err=on_err)
+
+
+def check_sri_mps(sri):
+    path = get_sri_path(sri)
+    if not exists(path):
+        return 'missing'
+    try:
+        features = load_sri_features(sri, path=path, on_err='raise')
+        return 'ok' if features else 'empty'
+    except FetchError:
+        return 'fetch error'
+    except MalformedSRIJSON:
+        return 'malformed'
 
 
 def get_sri_sld_name(sri, first=True):
@@ -199,19 +223,25 @@ def get_mp_ll(sri, mp, conn=None):
 def get_sri_mp_lls(df, cols=None, out_cols=None, conn=None, append=True):
     cols = cols or [ 'SRI', 'MP' ]
     sri_col, mp_col = cols
-    df_sri_mp = df[(df[sri_col] != '') & (~df[mp_col].isna())]
+    df_sri_mp = df[(df[sri_col] != '') & (~df[mp_col].isna())].reset_index(drop=True)
     points = df_sri_mp.apply(lambda r: get_mp_ll(sri=r.SRI, mp=r.MP, conn=conn), axis=1)
+    missing_points = points.isna()
+    num_missing_points = missing_points.sum()
+    if num_missing_points:
+        err(f'{num_missing_points} crashes failed to geocode')
+    points = points[~missing_points]
+    df_sri_mp = df_sri_mp[~missing_points]
     out_cols = out_cols or ['LON', 'LAT']
     lon_col, lat_col = out_cols
     lon = points.apply(lambda p: p[0]).rename(lon_col)
     lat = points.apply(lambda p: p[1]).rename(lat_col)
     if append:
-        return sxs(df, lon, lat)
+        return sxs(df_sri_mp, lon, lat)
     else:
         return sxs(lon, lat)
 
 
-overwrite_opt = option('-f', '--overwrite', is_flag=True)
+overwrite_opt = option('-f', '--overwrite', count=True)
 years_opt = option('-y', '--years', default='2020')
 
 
@@ -270,14 +300,15 @@ def cli_county_fetch_sris(ctx, overwrite, max_num, sleep_s, sleep_jitter, years)
         for sri in sris:
             if not sri:
                 continue
-            if check_sri_mps(sri):
-                if overwrite:
+            check_result = check_sri_mps(sri)
+            if check_result == 'ok':
+                if overwrite == 1:
                     err(f"Re-fetching SRI {sri}")
                 else:
                     err(f'Found SRI {sri}')
                     continue
             else:
-                err(f"Fetching SRI {sri}")
+                err(f"Fetching SRI {sri} ({check_result})")
             sri_map = get_sri_mp_map(sri, conn=conn, refetch=overwrite)
             fetches += 1
             fetches_str = f'{fetches}/{max_num}' if max_num > 0 else f'{fetches}'
@@ -287,7 +318,8 @@ def cli_county_fetch_sris(ctx, overwrite, max_num, sleep_s, sleep_jitter, years)
             else:
                 keys = list(sri_map.keys())
                 sri_name = get_sri_sld_name(sri)
-                err(f"Fetched {fetches_str}: SRI {sri} ({sri_name}), {len(keys)} MPs ∈ [{min(keys)}, {max(keys)}]; sleeping for {slp}s")
+                mp_range_str = f" ∈ [{min(keys)}, {max(keys)}]" if keys else ""
+                err(f"Fetched {fetches_str}: SRI {sri} ({sri_name}), {len(keys)} MPs{mp_range_str}; sleeping for {slp}s")
             if max_num > 0 and fetches >= max_num:
                 break
             sleep(slp)
@@ -312,8 +344,8 @@ def cli_county_fetch_sris(ctx, width, height, years):
         color='Severity',
         color_discrete_sequence=['yellow', 'orange', 'red'],
         hover_data=['Date', 'Crash Location', 'SRI', 'MP'],
-        # center=dict(lon=-74.042037, lat=40.725527),
-        # zoom=13.5,
+        center=dict(lon=-74.042037, lat=40.725527),
+        zoom=13.5,
         height=600,
     )
     legend_bgcolor = '50'
