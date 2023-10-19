@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Oct 18 10:00:02 EDT 2023</RUNDATE>
+  <RUNDATE>Thu Oct 19 10:00:04 EDT 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -52,8 +52,8 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0427" MNAME="Pennsauken Twsp">
       <ACCIDENT ACCID="12744" DATE="10/17/2023" TIME="1854">
-        <STREET>NJ-38 eastbound</STREET>
-        <LOCATION>NJ-38 eastbound</LOCATION>
+        <HIGHWAY>38</HIGHWAY>
+        <LOCATION>State Highway 38</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -91,13 +91,14 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0411" MNAME="Collingswood Boro">
       <ACCIDENT ACCID="12745" DATE="10/13/2023" TIME="1153">
-        <STREET>US 130 Northbound</STREET>
-        <LOCATION>US 130 Northbound</LOCATION>
+        <HIGHWAY>130</HIGHWAY>
+        <LOCATION>State Highway 130</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5335,12 +5336,13 @@
     <MUNICIPALITY MCODE="1331" MNAME="Middletown Twsp">
       <ACCIDENT ACCID="12281" DATE="01/21/2023" TIME="0629">
         <HIGHWAY>444</HIGHWAY>
-        <LOCATION>Garden State Parkway MP 112</LOCATION>
+        <LOCATION>Garden State Parkway MP 112.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5374,9 +5376,9 @@
   </COUNTY>
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2010" MNAME="Mountainside Boro">
-      <ACCIDENT ACCID="12279" DATE="01/20/2023" TIME="0647">
+      <ACCIDENT ACCID="12279" DATE="01/20/2023" TIME="0632">
         <HIGHWAY>22</HIGHWAY>
-        <LOCATION>State Highway 22</LOCATION>
+        <LOCATION>State Highway 22 MP 51.54</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5766,5 +5768,5 @@
   </COUNTY>
   <TOTACCIDENTS>433</TOTACCIDENTS>
   <TOTFATALITIES>455</TOTFATALITIES>
-  <TOTINJURIES>74</TOTINJURIES>
+  <TOTINJURIES>75</TOTINJURIES>
 </FAUQSTATS>
