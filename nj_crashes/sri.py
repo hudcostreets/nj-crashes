@@ -188,12 +188,13 @@ def get_sri_mp_map(sri, conn=None, refetch=False):
     return sri_map
 
 
-def get_mp_ll(sri, mp, conn=None):
+def get_mp_ll(sri, mp, conn=None, log=err):
     if isna(mp):
         return
     mps = get_sri_mp_map(sri, conn=conn)
     if not mps:
-        err(f'No MPs found for SRI {sri}')
+        if log:
+            log(f'No MPs found for SRI {sri}')
         return
     if mp in mps:
         return mps[mp]
@@ -302,14 +303,17 @@ def cli_county_fetch_sris(ctx, overwrite, max_num, sleep_s, sleep_jitter, years)
                 continue
             check_result = check_sri_mps(sri)
             if check_result == 'ok':
-                if overwrite == 1:
+                if overwrite == 2:
                     err(f"Re-fetching SRI {sri}")
                 else:
                     err(f'Found SRI {sri}')
                     continue
+            elif check_result == 'empty' and overwrite == 1:
+                err(f"Skipping empty SRI: {sri}")
+                continue
             else:
                 err(f"Fetching SRI {sri} ({check_result})")
-            sri_map = get_sri_mp_map(sri, conn=conn, refetch=overwrite)
+            sri_map = get_sri_mp_map(sri, conn=conn, refetch=bool(overwrite))
             fetches += 1
             fetches_str = f'{fetches}/{max_num}' if max_num > 0 else f'{fetches}'
             slp = max(0, round(sleep_s + np.random.normal() * sleep_jitter, 2))
