@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Oct 22 10:00:02 EDT 2023</RUNDATE>
+  <RUNDATE>Mon Oct 23 10:00:02 EDT 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -91,8 +91,8 @@
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0808" MNAME="Harrison Twsp">
       <ACCIDENT ACCID="12746" DATE="10/19/2023" TIME="1613">
-        <STREET>Mullica Hill Rd / Lambs Rd</STREET>
-        <LOCATION>Mullica Hill Rd / Lambs Rd</LOCATION>
+        <HIGHWAY>322</HIGHWAY>
+        <LOCATION>State Highway 322</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1673,6 +1673,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2776,12 +2777,13 @@
     <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
       <ACCIDENT ACCID="12507" DATE="06/18/2023" TIME="2042">
         <HIGHWAY>30</HIGHWAY>
-        <LOCATION>State Highway 30</LOCATION>
+        <LOCATION>State Highway 30 MP 54.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3609,6 +3611,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4800,6 +4803,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5743,12 +5747,13 @@
     <MUNICIPALITY MCODE="1021" MNAME="Raritan Twsp">
       <ACCIDENT ACCID="12255" DATE="01/04/2023" TIME="1834">
         <HIGHWAY>31</HIGHWAY>
-        <LOCATION>State Highway 31</LOCATION>
+        <LOCATION>State Highway 31 MP 22.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5836,5 +5841,5 @@
   </COUNTY>
   <TOTACCIDENTS>438</TOTACCIDENTS>
   <TOTFATALITIES>460</TOTFATALITIES>
-  <TOTINJURIES>75</TOTINJURIES>
+  <TOTINJURIES>77</TOTINJURIES>
 </FAUQSTATS>
