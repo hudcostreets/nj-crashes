@@ -60,7 +60,13 @@ jobs:
         run: njsp -cc update_pqts
       - id: update_pqts_sha
         if: inputs.update_pqts_sha || steps.update_pqts.outputs.sha
-        run: echo "sha=${{ inputs.update_pqts_sha || steps.update_pqts.outputs.sha }}" >> $GITHUB_OUTPUT
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+        run: |
+          echo "sha=${{ inputs.update_pqts_sha || steps.update_pqts.outputs.sha }}" >> $GITHUB_OUTPUT
+          aws s3 sync --exclude '*' --include 'nj_crashes.db' ./ s3://nj-crashes/
       - id: update_plots
         if: (github.event.schedule || inputs.update_plots) && (steps.update_pqts_sha.outputs.sha || !inputs.short_circuit)
         run: njsp -cc update_plots
