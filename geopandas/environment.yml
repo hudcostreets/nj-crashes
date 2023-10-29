@@ -7,4 +7,6 @@ dependencies:
 - geopandas==0.12.2
 - fiona==1.9.3[build=py310*]
 - pip:
-    - -r requirements.txt
+    - -r ../requirements.txt
+    - geopy
+    - pyshp
