@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Oct 29 10:00:02 EDT 2023</RUNDATE>
+  <RUNDATE>Mon Oct 30 10:00:02 EDT 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -63,15 +63,16 @@
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="14" CNAME="Morris">
-    <MUNICIPALITY MCODE="1439" MNAME="Wharton Boro">
-      <ACCIDENT ACCID="12772" DATE="10/27/2023" TIME="2023">
-        <STREET>274 STATE ROUTE 46</STREET>
-        <LOCATION>274 STATE ROUTE 46</LOCATION>
+    <MUNICIPALITY MCODE="1420" MNAME="Mine Hill Twsp">
+      <ACCIDENT ACCID="12772" DATE="10/27/2023" TIME="1802">
+        <HIGHWAY>46</HIGHWAY>
+        <LOCATION>State Highway 46</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1429" MNAME="Parsippany-Troy Hil">
