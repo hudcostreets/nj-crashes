@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Oct 30 10:00:02 EDT 2023</RUNDATE>
+  <RUNDATE>Tue Oct 31 10:00:02 EDT 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,16 +49,81 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
-  <COUNTY CCODE="13" CNAME="Monmouth">
-    <MUNICIPALITY MCODE="1304" MNAME="Colts Neck Twsp">
-      <ACCIDENT ACCID="12773" DATE="10/28/2023" TIME="0550">
-        <HIGHWAY>537</HIGHWAY>
-        <LOCATION>537 (Freeway)</LOCATION>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0436" MNAME="Winslow Twsp">
+      <ACCIDENT ACCID="12775" DATE="10/29/2023" TIME="0622">
+        <HIGHWAY>446</HIGHWAY>
+        <LOCATION>Atlantic City Expressway MP 37.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0709" MNAME="Irvington Town">
+      <ACCIDENT ACCID="12783" DATE="10/28/2023" TIME="2220">
+        <STREET>Clinton Ave</STREET>
+        <LOCATION>Clinton Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+    <MUNICIPALITY MCODE="0713" MNAME="Montclair Town">
+      <ACCIDENT ACCID="12782" DATE="10/28/2023" TIME="1215">
+        <STREET>Bellevue Ave</STREET>
+        <LOCATION>Bellevue Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
+    <MUNICIPALITY MCODE="1304" MNAME="Colts Neck Twsp">
+      <ACCIDENT ACCID="12773" DATE="10/28/2023" TIME="0550">
+        <HIGHWAY>537</HIGHWAY>
+        <LOCATION>County 537</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
+      <ACCIDENT ACCID="12776" DATE="10/28/2023" TIME="0500">
+        <HIGHWAY>35</HIGHWAY>
+        <LOCATION>State Highway 35</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+    <MUNICIPALITY MCODE="0119" MNAME="Pleasantville City">
+      <ACCIDENT ACCID="12784" DATE="10/27/2023" TIME="1920">
+        <HIGHWAY>322</HIGHWAY>
+        <LOCATION>State Highway 322 MP 58.5</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -90,8 +155,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1216" MNAME="Perth Amboy City">
       <ACCIDENT ACCID="12771" DATE="10/26/2023" TIME="1917">
-        <STREET>new brunswick avenue</STREET>
-        <LOCATION>new brunswick avenue</LOCATION>
+        <HIGHWAY>616</HIGHWAY>
+        <LOCATION>County 616</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -107,6 +172,19 @@
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
+      <ACCIDENT ACCID="12778" DATE="10/24/2023" TIME="0352">
+        <HIGHWAY>27</HIGHWAY>
+        <LOCATION>State Highway 27</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -137,6 +215,20 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0260" MNAME="Teaneck Twsp">
+      <ACCIDENT ACCID="12777" DATE="10/21/2023" TIME="0207">
+        <STREET>Teaneck Rd</STREET>
+        <LOCATION>Teaneck Rd</LOCATION>
+        <FATALITIES>2</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>2</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0324" MNAME="Mount Holly Twsp">
       <ACCIDENT ACCID="12752" DATE="10/20/2023" TIME="1929">
@@ -160,6 +252,20 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0702" MNAME="Bloomfield Boro">
+      <ACCIDENT ACCID="12781" DATE="10/20/2023" TIME="1844">
+        <HIGHWAY>506</HIGHWAY>
+        <LOCATION>County 506 (Spur (County Routes Only)) MP 1.9</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -241,6 +347,20 @@
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>3</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="16" CNAME="Passaic">
+    <MUNICIPALITY MCODE="1616" MNAME="Woodland Park Boro">
+      <ACCIDENT ACCID="12774" DATE="10/15/2023" TIME="1935">
+        <HIGHWAY>639</HIGHWAY>
+        <LOCATION>County 639 MP 25</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -648,6 +768,19 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0714" MNAME="Newark City">
+      <ACCIDENT ACCID="12780" DATE="09/26/2023" TIME="0103">
+        <STREET>Lake St</STREET>
+        <LOCATION>Lake St</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0408" MNAME="Camden City">
       <ACCIDENT ACCID="12707" DATE="09/25/2023" TIME="1953">
@@ -1016,6 +1149,19 @@
       <ACCIDENT ACCID="12678" DATE="09/09/2023" TIME="2334">
         <STREET>Lansdowne Ave</STREET>
         <LOCATION>Lansdowne Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0714" MNAME="Newark City">
+      <ACCIDENT ACCID="12779" DATE="09/08/2023" TIME="2222">
+        <STREET>6th Ave</STREET>
+        <LOCATION>6th Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5333,14 +5479,15 @@
   </COUNTY>
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0412" MNAME="Cherry Hill Twsp">
-      <ACCIDENT ACCID="12331" DATE="02/08/2023" TIME="0506">
+      <ACCIDENT ACCID="12331" DATE="02/08/2023" TIME="0028">
         <HIGHWAY>673</HIGHWAY>
-        <LOCATION>County 673</LOCATION>
+        <LOCATION>County 673 MP 9.29</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6056,8 +6203,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1217" MNAME="Piscataway Twsp">
       <ACCIDENT ACCID="12253" DATE="01/02/2023" TIME="1941">
-        <STREET>South Randolphville Rd</STREET>
-        <LOCATION>South Randolphville Rd</LOCATION>
+        <STREET>South Randolphville Road</STREET>
+        <LOCATION>South Randolphville Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6094,7 +6241,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>457</TOTACCIDENTS>
-  <TOTFATALITIES>481</TOTFATALITIES>
-  <TOTINJURIES>90</TOTINJURIES>
+  <TOTACCIDENTS>468</TOTACCIDENTS>
+  <TOTFATALITIES>493</TOTFATALITIES>
+  <TOTINJURIES>91</TOTINJURIES>
 </FAUQSTATS>
