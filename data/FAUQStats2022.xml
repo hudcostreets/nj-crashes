@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Nov 02 10:00:08 EDT 2023</RUNDATE>
+  <RUNDATE>Fri Nov 03 10:00:09 EDT 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -272,8 +272,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1221" MNAME="South Brunswick Tws">
       <ACCIDENT ACCID="12226" DATE="12/22/2022" TIME="1626">
-        <STREET>Beekman Road</STREET>
-        <LOCATION>Beekman Road</LOCATION>
+        <STREET>Beekman Rd</STREET>
+        <LOCATION>Beekman Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -2745,8 +2745,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12043" DATE="09/06/2022" TIME="2057">
-        <STREET>Sanford Ave.</STREET>
-        <LOCATION>Sanford Ave.</LOCATION>
+        <HIGHWAY>605</HIGHWAY>
+        <LOCATION>County 605</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
