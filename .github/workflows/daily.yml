@@ -67,6 +67,9 @@ jobs:
         run: |
           echo "sha=${{ inputs.update_pqts_sha || steps.update_pqts.outputs.sha }}" >> $GITHUB_OUTPUT
           aws s3 sync --exclude '*' --include 'nj_crashes.db' ./ s3://nj-crashes/
+          aws s3api put-object-acl --bucket nj-crashes --key nj_crashes.db --acl public-read
+          aws s3 cp data/crashes.pqt s3://nj-crashes/data/crashes.parquet
+          aws s3api put-object-acl --bucket nj-crashes --key data/crashes.parquet --acl public-read
       - id: update_plots
         if: (github.event.schedule || inputs.update_plots) && (steps.update_pqts_sha.outputs.sha || !inputs.short_circuit)
         run: njsp -cc update_plots
