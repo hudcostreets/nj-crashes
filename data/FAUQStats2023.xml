@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Nov 07 10:00:02 EST 2023</RUNDATE>
+  <RUNDATE>Wed Nov 08 10:00:02 EST 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -600,8 +600,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0709" MNAME="Irvington Town">
       <ACCIDENT ACCID="12733" DATE="10/09/2023" TIME="2124">
-        <HIGHWAY>444</HIGHWAY>
-        <LOCATION>Garden State Parkway MP 143</LOCATION>
+        <STREET>Eastern Parkway</STREET>
+        <LOCATION>Eastern Parkway</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2357,6 +2357,18 @@
         <INJURIES>4</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
+    <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
+      <ACCIDENT ACCID="12587" DATE="07/30/2023" TIME="0947">
+        <STREET>Arctic Ave</STREET>
+        <LOCATION>Arctic Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1211" MNAME="Middlesex Boro">
@@ -2639,20 +2651,6 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="01" CNAME="Atlantic">
-    <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
-      <ACCIDENT ACCID="12587" DATE="07/20/2023" TIME="0947">
-        <STREET>Arctic Ave</STREET>
-        <LOCATION>Arctic Ave</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>1</FATAL_B>
-        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
