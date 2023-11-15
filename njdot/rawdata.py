@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import re
+
 from functools import wraps, partial
 from inspect import getfullargspec
 from os import makedirs
@@ -19,7 +21,8 @@ import utz
 from utz import err
 from zipfile import ZipFile
 
-from njdot.data import TABLE_TYPES, DATA_DIR, COUNTIES, YEARS, FIELDS_DIR, TABLE_TYPES_MAP
+from njdot.data import TYPES, DATA_DIR, COUNTIES, YEARS, FIELDS_DIR, TYPE_TO_TABLE, END_YEAR, START_YEAR, \
+    REGIONS
 
 # Download datasets from https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm
 # The download action on that page doesn't seem to work, but we can access the data directly at URLs like
@@ -56,9 +59,9 @@ def cli():
 
 def parse_type(type_str):
     matched_types = [
-        table_type
-        for table_type in TABLE_TYPES
-        if table_type.lower().startswith(type_str.lower())
+        typ
+        for typ in TYPE_TO_TABLE
+        if typ.lower().startswith(type_str.lower())
     ]
     if len(matched_types) != 1:
         raise ValueError(f"Table type {type_str} matched {len(matched_types)} types: {matched_types}")
@@ -67,14 +70,14 @@ def parse_type(type_str):
 
 def parse_types(types_str):
     if not types_str:
-        return TABLE_TYPES
+        return TYPES
     return [ parse_type(type_str) for type_str in types_str.split(',') ]
 
 
 types_opt = parse_opt(
     '-t', '--types',
     parse=parse_types, kw='types',
-    help=f"Comma-separated list of record types ({', '.join(TABLE_TYPES)}); unique, case-insensitive prefixes also supported",
+    help=f"Comma-separated list of record types ({', '.join(TYPES)}); unique, case-insensitive prefixes also supported",
 )
 
 overwrite_opt = option('-f', '--overwrite', is_flag=True, help="Overwrite the output file, if it exists (default: no-op/skip)")
@@ -219,8 +222,11 @@ def zip(regions, cache_path, force, sleep, types, years):
                         else:
                             print(f'{url}: skipping, {name} exists')
                             continue
-                    head = requests.head(url)
-                    head.raise_for_status()
+                    head = requests.head(url, allow_redirects=True)
+                    try:
+                        head.raise_for_status()
+                    except:
+                        raise RuntimeError(f"Failed HEAD for {url}")
                     cache_headers = { k: head.headers[k] for k in CACHE_HEADERS }
                     new_row = { 'url': url, **cache_headers }
                     new_row_df = pd.DataFrame([ new_row ]).set_index('url')
@@ -228,7 +234,7 @@ def zip(regions, cache_path, force, sleep, types, years):
                     def download():
                         r = requests.get(url)
                         r.raise_for_status()
-                        makedirs(dirname(name), exist_ok=True)
+                        makedirs(dirname(out_path), exist_ok=True)
                         with open(out_path, 'wb') as f:
                             f.write(r.content)
 
@@ -284,7 +290,8 @@ def txt(regions, types, years, overwrite, dry_run):
         for year in years:
             for typ in types:
                 parent_dir = f'{DATA_DIR}/{year}'
-                table = TABLE_TYPES_MAP[typ]
+                # table = TABLE_TYPES_MAP[typ]
+                table = typ
                 name = f'{parent_dir}/{region}{year}{table}'
                 zip_path = f'{name}.zip'
                 txt_path = f'{name}.txt'
@@ -390,13 +397,37 @@ def parse_fields_pdf(version2017, overwrite, dry_run, type_strs):
                 json.dump(fields, f, indent=4)
 
 
+D4 = re.compile(r'\d{4}')
+D2 = re.compile(r'\d\d')
+D1 = re.compile(r'\d')
+D1_2 = re.compile(r'(?P<h>\d) (?P<mm>\d\d)')
+
+
 def build_dt(r):
+    crash_date = r['Crash Date']
     crash_time = r['Crash Time']
-    if crash_time and not fullmatch(r'\d{4}', crash_time):
-        err(f'Dropping unrecognized "Crash Time": "{crash_time}"')
-        return pd.to_datetime(r['Crash Date'])
+    date_str = crash_date
+    time_str = None
+    if crash_time:
+        if D4.fullmatch(crash_time):
+            time_str = f'{crash_time}'
+        elif D2.fullmatch(crash_time):
+            if crash_time != "00":
+                time_str = f'{crash_time}00'
+        elif D1.fullmatch(crash_time):
+            if crash_time != "0":
+                time_str = f'0{crash_time}00'
+        elif m := D1_2.fullmatch(crash_time):
+            time_str = f"0{m['h']}{m['mm']}"
+
+    if time_str:
+        dt_str = f'{date_str} {time_str}'
     else:
-        return pd.to_datetime(r['Crash Date'] + ' ' + crash_time)
+        dt_str = date_str
+        if crash_time:
+            err(f'Dropping unrecognized "Crash Time": "{crash_time}"')
+
+    return pd.to_datetime(dt_str)
 
 
 BOOLS = { 'Y': True, 'N': False, '1': True, '0': False, '': False }
@@ -426,11 +457,11 @@ def pqt(regions, types, years, overwrite, dry_run):
         for region in regions:
             for typ in types:
                 parent_dir = f'{DATA_DIR}/{year}'
-                table = TABLE_TYPES_MAP[typ]
-                name = f'{parent_dir}/{region}{year}{table}'
+                table = TYPE_TO_TABLE[typ]
+                name = f'{parent_dir}/{region}{year}{typ}'
                 txt_path = f'{name}.txt'
                 pqt_path = f'{name}.pqt'
-                json_name = f'{2017 if v2017 else 2001}{typ}Table.json'
+                json_name = f'{2017 if v2017 else 2001}{table}Table.json'
                 json_path = f'{FIELDS_DIR}/{json_name}'
                 if json_path in fields_dict:
                     fields = fields_dict[json_path]
@@ -446,7 +477,7 @@ def pqt(regions, types, years, overwrite, dry_run):
                 if dry_run_skip(txt_path, pqt_path, dry_run=dry_run, overwrite=overwrite):
                     continue
 
-                if typ == 'Crash':
+                if typ == 'Accidents':
                     df = load(
                         txt_path, fields,
                         ints=[ 'Total Killed', 'Total Injured', 'Pedestrians Killed', 'Pedestrians Injured', 'Total Vehicles Involved', ],
@@ -455,9 +486,9 @@ def pqt(regions, types, years, overwrite, dry_run):
                     )
                     df['Date'] = df.apply(build_dt, axis=1)
                     df = df.drop(columns=['Year', 'Crash Time', 'Crash Date', 'Crash Day Of Week'])
-                elif typ == 'Vehicle':
+                elif typ == 'Vehicles':
                     df = load(txt_path, fields, bools=[ 'Hit & Run Driver Flag', ])
-                elif typ == 'Pedestrian':
+                elif typ == 'Pedestrians':
                     df = load(txt_path, fields, bools=[ 'Is Bycyclist?', 'Is Other?', ]).rename(columns={'Is Bycyclist?': 'Is Bicyclist?'})
                 else:
                     df = load(txt_path, fields)

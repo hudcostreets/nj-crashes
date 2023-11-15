@@ -1,10 +1,13 @@
+from os import path
+from os.path import dirname
+
 import dask.dataframe as dd
 import pandas as pd
 from typing import Literal, Optional
 
 from dataclasses import dataclass, field, asdict
 
-START_YEAR, END_YEAR = 2001, 2021
+START_YEAR, END_YEAR = 2001, 2022
 COUNTIES = [
     'Atlantic',
     'Bergen',
@@ -30,20 +33,20 @@ COUNTIES = [
 ]
 REGIONS = ['NewJersey'] + COUNTIES
 YEARS: list[str] = list(map(str, range(START_YEAR, END_YEAR)))
-TABLE_TYPES_MAP = {
-    'Crash': 'Accidents',
-    'Driver': 'Drivers',
-    'Occupant': 'Occupants',
-    'Pedestrian': 'Pedestrians',
-    'Vehicle': 'Vehicles',
+TYPE_TO_TABLE = {
+    'Accidents': 'Crash',
+    'Drivers': 'Driver',
+    'Occupants': 'Occupant',
+    'Pedestrians': 'Pedestrian',
+    'Vehicles': 'Vehicle',
 }
-TABLE_TYPES = list(TABLE_TYPES_MAP.keys())
-Type = Literal['Crash', 'Driver', 'Occupant', 'Pedestrian', 'Vehicle']
+TYPES = list(TYPE_TO_TABLE.keys())
+Type = Literal[ 'Accidents', 'Drivers', 'Occupants', 'Pedestrians', 'Vehicles', ]
 
 YPK = ['County Code', 'Municipality Code', 'Department Case Number']
 PK = ['Year'] + YPK
 
-DATA_DIR = 'data'
+DATA_DIR = path.join(dirname(__file__), 'data')
 FIELDS_DIR = f'{DATA_DIR}/fields'
 
 
@@ -65,7 +68,7 @@ def hist(df, code, desc=None):
 @dataclass
 class Data:
     years: list[str] = field(default_factory=lambda: [*YEARS])
-    types: list[Type] = field(default_factory=lambda: [*TABLE_TYPES])
+    types: list[Type] = field(default_factory=lambda: [*TYPES])
     columns: Optional[list[str]] = None
 
     @property
@@ -74,10 +77,9 @@ class Data:
         if len( types) != 1:
             raise RuntimeError(f"Select a type ({ types}) before creating ddf")
         [tpe] = types
-        table = TABLE_TYPES_MAP[tpe]
         region = 'NewJersey'
         return dd.concat([
-            dd.read_parquet(f'{DATA_DIR}/{year}/{region}{year}{table}.pqt', columns=self.columns).assign(Year=year)
+            dd.read_parquet(f'{DATA_DIR}/{year}/{region}{year}{tpe}.pqt', columns=self.columns).assign(Year=year)
             for year in self.years
         ])
 
