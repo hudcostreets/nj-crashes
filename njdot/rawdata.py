@@ -541,5 +541,16 @@ def check_nj_agg(years):
             print(f'{year}: {len(nj)} NJ records match {len(cs)} county-level records')
 
 
+@cli.command('dvc-diff', short_help='')
+@click.argument('path')
+def dvc_diff(path):
+    if path.endswith('.dvc'):
+        dvc_path = path
+        path = dvc_path[:-len('.dvc')]
+    else:
+        dvc_path = f'{path}.dvc'
+
+
+
 if __name__ == '__main__':
     cli()
