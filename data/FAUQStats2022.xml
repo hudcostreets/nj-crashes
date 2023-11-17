@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Nov 15 10:00:05 EST 2023</RUNDATE>
+  <RUNDATE>Thu Nov 16 10:00:08 EST 2023</RUNDATE>
   <STATSYEAR>2022</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -426,8 +426,8 @@
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0323" MNAME="Moorestown Twsp">
       <ACCIDENT ACCID="12232" DATE="12/13/2022" TIME="1338">
-        <STREET>400 State HIghway 38</STREET>
-        <LOCATION>400 State HIghway 38</LOCATION>
+        <HIGHWAY>38</HIGHWAY>
+        <LOCATION>State Highway 38 MP 6.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -566,8 +566,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1337" MNAME="Ocean Twsp">
       <ACCIDENT ACCID="12202" DATE="12/09/2022" TIME="0829">
-        <STREET>Deal Road</STREET>
-        <LOCATION>Deal Road</LOCATION>
+        <STREET>Deal Rd</STREET>
+        <LOCATION>Deal Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1677,8 +1677,8 @@
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="12097" DATE="10/21/2022" TIME="2038">
-        <STREET>4403 E. Black Horse Pk (Parking Lot)</STREET>
-        <LOCATION>4403 E. Black Horse Pk (Parking Lot)</LOCATION>
+        <HIGHWAY>322</HIGHWAY>
+        <LOCATION>State Highway 322 MP 49.82</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1705,8 +1705,8 @@
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0319" MNAME="Mansfield Twsp">
       <ACCIDENT ACCID="12094" DATE="10/21/2022" TIME="1218">
-        <STREET>Mansfield Road West</STREET>
-        <LOCATION>Mansfield Road West</LOCATION>
+        <STREET>Mansfield Rd West</STREET>
+        <LOCATION>Mansfield Rd West</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1841,8 +1841,8 @@
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1223" MNAME="South River Boro">
       <ACCIDENT ACCID="12079" DATE="10/15/2022" TIME="2130">
-        <STREET>Virginia Street</STREET>
-        <LOCATION>Virginia Street</LOCATION>
+        <STREET>Virginia St</STREET>
+        <LOCATION>Virginia St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2223,20 +2223,6 @@
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>2</INJURIES>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="14" CNAME="Morris">
-    <MUNICIPALITY MCODE="1429" MNAME="Parsippany-Troy Hil">
-      <ACCIDENT ACCID="12104" DATE="09/29/2022" TIME="2010">
-        <HIGHWAY>46</HIGHWAY>
-        <LOCATION>State Highway 46 MP 47.7</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3105,8 +3091,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="12022" DATE="08/29/2022" TIME="0728">
-        <STREET>Virginia Street</STREET>
-        <LOCATION>Virginia Street</LOCATION>
+        <STREET>Virginia St</STREET>
+        <LOCATION>Virginia St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4484,8 +4470,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
       <ACCIDENT ACCID="11873" DATE="07/09/2022" TIME="0046">
-        <STREET>Talmadge Road</STREET>
-        <LOCATION>Talmadge Road</LOCATION>
+        <STREET>Talmadge Rd</STREET>
+        <LOCATION>Talmadge Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5506,8 +5492,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1334" MNAME="Neptune Twsp">
       <ACCIDENT ACCID="11776" DATE="06/05/2022" TIME="1919">
-        <STREET>Myrtle Avenue</STREET>
-        <LOCATION>Myrtle Avenue</LOCATION>
+        <STREET>Myrtle Ave</STREET>
+        <LOCATION>Myrtle Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -6878,20 +6864,6 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <COUNTY CCODE="04" CNAME="Camden">
-    <MUNICIPALITY MCODE="0408" MNAME="Camden City">
-      <ACCIDENT ACCID="11668" DATE="04/16/2022" TIME="1859">
-        <STREET>Vonn Nieda Park</STREET>
-        <LOCATION>Vonn Nieda Park</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
       <ACCIDENT ACCID="11765" DATE="04/16/2022" TIME="0416">
@@ -7085,8 +7057,8 @@
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0313" MNAME="Evesham Twsp">
       <ACCIDENT ACCID="11695" DATE="04/07/2022" TIME="0715">
-        <STREET>Fieldstone Lane</STREET>
-        <LOCATION>Fieldstone Lane</LOCATION>
+        <STREET>Fieldstone Ln</STREET>
+        <LOCATION>Fieldstone Ln</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -7295,20 +7267,6 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="11" CNAME="Mercer">
-    <MUNICIPALITY MCODE="1107" MNAME="Lawrence Twsp">
-      <ACCIDENT ACCID="11626" DATE="03/21/2022" TIME="1551">
-        <STREET>D&amp;R Canal Tow Path</STREET>
-        <LOCATION>D&amp;R Canal Tow Path</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
       </ACCIDENT>
@@ -8446,8 +8404,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
       <ACCIDENT ACCID="11522" DATE="01/26/2022" TIME="2239">
-        <STREET>Parkway Place Extension</STREET>
-        <LOCATION>Parkway Place Extension</LOCATION>
+        <STREET>Parkway Pl Ext</STREET>
+        <LOCATION>Parkway Pl Ext</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -9036,7 +8994,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>649</TOTACCIDENTS>
-  <TOTFATALITIES>692</TOTFATALITIES>
+  <TOTACCIDENTS>646</TOTACCIDENTS>
+  <TOTFATALITIES>689</TOTFATALITIES>
   <TOTINJURIES>463</TOTINJURIES>
 </FAUQSTATS>
