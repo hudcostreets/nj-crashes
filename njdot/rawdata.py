@@ -487,7 +487,7 @@ def pqt(regions, types, years, overwrite, dry_run):
                     df['Date'] = df.apply(build_dt, axis=1)
                     df = df.drop(columns=['Year', 'Crash Time', 'Crash Date', 'Crash Day Of Week'])
                     if v2017:
-                        df = df.rename({
+                        df = df.rename(columns={
                             'Police Dept Code': 'Police Department Code',
                             'MilePost': 'Mile Post',
                             'SRI (Std Rte Identifier)': 'SRI (Standard Route Identifier)',
@@ -496,17 +496,17 @@ def pqt(regions, types, years, overwrite, dry_run):
                 elif typ == 'Vehicles':
                     df = load(txt_path, fields, bools=[ 'Hit & Run Driver Flag', ])
                     if not v2017:
-                        df = df.rename({
+                        df = df.rename(columns={
                             'Pre- Crash Action': 'Pre-Crash Action',
                         })
                 elif typ == 'Pedestrians':
                     df = load(txt_path, fields, bools=[ 'Is Bycyclist?', 'Is Other?', ]).rename(columns={'Is Bycyclist?': 'Is Bicyclist?'})
                     if v2017:
-                        df = df.rename({
+                        df = df.rename(columns={
                             'Type of Most Severe Phys Injury': 'Type of Most Severe Physical Injury',
                         })
                     else:
-                        df = df.rename({
+                        df = df.rename(columns={
                             'Charge': 'Charge 1',
                             'Summons': 'Summons 1',
                             'Physical Status': 'Physical Status 1',
@@ -515,7 +515,7 @@ def pqt(regions, types, years, overwrite, dry_run):
                 elif typ == 'Drivers':
                     df = load(txt_path, fields)
                     if not v2017:
-                        df = df.rename({
+                        df = df.rename(columns={
                             'Charge': 'Charge 1',
                             'Summons': 'Summons 1',
                             'Driver Physical Status': 'Driver Physical Status 1',
@@ -523,7 +523,7 @@ def pqt(regions, types, years, overwrite, dry_run):
                 elif typ == 'Occupants':
                     df = load(txt_path, fields)
                     if v2017:
-                        df = df.rename({
+                        df = df.rename(columns={
                             'Type of Most Severe Phys Injury': 'Type of Most Severe Physical Injury',
                         })
                 else:
