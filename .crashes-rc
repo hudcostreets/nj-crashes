@@ -1,0 +1,9 @@
+
+njdot_year_type_path() {
+    local year=$1
+    local type=$2
+    local region="${3:-NewJersey}"
+    echo "njdot/data/$year/${region}${year}${type}.pqt"
+}
+export -f njdot_year_type_path
+alias njdyt=njdot_year_type_path
