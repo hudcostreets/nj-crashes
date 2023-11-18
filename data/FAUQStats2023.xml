@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Nov 16 10:00:02 EST 2023</RUNDATE>
+  <RUNDATE>Fri Nov 17 10:00:02 EST 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,19 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0236" MNAME="Montvale Boro">
+      <ACCIDENT ACCID="12817" DATE="11/16/2023" TIME="0502">
+        <HIGHWAY>444</HIGHWAY>
+        <LOCATION>Garden State Parkway MP 171.1</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="05" CNAME="Cape May">
     <MUNICIPALITY MCODE="0506" MNAME="Middle Twsp">
@@ -949,6 +962,19 @@
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0709" MNAME="Irvington Town">
+      <ACCIDENT ACCID="12818" DATE="10/03/2023" TIME="2002">
+        <HIGHWAY>509</HIGHWAY>
+        <LOCATION>County 509</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -2659,19 +2685,6 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="09" CNAME="Hudson">
-    <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
-      <ACCIDENT ACCID="12794" DATE="07/27/2023" TIME="1843">
-        <STREET>John F. Kennedy Blvd</STREET>
-        <LOCATION>John F. Kennedy Blvd</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>1</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6627,7 +6640,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>497</TOTACCIDENTS>
-  <TOTFATALITIES>525</TOTFATALITIES>
+  <TOTACCIDENTS>498</TOTACCIDENTS>
+  <TOTFATALITIES>526</TOTFATALITIES>
   <TOTINJURIES>99</TOTINJURIES>
 </FAUQSTATS>
