@@ -486,12 +486,49 @@ def pqt(regions, types, years, overwrite, dry_run):
                     )
                     df['Date'] = df.apply(build_dt, axis=1)
                     df = df.drop(columns=['Year', 'Crash Time', 'Crash Date', 'Crash Day Of Week'])
+                    if v2017:
+                        df = df.rename({
+                            'Police Dept Code': 'Police Department Code',
+                            'MilePost': 'Mile Post',
+                            'SRI (Std Rte Identifier)': 'SRI (Standard Route Identifier)',
+                            'Directn From Cross Street': 'Direction From Cross Street',
+                        })
                 elif typ == 'Vehicles':
                     df = load(txt_path, fields, bools=[ 'Hit & Run Driver Flag', ])
+                    if not v2017:
+                        df = df.rename({
+                            'Pre- Crash Action': 'Pre-Crash Action',
+                        })
                 elif typ == 'Pedestrians':
                     df = load(txt_path, fields, bools=[ 'Is Bycyclist?', 'Is Other?', ]).rename(columns={'Is Bycyclist?': 'Is Bicyclist?'})
-                else:
+                    if v2017:
+                        df = df.rename({
+                            'Type of Most Severe Phys Injury': 'Type of Most Severe Physical Injury',
+                        })
+                    else:
+                        df = df.rename({
+                            'Charge': 'Charge 1',
+                            'Summons': 'Summons 1',
+                            'Physical Status': 'Physical Status 1',
+                            'Pre- Crash Action': 'Pre-Crash Action',
+                        })
+                elif typ == 'Drivers':
                     df = load(txt_path, fields)
+                    if not v2017:
+                        df = df.rename({
+                            'Charge': 'Charge 1',
+                            'Summons': 'Summons 1',
+                            'Driver Physical Status': 'Driver Physical Status 1',
+                        })
+                elif typ == 'Occupants':
+                    df = load(txt_path, fields)
+                    if v2017:
+                        df = df.rename({
+                            'Type of Most Severe Phys Injury': 'Type of Most Severe Physical Injury',
+                        })
+                else:
+                    raise ValueError(f"Unrecognized type {typ}")
+
                 err(f'Writing {pqt_path}')
                 df.to_parquet(pqt_path, index=None)
 

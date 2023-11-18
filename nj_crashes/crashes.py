@@ -3,13 +3,14 @@ from pandas import read_parquet
 from typing import Union
 
 from njdot.codes import CrashSeverity
+from njdot.data import END_YEAR
 
 Year = Union[str, int]
 Years = Union[Year, list[Year]]
 
 
 def load(
-        years: Years = '2020',
+        years: Years = END_YEAR,
         county: str = None,
 ):
     if isinstance(years, str):
@@ -19,8 +20,10 @@ def load(
     dfs = []
     for year in years:
         crashes = read_parquet(f'njdot/data/{year}/NewJersey{year}Accidents.pqt')
-        sri_col = 'SRI (Standard Route Identifier)' if int(year) < 2017 else 'SRI (Std Rte Identifier)'
-        crashes = crashes.rename(columns={ sri_col: 'SRI', 'MilePost': 'MP' })
+        crashes = crashes.rename(columns={
+            'SRI (Standard Route Identifier)': 'SRI',
+            'Mile Post': 'MP',
+        })
         if county:
             crashes = crashes[crashes['County Name'].str.lower() == county.lower()]
         crashes['Longitude'] = -crashes['Longitude']  # Longitudes all come in positive, but are actually supposed to be negative (NJ ⊂ [-75, -73])
