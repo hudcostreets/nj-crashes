@@ -15,7 +15,6 @@ import sys
 import time
 from click import option
 from numpy import nan
-from re import fullmatch
 from tabula import read_pdf
 import utz
 from utz import err
@@ -493,6 +492,8 @@ def pqt(regions, types, years, overwrite, dry_run):
                             'SRI (Std Rte Identifier)': 'SRI (Standard Route Identifier)',
                             'Directn From Cross Street': 'Direction From Cross Street',
                         })
+                        if year == '2021':
+                            df['County Name'] = df['County Name'].str.upper().str.replace('CAPEMAY', 'CAPE MAY')
                 elif typ == 'Vehicles':
                     df = load(txt_path, fields, bools=[ 'Hit & Run Driver Flag', ])
                     if not v2017:
