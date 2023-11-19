@@ -1,3 +1,4 @@
+from IPython.core.display import Image
 from bs4 import BeautifulSoup as bs
 import pandas as pd
 
@@ -51,6 +52,10 @@ def normalized_ytd_days(dt):
     if dt.year % 4 == 0 and dt.month >= 3:
         days -= 1
     return days
+
+
+def show(fig, i=False, w=1000, h=600):
+    return fig if i else Image(fig.to_image(width=w, height=h))
 
 
 if __name__ == '__main__':

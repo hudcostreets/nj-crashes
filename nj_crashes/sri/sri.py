@@ -12,20 +12,6 @@ def load_sri_mps():
     return pd.read_sql_table('sri_mp', 'sqlite:///../nj_sri_mp.db')
 
 
-def make_mps_arr(s) -> dict[float, [ float, float ]]:
-    return dict(s.apply(lambda r: [ r.MP, [ r.LON, r.LAT ]], axis=1).tolist())
-
-
-def get_sri_mps_map() -> dict[str, dict[float, [ float, float ]]]:
-    sri_mps = load_sri_mps()
-    sri_mps_map = (
-        sri_mps
-        .groupby('SRI')
-        .apply(make_mps_arr)
-    )
-    return sri_mps_map.to_dict()
-
-
 @dataclass
 class LL:
     lon: float
@@ -96,11 +82,3 @@ class SRI:
             if start <= mp <= end:
                 return True
         return False
-
-
-def get_sris() -> dict[str, SRI]:
-    sri_mps_map = get_sri_mps_map()
-    return {
-        sri: SRI(sri, mp_lls)
-        for sri, mp_lls in sri_mps_map.items()
-    }

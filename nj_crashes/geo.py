@@ -1,16 +1,27 @@
+from functools import cache
+
 import geopandas as gpd
 from pandas import Series
 from shapely import Point
 from shapely.ops import unary_union
 from utz import sxs, err
 
-counties = gpd.read_file("tlgdb_2022_a_34_nj.gdb/", layer='County')
-counties_union = unary_union(counties.geometry.tolist())
+
+@cache
+def get_counties():
+    gpd_path = "tlgdb_2022_a_34_nj.gdb/"
+    err(f"Loading {gpd_path}")
+    return gpd.read_file(gpd_path, layer='County')
+
+
+@cache
+def get_counties_union():
+    return unary_union(get_counties().geometry.tolist())
 
 
 def is_nj_ll(lat, lon):
     point = Point(lon, lat)
-    return counties_union.contains(point)
+    return get_counties_union().contains(point)
 
 
 def is_nj(r):
@@ -18,6 +29,7 @@ def is_nj(r):
 
 
 def get_county(r):
+    counties = get_counties()
     hits = counties[counties.geometry.contains(Point(r.LON, r.LAT))].NAMELSAD
     if len(hits) > 1:
         err(f"{r}: {len(hits)} counties: {hits}")
@@ -39,17 +51,24 @@ def county_points(r):
     return Series([ c for l in linestrs for c in l.coords ], name='point')
 
 
-county_coords = (
-    counties
-    .rename(columns={'NAMELSAD': 'name'})
-    .groupby('name')
-    .apply(county_points)
-    .reset_index(level=1, drop=True)
-    .reset_index()
-)
+@cache
+def get_county_coords():
+    return (
+        get_counties()
+        .rename(columns={'NAMELSAD': 'name'})
+        .groupby('name')
+        .apply(county_points)
+        .reset_index(level=1, drop=True)
+        .reset_index()
+    )
 
-bnd_lls = sxs(county_coords.name, county_coords.point.apply(lambda p: Series(p, index=['lon', 'lat'])))
-ll_hist = bnd_lls[['lat', 'lon']].value_counts()
-ll1s = ll_hist[ll_hist == 1]
 
-p1s = bnd_lls.merge(ll1s, left_on=['lat', 'lon'], right_index=True).drop(columns='count')
+@cache
+def nj_points():
+    county_coords = get_county_coords()
+    bnd_lls = sxs(county_coords.name, county_coords.point.apply(lambda p: Series(p, index=['lon', 'lat'])))
+    ll_hist = bnd_lls[['lat', 'lon']].value_counts()
+    ll1s = ll_hist[ll_hist == 1]
+
+    p1s = bnd_lls.merge(ll1s, left_on=['lat', 'lon'], right_index=True).drop(columns='count')
+    return p1s
