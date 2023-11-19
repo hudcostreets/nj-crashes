@@ -39,7 +39,8 @@ class MP:
 
 
 @dataclass
-class MPLLs:
+class SRI:
+    sri: str
     mp_lls: dict[float, LL]
 
     @cached_property
@@ -54,8 +55,7 @@ class MPLLs:
             cur_mp = mps[i]
             expected = round(prv_mp + 0.05, 2)
             if expected != cur_mp or i + 1 == n:
-                end = cur_mp
-                ranges.append([ start, end ])
+                ranges.append([ start, prv_mp ])
                 start = cur_mp
             prv_mp = cur_mp
             i += 1
@@ -64,7 +64,7 @@ class MPLLs:
     def __getitem__(self, mp):
         ll = self.ll(mp)
         if ll is None:
-            raise ValueError(f"MP {mp} not in SRI {self.sri}")
+            raise ValueError(f"MP {mp} not found in SRI {self.sri}")
         return ll
 
     def get(self, mp, default=None):
@@ -79,10 +79,15 @@ class MPLLs:
                 continue
             floor = math.floor(mp * 20) / 20
             ceil = math.ceil(mp * 20) / 20
-            [ lon0, lat0 ] = self.mp_lls[floor]
-            [ lon1, lat1 ] = self.mp_lls[ceil]
-            lon = lon0 + (lon1 - lon0) * (mp - floor) / (ceil - floor)
-            lat = lat0 + (lat1 - lat0) * (mp - floor) / (ceil - floor)
+            if floor == ceil:
+                [ lon, lat ] = self.mp_lls[floor]
+            else:
+                [ lon0, lat0 ] = self.mp_lls[floor]
+                if ceil not in self.mp_lls:
+                    raise ValueError(f"SRI {self.sri} MP {mp}, range [{start},{end}], floor {floor}, ceil {ceil} not found")
+                [ lon1, lat1 ] = self.mp_lls[ceil]
+                lon = lon0 + (lon1 - lon0) * (mp - floor) / (ceil - floor)
+                lat = lat0 + (lat1 - lat0) * (mp - floor) / (ceil - floor)
             return LL(lon, lat)
         return None
 
@@ -93,15 +98,9 @@ class MPLLs:
         return False
 
 
-@dataclass
-class SRI:
-    sri: str
-    mp_lls: MPLLs
-
-
-def get_sris() -> dict[str, MPLLs]:
+def get_sris() -> dict[str, SRI]:
     sri_mps_map = get_sri_mps_map()
     return {
-        sri: MPLLs(mp_lls)
+        sri: SRI(sri, mp_lls)
         for sri, mp_lls in sri_mps_map.items()
     }
