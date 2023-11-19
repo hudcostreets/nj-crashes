@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import click
 import json
 from os import makedirs
 from typing import Union, Optional
@@ -39,12 +40,13 @@ def clean_notebook(nb: Union[str, dict], nb_out_path: Optional[str] = None) -> d
 
 
 @command
-def update_plots():
+@click.option('-k', '--kernel', default='python3')
+def update_plots(kernel):
     nb_path = 'njsp-plots.ipynb'
     env[PLOT_DISPLAY_IMG] = '1'
     out_dir = 'out'
     makedirs(out_dir, exist_ok=True)
     nb_out_path = f'{out_dir}/{nb_path}'
-    papermill.execute_notebook(nb_path, nb_out_path)
+    papermill.execute_notebook(nb_path, nb_out_path, kernel_name=kernel)
     clean_notebook(nb_out_path, nb_path)
     return "Update NJSP plots"
