@@ -1,9 +1,10 @@
 import React from "react";
 import * as Plots from "next-utils/plot";
 import A from "next-utils/a";
+import { GitHub } from "./socials";
 const { HalfRoundWiden, filterIdxs, filterValues } = Plots
 
-export type Year = "2021" | "2022"
+export type Year = "2021" | "2022" | "2023"
 export type YearTotals = { "Projected Total": number }
 export type ProjectedTotals = { [k in Year]: YearTotals }
 export type HasTotals = { projectedTotals: ProjectedTotals }
@@ -53,10 +54,11 @@ export const plotSpecs: PlotSpec[] = [
         children: ({ rundate, projectedTotals }: { rundate: string, } & HasTotals) => {
             const total2021 = projectedTotals["2021"]["Projected Total"]
             const total2022 = projectedTotals["2022"]["Projected Total"]
+            const total2023 = projectedTotals["2023"]["Projected Total"]
             const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
             return <>
                 <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
-                {/*<p><A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, 2022 is on pace {total2022 > total2021 ? `to exceed it, with` : `for`} {total2022}.</p>*/}
+                <p><A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, 2023 is on pace {total2023 > total2022 ? `to exceed it, with` : `for`} {total2023}.</p>
                 <p>{`Victim types have been published since 2020; prior years are shown as "Unknown".`}</p>
             </>
         },

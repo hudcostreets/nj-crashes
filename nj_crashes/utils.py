@@ -54,8 +54,10 @@ def normalized_ytd_days(dt):
     return days
 
 
+interactive = False
 def show(fig, i=False, w=1000, h=600):
-    return fig if i else Image(fig.to_image(width=w, height=h))
+    global interactive
+    return fig if interactive or i else Image(fig.to_image(width=w, height=h))
 
 
 if __name__ == '__main__':

@@ -81,7 +81,7 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
                                 </>
                             }
                             <div key={id} className={css["plot-container"]}>
-                                <Plot id={id} basePath={basePath} {...rest} data={{ rundate, projectedTotals }} />
+                                <Plot id={id} basePath={basePath} {...rest} margin={{ b: 30, }} data={{ rundate, projectedTotals }} />
                                 <hr/>
                             </div>
                         </Fragment>)
