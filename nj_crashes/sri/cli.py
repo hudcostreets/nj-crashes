@@ -1,6 +1,6 @@
 from functools import lru_cache
 import json
-from os.path import join, exists
+from os.path import join, exists, dirname
 from sqlite3 import connect
 from time import sleep
 from urllib.parse import urlencode
@@ -13,12 +13,9 @@ import requests
 from utz import err, sxs
 
 import nj_crashes
-
+from nj_crashes.sri.mp05 import SRI_DB_PATH
 
 SRI_FETCH_CACHE_DIR = '.sri'
-SRI_DB_PATH = 'nj_sri_mp.db'
-SRI_DB_URL = f'sqlite:///{SRI_DB_PATH}'
-SRI_DB_TABLE = 'sri_mp'
 
 COUNTIES = [
     'ATLANTIC',
@@ -222,17 +219,17 @@ def get_mp_ll(sri, mp, conn=None, log=err):
 
 
 def get_sri_mp_lls(df, cols=None, out_cols=None, conn=None, append=True):
-    cols = cols or [ 'SRI', 'MP' ]
+    cols = cols or [ 'sri', 'mp' ]
     sri_col, mp_col = cols
     df_sri_mp = df[(df[sri_col] != '') & (~df[mp_col].isna())].reset_index(drop=True)
-    points = df_sri_mp.apply(lambda r: get_mp_ll(sri=r.SRI, mp=r.MP, conn=conn), axis=1)
+    points = df_sri_mp.apply(lambda r: get_mp_ll(sri=r.sri, mp=r.mp, conn=conn), axis=1)
     missing_points = points.isna()
     num_missing_points = missing_points.sum()
     if num_missing_points:
         err(f'{num_missing_points} crashes failed to geocode')
     points = points[~missing_points]
     df_sri_mp = df_sri_mp[~missing_points]
-    out_cols = out_cols or ['LON', 'LAT']
+    out_cols = out_cols or ['lon', 'lat']
     lon_col, lat_col = out_cols
     lon = points.apply(lambda p: p[0]).rename(lon_col)
     lat = points.apply(lambda p: p[1]).rename(lat_col)

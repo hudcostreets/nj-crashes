@@ -1,9 +1,14 @@
 import pandas as pd
 
-from nj_crashes.sri.cli import SRI_DB_URL, SRI_DB_TABLE
+from nj_crashes import ROOT_DIR
 from nj_crashes.sri.sri_map import SriMap
 
 _mp05 = None
+
+
+SRI_DB_PATH = f'{ROOT_DIR}/nj_sri_mp.db'
+SRI_DB_URL = f'sqlite:///{SRI_DB_PATH}'
+SRI_DB_TABLE = 'sri_mp'
 
 
 def get_mp05():

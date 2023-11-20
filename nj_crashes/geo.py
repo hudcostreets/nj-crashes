@@ -64,11 +64,21 @@ def get_county_coords():
 
 
 @cache
-def nj_points():
+def get_boundary_lls():
     county_coords = get_county_coords()
-    bnd_lls = sxs(county_coords.name, county_coords.point.apply(lambda p: Series(p, index=['lon', 'lat'])))
-    ll_hist = bnd_lls[['lat', 'lon']].value_counts()
+    return sxs(county_coords.name, county_coords.point.apply(lambda p: Series(p, index=['lon', 'lat'])))
+
+
+@cache
+def get_boundary_ll_map():
+    boundary_ll_map = get_boundary_lls().groupby('name').apply(lambda df: df.apply(lambda r: [ r.lon, r.lat ], axis=1).tolist()).to_dict()
+    return boundary_ll_map
+
+@cache
+def get_nj_points():
+    boundary_lls = get_boundary_lls()
+    ll_hist = boundary_lls[['lat', 'lon']].value_counts()
     ll1s = ll_hist[ll_hist == 1]
 
-    p1s = bnd_lls.merge(ll1s, left_on=['lat', 'lon'], right_index=True).drop(columns='count')
+    p1s = boundary_lls.merge(ll1s, left_on=['lat', 'lon'], right_index=True).drop(columns='count')
     return p1s
