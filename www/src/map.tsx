@@ -11,6 +11,8 @@ import { entries } from "next-utils/objs";
 import { LL } from "next-utils/params";
 import singleton from "next-utils/singleton";
 import { useMetersPerPixel } from "next-utils/map/mPerPx";
+import { Cluster } from "./cluster";
+import * as cluster from "./cluster";
 const { max, min, log2 } = Math
 
 export const MAPS = {
@@ -22,18 +24,6 @@ export const MAPS = {
         url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
         attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors',
     },
-}
-
-export type Cluster = {
-    key: string
-    lon: number
-    lat: number
-    tk: number
-    ti: number
-    tv: number
-    pk: number
-    pi: number
-    crashes: Omit<Crash, 'lat' | 'lon'>[]
 }
 
 export default function MapBody(
@@ -119,115 +109,20 @@ export default function MapBody(
         [ crashes ]
     )
 
+    const clusterProps: Omit<cluster.Props, 'cluster'> = {
+        RL: { Circle, Popup, },
+        baseRadius,
+        hoveredClusterKey,
+        setHoveredClusterKey,
+        selectedClusterKey,
+        setSelectedClusterKey,
+    }
     return <>
         <TileLayer url={url} attribution={attribution} />
         {
-            clusters.map(({ key, lat, lon, tk, ti, tv, crashes, }, idx) => {
-                const color = crashes[0].severity === 'f' ? 'red' : crashes[0].severity === 'i' ? 'orange' : 'yellow'
-                const numCrashes = crashes.length
-                const radius = baseRadius * sqrt(numCrashes)
-                const showPopup = key === hoveredClusterKey || key === selectedClusterKey
-                const ref = useRef<any | null>(null)
-                const SRI = singleton(crashes.map(({ sri }) => sri))
-                const MP = SRI && singleton(crashes.map(({ mp }) => mp))
-                let metadata: ReactNode = null
-                if (SRI) {
-                    if (MP) {
-                        metadata = <span>SRI {SRI}, MP {MP}</span>
-                    } else {
-                        metadata = <span>SRI {SRI}</span>
-                    }
-                }
-                const hasFatal = tk > 0
-                const hasInjuries = ti > 0
-                const popupContent = useMemo(
-                    () => {
-                        if (!showPopup) return null
-                        return <>
-                            <div>{numCrashes} {numCrashes > 1 ? "crashes" : "crash"}: {tk ? `${tk} killed, ` : ""}{ti} injured, {tv} vehicles</div>
-                            <table className={css.clusterTable}>
-                                <thead>
-                                <tr>
-                                    <th colSpan={4}>Date</th>
-                                    {hasFatal ? <th>Killed</th> : null}
-                                    {hasInjuries ? <th>Injured</th> : null}
-                                    <th>Vehicles</th>
-                                    {SRI ? null : <th>SRI</th>}
-                                    {MP ? null : <th>MP</th>}
-                                </tr>
-                                </thead>
-                                <tbody>{
-                                    crashes.map(({ dt, tk, ti, tv, sri, mp, }, idx) => {
-                                        const year = dt.getFullYear()
-                                        const month = dt.getMonth()
-                                        const date = dt.getDate()
-                                        let yearStr = year.toString()
-                                        let monthStr = dt.toLocaleString('en-US', { month: 'short' })
-                                        let dateStr = date.toString()
-                                        const { dt: prev } = idx > 0 ? crashes[idx - 1] : { dt: null }
-                                        if (prev) {
-                                            if (prev.getFullYear() === year) yearStr = ""
-                                            if (prev.getMonth() === month) monthStr = ""
-                                            if (prev.getDate() === date) dateStr = ""
-                                        }
-                                        return <tr key={idx}>
-                                            <td>{yearStr}</td>
-                                            <td>{monthStr}</td>
-                                            <td>{dateStr}</td>
-                                            <td>{strftime('%H:%M', dt)}</td>
-                                            {hasFatal ? <td>{tk ? tk : ""}</td> : null}
-                                            <td>{ti ? ti : ""}</td>
-                                            <td>{tv ? tv : ""}</td>
-                                            <td>{SRI ? null : sri}</td>
-                                            <td>{MP ? null : mp}</td>
-                                        </tr>
-                                    })
-                                }</tbody>
-                            </table>
-                            <details>
-                                <summary>Location</summary>
-                                <div>{lat}, {lon}</div>
-                                <div>{metadata}</div>
-                            </details>
-                        </>
-                    },
-                    [ showPopup ]
-                )
-                useEffect(
-                    () => {
-                        if (!popupContent) {
-                            ref.current?.closePopup()
-                            return
-                        } else {
-                            ref.current?.openPopup()
-                        }
-                    },
-                    [ popupContent ]
-                );
-                return <Circle
-                    ref={ref}
-                    key={key}
-                    center={[lat, lon]}
-                    radius={radius}
-                    color={color}
-                    eventHandlers={{
-                        mouseover: e => {
-                            console.log("mouseover", e)
-                            setHoveredClusterKey(key)
-                        },
-                        mouseout: e => {
-                            console.log("mouseout", e)
-                            // setHoveredClusterKey(undefined)
-                        },
-                        click: e => {
-                            console.log("click", e)
-                            setSelectedClusterKey(key)
-                        },
-                    }}
-                >
-                    <Popup style={{ transition: "none", }} keepInView={false}>{popupContent}</Popup>
-                </Circle>
-            })
+            clusters.map((cluster) =>
+                <Cluster key={cluster.key} cluster={cluster} {...clusterProps} />
+            )
         }
     </>
 }

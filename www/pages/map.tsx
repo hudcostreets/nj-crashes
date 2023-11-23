@@ -58,7 +58,7 @@ export default function Page({ encodedCrashes }: { encodedCrashes: Encoded }) {
     const crashes = useMemo(
         () => {
             const crashes = decode<Crash>(encodedCrashes)
-            console.log(crashes)
+            console.log(crashes.slice(0, 100))
             return crashes
         },
         [encodedCrashes]
