@@ -13,7 +13,7 @@ export type Encoded = {
 
 export function decode<T>(obj: Encoded): T[] {
     const { rows, cols, dicts } = obj
-    return rows.map((row, rowIdx) => {
+    return rows.map(row => {
         const obj: any = {}
         row.forEach((val, colIdx) => {
             const col = cols[colIdx]
@@ -27,6 +27,8 @@ export function decode<T>(obj: Encoded): T[] {
                     const time = start + val
                     obj[col] = new Date(time * (unit === 's' ? 1000 : unit === 'm' ? 60000 : 3600000))
                 }
+            } else {
+                obj[col] = val
             }
         })
         return obj as T

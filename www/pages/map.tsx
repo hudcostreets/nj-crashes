@@ -56,10 +56,13 @@ const DEFAULT_ZOOM = 11
 
 export default function Page({ encodedCrashes }: { encodedCrashes: Encoded }) {
     const crashes = useMemo(
-        () => decode<Crash>(encodedCrashes),
+        () => {
+            const crashes = decode<Crash>(encodedCrashes)
+            console.log(crashes)
+            return crashes
+        },
         [encodedCrashes]
     )
-    console.log(crashes)
 
     const params: Params = {
         ll: llParam({ init: DEFAULT_CENTER, places: 3, }),

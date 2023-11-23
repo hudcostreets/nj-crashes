@@ -186,8 +186,8 @@ class LLCrashes(Crashes):
 
     @cached_property
     def ll_hist(self):
-        lls_count = self[['lon', 'lat', 'Severity']].value_counts().rename('lls_count')
-        merged = self.merge(lls_count.reset_index(), on=['lon', 'lat', 'Severity'], how='left')
+        lls_count = self[['lon', 'lat', 'severity']].value_counts().rename('lls_count')
+        merged = self.merge(lls_count.reset_index(), on=['lon', 'lat', 'severity'], how='left')
         merged['lls_count'] = merged['lls_count'].fillna(0)
         merged['radius'] = merged.lls_count.apply(sqrt)
         return LLCrashes(merged)

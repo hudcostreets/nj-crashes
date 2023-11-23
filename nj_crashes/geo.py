@@ -64,9 +64,13 @@ def get_county_coords():
 
 
 @cache
-def get_boundary_lls():
+def get_boundary_lls(county=None):
     county_coords = get_county_coords()
-    return sxs(county_coords.name, county_coords.point.apply(lambda p: Series(p, index=['lon', 'lat'])))
+    df = sxs(county_coords.name, county_coords.point.apply(lambda p: Series(p, index=['lon', 'lat'])))
+    df.name = df.name.str.replace(' County', '')
+    if county:
+        df = df[df.name == county]
+    return df
 
 
 @cache
