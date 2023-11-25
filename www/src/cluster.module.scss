@@ -1,0 +1,19 @@
+.clusterTable {
+  th, td {
+    text-align: right;
+  }
+}
+
+.clusterIcon {
+  font-size: 1em;
+  .cluster {
+    width: 15em;
+  }
+  // background-color: white;
+  // color: black;
+  //border: 1px solid white;
+}
+
+.llDetails {
+  white-space: nowrap;
+}

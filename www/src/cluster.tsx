@@ -1,10 +1,11 @@
 import { Crash } from "../pages/map";
 import { Dispatch, ReactNode, useEffect, useMemo, useRef } from "react";
 import singleton from "next-utils/singleton";
-import * as ReactLeaflet from "react-leaflet"
+import L, { Canvas, LeafletEventHandlerFnMap } from "leaflet"
+import { Circle, Marker, Popup } from "react-leaflet"
 const { sqrt } = Math
 import strftime from 'strftime'
-import css from './map.module.scss'
+import css from './cluster.module.scss'
 
 export type Cluster = {
     key: string
@@ -20,7 +21,9 @@ export type Cluster = {
 
 export type Props = {
     cluster: Cluster
-    RL: Pick<typeof ReactLeaflet, 'Circle' | 'Popup'>
+    canvas: Canvas,
+    // L: typeof L,
+    // RL: Pick<typeof ReactLeaflet, 'Circle' | 'Popup'>
     baseRadius: number
     hoveredClusterKey: string | undefined
     setHoveredClusterKey: Dispatch<string | undefined>
@@ -31,7 +34,8 @@ export type Props = {
 export function Cluster(
     {
         cluster: { key, lat, lon, tk, ti, tv, crashes, },
-        RL: { Circle, Popup, },
+        // L,
+        canvas,
         baseRadius,
         hoveredClusterKey,
         setHoveredClusterKey,
@@ -46,6 +50,7 @@ export function Cluster(
     const color = crashes[0].severity === 'f' ? 'red' : crashes[0].severity === 'i' ? 'orange' : 'yellow'
     const popupContent = useMemo(
         () => {
+            if (!showPopup) return null
             const SRI = singleton(crashes.map(({ sri }) => sri))
             const MP = SRI && singleton(crashes.map(({ mp }) => mp))
             let metadata: ReactNode = null
@@ -58,13 +63,25 @@ export function Cluster(
             }
             const hasFatal = tk > 0
             const hasInjuries = ti > 0
-            if (!showPopup) return null
+            const stats: string[] = []
+            if (tk) stats.push(`${tk} killed`)
+            if (ti) stats.push(`${ti} injured`)
+            if (tv) stats.push(`${tv} vehicles`)
+            const statsStr = stats.length ? `: ${stats.join(", ")}` : ``
+
+            // const crashEmoji = "💥".repeat(numCrashes)
+            // const fatalEmjoi = "☠️".repeat(tk)
+            // const injuryEmoji = "🏥".repeat(ti)
+            // const vehicleEmoji = "🚗".repeat(tv)
+            // const emoji = [ crashEmoji, fatalEmjoi, injuryEmoji, vehicleEmoji ].filter(s => s).map((s, idx) => <div key={idx}>{s}</div>)
             return <>
-                <div>{numCrashes} {numCrashes > 1 ? "crashes" : "crash"}: {tk ? `${tk} killed, ` : ""}{ti} injured, {tv} vehicles</div>
+                <div>{numCrashes} {numCrashes > 1 ? "crashes" : "crash"}{statsStr}</div>
+                {/*<div className={css.clusterIcon}>{emoji}</div>*/}
                 <table className={css.clusterTable}>
                     <thead>
                     <tr>
-                        <th colSpan={4}>Date</th>
+                        <th colSpan={3}>Date</th>
+                        <th>Time</th>
                         {hasFatal ? <th>Killed</th> : null}
                         {hasInjuries ? <th>Injured</th> : null}
                         <th>Vehicles</th>
@@ -86,23 +103,29 @@ export function Cluster(
                                 if (prev.getMonth() === month) monthStr = ""
                                 if (prev.getDate() === date) dateStr = ""
                             }
+                            const fatalEmjoi = "☠️".repeat(tk)
+                            const injuryEmoji = "🏥".repeat(ti)
+                            const vehicleEmoji = "🚗".repeat(tv)
                             return <tr key={idx}>
                                 <td>{yearStr}</td>
                                 <td>{monthStr}</td>
                                 <td>{dateStr}</td>
                                 <td>{strftime('%H:%M', dt)}</td>
-                                {hasFatal ? <td>{tk ? tk : ""}</td> : null}
-                                <td>{ti ? ti : ""}</td>
-                                <td>{tv ? tv : ""}</td>
-                                <td>{SRI ? null : sri}</td>
-                                <td>{MP ? null : mp}</td>
+                                {/*{hasFatal ? <td>{tk ? tk : ""}</td> : null}*/}
+                                {/*<td>{ti ? ti : ""}</td>*/}
+                                {/*<td>{tv ? tv : ""}</td>*/}
+                                {hasFatal ? <td>{tk ? fatalEmjoi : ""}</td> : null}
+                                <td>{ti ? injuryEmoji : ""}</td>
+                                <td>{tv ? vehicleEmoji : ""}</td>
+                                {SRI ? null : <td>{sri}</td>}
+                                {MP ? null : <td>{mp}</td>}
                             </tr>
                         })
                     }</tbody>
                 </table>
                 <details>
                     <summary>Location</summary>
-                    <div>{lat}, {lon}</div>
+                    <div className={css.llDetails}>{lat}, {lon}</div>
                     <div>{metadata}</div>
                 </details>
             </>
@@ -119,14 +142,14 @@ export function Cluster(
             }
         },
         [ popupContent ]
-    );
-    return <Circle
-        ref={ref}
-        key={key}
-        center={[lat, lon]}
-        radius={radius}
-        color={color}
-        eventHandlers={{
+    )
+    // const r = 7
+    // const circles = Array(numCrashes).fill(0).map((_, idx) =>
+    //     `<rect width=${r} height=${r} x=${1.2*r*idx} y=${0} fill="orange"></rect>`
+    //     //`<circle r=${r} cx=${2*r*idx} fill="orange"></circle>`
+    // ).join("")
+    const eventHandlers: LeafletEventHandlerFnMap = useMemo(
+        () => ({
             mouseover: e => {
                 console.log("mouseover", e)
                 setHoveredClusterKey(key)
@@ -139,8 +162,53 @@ export function Cluster(
                 console.log("click", e)
                 setSelectedClusterKey(key)
             },
-        }}
-    >
-        <Popup keepInView={false}>{popupContent}</Popup>
-    </Circle>
+        }),
+        [ key ]
+    )
+    const markerProps = { ref, key, eventHandlers }
+    // const emoji = useMemo(
+    //     () => {
+    //         const crashEmoji = "💥".repeat(numCrashes)
+    //         const fatalEmjoi = "☠️".repeat(tk)
+    //         const injuryEmoji = "🏥".repeat(ti)
+    //         const vehicleEmoji = "🚗".repeat(tv)
+    //         const emoji = [ crashEmoji, fatalEmjoi, injuryEmoji, vehicleEmoji ].filter(s => s).map(s => `<div>${s}</div>`).join("")
+    //         return emoji
+    //     },
+    //     [ numCrashes, tk, ti, tv ]
+    // )
+    // const emojiMarker = useMemo(
+    //     () => {
+    //         // if (!showPopup) return null
+    //         const marker =
+    //             <Marker
+    //                 position={[lat, lon]}
+    //                 icon={L.divIcon({
+    //                     className: css.clusterIcon,
+    //                     html: `<div class="${css.cluster}" style="margin-top: 5px;">${emoji}</div>`,
+    //                     // html: `<svg>${circles}</svg>`,
+    //                     iconSize: [ 40, 40 ],
+    //                 })}
+    //                 // {...markerProps}
+    //             >
+    //             </Marker>
+    //         return marker
+    //     },
+    //     [ lat, lon, emoji ]
+    // )
+
+    return <>
+        <Circle
+            center={[lat, lon]}
+            radius={radius}
+            color={color}
+            pathOptions={{
+                renderer: canvas,
+            }}
+            {...markerProps}
+        >
+            <Popup keepInView={false}>{popupContent}</Popup>
+        </Circle>
+        {/*{emojiMarker}*/}
+    </>
 }

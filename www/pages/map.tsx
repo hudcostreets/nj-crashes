@@ -1,15 +1,13 @@
 import dynamic from "next/dynamic"
 import css from "./map.module.scss"
 import fs from "fs"
-import * as ReactLeaflet from "react-leaflet";
 import { join, resolve } from "path"
 import { cwd } from "process"
 import { decode, Encoded } from "../src/indexed-json";
-import React, { useMemo } from "react";
-import { floatParam, LL, llParam, Param, ParsedParam, parseQueryParams } from "next-utils/params";
-import MapBody from '../src/map'
+import React, { useEffect, useMemo } from "react";
+import { floatParam, LL, llParam, Param, ParsedParam, parseHashParams, parseQueryParams, updateHashParams } from "next-utils/params";
 
-const Map = dynamic(() => import('next-utils/map'), { ssr: false });
+const Map = dynamic(() => import('../src/map'), { ssr: false });
 
 const publicDir = resolve(cwd(), 'public');
 const plotsDir = join(publicDir, 'plots')
@@ -58,14 +56,14 @@ export default function Page({ encodedCrashes }: { encodedCrashes: Encoded }) {
     const crashes = useMemo(
         () => {
             const crashes = decode<Crash>(encodedCrashes)
-            console.log(crashes.slice(0, 100))
+            // console.log(crashes.slice(0, 100))
             return crashes
         },
         [encodedCrashes]
     )
 
     const params: Params = {
-        ll: llParam({ init: DEFAULT_CENTER, places: 3, }),
+        ll: llParam({ init: DEFAULT_CENTER, places: 4, }),
         z: floatParam(DEFAULT_ZOOM, false),
         // ym: ymParam(defaults.ym),
     }
@@ -73,13 +71,40 @@ export default function Page({ encodedCrashes }: { encodedCrashes: Encoded }) {
         ll: [ { lat, lng }, setLL ],
         z: [ zoom, setZoom, ],
         // ym: [ ym, setYM ],
-    }: ParsedParams = parseQueryParams({ params })
+    }: ParsedParams = parseHashParams({ params })
 
-    return <div className={css.container}>
-        <Map className={css.map} center={{ lat, lng }} maxZoom={18} zoom={zoom} >{
-            (RL: typeof ReactLeaflet) => <div>{
-                MapBody(RL, { crashes, setLL, setZoom })
-            }</div>
-        }</Map>
-    </div>
+    const mapProps = useMemo(() => ({
+        className: css.map,
+        center: { lat, lng },
+        zoom,
+        maxZoom: 18,
+    }), [ lat, lng, zoom ])
+    const clustersProps = useMemo(() => ({
+        crashes,
+        setLL,
+        setZoom,
+    }), [ crashes, setLL, setZoom ])
+    const map = useMemo(
+        () => {
+            console.log("page render map:", clustersProps, mapProps)
+            return <Map
+                {...clustersProps}
+                {...mapProps}
+            />
+        },
+        [ mapProps, clustersProps ]
+    )
+    useEffect(
+        () => {
+            updateHashParams(
+                params,
+                { ll: { lat, lng }, z: zoom },
+                { push: false, log: true },
+            )
+        },
+        [ lat, lng, zoom ]
+    )
+    return <div className={css.container}>{
+        map
+    }</div>
 }

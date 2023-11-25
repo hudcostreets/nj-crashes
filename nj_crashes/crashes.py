@@ -85,8 +85,15 @@ class Crashes:
     def load(cls, years: Years = None, county: str = None):
         return cls(load(years, county))
 
-    @cached_property
-    def lls(self):
+    def lls(self, default='io', types=None):
+        if types is None:
+            # - interpolated (from SRI/MP)
+            # - original (from crash report)
+            # - interpolated, fall back to original
+            # - original, fall back to interpolated
+            types = [ 'oi' ]
+            # types = [ 'i', 'o', 'io', 'oi', ]
+
         df = self.df.copy()
         mp05_map = get_mp05_map()
         ll = DF(sxs(df.sri, df.mp).apply(geocode_mp, sris=mp05_map, axis=1).tolist(), index=df.index)
@@ -98,46 +105,46 @@ class Crashes:
         def pct(num):
             return int(num / n * 100)
 
-        def replace(k):
-            v = ll[k]
-            no_ll = df[k].isna()
-            yes_ll = ~no_ll
-            num_no_ll = no_ll.sum()
-            no_mp = v.isna()
-            yes_mp = ~no_mp
-            num_yes_mp = yes_mp.sum()
-            replace_idx = no_ll & yes_mp
-            num_replace = replace_idx.sum()
+        def replace(k, cross_tab=None):
+            o = df[k].copy()
+            i = ll[k]
+            no_o = o.isna()
+            yes_o = ~no_o
+            num_no_o = no_o.sum()
+            no_i = i.isna()
+            yes_i = ~no_i
+            num_yes_i = yes_i.sum()
 
-            num_lls = n - num_no_ll + num_replace
-            def pct_str(num, name):
-                return f"{num} {name} ({pct(num)}%)"
+            if cross_tab or (cross_tab is None and k == 'lat'):
+                cross_tab_o = yes_o.apply(lambda b: "yes" if b else "no").rename("Original")
+                cross_tab_i = yes_i.apply(lambda b: "yes" if b else "no").rename("Interpolated")
+                crosstab = pd.crosstab(cross_tab_o, cross_tab_i)
+                crosstab_pct = round(crosstab / n * 100, 1)
+                err(f"Original {k} vs. interpolated {k}:")
+                err(str(crosstab_pct))
 
-            strs = [
-                pct_str(num_replace, 'recovered'),
-                pct_str(num_no_ll, 'missing'),
-                pct_str(num_yes_mp, 'interpolated'),
-                pct_str(num_lls, 'total lls'),
-            ]
+            # Original lat/lon
+            if 'o' in types:
+                df[f'o{k}'] = o
 
-            err(f"{k}: {', '.join(strs)}")
-            original = df[k].copy()
-            interpd = v.copy()
-            df[f'o{k}'] = original
-            # df[f'i{k}'] = interpd
+            # Interpolated lat/lon
+            if 'i' in types:
+                df[f'i{k}'] = i
 
             # Original lat/lon, fall back to interpolated
-            io = interpd.copy()
-            io.loc[yes_ll & no_mp] = original
-            # df[f'io{k}'] = io
+            io = i.copy()
+            io.loc[yes_o & no_i] = o
+            if 'io' in types:
+                df[f'io{k}'] = io
 
             # Interpolated lat/lon, fall back to original
-            oi = original.copy()
-            oi.loc[no_ll & yes_mp] = interpd
-            # df[f'oi{k}'] = oi
+            oi = o.copy()
+            oi.loc[no_o & yes_i] = i
+            if 'oi' in types:
+                df[f'oi{k}'] = oi
 
-            # Use interpolated by default (originals seem to be less accurate)
-            df[k] = io
+            default_col = { 'i': i, 'o': o, 'io': io, 'oi': oi }[default]
+            df[k] = default_col
 
         replace('lat')
         replace('lon')

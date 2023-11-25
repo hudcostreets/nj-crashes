@@ -18,6 +18,7 @@ plotly
 pyarrow
 pygithub
 requests
+simplejson
 slack_sdk
 sqlalchemy==1.4.46
 tabula-py
