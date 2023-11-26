@@ -8,6 +8,12 @@ const withTranspileModules = createTranspileModulesPlugin(["next-utils"]);
 
 const basePath = "/nj-crashes"
 
+let distDirArgs = { distDir: `out${basePath}` }
+if (process.env.CI) {
+  distDirArgs = {}
+  console.log("CI detected, removing distDir")
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -21,7 +27,7 @@ const nextConfig = {
     unoptimized: true,
   },
   output: "export",
-  distDir: `out${basePath}`,
+  ...distDirArgs,
   trailingSlash: true,
 }
 
