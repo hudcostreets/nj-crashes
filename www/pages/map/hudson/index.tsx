@@ -6,7 +6,7 @@ import { decode, Encoded } from "@/src/indexed-json";
 import React, { useMemo } from "react";
 import { njdotDir } from "@/src/dirs";
 
-export const Map = dynamic(() => import('@/src/map/hudson/index'), { ssr: false });
+export const Map = dynamic(() => import('@/src/map/hudson'), { ssr: false });
 
 export type Crash = {
     dt: Date

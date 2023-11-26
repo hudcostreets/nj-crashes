@@ -1,4 +1,4 @@
-import { Crash } from "../pages/map";
+import { Crash } from "@/pages/map/hudson";
 import { Dispatch, ReactNode, useEffect, useMemo, useRef } from "react";
 import singleton from "next-utils/singleton";
 import L, { Canvas, LeafletEventHandlerFnMap } from "leaflet"
@@ -163,7 +163,7 @@ export function Cluster(
                 setSelectedClusterKey(key)
             },
         }),
-        [ key ]
+        [ key, setHoveredClusterKey, setSelectedClusterKey, ]
     )
     const markerProps = { ref, key, eventHandlers }
     // const emoji = useMemo(

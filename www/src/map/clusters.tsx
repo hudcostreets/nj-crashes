@@ -102,6 +102,7 @@ export function Clusters({ crashes, }: Props) {
         },
         [
             clusters,
+            canvas,
             baseRadius,
             hoveredClusterKey,
             setHoveredClusterKey,

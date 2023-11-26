@@ -4,7 +4,7 @@ import fs from "fs"
 import { join } from "path"
 import { decode, Encoded } from "src/indexed-json";
 import React, { useMemo } from "react";
-import * as Hudson from "@/pages/map/hudson/index";
+import * as Hudson from "@/pages/map/hudson";
 import { njdotDir, publicDir } from "@/src/dirs";
 import { FeatureCollection, MultiPolygon } from "geojson";
 
@@ -48,7 +48,7 @@ export default function Page({ encodedCrashes, hudco }: Props) {
                 hudco={hudco}
             />
         },
-        [ crashes ]
+        [ crashes, hudco ]
     )
 
     return <div className={css.container}>{map}</div>
