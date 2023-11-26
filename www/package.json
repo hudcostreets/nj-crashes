@@ -10,13 +10,14 @@
         "gha-export": "next build && touch out/.nojekyll"
     },
     "dependencies": {
+        "@fortawesome/fontawesome-svg-core": "^6.4.2",
         "@next/mdx": "^13.0.6",
         "@types/geojson": "^7946.0.13",
         "@vanilla-extract/next-plugin": "^2.1.1",
         "leaflet-edgebuffer": "^1.0.6",
         "next": "13.3.4",
         "next-transpile-modules": "^10.0.0",
-        "next-utils": "https://gitpkg.now.sh/runsascoded/next-utils/dist?4d41413",
+        "next-utils": "https://gitpkg.now.sh/runsascoded/next-utils/dist?8ba43bc",
         "plotly.js": "^2.16.3",
         "react": "^18.2.0",
         "react-dom": "^18.0.0",

@@ -1,10 +1,13 @@
 import dynamic from "next/dynamic"
 import css from "@/pages/map/map.module.scss"
+import vcss from "@/src/map/hudson/index.css"
 import fs from "fs"
 import { join } from "path"
 import { decode, Encoded } from "@/src/indexed-json";
 import React, { useMemo } from "react";
-import { njdotDir } from "@/src/dirs";
+import { njdotDir, publicDir } from "@/src/dirs";
+import { Props } from "@/pages/map/hudson/diffs";
+import { SettingsGear } from "next-utils/map/settings";
 
 export const Map = dynamic(() => import('@/src/map/hudson'), { ssr: false });
 
@@ -23,16 +26,15 @@ export type Crash = {
     tv: number
 }
 
-export type Props = {
-    crashes: Crash[]
-}
 export function getStaticProps() {
     const path = join(njdotDir, 'hudson-5yr-lls-if.json')
     const encodedCrashes = JSON.parse(fs.readFileSync(path).toString()) as Encoded
-    return { props: { encodedCrashes } }
+    const hudcoPath = join(publicDir, 'hudson.geojson')
+    const hudco = JSON.parse(fs.readFileSync(hudcoPath).toString())
+    return { props: { encodedCrashes, hudco, } }
 }
 
-export default function Page({ encodedCrashes }: { encodedCrashes: Encoded }) {
+export default function Page({ encodedCrashes, hudco, }: Props) {
     const crashes = useMemo(
         () => {
             const crashes = decode<Crash>(encodedCrashes) //.slice(0, 100)
@@ -49,10 +51,39 @@ export default function Page({ encodedCrashes }: { encodedCrashes: Encoded }) {
                 className={css.map}
                 maxZoom={18}
                 crashes={crashes}
+                hudco={hudco}
             />
         },
-        [ crashes ]
+        [ crashes, hudco ]
     )
 
-    return <div className={css.container}>{map}</div>
+    // `Hudson Crashes.ipynb`
+    const numKsiCrashes = 15_983
+    const numPropCrashes = 73_697
+    const { tk, ti, tv } = {
+        tk: 127,
+        ti: 21_112,
+        tv: 178_093,
+    }
+    return <div className={css.container}>
+        {map}
+        <SettingsGear
+            className={vcss.settings}
+            icons={[
+                { href: "https://github.com/neighbor-ryan/nj-crashes", alt: "View source code on GitHub", src: "logos/gh.png", },
+                { href: "/", alt: "Graphs of NJ crash data", src: "plots/crash_homicide_cmp.png", },
+                { href: "https://hudcostreets.org", alt: "Hudson County Complete Streets", src: "logos/hccs.png", },
+            ]}
+        >
+            <div className={css.info}>
+                <p className={css.heading}>Hudson County fatal / serious injury crashes, 2017-2021</p>
+                <p>{numKsiCrashes.toLocaleString()} KSI crashes, {crashes.length.toLocaleString()} with approximate locations plotted above</p>
+                <p>Not pictured: {numPropCrashes.toLocaleString()} property damage crashes.</p>
+                <p>Total: {tk.toLocaleString()} killed, {ti.toLocaleString()} injured, {tv.toLocaleString()} vehicles</p>
+                <p>1 death / 2 weeks</p>
+                <p>11 injuries / day</p>
+                <p>98 vehicles / day</p>
+            </div>
+        </SettingsGear>
+    </div>
 }
