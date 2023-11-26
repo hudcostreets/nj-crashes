@@ -1,39 +1,31 @@
-import { Crash } from "../pages/map";
-import { Dispatch, useMemo, useState } from "react";
-import { LL } from "next-utils/params";
+import { useContext, useMemo, useState } from "react";
 import { useMap, useMapEvents } from "react-leaflet";
-import { useMetersPerPixel } from "next-utils/map/mPerPx";
+import * as cluster from "./cluster";
 import { Cluster } from "./cluster";
 import { entries } from "next-utils/objs";
-import * as cluster from "./cluster";
 import L from "leaflet";
+import { CanvasContext } from "@/src/map/canvas";
+import { Crash } from "@/pages/map/hudson";
 
 const { max } = Math
 
-export type Props = {
-    crashes: Crash[]
-    setLL: Dispatch<LL>
-    setZoom: Dispatch<number>
+export type Props<_Crash = Crash> = {
+    crashes: _Crash[]
 }
 
-export function Clusters({ crashes, setLL, setZoom }: Props) {
+export function Clusters({ crashes, }: Props) {
+    const canvas = useContext(CanvasContext) as L.Canvas
     const [ hoveredClusterKey, setHoveredClusterKey ] = useState<string>()
     const [ selectedClusterKey, setSelectedClusterKey ] = useState<string>()
-    const [ tolerance, setTolerance ] = useState(12)
 
-    // const { url, attribution } = MAPS['openstreetmap']
     const map = useMap()
-    const canvas = useMemo(() => L.canvas({ tolerance }), [ tolerance ])
     const zoom = map.getZoom()
-    const mPerPx = useMetersPerPixel(map, zoom)
-    console.log("Clusters render", zoom)
+    console.log("Clusters render", zoom, "canvas", canvas)
     useMapEvents({
         movestart: () => {
             // setHoveredClusterKey(undefined)
             // setSelectedClusterKey(undefined)
         },
-        moveend: () => setLL(map.getCenter()),
-        zoom: () => setZoom(map.getZoom()),
         // tooltipopen: e => console.log("tooltipopen", e),
         // mouseover: e => console.log("mouseover", e),
         click: () => {
@@ -53,10 +45,10 @@ export function Clusters({ crashes, setLL, setZoom }: Props) {
             const [ minSize, maxSize ] = [ 1, 2 ]
             const baseRadius = minSize + max(0, zoom - minZoom) * (maxSize - minSize) / (maxZoom - minZoom)
             // const baseRadius = 1
-            console.log("baseRadius", baseRadius, "mPerPx", mPerPx, "zoom", zoom,)
+            console.log("baseRadius", baseRadius, "zoom", zoom,)
             return baseRadius
         },
-        [ mPerPx, zoom ]
+        [ zoom ]
     )
 
     const clusters: Cluster[] = useMemo(
