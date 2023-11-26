@@ -1,10 +1,8 @@
-import { useContext, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMap, useMapEvents } from "react-leaflet";
 import * as cluster from "./cluster";
 import { Cluster } from "./cluster";
 import { entries } from "next-utils/objs";
-import L from "leaflet";
-import { CanvasContext } from "@/src/map/canvas";
 import { Crash } from "@/pages/map/hudson";
 
 const { max } = Math
@@ -14,13 +12,12 @@ export type Props<_Crash = Crash> = {
 }
 
 export function Clusters({ crashes, }: Props) {
-    const canvas = useContext(CanvasContext) as L.Canvas
     const [ hoveredClusterKey, setHoveredClusterKey ] = useState<string>()
     const [ selectedClusterKey, setSelectedClusterKey ] = useState<string>()
 
     const map = useMap()
     const zoom = map.getZoom()
-    console.log("Clusters render", zoom, "canvas", canvas)
+    // console.log("Clusters render", zoom, "canvas", canvas)
     useMapEvents({
         movestart: () => {
             // setHoveredClusterKey(undefined)
@@ -87,7 +84,6 @@ export function Clusters({ crashes, }: Props) {
         () => {
             console.log("clustersElem")
             const clusterProps: Omit<cluster.Props, 'cluster'> = {
-                canvas,
                 baseRadius,
                 hoveredClusterKey,
                 setHoveredClusterKey,
@@ -102,7 +98,6 @@ export function Clusters({ crashes, }: Props) {
         },
         [
             clusters,
-            canvas,
             baseRadius,
             hoveredClusterKey,
             setHoveredClusterKey,

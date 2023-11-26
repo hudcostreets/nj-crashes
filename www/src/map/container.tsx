@@ -1,10 +1,11 @@
 import { MapContainerProps } from "react-leaflet/lib/MapContainer";
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import * as ReactLeaflet from "react-leaflet";
 import MapEvents from "@/src/map/events";
 import { floatParam, llParam, parseHashParams, updateHashParams } from "next-utils/params";
 import { DEFAULT_CENTER, DEFAULT_ZOOM, Params, ParsedParams } from "@/src/map/params";
 import { TileLayer } from "@/src/map/tiles";
+import L from "leaflet";
 
 export default function MapContainer({ children, ...mapProps }: MapContainerProps) {
     const params: Params = useMemo(() => ({
@@ -26,7 +27,9 @@ export default function MapContainer({ children, ...mapProps }: MapContainerProp
         },
         [ params, lat, lng, zoom ]
     )
-    return <ReactLeaflet.MapContainer {...mapProps} zoom={zoom} center={[ lat, lng ]}>
+    const [ tolerance, setTolerance ] = useState(12)
+    const canvas = useMemo(() => L.canvas({ tolerance, padding: 0.5, }), [ tolerance, ])
+    return <ReactLeaflet.MapContainer {...mapProps} zoom={zoom} center={[ lat, lng ]} renderer={canvas}>
         <MapEvents setLL={setLL} setZoom={setZoom}>
             <TileLayer />
             {children}

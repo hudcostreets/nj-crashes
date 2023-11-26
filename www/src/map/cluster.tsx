@@ -1,11 +1,12 @@
 import { Crash } from "@/pages/map/hudson";
 import { Dispatch, ReactNode, useEffect, useMemo, useRef } from "react";
 import singleton from "next-utils/singleton";
-import L, { Canvas, LeafletEventHandlerFnMap } from "leaflet"
-import { Circle, Marker, Popup } from "react-leaflet"
-const { sqrt } = Math
+import { LeafletEventHandlerFnMap } from "leaflet"
+import { Circle, Popup } from "react-leaflet"
 import strftime from 'strftime'
 import css from './cluster.module.scss'
+
+const { sqrt } = Math
 
 export type Cluster = {
     key: string
@@ -21,9 +22,6 @@ export type Cluster = {
 
 export type Props = {
     cluster: Cluster
-    canvas: Canvas,
-    // L: typeof L,
-    // RL: Pick<typeof ReactLeaflet, 'Circle' | 'Popup'>
     baseRadius: number
     hoveredClusterKey: string | undefined
     setHoveredClusterKey: Dispatch<string | undefined>
@@ -34,8 +32,6 @@ export type Props = {
 export function Cluster(
     {
         cluster: { key, lat, lon, tk, ti, tv, crashes, },
-        // L,
-        canvas,
         baseRadius,
         hoveredClusterKey,
         setHoveredClusterKey,
@@ -196,15 +192,11 @@ export function Cluster(
     //     },
     //     [ lat, lon, emoji ]
     // )
-
     return <>
         <Circle
             center={[lat, lon]}
             radius={radius}
             color={color}
-            pathOptions={{
-                renderer: canvas,
-            }}
             {...markerProps}
         >
             <Popup keepInView={false}>{popupContent}</Popup>
