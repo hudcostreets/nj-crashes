@@ -4163,10 +4163,10 @@ next-transpile-modules@^10.0.0:
   dependencies:
     enhanced-resolve "^5.10.0"
 
-"next-utils@https://gitpkg.now.sh/runsascoded/next-utils/dist?fcaf1e3":
+"next-utils@https://gitpkg.now.sh/runsascoded/next-utils/dist?b51b3fe":
   version "0.1.2"
-  resolved "https://gitpkg.now.sh/runsascoded/next-utils/dist?fcaf1e3"
-  integrity sha512-0v1moUQIkgygjFrTgGfukpA5m2wuOznBlJSHoi3UpDI/5EHvR8ULMeTIhj/0vq4+u9AuUqdS2XRL8YFZksgjKA==
+  resolved "https://gitpkg.now.sh/runsascoded/next-utils/dist?b51b3fe"
+  integrity sha512-KKX8RxdhWvNWDKtv6jqkJUoTBXmq9V5O12MNym/znllG2sIfiqQG2ZNrqWi0L0aP2HSHGV9A0ZF81zWnF7PrnA==
   dependencies:
     "@duckdb/duckdb-wasm" "^1.24.0"
     "@fortawesome/fontawesome-svg-core" "^6.4.2"

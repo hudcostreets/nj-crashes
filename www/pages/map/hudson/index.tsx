@@ -70,6 +70,7 @@ export default function Page({ encodedCrashes, hudco, }: Props) {
         {map}
         <SettingsGear
             icon={faInfo}
+            initialSettingsShow={true}
             className={vcss.settings}
             icons={[
                 { href: "https://github.com/neighbor-ryan/nj-crashes", alt: "View source code on GitHub", src: "logos/gh.png", },
