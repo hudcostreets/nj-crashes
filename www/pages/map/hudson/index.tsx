@@ -5,7 +5,7 @@ import { faInfo } from '@fortawesome/free-solid-svg-icons'
 import fs from "fs"
 import { join } from "path"
 import { decode, Encoded } from "@/src/indexed-json";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { njdotDir, publicDir } from "@/src/dirs";
 import { Props } from "@/pages/map/hudson/diffs";
 import { SettingsGear } from "next-utils/map/settings";
@@ -45,6 +45,7 @@ export default function Page({ encodedCrashes, hudco, }: Props) {
         [encodedCrashes]
     )
 
+    const [ initialSettingsShown, setInitialSettingsShown] = useState(true)
     const map = useMemo(
         () => {
             console.log("page render map")
@@ -53,6 +54,7 @@ export default function Page({ encodedCrashes, hudco, }: Props) {
                 maxZoom={18}
                 crashes={crashes}
                 hudco={hudco}
+                onClick={() => setInitialSettingsShown(false)}
             />
         },
         [ crashes, hudco ]
@@ -66,11 +68,16 @@ export default function Page({ encodedCrashes, hudco, }: Props) {
         ti: 21_112,
         tv: 178_093,
     }
+
     return <div className={css.container}>
         {map}
         <SettingsGear
             icon={faInfo}
-            initialSettingsShow={true}
+            show={
+                // initialSettingsShown ?
+                    [ initialSettingsShown, setInitialSettingsShown ]
+                    // : undefined
+            }
             className={vcss.settings}
             icons={[
                 { href: "https://github.com/neighbor-ryan/nj-crashes", alt: "View source code on GitHub", src: "logos/gh.png", },

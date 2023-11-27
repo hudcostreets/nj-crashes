@@ -6,8 +6,9 @@ import React from "react";
 import 'leaflet/dist/leaflet.css';
 import MapContainer from "@/src/map/container";
 import { GeoJSON } from "react-leaflet";
+import { OnClick } from "@/src/map/events";
 
-export type Props = MapContainerProps & clusters.Props & {
+export type Props = MapContainerProps & clusters.Props & OnClick & {
     hudco: GeoJSON.FeatureCollection
 }
 
