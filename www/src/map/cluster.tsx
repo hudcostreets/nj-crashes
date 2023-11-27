@@ -51,7 +51,7 @@ export function Cluster(
             const MP = SRI && singleton(crashes.map(({ mp }) => mp))
             let metadata: ReactNode = null
             if (SRI) {
-                if (MP) {
+                if (MP !== null) {
                     metadata = <span>SRI {SRI}, MP {MP}</span>
                 } else {
                     metadata = <span>SRI {SRI}</span>
@@ -82,7 +82,7 @@ export function Cluster(
                         {hasInjuries ? <th>Injured</th> : null}
                         <th>Vehicles</th>
                         {SRI ? null : <th>SRI</th>}
-                        {MP ? null : <th>MP</th>}
+                        {MP !== null ? null : <th>MP</th>}
                     </tr>
                     </thead>
                     <tbody>{
@@ -114,7 +114,7 @@ export function Cluster(
                                 <td>{ti ? injuryEmoji : ""}</td>
                                 <td>{tv ? vehicleEmoji : ""}</td>
                                 {SRI ? null : <td>{sri}</td>}
-                                {MP ? null : <td>{mp}</td>}
+                                {MP !== null ? null : <td>{mp}</td>}
                             </tr>
                         })
                     }</tbody>
