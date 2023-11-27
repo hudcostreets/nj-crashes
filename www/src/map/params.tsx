@@ -10,5 +10,5 @@ export type ParsedParams = {
     z: ParsedParam<number>
 }
 
-export const DEFAULT_CENTER = { lat: 40.725527, lng: -74.042037 }
-export const DEFAULT_ZOOM = 11
+export const DEFAULT_CENTER = { lat: 40.73, lng: -74.08 }
+export const DEFAULT_ZOOM = 12

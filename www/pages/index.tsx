@@ -1,7 +1,7 @@
 import React, {Fragment} from 'react'
 import type {GetStaticProps} from 'next'
 import {Head} from 'next-utils/head'
-import css from './index.module.css'
+import css from './index.module.scss'
 import A from "next-utils/a";
 import {Nav} from "next-utils/nav";
 import {getBasePath} from "next-utils/basePath"
@@ -61,13 +61,19 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
             <main className={css.main}>
                 <h1 className={css.title}>{title}</h1>
                 <p>
-                    The NJ State Police <A title={"NJ State Police fatal crash data"} href={"https://nj.gov/njsp/info/fatalacc/"}>publish fatal crash data</A> going back to 2008. {"It's usually current to the previous day, though things also show up weeks or months after the fact. The first 5 plots below are from that data."}
+                    <A href={`#per-year`}>The first 5 plots below</A> come from <A title={"NJ State Police fatal crash data"} href={"https://nj.gov/njsp/info/fatalacc/"}>NJ State Police fatal crash data</A> (2008-present). {"It's generally current to the previous day."}
                 </p>
                 <p>
-                    <a href={"#njdot"}>Below that</a> is some analysis of <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}>NJ DOT raw crash data</A>, which includes property-damage, injury, and fatal crashes from 2001-2020 (≈6MM records). {`It's a richer dataset, but less up to date (it currently ends in 2020, just before things regressed dramatically in 2021). 2021 data should arrive in early 2023.`}
+                    <A href={"#njdot"}>Below that</A> are plots of <A title={"NJ DOT raw crash data"} href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}>NJ DOT raw crash data</A>, which includes 6MM property-damage, injury, and fatal crashes from 2001-2021. {`It's a richer dataset, but less up to date.`}
                 </p>
-                <p>{`Tap plots to see specific values, single- or double-tap legend entries to toggle or "solo" them.`}</p>
-                <p>Code and cleaned data are on GitHub <A href={GitHub.href}>here</A>.</p>
+                <p>
+                    {"I'm working on mapping the NJDOT data;"} here are 5 years (2017-2021) of fatal and injury crashes in Hudson County:
+                </p>
+                <iframe src={"/nj-crashes/map/hudson"} className={css.map} />
+                <ul style={{ listStyle: "none" }}>
+                    <li>Code and cleaned data are <A href={GitHub.href}>here on GitHub</A>.</li>
+                    <li>Click / double-click legend entries below to toggle traces on/off.</li>
+                </ul>
                 {
                     plots.map(
                         ({ id, ...rest }, idx) => (<Fragment key={id}>
@@ -91,8 +97,9 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
                 <Socials
                     socials={[
                         GitHub,
-                        { name: "NJSP", title: "NJ State Police fatal crash data", href: "https://nj.gov/njsp/info/fatalacc/", src: `/njsp.png`, },
-                        { name: "NJDOT", title: "NJ DOT raw crash data", href: "https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm", src: `/njdot-s.png`, },
+                        // { name: "NJSP", title: "NJ State Police fatal crash data", href: "https://nj.gov/njsp/info/fatalacc/", src: `/njsp.png`, },
+                        // { name: "NJDOT", title: "NJ DOT raw crash data", href: "https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm", src: `/njdot-s.png`, },
+                        { name: "Hudson County Complete Streets", title: "Hudson County Complete Streets", href: "https://hudcostreets.org", src: `/logos/hccs.png`, },
                     ]}
                 />
             </main>

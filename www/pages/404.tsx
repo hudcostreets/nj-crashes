@@ -1,5 +1,5 @@
 import {Head} from "next-utils/head";
-import css from "./index.module.css";
+import css from "./index.module.scss";
 import React from "react";
 import {getBasePath} from "next-utils/basePath"
 import {Socials} from "next-utils/socials"
