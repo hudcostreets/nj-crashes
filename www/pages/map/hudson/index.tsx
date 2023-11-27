@@ -1,6 +1,7 @@
 import dynamic from "next/dynamic"
 import css from "@/pages/map/map.module.scss"
 import vcss from "@/src/map/hudson/index.css"
+import { faInfo } from '@fortawesome/free-solid-svg-icons'
 import fs from "fs"
 import { join } from "path"
 import { decode, Encoded } from "@/src/indexed-json";
@@ -68,6 +69,7 @@ export default function Page({ encodedCrashes, hudco, }: Props) {
     return <div className={css.container}>
         {map}
         <SettingsGear
+            icon={faInfo}
             className={vcss.settings}
             icons={[
                 { href: "https://github.com/neighbor-ryan/nj-crashes", alt: "View source code on GitHub", src: "logos/gh.png", },
