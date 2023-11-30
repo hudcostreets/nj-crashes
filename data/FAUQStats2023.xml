@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Nov 29 10:00:03 EST 2023</RUNDATE>
+  <RUNDATE>Thu Nov 30 10:00:02 EST 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -50,6 +50,17 @@
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
   <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1110" MNAME="Princeton">
+      <ACCIDENT ACCID="12844" DATE="11/29/2023" TIME="0956">
+        <STREET>Red Hill Rd</STREET>
+        <LOCATION>Red Hill Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
     <MUNICIPALITY MCODE="1113" MNAME="West Windsor Twp">
       <ACCIDENT ACCID="12838" DATE="11/27/2023" TIME="1737">
         <STREET>Rabbit Hill Rd</STREET>
@@ -58,6 +69,19 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0261" MNAME="Tenafly Boro">
+      <ACCIDENT ACCID="12843" DATE="11/27/2023" TIME="0803">
+        <HIGHWAY>72</HIGHWAY>
+        <LOCATION>County 72</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -335,6 +359,19 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="09" CNAME="Hudson">
+    <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
+      <ACCIDENT ACCID="12846" DATE="11/14/2023" TIME="1703">
+        <STREET>Danforth Ave</STREET>
+        <LOCATION>Danforth Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0330" MNAME="Pemberton Twsp">
       <ACCIDENT ACCID="12811" DATE="11/14/2023" TIME="1233">
@@ -396,6 +433,19 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="10" CNAME="Hunterdon">
+    <MUNICIPALITY MCODE="1022" MNAME="Readington Twsp">
+      <ACCIDENT ACCID="12845" DATE="11/10/2023" TIME="1411">
+        <HIGHWAY>22</HIGHWAY>
+        <LOCATION>State Highway 22</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -6914,7 +6964,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>518</TOTACCIDENTS>
-  <TOTFATALITIES>546</TOTFATALITIES>
+  <TOTACCIDENTS>522</TOTACCIDENTS>
+  <TOTFATALITIES>550</TOTFATALITIES>
   <TOTINJURIES>106</TOTINJURIES>
 </FAUQSTATS>
