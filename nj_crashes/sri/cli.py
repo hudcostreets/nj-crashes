@@ -13,7 +13,7 @@ import requests
 from utz import err, sxs
 
 import nj_crashes
-from nj_crashes.sri.mp05 import SRI_DB_PATH
+from nj_crashes.sri.mp05 import SRI_DB_PATH, SRI_DB_TABLE, SRI_DB_URL
 
 SRI_FETCH_CACHE_DIR = '.sri'
 

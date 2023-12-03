@@ -6,13 +6,20 @@ from shapely import Point
 from shapely.ops import unary_union
 from utz import sxs, err
 
+from nj_crashes import ROOT_DIR
+
 
 @cache
 def get_counties():
-    gpd_path = "tlgdb_2022_a_34_nj.gdb/"
+    gpd_path = f"{ROOT_DIR}/tlgdb_2022_a_34_nj.gdb/"
     err(f"Loading {gpd_path}")
     return gpd.read_file(gpd_path, layer='County')
 
+@cache
+def get_county_geometries():
+    counties = get_counties()
+    counties['cn'] = counties.NAMELSAD.str.replace(' County$', '', regex=True)
+    return counties.set_index('cn')[['geometry']]
 
 @cache
 def get_counties_union():

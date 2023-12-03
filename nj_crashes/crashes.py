@@ -4,6 +4,8 @@ from math import sqrt
 
 from dataclasses import dataclass, asdict
 
+import geopandas as gpd
+
 import pandas as pd
 from pandas import read_parquet, isna
 from typing import Union, Tuple
@@ -18,11 +20,30 @@ from njdot.data import END_YEAR, START_YEAR
 Year = Union[str, int]
 Years = Union[Year, list[Year]]
 
+INDEX_NAME = 'id'
+pk_cols = [ 'year', 'cc', 'mc', 'case', ]
+renames = {
+    'SRI (Standard Route Identifier)': 'sri',
+    'Mile Post': 'mp',
+    'Latitude': 'olat',
+    'Longitude': 'olon',
+    'County Code': 'cc',
+    'County Name': 'cn',
+    'Municipality Code': 'mc',
+    'Municipality Name': 'mn',
+    'Department Case Number': 'case',
+    'Police Department Code': 'pdc',
+    'Police Department': 'pdn',
+    'Police Station': 'station',
+    'Crash Type Code': 'crash_type',
+    'Severity': 'severity',
+}
+
 
 def load(
     years: Years = None,
     county: str = None,
-    index: bool = True,
+    index: bool = False,
 ):
     if isinstance(years, str):
         years = years.split(',')
@@ -34,29 +55,35 @@ def load(
     dfs = []
     for year in years:
         crashes = read_parquet(f'{NJDOT_DIR}/data/{year}/NewJersey{year}Accidents.pqt')
-        crashes = crashes.rename(columns={
-            'SRI (Standard Route Identifier)': 'sri',
-            'Mile Post': 'mp',
-            'Latitude': 'lat',
-            'Longitude': 'lon',
+        crashes = crashes.rename(columns=renames)
+        crashes = crashes.astype({
+            'cc': int,
+            'mc': int,
         })
         if county:
-            crashes = crashes[crashes['County Name'].str.lower() == county.lower()]
+            crashes = crashes[crashes.cn.str.lower() == county.lower()]
+        crashes['cn'] = crashes.cn.apply(lambda cn: cn.title())
+        crashes['mn'] = crashes.mn.apply(lambda mn: mn.title())
+        crashes['pdn'] = crashes.pdn.apply(lambda pdn: pdn.title())
         years_col = crashes.Date.dt.year.rename('year')
         wrong_year = years_col != int(year)
         if wrong_year.any():
             num_wrong_year = wrong_year.sum()
             err(f'{num_wrong_year} crashes for year {year} have wrong year: {years_col.value_counts()}')
         crashes['year'] = years_col
-        crashes['lon'] = -crashes['lon']  # Longitudes all come in positive, but are actually supposed to be negative (NJ ⊂ [-75, -73])
-        crashes = crashes.rename(columns={ 'Severity': 'severity', })
-        crashes['severity'] = crashes['severity'].apply(lambda s: CrashSeverity.CH2Name[s])
+        crashes['olon'] = -crashes['olon']  # Longitudes all come in positive, but are actually supposed to be negative (NJ ⊂ [-75, -73])
+        crashes['severity'] = crashes['severity'].apply(lambda s: s.lower())
         if index:
-            crashes = crashes.set_index([ 'year', 'County Code', 'Municipality Code', 'Department Case Number', ])
+            crashes = crashes.set_index(pk_cols)
         dfs.append(crashes)
     df = pd.concat(dfs)
-    if not index:
-        df = df.reset_index(drop=True)
+    if index:
+        df = df.sort_index()
+    else:
+        df = df.reset_index(drop=True).sort_values(pk_cols)
+        cols = pk_cols + [ col for col in df if col not in pk_cols ]
+        df = df[cols]
+        df.index.name = INDEX_NAME
     return df
 
 
@@ -82,10 +109,35 @@ class Crashes:
     df: pd.DataFrame
 
     @classmethod
-    def load(cls, years: Years = None, county: str = None):
+    def load(cls, years: Years = None, county: str = None) -> 'Crashes':
         return cls(load(years, county))
 
-    def lls(self, default='io', types=None):
+    def gdf(self, tpe='') -> 'Crashes':
+        df = self.df
+        gdf = gpd.GeoDataFrame(
+            df,
+            geometry=gpd.points_from_xy(x=df[f'{tpe}lon'], y=df[f'{tpe}lat']),
+            columns=df.columns,
+        ).astype(df.dtypes)
+        gdf.index.name = INDEX_NAME
+        return Crashes(gdf)
+
+    def mp_lls(self, append=True) -> pd.DataFrame:
+        df = self.df
+        mp05_map = get_mp05_map()
+        ll = DF(
+            sxs(df.sri, df.mp).apply(geocode_mp, sris=mp05_map, axis=1).tolist(),
+            index=df.index,
+        ).rename(columns={
+            'lat': 'ilat',
+            'lon': 'ilon',
+        })
+        if append:
+            return sxs(df, ll)
+        else:
+            return ll
+
+    def lls(self, default='io', types=None) -> 'LLCrashes':
         if types is None:
             # - interpolated (from SRI/MP)
             # - original (from crash report)
@@ -101,9 +153,6 @@ class Crashes:
         n = len(df)
         if len(ll) != n:
             raise RuntimeError(f"Expected {n} geocoded lls, got {len(ll)}")
-
-        def pct(num):
-            return int(num / n * 100)
 
         def replace(k, cross_tab=None):
             o = df[k].copy()

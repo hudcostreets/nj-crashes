@@ -20,6 +20,9 @@ class SriMap:
         )
         return sri_mps_map.to_dict()
 
+    def __getitem__(self, sri):
+        return self.sris[sri]
+
     @classmethod
     def load(cls, sri_mps) -> dict[str, SRI]:
         sri_mps_map = cls.get_sri_mps_map(sri_mps)
