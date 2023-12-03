@@ -23,6 +23,7 @@ Years = Union[Year, list[Year]]
 INDEX_NAME = 'id'
 pk_cols = [ 'year', 'cc', 'mc', 'case', ]
 renames = {
+    'Date': 'dt',
     'SRI (Standard Route Identifier)': 'sri',
     'Mile Post': 'mp',
     'Latitude': 'olat',
@@ -65,7 +66,7 @@ def load(
         crashes['cn'] = crashes.cn.apply(lambda cn: cn.title())
         crashes['mn'] = crashes.mn.apply(lambda mn: mn.title())
         crashes['pdn'] = crashes.pdn.apply(lambda pdn: pdn.title())
-        years_col = crashes.Date.dt.year.rename('year')
+        years_col = crashes.dt.dt.year.rename('year')
         wrong_year = years_col != int(year)
         if wrong_year.any():
             num_wrong_year = wrong_year.sum()
