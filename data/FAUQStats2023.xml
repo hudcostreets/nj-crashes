@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Dec 15 10:00:02 EST 2023</RUNDATE>
+  <RUNDATE>Sat Dec 16 10:00:03 EST 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2683,6 +2683,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4003,7 +4004,7 @@
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12532" DATE="06/26/2023" TIME="1703">
         <HIGHWAY>95</HIGHWAY>
-        <LOCATION>New Jersey Turnpike</LOCATION>
+        <LOCATION>New Jersey Turnpike MP 106.8</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -6768,7 +6769,7 @@
     <MUNICIPALITY MCODE="0222" MNAME="Glen Rock Boro">
       <ACCIDENT ACCID="12311" DATE="01/30/2023" TIME="0641">
         <HIGHWAY>69</HIGHWAY>
-        <LOCATION>County 69</LOCATION>
+        <LOCATION>County 69 MP 1.31</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7077,6 +7078,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7316,7 +7318,7 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="12249" DATE="01/01/2023" TIME="0149">
+      <ACCIDENT ACCID="12249" DATE="01/01/2023" TIME="0115">
         <STREET>Mulberry St</STREET>
         <LOCATION>Mulberry St</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -7324,6 +7326,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
