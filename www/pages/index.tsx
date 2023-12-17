@@ -69,9 +69,9 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
                 <p>
                     {"I'm working on mapping the NJDOT data;"} here are 5 years (2017-2021) of fatal and injury crashes in Hudson County:
                 </p>
-                <iframe src={"/nj-crashes/map/hudson"} className={css.map} />
+                <iframe src={`${basePath}/map/hudson`} className={css.map} />
                 <ul style={{ listStyle: "none" }}>
-                    <li><A href={"/nj-crashes/map/hudson"}>Full screen map here</A></li>
+                    <li><A href={"/map/hudson"}>Full screen map here</A></li>
                     <li>Code and cleaned data are <A href={GitHub.href}>here on GitHub</A>.</li>
                     <li>Click / double-click legend entries below to toggle traces on/off.</li>
                 </ul>
