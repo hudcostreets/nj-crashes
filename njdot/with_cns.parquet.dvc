@@ -1,0 +1,5 @@
+outs:
+- md5: 17d2bf02296c43d59c21f38ac44cf2c7
+  size: 310867955
+  hash: md5
+  path: with_cns.parquet
