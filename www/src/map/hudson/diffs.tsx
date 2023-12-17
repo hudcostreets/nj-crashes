@@ -9,47 +9,34 @@ import { FeatureCollection, MultiPolygon } from "geojson";
 
 export type Props = MapContainerProps & {
     crashes: Crash[]
-    hudco: FeatureCollection<MultiPolygon>
+    hudson: FeatureCollection<MultiPolygon>
 }
 
-export default function Map({ crashes, hudco, ...mapProps }: Props) {
-    const [ feature ] = hudco.features
-    const [ lineStrings ] = feature.geometry.coordinates
+export default function Map({ crashes, hudson, ...mapProps }: Props) {
+    // const [ feature ] = hudco.features
+    // const [ lineStrings ] = feature.geometry.coordinates
     // console.log(`${lineStrings.length} linestrings:`, lineStrings)
     return <MapContainer {...mapProps}>
         {
-            crashes.map(({ lat, lon, oilat, oilon }, idx) => {
+            crashes.map(({ oilat, oilon, ilat, ilon }, idx) => {
                 return <Fragment key={idx}>
                     <Polyline
-                        positions={[ [ lat, lon ], [ oilat, oilon ] ]}
+                        positions={[ [ oilat, oilon ], [ ilat, ilon ] ]}
                         weight={1}
                         opacity={0.5}
                         color={"orange"}
                         // fillColor={"red"}
                     />
-                    <Circle color={"red"} fillColor={"red"} center={[ lat, lon ]} radius={5} />
-                    <Circle color={"blue"} fillColor={"blue"} center={[ oilat, oilon ]} radius={5} />
+                    <Circle color={"red"} fillColor={"red"} center={[ oilat, oilon ]} radius={5} />
+                    <Circle color={"blue"} fillColor={"blue"} center={[ ilat, ilon ]} radius={5} />
                 </Fragment>
             })
         }
-        {/*{*/}
-        {/*    lineStrings.map((positions: Position[], idx: number) => {*/}
-        {/*        return <Polyline*/}
-        {/*            key={idx}*/}
-        {/*            positions={positions.map(([ lat, lon ]) => [ lat, lon ])}*/}
-        {/*            // weight={1}*/}
-        {/*            // opacity={0.5}*/}
-        {/*            color={"yellow"}*/}
-        {/*            fillColor={"red"}*/}
-        {/*        />*/}
-        {/*    })*/}
-        {/*}*/}
-        <GeoJSON data={hudco} style={{
+        <GeoJSON data={hudson} style={{
             fillColor: "yellow",
             color: "yellow",
             opacity: 0.5,
             fillOpacity: 0,
         }} />
-        {/*<Clusters crashes={crashes} setLL={setLL} setZoom={setZoom} />*/}
     </MapContainer>
 }

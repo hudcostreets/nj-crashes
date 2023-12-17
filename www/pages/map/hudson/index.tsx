@@ -30,12 +30,12 @@ export type Crash = {
 export function getStaticProps() {
     const path = join(njdotDir, 'hudson-5yr-lls-if.json')
     const encodedCrashes = JSON.parse(fs.readFileSync(path).toString()) as Encoded
-    const hudcoPath = join(publicDir, 'hudson.geojson')
-    const hudco = JSON.parse(fs.readFileSync(hudcoPath).toString())
-    return { props: { encodedCrashes, hudco, } }
+    const hudsonPath = join(publicDir, 'hudson.geojson')
+    const hudson = JSON.parse(fs.readFileSync(hudsonPath).toString())
+    return { props: { encodedCrashes, hudson, } }
 }
 
-export default function Page({ encodedCrashes, hudco, }: Props) {
+export default function Page({ encodedCrashes, hudson, }: Props) {
     const crashes = useMemo(
         () => {
             const crashes = decode<Crash>(encodedCrashes) //.slice(0, 100)
@@ -53,11 +53,11 @@ export default function Page({ encodedCrashes, hudco, }: Props) {
                 className={css.map}
                 maxZoom={18}
                 crashes={crashes}
-                hudco={hudco}
+                hudson={hudson}
                 onClick={() => setInitialSettingsShown(false)}
             />
         },
-        [ crashes, hudco ]
+        [ crashes, hudson ]
     )
 
     // `Hudson Crashes.ipynb`

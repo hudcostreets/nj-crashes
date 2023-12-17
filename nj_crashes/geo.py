@@ -6,7 +6,7 @@ from shapely import Point
 from shapely.ops import unary_union
 from utz import sxs, err
 
-from nj_crashes import ROOT_DIR
+from nj_crashes.paths import ROOT_DIR
 
 
 @cache

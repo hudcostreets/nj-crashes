@@ -8,15 +8,15 @@ class SriMap:
     sris: dict[str, SRI]
 
     @classmethod
-    def make_mps_arr(cls, s) -> dict[float, [ float, float ]]:
-        return dict(s.apply(lambda r: [ r.MP, [ r.LON, r.LAT ]], axis=1).tolist())
+    def mp2ll(cls, s) -> dict[float, [float, float]]:
+        return dict(s.apply(lambda r: [ r.mp, [ r.lon, r.lat ]], axis=1).tolist())
 
     @classmethod
     def get_sri_mps_map(cls, sri_mps) -> dict[str, dict[float, [ float, float ]]]:
         sri_mps_map = (
             sri_mps
-            .groupby('SRI')
-            .apply(cls.make_mps_arr)
+            .groupby('sri')
+            .apply(cls.mp2ll)
         )
         return sri_mps_map.to_dict()
 

@@ -22,14 +22,18 @@
         "@react-leaflet/core": "^2.1.0",
         "@vanilla-extract/css": "^1.14.0",
         "@vanilla-extract/next-plugin": "^2",
+        "deck.gl": "^8.9.32",
         "leaflet-edgebuffer": "^1",
+        "maplibre-gl": "^3.6.2",
         "next": "^14",
         "plotly.js": "^2",
         "react": "^18",
         "react-dom": "^18",
         "react-leaflet": "^4",
+        "react-map-gl": "^7.1.6",
         "react-plotly.js": "^2",
         "sass": "^1",
+        "sqlite-wasm-http": "^1.1.2",
         "strftime": "^0.10.2"
     },
     "devDependencies": {

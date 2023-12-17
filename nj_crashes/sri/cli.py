@@ -14,8 +14,7 @@ from utz import err, sxs
 
 import nj_crashes
 from nj_crashes.sri.mp05 import SRI_DB_PATH, SRI_DB_TABLE, SRI_DB_URL
-
-SRI_FETCH_CACHE_DIR = '.sri'
+from nj_crashes.sri.sri import SRI_DIR, get_sri_path
 
 COUNTIES = [
     'ATLANTIC',
@@ -51,10 +50,6 @@ class MalformedSRIJSON(RuntimeError):
     pass
 
 
-def get_sri_path(sri):
-    return join(f'{SRI_FETCH_CACHE_DIR}', sri)
-
-
 def load_sri_features(sri, path=None, on_err='warn'):
     path = path or get_sri_path(sri)
     with open(path, 'r') as f:
@@ -80,7 +75,7 @@ def load_sri_features(sri, path=None, on_err='warn'):
 
 
 def fetch_sri_mps(sri, overwrite=False, log=err, sleep_s=0.5, on_err='warn'):
-    path = join(f'{SRI_FETCH_CACHE_DIR}', sri)
+    path = get_sri_path(sri)
     if overwrite or not exists(path):
         page = 0
         offset = 0
@@ -134,8 +129,8 @@ def check_sri_mps(sri):
         return 'malformed'
 
 
-def get_sri_sld_name(sri, first=True):
-    features = fetch_sri_mps(sri)
+def get_sri_sld_name(sri, first=True, features=None):
+    features = features or fetch_sri_mps(sri)
     sld_names = [ f['attributes']['SLD_NAME'] for f in features ]
     uniq_sld_names = sorted(set(sld_names))
     if len(uniq_sld_names) == 1 or (first and uniq_sld_names):
@@ -160,14 +155,14 @@ def get_sri_mps(sri, conn=None, log=err, refetch=False):
         return None
     df = pd.DataFrame([
         dict(
-            SRI=f['attributes']['SRI'],
-            MP=f['attributes']['MP'],
-            LON=f['geometry']['x'],
-            LAT=f['geometry']['y'],
+            sri=f['attributes']['SRI'],
+            mp=f['attributes']['MP'],
+            lon=f['geometry']['x'],
+            lat=f['geometry']['y'],
         )
         for f in features
         if 'geometry' in f
-    ]).set_index('SRI')
+    ]).set_index('sri')
     log(f'SRI {sri}: writing {len(df)} MPs')
     df.to_sql(SRI_DB_TABLE, SRI_DB_URL, if_exists='append')
     res = pd.read_sql(query, SRI_DB_URL)
@@ -321,7 +316,7 @@ def cli_county_fetch_sris(ctx, overwrite, max_num, sleep_s, sleep_jitter, years)
                 sri_name = get_sri_sld_name(sri)
                 mp_range_str = f" ∈ [{min(keys)}, {max(keys)}]" if keys else ""
                 err(f"Fetched {fetches_str}: SRI {sri} ({sri_name}), {len(keys)} MPs{mp_range_str}; sleeping for {slp}s")
-            if max_num > 0 and fetches >= max_num:
+            if 0 < max_num <= fetches:
                 break
             sleep(slp)
 

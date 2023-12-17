@@ -8,12 +8,12 @@ import { GeoJSON } from "react-leaflet";
 import { OnClick } from "@/src/map/events";
 
 export type Props = MapContainerProps & clusters.Props & OnClick & {
-    hudco: GeoJSON.FeatureCollection
+    hudson: GeoJSON.FeatureCollection
 }
 
-export default function Map({ crashes, hudco, ...mapProps }: Props) {
+export default function Map({ crashes, hudson, ...mapProps }: Props) {
     return <MapContainer {...mapProps}>
-        <GeoJSON data={hudco} style={{
+        <GeoJSON data={hudson} style={{
             fillColor: "yellow",
             color: "yellow",
             opacity: 0.5,

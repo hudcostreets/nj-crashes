@@ -2,7 +2,6 @@ from os.path import basename, dirname, join
 
 PKG_DIR = dirname(__file__)
 ROOT_DIR = dirname(PKG_DIR)
-
 DATA_DIR = join(ROOT_DIR, 'data')
 NJDOT_DIR = join(ROOT_DIR, 'njdot')
 DOT_DATA = join(NJDOT_DIR, 'data')
@@ -16,5 +15,4 @@ PKG_NAME = basename(PKG_DIR)
 RUNDATE_PATH = join(PUBLIC_DIR, 'rundate.json')
 PROJECTED_TOTALS_PATH = join(PLOTS_DIR, 'projected_totals.json')
 DB_PATH = join(ROOT_DIR, f'{PKG_NAME}.db')
-
 DB_URI = f'sqlite:///{DB_PATH}'

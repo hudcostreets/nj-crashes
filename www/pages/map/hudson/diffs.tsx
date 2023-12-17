@@ -10,25 +10,27 @@ import { FeatureCollection, MultiPolygon } from "geojson";
 
 export const Map = dynamic(() => import('@/src/map/hudson/diffs'), { ssr: false });
 
-export type Crash = Hudson.Crash & {
+export type Crash = Omit<Hudson.Crash, 'lat' | 'lon'> & {
     oilon: number
     oilat: number
+    ilon: number
+    ilat: number
 }
 
 export type Props = {
     encodedCrashes: Encoded
-    hudco: FeatureCollection<MultiPolygon>
+    hudson: FeatureCollection<MultiPolygon>
 }
 
 export function getStaticProps() {
     const path = join(njdotDir, 'hudson-5yr-lls-if-diffs.json')
     const encodedCrashes = JSON.parse(fs.readFileSync(path).toString()) as Encoded
-    const hudcoPath = join(publicDir, 'hudson.geojson')
-    const hudco = JSON.parse(fs.readFileSync(hudcoPath).toString())
-    return { props: { encodedCrashes, hudco } }
+    const hudsonPath = join(publicDir, 'hudson.geojson')
+    const hudson = JSON.parse(fs.readFileSync(hudsonPath).toString())
+    return { props: { encodedCrashes, hudson } }
 }
 
-export default function Page({ encodedCrashes, hudco }: Props) {
+export default function Page({ encodedCrashes, hudson }: Props) {
     const crashes = useMemo(
         () => {
             const crashes = decode<Crash>(encodedCrashes) //.slice(0, 100)
@@ -45,10 +47,10 @@ export default function Page({ encodedCrashes, hudco }: Props) {
                 className={css.map}
                 maxZoom={18}
                 crashes={crashes}
-                hudco={hudco}
+                hudson={hudson}
             />
         },
-        [ crashes, hudco ]
+        [ crashes, hudson ]
     )
 
     return <div className={css.container}>{map}</div>

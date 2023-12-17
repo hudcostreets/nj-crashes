@@ -1,6 +1,6 @@
 import pandas as pd
 
-from nj_crashes import ROOT_DIR
+from nj_crashes.paths import ROOT_DIR
 from nj_crashes.sri.sri_map import SriMap
 
 _mp05 = None
