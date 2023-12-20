@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Dec 19 10:00:02 EST 2023</RUNDATE>
+  <RUNDATE>Wed Dec 20 10:00:02 EST 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,15 +49,54 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0436" MNAME="Winslow Twsp">
+      <ACCIDENT ACCID="12886" DATE="12/19/2023" TIME="2201">
+        <STREET>CR 561 (South Egg Harbor Road)</STREET>
+        <LOCATION>CR 561 (South Egg Harbor Road)</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1215" MNAME="North Brunswick Tws">
+      <ACCIDENT ACCID="12885" DATE="12/19/2023" TIME="0632">
+        <HIGHWAY>130</HIGHWAY>
+        <LOCATION>State Highway 130</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2009" MNAME="Linden City">
       <ACCIDENT ACCID="12881" DATE="12/18/2023" TIME="1848">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>1</LOCATION>
+        <LOCATION>State Highway 1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="06" CNAME="Cumberland">
+    <MUNICIPALITY MCODE="0610" MNAME="Millville City">
+      <ACCIDENT ACCID="12884" DATE="12/18/2023" TIME="1648">
+        <HIGHWAY>47</HIGHWAY>
+        <LOCATION>State Highway 47</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -142,6 +181,19 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0425" MNAME="Mount Ephraim Boro">
+      <ACCIDENT ACCID="12883" DATE="12/10/2023" TIME="1907">
+        <HIGHWAY>168</HIGHWAY>
+        <LOCATION>State Highway 168</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="12870" DATE="12/10/2023" TIME="0549">
@@ -177,6 +229,19 @@
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1111" MNAME="Trenton">
+      <ACCIDENT ACCID="12887" DATE="12/08/2023" TIME="2015">
+        <STREET>S. Clinton Ave</STREET>
+        <LOCATION>S. Clinton Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -2753,13 +2818,13 @@
     <MUNICIPALITY MCODE="1311" MNAME="Eatontown Boro">
       <ACCIDENT ACCID="12654" DATE="08/24/2023" TIME="1952">
         <HIGHWAY>35</HIGHWAY>
-        <LOCATION>State Highway 35</LOCATION>
+        <LOCATION>State Highway 35 MP 30.44</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-        <INJURIES>2</INJURIES>
+        <INJURIES>3</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2859,7 +2924,7 @@
     <MUNICIPALITY MCODE="1311" MNAME="Eatontown Boro">
       <ACCIDENT ACCID="12639" DATE="08/20/2023" TIME="1508">
         <HIGHWAY>18</HIGHWAY>
-        <LOCATION>State Highway 18</LOCATION>
+        <LOCATION>State Highway 18 MP 13.46</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3606,12 +3671,13 @@
     <MUNICIPALITY MCODE="1311" MNAME="Eatontown Boro">
       <ACCIDENT ACCID="12597" DATE="07/22/2023" TIME="0228">
         <HIGHWAY>36</HIGHWAY>
-        <LOCATION>State Highway 36</LOCATION>
+        <LOCATION>State Highway 36 MP .83</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>4</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3889,6 +3955,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4016,12 +4083,13 @@
     <MUNICIPALITY MCODE="1604" MNAME="Hawthorne Boro">
       <ACCIDENT ACCID="12538" DATE="06/28/2023" TIME="2046">
         <HIGHWAY>504</HIGHWAY>
-        <LOCATION>County 504 (Alternate)</LOCATION>
+        <LOCATION>County 504 (Alternate) MP 15.66</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5030,6 +5098,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6178,13 +6247,14 @@
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0910" MNAME="Union City">
       <ACCIDENT ACCID="12369" DATE="03/06/2023" TIME="1317">
-        <HIGHWAY>691</HIGHWAY>
-        <LOCATION>County 691</LOCATION>
+        <STREET>39th Street</STREET>
+        <LOCATION>39th Street</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6966,7 +7036,7 @@
     <MUNICIPALITY MCODE="2013" MNAME="Rahway City">
       <ACCIDENT ACCID="12284" DATE="01/21/2023" TIME="2131">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 38.71</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7102,13 +7172,14 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0702" MNAME="Bloomfield Boro">
       <ACCIDENT ACCID="12274" DATE="01/15/2023" TIME="2247">
-        <STREET>W. Circuit Dr</STREET>
-        <LOCATION>W. Circuit Dr</LOCATION>
+        <STREET>West Circuit Drive</STREET>
+        <LOCATION>West Circuit Drive</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>3</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7403,7 +7474,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>552</TOTACCIDENTS>
-  <TOTFATALITIES>581</TOTFATALITIES>
-  <TOTINJURIES>132</TOTINJURIES>
+  <TOTACCIDENTS>557</TOTACCIDENTS>
+  <TOTFATALITIES>586</TOTFATALITIES>
+  <TOTINJURIES>141</TOTINJURIES>
 </FAUQSTATS>
