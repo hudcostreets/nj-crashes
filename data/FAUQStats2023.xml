@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Dec 21 10:00:02 EST 2023</RUNDATE>
+  <RUNDATE>Fri Dec 22 10:00:02 EST 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -111,6 +111,20 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0820" MNAME="West Deptford Twsp">
+      <ACCIDENT ACCID="12891" DATE="12/18/2023" TIME="0725">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike MP 18.6</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>6</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1799,12 +1813,13 @@
     <MUNICIPALITY MCODE="0217" MNAME="Fair Lawn Boro">
       <ACCIDENT ACCID="12726" DATE="10/05/2023" TIME="2030">
         <HIGHWAY>69</HIGHWAY>
-        <LOCATION>County 69</LOCATION>
+        <LOCATION>County 69 MP .01</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1870,6 +1885,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1883,6 +1899,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>4</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2050,6 +2067,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2352,6 +2370,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2389,6 +2408,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2519,19 +2539,6 @@
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="02" CNAME="Bergen">
-    <MUNICIPALITY MCODE="0246" MNAME="Paramus Boro">
-      <ACCIDENT ACCID="12667" DATE="09/04/2023" TIME="1300">
-        <HIGHWAY>4</HIGHWAY>
-        <LOCATION>State Highway 4</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -2983,6 +2990,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>5</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3484,6 +3492,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3647,12 +3656,13 @@
     <MUNICIPALITY MCODE="0216" MNAME="Englewood Cliffs Bo">
       <ACCIDENT ACCID="12590" DATE="07/23/2023" TIME="0118">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9</LOCATION>
+        <LOCATION>State Highway 9 (Western Alignment (NJ Turnpike Only)) MP 3.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0246" MNAME="Paramus Boro">
@@ -3664,6 +3674,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3947,9 +3958,9 @@
   </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1304" MNAME="Colts Neck Twsp">
-      <ACCIDENT ACCID="12551" DATE="07/09/2023" TIME="0528">
+      <ACCIDENT ACCID="12551" DATE="07/09/2023" TIME="0524">
         <HIGHWAY>537</HIGHWAY>
-        <LOCATION>County 537</LOCATION>
+        <LOCATION>County 537 MP 57.46</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4009,6 +4020,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4297,12 +4309,13 @@
     <MUNICIPALITY MCODE="0249" MNAME="Ridgefield Boro">
       <ACCIDENT ACCID="12541" DATE="06/23/2023" TIME="2355">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 62.06</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5370,7 +5383,7 @@
     <MUNICIPALITY MCODE="0217" MNAME="Fair Lawn Boro">
       <ACCIDENT ACCID="12439" DATE="05/05/2023" TIME="2052">
         <HIGHWAY>507</HIGHWAY>
-        <LOCATION>County 507</LOCATION>
+        <LOCATION>County 507 MP 16.07</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5417,6 +5430,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5430,6 +5444,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5610,6 +5625,8 @@
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0246" MNAME="Paramus Boro">
       <ACCIDENT ACCID="12421" DATE="04/15/2023" TIME="0258">
+        <HIGHWAY>4</HIGHWAY>
+        <LOCATION>State Highway 4 MP 3.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5690,12 +5707,13 @@
     <MUNICIPALITY MCODE="0205" MNAME="Carlstadt Boro">
       <ACCIDENT ACCID="12407" DATE="04/13/2023" TIME="0323">
         <HIGHWAY>17</HIGHWAY>
-        <LOCATION>State Highway 17</LOCATION>
+        <LOCATION>State Highway 17 MP 6.04</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5798,7 +5816,7 @@
     <MUNICIPALITY MCODE="0250" MNAME="Ridgefield Park Tws">
       <ACCIDENT ACCID="12402" DATE="04/07/2023" TIME="2310">
         <HIGHWAY>46</HIGHWAY>
-        <LOCATION>State Highway 46</LOCATION>
+        <LOCATION>State Highway 46 MP 70.54</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7505,5 +7523,5 @@
   </COUNTY>
   <TOTACCIDENTS>559</TOTACCIDENTS>
   <TOTFATALITIES>588</TOTFATALITIES>
-  <TOTINJURIES>143</TOTINJURIES>
+  <TOTINJURIES>164</TOTINJURIES>
 </FAUQSTATS>
