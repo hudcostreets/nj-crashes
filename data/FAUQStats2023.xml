@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Dec 22 10:00:02 EST 2023</RUNDATE>
+  <RUNDATE>Sat Dec 23 10:00:02 EST 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,45 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
+      <ACCIDENT ACCID="12894" DATE="12/22/2023" TIME="0647">
+        <HIGHWAY>35</HIGHWAY>
+        <LOCATION>35</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="14" CNAME="Morris">
+    <MUNICIPALITY MCODE="1439" MNAME="Wharton Boro">
+      <ACCIDENT ACCID="12892" DATE="12/22/2023" TIME="0542">
+        <HIGHWAY>15</HIGHWAY>
+        <LOCATION>State Highway 15 MP 2.4</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1112" MNAME="Robbinsville Twsp">
+      <ACCIDENT ACCID="12893" DATE="12/22/2023" TIME="0428">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike MP 59.9</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2018" MNAME="Summit City">
@@ -401,6 +440,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -513,12 +553,13 @@
     <MUNICIPALITY MCODE="0261" MNAME="Tenafly Boro">
       <ACCIDENT ACCID="12843" DATE="11/27/2023" TIME="0803">
         <HIGHWAY>72</HIGHWAY>
-        <LOCATION>County 72</LOCATION>
+        <LOCATION>County 72 MP 1.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -532,6 +573,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -598,6 +640,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -618,12 +661,13 @@
     <MUNICIPALITY MCODE="0217" MNAME="Fair Lawn Boro">
       <ACCIDENT ACCID="12830" DATE="11/23/2023" TIME="1739">
         <HIGHWAY>208</HIGHWAY>
-        <LOCATION>State Highway 208</LOCATION>
+        <LOCATION>State Highway 208 MP 2.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1084,6 +1128,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1176,6 +1221,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3220,12 +3266,13 @@
     <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
       <ACCIDENT ACCID="12614" DATE="08/13/2023" TIME="1054">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9</LOCATION>
+        <LOCATION>State Highway 9 MP 122</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3519,6 +3566,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3840,12 +3888,13 @@
     <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
       <ACCIDENT ACCID="12569" DATE="07/16/2023" TIME="2317">
         <HIGHWAY>18</HIGHWAY>
-        <LOCATION>State Highway 18</LOCATION>
+        <LOCATION>State Highway 18 MP 34</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>3</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4261,19 +4310,6 @@
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="12" CNAME="Middlesex">
-    <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
-      <ACCIDENT ACCID="12547" DATE="06/24/2023" TIME="1510">
-        <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7521,7 +7557,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>559</TOTACCIDENTS>
-  <TOTFATALITIES>588</TOTFATALITIES>
-  <TOTINJURIES>164</TOTINJURIES>
+  <TOTACCIDENTS>561</TOTACCIDENTS>
+  <TOTFATALITIES>590</TOTFATALITIES>
+  <TOTINJURIES>172</TOTINJURIES>
 </FAUQSTATS>
