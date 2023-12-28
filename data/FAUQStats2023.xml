@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Dec 27 10:00:02 EST 2023</RUNDATE>
+  <RUNDATE>Thu Dec 28 10:00:02 EST 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,19 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0808" MNAME="Harrison Twsp">
+      <ACCIDENT ACCID="12905" DATE="12/27/2023" TIME="1627">
+        <STREET>Stephen M Sweeney Way</STREET>
+        <LOCATION>Stephen M Sweeney Way</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
@@ -99,19 +112,6 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <COUNTY CCODE="08" CNAME="Gloucester">
-    <MUNICIPALITY MCODE="0802" MNAME="Deptford Twsp">
-      <ACCIDENT ACCID="12900" DATE="12/23/2023" TIME="0038">
-        <STREET>Fox Run Rd</STREET>
-        <LOCATION>Fox Run Rd</LOCATION>
-        <FATALITIES>2</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>1</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0338" MNAME="Westampton Twsp">
       <ACCIDENT ACCID="12902" DATE="12/22/2023" TIME="1739">
@@ -133,6 +133,19 @@
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0408" MNAME="Camden City">
+      <ACCIDENT ACCID="12906" DATE="12/22/2023" TIME="0545">
+        <STREET>US 130 Southbound &amp; Terrace</STREET>
+        <LOCATION>US 130 Southbound &amp; Terrace</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
@@ -359,6 +372,20 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="05" CNAME="Cape May">
+    <MUNICIPALITY MCODE="0506" MNAME="Middle Twsp">
+      <ACCIDENT ACCID="12904" DATE="12/09/2023" TIME="1540">
+        <HIGHWAY>601</HIGHWAY>
+        <LOCATION>County 601 MP .03</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3464,7 +3491,7 @@
     <MUNICIPALITY MCODE="0427" MNAME="Pennsauken Twsp">
       <ACCIDENT ACCID="12607" DATE="08/08/2023" TIME="1254">
         <HIGHWAY>130</HIGHWAY>
-        <LOCATION>State Highway 130 MP 31.35</LOCATION>
+        <LOCATION>US Govt Property 130 MP 31.35</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -3966,12 +3993,13 @@
     <MUNICIPALITY MCODE="1215" MNAME="North Brunswick Tws">
       <ACCIDENT ACCID="12563" DATE="07/17/2023" TIME="0311">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 20.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
@@ -7648,7 +7676,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>568</TOTACCIDENTS>
-  <TOTFATALITIES>598</TOTFATALITIES>
-  <TOTINJURIES>172</TOTINJURIES>
+  <TOTACCIDENTS>570</TOTACCIDENTS>
+  <TOTFATALITIES>599</TOTFATALITIES>
+  <TOTINJURIES>173</TOTINJURIES>
 </FAUQSTATS>
