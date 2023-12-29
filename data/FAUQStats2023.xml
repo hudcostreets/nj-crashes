@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Dec 28 10:00:02 EST 2023</RUNDATE>
+  <RUNDATE>Fri Dec 29 10:00:02 EST 2023</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,11 +49,24 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0319" MNAME="Mansfield Twsp">
+      <ACCIDENT ACCID="12907" DATE="12/27/2023" TIME="2236">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike MP 49.7</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0808" MNAME="Harrison Twsp">
       <ACCIDENT ACCID="12905" DATE="12/27/2023" TIME="1627">
-        <STREET>Stephen M Sweeney Way</STREET>
-        <LOCATION>Stephen M Sweeney Way</LOCATION>
+        <HIGHWAY>322</HIGHWAY>
+        <LOCATION>State Highway 322</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -112,6 +125,19 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0802" MNAME="Deptford Twsp">
+      <ACCIDENT ACCID="12900" DATE="12/23/2023" TIME="0038">
+        <STREET>Fox Run Rd</STREET>
+        <LOCATION>Fox Run Rd</LOCATION>
+        <FATALITIES>2</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0338" MNAME="Westampton Twsp">
       <ACCIDENT ACCID="12902" DATE="12/22/2023" TIME="1739">
@@ -141,8 +167,8 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0408" MNAME="Camden City">
       <ACCIDENT ACCID="12906" DATE="12/22/2023" TIME="0545">
-        <STREET>US 130 Southbound &amp; Terrace</STREET>
-        <LOCATION>US 130 Southbound &amp; Terrace</LOCATION>
+        <HIGHWAY>130</HIGHWAY>
+        <LOCATION>State Highway 130</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -604,7 +630,7 @@
     <MUNICIPALITY MCODE="0718" MNAME="Roseland Boro">
       <ACCIDENT ACCID="12852" DATE="12/01/2023" TIME="0925">
         <HIGHWAY>280</HIGHWAY>
-        <LOCATION>Interstate 280</LOCATION>
+        <LOCATION>Interstate 280 MP 3.9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -647,6 +673,19 @@
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0722" MNAME="West Orange Town">
+      <ACCIDENT ACCID="12908" DATE="11/28/2023" TIME="0817">
+        <HIGHWAY>508</HIGHWAY>
+        <LOCATION>County 508</LOCATION>
+        <FATALITIES>2</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
@@ -1118,8 +1157,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12888" DATE="11/10/2023" TIME="0432">
-        <STREET>1st St</STREET>
-        <LOCATION>1st St</LOCATION>
+        <STREET>1st Street</STREET>
+        <LOCATION>1st Street</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -1166,6 +1205,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0325" MNAME="Mount Laurel Twsp">
@@ -2480,6 +2520,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2493,6 +2534,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3053,8 +3095,8 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0408" MNAME="Camden City">
       <ACCIDENT ACCID="12637" DATE="08/24/2023" TIME="0305">
-        <HIGHWAY>543</HIGHWAY>
-        <LOCATION>County 543</LOCATION>
+        <HIGHWAY>611</HIGHWAY>
+        <LOCATION>County 611 MP 1.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3926,8 +3968,8 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0415" MNAME="Gloucester Twsp">
       <ACCIDENT ACCID="12623" DATE="07/20/2023" TIME="1722">
-        <STREET>Little Gloucester Rd</STREET>
-        <LOCATION>Little Gloucester Rd</LOCATION>
+        <HIGHWAY>759</HIGHWAY>
+        <LOCATION>County 759 MP 1.35</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4140,7 +4182,7 @@
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12549" DATE="07/09/2023" TIME="0324">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 45.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4402,6 +4444,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4415,6 +4458,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0330" MNAME="Pemberton Twsp">
@@ -4708,12 +4752,13 @@
     <MUNICIPALITY MCODE="1207" MNAME="Highland Park Boro">
       <ACCIDENT ACCID="12521" DATE="06/13/2023" TIME="1743">
         <HIGHWAY>27</HIGHWAY>
-        <LOCATION>State Highway 27</LOCATION>
+        <LOCATION>State Highway 27 MP 17.7</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5230,7 +5275,7 @@
     <MUNICIPALITY MCODE="0713" MNAME="Montclair Town">
       <ACCIDENT ACCID="12468" DATE="05/22/2023" TIME="1344">
         <HIGHWAY>506</HIGHWAY>
-        <LOCATION>County 506</LOCATION>
+        <LOCATION>County 506 MP .7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6013,7 +6058,7 @@
     <MUNICIPALITY MCODE="0709" MNAME="Irvington Town">
       <ACCIDENT ACCID="12394" DATE="04/04/2023" TIME="2115">
         <HIGHWAY>601</HIGHWAY>
-        <LOCATION>County 601</LOCATION>
+        <LOCATION>County 601 MP .7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7676,7 +7721,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>570</TOTACCIDENTS>
-  <TOTFATALITIES>599</TOTFATALITIES>
-  <TOTINJURIES>173</TOTINJURIES>
+  <TOTACCIDENTS>573</TOTACCIDENTS>
+  <TOTFATALITIES>604</TOTFATALITIES>
+  <TOTINJURIES>176</TOTINJURIES>
 </FAUQSTATS>
