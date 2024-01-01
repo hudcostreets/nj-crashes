@@ -74,6 +74,9 @@ dependencies:
   strftime:
     specifier: ^0.10.2
     version: 0.10.2
+  use-session-storage-state:
+    specifier: ^18.2.0
+    version: 18.2.0(react-dom@18.2.0)(react@18.2.0)
   web-worker:
     specifier: ^1.3.0
     version: 1.3.0
@@ -4661,6 +4664,17 @@ packages:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
     dependencies:
       punycode: 2.3.1
+    dev: false
+
+  /use-session-storage-state@18.2.0(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-FO+L8B73DA78SxbeWo80Q/Dt+EtK/BgkONwFK3pmbntMolNh9Mij43qBxKFWfVWl7OOpeYm/M984var2utSEJQ==}
+    engines: {node: '>=12'}
+    peerDependencies:
+      react: '>=18'
+      react-dom: '>=18'
+    dependencies:
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
     dev: false
 
   /util-deprecate@1.0.2:
