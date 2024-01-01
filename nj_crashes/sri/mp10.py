@@ -24,6 +24,8 @@ def get_mp10():
     global _mp10
     if _mp10 is None:
         _mp10 = pd.read_parquet('mp10.parquet')
+        if 'SRI' in _mp10:
+            _mp10.columns = _mp10.columns.str.lower()
     return _mp10
 
 

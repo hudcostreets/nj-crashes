@@ -15,6 +15,8 @@ def get_mp05():
     global _mp05
     if _mp05 is None:
         _mp05 = pd.read_sql_table(SRI_DB_TABLE, SRI_DB_URL)
+        if 'SRI' in _mp05:
+            _mp05.columns = _mp05.columns.str.lower()
     return _mp05
 
 
