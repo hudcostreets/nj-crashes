@@ -10,6 +10,7 @@
         "gha-export": "next build && touch out/.nojekyll"
     },
     "dependencies": {
+        "@duckdb/duckdb-wasm": "^1.28.0",
         "@fortawesome/fontawesome-svg-core": "^6",
         "@fortawesome/free-solid-svg-icons": "^6",
         "@mdx-js/loader": "^2",
@@ -34,7 +35,8 @@
         "react-plotly.js": "^2",
         "sass": "^1",
         "sqlite-wasm-http": "^1.1.2",
-        "strftime": "^0.10.2"
+        "strftime": "^0.10.2",
+        "use-session-storage-state": "^18.2.0"
     },
     "devDependencies": {
         "@types/geojson": "^7946",
