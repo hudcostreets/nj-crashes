@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 from datetime import datetime
+from github import UnknownObjectException
 from html.parser import HTMLParser
 from os.path import exists
 from typing import Optional
 
 import click
+from utz import err
 
 from njsp.commit_crashes import REPO, load_github, git_fmt
 
@@ -62,12 +64,15 @@ class Crashes:
                 else:
                     raise RuntimeError(f"Couldn't find {xml_path}")
 
-            xml = load_github(path=xml_path, ref=ref).decode()
-            year_accid_map = SourcemapParser.load(xml_path, xml=xml)
-            extant_keys = set(accid_map).intersection(set(year_accid_map))
-            if extant_keys:
-                raise RuntimeError(f"ACCIDs would be overwritten by year {year}: {list(extant_keys)}")
-            accid_map.update(year_accid_map)
+            try:
+                xml = load_github(path=xml_path, ref=ref).decode()
+                year_accid_map = SourcemapParser.load(xml_path, xml=xml)
+                extant_keys = set(accid_map).intersection(set(year_accid_map))
+                if extant_keys:
+                    raise RuntimeError(f"ACCIDs would be overwritten by year {year}: {list(extant_keys)}")
+                accid_map.update(year_accid_map)
+            except UnknownObjectException as e:
+                err(f"{year}: missing XML file {xml_path}@{ref}: {e}")
             year += 1
         self.accid_map = accid_map
 
