@@ -1,162 +1,130 @@
 {
     "2008": {
-        "Drivers": 0,
-        "Pedestrians": 0,
-        "Passengers": 0,
-        "Cyclists": 0,
-        "Unknown": 590,
-        "Total": 590,
-        "Projected": 0,
-        "Projected Total": 590
+        "Drivers": 0.0,
+        "Pedestrians": 0.0,
+        "Passengers": 0.0,
+        "Cyclists": 0.0,
+        "Unknown": 590.0,
+        "Total": 590
     },
     "2009": {
-        "Drivers": 0,
-        "Pedestrians": 0,
-        "Passengers": 0,
-        "Cyclists": 0,
-        "Unknown": 584,
-        "Total": 584,
-        "Projected": 0,
-        "Projected Total": 584
+        "Drivers": 0.0,
+        "Pedestrians": 0.0,
+        "Passengers": 0.0,
+        "Cyclists": 0.0,
+        "Unknown": 584.0,
+        "Total": 584
     },
     "2010": {
-        "Drivers": 0,
-        "Pedestrians": 0,
-        "Passengers": 0,
-        "Cyclists": 0,
-        "Unknown": 556,
-        "Total": 556,
-        "Projected": 0,
-        "Projected Total": 556
+        "Drivers": 0.0,
+        "Pedestrians": 0.0,
+        "Passengers": 0.0,
+        "Cyclists": 0.0,
+        "Unknown": 556.0,
+        "Total": 556
     },
     "2011": {
-        "Drivers": 0,
-        "Pedestrians": 0,
-        "Passengers": 0,
-        "Cyclists": 0,
-        "Unknown": 627,
-        "Total": 627,
-        "Projected": 0,
-        "Projected Total": 627
+        "Drivers": 0.0,
+        "Pedestrians": 0.0,
+        "Passengers": 0.0,
+        "Cyclists": 0.0,
+        "Unknown": 627.0,
+        "Total": 627
     },
     "2012": {
-        "Drivers": 0,
-        "Pedestrians": 0,
-        "Passengers": 0,
-        "Cyclists": 0,
-        "Unknown": 589,
-        "Total": 589,
-        "Projected": 0,
-        "Projected Total": 589
+        "Drivers": 0.0,
+        "Pedestrians": 0.0,
+        "Passengers": 0.0,
+        "Cyclists": 0.0,
+        "Unknown": 589.0,
+        "Total": 589
     },
     "2013": {
-        "Drivers": 0,
-        "Pedestrians": 0,
-        "Passengers": 0,
-        "Cyclists": 0,
-        "Unknown": 542,
-        "Total": 542,
-        "Projected": 0,
-        "Projected Total": 542
+        "Drivers": 0.0,
+        "Pedestrians": 0.0,
+        "Passengers": 0.0,
+        "Cyclists": 0.0,
+        "Unknown": 542.0,
+        "Total": 542
     },
     "2014": {
-        "Drivers": 0,
-        "Pedestrians": 0,
-        "Passengers": 0,
-        "Cyclists": 0,
-        "Unknown": 556,
-        "Total": 556,
-        "Projected": 0,
-        "Projected Total": 556
+        "Drivers": 0.0,
+        "Pedestrians": 0.0,
+        "Passengers": 0.0,
+        "Cyclists": 0.0,
+        "Unknown": 556.0,
+        "Total": 556
     },
     "2015": {
-        "Drivers": 0,
-        "Pedestrians": 0,
-        "Passengers": 0,
-        "Cyclists": 0,
-        "Unknown": 562,
-        "Total": 562,
-        "Projected": 0,
-        "Projected Total": 562
+        "Drivers": 0.0,
+        "Pedestrians": 0.0,
+        "Passengers": 0.0,
+        "Cyclists": 0.0,
+        "Unknown": 562.0,
+        "Total": 562
     },
     "2016": {
-        "Drivers": 0,
-        "Pedestrians": 0,
-        "Passengers": 0,
-        "Cyclists": 0,
-        "Unknown": 602,
-        "Total": 602,
-        "Projected": 0,
-        "Projected Total": 602
+        "Drivers": 0.0,
+        "Pedestrians": 0.0,
+        "Passengers": 0.0,
+        "Cyclists": 0.0,
+        "Unknown": 602.0,
+        "Total": 602
     },
     "2017": {
-        "Drivers": 0,
-        "Pedestrians": 0,
-        "Passengers": 0,
-        "Cyclists": 0,
-        "Unknown": 624,
-        "Total": 624,
-        "Projected": 0,
-        "Projected Total": 624
+        "Drivers": 0.0,
+        "Pedestrians": 0.0,
+        "Passengers": 0.0,
+        "Cyclists": 0.0,
+        "Unknown": 624.0,
+        "Total": 624
     },
     "2018": {
-        "Drivers": 0,
-        "Pedestrians": 0,
-        "Passengers": 0,
-        "Cyclists": 0,
-        "Unknown": 563,
-        "Total": 563,
-        "Projected": 0,
-        "Projected Total": 563
+        "Drivers": 0.0,
+        "Pedestrians": 0.0,
+        "Passengers": 0.0,
+        "Cyclists": 0.0,
+        "Unknown": 563.0,
+        "Total": 563
     },
     "2019": {
-        "Drivers": 0,
-        "Pedestrians": 0,
-        "Passengers": 0,
-        "Cyclists": 0,
-        "Unknown": 558,
-        "Total": 558,
-        "Projected": 0,
-        "Projected Total": 558
+        "Drivers": 0.0,
+        "Pedestrians": 0.0,
+        "Passengers": 0.0,
+        "Cyclists": 0.0,
+        "Unknown": 558.0,
+        "Total": 558
     },
     "2020": {
-        "Drivers": 304,
-        "Pedestrians": 179,
-        "Passengers": 86,
-        "Cyclists": 18,
-        "Unknown": 0,
-        "Total": 587,
-        "Projected": 0,
-        "Projected Total": 587
+        "Drivers": 304.0,
+        "Pedestrians": 179.0,
+        "Passengers": 86.0,
+        "Cyclists": 18.0,
+        "Unknown": 0.0,
+        "Total": 587
     },
     "2021": {
-        "Drivers": 368,
-        "Pedestrians": 217,
-        "Passengers": 86,
-        "Cyclists": 26,
-        "Unknown": 0,
-        "Total": 697,
-        "Projected": 0,
-        "Projected Total": 697
+        "Drivers": 368.0,
+        "Pedestrians": 217.0,
+        "Passengers": 86.0,
+        "Cyclists": 26.0,
+        "Unknown": 0.0,
+        "Total": 697
     },
     "2022": {
-        "Drivers": 379,
-        "Pedestrians": 191,
-        "Passengers": 103,
-        "Cyclists": 16,
-        "Unknown": 0,
-        "Total": 689,
-        "Projected": 0,
-        "Projected Total": 689
+        "Drivers": 379.0,
+        "Pedestrians": 191.0,
+        "Passengers": 103.0,
+        "Cyclists": 16.0,
+        "Unknown": 0.0,
+        "Total": 689
     },
     "2023": {
-        "Drivers": 329,
-        "Pedestrians": 172,
-        "Passengers": 86,
-        "Cyclists": 23,
-        "Unknown": 0,
-        "Total": 610,
-        "Projected": 0,
-        "Projected Total": 610
+        "Drivers": 331.0,
+        "Pedestrians": 172.0,
+        "Passengers": 86.0,
+        "Cyclists": 23.0,
+        "Unknown": 0.0,
+        "Total": 612
     }
 }
