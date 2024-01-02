@@ -9,7 +9,9 @@ from .base import command
 def update_years(*years):
     for year in years:
         name = f"FAUQStats{year}.xml"
-        process.run('wget', '-O', f'data/{name}', f'https://nj.gov/njsp/info/fatalacc/{name}')
+        out_path = f'data/{name}'
+        process.run('wget', '-O', out_path, f'https://nj.gov/njsp/info/fatalacc/{name}')
+        process.run('git', 'add', out_path)
 
 
 @command

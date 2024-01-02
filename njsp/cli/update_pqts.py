@@ -40,7 +40,7 @@ def update_pqts():
 
     print(cur_year_dt, cur_month_dt, rundate, nxt_year_dt)
 
-    crashes['dt'] = crashes[['DATE','TIME']].apply(lambda r: to_dt(f'{r["DATE"]} {r["TIME"]}'), axis=1)
+    crashes['dt'] = crashes[['DATE', 'TIME']].apply(lambda r: to_dt(f'{r["DATE"]} {r["TIME"]}'), axis=1)
     crashes = (
         crashes
         .astype({
