@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Jan 10 10:00:06 EST 2024</RUNDATE>
+  <RUNDATE>Thu Jan 11 10:00:08 EST 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -183,6 +183,19 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2016" MNAME="Scotch Plains Twsp">
+      <ACCIDENT ACCID="12938" DATE="12/25/2023" TIME="0605">
+        <HIGHWAY>22</HIGHWAY>
+        <LOCATION>State Highway 22</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -5618,12 +5631,13 @@
     <MUNICIPALITY MCODE="1514" MNAME="Lakewood Twsp">
       <ACCIDENT ACCID="12450" DATE="05/09/2023" TIME="2148">
         <HIGHWAY>70</HIGHWAY>
-        <LOCATION>State Highway 70</LOCATION>
+        <LOCATION>State Highway 70 MP 50.57</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5698,6 +5712,19 @@
       <ACCIDENT ACCID="12441" DATE="05/06/2023" TIME="1140">
         <HIGHWAY>610</HIGHWAY>
         <LOCATION>County 610</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1111" MNAME="Trenton">
+      <ACCIDENT ACCID="12453" DATE="05/06/2023" TIME="1008">
+        <STREET>Martin Luter King Jr. Blvd</STREET>
+        <LOCATION>Martin Luter King Jr. Blvd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6045,6 +6072,19 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2002" MNAME="Clark Twsp">
+      <ACCIDENT ACCID="12413" DATE="04/14/2023" TIME="0941">
+        <STREET>Terminal Ave</STREET>
+        <LOCATION>Terminal Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0907" MNAME="Kearny Town">
       <ACCIDENT ACCID="12408" DATE="04/14/2023" TIME="0200">
@@ -6118,12 +6158,13 @@
     <MUNICIPALITY MCODE="1507" MNAME="Toms River">
       <ACCIDENT ACCID="12401" DATE="04/10/2023" TIME="2046">
         <HIGHWAY>527</HIGHWAY>
-        <LOCATION>County 527</LOCATION>
+        <LOCATION>County 527 MP 5.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6159,12 +6200,13 @@
     <MUNICIPALITY MCODE="0908" MNAME="North Bergen Twsp">
       <ACCIDENT ACCID="12399" DATE="04/08/2023" TIME="1542">
         <HIGHWAY>495</HIGHWAY>
-        <LOCATION>State Highway 495</LOCATION>
+        <LOCATION>State Highway 495 MP 1.23</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7840,8 +7882,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1217" MNAME="Piscataway Twsp">
       <ACCIDENT ACCID="12253" DATE="01/02/2023" TIME="1941">
-        <STREET>South Randolphville Road</STREET>
-        <LOCATION>South Randolphville Road</LOCATION>
+        <STREET>South Randolphville Rd</STREET>
+        <LOCATION>South Randolphville Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7879,7 +7921,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>584</TOTACCIDENTS>
-  <TOTFATALITIES>616</TOTFATALITIES>
+  <TOTACCIDENTS>587</TOTACCIDENTS>
+  <TOTFATALITIES>619</TOTFATALITIES>
   <TOTINJURIES>189</TOTINJURIES>
 </FAUQSTATS>
