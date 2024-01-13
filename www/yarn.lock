@@ -231,7 +231,7 @@
   dependencies:
     commander "^2.15.1"
 
-"@duckdb/duckdb-wasm@^1.24.0":
+"@duckdb/duckdb-wasm@^1.28.0":
   version "1.28.0"
   resolved "https://registry.npmjs.org/@duckdb/duckdb-wasm/-/duckdb-wasm-1.28.0.tgz"
   integrity sha512-YaswpEmxr1Sp20/FZbWR7bZBJqj6xQXX2m4LLzYBnA02g4K1yrpxsBWmkxQyMbrH6AHKhcUUqAlaXfA2Rvaa3w==
@@ -4158,12 +4158,12 @@ next-transpile-modules@^10.0.0:
   dependencies:
     enhanced-resolve "^5.10.0"
 
-"next-utils@https://gitpkg.now.sh/runsascoded/next-utils/dist?b51b3fe":
+"next-utils@https://gitpkg.now.sh/runsascoded/next-utils/dist?c5d555e":
   version "0.1.2"
-  resolved "https://gitpkg.now.sh/runsascoded/next-utils/dist?b51b3fe"
-  integrity sha512-KKX8RxdhWvNWDKtv6jqkJUoTBXmq9V5O12MNym/znllG2sIfiqQG2ZNrqWi0L0aP2HSHGV9A0ZF81zWnF7PrnA==
+  resolved "https://gitpkg.now.sh/runsascoded/next-utils/dist?c5d555e"
+  integrity sha512-DitA2+eGViC9l5zO7fmJUraiwI4Sx/Pj1bHK7F1g1wUaaeUTloSQQsnO3jMv1nqhgtQ/4B5+dWvEs3zbh5F9Bg==
   dependencies:
-    "@duckdb/duckdb-wasm" "^1.24.0"
+    "@duckdb/duckdb-wasm" "^1.28.0"
     "@fortawesome/fontawesome-svg-core" "^6.4.2"
     "@fortawesome/free-solid-svg-icons" "^6.4.2"
     "@fortawesome/react-fontawesome" "^0.2.0"

@@ -2,6 +2,7 @@ const {
   createVanillaExtractPlugin
 } = require('@vanilla-extract/next-plugin');
 const withVanillaExtract = createVanillaExtractPlugin();
+const path = require('path')
 
 const createTranspileModulesPlugin = require("next-transpile-modules");
 const withTranspileModules = createTranspileModulesPlugin(["next-utils"]);
@@ -29,6 +30,24 @@ const nextConfig = {
   output: "export",
   ...distDirArgs,
   trailingSlash: true,
+  // https://github.com/vercel/next.js/issues/55964#issuecomment-1744279596
+  webpack: (config) => {
+    // This fixes the invalid hook React error which
+    // will occur when multiple versions of React is detected
+    // This can happen since common project is also using Next (which is using React)
+    const reactPaths = {
+      react: path.join(__dirname, "node_modules/react"),
+      "react-dom": path.join(__dirname, "node_modules/react-dom"),
+    };
+    config.resolve = {
+      ...config.resolve,
+      alias: {
+        ...config.resolve.alias,
+        ...reactPaths,
+      },
+    };
+    return config;
+  },
 }
 
 const withMDX = require('@next/mdx')({

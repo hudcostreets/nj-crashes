@@ -4,7 +4,9 @@ import A from "next-utils/a";
 import { GitHub } from "./socials";
 const { HalfRoundWiden, filterIdxs, filterValues } = Plots
 
-export type Year = "2021" | "2022" | "2023"
+export const curYear = (new Date().getFullYear())
+export const prvYear = curYear - 1
+export type Year = "2021" | "2022" | typeof prvYear | typeof curYear
 export type YearTotals = { "Projected Total": number }
 export type ProjectedTotals = { [k in Year]: YearTotals }
 export type HasTotals = { projectedTotals: ProjectedTotals }
@@ -38,6 +40,23 @@ export const YM_SC_PID_SPECS: PlotSpec[] =
         ))
     ))
 
+export const njspPlotSpec: PlotSpec = {
+    title: "NJ Traffic Deaths per Year", id: "per-year", name: "fatalities_per_year_by_type",
+    menuName: "Traffic Deaths / Year", dropdownSection: "NJSP",
+    filter: filterValues({ mapRange: HalfRoundWiden }),
+    children: ({ rundate, projectedTotals }: { rundate: string, } & HasTotals) => {
+        const total2021 = projectedTotals["2021"]["Projected Total"]
+        const total2022 = projectedTotals["2022"]["Projected Total"]
+        const prvYearTotal = projectedTotals[prvYear]["Projected Total"]
+        const curYearTotal = projectedTotals[curYear]["Projected Total"]
+        const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
+        return <>
+            <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
+            <p><A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, {curYear} is on pace {curYearTotal > prvYearTotal ? `to exceed ${prvYear}, with` : `for`} {curYearTotal} deaths (estimated).</p>
+        </>
+    },
+}
+
 export const plotSpecs: PlotSpec[] = [
     // {
     //     id: "crash-map",
@@ -47,22 +66,7 @@ export const plotSpecs: PlotSpec[] = [
     //     //src: "",
     //     style: { height: 1100, },
     // },
-    {
-        title: "NJ Traffic Deaths per Year", id: "per-year", name: "fatalities_per_year_by_type",
-        menuName: "Traffic Deaths / Year", dropdownSection: "NJSP",
-        filter: filterValues({ mapRange: HalfRoundWiden }),
-        children: ({ rundate, projectedTotals }: { rundate: string, } & HasTotals) => {
-            const total2021 = projectedTotals["2021"]["Projected Total"]
-            const total2022 = projectedTotals["2022"]["Projected Total"]
-            const total2023 = projectedTotals["2023"]["Projected Total"]
-            const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
-            return <>
-                <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
-                <p><A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, 2023 is on pace {total2023 > total2022 ? `to exceed it, with` : `for`} {total2023}.</p>
-                <p>{`Victim types have been published since 2020; prior years are shown as "Unknown".`}</p>
-            </>
-        },
-    },
+    njspPlotSpec,
     {
         id: "ytd", name: "ytd-deaths", title: "NJ Traffic Deaths per Year", menuName: "YTD", dropdownSection: "NJSP",
         filter: filterIdxs,

@@ -18,7 +18,7 @@
         "leaflet-edgebuffer": "^1.0.6",
         "next": "13.3.4",
         "next-transpile-modules": "^10.0.0",
-        "next-utils": "https://gitpkg.now.sh/runsascoded/next-utils/dist?b51b3fe",
+        "next-utils": "https://gitpkg.now.sh/runsascoded/next-utils/dist?c5d555e",
         "plotly.js": "^2.16.3",
         "react": "^18.2.0",
         "react-dom": "^18.0.0",
