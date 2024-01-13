@@ -5,10 +5,14 @@ from git import Repo
 from utz import process, env, err
 
 
+DEFAULT_AUTHOR_NAME = 'GitHub Actions'
+DEFAULT_AUTHOR_EMAIL = 'ryan-williams@users.noreply.github.com'
+
+
 @click.group('njsp')
 @click.pass_context
-@click.option('-a', '--configure-author', 'do_configure_author', is_flag=True)
-@click.option('-c', '--commit', 'do_commit', count=True)
+@click.option('-a', '--configure-author', 'do_configure_author', is_flag=True, help='Set Git user.{name,email} configs: %s / %s' % (DEFAULT_AUTHOR_NAME, DEFAULT_AUTHOR_EMAIL))
+@click.option('-c', '--commit', 'do_commit', count=True, help='1x: commit changes; 2x: commit and push')
 def njsp(ctx, do_configure_author, do_commit):
     ctx.obj = dict(
         do_configure_author=do_configure_author,
@@ -47,8 +51,8 @@ def command(fn):
                 do_configure_author = ctx.obj['do_configure_author']
                 if do_configure_author:
                     configure_author(
-                        env.get('GIT_AUTHOR_NAME', 'GitHub Actions'),
-                        env.get('GIT_AUTHOR_EMAIL', 'ryan-williams@users.noreply.github.com'),
+                        env.get('GIT_AUTHOR_NAME', DEFAULT_AUTHOR_NAME),
+                        env.get('GIT_AUTHOR_EMAIL', DEFAULT_AUTHOR_EMAIL),
                     )
                 process.run('git', 'commit', '-am', msg)
                 step_output('sha', repo.commit().hexsha)
