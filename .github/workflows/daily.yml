@@ -39,19 +39,9 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     steps:
-      - run: env
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
-      - name: Check current branch
-        run: git symbolic-ref -q --short HEAD
-      - name: Fetch history
-        run: |
-          year=$(date +%Y)
-          let prv_year=year-1
-          git fetch --shallow-since "$prv_year-01-01" origin ${{ github.ref_name }}
-      - name: Verify fetched history
-        run: git log '--format=%h%d %ad %s' --graph
       - uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.GHA_DEPLOY_KEY }}
@@ -84,7 +74,14 @@ jobs:
           aws s3api put-object-acl --bucket nj-crashes --key data/crashes.parquet --acl public-read
       - id: update_plots
         if: (github.event.schedule || inputs.update_plots) && (steps.update_pqts_sha.outputs.sha || !inputs.short_circuit)
-        run: njsp -cc update_plots
+        run: |
+          year=$(date +%Y)
+          let prv_year=year-1
+          since="$(date --date="$(date +%Y-%m-%d) -375 day" +%Y-%m-%d)"
+          echo "Fetching commits since $since"
+          git fetch --shallow-since "$since" origin ${{ github.ref_name }}
+          echo "Fetched $(git rev-list --count) revisions"
+          njsp -cc update_plots
       - id: post_to_slack
         if: (github.event.schedule || inputs.post_to_slack) && (steps.update_pqts_sha.outputs.sha || !inputs.short_circuit)
         run: njsp slack sync -m500 -c ${{ steps.update_pqts_sha.outputs.sha }}
@@ -105,7 +102,7 @@ jobs:
         name: npm install, build, export
         run: |
           cd www
-          npm install
+          npm ci
           npm run gha-export
       - if: steps.build_www.outputs.run
         name: Deploy to GH Pages
