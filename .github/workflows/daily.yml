@@ -16,16 +16,18 @@ jobs:
           ref: ${{ github.ref_name }}
       - run: echo "rev-list count $(git rev-list --count --all)"
       - run: git rev-list --date=local --all '--format=%h%d %ad %s' | grep -v '^commit'
+      - run: cat .git/shallow
       - name: Check current branch
         run: git symbolic-ref -q --short HEAD
       - name: Show all history
         run: git log '--format=%h%d %ad %s' --date=local --graph --all
-      - name: Fetch history
+      - name: Fetch history since start of year
         run: |
           year=$(date +%Y)
           since="$year-01-01"
           echo "Fetching since: $since"
           git fetch --shallow-since $since origin
+      - run: cat .git/shallow
       - name: Show all history
         run: git log '--format=%h%d %ad %s' --date=local --graph --all
       - name: Show HEAD history
@@ -33,6 +35,7 @@ jobs:
       - run: echo "rev-list count $(git rev-list --count --all)"
       - run: git rev-list --date=local --all '--format=%h%d %ad %s' | grep -v '^commit'
       - run: git fetch --depth=2 origin
+      - run: cat .git/shallow
       - run: echo "rev-list count $(git rev-list --count --all)"
       - run: git rev-list --date=local --all '--format=%h%d %ad %s' | grep -v '^commit'
       - name: Show HEAD history
