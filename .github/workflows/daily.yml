@@ -40,6 +40,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Fetch history
+        run: |
+          year=$(date +%Y)
+          let prv_year=year-1
+          git fetch --shallow-since "$prv_year-01-01" origin
       - uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.GHA_DEPLOY_KEY }}
