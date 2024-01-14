@@ -25,3 +25,6 @@ jobs:
         run: git log '--format=%h%d %ad %s' --date=local --graph --all
       - name: Show HEAD history
         run: git log '--format=%h%d %ad %s' --date=local --graph
+      - run: git fetch --depth=2 origin
+      - name: Show HEAD history
+        run: git log '--format=%h%d %ad %s' --date=local --graph
