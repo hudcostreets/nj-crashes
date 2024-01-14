@@ -17,6 +17,8 @@ jobs:
       - run: echo "rev-list count $(git rev-list --count --all)"
       - name: Check current branch
         run: git symbolic-ref -q --short HEAD
+      - name: Show all history
+        run: git log '--format=%h%d %ad %s' --date=local --graph --all
       - name: Fetch history
         run: |
           year=$(date +%Y)
