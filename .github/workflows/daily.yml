@@ -11,21 +11,25 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     steps:
-      - run: env
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
+      - run: echo "rev-list count $(git rev-list --count --all)"
       - name: Check current branch
         run: git symbolic-ref -q --short HEAD
       - name: Fetch history
         run: |
           year=$(date +%Y)
-          git fetch --shallow-since $year-01-01 origin
+          since="$year-01-01"
+          echo "Fetching since: $since"
+          git fetch --shallow-since $since origin
+      - run: echo "rev-list count $(git rev-list --count --all)"
       - name: Show all history
         run: git log '--format=%h%d %ad %s' --date=local --graph --all
       - name: Show HEAD history
         run: git log '--format=%h%d %ad %s' --date=local --graph
       - run: git fetch --depth=2 origin
+      - run: echo "rev-list count $(git rev-list --count --all)"
       - name: Show HEAD history
         run: git log '--format=%h%d %ad %s' --date=local --graph
       - name: Fetch deeper
