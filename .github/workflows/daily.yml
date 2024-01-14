@@ -5,36 +5,8 @@ on:
   push:
     branches:
       - daily
+      - test
   workflow_dispatch:
-    inputs:
-      short_circuit:
-        type: boolean
-        description: "Short-circuit unchanged stages"
-        default: true
-      refresh_data:
-        type: boolean
-        description: "Refresh data (from NJSP)"
-        default: true
-      update_pqts:
-        type: boolean
-        description: "Update parquets (in this repo)"
-        default: true
-      update_pqts_sha:
-        description: "\"Update NJSP data\" commit hash (for posting to Slack and rebuilding www)"
-      update_plots:
-        type: boolean
-        description: "Update plots"
-        default: true
-      post_to_slack:
-        type: boolean
-        description: "Post to Slack"
-        default: true
-      build_www:
-        type: boolean
-        description: "Build www"
-        default: true
-      slack_channel_id:
-        description: "Slack channel override"
 jobs:
   refresh:
     runs-on: ubuntu-latest
@@ -48,69 +20,8 @@ jobs:
       - name: Fetch history
         run: |
           year=$(date +%Y)
-          let prv_year=year-1
-          git fetch --shallow-since "$prv_year-01-01" origin
-          git log --oneline
-      - uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.GHA_DEPLOY_KEY }}
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-          cache: pip
-      - run: pip install -e .
-      - name: Configure Git author
-        run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'ryan-williams@users.noreply.github.com'
-      - id: refresh_data
-        if: github.event.schedule || inputs.refresh_data
-        run: njsp -cc refresh_data
-      - id: update_pqts
-        if: (github.event.schedule || inputs.update_pqts) && (steps.refresh_data.outputs.sha || !inputs.short_circuit)
-        run: njsp -cc update_pqts
-      - id: update_pqts_sha
-        if: inputs.update_pqts_sha || steps.update_pqts.outputs.sha
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-1
-        run: |
-          echo "sha=${{ inputs.update_pqts_sha || steps.update_pqts.outputs.sha }}" >> $GITHUB_OUTPUT
-          aws s3 sync --exclude '*' --include 'nj_crashes.db' ./ s3://nj-crashes/
-          aws s3api put-object-acl --bucket nj-crashes --key nj_crashes.db --acl public-read
-          aws s3 cp data/crashes.pqt s3://nj-crashes/data/crashes.parquet
-          aws s3api put-object-acl --bucket nj-crashes --key data/crashes.parquet --acl public-read
-      - id: update_plots
-        if: (github.event.schedule || inputs.update_plots) && (steps.update_pqts_sha.outputs.sha || !inputs.short_circuit)
-        run: njsp -cc update_plots
-      - id: post_to_slack
-        if: (github.event.schedule || inputs.post_to_slack) && (steps.update_pqts_sha.outputs.sha || !inputs.short_circuit)
-        run: njsp slack sync -m500 -c ${{ steps.update_pqts_sha.outputs.sha }}
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL_ID: ${{ inputs.slack_channel_id || secrets.SLACK_CHANNEL_ID }}
-      - id: build_www
-        if: (github.event.schedule || inputs.build_www) && (steps.update_plots.outputs.sha || !inputs.short_circuit)
-        run: echo "run=1" >> $GITHUB_OUTPUT
-      - if: steps.build_www.outputs.run
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: npm
-          cache-dependency-path: www/yarn.lock
-      - if: steps.build_www.outputs.run
-        name: npm install, build, export
-        run: |
-          cd www
-          npm install
-          npm run gha-export
-      - if: steps.build_www.outputs.run
-        name: Deploy to GH Pages
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: gh-pages
-          folder: www/out
-    outputs:
-      update_pqts: ${{ steps.update_pqts.outputs.sha }}
+          git fetch --shallow-since $year-01-01 origin
+      - name: Show all history
+        run: git log '--format=%h%d %ad %s' --date=local --graph --all
+      - name: Show HEAD history
+        run: git log '--format=%h%d %ad %s' --date=local --graph
