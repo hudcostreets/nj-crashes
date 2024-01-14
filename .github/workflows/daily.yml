@@ -49,8 +49,9 @@ jobs:
         run: |
           year=$(date +%Y)
           let prv_year=year-1
-          git fetch --shallow-since "$prv_year-01-01" origin
-          git log --oneline
+          git fetch --shallow-since "$prv_year-01-01" origin ${{ github.ref_name }}
+      - name: Verify fetched history
+        run: git log '--format=%h%d %ad %s' --graph
       - uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.GHA_DEPLOY_KEY }}
