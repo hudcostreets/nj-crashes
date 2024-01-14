@@ -28,3 +28,10 @@ jobs:
       - run: git fetch --depth=2 origin
       - name: Show HEAD history
         run: git log '--format=%h%d %ad %s' --date=local --graph
+      - name: Fetch deeper
+        run: |
+          count="$(git rev-list --count --all)"
+          echo "Count: $count"
+          git fetch --depth=$count origin
+      - name: Show HEAD history
+        run: git log '--format=%h%d %ad %s' --date=local --graph
