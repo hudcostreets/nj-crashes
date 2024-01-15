@@ -10,6 +10,7 @@
         "gha-export": "next build && touch out/.nojekyll"
     },
     "dependencies": {
+        "@duckdb/duckdb-wasm": "1.28.1-dev106.0",
         "@fortawesome/fontawesome-svg-core": "^6",
         "@fortawesome/free-solid-svg-icons": "^6",
         "@mdx-js/loader": "^2",
