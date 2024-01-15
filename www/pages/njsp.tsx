@@ -20,24 +20,33 @@ export type Props = {
     params: PlotParams
     // crashesPqtArr: number[]
     crashesBase64: string
+    ytcCsvStr: string
 }
 
-export const getStaticProps: GetStaticProps = async () => {
+export const getStaticProps: GetStaticProps<Props> = async () => {
     // const { rundate } = loadSync<{ rundate: string }>(`public/rundate.json`)
     // console.log(`rundate: ${rundate}`)
-    const params: PlotParams = loadPlot(njspPlotSpec)
     // const projectedTotals = loadSync<ProjectedTotals>(`public/plots/projected_totals.json`)
+    const params: PlotParams = loadPlot(njspPlotSpec)
     const crashesPqtPath = path.join(dirname(process.cwd()), "data", "crashes.pqt")
     const crashesPqtBuf = fs.readFileSync(crashesPqtPath)
-    // const crashesPqtArr8 = new Uint8Array(crashesPqtBuf)
-    const crashesPqtArr = Array.from(crashesPqtBuf)
     const crashesBase64 = crashesPqtBuf.toString('base64') //btoa(crashesPqtArr)//String.fromCharCode.apply(null, crashesPqtArr))
-    console.log("crashesBase64:", crashesBase64.substring(0, 100))
+    // console.log("crashesBase64:", crashesBase64.substring(0, 100))
+
+    const ytcCsvPath = path.join(dirname(process.cwd()), "data", "njsp", "year-type-county.csv")
+    const ytcCsvStr = fs.readFileSync(ytcCsvPath).toString()
+    const db = await initDuckDb()
+    await db.registerFileBuffer(
+        'ytc.csv',
+        Uint8Array.from(Buffer.from(ytcCsvStr)),
+        // Uint8Array.from(crashesPqtArr)
+    )
+
     return {
         props: {
             params,
             crashesBase64,
-            // crashesPqtArr,
+            ytcCsvStr,
             /*projectedTotals, rundate,*/
         },
     }
@@ -45,7 +54,7 @@ export const getStaticProps: GetStaticProps = async () => {
 
 const title = "New Jersey Car Crash Deaths"
 
-export default function Page({ params, crashesBase64, /*crashesPqtArr,*/ /*projectedTotals, rundate,*/ }: Props) {
+export default function Page({ params, crashesBase64, ytcCsvStr, /*projectedTotals, rundate,*/ }: Props) {
     const spec = njspPlotSpec
     let { src, name } = spec
     src = src ?? `plots/${name}.png`
@@ -56,13 +65,7 @@ export default function Page({ params, crashesBase64, /*crashesPqtArr,*/ /*proje
         () => {
             async function init() {
                 const db = await initDuckDb()
-                // const arr = atob(crashesBase64)
                 let crashesPqtArr = new Uint8Array(Buffer.from(crashesBase64, 'base64'))
-                // let crashesPqtArr = new Uint8Array(
-                //     atob(crashesBase64)
-                //         .split("")
-                //         .map(char => char.charCodeAt(0))
-                // )
                 console.log("got db:", db)
                 await db.registerFileBuffer(
                     'crashes.parquet',
@@ -71,7 +74,7 @@ export default function Page({ params, crashesBase64, /*crashesPqtArr,*/ /*proje
                 )
                 console.log("registered file")
                 const query = `SELECT count(*) FROM parquet_scan('crashes.parquet')`
-                const countRes = await runQuery(db, query)
+                const [countRes] = await runQuery(db, query)
                 console.log("countRes:", countRes)
             }
             init()
