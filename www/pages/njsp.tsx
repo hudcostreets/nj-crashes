@@ -20,7 +20,8 @@ export type Props = {
     params: PlotParams
     // crashesPqtArr: number[]
     crashesBase64: string
-    ytcCsvStr: string
+    // ytcCsvStr: string
+    ytc: any[]
 }
 
 export const getStaticProps: GetStaticProps<Props> = async () => {
@@ -39,14 +40,15 @@ export const getStaticProps: GetStaticProps<Props> = async () => {
     await db.registerFileBuffer(
         'ytc.csv',
         Uint8Array.from(Buffer.from(ytcCsvStr)),
-        // Uint8Array.from(crashesPqtArr)
     )
-
+    const ytc = await runQuery(db, `SELECT * FROM read_csv_auto('ytc.csv')`) as any[]
+    // const ytc = [] as any[]
     return {
         props: {
             params,
             crashesBase64,
-            ytcCsvStr,
+            // ytcCsvStr,
+            ytc,
             /*projectedTotals, rundate,*/
         },
     }
@@ -54,7 +56,8 @@ export const getStaticProps: GetStaticProps<Props> = async () => {
 
 const title = "New Jersey Car Crash Deaths"
 
-export default function Page({ params, crashesBase64, ytcCsvStr, /*projectedTotals, rundate,*/ }: Props) {
+export default function Page({ params, crashesBase64, ytc, /*projectedTotals, rundate,*/ }: Props) {
+    console.log("ytc:", ytc)
     const spec = njspPlotSpec
     let { src, name } = spec
     src = src ?? `plots/${name}.png`
@@ -94,7 +97,7 @@ export default function Page({ params, crashesBase64, ytcCsvStr, /*projectedTota
             //     }
             // )
         },
-        []
+        [ crashesBase64, ]
     )
     return (
         <div className={css.container}>
