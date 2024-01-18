@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Jan 17 10:00:07 EST 2024</RUNDATE>
+  <RUNDATE>Thu Jan 18 10:00:06 EST 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -239,12 +239,13 @@
     <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="12895" DATE="12/23/2023" TIME="2358">
         <HIGHWAY>322</HIGHWAY>
-        <LOCATION>State Highway 322</LOCATION>
+        <LOCATION>State Highway 322 MP 45.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -912,8 +913,8 @@
   <COUNTY CCODE="14" CNAME="Morris">
     <MUNICIPALITY MCODE="1433" MNAME="Riverdale Boro">
       <ACCIDENT ACCID="12841" DATE="11/26/2023" TIME="2102">
-        <HIGHWAY>23</HIGHWAY>
-        <LOCATION>State Highway 23</LOCATION>
+        <STREET>Cotluss Rd</STREET>
+        <LOCATION>Cotluss Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6945,8 +6946,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
       <ACCIDENT ACCID="12343" DATE="02/17/2023" TIME="1756">
-        <STREET>West Greystone Road</STREET>
-        <LOCATION>West Greystone Road</LOCATION>
+        <STREET>West Greystone Rd</STREET>
+        <LOCATION>West Greystone Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7874,13 +7875,14 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12267" DATE="01/04/2023" TIME="0621">
-        <STREET>Washington St</STREET>
-        <LOCATION>Washington St</LOCATION>
+        <STREET>Washington Street</STREET>
+        <LOCATION>Washington Street</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
