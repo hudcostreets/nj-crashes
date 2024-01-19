@@ -15,3 +15,11 @@ ANNUAL_SUMMARIES_YT_CSV = path.join(ANNUAL_SUMMARIES, 'year-type.csv')
 ANNUAL_SUMMARIES_YTC_CSV = path.join(ANNUAL_SUMMARIES, 'year-type-county.csv')
 
 YTC_CSV = path.join(NJSP_DATA, 'year-type-county.csv')
+
+
+def annual_ytc_url(year):
+    return 'https://www.nj.gov/njsp/info/fatalacc/pdf/ptccr_%02d.pdf' % (year % 100)
+
+
+def annual_ytd_url(year):
+    return 'https://www.nj.gov/njsp/info/fatalacc/pdf/swfcs2_%02d.pdf' % (year % 100)
