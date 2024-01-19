@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Jan 18 10:00:06 EST 2024</RUNDATE>
+  <RUNDATE>Fri Jan 19 10:00:08 EST 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1164,13 +1164,14 @@
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0111" MNAME="Galloway Twsp">
       <ACCIDENT ACCID="12820" DATE="11/19/2023" TIME="1835">
-        <STREET>Moss Mill Rd</STREET>
-        <LOCATION>Moss Mill Rd</LOCATION>
+        <STREET>CR 561A</STREET>
+        <LOCATION>CR 561A</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2395,7 +2396,7 @@
     <MUNICIPALITY MCODE="0403" MNAME="Barrington Boro">
       <ACCIDENT ACCID="12714" DATE="09/29/2023" TIME="0644">
         <HIGHWAY>30</HIGHWAY>
-        <LOCATION>State Highway 30</LOCATION>
+        <LOCATION>State Highway 30 MP 8.34</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2464,8 +2465,8 @@
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5728,12 +5729,13 @@
     <MUNICIPALITY MCODE="0811" MNAME="Monroe Twsp">
       <ACCIDENT ACCID="12441" DATE="05/06/2023" TIME="1140">
         <HIGHWAY>610</HIGHWAY>
-        <LOCATION>County 610</LOCATION>
+        <LOCATION>County 610 MP 7.81</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6303,7 +6305,7 @@
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12390" DATE="04/02/2023" TIME="0238">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1 MP 49.6</LOCATION>
+        <LOCATION>State Highway 1 (Truck (Rt. 1 and 9 Only)) MP 49.6</LOCATION>
         <FATALITIES>3</FATALITIES>
         <FATAL_D>2</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -6382,8 +6384,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1223" MNAME="South River Boro">
       <ACCIDENT ACCID="12385" DATE="03/30/2023" TIME="0619">
-        <STREET>Kamm Avenue</STREET>
-        <LOCATION>Kamm Avenue</LOCATION>
+        <STREET>Kamm Ave</STREET>
+        <LOCATION>Kamm Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6587,8 +6589,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1328" MNAME="Marlboro Twsp">
       <ACCIDENT ACCID="12372" DATE="03/17/2023" TIME="1216">
-        <STREET>Ryan Road</STREET>
-        <LOCATION>Ryan Road</LOCATION>
+        <STREET>Ryan Rd</STREET>
+        <LOCATION>Ryan Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
