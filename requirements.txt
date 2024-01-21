@@ -12,7 +12,7 @@ lxml
 nbclassic==0.4.8
 numpy
 openpyxl
-pandas
+pandas>=2.0.0,<2.2.0
 papermill
 plotly
 pyarrow
