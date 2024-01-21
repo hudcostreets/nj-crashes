@@ -2,7 +2,7 @@ import { MapContainerProps } from "react-leaflet/lib/MapContainer";
 import React, { useEffect, useMemo, useState } from "react";
 import * as ReactLeaflet from "react-leaflet";
 import MapEvents, { OnClick } from "@/src/map/events";
-import { floatParam, llParam, parseHashParams, updateHashParams } from "next-utils/params";
+import { floatParam, llParam, parseHashParams, updateHashParams } from "@rdub/next-params/params";
 import { DEFAULT_CENTER, DEFAULT_ZOOM, Params, ParsedParams } from "@/src/map/params";
 import { TileLayer } from "@/src/map/tiles";
 import L from "leaflet";

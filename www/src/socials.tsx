@@ -1,4 +1,4 @@
-import * as Socials from "next-utils/socials"
+import * as Socials from "@rdub/next-base/socials"
 import * as css from "./socials.css"
 
 export const url = "https://neighbor-ryan.org/nj-crashes"

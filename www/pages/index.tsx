@@ -1,16 +1,16 @@
 import React, { Fragment } from 'react'
 import type { GetStaticProps } from 'next'
-import { Head } from 'next-utils/head'
+import { Head } from '@rdub/next-base/head'
 import css from './index.module.scss'
-import A from "next-utils/a";
-import { Nav } from "next-utils/nav";
-import { getBasePath } from "next-utils/basePath"
-import { Socials } from "next-utils/socials"
+import A from "@rdub/next-base/a";
+import { Nav } from "@rdub/next-base/nav";
+import { getBasePath } from "@rdub/next-base/basePath"
+import { Socials } from "@rdub/next-base/socials"
 import { GitHub, url } from "@/src/socials"
 import { HasTotals, Plot, plotSpecs, ProjectedTotals } from "@/src/plotSpecs";
-import { loadSync } from "next-utils/load";
-import { buildPlot, buildPlots, PlotsDict } from "next-utils/plot";
-import { loadPlots } from "next-utils/plot-load";
+import { loadSync } from "@rdub/base/load";
+import { buildPlot, buildPlots, PlotsDict } from "@rdub/next-plotly/plot";
+import { loadPlots } from "@rdub/next-plotly/plot-load";
 
 type Props = { plotsDict: PlotsDict, rundate: string, } & HasTotals
 

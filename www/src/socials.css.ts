@@ -1,5 +1,5 @@
 import {globalStyle} from '@vanilla-extract/css'
-import * as css from "next-utils/socials.css";
+import * as css from "@rdub/next-base/socials.css";
 
 export const svg = css.svg
 globalStyle(`.${css.socials} path, .${css.socials} polygon`, {

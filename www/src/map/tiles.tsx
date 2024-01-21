@@ -1,6 +1,6 @@
 import { TileLayer as LeafletTileLayer } from 'leaflet'
 import { createElementObject, createTileLayerComponent, updateGridLayer, withPane } from "@react-leaflet/core";
-import { TileLayerProps } from "react-leaflet";
+import { TileLayer as RLTileLayer, TileLayerProps } from "react-leaflet";
 
 export const MAPS = {
     openstreetmap: {
@@ -44,5 +44,7 @@ export function TileLayer(
     }: Props
 ) {
     const { url, attribution } = MAPS[map]
-    return <BufferedTileLayer url={url} attribution = {attribution} {...props} />
+    return <RLTileLayer url={url} attribution={attribution} />
+    // Getting a "Error: No context provided: useLeafletContext() can only be used in a descendant of <MapContainer>" from this, it used to work, not sure why
+    // return <BufferedTileLayer url={url} attribution={attribution} {...props} />
 }

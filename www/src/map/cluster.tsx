@@ -1,6 +1,6 @@
 import { Crash } from "@/pages/map/hudson";
 import { Dispatch, ReactNode, useEffect, useMemo, useRef } from "react";
-import singleton from "next-utils/singleton";
+import singleton from "@rdub/base/singleton";
 import { LeafletEventHandlerFnMap } from "leaflet"
 import { Circle, Popup } from "react-leaflet"
 import strftime from 'strftime'

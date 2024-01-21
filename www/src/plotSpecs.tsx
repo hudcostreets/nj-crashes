@@ -1,6 +1,6 @@
 import React from "react";
-import * as Plots from "next-utils/plot";
-import A from "next-utils/a";
+import * as Plots from "@rdub/next-plotly/plot";
+import A from "@rdub/next-base/a";
 import { GitHub } from "./socials";
 const { HalfRoundWiden, filterIdxs, filterValues } = Plots
 

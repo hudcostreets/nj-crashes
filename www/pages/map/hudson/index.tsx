@@ -8,7 +8,7 @@ import { decode, Encoded } from "@/src/indexed-json";
 import React, { useMemo, useState } from "react";
 import { njdotDir, publicDir } from "@/src/dirs";
 import { Props } from "@/pages/map/hudson/diffs";
-import { SettingsGear } from "next-utils/map/settings";
+import { SettingsGear } from "@rdub/next-leaflet/map/settings";
 
 export const Map = dynamic(() => import('@/src/map/hudson'), { ssr: false });
 

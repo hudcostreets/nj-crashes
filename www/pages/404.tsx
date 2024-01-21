@@ -1,8 +1,8 @@
-import {Head} from "next-utils/head";
+import {Head} from "@rdub/next-base/head";
 import css from "./index.module.scss";
 import React from "react";
-import {getBasePath} from "next-utils/basePath"
-import {Socials} from "next-utils/socials"
+import {getBasePath} from "@rdub/next-base/basePath"
+import {Socials} from "@rdub/next-base/socials"
 import {socials, url} from "../src/socials"
 
 const Home = () => {

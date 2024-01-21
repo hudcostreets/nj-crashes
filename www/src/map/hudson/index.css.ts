@@ -1,5 +1,5 @@
 import { style, globalStyle } from "@vanilla-extract/css";
-import { icon, menu } from "next-utils/map/settings.css";
+import { icon, menu } from "@rdub/next-leaflet/map/settings.css";
 
 export const settings = style({
     fontSize: "0.8em",

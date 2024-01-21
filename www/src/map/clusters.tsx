@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMap, useMapEvents } from "react-leaflet";
 import * as cluster from "./cluster";
 import { Cluster } from "./cluster";
-import { entries } from "next-utils/objs";
+import { entries } from "@rdub/base/objs";
 import { Crash } from "@/pages/map/hudson";
 
 const { max } = Math

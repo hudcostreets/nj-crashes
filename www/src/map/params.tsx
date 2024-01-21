@@ -1,4 +1,4 @@
-import { floatParam, LL, llParam, Param, ParsedParam, parseHashParams, updateHashParams } from "next-utils/params";
+import { floatParam, LL, llParam, Param, ParsedParam, parseHashParams, updateHashParams } from "@rdub/next-params/params";
 
 export type Params = {
     ll: Param<LL>
