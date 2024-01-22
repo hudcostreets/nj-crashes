@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - www
+  workflow_call:
   workflow_dispatch:
 jobs:
   run:

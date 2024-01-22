@@ -36,21 +36,31 @@ on:
       slack_channel_id:
         description: "Slack channel override"
 jobs:
-  refresh:
+  refresh_data:
+    name: Refresh NJSP data, dispatch www rebuild (if necessary)
     runs-on: ubuntu-latest
     steps:
+      - name: Compute step that need to run
+        id: compute_steps
+        run: |
+          echo "needs_python=${{ github.event.schedule || inputs.refresh_data || inputs.update_pqts || inputs.update_pqts_sha || inputs.update_plots || inputs.post_to_slack || '' }}" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v4
+        if: steps.compute_steps.outputs.needs_python
         with:
           ref: ${{ github.ref_name }}
       - uses: webfactory/ssh-agent@v0.7.0
+        if: steps.compute_steps.outputs.needs_python
         with:
           ssh-private-key: ${{ secrets.GHA_DEPLOY_KEY }}
       - uses: actions/setup-python@v4
+        if: steps.compute_steps.outputs.needs_python
         with:
           python-version: 3.9
           cache: pip
       - run: pip install -e .
+        if: steps.compute_steps.outputs.needs_python
       - name: Configure Git author
+        if: steps.compute_steps.outputs.needs_python
         run: |
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'ryan-williams@users.noreply.github.com'
@@ -98,24 +108,11 @@ jobs:
         id: build_www
         if: (github.event.schedule || inputs.build_www) && (steps.update_plots.outputs.sha || !inputs.short_circuit)
         run: echo "run=1" >> $GITHUB_OUTPUT
-      - name: Setup node
-        if: steps.build_www.outputs.run
-        uses: actions/setup-node@v3
-        with:
-          node-version: 19
-          cache: npm
-          cache-dependency-path: www/yarn.lock
-      - name: Build www
-        if: steps.build_www.outputs.run
-        run: |
-          cd www
-          npm ci
-          npm run gha-export
-      - name: Deploy to GH Pages
-        if: steps.build_www.outputs.run
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: gh-pages
-          folder: www/out
     outputs:
       update_pqts: ${{ steps.update_pqts.outputs.sha }}
+      build_www: ${{ steps.build_www.outputs.run }}
+  rebuild_www:
+    name: Rebuild www
+    needs: refresh_data
+    if: needs.refresh_data.outputs.build_www
+    uses: ./.github/workflows/www.yml
