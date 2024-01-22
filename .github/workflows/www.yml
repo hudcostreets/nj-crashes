@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - www
+  workflow_dispatch:
 jobs:
   run:
     name: Build + Deploy to GitHub Pages (iff www/ has changed since last gh-pages push)
