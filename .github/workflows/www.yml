@@ -8,7 +8,10 @@ jobs:
     name: Build + Deploy to GitHub Pages (iff www/ has changed since last gh-pages push)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
       - run: git fetch origin gh-pages
       - id: base-sha
         run: echo "BASE_SHA=$(./parse-ghp-base-sha.py -d root origin/gh-pages)" >> $GITHUB_OUTPUT
@@ -24,15 +27,15 @@ jobs:
       - if: steps.www-changed.outputs.WWW_CHANGED
         uses: actions/setup-node@v3
         with:
-          node-version: 16
-          cache: 'npm'
-          cache-dependency-path: www/yarn.lock
+          node-version: 19
+          cache: 'pnpm'
+          cache-dependency-path: www/pnpm-lock.yaml
       - if: steps.www-changed.outputs.WWW_CHANGED
-        name: npm install, build, export
+        name: pnpm install, build, export
         run: |
           cd www
-          npm install
-          npm run gha-export
+          pnpm install
+          pnpm run gha-export
       - if: steps.www-changed.outputs.WWW_CHANGED
         name: Deploy to GH Pages
         uses: JamesIves/github-pages-deploy-action@4.4.1

@@ -19,6 +19,7 @@
         "@rdub/next-leaflet": "0.0.3",
         "@rdub/next-params": "^0.0.1",
         "@rdub/next-plotly": "^0.0.2",
+        "@react-leaflet/core": "^2.1.0",
         "@vanilla-extract/css": "^1.14.0",
         "@vanilla-extract/next-plugin": "^2",
         "leaflet-edgebuffer": "^1",
@@ -39,8 +40,6 @@
         "@types/react-dom": "^18",
         "@types/react-plotly.js": "^2",
         "@types/strftime": "^0.9.8",
-        "eslint": "^7",
-        "eslint-config-next": "^14.1.0",
         "typescript": "5.1.6"
     }
 }
