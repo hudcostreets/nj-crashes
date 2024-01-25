@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Jan 24 10:00:07 EST 2024</RUNDATE>
+  <RUNDATE>Thu Jan 25 10:00:06 EST 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -6360,7 +6360,7 @@
     <MUNICIPALITY MCODE="0610" MNAME="Millville City">
       <ACCIDENT ACCID="12389" DATE="03/31/2023" TIME="2107">
         <HIGHWAY>670</HIGHWAY>
-        <LOCATION>County 670 MP 8.5</LOCATION>
+        <LOCATION>County 670 MP 8.46</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7951,8 +7951,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12249" DATE="01/01/2023" TIME="0118">
-        <STREET>Mulberry St</STREET>
-        <LOCATION>Mulberry St</LOCATION>
+        <HIGHWAY>510</HIGHWAY>
+        <LOCATION>County 510 MP 29.42</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
