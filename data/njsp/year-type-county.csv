@@ -338,13 +338,14 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2024,Atlantic,2,0,0,1,3
 2024,Bergen,2,0,0,1,3
 2024,Burlington,1,1,0,0,2
-2024,Camden,0,0,0,1,1
+2024,Camden,0,0,0,2,2
+2024,Cumberland,0,0,0,1,1
 2024,Essex,0,0,0,2,2
 2024,Gloucester,1,0,0,0,1
-2024,Hudson,1,0,0,0,1
+2024,Hudson,1,0,0,1,2
 2024,Mercer,2,0,0,0,2
 2024,Middlesex,1,0,0,3,4
 2024,Monmouth,1,3,0,1,4
-2024,Ocean,1,0,0,3,4
+2024,Ocean,2,0,0,3,5
 2024,Passaic,0,0,0,1,1
 2024,Union,0,0,0,1,1
