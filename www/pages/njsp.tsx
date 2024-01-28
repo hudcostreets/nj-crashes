@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import type { GetStaticProps } from "next";
-import { loadSync } from "next-utils/load";
-import { loadPlot } from "next-utils/plot-load";
+import { loadSync } from "@rdub/base/load";
+import { loadPlot } from "@rdub/next-plotly/plot-load";
 import { HasTotals, njspPlotSpec, ProjectedTotals } from "@/src/plotSpecs";
 import css from "@/pages/index.module.scss";
-import { Head } from "next-utils/head";
+import { Head } from "@rdub/next-base/head";
 import { GitHub, url } from "@/src/socials";
-import A from "next-utils/a";
-import { Socials } from "next-utils/socials";
+import A from "@rdub/next-base/a";
+import { Socials } from "@rdub/next-base/socials";
 import { PlotParams } from "react-plotly.js";
-import PlotWrapper from "next-utils/plot-wrapper";
-import { initDuckDb, runQuery } from "next-utils/parquet";
+import PlotWrapper from "@rdub/next-plotly/plot-wrapper";
+import { initDuckDb, runQuery } from "@rdub/duckdb/duckdb";
 import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import path, { dirname } from "path"
 import fs from "fs";
