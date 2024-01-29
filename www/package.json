@@ -19,7 +19,7 @@
         "@mdx-js/loader": "^2",
         "@next/mdx": "^14",
         "@rdub/base": "^0.1.0",
-        "@rdub/duckdb": "file:///../../../next-utils/packages/duckdb/dist",
+        "@rdub/duckdb": "0.0.1",
         "@rdub/next-base": "^0.1.0",
         "@rdub/next-leaflet": "0.0.3",
         "@rdub/next-params": "^0.0.1",

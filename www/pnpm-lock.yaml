@@ -33,8 +33,8 @@ dependencies:
     specifier: ^0.1.0
     version: 0.1.0(react-dom@18.2.0)(react@18.2.0)
   '@rdub/duckdb':
-    specifier: file:///../../../next-utils/packages/duckdb/dist
-    version: file:../../../next-utils/packages/duckdb/dist(@duckdb/duckdb-wasm@1.28.0)(react-dom@18.2.0)(react@18.2.0)
+    specifier: 0.0.1
+    version: 0.0.1(@duckdb/duckdb-wasm@1.28.0)(react-dom@18.2.0)(react@18.2.0)
   '@rdub/next-base':
     specifier: ^0.1.0
     version: 0.1.0(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)
@@ -1503,6 +1503,19 @@ packages:
       node-fetch: 3.3.2
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
+    dev: false
+
+  /@rdub/duckdb@0.0.1(@duckdb/duckdb-wasm@1.28.0)(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-Fxf/twrwmF9XQLPwKSU42lpYZfqZOVCUuASyU3LF3B6eQDxP1LLNMhYk25pyIj68I4C6+7aogyLd1uf8940cRw==}
+    peerDependencies:
+      '@duckdb/duckdb-wasm': ^1.28.0
+      react: ^18
+      react-dom: ^18
+    dependencies:
+      '@duckdb/duckdb-wasm': 1.28.0
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+      web-worker: 1.3.0
     dev: false
 
   /@rdub/next-base@0.1.0(next@14.0.4)(react-dom@18.2.0)(react@18.2.0):
@@ -5931,19 +5944,4 @@ packages:
 
   /zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
-    dev: false
-
-  file:../../../next-utils/packages/duckdb/dist(@duckdb/duckdb-wasm@1.28.0)(react-dom@18.2.0)(react@18.2.0):
-    resolution: {directory: ../../../next-utils/packages/duckdb/dist, type: directory}
-    id: file:../../../next-utils/packages/duckdb/dist
-    name: '@rdub/duckdb'
-    peerDependencies:
-      '@duckdb/duckdb-wasm': ^1.28.0
-      react: ^18
-      react-dom: ^18
-    dependencies:
-      '@duckdb/duckdb-wasm': 1.28.0
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-      web-worker: 1.3.0
     dev: false
