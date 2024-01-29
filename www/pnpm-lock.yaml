@@ -88,6 +88,9 @@ devDependencies:
   '@types/node':
     specifier: ^20
     version: 20.3.0
+  '@types/plotly.js':
+    specifier: ^2.12.32
+    version: 2.12.32
   '@types/react':
     specifier: ^18
     version: 18.2.48
