@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import type { GetStaticProps } from "next";
-import { loadSync } from "@rdub/base/load";
 import { loadPlot } from "@rdub/next-plotly/plot-load";
-import { HasTotals, njspPlotSpec, ProjectedTotals } from "@/src/plotSpecs";
+import { njspPlotSpec } from "@/src/plotSpecs";
 import css from "@/pages/index.module.scss";
 import { Head } from "@rdub/next-base/head";
 import { GitHub, url } from "@/src/socials";
@@ -15,16 +14,20 @@ import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import path, { dirname } from "path"
 import fs from "fs";
 import type { PlotData } from "plotly.js";
-import { fromEntries } from "@rdub/base/objs";
 
-// type Props = { params: PlotParams, rundate: string, } & HasTotals
+export type CsvData = {
+    kind: 'csv'
+    data: string
+}
+export type PqtData = {
+    kind: 'pqt'
+    base64: string
+}
+export type TableData = CsvData | PqtData
+
 export type Props = {
     params: PlotParams
-    // crashesPqtArr: number[]
-    ytcBase64: string
-    // crashesBase64: string
-    // ytcCsvStr: string
-    // ytc: any[]
+    tableData: TableData
 }
 
 function loadParquetBase64(relpath: string) {
@@ -35,36 +38,42 @@ function loadParquetBase64(relpath: string) {
 }
 
 export const getStaticProps: GetStaticProps<Props> = async () => {
+    const dataFmt = 'csv'
     const params: PlotParams = loadPlot(njspPlotSpec)
     // const crashesBase64 = loadParquetBase64("data/crashes.pqt")
-
-    const ytcBase64 = loadParquetBase64("data/njsp/year-type-county.pqt")
-    console.log("ytcBase64:", ytcBase64.substring(0, 100))
-
-    // const ytcCsvPath = path.join(dirname(process.cwd()), "data", "njsp", "year-type-county.csv")
-    // const ytcCsvStr = fs.readFileSync(ytcCsvPath).toString()
-    // const db = await initDuckDb()
-    // await db.registerFileBuffer(
-    //     'ytc.csv',
-    //     Uint8Array.from(Buffer.from(ytcCsvStr)),
-    // )
-    // const ytc = await runQuery(db, `-- SELECT * FROM read_csv_auto('ytc.csv')`) as any[]
-    // const ytc = [] as any[]
+    let tableData: TableData
+    if (dataFmt === 'csv') {
+        const csvPath = path.join(dirname(process.cwd()), "data", "njsp", "year-type-county.csv")
+        const data = fs.readFileSync(csvPath).toString()
+        tableData = { kind: 'csv', data, }
+    } else {
+        const base64 = loadParquetBase64("data/njsp/year-type-county.pqt")
+        tableData = { kind: 'pqt',  base64, }
+    }
     return {
         props: {
             params,
-            ytcBase64,
-            // crashesBase64,
-            // ytcCsvStr,
-            // ytc,
-            /*projectedTotals, rundate,*/
+            tableData,
         },
     }
 }
 
+export type YtcRow = {
+    year: number
+    driver: number
+    pedestrian: number
+    cyclist: number
+    passenger: number
+}
+
 const title = "New Jersey Car Crash Deaths"
 
-export default function Page({ params, ytcBase64, /*crashesBase64, projectedTotals, rundate,*/ }: Props) {
+export default function Page(
+    {
+        params,
+        tableData,
+    }: Props
+) {
     // console.log("ytc:", ytc)
     const spec = njspPlotSpec
     let { src, name } = spec
@@ -77,49 +86,35 @@ export default function Page({ params, ytcBase64, /*crashesBase64, projectedTota
         () => {
             async function init() {
                 const db = await initDuckDb()
-                // let crashesPqtArr = new Uint8Array(Buffer.from(crashesBase64, 'base64'))
-                let ytcPqtArr = new Uint8Array(Buffer.from(ytcBase64, 'base64'))
                 console.log("got db:", db)
                 setDb(db)
-                // await db.registerFileText(
-                //     'ytc.json',
-                //     JSON.stringify(ytc),
-                // );
-                const path = "crashes.parquet"
-                await db.registerFileBuffer(path, ytcPqtArr)
+                let target: string
+                if (tableData.kind === 'csv') {
+                    const path = "ytc.csv"
+                    target = `'${path}'`
+                    await db.registerFileText(path, tableData.data)
+                } else {
+                    const path = "ytc.parquet"
+                    target = `parquet_scan('${path}')`
+                    let ytcPqtArr = new Uint8Array(Buffer.from(tableData.base64, 'base64'))
+                    await db.registerFileBuffer(path, ytcPqtArr)
+                }
                 console.log("registered file")
-                const conn = await db.connect()
-
-                let query = `SELECT count(*) FROM parquet_scan('${path}')`
-                const [countRes] = await runQuery(db, query)
-                console.log("countRes:", countRes)
+                let query: string
                 query = `
                     SELECT 
                         year,
-                        sum(driver) as driver,
-                        sum(pedestrian) as pedestrian,
-                        sum(cyclist) as cyclist,
-                        sum(passenger) as passenger 
-                    FROM parquet_scan('${path}')
+                        CAST(sum(driver) as INTEGER) as driver,
+                        CAST(sum(pedestrian) as INTEGER) as pedestrian,
+                        CAST(sum(cyclist) as INTEGER) as cyclist,
+                        CAST(sum(passenger) as INTEGER) as passenger
+                    FROM ${target}
                     GROUP BY year
                 `
-                const proxies = (await conn.query(query)).toArray()
-                // const data = JSON.parse(JSON.stringify(proxies, (k, v) => {
-                //     console.log("replacer:", k, v)
-                //     return typeof v === 'bigint' ? v.toString() : v
-                // })) as any[]
-                const data = proxies.map(r => r.toJSON())
-                for (const row of data) {
-                    console.log("year:", row.year, "driver:", row.driver)
-                    row.year = parseInt(row.year)
-                    row.driver = parseInt(row.driver)
-                    row.pedestrian = parseInt(row.pedestrian)
-                    row.cyclist = parseInt(row.cyclist)
-                    row.passenger = parseInt(row.passenger)
-                }
+                const data = await runQuery<YtcRow>(db, query)
                 console.log("got ytc data:", data)
                 setData(data)
-                const typesMap: { [k: string]: string } = {
+                const typesMap: { [k: string]: keyof YtcRow } = {
                     "Drivers": "driver",
                     "Pedestrians": "pedestrian",
                     "Cyclists": "cyclist",
@@ -132,24 +127,14 @@ export default function Page({ params, ytcBase64, /*crashesBase64, projectedTota
                     newSeries.y = data.map(r => r[type])
                     return newSeries
                 })
-                // for (let type of [ "driver", "pedestrian", "cyclist", "passenger" ]) {
-                //
-                // }
-                // let [ driverPlotData, ...otherPlotData ] = plotData
-                // driverPlotData = { ...driverPlotData }
-                // driverPlotData.x = data.map(r => r.year)
-                // driverPlotData.y = data.map(r => r.driver)
-                // const newPlotData = [ driverPlotData, ...otherPlotData ]
                 console.log("newPlotData:", newPlotData)
                 setPlotData(newPlotData)
-                // query = `SELECT * FROM parquet_scan('${path}')`
-                // const data = await runQuery(db, query)
             }
             init()
         },
-        [ ytcBase64, ]
+        [ tableData, ]
     )
-    console.log("plot:", params)
+    // console.log("plot:", params)
     return (
         <div className={css.container}>
             <Head
