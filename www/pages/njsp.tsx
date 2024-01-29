@@ -47,7 +47,7 @@ export const getStaticProps: GetStaticProps<Props> = async () => {
         const data = fs.readFileSync(csvPath).toString()
         tableData = { kind: 'csv', data, }
     } else {
-        const base64 = loadParquetBase64("data/njsp/year-type-county.pqt")
+        const base64 = loadParquetBase64("data/njsp/year-type-county.pqt")  // TODO: this isn't checked into Git yet
         tableData = { kind: 'pqt',  base64, }
     }
     return {
