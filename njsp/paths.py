@@ -15,6 +15,7 @@ ANNUAL_SUMMARIES_YT_CSV = path.join(ANNUAL_SUMMARIES, 'year-type.csv')
 ANNUAL_SUMMARIES_YTC_CSV = path.join(ANNUAL_SUMMARIES, 'year-type-county.csv')
 
 YTC_CSV = path.join(NJSP_DATA, 'year-type-county.csv')
+YTC_PQT = path.join(NJSP_DATA, 'year-type-county.pqt')
 
 
 def annual_ytc_url(year):
