@@ -145,11 +145,11 @@
     },
     "2024": {
         "Drivers": 14,
-        "Pedestrians": 20,
+        "Pedestrians": 22,
         "Passengers": 4,
         "Cyclists": 0,
-        "Total": 38,
-        "Projected": 585,
-        "Projected Total": 623
+        "Total": 40,
+        "Projected": 579,
+        "Projected Total": 619
     }
 }
