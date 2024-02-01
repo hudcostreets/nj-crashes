@@ -47,6 +47,9 @@ dependencies:
   '@rdub/next-plotly':
     specifier: 0.0.3
     version: 0.0.3(@types/node@20.3.0)(mapbox-gl@3.1.2)(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)(sass@1.69.7)(webpack@5.89.0)
+  '@rdub/react-sql.js-httpvfs':
+    specifier: 0.0.1
+    version: 0.0.1(react-dom@18.2.0)(react@18.2.0)
   '@react-leaflet/core':
     specifier: ^2.1.0
     version: 2.1.0(leaflet@1.9.4)(react-dom@18.2.0)(react@18.2.0)
@@ -86,6 +89,9 @@ dependencies:
   sass:
     specifier: ^1
     version: 1.69.7
+  sql.js-httpvfs:
+    specifier: ^0.8.12
+    version: 0.8.12
   strftime:
     specifier: ^0.10.2
     version: 0.10.2
@@ -1439,6 +1445,18 @@ packages:
       - webpack
     dev: false
 
+  /@rdub/react-sql.js-httpvfs@0.0.1(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-TrRpRnjCRCQornTZiaB49zAnp89wbCrPiLmrkFVqMvTYrBVf3JegNl04HdiMzbteTlFZ+V2agooIGwezFb6SCg==}
+    peerDependencies:
+      react: ^18
+      react-dom: ^18
+    dependencies:
+      comlink: 4.4.1
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+      sql.js-httpvfs: 0.8.12
+    dev: false
+
   /@react-leaflet/core@2.1.0(leaflet@1.9.4)(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-Qk7Pfu8BSarKGqILj4x7bCSZ1pjuAPZ+qmRwH5S7mDS91VSbVVsJSrW4qA+GPrro8t69gFYVMWb1Zc4yFmPiVg==}
     peerDependencies:
@@ -2226,6 +2244,10 @@ packages:
     dependencies:
       hsluv: 0.0.3
       mumath: 3.3.4
+    dev: false
+
+  /comlink@4.4.1:
+    resolution: {integrity: sha512-+1dlx0aY5Jo1vHy/tSsIGpSkN4tS9rZSW8FIhG0JH/crs9wwweswIo/POr451r7bZww3hFbPAKnTpimzL/mm4Q==}
     dev: false
 
   /comma-separated-tokens@2.0.3:
@@ -4758,6 +4780,12 @@ packages:
     engines: {node: '>=0.10.0'}
     dependencies:
       extend-shallow: 3.0.2
+    dev: false
+
+  /sql.js-httpvfs@0.8.12:
+    resolution: {integrity: sha512-lcEBc2q0psFRfdCx8Di22oUIkkv5MUIaVO/fGCj/Jjx6YQDKVylQEcjd7NSSbmINHTRwVkm/vWP8uuevT7Rkkw==}
+    dependencies:
+      comlink: 4.4.1
     dev: false
 
   /stack-trace@0.0.9:
