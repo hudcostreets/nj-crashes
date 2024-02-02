@@ -40,4 +40,4 @@ class Rundate:
         return getattr(self.cur, attr)
 
     def __str__(self):
-        return str(self.cur) #.strftime('%Y-%m-%d')
+        return str(self.cur)
