@@ -1,7 +1,7 @@
 from os import path
 from os.path import join
 
-from nj_crashes.paths import DATA_DIR
+from nj_crashes.paths import DATA_DIR, WWW_NJSP
 
 CRASHES_PQT = join(DATA_DIR, 'crashes.pqt')
 NJSP_DATA = join(DATA_DIR, 'njsp')
@@ -15,6 +15,9 @@ ANNUAL_SUMMARIES_YT_CSV = path.join(ANNUAL_SUMMARIES, 'year-type.csv')
 ANNUAL_SUMMARIES_YTC_CSV = path.join(ANNUAL_SUMMARIES, 'year-type-county.csv')
 
 YTC_CSV = path.join(NJSP_DATA, 'year-type-county.csv')
+YTC_PQT = path.join(NJSP_DATA, 'year-type-county.pqt')
+YTC_DB = path.join(WWW_NJSP, 'year-type-county.db')
+YTC_DB_URI = f'sqlite:///{YTC_DB}'
 
 
 def annual_ytc_url(year):
