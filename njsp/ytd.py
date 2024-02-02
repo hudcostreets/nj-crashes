@@ -54,6 +54,41 @@ def projs_rundate(commit):
     return { 'sha': sha, **rdo, **pto, }
 
 
+def oldest_commit_rundate_since(dt):
+    """Iterate through Git commit history, looking for the oldest commit that's more recent than the given date."""
+    err(f'Searching for oldest commit with rundate ≥{dt}')
+    repo = Repo()
+    prv_commit = None
+    commits = repo.iter_commits()
+    shas = []
+    while True:
+        try:
+            commit = next(commits)
+        except StopIteration:
+            raise RuntimeError(f"Ran out of commits after {len(shas)}: {','.join(shas)}")
+        tree = commit.tree
+        short_sha = commit.hexsha[:7]
+        shas.append(short_sha)
+        rundate_blob = tree[RUNDATE_RELPATH]
+        rundate_object = json.load(rundate_blob.data_stream)
+        commit_rundate = rundate_object["rundate"]
+        if commit_rundate < dt:
+            err(f'Found rundate {commit_rundate} < {dt} at commit {short_sha}; returning commit {prv_commit.hexsha[:7]}')
+            break
+        prv_commit = commit
+    return prv_commit
+
+
+def projected_roy_deaths(prv_ytd, prv_end, cur_ytd, cur_ytd_frac):
+    prv_roy = prv_end - prv_ytd
+    if prv_ytd == 0:
+        # (p_roy + c_ytd - p_ytd) * (1-f)
+        cur_roy_frac = 1 - cur_ytd_frac
+        return (prv_roy + cur_ytd) * cur_roy_frac
+    else:
+        return prv_roy * (1 + cur_ytd_frac * (cur_ytd / prv_ytd - 1))
+
+
 class Ytd:
     @cached_property
     def rundate(self) -> Rundate:
@@ -92,35 +127,25 @@ class Ytd:
     def cur_year(self):
         return self.rundate.year
 
+    @property
+    def prv_rundate(self):
+        return f'{self.prv_year}-{self.rundate.cur.strftime("%m-%d")}'
+
     @cached_property
     def prv_projection(self):
         """Iterate through Git commit history, looking for the oldest commit that's at least as far into last year as we currently are into the present year"""
-        prv_prd = None
-        prv_rundate = f'{self.prv_year}-{self.rundate.cur.strftime("%m-%d")}'
-        err(f'Searching for projected totals ca. {prv_rundate}')
-        repo = Repo()
-        commits = repo.iter_commits()
-        shas = []
-        while True:
-            try:
-                commit = next(commits)
-            except StopIteration:
-                raise RuntimeError(f"Ran out of commits after {len(shas)}: {','.join(shas)}")
-            shas.append(commit.hexsha[:7])
-            prd = projs_rundate(commit)
-            commit_rundate = prd["rundate"]
-            if commit_rundate < prv_rundate:
-                err(f'Found previous rundate {commit_rundate} < {prv_rundate}; breaking')
-                break
-            prv_prd = prd
-        return prv_prd
+        prv_rundate = self.prv_rundate
+        prv_commit = oldest_commit_rundate_since(prv_rundate)
+        if prv_commit is None:
+            raise RuntimeError(f"Failed to find a commit since rundate ≥{prv_rundate}")
+        return projs_rundate(prv_commit)
 
     @property
     def prv_total(self):
         return self.prv_projection[f'{self.prv_year}']['Total']
 
     @property
-    def prv_rundate(self):
+    def prv_projection_rundate(self):
         return pd.to_datetime(self.prv_projection['rundate'])
 
     @property
@@ -133,7 +158,7 @@ class Ytd:
     def prv_year_frac(self):
         rundate = self.rundate
         prv_year_dt = rundate.prv_year_dt
-        return (self.prv_rundate - prv_year_dt) / (rundate.cur_year_dt - prv_year_dt)
+        return (self.prv_projection_rundate - prv_year_dt) / (rundate.cur_year_dt - prv_year_dt)
 
     @cached_property
     def cur_ytd_deaths(self):
@@ -160,11 +185,7 @@ class Ytd:
 
     @cached_property
     def projected_roy_deaths(self):
-        cur_year_frac = self.cur_year_frac
-        prv_ytd_deaths = self.prv_ytd_deaths
-        prv_roy_deaths = self.prv_end_deaths - prv_ytd_deaths
-
-        return int(prv_roy_deaths * (cur_year_frac * (self.cur_ytd_deaths / prv_ytd_deaths) + self.cur_roy_frac))
+        return projected_roy_deaths(self.prv_ytd_deaths, self.prv_end_deaths, self.cur_ytd_deaths, self.cur_year_frac)
 
     @cached_property
     def projected_year_total(self):

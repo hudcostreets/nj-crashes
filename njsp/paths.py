@@ -1,10 +1,12 @@
 from os import path
 from os.path import join
 
-from nj_crashes.paths import DATA_DIR, WWW_NJSP
+from nj_crashes.paths import DATA_DIR, ROOT_DIR, WWW_NJSP
 
 CRASHES_PQT = join(DATA_DIR, 'crashes.pqt')
 DATA_NJSP = join(DATA_DIR, 'njsp')
+PROJECTED_CSV = join(DATA_NJSP, 'projected.csv')
+
 # Tabula template JSONs and NJSP summary PDFs live in this dir
 ANNUAL_REPORTS = join(DATA_NJSP, 'annual-reports')
 ANNUAL_SUMMARIES = join(DATA_NJSP, 'annual-summaries')

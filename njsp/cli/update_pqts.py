@@ -8,6 +8,7 @@ from utz import *
 from nj_crashes.paths import RUNDATE_PATH
 from nj_crashes.utils import parse_file
 from .base import command
+from ..paths import CRASHES_PQT
 
 
 @command
@@ -111,7 +112,7 @@ def update_pqts():
     }
 
     for name, table in tables.items():
-        table.to_sql(name, con=engine, if_exists='replace',)
-        table.to_parquet(f'data/{name}.pqt')
+        table.to_sql(name, con=engine, if_exists='replace')
+        table.to_parquet(CRASHES_PQT)
 
     return "Update NJSP data"
