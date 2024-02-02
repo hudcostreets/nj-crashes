@@ -85,9 +85,15 @@ jobs:
           aws s3api put-object-acl --bucket nj-crashes --key nj_crashes.db --acl public-read
           aws s3 cp data/crashes.pqt s3://nj-crashes/data/crashes.parquet
           aws s3api put-object-acl --bucket nj-crashes --key data/crashes.parquet --acl public-read
-      - name: Update plot data
-        id: update_plots
+      - name: Compute update_plots
+        id: plot_data
         if: (github.event.schedule || inputs.update_plots) && (steps.update_pqts_sha.outputs.sha || !inputs.short_circuit)
+        run: echo "changed=1" >> $GITHUB_OUTPUT
+      - name: Refresh annual summaries
+        if: steps.plot_data.outputs.changed
+        run: njsp -cc refresh_summaries
+      - name: "Fetch ≈1yr of history"
+        if: steps.plot_data.outputs.changed
         run: |
           year=$(date +%Y)
           let prv_year=year-1
@@ -95,7 +101,10 @@ jobs:
           echo "Fetching commits since $since"
           git fetch --shallow-since "$since" origin ${{ github.ref_name }}
           echo "Fetched $(git rev-list --count) revisions"
-          njsp -cc update_plots
+      - name: Update plot data
+        id: update_plots
+        if: steps.plot_data.outputs.changed
+        run: njsp -cc update_plots
       - name: Post to Slack
         id: post_to_slack
         if: (github.event.schedule || inputs.post_to_slack) && (steps.update_pqts_sha.outputs.sha || !inputs.short_circuit)
