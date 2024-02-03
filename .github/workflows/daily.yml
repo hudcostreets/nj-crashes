@@ -119,12 +119,17 @@ jobs:
       - name: Decide whether to rebuild www
         id: build_www
         if: (github.event.schedule || inputs.build_www) && (steps.update_plots.outputs.sha || !inputs.short_circuit)
-        run: echo "run=1" >> $GITHUB_OUTPUT
+        run: |
+          echo "run=1" >> $GITHUB_OUTPUT
+          echo "sha=$(git log -1 --format=%h)" >> $GITHUB_OUTPUT
     outputs:
       update_pqts: ${{ steps.update_pqts.outputs.sha }}
       build_www: ${{ steps.build_www.outputs.run }}
+      sha: ${{ steps.build_www.outputs.sha }}
   rebuild_www:
     name: Rebuild www
     needs: refresh_data
     if: needs.refresh_data.outputs.build_www
     uses: ./.github/workflows/www.yml
+    with:
+      ref: ${{ needs.refresh_data.outputs.sha }}

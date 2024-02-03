@@ -4,13 +4,25 @@ on:
     branches:
       - www
   workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: main
+        description: "The branch, tag, or SHA to run the workflow from"
   workflow_dispatch:
+    inputs:
+      ref:
+        type: string
+        default: main
+        description: "The branch, tag, or SHA to run the workflow from"
 jobs:
   run:
     name: Build + Deploy to GitHub Pages (iff www/ has changed since last gh-pages push)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref }}
       - uses: pnpm/action-setup@v2
         with:
           version: 8
