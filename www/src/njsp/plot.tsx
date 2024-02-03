@@ -3,8 +3,7 @@ import * as Plotly from "react-plotly.js";
 import { registerTableData, TableData } from "@/src/tableData";
 import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import { initDuckDb, runQuery } from "@rdub/duckdb/duckdb";
-import { njspPlotSpec } from "@/src/plotSpecs";
-import PlotWrapper from "@rdub/next-plotly/plot-wrapper";
+import { Data, njspPlotSpec, Plot } from "@/src/plotSpecs";
 import React, { useEffect, useState } from "react";
 
 export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
@@ -14,9 +13,9 @@ export type Props = {
     params: PlotParams
     tableData: TableData
     projectedTotal: number
-}
+} & Data
 
-export type YtcRow = {
+export type YtRow = {
     year: number
     driver: number
     pedestrian: number
@@ -32,7 +31,7 @@ export async function getPlotData({ db, target, projectedTotal, initialPlotData 
     projectedTotal: number
     initialPlotData: PlotData[]
 }): Promise<{
-    rows: YtcRow[]
+    rows: YtRow[]
     data: PlotData[]
     annotations: Annotation[]
 }> {
@@ -49,11 +48,11 @@ export async function getPlotData({ db, target, projectedTotal, initialPlotData 
         FROM ${target}
         GROUP BY year
     `
-    const rows = await runQuery<YtcRow>(db, query)
+    const rows = await runQuery<YtRow>(db, query)
     const last = rows[rows.length - 1]
     last.projected = projectedTotal - last.total
     console.log("got ytc data:", rows)
-    const typesMap: { [k: string]: keyof YtcRow } = {
+    const typesMap: { [k: string]: keyof YtRow } = {
         "Drivers": "driver",
         "Pedestrians": "pedestrian",
         "Cyclists": "cyclist",
@@ -82,7 +81,7 @@ export async function getPlotData({ db, target, projectedTotal, initialPlotData 
 
 export const title = "New Jersey Car Crash Deaths"
 
-export function NjspPlot({ params, tableData, projectedTotal, }: Props) {
+export function NjspPlot({ params, tableData, projectedTotal, rundate, projectedTotals, }: Props) {
     const spec = njspPlotSpec
     let { src, name } = spec
     src = src ?? `plots/${name}.png`
@@ -117,11 +116,12 @@ export function NjspPlot({ params, tableData, projectedTotal, }: Props) {
     )
 
     return (
-        <PlotWrapper
-            params={{ data: data, layout: { ...layout, annotations }, ...plotRest }}
+        <Plot
+            {...spec}
+            params={{ data, layout: { ...layout, annotations }, ...plotRest }}
             src={src}
-            alt={title}
-            // margin={{b: 30,}}
+            title={title}
+            data={{ rundate, projectedTotals }}
         />
     )
 }

@@ -11,21 +11,26 @@ import { HasTotals, Plot, plotSpecs, ProjectedTotals } from "@/src/plotSpecs";
 import { loadSync } from "@rdub/base/load";
 import { buildPlot, buildPlots, PlotsDict } from "@rdub/next-plotly/plot";
 import { loadPlots } from "@rdub/next-plotly/plot-load";
+import { NjspPlot } from "@/src/njsp/plot";
+import * as Njsp from "@/src/njsp/plot";
+import { loadProps } from "@/server/njsp/plot";
 
-type Props = { plotsDict: PlotsDict, rundate: string, } & HasTotals
-
-export const getStaticProps: GetStaticProps = async () => {
-    const { rundate } = loadSync<{ rundate: string }>(`public/rundate.json`)
-    console.log(`rundate: ${rundate}`)
-    const plotsDict: PlotsDict = loadPlots(plotSpecs)
-    const projectedTotals = loadSync<ProjectedTotals>(`public/plots/projected_totals.json`)
-    return { props: { plotsDict, projectedTotals, rundate, }, }
+type Props = {
+    plotsDict: PlotsDict
+    njspProps: Njsp.Props
 }
 
-const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
+export const getStaticProps: GetStaticProps = async () => {
+    const plotsDict: PlotsDict = loadPlots(plotSpecs)
+    const njspProps = await loadProps()
+    return { props: { plotsDict, njspProps }, }
+}
+
+const Home = ({ plotsDict, njspProps, }: Props) => {
     // console.log("Home plots:", plotsDict)
     const basePath = getBasePath()
 
+    const { rundate, projectedTotals } = njspProps
     const data = { rundate, projectedTotals }
     const [ njspPlotSpec, ...plotSpecs2 ] = plotSpecs
     const njspPlot = buildPlot(njspPlotSpec, plotsDict[njspPlotSpec.id], data)
@@ -86,7 +91,7 @@ const Home = ({ plotsDict, projectedTotals, rundate, }: Props) => {
                     <li>Click / double-click legend entries below to toggle traces on/off.</li>
                 </ul>
                 <div key={njspPlotSpec.id} className={css["plot-container"]}>
-                    <Plot basePath={basePath} {...njspPlot} margin={{b: 30,}} data={{rundate, projectedTotals}}/>
+                    <NjspPlot {...njspProps} />
                     <hr/>
                 </div>
                 {

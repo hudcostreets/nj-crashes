@@ -1,5 +1,5 @@
 import { loadPlot } from "@rdub/next-plotly/plot-load";
-import { njspPlotSpec } from "@/src/plotSpecs";
+import { curYear, njspPlotSpec, ProjectedTotals, prvYear } from "@/src/plotSpecs";
 import { initDuckDb, runQuery } from "@rdub/duckdb/duckdb";
 import { registerTableData, TableData } from "@/src/tableData";
 import { loadTableData } from "@/server/tableData";
@@ -7,6 +7,8 @@ import { getPlotData, PlotParams, Props } from "@/src/njsp/plot";
 import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import path, { dirname } from "path";
 import fs from "fs";
+import { loadSync } from "@rdub/base/load";
+import { fromEntries } from "@rdub/base/objs";
 
 export async function getProjectedTotal(db: AsyncDuckDB) {
     const projectedCsvPath = path.join(dirname(process.cwd()), "data/njsp/projected.csv")
@@ -33,16 +35,34 @@ export async function loadProps(): Promise<Props> {
     // const crashesBase64 = loadParquetBase64("data/crashes.pqt")
     const tableData: TableData = loadTableData({ fmt: 'csv', stem: "data/njsp/year-type-county" })
     const target = await registerTableData({ db, tableData, stem: "ytc", })
-    const { data, annotations } = await getPlotData({
+    const { data, rows, annotations } = await getPlotData({
         db,
         target,
         projectedTotal,
         initialPlotData,
     })
 
+    const ytcMap = fromEntries(
+        rows.map(
+            ({ year, total, projected }) =>
+            [ year, { total, projected } ]
+        )
+    )
+
+    const { rundate } = loadSync<{ rundate: string }>(`public/rundate.json`)
+    console.log(`rundate: ${rundate}`)
+    const projectedTotals: ProjectedTotals = {
+        2021: ytcMap[2021].total,
+        2022: ytcMap[2022].total,
+    }
+    projectedTotals[prvYear] = ytcMap[prvYear].total
+    projectedTotals[curYear] = projectedTotal
+
     return {
         params: { data, layout: { ...layout, annotations }, ...plotRest },
         tableData,
         projectedTotal,
+        rundate,
+        projectedTotals,
     }
 }
