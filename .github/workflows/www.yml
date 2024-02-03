@@ -45,8 +45,8 @@ jobs:
           node-version: 19
           cache: 'pnpm'
           cache-dependency-path: www/pnpm-lock.yaml
-      - if: steps.www-changed.outputs.WWW_CHANGED
-        name: pnpm install, build, export
+      - name: pnpm install, build, export
+        if: steps.www-changed.outputs.WWW_CHANGED
         run: |
           cd www
           pnpm install

@@ -21,23 +21,23 @@ dependencies:
     specifier: ^14
     version: 14.0.4(@mdx-js/loader@2.3.0)
   '@rdub/base':
-    specifier: ^0.1.0
+    specifier: 0.1.0
     version: 0.1.0(react-dom@18.2.0)(react@18.2.0)
   '@rdub/duckdb':
     specifier: 0.0.1
     version: 0.0.1(@duckdb/duckdb-wasm@1.28.1-dev106.0)(react-dom@18.2.0)(react@18.2.0)
   '@rdub/next-base':
-    specifier: ^0.1.0
+    specifier: 0.1.0
     version: 0.1.0(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)
   '@rdub/next-leaflet':
     specifier: 0.0.3
     version: 0.0.3(leaflet@1.9.4)(next@14.0.4)(react-dom@18.2.0)(react-leaflet@4.2.1)(react@18.2.0)
   '@rdub/next-params':
-    specifier: ^0.0.1
+    specifier: 0.0.1
     version: 0.0.1(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)
   '@rdub/next-plotly':
-    specifier: ^0.0.2
-    version: 0.0.2(@types/node@20.3.0)(mapbox-gl@1.13.3)(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)(sass@1.69.7)(webpack@5.89.0)
+    specifier: 0.0.3
+    version: 0.0.3(@types/node@20.3.0)(mapbox-gl@1.13.3)(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)(sass@1.69.7)(webpack@5.89.0)
   '@react-leaflet/core':
     specifier: ^2.1.0
     version: 2.1.0(leaflet@1.9.4)(react-dom@18.2.0)(react@18.2.0)
@@ -1149,8 +1149,8 @@ packages:
       react-dom: 18.2.0(react@18.2.0)
     dev: false
 
-  /@rdub/next-plotly@0.0.2(@types/node@20.3.0)(mapbox-gl@1.13.3)(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)(sass@1.69.7)(webpack@5.89.0):
-    resolution: {integrity: sha512-kaHwsSxtdoqD61RSdl/aSRbKyjITkxXlk96SgYD6d82ZOrGkI1N99M96r92lK35n83/9nLBwAQuPOU8MrSB0Bw==}
+  /@rdub/next-plotly@0.0.3(@types/node@20.3.0)(mapbox-gl@1.13.3)(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)(sass@1.69.7)(webpack@5.89.0):
+    resolution: {integrity: sha512-zFglAsiYRuEMFnLoZ8DVty4wvr3yXxA+PPuFdlhqA+FT/V/V/dYEepXoItIKaYLCywCxCl0JAmngsEm86YEYlg==}
     peerDependencies:
       next: ^14
       react: ^18

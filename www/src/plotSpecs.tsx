@@ -12,8 +12,8 @@ export type HasTotals = { projectedTotals: ProjectedTotals }
 
 export type Data = { rundate: string } & HasTotals
 export type PlotSpec = Plots.PlotSpec<Data>
-export type Plot = Plots.Plot<Data>
-export const Plot = (args: Plot) => Plots.Plot<Data>(args)
+export type Plot<TraceName extends string = string> = Plots.Plot<Data, TraceName>
+export function Plot<TraceName extends string = string>(args: Plot<TraceName>) { return Plots.Plot<Data, TraceName>(args) }
 
 export const EMPTY: PlotSpec[] = []
 export const YM_SC_PID_SPECS: PlotSpec[] =
