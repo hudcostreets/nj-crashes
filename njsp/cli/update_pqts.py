@@ -99,6 +99,13 @@ def update_pqts():
         .accidents
     )
 
+    # Verify the reported "total deaths" stat reflects what we see in the crash records
+    njsp_totals = totals.fatalities.rename('NJSP total')
+    fatalities_per_year = crashes.FATALITIES.groupby(dt.year).sum().astype(int).rename('NJSP records')
+    njsp_diffs = sxs(njsp_totals, fatalities_per_year)[njsp_totals != fatalities_per_year]
+    if not njsp_diffs.empty:
+        raise RuntimeError(f"NJSP totals don't match crash records:\n{njsp_diffs}")
+
     # ### Save to file
 
     from nj_crashes.paths import DB_URI
