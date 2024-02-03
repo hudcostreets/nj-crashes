@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import json
 
 from functools import cached_property
@@ -89,15 +91,27 @@ def projected_roy_deaths(prv_ytd, prv_end, cur_ytd, cur_ytd_frac):
         return prv_roy * (1 + cur_ytd_frac * (cur_ytd / prv_ytd - 1))
 
 
+@dataclass
 class Ytd:
+    county: str = None
+    type: str = None
+
     @cached_property
     def rundate(self) -> Rundate:
         return Rundate()
 
     @cached_property
-    def ytds(self):
+    def crashes(self):
         crashes = pd.read_sql_table("crashes", DB_URI)
-        ytds = crashes[['dt', 'FATALITIES']].copy()
+        if self.county:
+            crashes = crashes[crashes.COUNTY == self.county]
+        if self.type:
+            crashes = crashes[crashes.TYPE == self.type]
+        return crashes
+
+    @cached_property
+    def ytds(self):
+        ytds = self.crashes[['dt', 'FATALITIES']].copy()
         ytds['Year'] = ytds.dt.dt.year
         ytds['Days'] = ytds.dt.apply(normalized_ytd_days)
         ytds = (
