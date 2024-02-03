@@ -1,9 +1,9 @@
 import {Map} from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 // import {Layer} from '@deck.gl/core/typed';
-import { getDuckDb, runQuery } from "next-utils/parquet";
+import { getDuckDb, runQuery } from "@rdub/duckdb/duckdb";
 import { useEffect, useState } from "react";
-import { getBasePath } from "next-utils/basePath";
+import { getBasePath } from "@rdub/next-base/basePath";
 import type { Map as MapboxMap } from "mapbox-gl";
 import { MapLib } from "react-map-gl/dist/esm/types/lib";
 import DeckGL from '@deck.gl/react/typed';
