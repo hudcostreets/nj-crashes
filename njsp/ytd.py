@@ -1,3 +1,7 @@
+from typing import Tuple
+
+from io import BytesIO
+
 from dataclasses import dataclass
 
 import json
@@ -6,13 +10,14 @@ from functools import cached_property
 from os.path import relpath
 
 import pandas as pd
-from git import Repo
-from utz import err
+from git import Repo, Commit
+from utz import err, cd
 
 from nj_crashes.paths import DB_URI, RUNDATE_PATH, ROOT_DIR, PROJECTED_TOTALS_PATH
 from nj_crashes.utils import normalized_ytd_days
+from njsp.paths import CRASHES_PQT
 from njsp.rundate import Rundate
-
+from njsp.ytc import to_ytc
 
 RUNDATE_RELPATH = relpath(RUNDATE_PATH, ROOT_DIR)
 PROJECTED_TOTALS_RELPATH = relpath(PROJECTED_TOTALS_PATH, ROOT_DIR)
@@ -46,21 +51,12 @@ def fill_all_days(df, rundate: Rundate):
     return df
 
 
-def projs_rundate(commit):
-    tree = commit.tree
-    sha = commit.hexsha
-    pt = tree[PROJECTED_TOTALS_RELPATH]
-    pto = json.load(pt.data_stream)
-    rd = tree[RUNDATE_RELPATH]
-    rdo = json.load(rd.data_stream)
-    return { 'sha': sha, **rdo, **pto, }
-
-
-def oldest_commit_rundate_since(dt):
+def oldest_commit_rundate_since(dt: str) -> Tuple[Commit, str]:
     """Iterate through Git commit history, looking for the oldest commit that's more recent than the given date."""
     err(f'Searching for oldest commit with rundate ≥{dt}')
     repo = Repo()
     prv_commit = None
+    prv_rundate = None
     commits = repo.iter_commits()
     shas = []
     while True:
@@ -76,9 +72,9 @@ def oldest_commit_rundate_since(dt):
         commit_rundate = rundate_object["rundate"]
         if commit_rundate < dt:
             err(f'Found rundate {commit_rundate} < {dt} at commit {short_sha}; returning commit {prv_commit.hexsha[:7]}')
-            break
+            return prv_commit, prv_rundate
         prv_commit = commit
-    return prv_commit
+        prv_rundate = commit_rundate
 
 
 def projected_roy_deaths(prv_ytd, prv_end, cur_ytd, cur_ytd_frac):
@@ -141,26 +137,41 @@ class Ytd:
     def cur_year(self):
         return self.rundate.year
 
+    @cached_property
+    def prv_commit_rundate(self) -> Tuple[Commit, str]:
+        prv_rundate_target = f'{self.prv_year}-{self.rundate.cur.strftime("%m-%d")}'
+        return oldest_commit_rundate_since(prv_rundate_target)
+
     @property
-    def prv_rundate(self):
-        return f'{self.prv_year}-{self.rundate.cur.strftime("%m-%d")}'
+    def prv_commit(self) -> Commit:
+        return self.prv_commit_rundate[0]
 
     @cached_property
-    def prv_projection(self):
-        """Iterate through Git commit history, looking for the oldest commit that's at least as far into last year as we currently are into the present year"""
-        prv_rundate = self.prv_rundate
-        prv_commit = oldest_commit_rundate_since(prv_rundate)
-        if prv_commit is None:
-            raise RuntimeError(f"Failed to find a commit since rundate ≥{prv_rundate}")
-        return projs_rundate(prv_commit)
+    def prv_rundate(self):
+        return self.prv_commit_rundate[1]
 
     @property
-    def prv_total(self):
-        return self.prv_projection[f'{self.prv_year}']['Total']
+    def prv_crashes(self):
+        crashes_relpath = relpath(CRASHES_PQT, ROOT_DIR)
+        prv_crashes_blob = self.prv_commit.tree[crashes_relpath]
+        stream = prv_crashes_blob.data_stream
+        blob = stream.read()
+        prv_crashes = pd.read_parquet(BytesIO(blob))
+        return prv_crashes
 
     @property
-    def prv_projection_rundate(self):
-        return pd.to_datetime(self.prv_projection['rundate'])
+    def prv_ytd_total(self):
+        """Number of deaths reported by NJSP at the closest point in the previous year."""
+        return to_ytc(self.prv_year_crashes).drop(columns='crashes').sum().sum()
+
+    @cached_property
+    def prv_year_crashes(self):
+        prv_crashes = self.prv_crashes
+        return prv_crashes[prv_crashes.dt.dt.year == self.prv_year]
+
+    @property
+    def prv_rundate_dt(self):
+        return pd.to_datetime(self.prv_rundate)
 
     @property
     def cur_year_frac(self):
@@ -172,7 +183,7 @@ class Ytd:
     def prv_year_frac(self):
         rundate = self.rundate
         prv_year_dt = rundate.prv_year_dt
-        return (self.prv_projection_rundate - prv_year_dt) / (rundate.cur_year_dt - prv_year_dt)
+        return (self.prv_rundate_dt - prv_year_dt) / (rundate.cur_year_dt - prv_year_dt)
 
     @cached_property
     def cur_ytd_deaths(self):
@@ -195,7 +206,8 @@ class Ytd:
 
     @property
     def prv_ytd_deaths(self):
-        return self.prv_total * self.cur_year_frac / self.prv_year_frac
+        """Adjust death count from previous year by relative ytd fraction of current year vs. previous."""
+        return self.prv_ytd_total * self.cur_year_frac / self.prv_year_frac
 
     @cached_property
     def projected_roy_deaths(self):
