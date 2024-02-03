@@ -1,3 +1,5 @@
+from os.path import basename
+
 from contextlib import nullcontext
 
 from tempfile import TemporaryDirectory
@@ -40,7 +42,7 @@ def clean_notebook(nb: Union[str, dict], nb_out_path: Optional[str] = None, inde
 def execute(nb_path, nb_out_path=None, kernel=None, **kwargs):
     if nb_out_path is None:
         ctx = TemporaryDirectory()
-        nb_out_path = f'{ctx.name}/{nb_path}'
+        nb_out_path = f'{ctx.name}/{basename(nb_path)}'
     else:
         ctx = nullcontext()
     with ctx:
