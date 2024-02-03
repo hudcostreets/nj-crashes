@@ -6,56 +6,37 @@ import css from "@/pages/index.module.scss";
 import { Head } from "@rdub/next-base/head";
 import { GitHub, url } from "@/src/socials";
 import A from "@rdub/next-base/a";
+import * as Plotly from "react-plotly.js"
 import { Socials } from "@rdub/next-base/socials";
-import { PlotParams } from "react-plotly.js";
 import PlotWrapper from "@rdub/next-plotly/plot-wrapper";
 import { initDuckDb, runQuery } from "@rdub/duckdb/duckdb";
 import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
-import path, { dirname } from "path"
+import { Annotations, PlotData } from "plotly.js";
+import { loadTableData } from "@/server/tableData";
+import { registerTableData, TableData } from "@/src/tableData";
+import path, { dirname } from "path";
 import fs from "fs";
-import type { PlotData } from "plotly.js";
 
-export type CsvData = {
-    kind: 'csv'
-    data: string
-}
-export type PqtData = {
-    kind: 'pqt'
-    base64: string
-}
-export type TableData = CsvData | PqtData
+export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
+export type Annotation = Partial<Annotations>
 
 export type Props = {
     params: PlotParams
     tableData: TableData
+    projectedTotal: number
 }
 
-function loadParquetBase64(relpath: string) {
-    const absPath = path.join(dirname(process.cwd()), relpath)
-    const pqtBuf = fs.readFileSync(absPath)
-    const base64 = pqtBuf.toString('base64')
-    return base64
-}
-
-export const getStaticProps: GetStaticProps<Props> = async () => {
-    const dataFmt = 'csv'
-    const params: PlotParams = loadPlot(njspPlotSpec)
-    // const crashesBase64 = loadParquetBase64("data/crashes.pqt")
-    let tableData: TableData
-    if (dataFmt === 'csv') {
-        const csvPath = path.join(dirname(process.cwd()), "data", "njsp", "year-type-county.csv")
-        const data = fs.readFileSync(csvPath).toString()
-        tableData = { kind: 'csv', data, }
-    } else {
-        const base64 = loadParquetBase64("data/njsp/year-type-county.pqt")  // TODO: this isn't checked into Git yet
-        tableData = { kind: 'pqt',  base64, }
-    }
-    return {
-        props: {
-            params,
-            tableData,
-        },
-    }
+async function getProjectedTotal(db: AsyncDuckDB) {
+    const projectedCsvPath = path.join(dirname(process.cwd()), "data/njsp/projected.csv")
+    const projectedCsvText = fs.readFileSync(projectedCsvPath).toString()
+    const name = "projected.csv"
+    await db.registerFileText(name, projectedCsvText)
+    const [{ projectedTotal }] = await runQuery<{ projectedTotal: number }>(
+        db,
+        `select cast(sum(driver + pedestrian + passenger + cyclist) as integer) as projectedTotal from ${name}`
+    )
+    console.log("projectedTotal:", projectedTotal)
+    return projectedTotal
 }
 
 export type YtcRow = {
@@ -64,6 +45,90 @@ export type YtcRow = {
     pedestrian: number
     cyclist: number
     passenger: number
+    total: number
+    projected: number
+}
+
+async function getPlotData({ db, target, projectedTotal, initialPlotData }: {
+    db: AsyncDuckDB
+    target: string
+    projectedTotal: number
+    initialPlotData: PlotData[]
+}): Promise<{
+    rows: YtcRow[]
+    data: PlotData[]
+    annotations: Annotation[]
+}> {
+    let query: string
+    query = `
+        SELECT
+            year,
+            CAST(sum(driver) as INTEGER) as driver,
+            CAST(sum(pedestrian) as INTEGER) as pedestrian,
+            CAST(sum(cyclist) as INTEGER) as cyclist,
+            CAST(sum(passenger) as INTEGER) as passenger,
+            CAST(sum(driver + pedestrian + cyclist + passenger) as INTEGER) as total,
+            NULL as projected
+        FROM ${target}
+        GROUP BY year
+    `
+    const rows = await runQuery<YtcRow>(db, query)
+    const last = rows[rows.length - 1]
+    last.projected = projectedTotal - last.total
+    console.log("got ytc data:", rows)
+    const typesMap: { [k: string]: keyof YtcRow } = {
+        "Drivers": "driver",
+        "Pedestrians": "pedestrian",
+        "Cyclists": "cyclist",
+        "Passengers": "passenger",
+        "Projected": "projected",
+    }
+    const data = initialPlotData.map(series => {
+        const type = typesMap[series.name]
+        const newSeries: PlotData = { ...series }
+        newSeries.x = rows.map(r => r.year)
+        newSeries.y = rows.map(r => r[type])
+        return newSeries
+    })
+    const annotations: Annotation[] = rows.map(({ year, total, projected }) => {
+        const y = total + projected
+        return {
+            x: year,
+            y,
+            text: `${y}`,
+            showarrow: false,
+            yshift: 10,
+        }
+    })
+    return { rows, data, annotations }
+}
+
+export const getStaticProps: GetStaticProps<Props> = async () => {
+    const initialPlot = loadPlot(njspPlotSpec) as PlotParams   // TODO: push cast into loadPlot
+    const {
+        data: initialPlotData,
+        layout,
+        ...plotRest
+    } = initialPlot
+    const db = await initDuckDb()
+    const projectedTotal = await getProjectedTotal(db)
+    // const crashesBase64 = loadParquetBase64("data/crashes.pqt")
+    const tableData: TableData = loadTableData({ fmt: 'csv', stem: "data/njsp/year-type-county" })
+    const target = await registerTableData({ db, tableData, stem: "ytc", })
+    const { data, annotations } = await getPlotData({
+        db,
+        target,
+        projectedTotal,
+        initialPlotData,
+    })
+
+    return {
+        props: {
+            params: { data, layout: { ...layout, annotations }, ...plotRest },
+            tableData,
+            projectedTotal,
+        },
+    }
 }
 
 const title = "New Jersey Car Crash Deaths"
@@ -72,6 +137,7 @@ export default function Page(
     {
         params,
         tableData,
+        projectedTotal,
     }: Props
 ) {
     // console.log("ytc:", ytc)
@@ -79,56 +145,28 @@ export default function Page(
     let { src, name } = spec
     src = src ?? `plots/${name}.png`
     const [ db, setDb ] = useState<AsyncDuckDB | null>(null)
-    const [ data, setData ] = useState<any[] | null>(null)
-    const { data: initialPlotData, ...plotRest } = params as { data: PlotData[] } & Omit<PlotParams, "data">
-    const [ plotData, setPlotData ] = useState<PlotData[] | null>(null/*initialPlotData as PlotData[]*/)
+    const [ rows, setRows ] = useState<any[] | null>(null)
+    const { data: initialPlotData, layout, ...plotRest } = params as PlotParams
+    const [ data, setData ] = useState<PlotData[]>(initialPlotData)
+    const [ annotations, setAnnotations ] = useState<Annotation[] | undefined>(layout.annotations)
     useEffect(
         () => {
             async function init() {
                 const db = await initDuckDb()
                 console.log("got db:", db)
                 setDb(db)
-                let target: string
-                if (tableData.kind === 'csv') {
-                    const path = "ytc.csv"
-                    target = `'${path}'`
-                    await db.registerFileText(path, tableData.data)
-                } else {
-                    const path = "ytc.parquet"
-                    target = `parquet_scan('${path}')`
-                    let ytcPqtArr = new Uint8Array(Buffer.from(tableData.base64, 'base64'))
-                    await db.registerFileBuffer(path, ytcPqtArr)
-                }
-                console.log("registered file")
-                let query: string
-                query = `
-                    SELECT 
-                        year,
-                        CAST(sum(driver) as INTEGER) as driver,
-                        CAST(sum(pedestrian) as INTEGER) as pedestrian,
-                        CAST(sum(cyclist) as INTEGER) as cyclist,
-                        CAST(sum(passenger) as INTEGER) as passenger
-                    FROM ${target}
-                    GROUP BY year
-                `
-                const data = await runQuery<YtcRow>(db, query)
-                console.log("got ytc data:", data)
-                setData(data)
-                const typesMap: { [k: string]: keyof YtcRow } = {
-                    "Drivers": "driver",
-                    "Pedestrians": "pedestrian",
-                    "Cyclists": "cyclist",
-                    "Passengers": "passenger",
-                }
-                const newPlotData = initialPlotData.map(series => {
-                    const type = typesMap[series.name]
-                    const newSeries: PlotData = { ...series }
-                    newSeries.x = data.map(r => r.year)
-                    newSeries.y = data.map(r => r[type])
-                    return newSeries
+                const target = await registerTableData({ db, tableData, stem: "ytc", })
+                console.log("registered target:", target)
+                const { rows, data, annotations } = await getPlotData({
+                    db,
+                    target,
+                    projectedTotal,
+                    initialPlotData,
                 })
-                console.log("newPlotData:", newPlotData)
-                setPlotData(newPlotData)
+                console.log("data:", data)
+                setRows(rows)
+                setData(data)
+                setAnnotations(annotations)
             }
             init()
         },
@@ -154,15 +192,12 @@ export default function Page(
                     </A>, and is updated daily (though crashes sometimes take weeks or months to show up).
                 </p>
                 <div className={css["plot-container"]}>
-                    {
-                        plotData &&
-                        <PlotWrapper
-                            params={{ data: plotData, ...plotRest }}
-                            src={src}
-                            alt={title}
-                            // margin={{b: 30,}}
-                        />
-                    }
+                    <PlotWrapper
+                        params={{ data: data, layout: { ...layout, annotations }, ...plotRest }}
+                        src={src}
+                        alt={title}
+                        // margin={{b: 30,}}
+                    />
                     <hr/>
                 </div>
                 <p>Code and data are <A href={GitHub.href}>on GitHub</A>; feedback / issues <A href={`${GitHub.href}/issues/new`}>here</A>).</p>
