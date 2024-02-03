@@ -101,6 +101,9 @@ jobs:
           echo "Fetching commits since $since"
           git fetch --shallow-since "$since" origin ${{ github.ref_name }}
           echo "Fetched $(git rev-list --count) revisions"
+      - name: Update YTD / ROY projections
+        if: steps.plot_data.outputs.changed
+        run: njsp -cc update_projections
       - name: Update plot data
         id: update_plots
         if: steps.plot_data.outputs.changed

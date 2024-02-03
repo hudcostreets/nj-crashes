@@ -7,6 +7,7 @@ from njsp.nb import execute
 
 @command
 @click.option('-k', '--kernel', default='python3')
-def update_plots(kernel):
-    execute('njsp/update-plots.ipynb', kernel=kernel)
+def update_projections(kernel):
+    nb_path = 'njsp/update-projections.ipynb'
+    execute(nb_path, kernel=kernel)
     return "Update NJSP plots"
