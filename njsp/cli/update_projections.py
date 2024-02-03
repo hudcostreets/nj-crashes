@@ -10,4 +10,4 @@ from njsp.nb import execute
 def update_projections(kernel):
     nb_path = 'njsp/update-projections.ipynb'
     execute(nb_path, kernel=kernel)
-    return "Update NJSP plots"
+    return "Update NJSP projections"
