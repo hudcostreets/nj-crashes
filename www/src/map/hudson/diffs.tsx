@@ -2,7 +2,6 @@ import { Circle, GeoJSON, Polyline } from "react-leaflet"
 import { MapContainerProps } from "react-leaflet/lib/MapContainer";
 import MapContainer from "@/src/map/container";
 
-import 'leaflet/dist/leaflet.css';
 import { Crash } from "@/pages/map/hudson/diffs";
 import { Fragment } from "react";
 import { FeatureCollection, MultiPolygon } from "geojson";

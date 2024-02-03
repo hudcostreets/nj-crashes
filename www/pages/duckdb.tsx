@@ -23,7 +23,7 @@ export default function DuckDb() {
             onKeyDown={e => {
                 // console.log("key:", e.code, e)
                 const query = ref.current?.value
-                if (e.code === 'Enter' && e.shiftKey) {
+                if (query && e.code === 'Enter' && e.shiftKey) {
                     e.preventDefault();
                     if (!db) {
                         console.error("no db")
