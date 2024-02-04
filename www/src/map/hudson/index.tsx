@@ -1,13 +1,12 @@
-import { MapContainerProps } from "react-leaflet/lib/MapContainer";
+import * as clusters from "@/src/map/clusters"
+import { Clusters } from "@/src/map/clusters"
+import React, { Dispatch } from "react"
+import MapContainer from "@rdub/next-leaflet/container"
+import type { MapContainerProps } from "@rdub/next-leaflet/container"
+import { OnClick } from "@rdub/next-leaflet/events"
+import { GeoJSON } from "react-leaflet"
 
-import * as clusters from "@/src/map/clusters";
-import { Clusters } from "@/src/map/clusters";
-import React from "react";
-import MapContainer from "@/src/map/container";
-import { GeoJSON } from "react-leaflet";
-import { OnClick } from "@/src/map/events";
-
-export type Props = MapContainerProps & clusters.Props & OnClick & {
+export type Props = MapContainerProps & clusters.Props & {
     hudco: GeoJSON.FeatureCollection
 }
 

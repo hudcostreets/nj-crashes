@@ -1,5 +1,5 @@
 import dynamic from "next/dynamic";
-const Map = dynamic(() => import("../../../../src/map/hudson/ddb/map"), { ssr: false })
+const Map = dynamic(() => import("@/src/map/hudson/ddb/map"), { ssr: false })
 
 export type Color = [ number, number, number ];
 export const MALE_COLOR: Color = [0, 128, 255];

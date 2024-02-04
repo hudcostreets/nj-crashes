@@ -7,6 +7,7 @@ import React, { useMemo } from "react";
 import * as Hudson from "@/pages/map/hudson";
 import { njdotDir, publicDir } from "@/src/dirs";
 import { FeatureCollection, MultiPolygon } from "geojson";
+import { useMapState } from "@/src/map/hudson/state";
 
 export const Map = dynamic(() => import('@/src/map/hudson/diffs'), { ssr: false });
 
@@ -29,6 +30,7 @@ export function getStaticProps() {
 }
 
 export default function Page({ encodedCrashes, hudco }: Props) {
+    const mapState = useMapState()
     const crashes = useMemo(
         () => {
             const crashes = decode<Crash>(encodedCrashes) //.slice(0, 100)
@@ -42,8 +44,7 @@ export default function Page({ encodedCrashes, hudco }: Props) {
         () => {
             console.log("page render map")
             return <Map
-                className={css.map}
-                maxZoom={18}
+                {...mapState}
                 crashes={crashes}
                 hudco={hudco}
             />

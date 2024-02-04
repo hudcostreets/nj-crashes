@@ -1,6 +1,6 @@
 import { Circle, GeoJSON, Polyline } from "react-leaflet"
-import { MapContainerProps } from "react-leaflet/lib/MapContainer";
-import MapContainer from "@/src/map/container";
+import MapContainer from "@rdub/next-leaflet/container"
+import type { MapContainerProps } from "@rdub/next-leaflet/container"
 
 import { Crash } from "@/pages/map/hudson/diffs";
 import { Fragment } from "react";
