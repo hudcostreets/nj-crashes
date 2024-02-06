@@ -350,3 +350,4 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2024,Ocean,2,0,0,4,6
 2024,Passaic,0,0,0,1,1
 2024,Union,0,0,0,1,1
+2024,Warren,0,0,1,0,1
