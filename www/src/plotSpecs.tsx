@@ -52,6 +52,7 @@ export const njspPlotSpec: PlotSpec = {
         const curYearTotal = projectedTotals[curYear]
         const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
         return <>
+            <p>Click/Double-click the legend to toggle/solo individual traces.</p>
             <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
             <p><A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, {curYear} is on pace {curYearTotal > prvYearTotal ? `to exceed ${prvYear}, with` : `for`} {curYearTotal} deaths (<A href={estimationHref}>estimated</A>).</p>
         </>
