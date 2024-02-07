@@ -1,4 +1,4 @@
-from os.path import basename, dirname, join
+from os.path import basename, dirname, join, relpath
 
 PKG_DIR = dirname(__file__)
 ROOT_DIR = dirname(PKG_DIR)
@@ -18,3 +18,6 @@ PROJECTED_TOTALS_PATH = join(PLOTS_DIR, 'projected_totals.json')
 DB_PATH = join(ROOT_DIR, f'{PKG_NAME}.db')
 
 DB_URI = f'sqlite:///{DB_PATH}'
+
+RUNDATE_RELPATH = relpath(RUNDATE_PATH, ROOT_DIR)
+PROJECTED_TOTALS_RELPATH = relpath(PROJECTED_TOTALS_PATH, ROOT_DIR)

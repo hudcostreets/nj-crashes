@@ -1,9 +1,11 @@
 from os import path
-from os.path import join
+from os.path import join, relpath
 
 from nj_crashes.paths import DATA_DIR, ROOT_DIR, WWW_NJSP
 
 CRASHES_PQT = join(DATA_DIR, 'crashes.pqt')
+CRASHES_RELPATH = relpath(CRASHES_PQT, ROOT_DIR)
+
 DATA_NJSP = join(DATA_DIR, 'njsp')
 PROJECTED_CSV = join(DATA_NJSP, 'projected.csv')
 

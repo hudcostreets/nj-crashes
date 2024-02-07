@@ -15,9 +15,12 @@ from github import Auth, Github
 from github.Repository import Repository
 from github.Commit import Commit as GithubCommit
 from pandas import isna
-from utz import process, cached_property
+from utz import process, cached_property, singleton
 
-from git import Commit, Repo, Tree
+from git import Commit, Repo, Tree, Object, Blob
+
+from nj_crashes.paths import RUNDATE_RELPATH
+from njsp.paths import CRASHES_RELPATH
 
 _repo: Optional[Repo] = None
 
@@ -75,27 +78,37 @@ def load_pqt_github(
     return pd.read_parquet(BytesIO(content_bytes))
 
 
+def load_pqt_blob(blob: Object) -> pd.DataFrame:
+    data = blob.data_stream.read()
+    return pd.read_parquet(BytesIO(data))
+
+
 def load_pqt(
         path: str,
-        commit: Union[None, str, Commit] = None,
-        repo: Optional[Repo] = None,
+        commit: Union[None, str, Commit, Blob] = None,
+        repo: Union[Repo, Github, None] = None,
 ) -> pd.DataFrame:
-    if repo is None:
-        repo = get_repo()
-    elif isinstance(repo, Github):
+    if isinstance(repo, Github):
         return load_pqt_github(path, ref=commit)
 
     if commit is None:
+        repo = repo or get_repo()
         commit = repo.head.ref
     elif isinstance(commit, str):
         try:
+            repo = repo or get_repo()
             commit = repo.commit(commit)
         except (BadName, ValueError):
             return load_pqt_github(path, ref=commit)
+
+    if isinstance(commit, Blob):
+        blob = commit
+    elif isinstance(commit, Commit):
+        blob = commit.tree[path]
     else:
-        assert isinstance(commit, Commit), commit
-    data = commit.tree[path].data_stream.read()
-    return pd.read_parquet(BytesIO(data))
+        raise TypeError(commit)
+
+    return load_pqt_blob(blob)
 
 
 VICTIM_TYPES = {
@@ -106,7 +119,11 @@ VICTIM_TYPES = {
 }
 
 
-def crash_str(r: pd.Series, fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p', xml_url: Optional[str] = None) -> str:
+def crash_str(
+        r: pd.Series,
+        fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p',
+        github_url: Optional[str] = None
+) -> str:
     victim_pcs = []
     for suffix, name in VICTIM_TYPES.items():
         num = r[f'FATAL_{suffix}']
@@ -123,13 +140,13 @@ def crash_str(r: pd.Series, fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p',
         dt_str = dt.strftime(fmt)
 
     accid = r.name
-    if xml_url:
-        id_str = f'<{xml_url}|{accid}>'
+    if github_url:
+        github_link = f'<{github_url}|{accid}>'
     else:
-        id_str = accid
+        github_link = accid
 
     location = r.LOCATION.replace('&', '&amp;')
-    return f'*{dt_str} ({id_str})*: {r.MNAME} ({r.CNAME} County), {location}: {victim_str} deceased'
+    return f'*{dt_str} ({github_link})*: {r.MNAME} ({r.CNAME} County), {location}: {victim_str} deceased'
 
 
 def git_fmt(*refs: str, fmt: str = '%h') -> str:
@@ -138,10 +155,18 @@ def git_fmt(*refs: str, fmt: str = '%h') -> str:
 
 @dataclass
 class CommitCrashes:
-    ref: Optional[str] = None
-
-    CRASHES_PATH = 'data/crashes.pqt'
-    RUNDATE_JSON_PATH = 'www/public/rundate.json'
+    def __init__(self, ref: Union[str, Commit, None] = None):
+        if isinstance(ref, Commit):
+            self.ref = ref.hexsha
+            self.commit = ref
+        elif isinstance(ref, str):
+            self.ref = ref
+            self.commit = get_repo().commit(self.ref)
+        elif ref is None:
+            self.ref = git_fmt('HEAD')
+            self.commit = get_repo().commit(self.ref)
+        else:
+            raise TypeError(ref)
 
     def fmt(self, fmt: str) -> str:
         return git_fmt(self.ref, fmt=fmt)
@@ -165,16 +190,28 @@ class CommitCrashes:
             return self.github_commit.sha[:SHORT_SHA_LEN]
 
     @cached_property
+    def parent_sha(self) -> str:
+        return self.fmt('%P')
+
+    @cached_property
+    def parent_short_sha(self) -> str:
+        return self.parent_sha[:SHORT_SHA_LEN]
+
+    @cached_property
     def parent_ref(self) -> str:
         return f'{self.sha}~1'
 
+    @property
+    def parent(self) -> Commit:
+        return singleton(self.commit.parents, dedupe=False)
+
     @cached_property
     def df0(self) -> pd.DataFrame:
-        return load_pqt(self.CRASHES_PATH, commit=self.parent_ref)
+        return load_pqt(CRASHES_RELPATH, commit=self.parent)
 
     @cached_property
     def df1(self) -> pd.DataFrame:
-        return load_pqt(self.CRASHES_PATH, commit=self.ref)
+        return load_pqt(CRASHES_RELPATH, commit=self.commit)
 
     @cached_property
     def dfs(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -197,15 +234,15 @@ class CommitCrashes:
         return set(self.idx1)
 
     @cached_property
-    def new_ids(self) -> list[str]:
+    def add_ids(self) -> list[str]:
         return list(self.idx1.difference(self.ids0))
 
     @cached_property
-    def new_df(self) -> pd.DataFrame:
-        return self.df1.loc[self.new_ids]
+    def adds_df(self) -> pd.DataFrame:
+        return self.df1.loc[self.add_ids]
 
     @cached_property
-    def removed_ids(self) -> list[str]:
+    def del_ids(self) -> list[str]:
         return list(self.ids0.difference(self.ids1))
 
     @cached_property
@@ -234,14 +271,18 @@ class CommitCrashes:
         return changed_sxs
 
     @cached_property
-    def changed_crash_ids(self) -> list[str]:
+    def updated_ids(self) -> list[str]:
         return self.changed_crashes.index.tolist()
 
+    @property
+    def updated_df(self) -> pd.DataFrame:
+        return self.df1.loc[self.updated_ids]
+
     @cached_property
-    def diff_objs(self):
+    def diff_objs(self) -> dict[str, dict]:
         diff_objs = {}
         df0, df1 = self.dfs
-        for id in self.changed_crash_ids:
+        for id in self.updated_ids:
             r0 = df0.loc[id].fillna('')
             r1 = df1.loc[id].fillna('')
             fields = r0 != r1
@@ -252,13 +293,9 @@ class CommitCrashes:
         return diff_objs
 
     def descriptions(self, **kwargs) -> list[str]:
-        new_df = self.new_df
+        new_df = self.adds_df
         descriptions = new_df.apply(crash_str, **kwargs, axis=1)
         return descriptions.tolist() if len(descriptions) else []
-
-    @cached_property
-    def commit(self) -> Commit:
-        return get_repo().commit(self.ref)
 
     @cached_property
     def tree(self) -> Tree:
@@ -295,7 +332,7 @@ class CommitCrashes:
 
     @cached_property
     def rundate_json(self):
-        path = self.RUNDATE_JSON_PATH
+        path = RUNDATE_RELPATH
         try:
             rundate_blob = self.tree[path]
             rundate_bytes = rundate_blob.data_stream.read()
@@ -330,14 +367,14 @@ class CommitCrashes:
     @property
     def crash_type_pcs(self) -> list[str]:
         pcs = []
-        new_ids = self.new_ids
+        new_ids = self.add_ids
         if new_ids:
             noun = 'crash' if len(new_ids) == 1 else 'crashes'
             pcs.append(f'{len(new_ids)} new {noun}')
         else:
             pcs.append(f'no new crashes')
 
-        removed_ids = self.removed_ids
+        removed_ids = self.del_ids
         if removed_ids:
             if pcs:
                 pc = f'{len(removed_ids)} removed'
@@ -346,7 +383,7 @@ class CommitCrashes:
                 pc = f'{len(removed_ids)} {noun} removed'
             pcs.append(pc)
 
-        updated_ids = self.changed_crash_ids
+        updated_ids = self.updated_ids
         if updated_ids:
             if pcs:
                 pc = f'{len(updated_ids)} updated'
@@ -358,6 +395,15 @@ class CommitCrashes:
         if not pcs:
             pcs = ['no crashes added, removed, or updated']
         return pcs
+
+    # @property
+    # def crash_updates(self) -> CrashUpdates:
+    #     return CrashUpdates(
+    #         sha=self.short_sha,
+    #         adds=self.add_ids,
+    #         dels=self.del_ids,
+    #         diffs=self.diff_objs,
+    #     )
 
     @property
     def subject(self) -> str:

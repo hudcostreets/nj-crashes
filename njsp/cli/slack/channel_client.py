@@ -6,15 +6,13 @@ from typing import Optional, Iterable, Callable
 from slack_sdk import WebClient
 from utz import cached_property, err, singleton
 
-SLACK_CHANNEL_ID = 'SLACK_CHANNEL_ID'
-SLACK_BOT_TOKEN = 'SLACK_BOT_TOKEN'
-SLACK_CONFIG_DIR = '.slack'
-
+from njsp.cli.slack.channel_cache import ChannelCache
+from njsp.cli.slack.config import SLACK_CHANNEL_ID, SLACK_CONFIG_DIR, SLACK_BOT_TOKEN
 
 CHANNEL_OPTS = ('-h', '--channel')
 
 
-def resolve_channel(channel: Optional[str], client: 'Client') -> str:
+def resolve_channel(channel: Optional[str], client: 'ChannelClient') -> str:
     client = client.client
     channel = load_slack_config(env=SLACK_CHANNEL_ID, basename='channel', value=channel, opts=CHANNEL_OPTS)
     print("loaded channel", channel)
@@ -118,97 +116,14 @@ def load_slack_config(
         raise RuntimeError(f"No {candidates_str} found")
 
 
-SKIP_CACHE_KEYS = [ 'blocks', 'edited' ]
-
-
-class MsgCache:
-    def __init__(self, client: WebClient):
-        self.client = client
-        self.accid2msg_cache_updated = False
-        self.accid_to_msg = {}
-
-    @property
-    def accid2msg_cache_path(self):
-        return f'{SLACK_CONFIG_DIR}/accid2msg.json'
+class ChannelClient:
+    def __init__(self, channel: str, dry_run: int = 0):
+        self.channel = resolve_channel(channel, client=self)
+        self.dry_run = dry_run
 
     @cached_property
-    def accid2msg_cache(self):
-        accid2msg_cache = {}
-        if exists(self.accid2msg_cache_path):
-            with open(self.accid2msg_cache_path, 'r') as f:
-                accid2msg_cache = json.load(f)
-                err(f"Loaded accid2msg cache ({len(accid2msg_cache)} entries)")
-        return accid2msg_cache
-
-    def channel_cache(self, channel):
-        accid2msg_cache = self.accid2msg_cache
-        if channel not in accid2msg_cache:
-            accid2msg_cache[channel] = {}
-        return accid2msg_cache[channel]
-
-    def update(self, channel, msg):
-        accid = msg.get('metadata', {}).get('event_payload', {}).get('ACCID')
-        if not accid:
-            return
-        msg = {
-            k: v
-            for k, v in msg.items()
-            if k not in SKIP_CACHE_KEYS
-        }
-        accid_to_msg = self.accid_to_msg
-        accid_to_msg[accid] = msg
-        channel_cache = self.channel_cache(channel)
-        cached_msg = channel_cache.get(accid)
-        if not cached_msg:
-            err(f"ACCID {accid}: caching msg")
-            channel_cache[accid] = msg
-            self.accid2msg_cache_updated = True
-        elif msg != cached_msg:
-            err(f"ACCID {accid}: updating cached msg:")
-            try:
-                from deepdiff import DeepDiff
-                from pprint import pprint
-                pprint(DeepDiff(cached_msg, msg), indent=2)
-            except ImportError:
-                for k, v0 in cached_msg.items():
-                    if k in msg:
-                        v1 = msg[k]
-                        if v0 != v1:
-                            err(f"\t{k}: {v0} -> {v1}")
-                    else:
-                        err(f"\t{k} deleted: {v0}")
-                for k, v1 in msg.items():
-                    if k not in cached_msg:
-                        err(f"\t{k} added: {v1}")
-            channel_cache[accid] = msg
-            self.accid2msg_cache_updated = True
-
-    def fetch_messages(self, channel: str, limit: int = 1000, dry_run: int = 0):
-        msg = f"Slack: fetching {limit} messages"
-        if dry_run > 1:
-            err(f"DRY RUN {msg}")
-        else:
-            err(msg)
-            resp = self.client.conversations_history(channel=channel, include_all_metadata=True, limit=limit)
-            msgs = resp.data['messages']
-            err(f'Slack: fetched {len(msgs)} messages')
-            for msg in msgs:
-                self.update(channel, msg)
-
-    def close(self):
-        if self.accid2msg_cache_updated:
-            accid2msg_cache = self.accid2msg_cache
-            accid2msg_cache_path = self.accid2msg_cache_path
-            err(f"Dumping updated ts_hints ({len(accid2msg_cache)} entries) to {accid2msg_cache_path}")
-            makedirs(dirname(accid2msg_cache_path), exist_ok=True)
-            with open(accid2msg_cache_path, 'w') as f:
-                json.dump(accid2msg_cache, f, indent=4)
-
-
-class Client:
-    @cached_property
-    def cache(self):
-        return MsgCache(self.client)
+    def cache(self) -> ChannelCache:
+        return ChannelCache(channel=self.channel)
 
     @cached_property
     def token(self):
@@ -218,8 +133,62 @@ class Client:
     def client(self):
         return WebClient(token=self.token)
 
-    def fetch_messages(self, limit: int = 1000, channel: Optional[str] = None, dry_run: int = 0):
-        channel = resolve_channel(channel, client=self)
-        self.cache.fetch_messages(channel=channel, limit=limit, dry_run=dry_run)
+    def fetch_messages(self, limit: int = 1000):
+        msg = f"Slack: fetching {limit} messages"
+        if self.dry_run > 1:
+            err(f"DRY RUN {msg}")
+        else:
+            err(msg)
+            resp = self.client.conversations_history(channel=self.channel, include_all_metadata=True, limit=limit)
+            msgs = resp.data['messages']
+            err(f'Slack: fetched {len(msgs)} messages')
+            for msg in msgs:
+                self.cache.update(self.channel, msg)
 
+    def msg_kwargs(self, accid: str, text: str) -> dict:
+        return dict(
+            channel=self.channel,
+            text=text,
+            unfurl_links=False,
+            unfurl_media=False,
+            metadata={
+                'event_type': 'new_crash',
+                'event_payload': { 'ACCID': accid, },
+            },
+        )
 
+    def post_msg(self, accid: str, text: str):
+        msg_kwargs = self.msg_kwargs(accid=accid, text=text)
+        m = '\n\t'.join([
+            f"ACCID {accid} posting new message:",
+            *[
+                f'{k}={v}'
+                for k, v in msg_kwargs.items()
+            ]
+        ])
+        if self.dry_run:
+            err(f"DRY RUN {m}")
+        else:
+            err(m)
+            resp = self.client.chat_postMessage(**msg_kwargs)
+            msg = resp.data['message']
+            err(f"ACCID {accid}: sent message {msg['ts']}")
+            self.cache.update(self.channel, msg)
+
+    def delete_msg(self, ts: str, accid: str):
+        self.client.chat_delete(channel=self.channel, ts=ts)
+        self.cache.delete_msg(accid)
+
+    def update_msg(self, ts: str, accid: str, text: str):
+        update_kwargs = dict(
+            **self.msg_kwargs(accid=accid, text=text),
+            ts=ts,
+        )
+        resp = self.client.chat_update(**update_kwargs)
+        data = resp.data
+        new_msg = data['message']
+        new_ts = data['ts']
+        if ts != new_ts:
+            raise RuntimeError(f"Message {ts} updated to {new_ts}")
+        new_msg['ts'] = ts  # Not included in chat.update `message` payload
+        self.cache.update(self.channel, new_msg)

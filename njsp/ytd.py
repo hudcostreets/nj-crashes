@@ -11,16 +11,13 @@ from os.path import relpath
 
 import pandas as pd
 from git import Repo, Commit
-from utz import err, cd
+from utz import err
 
-from nj_crashes.paths import DB_URI, RUNDATE_PATH, ROOT_DIR, PROJECTED_TOTALS_PATH
+from nj_crashes.paths import DB_URI, ROOT_DIR, RUNDATE_RELPATH
 from nj_crashes.utils import normalized_ytd_days
 from njsp.paths import CRASHES_PQT
 from njsp.rundate import Rundate
 from njsp.ytc import to_ytc
-
-RUNDATE_RELPATH = relpath(RUNDATE_PATH, ROOT_DIR)
-PROJECTED_TOTALS_RELPATH = relpath(PROJECTED_TOTALS_PATH, ROOT_DIR)
 
 
 def get_all_days():
