@@ -1,65 +1,87 @@
-from io import BytesIO
-
 import pandas as pd
-from datetime import datetime, timezone
-
-import json
-
 from dataclasses import dataclass, field
-from typing import Optional, Tuple, Union
+from datetime import datetime, timezone
+from dateutil.parser import parse
+from typing import Optional, Tuple, Union, Literal
 from utz import err
 
-from njsp.commit_crashes import get_repo, CommitCrashes, load_pqt, load_pqt_blob
+from njsp.commit_crashes import get_repo, CommitCrashes, get_rundate, DEFAULT_ROOT_SHA, SHORT_SHA_LEN
 from njsp.paths import CRASHES_RELPATH
-from njsp.ytd import RUNDATE_RELPATH
+
+Kind = Literal['add', 'update', 'del']
 
 
 @dataclass
-class ShaDate:
+class Snapshot:
     sha: str
     rundate: str
+    crash: Optional[pd.Series] = None
+    prv: Optional['Snapshot'] = None
+
+    @property
+    def kind(self) -> Kind:
+        return 'add' if self.prv is None else 'del' if self.crash is None else 'update'
+
+    @property
+    def diff_obj(self) -> dict[str, Tuple]:
+        if self.prv is None:
+            return {
+                k: (None, v)
+                for k, v in self.crash.to_dict().items()
+            }
+        if self.crash is None:
+            return {
+                k: (v, None)
+                for k, v in self.prv.crash.to_dict().items()
+            }
+        prv = self.prv.crash
+        cur = self.crash
+        return {
+            k: (prv[k], v)
+            for k, v in cur.to_dict().items()
+        }
 
 
 @dataclass
-class CrashUpdate:
-    sha: str
-    rundate: str
-    diff: dict[str, Tuple]
+class Crash:
+    accid: int
+    snapshots: list[Snapshot] = field(default_factory=list)
+
+    @property
+    def first(self) -> Snapshot:
+        return self.snapshots[0]
+
+    @property
+    def last(self) -> Snapshot:
+        return self.snapshots[-1]
+
+    @property
+    def cur(self) -> pd.Series:
+        return self.last.crash
+
+    @property
+    def orig(self) -> pd.Series:
+        return self.first.crash
 
 
-@dataclass
-class CrashLog:
-    accid: str
-    added: ShaDate
-    updates: list[CrashUpdate] = field(default_factory=list)
-    deled: Optional[ShaDate] = None
-    cur: Optional[pd.Series] = None
-    orig: Optional[pd.Series] = None
-
-
-def get_crash_logs(
+def get_crashes(
         repo=None,
+        head: Union[str, None] = None,
         since: Union[str, datetime, pd.Timestamp, None] = None,
-) -> list['CrashLog']:
+        root: Union[str, None] = DEFAULT_ROOT_SHA,
+) -> list[Crash]:
     if isinstance(since, (str, datetime)):
         tz = datetime.now(timezone.utc).astimezone().tzinfo
         since = pd.to_datetime(since).tz_localize(tz)
 
-    # accid -> ShaDate
-    adds = {}
-    # accid -> Series, iff updates are detected
-    origs = {}
-    # accid -> {sha, rundate}
-    dels = {}
-    # accid -> [CrashUpdate]
-    crash_updates = {}
+    crash_map = {}
     repo = repo or get_repo()
-    commits = repo.iter_commits()
+    # TODO: pass CRASHES_RELPATH directly here?
+    commits = repo.iter_commits(head)
     shas = []
     cur_commit = None
     cur_tree = None
     cur_crashes_sha = None
-    orig_crashes = None
     while True:
         try:
             prv_commit = next(commits)
@@ -72,82 +94,70 @@ def get_crash_logs(
         prv_tree = prv_commit.tree
         prv_short_sha = prv_commit.hexsha[:7]
         shas.append(prv_short_sha)
-        prv_crashes_blob = prv_tree[CRASHES_RELPATH]
-        if orig_crashes is None:
-            orig_crashes = load_pqt_blob(prv_crashes_blob)
-        prv_crashes_sha = prv_crashes_blob.hexsha
+        try:
+            prv_crashes_blob = prv_tree[CRASHES_RELPATH]
+            prv_crashes_sha = prv_crashes_blob.hexsha
+        except KeyError:
+            if cur_commit.hexsha == DEFAULT_ROOT_SHA:
+                prv_crashes_sha = None
+            else:
+                raise RuntimeError(f"Commit {prv_short_sha} lacks {CRASHES_RELPATH}")
         if cur_tree is not None and cur_crashes_sha != prv_crashes_sha:
             try:
-                rundate_blob = cur_tree[RUNDATE_RELPATH]
-                rundate_object = json.load(rundate_blob.data_stream)
-                rundate = rundate_object["rundate"]
-                cc = CommitCrashes(cur_commit.hexsha)
-                sha_date = ShaDate(cur_commit.hexsha, rundate)
+                rundate = parse(get_rundate(cur_tree))
+                cur_sha = cur_commit.hexsha[:SHORT_SHA_LEN]
+                cc = CommitCrashes(cur_sha)
+
+                def save(accid, *snapshot_args):
+                    accid = int(accid)
+                    if accid not in crash_map:
+                        crash_map[accid] = Crash(accid=accid, snapshots=[])
+                    snapshot = Snapshot(*snapshot_args)
+                    crash_map[accid].snapshots.append(snapshot)
 
                 # Added crashes
                 for accid, crash in cc.adds_df.to_dict('index').items():
-                    if accid in adds:
-                        err(f"Duplicate add for {accid}: {adds[accid]} vs. {sha_date}")
-                    adds[accid] = sha_date
+                    save(accid, cur_sha, rundate, crash)
 
                 # Deleted crashes
                 for accid in cc.del_ids:
-                    if accid in dels:
-                        err(f"Duplicate del for {accid}: {dels[accid]} vs. {sha_date}")
-                    dels[accid] = sha_date
+                    save(accid, cur_sha, rundate)
 
                 # Updated crashes
-                for accid, diffs in cc.diff_objs.items():
-                    if accid not in crash_updates:
-                        crash_updates[accid] = []
-                    crash_updates[accid].append(CrashUpdate(sha_date.sha, sha_date.rundate, diffs))
+                for accid, crash in cc.updated_df.to_dict('index').items():
+                    save(accid, cur_sha, rundate, crash)
 
-                # For any crashes where we've just seen the first update or deletion, since it was initially added, save
-                # a denormalized copy of the initial ("original") crash info.
-                orig_ids_to_check = cc.del_ids + cc.updated_ids
-                orig_ids_to_add = [
-                    accid
-                    for accid in orig_ids_to_check
-                    if accid not in origs
-                ]
-                if orig_ids_to_add:
-                    prv_crashes = load_pqt_blob(prv_crashes_blob)
-                    del_crashes = prv_crashes.loc[orig_ids_to_add]
-                    for accid, crash in del_crashes.to_dict('index').items():
-                        origs[accid] = crash
             except Exception:
                 raise RuntimeError(f"Error processing commit {cur_commit.hexsha}")
+
+        if root and cur_commit and cur_commit.hexsha[:len(root)] == root:
+            err(f"Reached root commit {root} after {len(shas)} commits; breaking")
+            break
 
         # Step backward in history: current parent becomes child, next commit popped will be parent's parent
         cur_commit = prv_commit
         cur_tree = prv_tree
         cur_crashes_sha = prv_crashes_sha
 
-    crash_logs = []
-    for accid, added in adds.items():
-        deled = dels.get(accid)
-        updates = crash_updates.get(accid)
-        try:
-            cur = orig_crashes.loc[accid]
-        except KeyError:
-            cur = None
-        orig = origs.get(accid)
-        crash_log = CrashLog(
-            accid=accid,
-            added=added,
-            updates=updates,
-            deled=deled,
-            cur=cur,
-            orig=orig,
-        )
-        crash_logs.append(crash_log)
+    crashes = list(sorted(crash_map.values(), key=lambda c: c.accid))
+    for crash in crashes:
+        new_snapshots = []
+        prv = None
+        for cur in reversed(crash.snapshots):
+            cur.prv = prv
+            new_snapshots.append(cur)
+            prv = cur
+        crash.snapshots = new_snapshots
 
-    for accid, diffs in crash_updates.items():
-        if accid not in adds:
-            err(f"Found `updates` for {accid} without an `add`:\n\t%s" % '\n\t'.join(map(str, diffs)))
+    return crashes
 
-    for accid, sha_date in dels.items():
-        if accid not in adds:
-            err(f"Found `del` for {accid} without an `add`: {sha_date}")
 
-    return crash_logs
+def get_crashes_df(
+        repo=None,
+        head: Union[str, None] = None,
+        since: Union[str, datetime, pd.Timestamp, None] = None,
+        root: Union[str, None] = DEFAULT_ROOT_SHA,
+) -> pd.DataFrame:
+    crashes = get_crashes(repo=repo, head=head, since=since, root=root)
+    df = pd.DataFrame(crashes)
+    return df

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import json
-from dataclasses import dataclass
 from datetime import datetime
 from io import BytesIO
 from os import environ as env
@@ -15,11 +14,12 @@ from github import Auth, Github
 from github.Repository import Repository
 from github.Commit import Commit as GithubCommit
 from pandas import isna
-from utz import process, cached_property, singleton
+from utz import process, cached_property, err
 
 from git import Commit, Repo, Tree, Object, Blob
 
 from nj_crashes.paths import RUNDATE_RELPATH
+from nj_crashes.utils import get_fauqstats
 from njsp.paths import CRASHES_RELPATH
 
 _repo: Optional[Repo] = None
@@ -34,7 +34,7 @@ def get_repo() -> Repo:
 
 _gh: Optional[Github] = None
 _gh_repo: Optional[Repository] = None
-SHORT_SHA_LEN = 7
+SHORT_SHA_LEN = 8
 REPO = 'neighbor-ryan/nj-crashes'
 
 
@@ -149,13 +149,38 @@ def crash_str(
     return f'*{dt_str} ({github_link})*: {r.MNAME} ({r.CNAME} County), {location}: {victim_str} deceased'
 
 
-def git_fmt(*refs: str, fmt: str = '%h') -> str:
-    return process.line('git', 'log', '-1', f'--format={fmt}', *refs)
+def git_fmt(*refs: str, fmt: str = '%h', **kwargs) -> str:
+    return process.line('git', 'log', '-1', f'--format={fmt}', *refs, **kwargs)
 
 
-@dataclass
+def get_rundate(tree: Tree) -> str:
+    if RUNDATE_RELPATH in tree:
+        rundate_blob = tree[RUNDATE_RELPATH]
+        rundate_object = json.load(rundate_blob.data_stream)
+        rundate = rundate_object["rundate"]
+        return rundate
+    else:
+        data = tree['data']
+        blobs = data.blobs
+        xmls = {
+            blob.name: blob
+            for blob in blobs
+            if blob.name.startswith('FAUQStats')
+        }
+        blob = list(xmls.values())[-1]
+        fauqstats = get_fauqstats(blob.data_stream)
+        rundate = fauqstats.RUNDATE.text
+        return rundate
+
+
+# data/crashes.pqt has been updated ≈daily since this commit on 2022-11-16
+DEFAULT_ROOT_SHA = '3590e7d34cdae18cedfb1a661a3520ec679b544c'
+# www/public/rundate.json has existed since this commit on 2022-12-10
+# DEFAULT_ROOT_SHA = '448170bec'
+
+
 class CommitCrashes:
-    def __init__(self, ref: Union[str, Commit, None] = None):
+    def __init__(self, ref: Union[str, Commit, None] = None, log=False):
         if isinstance(ref, Commit):
             self.ref = ref.hexsha
             self.commit = ref
@@ -163,13 +188,14 @@ class CommitCrashes:
             self.ref = ref
             self.commit = get_repo().commit(self.ref)
         elif ref is None:
-            self.ref = git_fmt('HEAD')
+            self.ref = git_fmt('HEAD', log=log)
             self.commit = get_repo().commit(self.ref)
         else:
             raise TypeError(ref)
+        self.log = log
 
     def fmt(self, fmt: str) -> str:
-        return git_fmt(self.ref, fmt=fmt)
+        return git_fmt(self.ref, fmt=fmt, log=self.log)
 
     @cached_property
     def github_commit(self) -> GithubCommit:
@@ -203,11 +229,17 @@ class CommitCrashes:
 
     @property
     def parent(self) -> Commit:
-        return singleton(self.commit.parents, dedupe=False)
+        parents = self.commit.parents
+        if len(parents) > 1:
+            err(f"Expected 1 parent, got {len(parents)}: {parents}; returning first parent")
+        return parents[0]
 
     @cached_property
     def df0(self) -> pd.DataFrame:
-        return load_pqt(CRASHES_RELPATH, commit=self.parent)
+        if self.sha == DEFAULT_ROOT_SHA:
+            return pd.DataFrame([], columns=self.df1.columns)
+        else:
+            return load_pqt(CRASHES_RELPATH, commit=self.parent)
 
     @cached_property
     def df1(self) -> pd.DataFrame:
@@ -331,18 +363,12 @@ class CommitCrashes:
         return json.dumps(self.slack_json, indent=indent)
 
     @cached_property
-    def rundate_json(self):
-        path = RUNDATE_RELPATH
-        try:
-            rundate_blob = self.tree[path]
-            rundate_bytes = rundate_blob.data_stream.read()
-        except (ValueError, BadName):
-            rundate_bytes = get_github_repo().get_contents(path, ref=self.ref).decoded_content
-        return json.loads(rundate_bytes.decode())
+    def rundate(self):
+        return get_rundate(self.tree)
 
     @cached_property
     def run_dt(self) -> pd.Timestamp:
-        return pd.to_datetime(self.rundate_json['rundate'])
+        return pd.to_datetime(self.rundate)
 
     @cached_property
     def run_date(self) -> datetime.date:

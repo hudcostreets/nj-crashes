@@ -1,3 +1,5 @@
+from typing import IO, Union
+
 from IPython.core.display import Image
 from bs4 import BeautifulSoup as bs
 import pandas as pd
@@ -7,12 +9,20 @@ def get_children(tag):
     return [ child for child in tag.children if not isinstance(child, str) ]
 
 
-def parse_file(path):
-    with open(path, 'r') as f:
-        xml = bs(f, features="xml")
+def get_fauqstats(path: Union[str, IO]):
+    if isinstance(path, str):
+        with open(path, 'r') as f:
+            xml = bs(f, features="xml")
+    else:
+        xml = bs(path, features="xml")
     children = list(xml.children)
     assert len(children) == 2
     fauqstats = children[-1]
+    return fauqstats
+
+
+def parse_file(path: Union[str, IO]):
+    fauqstats = get_fauqstats(path)
     assert fauqstats.name == 'FAUQSTATS', fauqstats.name
     rundate = fauqstats.RUNDATE.text
     year = int(fauqstats.STATSYEAR.text)
