@@ -2,44 +2,39 @@
 # - Load XMLs
 # - Clean / Assign some dtypes
 # - Write to parquet and SQLite
-
+from git import Tree
 from utz import *
 
 from nj_crashes.paths import RUNDATE_PATH
-from nj_crashes.utils import parse_file
+from nj_crashes.utils import parse_file, Log
 from .base import command
 from ..paths import CRASHES_PQT
 
 
-@command
-def update_pqts():
-    cur_month = to_dt(now().strftime('%Y-%m'))
-    cur_year = cur_month.year
-
-    parsed_files = {
-        year: parse_file(f'data/FAUQStats{year}.xml')
-        for year in range(2008, cur_year + 1)
-    }
+def get_crashes_df(tree: Optional[Tree] = None, log: Log = err) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Timestamp]:
+    if tree is None:
+        parsed_files = [
+            parse_file(path)
+            for path in glob('data/FAUQStats20*.xml')
+        ]
+    else:
+        data = tree['data']
+        blobs = data.blobs
+        parsed_files = [
+            parse_file(blob.data_stream, log=log, blob_sha=blob.hexsha)
+            for blob in blobs
+            if blob.name.startswith('FAUQStats20')
+        ]
     crashes, totals = [
         pd.concat(dfs)
         for dfs in
         zip(*[
             [ dfs['crashes'], dfs['totals'] ]
-            for dfs in parsed_files.values()
+            for dfs in parsed_files
         ])
     ]
     totals = totals.set_index('year')
-    print(totals)
-
-    rundate = to_dt(parsed_files[cur_year]['rundate'])
-    with open(RUNDATE_PATH, 'w') as f:
-        json.dump({ 'rundate': str(rundate), }, f)
-
-    cur_year_dt = to_dt(str(cur_year)).tz_localize(rundate.tz)
-    nxt_year_dt = to_dt(str(cur_year + 1)).tz_localize(rundate.tz)
-    cur_month_dt = cur_month.tz_localize(rundate.tz)
-
-    print(cur_year_dt, cur_month_dt, rundate, nxt_year_dt)
+    log(totals)
 
     crashes['dt'] = crashes[['DATE', 'TIME']].apply(lambda r: to_dt(f'{r["DATE"]} {r["TIME"]}'), axis=1)
     crashes = (
@@ -56,7 +51,24 @@ def update_pqts():
         .set_index('ACCID')
     )
     crashes = crashes.sort_values('dt')
-    print(crashes)
+    log(crashes)
+
+    last_parsed_file = parsed_files[-1]
+    last_year_rundate = last_parsed_file['rundate']
+    # err(last_year_rundate)
+    last_year_run_dt = parse(last_year_rundate)
+    # err(str(last_year_run_dt))
+    rundate = to_dt(last_year_run_dt)
+
+    return crashes, totals, rundate
+
+
+@command
+def update_pqts():
+    crashes, totals, rundate = get_crashes_df()
+
+    with open(RUNDATE_PATH, 'w') as f:
+        json.dump({ 'rundate': str(rundate), }, f)
 
     counties = crashes[['CCODE', 'CNAME']].value_counts().rename('accidents').reset_index().set_index('CCODE').sort_index().CNAME
 

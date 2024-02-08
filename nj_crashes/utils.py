@@ -1,8 +1,9 @@
-from typing import IO, Union
+from typing import IO, Union, Callable
 
 from IPython.core.display import Image
 from bs4 import BeautifulSoup as bs
 import pandas as pd
+from utz import err
 
 
 def get_children(tag):
@@ -21,7 +22,17 @@ def get_fauqstats(path: Union[str, IO]):
     return fauqstats
 
 
-def parse_file(path: Union[str, IO]):
+Log = Callable[[str], None]
+def none(msg: str):
+    pass
+
+
+parsed_file_cache = {}
+
+
+def parse_file(path: Union[str, IO], log: Log = err, blob_sha: str = None):
+    if blob_sha and blob_sha in parsed_file_cache:
+        return parsed_file_cache[blob_sha]
     fauqstats = get_fauqstats(path)
     assert fauqstats.name == 'FAUQSTATS', fauqstats.name
     rundate = fauqstats.RUNDATE.text
@@ -31,7 +42,7 @@ def parse_file(path: Union[str, IO]):
     total_injuries = int(fauqstats.TOTINJURIES.text)
     total_fatalities = int(fauqstats.TOTFATALITIES.text)
     crash_counties = [ county for county in counties if county.MUNICIPALITY ]
-    print(f'{len(counties)} "COUNTY" entries, {len(crash_counties)} containing "MUNICIPALITY"/crash info, {total_accidents} accidents, {total_injuries} injuries, {total_fatalities} fatalities')
+    log(f'{len(counties)} "COUNTY" entries, {len(crash_counties)} containing "MUNICIPALITY"/crash info, {total_accidents} accidents, {total_injuries} injuries, {total_fatalities} fatalities')
     records = []
     for county in crash_counties:
         municipalities = county.find_all('MUNICIPALITY')
@@ -53,7 +64,10 @@ def parse_file(path: Union[str, IO]):
         injuries=total_injuries,
         fatalities=total_fatalities,
     )])
-    return dict(crashes=df, totals=totals_df, rundate=rundate)
+    rv = dict(crashes=df, totals=totals_df, rundate=rundate)
+    if blob_sha:
+        parsed_file_cache[blob_sha] = rv
+    return rv
 
 
 def normalized_ytd_days(dt):

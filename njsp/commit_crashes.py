@@ -19,7 +19,8 @@ from utz import process, cached_property, err
 from git import Commit, Repo, Tree, Object, Blob
 
 from nj_crashes.paths import RUNDATE_RELPATH
-from nj_crashes.utils import get_fauqstats
+from nj_crashes.utils import get_fauqstats, none
+from njsp.cli.update_pqts import get_crashes_df
 from njsp.paths import CRASHES_RELPATH
 
 _repo: Optional[Repo] = None
@@ -180,7 +181,12 @@ DEFAULT_ROOT_SHA = '3590e7d34cdae18cedfb1a661a3520ec679b544c'
 
 
 class CommitCrashes:
-    def __init__(self, ref: Union[str, Commit, None] = None, log=False):
+    def __init__(
+            self,
+            ref: Union[str, Commit, None] = None,
+            log=False,
+            load_pqt=True,
+    ):
         if isinstance(ref, Commit):
             self.ref = ref.hexsha
             self.commit = ref
@@ -193,6 +199,7 @@ class CommitCrashes:
         else:
             raise TypeError(ref)
         self.log = log
+        self.load_pqt = load_pqt
 
     def fmt(self, fmt: str) -> str:
         return git_fmt(self.ref, fmt=fmt, log=self.log)
@@ -238,12 +245,17 @@ class CommitCrashes:
     def df0(self) -> pd.DataFrame:
         if self.sha == DEFAULT_ROOT_SHA:
             return pd.DataFrame([], columns=self.df1.columns)
-        else:
+        elif self.load_pqt:
             return load_pqt(CRASHES_RELPATH, commit=self.parent)
+        else:
+            return get_crashes_df(self.parent.tree, log=none)[0]
 
     @cached_property
     def df1(self) -> pd.DataFrame:
-        return load_pqt(CRASHES_RELPATH, commit=self.commit)
+        if self.load_pqt:
+            return load_pqt(CRASHES_RELPATH, commit=self.commit)
+        else:
+            return get_crashes_df(self.commit.tree, log=none)[0]
 
     @cached_property
     def dfs(self) -> Tuple[pd.DataFrame, pd.DataFrame]:

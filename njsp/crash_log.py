@@ -1,8 +1,7 @@
 import pandas as pd
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from dateutil.parser import parse
-from typing import Optional, Tuple, Union, Literal
+from typing import Optional, Union, Literal
 from utz import err
 
 from njsp.commit_crashes import get_repo, CommitCrashes, get_rundate, DEFAULT_ROOT_SHA, SHORT_SHA_LEN
@@ -11,70 +10,18 @@ from njsp.paths import CRASHES_RELPATH
 Kind = Literal['add', 'update', 'del']
 
 
-@dataclass
-class Snapshot:
-    sha: str
-    rundate: str
-    crash: Optional[pd.Series] = None
-    prv: Optional['Snapshot'] = None
-
-    @property
-    def kind(self) -> Kind:
-        return 'add' if self.prv is None else 'del' if self.crash is None else 'update'
-
-    @property
-    def diff_obj(self) -> dict[str, Tuple]:
-        if self.prv is None:
-            return {
-                k: (None, v)
-                for k, v in self.crash.to_dict().items()
-            }
-        if self.crash is None:
-            return {
-                k: (v, None)
-                for k, v in self.prv.crash.to_dict().items()
-            }
-        prv = self.prv.crash
-        cur = self.crash
-        return {
-            k: (prv[k], v)
-            for k, v in cur.to_dict().items()
-        }
-
-
-@dataclass
-class Crash:
-    accid: int
-    snapshots: list[Snapshot] = field(default_factory=list)
-
-    @property
-    def first(self) -> Snapshot:
-        return self.snapshots[0]
-
-    @property
-    def last(self) -> Snapshot:
-        return self.snapshots[-1]
-
-    @property
-    def cur(self) -> pd.Series:
-        return self.last.crash
-
-    @property
-    def orig(self) -> pd.Series:
-        return self.first.crash
-
-
-def get_crashes(
+def get_crashes_df(
         repo=None,
         head: Union[str, None] = None,
         since: Union[str, datetime, pd.Timestamp, None] = None,
         root: Union[str, None] = DEFAULT_ROOT_SHA,
-) -> list[Crash]:
+        load_pqt: bool = True,
+) -> pd.DataFrame:
     if isinstance(since, (str, datetime)):
         tz = datetime.now(timezone.utc).astimezone().tzinfo
         since = pd.to_datetime(since).tz_localize(tz)
 
-    crash_map = {}
+    crash_map = {}  # (accid: int) -> list[pd.Series]
     repo = repo or get_repo()
     # TODO: pass CRASHES_RELPATH directly here?
     commits = repo.iter_commits(head)
@@ -106,26 +53,26 @@ def get_crashes(
             try:
                 rundate = parse(get_rundate(cur_tree))
                 cur_sha = cur_commit.hexsha[:SHORT_SHA_LEN]
-                cc = CommitCrashes(cur_sha)
+                cc = CommitCrashes(cur_sha, load_pqt=load_pqt)
 
-                def save(accid, *snapshot_args):
+                def save(accid, crash: Optional[pd.Series], kind: Kind):
                     accid = int(accid)
                     if accid not in crash_map:
-                        crash_map[accid] = Crash(accid=accid, snapshots=[])
-                    snapshot = Snapshot(*snapshot_args)
-                    crash_map[accid].snapshots.append(snapshot)
+                        crash_map[accid] = []
+                    snapshot = dict(accid=accid, sha=cur_sha, rundate=rundate, kind=kind, **(crash or {}))
+                    crash_map[accid].append(snapshot)
 
                 # Added crashes
                 for accid, crash in cc.adds_df.to_dict('index').items():
-                    save(accid, cur_sha, rundate, crash)
+                    save(accid, crash, 'add')
 
                 # Deleted crashes
                 for accid in cc.del_ids:
-                    save(accid, cur_sha, rundate)
+                    save(accid, None, 'del')
 
                 # Updated crashes
                 for accid, crash in cc.updated_df.to_dict('index').items():
-                    save(accid, cur_sha, rundate, crash)
+                    save(accid, crash, 'update')
 
             except Exception:
                 raise RuntimeError(f"Error processing commit {cur_commit.hexsha}")
@@ -139,25 +86,14 @@ def get_crashes(
         cur_tree = prv_tree
         cur_crashes_sha = prv_crashes_sha
 
-    crashes = list(sorted(crash_map.values(), key=lambda c: c.accid))
-    for crash in crashes:
-        new_snapshots = []
-        prv = None
-        for cur in reversed(crash.snapshots):
-            cur.prv = prv
-            new_snapshots.append(cur)
-            prv = cur
-        crash.snapshots = new_snapshots
+    crashes_df = (
+        pd.DataFrame([
+            snapshot
+            for snapshots in crash_map.values()
+            for snapshot in snapshots
+        ])
+        .sort_values(['accid', 'rundate'])
+        .set_index(['accid', 'sha'])
+    )
 
-    return crashes
-
-
-def get_crashes_df(
-        repo=None,
-        head: Union[str, None] = None,
-        since: Union[str, datetime, pd.Timestamp, None] = None,
-        root: Union[str, None] = DEFAULT_ROOT_SHA,
-) -> pd.DataFrame:
-    crashes = get_crashes(repo=repo, head=head, since=since, root=root)
-    df = pd.DataFrame(crashes)
-    return df
+    return crashes_df
