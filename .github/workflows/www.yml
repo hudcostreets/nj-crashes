@@ -20,9 +20,23 @@ jobs:
     name: Build + Deploy to GitHub Pages (iff www/ has changed since last gh-pages push)
     runs-on: ubuntu-latest
     steps:
+      - name: Resolve inputs.ref to full SHA
+        id: resolve-ref
+        # https://github.com/actions/checkout/issues/265
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          ref=${{ inputs.ref }}
+          sha=$(gh api /repos/$GITHUB_REPOSITORY/commits/$ref | jq -r .sha)
+          if [ -z "$sha" ]; then
+            echo "Failed to resolve ref $ref (possibly missing GH_TOKEN env var?)" >&2
+            exit 1
+          fi
+          echo "Expanded ref $ref to SHA $sha"
+          echo "sha=$sha" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ steps.resolve-ref.outputs.sha }}
       - uses: pnpm/action-setup@v2
         with:
           version: 8
