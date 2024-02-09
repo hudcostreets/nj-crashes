@@ -111,7 +111,11 @@ jobs:
       - name: Post to Slack
         id: post_to_slack
         if: (github.event.schedule || inputs.post_to_slack) && (steps.update_pqts_sha.outputs.sha || !inputs.short_circuit)
-        run: njsp slack sync -m500 -c ${{ steps.update_pqts_sha.outputs.sha }}
+        run: |
+          ref=${{ steps.update_pqts_sha.outputs.sha }}
+          sha=$(gh api /repos/neighbor-ryan/nj-crashes/commits/$ref | jq -r .sha)
+          git fetch origin $sha
+          njsp slack sync -m500 -c $sha
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
