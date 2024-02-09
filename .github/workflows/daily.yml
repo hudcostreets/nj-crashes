@@ -85,7 +85,7 @@ jobs:
           aws s3api put-object-acl --bucket nj-crashes --key nj_crashes.db --acl public-read
           aws s3 cp data/crashes.pqt s3://nj-crashes/data/crashes.parquet
           aws s3api put-object-acl --bucket nj-crashes --key data/crashes.parquet --acl public-read
-      - name: Compute update_plots
+      - name: Compute plot_data.changed
         id: plot_data
         if: (github.event.schedule || inputs.update_plots) && (steps.update_pqts_sha.outputs.sha || !inputs.short_circuit)
         run: echo "changed=1" >> $GITHUB_OUTPUT

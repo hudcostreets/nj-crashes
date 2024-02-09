@@ -60,7 +60,7 @@ def oldest_commit_rundate_since(dt: str) -> Tuple[Commit, str]:
         try:
             commit = next(commits)
         except StopIteration:
-            raise RuntimeError(f"Ran out of commits after {len(shas)}: {','.join(shas)}")
+            raise RuntimeError(f"Ran out of commits after {len(shas)}, looking for {dt}: {','.join(shas)}")
         tree = commit.tree
         short_sha = commit.hexsha[:7]
         shas.append(short_sha)
