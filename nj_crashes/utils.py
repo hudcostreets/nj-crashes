@@ -1,3 +1,9 @@
+import re
+
+from dataclasses import dataclass
+from git import Blob, Commit, Tree
+from pandas import Series
+
 from typing import IO, Union, Callable
 
 from IPython.core.display import Image
@@ -23,51 +29,108 @@ def get_fauqstats(path: Union[str, IO]):
 
 
 Log = Callable[[str], None]
+
+
 def none(msg: str):
     pass
 
 
-parsed_file_cache = {}
+fauqstats_cache = {}
 
 
-def parse_file(path: Union[str, IO], log: Log = err, blob_sha: str = None):
-    if blob_sha and blob_sha in parsed_file_cache:
-        return parsed_file_cache[blob_sha]
-    fauqstats = get_fauqstats(path)
-    assert fauqstats.name == 'FAUQSTATS', fauqstats.name
-    rundate = fauqstats.RUNDATE.text
-    year = int(fauqstats.STATSYEAR.text)
-    counties = fauqstats.find_all('COUNTY', recursive=False)
-    total_accidents = int(fauqstats.TOTACCIDENTS.text)
-    total_injuries = int(fauqstats.TOTINJURIES.text)
-    total_fatalities = int(fauqstats.TOTFATALITIES.text)
-    crash_counties = [ county for county in counties if county.MUNICIPALITY ]
-    log(f'{len(counties)} "COUNTY" entries, {len(crash_counties)} containing "MUNICIPALITY"/crash info, {total_accidents} accidents, {total_injuries} injuries, {total_fatalities} fatalities')
-    records = []
-    for county in crash_counties:
-        municipalities = county.find_all('MUNICIPALITY')
-        for municipality in municipalities:
-            assert municipality.name == 'MUNICIPALITY'
-            children = get_children(municipality)
-            accidents = municipality.find_all('ACCIDENT', recursive=False)
-            if len(children) != len(accidents):
-                raise ValueError(f'Found {len(children)} municipality children, but {len(accidents)} accidents: {county}. {accidents}')
-            for accident in accidents:
-                obj = { child.name: child.text for child in get_children(accident) }
-                obj = dict(**county.attrs, **municipality.attrs, **accident.attrs, **obj, )
-                records.append(obj)
+@dataclass
+class FAUQStats:
+    year: int
+    rundate: str
+    crashes: pd.DataFrame
+    totals: pd.DataFrame
 
-    df = pd.DataFrame(records)
-    totals_df = pd.DataFrame([dict(
-        year=year,
-        accidents=total_accidents,
-        injuries=total_injuries,
-        fatalities=total_fatalities,
-    )])
-    rv = dict(crashes=df, totals=totals_df, rundate=rundate)
-    if blob_sha:
-        parsed_file_cache[blob_sha] = rv
-    return rv
+    @classmethod
+    def blobs(cls, obj: Union[Commit, Tree]) -> dict[int, Blob]:
+        if isinstance(obj, Commit):
+            tree = obj.tree
+        else:
+            tree = obj
+        fauqstats_blobs = {}
+        data = tree['data']
+        for blob in data.blobs:
+            m = re.fullmatch(r'FAUQStats(?P<year>20\d\d)\.xml', blob.name)
+            if not m:
+                continue
+            year = int(m['year'])
+            fauqstats_blobs[year] = blob
+        return fauqstats_blobs
+
+    @classmethod
+    def load(cls, obj: Union[str, Blob], log: Log = err) -> 'FAUQStats':
+        if isinstance(obj, Blob):
+            blob_sha = obj.hexsha
+            if blob_sha in fauqstats_cache:
+                fauqstats = fauqstats_cache[blob_sha]
+                log(f"FAUQStats cache hit: {fauqstats.year}, {fauqstats.rundate}")
+                return fauqstats
+            fauqstats = get_fauqstats(obj.data_stream)
+        else:
+            blob_sha = None
+            fauqstats = get_fauqstats(obj)
+        assert fauqstats.name == 'FAUQSTATS', fauqstats.name
+        rundate = fauqstats.RUNDATE.text
+        year = int(fauqstats.STATSYEAR.text)
+        counties = fauqstats.find_all('COUNTY', recursive=False)
+        total_accidents = int(fauqstats.TOTACCIDENTS.text)
+        total_injuries = int(fauqstats.TOTINJURIES.text)
+        total_fatalities = int(fauqstats.TOTFATALITIES.text)
+        crash_counties = [ county for county in counties if county.MUNICIPALITY ]
+        # log(f'{len(counties)} "COUNTY" entries, {len(crash_counties)} containing "MUNICIPALITY"/crash info, {total_accidents} accidents, {total_injuries} injuries, {total_fatalities} fatalities')
+        records = []
+        for county in crash_counties:
+            municipalities = county.find_all('MUNICIPALITY')
+            for municipality in municipalities:
+                assert municipality.name == 'MUNICIPALITY'
+                children = get_children(municipality)
+                accidents = municipality.find_all('ACCIDENT', recursive=False)
+                if len(children) != len(accidents):
+                    raise ValueError(f'Found {len(children)} municipality children, but {len(accidents)} accidents: {county}. {accidents}')
+                for accident in accidents:
+                    obj = { child.name: child.text for child in get_children(accident) }
+                    obj = dict(**county.attrs, **municipality.attrs, **accident.attrs, **obj, )
+                    records.append(obj)
+
+        crashes = pd.DataFrame(records)
+        if 'DATE' in crashes:
+            crashes['dt'] = crashes[['DATE', 'TIME']].apply(lambda r: pd.to_datetime(f'{r["DATE"]} {r["TIME"]}'), axis=1)
+            dtypes = {
+                'FATALITIES': float,
+                'FATAL_D': float,
+                'FATAL_P': float,
+                'FATAL_T': float,
+                'FATAL_B': float,
+            }
+            if 'INJURIES' in crashes:
+                dtypes['INJURIES'] = float
+            crashes = (
+                crashes
+                .astype(dtypes)
+                .drop(columns=['DATE', 'TIME'])
+                .set_index('ACCID')
+                .sort_values('dt')
+            )
+        else:
+            # e.g. loading an XML from the start of a year, when there's no crashes yet that year
+            # crashes['dt'] = Series([], dtype='datetime64[ns]')
+            pass
+
+        totals_df = pd.DataFrame([dict(
+            year=year,
+            accidents=total_accidents,
+            injuries=total_injuries,
+            fatalities=total_fatalities,
+        )])
+        fauqstats = FAUQStats(year=year, rundate=rundate, crashes=crashes, totals=totals_df)
+        if blob_sha:
+            log(f"FAUQStats cache miss: {fauqstats.year}, {fauqstats.rundate}")
+            fauqstats_cache[blob_sha] = fauqstats
+        return fauqstats
 
 
 def normalized_ytd_days(dt):
@@ -85,5 +148,5 @@ def show(fig, i=False, w=1000, h=600):
 
 
 if __name__ == '__main__':
-    result = parse_file('data/FAUQStats2023.xml')
+    result = load_fauqstats('data/FAUQStats2023.xml')
     print(result)

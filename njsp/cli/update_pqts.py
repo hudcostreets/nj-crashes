@@ -2,62 +2,44 @@
 # - Load XMLs
 # - Clean / Assign some dtypes
 # - Write to parquet and SQLite
-from git import Tree
+from git import Tree, Commit, Blob
 from utz import *
 
 from nj_crashes.paths import RUNDATE_PATH
-from nj_crashes.utils import parse_file, Log
+from nj_crashes.utils import Log, FAUQStats
 from .base import command
 from ..paths import CRASHES_PQT
 
 
-def get_crashes_df(tree: Optional[Tree] = None, log: Log = err) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Timestamp]:
+def get_crashes_df(
+        tree: Optional[Tree] = None,
+        log: Log = err,
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Timestamp]:
     if tree is None:
-        parsed_files = [
-            parse_file(path)
+        fauqstatss = [
+            FAUQStats.load(path)
             for path in glob('data/FAUQStats20*.xml')
         ]
     else:
-        data = tree['data']
-        blobs = data.blobs
-        parsed_files = [
-            parse_file(blob.data_stream, log=log, blob_sha=blob.hexsha)
-            for blob in blobs
-            if blob.name.startswith('FAUQStats20')
+        fauqstatss = [
+            FAUQStats.load(blob.data_stream, log=log, blob_sha=blob.hexsha)
+            for blob in FAUQStats.blobs(tree).values()
         ]
     crashes, totals = [
         pd.concat(dfs)
         for dfs in
         zip(*[
-            [ dfs['crashes'], dfs['totals'] ]
-            for dfs in parsed_files
+            [ fauqstats.crashes, fauqstats.totals ]
+            for fauqstats in fauqstatss
         ])
     ]
     totals = totals.set_index('year')
     log(totals)
-
-    crashes['dt'] = crashes[['DATE', 'TIME']].apply(lambda r: to_dt(f'{r["DATE"]} {r["TIME"]}'), axis=1)
-    crashes = (
-        crashes
-        .astype({
-            'FATALITIES': float,
-            'FATAL_D': float,
-            'FATAL_P': float,
-            'FATAL_T': float,
-            'FATAL_B': float,
-            'INJURIES': float,
-        })
-        .drop(columns=['DATE', 'TIME'])
-        .set_index('ACCID')
-    )
-    crashes = crashes.sort_values('dt')
     log(crashes)
 
-    last_parsed_file = parsed_files[-1]
-    last_year_rundate = last_parsed_file['rundate']
-    # err(last_year_rundate)
+    last_fauqstats = fauqstatss[-1]
+    last_year_rundate = last_fauqstats.rundate
     last_year_run_dt = parse(last_year_rundate)
-    # err(str(last_year_run_dt))
     rundate = to_dt(last_year_run_dt)
 
     return crashes, totals, rundate

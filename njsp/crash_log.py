@@ -4,6 +4,7 @@ from dateutil.parser import parse
 from typing import Optional, Union, Literal
 from utz import err
 
+from nj_crashes.utils import FAUQStats
 from njsp.commit_crashes import get_repo, CommitCrashes, get_rundate, DEFAULT_ROOT_SHA, SHORT_SHA_LEN
 from njsp.paths import CRASHES_RELPATH
 
@@ -16,6 +17,7 @@ def get_crashes_df(
         since: Union[str, datetime, pd.Timestamp, None] = None,
         root: Union[str, None] = DEFAULT_ROOT_SHA,
         load_pqt: bool = True,
+        log: bool = True,
 ) -> pd.DataFrame:
     if isinstance(since, (str, datetime)):
         tz = datetime.now(timezone.utc).astimezone().tzinfo
@@ -28,7 +30,7 @@ def get_crashes_df(
     shas = []
     cur_commit = None
     cur_tree = None
-    cur_crashes_sha = None
+    cur_fauqstats_blobs = None
     while True:
         try:
             prv_commit = next(commits)
@@ -42,18 +44,20 @@ def get_crashes_df(
         prv_short_sha = prv_commit.hexsha[:7]
         shas.append(prv_short_sha)
         try:
-            prv_crashes_blob = prv_tree[CRASHES_RELPATH]
-            prv_crashes_sha = prv_crashes_blob.hexsha
+            prv_fauqstats_blobs = FAUQStats.blobs(prv_tree)
+            # prv_crashes_blob = prv_tree[CRASHES_RELPATH]
+            # prv_crashes_sha = prv_crashes_blob.hexsha
         except KeyError:
-            if cur_commit.hexsha == DEFAULT_ROOT_SHA:
-                prv_crashes_sha = None
+            if prv_commit.hexsha == DEFAULT_ROOT_SHA:
+                prv_fauqstats_blobs = None
+                # prv_crashes_sha = None
             else:
                 raise RuntimeError(f"Commit {prv_short_sha} lacks {CRASHES_RELPATH}")
-        if cur_tree is not None and cur_crashes_sha != prv_crashes_sha:
+        if cur_tree is not None and cur_fauqstats_blobs != prv_fauqstats_blobs:
             try:
-                rundate = parse(get_rundate(cur_tree))
+                rundate = pd.to_datetime(parse(get_rundate(cur_tree))).tz_convert('US/Eastern')
                 cur_sha = cur_commit.hexsha[:SHORT_SHA_LEN]
-                cc = CommitCrashes(cur_sha, load_pqt=load_pqt)
+                cc = CommitCrashes(cur_sha, load_pqt=load_pqt, log=log)
 
                 def save(accid, crash: Optional[pd.Series], kind: Kind):
                     accid = int(accid)
@@ -77,23 +81,25 @@ def get_crashes_df(
             except Exception:
                 raise RuntimeError(f"Error processing commit {cur_commit.hexsha}")
 
-        if root and cur_commit and cur_commit.hexsha[:len(root)] == root:
+        if root and prv_commit and prv_commit.hexsha[:len(root)] == root:
             err(f"Reached root commit {root} after {len(shas)} commits; breaking")
             break
 
         # Step backward in history: current parent becomes child, next commit popped will be parent's parent
         cur_commit = prv_commit
         cur_tree = prv_tree
-        cur_crashes_sha = prv_crashes_sha
+        cur_fauqstats_blobs = prv_fauqstats_blobs
 
-    crashes_df = (
-        pd.DataFrame([
-            snapshot
-            for snapshots in crash_map.values()
-            for snapshot in snapshots
-        ])
-        .sort_values(['accid', 'rundate'])
-        .set_index(['accid', 'sha'])
-    )
+    crashes_df = pd.DataFrame([
+        snapshot
+        for snapshots in crash_map.values()
+        for snapshot in snapshots
+    ])
+    if not crashes_df.empty:
+        crashes_df = (
+            crashes_df
+            .sort_values(['accid', 'rundate'])
+            .set_index(['accid', 'sha'])
+        )
 
     return crashes_df
