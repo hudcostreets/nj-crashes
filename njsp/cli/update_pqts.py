@@ -33,6 +33,7 @@ def get_crashes_df(
             FAUQStats.load(blob.data_stream, log=log, blob_sha=blob.hexsha)
             for blob in FAUQStats.blobs(tree).values()
         ]
+    fauqstatss = list(sorted(fauqstatss, key=lambda fauqstats: fauqstats.year))
     crashes, totals = [
         pd.concat(dfs)
         for dfs in
