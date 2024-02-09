@@ -1,6 +1,6 @@
 import json
 from os import makedirs, environ
-from os.path import exists, dirname
+from os.path import exists
 from typing import Optional, Iterable, Callable
 
 from slack_sdk import WebClient
@@ -143,7 +143,7 @@ class ChannelClient:
             msgs = resp.data['messages']
             err(f'Slack: fetched {len(msgs)} messages')
             for msg in msgs:
-                self.cache.update(self.channel, msg)
+                self.cache.update(msg)
 
     def msg_kwargs(self, accid: str, text: str) -> dict:
         return dict(
@@ -173,7 +173,7 @@ class ChannelClient:
             resp = self.client.chat_postMessage(**msg_kwargs)
             msg = resp.data['message']
             err(f"ACCID {accid}: sent message {msg['ts']}")
-            self.cache.update(self.channel, msg)
+            self.cache.update(msg)
 
     def delete_msg(self, ts: str, accid: str):
         self.client.chat_delete(channel=self.channel, ts=ts)
@@ -191,4 +191,4 @@ class ChannelClient:
         if ts != new_ts:
             raise RuntimeError(f"Message {ts} updated to {new_ts}")
         new_msg['ts'] = ts  # Not included in chat.update `message` payload
-        self.cache.update(self.channel, new_msg)
+        self.cache.update(new_msg)
