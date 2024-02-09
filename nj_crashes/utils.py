@@ -1,15 +1,14 @@
 import re
+import utz
 
 from dataclasses import dataclass
 from git import Blob, Commit, Tree
-from pandas import Series
 
 from typing import IO, Union, Callable
 
 from IPython.core.display import Image
 from bs4 import BeautifulSoup as bs
 import pandas as pd
-from utz import err
 
 
 def get_children(tag):
@@ -33,6 +32,10 @@ Log = Callable[[str], None]
 
 def none(msg: str):
     pass
+
+
+def err(msg):
+    utz.err(str(msg))
 
 
 fauqstats_cache = {}
@@ -99,15 +102,19 @@ class FAUQStats:
         crashes = pd.DataFrame(records)
         if 'DATE' in crashes:
             crashes['dt'] = crashes[['DATE', 'TIME']].apply(lambda r: pd.to_datetime(f'{r["DATE"]} {r["TIME"]}'), axis=1)
+            float_cols = [
+                'FATALITIES',
+                'FATAL_D',
+                'FATAL_P',
+                'FATAL_T',
+                'FATAL_B',
+                'INJURIES',
+            ]
             dtypes = {
-                'FATALITIES': float,
-                'FATAL_D': float,
-                'FATAL_P': float,
-                'FATAL_T': float,
-                'FATAL_B': float,
+                col: float
+                for col in float_cols
+                if col in crashes
             }
-            if 'INJURIES' in crashes:
-                dtypes['INJURIES'] = float
             crashes = (
                 crashes
                 .astype(dtypes)

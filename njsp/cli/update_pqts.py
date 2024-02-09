@@ -2,11 +2,19 @@
 # - Load XMLs
 # - Clean / Assign some dtypes
 # - Write to parquet and SQLite
-from git import Tree, Commit, Blob
-from utz import *
+import json
+
+from dateutil.parser import parse
+from glob import glob
+
+import pandas as pd
+from typing import Optional, Tuple
+
+from git import Tree
+from utz import sxs
 
 from nj_crashes.paths import RUNDATE_PATH
-from nj_crashes.utils import Log, FAUQStats
+from nj_crashes.utils import Log, FAUQStats, err
 from .base import command
 from ..paths import CRASHES_PQT
 
@@ -33,14 +41,14 @@ def get_crashes_df(
             for fauqstats in fauqstatss
         ])
     ]
-    totals = totals.set_index('year')
+    totals = totals.set_index('year').sort_index()
     log(totals)
     log(crashes)
 
     last_fauqstats = fauqstatss[-1]
     last_year_rundate = last_fauqstats.rundate
     last_year_run_dt = parse(last_year_rundate)
-    rundate = to_dt(last_year_run_dt)
+    rundate = pd.to_datetime(last_year_run_dt)
 
     return crashes, totals, rundate
 
@@ -52,7 +60,16 @@ def update_pqts():
     with open(RUNDATE_PATH, 'w') as f:
         json.dump({ 'rundate': str(rundate), }, f)
 
-    counties = crashes[['CCODE', 'CNAME']].value_counts().rename('accidents').reset_index().set_index('CCODE').sort_index().CNAME
+    counties = (
+        crashes
+        [['CCODE', 'CNAME']]
+        .value_counts()
+        .rename('accidents')
+        .reset_index()
+        .set_index('CCODE')
+        .sort_index()
+        .CNAME
+    )
 
     munis = (
         crashes
@@ -73,7 +90,12 @@ def update_pqts():
     counties.to_frame().to_parquet('data/counties.pqt')
     munis.to_parquet('data/munis.pqt')
 
-    muni_counties = crashes.groupby('MNAME').apply(lambda df: df['CNAME'].unique()).rename('counties')
+    muni_counties = (
+        crashes
+        .groupby('MNAME')
+        .apply(lambda df: df['CNAME'].unique())
+        .rename('counties')
+    )
 
     muni_county_counts = muni_counties.apply(len).rename('muni_county_counts').sort_values()
     multi_county_counts = muni_county_counts[muni_county_counts > 1]
