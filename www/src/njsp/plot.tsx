@@ -105,7 +105,7 @@ export const title = "New Jersey Car Crash Deaths"
 export const AllTypes: Type[] = ["Drivers", "Pedestrians", "Cyclists", "Passengers", "Projected"]
 export type Type = "Drivers" | "Pedestrians" | "Cyclists" | "Passengers" | "Projected"
 
-export function NjspPlot({ params, tableData, typeProjections, rundate, projectedTotals, }: Props) {
+export function NjspPlot({ params, tableData, typeProjections, rundate, yearTotalsMap, }: Props) {
     const spec = njspPlotSpec
     let { src, name } = spec
     src = src ?? `plots/${name}.png`
@@ -195,7 +195,7 @@ export function NjspPlot({ params, tableData, typeProjections, rundate, projecte
             params={{ data, layout: { ...layout, annotations }, ...plotRest }}
             src={src}
             title={title}
-            data={{ rundate, projectedTotals }}
+            data={{ rundate, yearTotalsMap }}
             onLegendClick={onLegendClick}
             onLegendDoubleClick={onLegendDoubleClick}
         />

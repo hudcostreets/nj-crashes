@@ -7,8 +7,7 @@ import { Nav } from "@rdub/next-base/nav";
 import { getBasePath } from "@rdub/next-base/basePath"
 import { Socials } from "@rdub/next-base/socials"
 import { GitHub, url } from "@/src/socials"
-import { HasTotals, Plot, plotSpecs, ProjectedTotals } from "@/src/plotSpecs";
-import { loadSync } from "@rdub/base/load";
+import { Plot, plotSpecs } from "@/src/plotSpecs";
 import { buildPlot, buildPlots, PlotsDict } from "@rdub/next-plotly/plot";
 import { loadPlots } from "@rdub/next-plotly/plot-load";
 import { NjspPlot } from "@/src/njsp/plot";
@@ -30,8 +29,8 @@ const Home = ({ plotsDict, njspProps, }: Props) => {
     // console.log("Home plots:", plotsDict)
     const basePath = getBasePath()
 
-    const { rundate, projectedTotals } = njspProps
-    const data = { rundate, projectedTotals }
+    const { rundate, yearTotalsMap } = njspProps
+    const data = { rundate, yearTotalsMap }
     const [ njspPlotSpec, ...plotSpecs2 ] = plotSpecs
     const njspPlot = buildPlot(njspPlotSpec, plotsDict[njspPlotSpec.id], data)
     const plots: Plot[] = buildPlots(plotSpecs2, plotsDict, data)
@@ -111,8 +110,13 @@ const Home = ({ plotsDict, njspProps, }: Props) => {
                                     </>
                                 }
                                 <div key={id} className={css["plot-container"]}>
-                                    <Plot id={id} basePath={basePath} {...rest} margin={{b: 30,}}
-                                          data={{rundate, projectedTotals}}/>
+                                    <Plot
+                                        id={id}
+                                        basePath={basePath}
+                                        {...rest}
+                                        margin={{b: 30,}}
+                                        data={{rundate, yearTotalsMap}}
+                                    />
                                     <hr/>
                                 </div>
                             </Fragment>

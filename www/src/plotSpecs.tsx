@@ -8,9 +8,11 @@ export const curYear = (new Date().getFullYear())
 export const prvYear = curYear - 1
 export type Year = "2021" | "2022" | typeof prvYear | typeof curYear
 export type ProjectedTotals = { [k in Year]: number }
-export type HasTotals = { projectedTotals: ProjectedTotals }
-
-export type Data = { rundate: string } & HasTotals
+export type YearTotalsMap = { [k in Year]: { total: number, projected: number } }
+export type Data = {
+    rundate: string
+    yearTotalsMap: YearTotalsMap
+}
 export type PlotSpec = Plots.PlotSpec<Data>
 export type Plot<TraceName extends string = string> = Plots.Plot<Data, TraceName>
 export function Plot<TraceName extends string = string>(args: Plot<TraceName>) { return Plots.Plot<Data, TraceName>(args) }
@@ -45,16 +47,17 @@ export const njspPlotSpec: PlotSpec = {
     title: "NJ Traffic Deaths per Year", id: "per-year", name: "fatalities_per_year_by_type",
     menuName: "Traffic Deaths / Year", dropdownSection: "NJSP",
     filter: filterValues({ mapRange: HalfRoundWiden }),
-    children: ({ rundate, projectedTotals }: Data) => {
-        const total2021 = projectedTotals["2021"]
-        const total2022 = projectedTotals["2022"]
-        const prvYearTotal = projectedTotals[prvYear]
-        const curYearTotal = projectedTotals[curYear]
+    children: ({ rundate, yearTotalsMap }: Data) => {
+        const total2021 = yearTotalsMap["2021"].total
+        const total2022 = yearTotalsMap["2022"].total
+        const prvYearTotal = yearTotalsMap[prvYear].total
+        const { total: curYearTotal, projected: curYearProjected } = yearTotalsMap[curYear]
+        const curYearProjectedTotal = curYearTotal + curYearProjected
         const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
         return <>
             <p>Click/Double-click the legend to toggle/solo individual traces.</p>
             <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
-            <p><A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, {curYear} is on pace {curYearTotal > prvYearTotal ? `to exceed ${prvYear}, with` : `for`} {curYearTotal} deaths (<A href={estimationHref}>estimated</A>).</p>
+            <p><A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, {curYear} has {curYearTotal} reported deaths, and <A href={estimationHref}>is estimated</A> to be on pace {curYearProjectedTotal > prvYearTotal ? `to exceed ${prvYear}, with` : `for`} {curYearProjectedTotal} deaths.</p>
         </>
     },
 }
