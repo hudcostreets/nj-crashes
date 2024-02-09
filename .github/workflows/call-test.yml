@@ -1,14 +1,34 @@
-name: Call Slack-post workflow
+name: Test actions/checkout ref expansion
 on:
   workflow_dispatch:
     inputs:
-      commits:
-        description: "Commits"
-        default: 22b52f3
+      ref:
+        type: string
+        default: main
+        description: "The branch, tag, or SHA to checkout"
 jobs:
-  post:
-    name: Call Slack-post workflow
-    uses: ./.github/workflows/slack-test.yml
-    with:
-      commits: ${{ inputs.commits }}
-    secrets: inherit
+  run:
+    name: Test actions/checkout ref expansion
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve inputs.ref to full SHA
+        id: resolve-ref
+        # https://github.com/actions/checkout/issues/265
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          ref=${{ inputs.ref }}
+          sha=$(gh api /repos/$GITHUB_REPOSITORY/commits/$ref | jq -r .sha)
+          if [ -z "$sha" ]; then
+            echo "Failed to resolve ref $ref (possibly missing GH_TOKEN env var?)" >&2
+            exit 1
+          fi
+          echo "Expanded ref $ref to SHA $sha"
+          echo "sha=$sha" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.resolve-ref.outputs.sha }}
+      - name: Verify checked out commit
+        run: |
+          echo "Output SHA: ${{ steps.resolve-ref.outputs.sha }}"
+          git log -1
