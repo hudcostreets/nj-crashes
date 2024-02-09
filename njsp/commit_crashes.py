@@ -190,7 +190,15 @@ class CommitCrashes:
             self.commit = ref
         elif isinstance(ref, str):
             self.ref = ref
-            self.commit = get_repo().commit(self.ref)
+            try:
+                self.commit = get_repo().commit(self.ref)
+            except BadName:
+                github_commit = get_github_repo().get_commit(self.ref)
+                commit_sha = github_commit.sha
+                err(f"Didn't find ref {ref}, attempting to fetch {commit_sha}")
+                remote = f'https://github.com/{REPO}'
+                process.run('git', 'fetch', '--depth=2', remote, commit_sha)
+                self.commit = get_repo().commit(commit_sha)
         elif ref is None:
             self.ref = git_fmt('HEAD', log=log)
             self.commit = get_repo().commit(self.ref)
