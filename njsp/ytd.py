@@ -64,7 +64,10 @@ def oldest_commit_rundate_since(dt: str) -> Tuple[Commit, str]:
         tree = commit.tree
         short_sha = commit.hexsha[:7]
         shas.append(short_sha)
-        rundate_blob = tree[RUNDATE_RELPATH]
+        try:
+            rundate_blob = tree[RUNDATE_RELPATH]
+        except KeyError:
+            raise RuntimeError(f"Commit {short_sha} is missing {RUNDATE_RELPATH}")
         rundate_object = json.load(rundate_blob.data_stream)
         commit_rundate = rundate_object["rundate"]
         if commit_rundate < dt:
