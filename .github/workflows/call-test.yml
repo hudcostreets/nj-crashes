@@ -1,4 +1,4 @@
-name: Test actions/checkout ref expansion
+name: Test env context
 on:
   workflow_dispatch:
     inputs:
@@ -6,29 +6,25 @@ on:
         type: string
         default: main
         description: "The branch, tag, or SHA to checkout"
+      bool1:
+        type: boolean
+        description: "test flag #1"
+        default: true
+      bool2:
+        type: boolean
+        description: "test flag #2"
+        default: false
 jobs:
   run:
-    name: Test actions/checkout ref expansion
+    name: Test env context
     runs-on: ubuntu-latest
     steps:
-      - name: Resolve inputs.ref to full SHA
-        id: resolve-ref
-        # https://github.com/actions/checkout/issues/265
+      - name: test env context
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          test1: ${{ inputs.bool1 || '' }}
+          test2: ${{ inputs.bool2 || '' }}
         run: |
-          ref=${{ inputs.ref }}
-          sha=$(gh api /repos/$GITHUB_REPOSITORY/commits/$ref | jq -r .sha)
-          if [ -z "$sha" ]; then
-            echo "Failed to resolve ref $ref (possibly missing GH_TOKEN env var?)" >&2
-            exit 1
-          fi
-          echo "Expanded ref $ref to SHA $sha"
-          echo "sha=$sha" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.resolve-ref.outputs.sha }}
-      - name: Verify checked out commit
-        run: |
-          echo "Output SHA: ${{ steps.resolve-ref.outputs.sha }}"
-          git log -1
+          export test3=yay3
+          echo "env.test1: ${{ env.test1 || 'boo1' }}"
+          echo "env.test2: ${{ env.test2 || 'boo2' }}"
+          echo "env.test3: ${{ env.test3 || 'boo3' }}"
