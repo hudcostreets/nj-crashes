@@ -106,6 +106,9 @@ jobs:
         if: inputs.update_crash_log || steps.refresh_data.outputs.sha
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
         run: njsp crash_logs -a s3://nj-crashes/data/njsp/crash-log.parquet -vi
       - name: Compute plot_data.changed
         id: plot_data
