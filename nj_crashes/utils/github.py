@@ -9,7 +9,7 @@ import git
 from github.Commit import Commit
 from github.GitTree import GitTree
 from io import BytesIO
-from os.path import exists
+from os.path import exists, expanduser
 
 from github import Auth, Github
 from github.Repository import Repository
@@ -29,12 +29,13 @@ def get_github_repo() -> Repository:
     global _gh
     global _gh_repo
     if _gh is None:
-        GITHUB_TOKEN = environ.get('GITHUB_TOKEN')
+        GITHUB_TOKEN = environ.get('GITHUB_TOKEN') or environ.get('GH_TOKEN')
         if not GITHUB_TOKEN:
-            github_token_path = '.github_token'
-            if exists(github_token_path):
-                with open(github_token_path, 'r') as f:
-                    GITHUB_TOKEN = f.read()
+            for github_token_path in [ '.github_token', '.gh_token', '~/.github_token', '~/.gh_token' ]:
+                if exists(expanduser(github_token_path)):
+                    with open(github_token_path, 'r') as f:
+                        GITHUB_TOKEN = f.read()
+                        break
         if GITHUB_TOKEN:
             auth = Auth.Token(GITHUB_TOKEN)
             auth_kwargs = dict(auth=auth)

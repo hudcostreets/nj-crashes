@@ -104,6 +104,8 @@ jobs:
           aws s3api put-object-acl --bucket nj-crashes --key data/crashes.parquet --acl public-read
       - name: Update crash log
         if: inputs.update_crash_log || steps.refresh_data.outputs.sha
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: njsp crash_logs -a s3://nj-crashes/data/njsp/crash-log.parquet -vi
       - name: Compute plot_data.changed
         id: plot_data
