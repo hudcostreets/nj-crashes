@@ -43,9 +43,12 @@ jobs:
       - name: Compute step that need to run
         id: compute_steps
         run: |
-          echo "needs_python=${{ github.event.schedule || inputs.refresh_data || inputs.update_pqts || inputs.update_pqts_sha || inputs.update_plots || inputs.post_to_slack || '' }}" >> $GITHUB_OUTPUT
+          needs_python=${{ github.event.schedule || inputs.refresh_data || inputs.update_pqts || inputs.update_pqts_sha || inputs.update_plots || inputs.post_to_slack || '' }}
+          echo "needs_python=$needs_python" >> $GITHUB_OUTPUT
+          echo "needs_python=${{ env.needs_python }}" >> $GITHUB_OUTPUT
+          echo "needs_checkout=${{ env.needs_python || inputs.build_www || '' }}" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v4
-        if: steps.compute_steps.outputs.needs_python
+        if: steps.compute_steps.outputs.needs_checkout
         with:
           ref: ${{ github.ref_name }}
       - uses: webfactory/ssh-agent@v0.7.0
