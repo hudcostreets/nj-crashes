@@ -134,5 +134,6 @@ jobs:
     needs: refresh_data
     if: needs.refresh_data.outputs.build_www
     uses: ./.github/workflows/www.yml
+    secrets: inherit
     with:
       ref: ${{ needs.refresh_data.outputs.sha }}
