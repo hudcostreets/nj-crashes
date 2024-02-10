@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Feb 09 10:00:06 EST 2024</RUNDATE>
+  <RUNDATE>Sat Feb 10 10:00:07 EST 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2196,7 +2196,7 @@
   </COUNTY>
   <COUNTY CCODE="14" CNAME="Morris">
     <MUNICIPALITY MCODE="1438" MNAME="Washington Twsp">
-      <ACCIDENT ACCID="12728" DATE="10/07/2023" TIME="0358">
+      <ACCIDENT ACCID="12728" DATE="10/07/2023" TIME="0228">
         <STREET>Flocktown Rd</STREET>
         <LOCATION>Flocktown Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -2443,6 +2443,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4753,9 +4754,9 @@
   </COUNTY>
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0811" MNAME="Monroe Twsp">
-      <ACCIDENT ACCID="12522" DATE="06/22/2023" TIME="2229">
-        <STREET>Lake Avenue</STREET>
-        <LOCATION>Lake Avenue</LOCATION>
+      <ACCIDENT ACCID="12522" DATE="06/22/2023" TIME="2208">
+        <STREET>Lake Ave</STREET>
+        <LOCATION>Lake Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6019,7 +6020,7 @@
     <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
       <ACCIDENT ACCID="12423" DATE="04/19/2023" TIME="2008">
         <HIGHWAY>35</HIGHWAY>
-        <LOCATION>State Highway 35 MP 47.8</LOCATION>
+        <LOCATION>State Highway 35 MP 47.68</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6029,7 +6030,7 @@
       </ACCIDENT>
       <ACCIDENT ACCID="12420" DATE="04/18/2023" TIME="0321">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9 MP 128.5</LOCATION>
+        <LOCATION>State Highway 9 MP 128.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
