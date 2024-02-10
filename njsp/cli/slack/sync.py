@@ -58,7 +58,7 @@ def sync_crash(
 @dates(default_start=YMD(2008), help='Date range to filter crashes to, e.g. `202307-`, `20230710-202308')
 @option('-f', '--overwrite-existing', count=True, help='1x')
 @option(*CHANNEL_OPTS, help='Slack channel ID to post to; defaults to $SLACK_CHANNEL_ID')
-@option('-m', '--fetch-messages', type=int, help="Fetch messages from Slack and update cache (as opposed to just reading cached messages")
+@option('-m', '--fetch-messages', type=int, default=1000, help="Fetch messages from Slack and update cache (as opposed to just reading cached messages")
 @option('-n', '--dry-run', count=True, help="Avoid Slack API requests, cache updates, etc.")
 def sync(commits, start: YMD, end: YMD, overwrite_existing, channel, fetch_messages: Optional[int], dry_run: int):
     if commits:
@@ -66,6 +66,10 @@ def sync(commits, start: YMD, end: YMD, overwrite_existing, channel, fetch_messa
         crashes = pd.concat([cc.adds_df for cc in ccs])
     else:
         crashes = pd.read_parquet('data/crashes.pqt')
+
+    if crashes.empty:
+        err("No new crashes found, breaking")
+        return
 
     if start:
         crashes = crashes[crashes.dt.dt.date >= start.date]
