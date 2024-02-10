@@ -20,9 +20,9 @@ jobs:
     name: Build + Deploy to GitHub Pages (iff www/ has changed since last gh-pages push)
     runs-on: ubuntu-latest
     steps:
+      # See https://github.com/actions/checkout/issues/265#issuecomment-1936792528
       - name: Resolve inputs.ref to full SHA
         id: resolve-ref
-        # https://github.com/actions/checkout/issues/265
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
