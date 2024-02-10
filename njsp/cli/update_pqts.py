@@ -13,8 +13,9 @@ from typing import Optional, Tuple
 from git import Tree
 from utz import sxs
 
+from nj_crashes.fauqstats import FAUQStats
 from nj_crashes.paths import RUNDATE_PATH
-from nj_crashes.utils import Log, FAUQStats, err
+from nj_crashes.utils.log import Log, err
 from .base import command
 from ..paths import CRASHES_PQT
 
@@ -30,7 +31,7 @@ def get_crashes_df(
         ]
     else:
         fauqstatss = [
-            FAUQStats.load(blob.data_stream, log=log, blob_sha=blob.hexsha)
+            FAUQStats.load(blob.data_stream, log=log)
             for blob in FAUQStats.blobs(tree).values()
         ]
     fauqstatss = list(sorted(fauqstatss, key=lambda fauqstats: fauqstats.year))

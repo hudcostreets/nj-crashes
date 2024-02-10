@@ -1,81 +1,24 @@
 #!/usr/bin/env python
 
 import json
+import pandas as pd
 from datetime import datetime
+from git import Commit, Repo, Tree, Object, Blob
+from gitdb.exc import BadName
+from github import Github
+from github.Commit import Commit as GithubCommit
 from io import BytesIO
-from os import environ as env
-from os.path import exists
+from pandas import isna
 from subprocess import CalledProcessError
 from typing import Union, Optional, Tuple, Callable
-
-import pandas as pd
-from gitdb.exc import BadName
-from github import Auth, Github
-from github.Repository import Repository
-from github.Commit import Commit as GithubCommit
-from pandas import isna
 from utz import process, cached_property, err
 
-from git import Commit, Repo, Tree, Object, Blob
-
+from nj_crashes.fauqstats import get_fauqstats, FAUQStats
 from nj_crashes.paths import RUNDATE_RELPATH
-from nj_crashes.utils import get_fauqstats, none, FAUQStats
+from nj_crashes.utils.git import git_fmt, get_repo, SHORT_SHA_LEN
+from nj_crashes.utils.github import get_github_repo, load_pqt_github, REPO
+from nj_crashes.utils.log import none
 from njsp.paths import CRASHES_RELPATH
-
-_repo: Optional[Repo] = None
-
-
-def get_repo() -> Repo:
-    global _repo
-    if _repo is None:
-        _repo = Repo()
-    return _repo
-
-
-_gh: Optional[Github] = None
-_gh_repo: Optional[Repository] = None
-SHORT_SHA_LEN = 8
-REPO = 'neighbor-ryan/nj-crashes'
-
-
-def get_github_repo() -> Repository:
-    global _gh
-    global _gh_repo
-    if _gh is None:
-        GITHUB_TOKEN = env.get('GITHUB_TOKEN')
-        if not GITHUB_TOKEN:
-            github_token_path = '.github_token'
-            if exists(github_token_path):
-                with open(github_token_path, 'r') as f:
-                    GITHUB_TOKEN = f.read()
-        if GITHUB_TOKEN:
-            auth = Auth.Token(GITHUB_TOKEN)
-            auth_kwargs = dict(auth=auth)
-        else:
-            auth_kwargs = dict()
-        _gh = Github(**auth_kwargs)
-    if _gh_repo is None:
-        _gh_repo = _gh.get_repo(REPO)
-    return _gh_repo
-
-
-def load_github(
-        path: str,
-        ref: str = None,
-        repo: Optional[Repository] = None,
-) -> bytes:
-    if repo is None:
-        repo = get_github_repo()
-    return repo.get_contents(path, ref=ref).decoded_content
-
-
-def load_pqt_github(
-        path: str,
-        ref: str = None,
-        repo: Optional[Repository] = None,
-) -> pd.DataFrame:
-    content_bytes = load_github(path, ref, repo)
-    return pd.read_parquet(BytesIO(content_bytes))
 
 
 def load_pqt_blob(blob: Object) -> pd.DataFrame:
@@ -147,10 +90,6 @@ def crash_str(
 
     location = r.LOCATION.replace('&', '&amp;')
     return f'*{dt_str} ({github_link})*: {r.MNAME} ({r.CNAME} County), {location}: {victim_str} deceased'
-
-
-def git_fmt(*refs: str, fmt: str = '%h', log: bool = True, **kwargs) -> str:
-    return process.line('git', 'log', '-1', f'--format={fmt}', *refs, log=err if log is True else log, **kwargs)
 
 
 def get_rundate(tree: Tree) -> str:

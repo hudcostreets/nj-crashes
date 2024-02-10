@@ -8,7 +8,9 @@ from typing import Optional
 import click
 from utz import err
 
-from njsp.commit_crashes import REPO, load_github, git_fmt
+from nj_crashes.utils.git import git_fmt
+from nj_crashes.utils.github import load_github
+from njsp.commit_crashes import REPO
 
 
 def get_xml_path(year: int) -> str:

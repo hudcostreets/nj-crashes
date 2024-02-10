@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 from urllib.parse import ParseResult
 
-from nj_crashes.utils import err
+from nj_crashes.utils.log import err
 
 
 @contextmanager

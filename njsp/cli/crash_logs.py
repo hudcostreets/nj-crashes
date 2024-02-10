@@ -1,13 +1,11 @@
-from contextlib import nullcontext
 from os.path import splitext
-from urllib.parse import urlparse
 
 import click
 import pandas as pd
 from utz import singleton
 
-from nj_crashes.s3 import s3_upload_ctx, output_ctx, input_ctx
-from nj_crashes.utils import err
+from nj_crashes.utils.s3 import output_ctx, input_ctx
+from nj_crashes.utils.log import err
 from njsp.cli.base import njsp
 from njsp.crash_log import get_crashes_df, DEFAULT_ROOT_SHA
 from njsp.paths import CRASHES_RELPATH

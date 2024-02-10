@@ -1,27 +1,16 @@
-from base64 import b64decode
-
-from io import BytesIO
-
+import pandas as pd
 import re
-import utz
-
 from dataclasses import dataclass
-import git
 from git import Commit, Tree
 from github.Commit import Commit as GithubCommit
+from typing import Union, IO
+from utz import singleton
 
-from typing import IO, Union, Callable
-
-from IPython.core.display import Image
+import git
+from nj_crashes.utils.github import get_github_repo, Blob, GithubBlob
 from bs4 import BeautifulSoup as bs
-import pandas as pd
-from utz import singleton, process
 
-from njsp.commit_crashes import REPO, get_github_repo
-
-
-def get_children(tag):
-    return [ child for child in tag.children if not isinstance(child, str) ]
+from nj_crashes.utils.log import Log, err
 
 
 def get_fauqstats(path: Union[str, IO]):
@@ -36,39 +25,8 @@ def get_fauqstats(path: Union[str, IO]):
     return fauqstats
 
 
-Log = Callable[[str], None]
-
-
-def none(msg: str):
-    pass
-
-
-def err(msg):
-    utz.err(str(msg))
-
-
-@dataclass
-class GithubBlob:
-    """Partial implementation of git.Blob interface for GitHub blobs."""
-    name: str
-    hexsha: str
-
-    @property
-    def data_stream(self):
-        gh = get_github_repo()
-        blob = gh.get_git_blob(self.hexsha)
-        return BytesIO(b64decode(blob.content))
-        # return BytesIO(process.output('gh', 'api', '-H', 'Accept: application/vnd.github.raw+json', f'/repos/{REPO}/git/blobs/{self.hexsha}'))
-        # TODO: streaming response
-        # gh_token = environ['GH_TOKEN']
-        # headers = {
-        #     'Accept': 'application/vnd.github.raw+json',
-        #     'Authorization': f'Bearer {gh_token}',
-        # }
-        # return BytesIO(requests.get(self.blob.url, headers=headers).content)
-
-
-Blob = Union[git.Blob, GithubBlob]
+def get_children(tag):
+    return [ child for child in tag.children if not isinstance(child, str) ]
 
 
 fauqstats_cache = {}
@@ -112,7 +70,7 @@ class FAUQStats:
 
     @classmethod
     def load(cls, obj: Union[str, Blob], log: Log = err) -> 'FAUQStats':
-        if isinstance(obj, Blob):
+        if isinstance(obj, (git.Blob, GithubBlob)):
             blob_sha = obj.hexsha
             if blob_sha in fauqstats_cache:
                 fauqstats = fauqstats_cache[blob_sha]
@@ -184,17 +142,3 @@ class FAUQStats:
             log(f"FAUQStats cache miss: {fauqstats.year}, {fauqstats.rundate}")
             fauqstats_cache[blob_sha] = fauqstats
         return fauqstats
-
-
-def normalized_ytd_days(dt):
-    """Combine 2/29 and 2/28, count YTD days as if in non-leap years."""
-    days = int((dt - pd.to_datetime(f'{dt.year}').tz_localize(dt.tz)).days + 1)
-    if dt.year % 4 == 0 and dt.month >= 3:
-        days -= 1
-    return days
-
-
-interactive = False
-def show(fig, i=False, w=1000, h=600):
-    global interactive
-    return fig if interactive or i else Image(fig.to_image(width=w, height=h))

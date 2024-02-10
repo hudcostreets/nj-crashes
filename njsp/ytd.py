@@ -14,7 +14,6 @@ from git import Repo, Commit
 from utz import err
 
 from nj_crashes.paths import DB_URI, ROOT_DIR, RUNDATE_RELPATH
-from nj_crashes.utils import normalized_ytd_days
 from njsp.paths import CRASHES_PQT
 from njsp.rundate import Rundate
 from njsp.ytc import to_ytc
@@ -26,6 +25,14 @@ def get_all_days():
         for days in range(1, 366)
     ]).set_index('Days')
     return all_days
+
+
+def normalized_ytd_days(dt):
+    """Combine 2/29 and 2/28, count YTD days as if in non-leap years."""
+    days = int((dt - pd.to_datetime(f'{dt.year}').tz_localize(dt.tz)).days + 1)
+    if dt.year % 4 == 0 and dt.month >= 3:
+        days -= 1
+    return days
 
 
 def fill_all_days(df, rundate: Rundate):

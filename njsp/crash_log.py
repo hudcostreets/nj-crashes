@@ -4,7 +4,7 @@ from dateutil.parser import parse
 from typing import Optional, Union, Literal
 from utz import err
 
-from nj_crashes.utils import FAUQStats
+from nj_crashes.fauqstats import FAUQStats
 from njsp.commit_crashes import get_repo, CommitCrashes, get_rundate, DEFAULT_ROOT_SHA, SHORT_SHA_LEN
 from njsp.paths import CRASHES_RELPATH
 
