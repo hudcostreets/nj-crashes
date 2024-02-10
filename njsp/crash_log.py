@@ -41,21 +41,22 @@ def get_crashes_df(
             err(f"Reached commit authored at {authored_datetime} before {since}, after {len(shas)} commits; breaking")
             break
         prv_tree = prv_commit.tree
-        prv_short_sha = prv_commit.hexsha[:7]
+        prv_short_sha = prv_commit.hexsha[:SHORT_SHA_LEN]
         shas.append(prv_short_sha)
         try:
             prv_fauqstats_blobs = FAUQStats.blobs(prv_tree)
-            # prv_crashes_blob = prv_tree[CRASHES_RELPATH]
-            # prv_crashes_sha = prv_crashes_blob.hexsha
         except KeyError:
             if prv_commit.hexsha == DEFAULT_ROOT_SHA:
                 prv_fauqstats_blobs = None
-                # prv_crashes_sha = None
             else:
                 raise RuntimeError(f"Commit {prv_short_sha} lacks {CRASHES_RELPATH}")
         if cur_tree is not None and cur_fauqstats_blobs != prv_fauqstats_blobs:
             try:
-                rundate = pd.to_datetime(parse(get_rundate(cur_tree))).tz_convert('US/Eastern')
+                ts = pd.to_datetime(parse(get_rundate(cur_tree)))
+                if ts.tz is None:
+                    rundate = ts.tz_localize('US/Eastern')
+                else:
+                    rundate = ts.tz_convert('US/Eastern')
                 cur_sha = cur_commit.hexsha[:SHORT_SHA_LEN]
                 cc = CommitCrashes(cur_sha, load_pqt=load_pqt, log=log)
 

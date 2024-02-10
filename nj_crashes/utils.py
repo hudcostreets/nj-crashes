@@ -1,14 +1,23 @@
+from base64 import b64decode
+
+from io import BytesIO
+
 import re
 import utz
 
 from dataclasses import dataclass
-from git import Blob, Commit, Tree
+import git
+from git import Commit, Tree
+from github.Commit import Commit as GithubCommit
 
 from typing import IO, Union, Callable
 
 from IPython.core.display import Image
 from bs4 import BeautifulSoup as bs
 import pandas as pd
+from utz import singleton, process
+
+from njsp.commit_crashes import REPO, get_github_repo
 
 
 def get_children(tag):
@@ -38,6 +47,30 @@ def err(msg):
     utz.err(str(msg))
 
 
+@dataclass
+class GithubBlob:
+    """Partial implementation of git.Blob interface for GitHub blobs."""
+    name: str
+    hexsha: str
+
+    @property
+    def data_stream(self):
+        gh = get_github_repo()
+        blob = gh.get_git_blob(self.hexsha)
+        return BytesIO(b64decode(blob.content))
+        # return BytesIO(process.output('gh', 'api', '-H', 'Accept: application/vnd.github.raw+json', f'/repos/{REPO}/git/blobs/{self.hexsha}'))
+        # TODO: streaming response
+        # gh_token = environ['GH_TOKEN']
+        # headers = {
+        #     'Accept': 'application/vnd.github.raw+json',
+        #     'Authorization': f'Bearer {gh_token}',
+        # }
+        # return BytesIO(requests.get(self.blob.url, headers=headers).content)
+
+
+Blob = Union[git.Blob, GithubBlob]
+
+
 fauqstats_cache = {}
 
 
@@ -49,14 +82,27 @@ class FAUQStats:
     totals: pd.DataFrame
 
     @classmethod
-    def blobs(cls, obj: Union[Commit, Tree]) -> dict[int, Blob]:
-        if isinstance(obj, Commit):
-            tree = obj.tree
+    def blobs(cls, obj: Union[Commit, Tree, GithubCommit]) -> dict[int, Blob]:
+        if isinstance(obj, GithubCommit):
+            children = obj.commit.tree.tree
+            data = singleton([ e for e in children if e.path == 'data' ])
+            data_sha = data.sha
+            gh = get_github_repo()
+            data = gh.get_git_tree(data_sha)
+            children = data.raw_data['tree']
+            # tree_resp = process.json('gh', 'api', f'/repos/{REPO}/git/trees/{data_sha}')
+            # children = tree_resp['tree']
+            blobs = [ GithubBlob(name=e['path'], hexsha=e['sha']) for e in children if e['type'] == 'blob' ]
         else:
-            tree = obj
+            if isinstance(obj, Commit):
+                tree = obj.tree
+            else:
+                tree = obj
+            data = tree['data']
+            blobs = data.blobs
+
         fauqstats_blobs = {}
-        data = tree['data']
-        for blob in data.blobs:
+        for blob in blobs:
             m = re.fullmatch(r'FAUQStats(?P<year>20\d\d)\.xml', blob.name)
             if not m:
                 continue
@@ -152,8 +198,3 @@ interactive = False
 def show(fig, i=False, w=1000, h=600):
     global interactive
     return fig if interactive or i else Image(fig.to_image(width=w, height=h))
-
-
-if __name__ == '__main__':
-    result = load_fauqstats('data/FAUQStats2023.xml')
-    print(result)
