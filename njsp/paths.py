@@ -23,6 +23,8 @@ YTC_PQT = path.join(DATA_NJSP, 'year-type-county.pqt')
 YTC_DB = path.join(WWW_NJSP, 'year-type-county.db')
 YTC_DB_URI = f'sqlite:///{YTC_DB}'
 
+S3_CRASH_LOG_PQT = 's3://nj-crashes/data/njsp/crash-log.pqt'
+
 
 def annual_ytc_url(year):
     return f'https://www.nj.gov/njsp/info/fatalacc/pdf/ptccr_{year % 100:02d}.pdf'

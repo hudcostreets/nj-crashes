@@ -1,10 +1,13 @@
+from contextlib import nullcontext
 from os.path import splitext
+from urllib.parse import urlparse
 
 import click
 import pandas as pd
-from utz import err
+from utz import singleton
 
-from njdot.rawdata import singleton
+from nj_crashes.s3 import s3_upload_ctx, output_ctx, input_ctx
+from nj_crashes.utils import err
 from njsp.cli.base import njsp
 from njsp.crash_log import get_crashes_df, DEFAULT_ROOT_SHA
 from njsp.paths import CRASHES_RELPATH
@@ -21,6 +24,21 @@ COLS = [
 ]
 
 
+TBL = "crash_log"
+
+
+def load_prefix(path: str) -> pd.DataFrame:
+    xtn = splitext(path)[1]
+    if xtn in [".pqt", ".parquet"]:
+        return pd.read_parquet(path)
+    elif xtn == ".csv":
+        return pd.read_csv(path)
+    elif xtn in [".db", ".sqlite"]:
+        with input_ctx(path) as local_path:
+            db_uri = f'sqlite:///{local_path}'
+            return pd.read_sql(TBL, db_uri)
+
+
 @njsp.command("crash_logs")
 @click.option('-a', '--append-to', help='Append to existing file (typically `crash_logs/<root>.pqt`')
 @click.option("-f", "--write-dupes", is_flag=True, help="Write output even when duplicate rows are detected")
@@ -32,9 +50,10 @@ COLS = [
 @click.option("-s", "--since", help="Date to start from")
 @click.option("-v", "--verbose", is_flag=True, help="Print debug info")
 def crash_logs(append_to, write_dupes, head, in_place, out_path, load_parquet, root, since, verbose):
+    prefix = None
     if append_to:
         if not root:
-            prefix = pd.read_parquet(append_to)
+            prefix = load_prefix(append_to)
             df_sha = prefix.reset_index(level=0)
             latest_prefix_sha = df_sha.rundate.idxmax()
             root = latest_prefix_sha
@@ -55,14 +74,12 @@ def crash_logs(append_to, write_dupes, head, in_place, out_path, load_parquet, r
     ]
     df = df[cols]
     if append_to:
-        prefix = pd.read_parquet(append_to)
-        df = (
+        if prefix is None:
+            prefix = load_prefix(append_to)
+        reset = (
             pd.concat([prefix, df])
             .reset_index()
-            .sort_values(['accid', 'rundate'])
-            .set_index(['accid', 'sha'])
         )
-        reset = df.reset_index()
         dupes = reset[reset.duplicated(keep=False)]
         if not dupes.empty:
             dupe_shas = dupes.reset_index(level=1).sha.unique()
@@ -72,12 +89,25 @@ def crash_logs(append_to, write_dupes, head, in_place, out_path, load_parquet, r
             else:
                 raise ValueError(msg)
 
+        err(f"Found {len(df)} new rows, appending to {len(prefix)} from {append_to}:")
+        err(df)
+        df = (
+            reset
+            .sort_values(['accid', 'rundate'])
+            .set_index(['accid', 'sha'])
+        )
+
     if out_path:
         stem, xtn = splitext(out_path)
-        if xtn == ".pqt":
+        if xtn in [".pqt", ".parquet"]:
             df.to_parquet(out_path)
         elif xtn == ".csv":
             df.to_csv(out_path)
+        elif xtn in [".db", ".sqlite"]:
+            with output_ctx(out_path) as local_path:
+                db_uri = f'sqlite:///{local_path}'
+                df.to_sql(TBL, db_uri, if_exists="replace")
+                err(f"Wrote crash log to {local_path}")
         else:
             raise ValueError(f"Unrecognized extension: {xtn}")
     else:
