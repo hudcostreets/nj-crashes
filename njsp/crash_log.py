@@ -5,6 +5,7 @@ from typing import Optional, Union, Literal
 from utz import err
 
 from nj_crashes.fauqstats import FAUQStats
+from nj_crashes.utils.github import GithubCommit
 from njsp.commit_crashes import get_repo, CommitCrashes, get_rundate, DEFAULT_ROOT_SHA, SHORT_SHA_LEN
 from njsp.paths import CRASHES_RELPATH
 
@@ -28,14 +29,27 @@ def get_crashes_df(
     # TODO: pass CRASHES_RELPATH directly here?
     commits = repo.iter_commits(head)
     shas = []
+    using_gh_commits = False
     cur_commit = None
     cur_tree = None
     cur_fauqstats_blobs = None
     while True:
         try:
-            prv_commit = next(commits)
+            if using_gh_commits:
+                prv_commit = cur_commit.parent
+            else:
+                prv_commit = next(commits)
         except StopIteration:
-            raise RuntimeError(f"Ran out of commits after {len(shas)}: {','.join(shas)}")
+            if len(shas) > 10:
+                sha_strs = shas[:5] + ['...'] + shas[-5:]
+            else:
+                sha_strs = shas
+            err(f"Ran out of commits after {len(shas)} ({','.join(sha_strs)}), switching to Github commit traversal")
+            cur_commit = GithubCommit.from_git(cur_commit)
+            cur_tree = cur_commit.tree
+            cur_fauqstats_blobs = FAUQStats.blobs(cur_tree)
+            prv_commit = cur_commit.parent
+            using_gh_commits = True
         authored_datetime = pd.to_datetime(prv_commit.authored_datetime)
         if since and authored_datetime < since:
             err(f"Reached commit authored at {authored_datetime} before {since}, after {len(shas)} commits; breaking")

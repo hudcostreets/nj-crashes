@@ -2,12 +2,10 @@ import pandas as pd
 import re
 from dataclasses import dataclass
 from git import Commit, Tree
-from github.Commit import Commit as GithubCommit
 from typing import Union, IO
-from utz import singleton
 
 import git
-from nj_crashes.utils.github import get_github_repo, Blob, GithubBlob
+from nj_crashes.utils.github import Blob, GithubBlob, GithubCommit
 from bs4 import BeautifulSoup as bs
 
 from nj_crashes.utils.log import Log, err
@@ -41,23 +39,12 @@ class FAUQStats:
 
     @classmethod
     def blobs(cls, obj: Union[Commit, Tree, GithubCommit]) -> dict[int, Blob]:
-        if isinstance(obj, GithubCommit):
-            children = obj.commit.tree.tree
-            data = singleton([ e for e in children if e.path == 'data' ])
-            data_sha = data.sha
-            gh = get_github_repo()
-            data = gh.get_git_tree(data_sha)
-            children = data.raw_data['tree']
-            # tree_resp = process.json('gh', 'api', f'/repos/{REPO}/git/trees/{data_sha}')
-            # children = tree_resp['tree']
-            blobs = [ GithubBlob(name=e['path'], hexsha=e['sha']) for e in children if e['type'] == 'blob' ]
+        if isinstance(obj, (Commit, GithubCommit)):
+            tree = obj.tree
         else:
-            if isinstance(obj, Commit):
-                tree = obj.tree
-            else:
-                tree = obj
-            data = tree['data']
-            blobs = data.blobs
+            tree = obj
+        data = tree['data']
+        blobs = data.blobs
 
         fauqstats_blobs = {}
         for blob in blobs:
