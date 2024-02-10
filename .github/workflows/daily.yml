@@ -50,11 +50,13 @@ jobs:
     steps:
       - name: Compute step that need to run
         id: compute_steps
+        env:
+          scheduled_run: ${{ github.event.schedule && 'true' || '' }}
+          needs_python: ${{ env.scheduled_run || inputs.refresh_data || inputs.update_pqts || inputs.update_slack_sha || inputs.update_plots || inputs.post_to_slack || '' }}
+          needs_checkout: ${{ env.needs_python || inputs.build_www || '' }}
         run: |
-          needs_python=${{ github.event.schedule || inputs.refresh_data || inputs.update_pqts || inputs.update_slack_sha || inputs.update_plots || inputs.post_to_slack || '' }}
-          echo "needs_python=$needs_python" >> $GITHUB_OUTPUT
-          echo "needs_python=${{ env.needs_python }}" >> $GITHUB_OUTPUT
-          echo "needs_checkout=${{ env.needs_python || inputs.build_www || '' }}" >> $GITHUB_OUTPUT
+          echo "needs_python=$needs_python" | tee -a $GITHUB_OUTPUT
+          echo "needs_checkout=$needs_checkout" | tee -a $GITHUB_OUTPUT
       - uses: actions/checkout@v4
         if: steps.compute_steps.outputs.needs_checkout
         with:
@@ -66,7 +68,7 @@ jobs:
       - uses: actions/setup-python@v4
         if: steps.compute_steps.outputs.needs_python
         with:
-          python-version: 3.9
+          python-version: 3.11
           cache: pip
       - run: pip install -e .
         if: steps.compute_steps.outputs.needs_python
