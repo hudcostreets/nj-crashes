@@ -48,32 +48,26 @@ jobs:
     name: Refresh NJSP data, dispatch www rebuild (if necessary)
     runs-on: ubuntu-latest
     steps:
-      - name: Compute step that need to run
-        id: compute_steps
-        env:
-          scheduled_run: ${{ github.event.schedule && 'true' || '' }}
-          needs_python: ${{ env.scheduled_run || inputs.refresh_data || inputs.update_pqts || inputs.update_slack_sha || inputs.update_plots || inputs.post_to_slack || '' }}
-          needs_checkout: ${{ env.needs_python || inputs.build_www || '' }}
-        run: |
-          echo "needs_python=$needs_python" | tee -a $GITHUB_OUTPUT
-          echo "needs_checkout=$needs_checkout" | tee -a $GITHUB_OUTPUT
+      - name: Setup Python?
+        id: needs_python
+        run: echo "y=${{ github.event.schedule || inputs.refresh_data || inputs.update_pqts || inputs.update_slack_sha || inputs.update_plots || inputs.post_to_slack || '' }}" | tee -a $GITHUB_OUTPUT
       - uses: actions/checkout@v4
-        if: steps.compute_steps.outputs.needs_checkout
+        if: steps.needs_python.outputs.needs_python || inputs.build_www
         with:
           ref: ${{ github.ref_name }}
       - uses: webfactory/ssh-agent@v0.7.0
-        if: steps.compute_steps.outputs.needs_python
+        if: steps.needs_python.outputs.y
         with:
           ssh-private-key: ${{ secrets.GHA_DEPLOY_KEY }}
       - uses: actions/setup-python@v4
-        if: steps.compute_steps.outputs.needs_python
+        if: steps.needs_python.outputs.y
         with:
           python-version: 3.11
           cache: pip
       - run: pip install -e .
-        if: steps.compute_steps.outputs.needs_python
+        if: steps.needs_python.outputs.y
       - name: Configure Git author
-        if: steps.compute_steps.outputs.needs_python
+        if: steps.needs_python.outputs.y
         run: |
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'ryan-williams@users.noreply.github.com'

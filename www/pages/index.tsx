@@ -83,7 +83,7 @@ const Home = ({ plotsDict, njspProps, }: Props) => {
                     <span className={css.bold}>Work in progress</span> map of NJDOT data: 5 years (2017-2021) of fatal
                     and injury crashes in Hudson County:
                 </p>
-                <iframe src={`${basePath}/map/hudson`} className={css.map}/>
+                <iframe src={`${basePath}/map/hudson`} className={css.map} />
                 <ul style={{listStyle: "none"}}>
                     <li><A href={"/map/hudson"}>Full screen map here</A></li>
                     <li>Code and cleaned data are <A href={GitHub.href}>here on GitHub</A>.</li>
