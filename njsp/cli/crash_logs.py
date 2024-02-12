@@ -55,7 +55,7 @@ def crash_logs(append_to, write_dupes, head, in_place, out_path, load_parquet, r
             df_sha = prefix.reset_index(level=0)
             latest_prefix_sha = df_sha.rundate.idxmax()
             root = latest_prefix_sha
-            latest_rundate = singleton(df_sha.loc[latest_prefix_sha, 'rundate'].tolist())
+            latest_rundate = singleton(df_sha.loc[[latest_prefix_sha], 'rundate'].tolist())
             err(f"Using latest SHA from {append_to} as root: {root} (rundate {latest_rundate})")
         if in_place:
             if out_path:
