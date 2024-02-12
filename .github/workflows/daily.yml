@@ -52,7 +52,7 @@ jobs:
         id: needs_python
         run: echo "y=${{ github.event.schedule || inputs.refresh_data || inputs.update_pqts || inputs.update_slack_sha || inputs.update_plots || inputs.post_to_slack || '' }}" | tee -a $GITHUB_OUTPUT
       - uses: actions/checkout@v4
-        if: steps.needs_python.outputs.needs_python || inputs.build_www
+        if: steps.needs_python.outputs.y || inputs.build_www
         with:
           ref: ${{ github.ref_name }}
       - uses: webfactory/ssh-agent@v0.7.0
