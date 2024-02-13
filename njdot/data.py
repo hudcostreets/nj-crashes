@@ -32,6 +32,13 @@ COUNTIES = [
     'Warren',
 ]
 REGIONS = ['NewJersey'] + COUNTIES
+
+cc2cn = {
+    cc: 'Cape May' if cn == 'CapeMay' else cn
+    for cc, cn in enumerate(COUNTIES, 1)
+}
+cn2cc = { cn: cc for cc, cn in cc2cn.items() }
+
 YEARS: list[str] = list(map(str, range(START_YEAR, END_YEAR)))
 TYPE_TO_TABLE = {
     'Accidents': 'Crash',

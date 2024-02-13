@@ -1,4 +1,4 @@
-from nj_crashes.crashes import Crashes
+from njdot.crashes import Crashes
 
 
 def test_load_hudson_5yrs():
