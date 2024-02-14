@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Feb 13 10:00:07 EST 2024</RUNDATE>
+  <RUNDATE>Wed Feb 14 10:00:07 EST 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2004,7 +2004,7 @@
     <MUNICIPALITY MCODE="0427" MNAME="Pennsauken Twsp">
       <ACCIDENT ACCID="12744" DATE="10/17/2023" TIME="1854">
         <HIGHWAY>38</HIGHWAY>
-        <LOCATION>State Highway 38</LOCATION>
+        <LOCATION>State Highway 38 MP 1.1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3249,12 +3249,13 @@
     <MUNICIPALITY MCODE="0805" MNAME="Franklin Twsp">
       <ACCIDENT ACCID="12646" DATE="08/25/2023" TIME="1427">
         <HIGHWAY>47</HIGHWAY>
-        <LOCATION>State Highway 47</LOCATION>
+        <LOCATION>State Highway 47 MP 56.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3617,12 +3618,13 @@
     <MUNICIPALITY MCODE="0805" MNAME="Franklin Twsp">
       <ACCIDENT ACCID="12617" DATE="08/14/2023" TIME="1038">
         <HIGHWAY>47</HIGHWAY>
-        <LOCATION>State Highway 47</LOCATION>
+        <LOCATION>State Highway 47 MP 56.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3710,7 +3712,7 @@
   </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0325" MNAME="Mount Laurel Twsp">
-      <ACCIDENT ACCID="12611" DATE="08/11/2023" TIME="0649">
+      <ACCIDENT ACCID="12611" DATE="08/11/2023" TIME="0650">
         <HIGHWAY>95</HIGHWAY>
         <LOCATION>New Jersey Turnpike MP 39</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -3718,6 +3720,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4298,8 +4301,8 @@
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0802" MNAME="Deptford Twsp">
       <ACCIDENT ACCID="12561" DATE="07/15/2023" TIME="0827">
-        <STREET>Deptford Ave</STREET>
-        <LOCATION>Deptford Ave</LOCATION>
+        <HIGHWAY>646</HIGHWAY>
+        <LOCATION>County 646 MP 0</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5028,6 +5031,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5035,7 +5039,7 @@
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="12502" DATE="06/12/2023" TIME="2243">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 44.52</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7971,5 +7975,5 @@
   </COUNTY>
   <TOTACCIDENTS>588</TOTACCIDENTS>
   <TOTFATALITIES>620</TOTFATALITIES>
-  <TOTINJURIES>220</TOTINJURIES>
+  <TOTINJURIES>223</TOTINJURIES>
 </FAUQSTATS>
