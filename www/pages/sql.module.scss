@@ -1,0 +1,19 @@
+.control {
+  margin-bottom: 0.3em;
+  label {
+    input {
+      min-width: 25em;
+      padding: 0.2em 0.4em;
+    }
+  }
+  input {
+    font-size: 1.1em;
+    margin-left: 0.3em;
+  }
+  .updateButton {
+  }
+}
+
+.sqlError {
+  background-color: #ffdddd;
+}
