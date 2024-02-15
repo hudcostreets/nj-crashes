@@ -4,6 +4,7 @@ import { useSqlQuery } from "@/src/sqlQuery";
 import { getBasePath } from "@rdub/next-base/basePath";
 import { Result } from "@/src/sql/result";
 import { useMemo, useState } from "react";
+import { loadSync } from "@rdub/base/load";
 
 export type Params = {
     county: string
@@ -11,6 +12,7 @@ export type Params = {
 
 export type Props = {
     cc: number
+    mc2mn: { [mc: number]: string }
 } & Params
 
 const Counties = [
@@ -49,18 +51,20 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
     if (!params) {
         return { notFound: true }
     }
+    const cc2mc2mn = loadSync('public/njdot/cc2mc2mn.json') as any
     let { county } = params
     county = county.toLowerCase()
     const cc = CountyCodes[county]
-    return { props: { county, cc } }
+    const mc2mn = cc2mc2mn[cc].mc2mn
+    return { props: { county, cc, mc2mn } }
 }
 
 export const titleCase = (s: string) => s.split(' ').map(word => word[0].toUpperCase() + word.slice(1)).join(' ')
 
-export default function CountyPage({ county, cc }: Props) {
+export default function CountyPage({ county, cc, mc2mn }: Props) {
     const basePath = getBasePath()
 
-    const [ perPage, setPerPage ] = useState<number>(25)
+    const [ perPage, setPerPage ] = useState<number>(20)
     const [ page, setPage ] = useState<number>(0)
 
     const query = useMemo(
@@ -82,7 +86,7 @@ export default function CountyPage({ county, cc }: Props) {
     return (
         <div>
             <h1>{countyTitle} County</h1>
-            <Result result={result} />
+            <Result result={result} mc2mn={mc2mn} />
         </div>
     )
 }

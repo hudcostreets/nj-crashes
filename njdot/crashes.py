@@ -1,5 +1,3 @@
-from os.path import dirname
-
 from math import sqrt
 
 from dataclasses import dataclass, asdict
@@ -14,7 +12,6 @@ from utz import cached_property, DF, sxs, err
 from nj_crashes.geo import is_nj_ll
 from nj_crashes.sri.mp05 import get_mp05_map
 from njdot import NJDOT_DIR
-from njdot.codes import CrashSeverity
 from njdot.data import END_YEAR, START_YEAR
 
 Year = Union[str, int]
@@ -22,12 +19,24 @@ Years = Union[Year, list[Year]]
 
 INDEX_NAME = 'id'
 pk_cols = [ 'year', 'cc', 'mc', 'case', ]
-renames = {
-    'Date': 'dt',
+ksi_renames = {
+    'Total Killed': 'tk',
+    'Total Injured': 'ti',
+    'Pedestrians Killed': 'pk',
+    'Pedestrians Injured': 'pi',
+    'Total Vehicles Involved': 'tv',
+}
+ksi_cols = list(ksi_renames.values())
+road_renames = {
     'SRI (Standard Route Identifier)': 'sri',
     'Mile Post': 'mp',
-    'Latitude': 'olat',
-    'Longitude': 'olon',
+    'Crash Location': 'road',
+    'Location Direction': 'road_direction',
+    'Cross Street Name': 'cross_street',
+}
+road_cols = list(road_renames.values())
+renames = {
+    'Date': 'dt',
     'County Code': 'cc',
     'County Name': 'cn',
     'Municipality Code': 'mc',
@@ -36,8 +45,12 @@ renames = {
     'Police Department Code': 'pdc',
     'Police Department': 'pdn',
     'Police Station': 'station',
+    'Latitude': 'olat',
+    'Longitude': 'olon',
     'Crash Type Code': 'crash_type',
     'Severity': 'severity',
+    **road_renames,
+    **ksi_renames,
 }
 
 
