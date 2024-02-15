@@ -1,6 +1,6 @@
 import { keys, values } from "@rdub/base/objs";
 import css from "@/src/sql.module.scss";
-import * as sql from "@/src/sqlQuery";
+import * as sql from "@rdub/react-sql.js-httpvfs/query";
 
 export function Result({ result }: { result: sql.Result<any> | null }) {
     if (!result) return null

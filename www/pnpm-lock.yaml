@@ -57,8 +57,8 @@ dependencies:
     specifier: 0.0.4
     version: 0.0.4(@types/node@20.3.0)(mapbox-gl@3.1.2)(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)(sass@1.69.7)(webpack@5.89.0)
   '@rdub/react-sql.js-httpvfs':
-    specifier: 0.0.3
-    version: 0.0.3(react-dom@18.2.0)(react@18.2.0)
+    specifier: 0.0.4
+    version: 0.0.4(react-dom@18.2.0)(react@18.2.0)
   '@react-leaflet/core':
     specifier: ^2.1.0
     version: 2.1.0(leaflet@1.9.4)(react-dom@18.2.0)(react@18.2.0)
@@ -1770,8 +1770,8 @@ packages:
       - webpack
     dev: false
 
-  /@rdub/react-sql.js-httpvfs@0.0.3(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-qlzNCJtgWPmt4JVwJ/gqSiThAN349DsmhI/buvz+As58z94MMljohPnoz2GNlV32lYYf8CkjTnsgY+b+zMVPMg==}
+  /@rdub/react-sql.js-httpvfs@0.0.4(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-NBTfpAaWGf+ON+1/10atKPW8BKfuCgU3Zg3nclqYzQhs/L1ybTo91XW59OgVjdhgJb5F3oyo+BWZNRMHLjb97A==}
     peerDependencies:
       react: ^18
       react-dom: ^18

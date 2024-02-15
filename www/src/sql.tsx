@@ -2,8 +2,8 @@ import React, { HTMLProps, useEffect, useState } from "react";
 import { getBasePath } from "@rdub/next-base/basePath";
 import useSessionStorageState from "use-session-storage-state";
 import css from "./sql.module.scss"
-import * as Query from "@/src/sqlQuery";
-import { useSqlResult } from "@/src/sqlQuery";
+import * as Query from "@rdub/react-sql.js-httpvfs/query";
+import { useSqlResult } from "@rdub/react-sql.js-httpvfs/query";
 import { Result } from "@/src/sql/result";
 
 export const UrlKey = "sql-db-url"

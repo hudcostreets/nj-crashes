@@ -1,6 +1,6 @@
 import type { GetStaticProps } from "next";
 import { fromEntries } from "@rdub/base/objs";
-import { useSqlQuery } from "@/src/sqlQuery";
+import { useSqlQuery } from "@rdub/react-sql.js-httpvfs/query";
 import { getBasePath } from "@rdub/next-base/basePath";
 import { useMemo, useState } from "react";
 import { loadSync } from "@rdub/base/load";

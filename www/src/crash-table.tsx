@@ -1,5 +1,5 @@
 import css from "@/src/sql/result.module.scss";
-import * as sql from "@/src/sqlQuery";
+import * as sql from "@rdub/react-sql.js-httpvfs/query";
 import TableContainer from "@mui/material/TableContainer";
 import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
