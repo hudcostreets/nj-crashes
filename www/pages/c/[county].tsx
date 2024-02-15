@@ -1,10 +1,13 @@
 import type { GetStaticProps } from "next";
-import { fromEntries } from "@rdub/base/objs";
 import { useSqlQuery } from "@rdub/react-sql.js-httpvfs/query";
 import { getBasePath } from "@rdub/next-base/basePath";
 import { useMemo, useState } from "react";
-import { loadSync } from "@rdub/base/load";
-import { CrashTable } from "@/src/crash-table";
+import { Col, CrashTable } from "@/src/crash-table";
+import { keys } from "@rdub/base/objs";
+import { cc2mc2mn, CountyCodes } from "@/server/county";
+import { denormalize, normalize } from "@/src/county";
+
+export const maxBytesToRead = 20 * 1024 * 1024
 
 export type Params = {
     county: string
@@ -15,35 +18,8 @@ export type Props = {
     mc2mn: { [mc: number]: string }
 } & Params
 
-const Counties = [
-    'atlantic',
-    'bergen',
-    'burlington',
-    'camden',
-    'cape may',
-    'cumberland',
-    'essex',
-    'gloucester',
-    'hudson',
-    'hunterdon',
-    'mercer',
-    'middlesex',
-    'monmouth',
-    'morris',
-    'ocean',
-    'passaic',
-    'salem',
-    'somerset',
-    'sussex',
-    'union',
-    'warren',
-]
-const CountyCodes = fromEntries(
-    Counties.map((county, idx) => [ county, idx + 1 ])
-)
-
 export function getStaticPaths() {
-    const paths = Counties.map(county => ({ params: { county } }))
+    const paths = keys(CountyCodes).map(county => ({ params: { county: normalize(county) } }))
     return { paths, fallback: false }
 }
 
@@ -51,15 +27,12 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
     if (!params) {
         return { notFound: true }
     }
-    const cc2mc2mn = loadSync('public/njdot/cc2mc2mn.json') as any
     let { county } = params
-    county = county.toLowerCase()
+    county = normalize(county)
     const cc = CountyCodes[county]
     const mc2mn = cc2mc2mn[cc].mc2mn
     return { props: { county, cc, mc2mn } }
 }
-
-export const titleCase = (s: string) => s.split(' ').map(word => word[0].toUpperCase() + word.slice(1)).join(' ')
 
 export default function CountyPage({ county, cc, mc2mn }: Props) {
     const basePath = getBasePath()
@@ -81,13 +54,13 @@ export default function CountyPage({ county, cc, mc2mn }: Props) {
     )
     const url = `${basePath}/njdot/crashes.db`
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
-    const result = useSqlQuery({ url, requestChunkSize, query })
-    const countyTitle = titleCase(county)
-
+    const result = useSqlQuery({ url, requestChunkSize, query, maxBytesToRead })
+    const countyTitle = denormalize(county)
+    const cols: Col[] = [ 'dt', 'mc', 'casualties', 'road', 'cross_street', 'mp', 'll', ]
     return (
         <div>
             <h1>{countyTitle} County</h1>
-            <CrashTable result={result} mc2mn={mc2mn} />
+            <CrashTable result={result} cols={cols} mc2mn={mc2mn} />
         </div>
     )
 }

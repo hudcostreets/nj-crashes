@@ -2,7 +2,7 @@ import { keys, values } from "@rdub/base/objs";
 import css from "@/src/sql.module.scss";
 import * as sql from "@rdub/react-sql.js-httpvfs/query";
 
-export function Result({ result }: { result: sql.Result<any> | null }) {
+export function Result({ result }: { result: sql.Result<Record<any, any>> | null }) {
     if (!result) return null
     if (result.kind === 'data') {
         const { rows } = result

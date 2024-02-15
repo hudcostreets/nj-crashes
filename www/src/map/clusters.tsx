@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMap, useMapEvents } from "react-leaflet";
 import * as cluster from "./cluster";
 import { Cluster } from "./cluster";
-import { entries } from "@rdub/base/objs";
+import { o2a } from "@rdub/base/objs";
 import { Crash } from "@/pages/map/hudson";
 
 const { max } = Math
@@ -50,7 +50,7 @@ export function Clusters({ crashes, }: Props) {
 
     const clusters: Cluster[] = useMemo(
         () => {
-            const clusters: { [ll: string]: Crash[] } = {}
+            const clusters: Record<string, Crash[]> = {}
             crashes.forEach(crash => {
                 const { lat, lon } = crash
                 const key = `${lat},${lon}`
@@ -59,7 +59,7 @@ export function Clusters({ crashes, }: Props) {
                 }
                 clusters[key].push(crash)
             })
-            return entries(clusters).map(([ key, crashes ]) => {
+            return o2a(clusters, (key, crashes) => {
                 const { lon, lat } = crashes[0]
                 const trimmedCrashes = crashes.map(({ lon, lat, ...crash }) => crash)
                 trimmedCrashes.sort((a, b) => a.dt < b.dt ? -1 : a.dt > b.dt ? 1 : 0)
