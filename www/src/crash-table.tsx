@@ -27,16 +27,17 @@ export type Props<Row = any> = {
     result: sql.Result<Row> | null
     cols: Col[]
     mc2mn?: MC2MN
+    className?: string
 }
 
-export function CrashTable({ result, cols, mc2mn }: Props) {
+export function CrashTable({ result, cols, mc2mn, className }: Props) {
     if (!result) return null
     if (result.kind === 'data') {
         const { rows } = result
         // const hasLL = cols.includes('ll')
         // const hasCasualties = cols.includes('casualties')
         return (
-            <TableContainer component={Paper}>
+            <TableContainer component={Paper} className={className}>
                 <Table sx={{ minWidth: 450 }} size={"small"} aria-label="simple table">
                     <TableHead className={css.tableHead}>
                         <TableRow>{
@@ -75,7 +76,7 @@ export function CrashTable({ result, cols, mc2mn }: Props) {
                                         } else {
                                             txt = row[col]
                                         }
-                                        return <TableCell align="right">{txt}</TableCell>
+                                        return <TableCell key={col} align="right">{txt}</TableCell>
                                     })
                                 }</TableRow>
                             )

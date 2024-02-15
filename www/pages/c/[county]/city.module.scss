@@ -1,0 +1,29 @@
+.body {
+  max-width: 80em;
+  margin: 0 auto;
+  a {
+    text-decoration: underline;
+  }
+}
+
+.container {
+  margin: 0.5em;
+  text-align: center;
+}
+
+.title {
+  margin: 0.5em 0;
+}
+
+.subtitle {
+  margin: 0;
+}
+
+.crashesTable {
+  margin: 1em 0;
+  width: 100%;
+  //border-collapse: collapse;
+  th {
+    font-weight: bold;
+  }
+}

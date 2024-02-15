@@ -6,6 +6,8 @@ import { useMemo, useState } from "react";
 import { useSqlQuery } from "@rdub/react-sql.js-httpvfs/query";
 import { Col, CrashTable } from "@/src/crash-table";
 import { denormalize, normalize } from "@/src/county";
+import css from "./city.module.scss"
+import A from "@rdub/next-base/a";
 
 export type Params = {
     county: string
@@ -66,16 +68,19 @@ export default function CityPage({ county, city, cc, mc }: Props) {
     const url = `${basePath}/njdot/crashes.db`
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
     const result = useSqlQuery({ url, requestChunkSize, query })
+    const countyTitle = `${denormalize(county)} County`
     const title = useMemo(() => {
         const cityTitle = denormalize(city)
-        const countyTitle = denormalize(county)
-        return `${cityTitle} (${countyTitle} County)`
+        return `${cityTitle}`
     },  [ city, county ])
     const cols: Col[] = [ 'dt', 'casualties', 'road', 'cross_street', 'mp', 'll', ]
     return (
-        <div>
-            <h1>{title}</h1>
-            <CrashTable result={result} cols={cols} />
+        <div className={css.body}>
+            <div className={css.container}>
+                <h1 className={css.title}>{title}</h1>
+                <h2 className={css.subtitle}><A href={`/c/${county}`}>{countyTitle}</A></h2>
+                <CrashTable className={css.crashesTable} result={result} cols={cols} />
+            </div>
         </div>
     )
 }

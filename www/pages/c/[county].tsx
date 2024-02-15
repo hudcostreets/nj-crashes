@@ -6,6 +6,8 @@ import { Col, CrashTable } from "@/src/crash-table";
 import { keys } from "@rdub/base/objs";
 import { cc2mc2mn, CountyCodes } from "@/server/county";
 import { denormalize, normalize } from "@/src/county";
+import css from "@/pages/c/[county]/city.module.scss";
+import A from "@rdub/next-base/a";
 
 export const maxBytesToRead = 20 * 1024 * 1024
 
@@ -55,12 +57,14 @@ export default function CountyPage({ county, cc, mc2mn }: Props) {
     const url = `${basePath}/njdot/crashes.db`
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
     const result = useSqlQuery({ url, requestChunkSize, query, maxBytesToRead })
-    const countyTitle = denormalize(county)
+    const title = denormalize(county)
     const cols: Col[] = [ 'dt', 'mc', 'casualties', 'road', 'cross_street', 'mp', 'll', ]
     return (
-        <div>
-            <h1>{countyTitle} County</h1>
-            <CrashTable result={result} cols={cols} mc2mn={mc2mn} />
+        <div className={css.body}>
+            <div className={css.container}>
+                <h1 className={css.title}>{title}</h1>
+                <CrashTable className={css.crashesTable} result={result} cols={cols} mc2mn={mc2mn} />
+            </div>
         </div>
     )
 }
