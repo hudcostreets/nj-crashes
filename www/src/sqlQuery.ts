@@ -19,13 +19,13 @@ export type Result<T> = Data<T> | Err
 export type Props<T> = {
     url: string
     requestChunkSize?: number
-    // query: string
+    maxBytesToRead?: number
 }
 
-export function useSqlQueryCallback<T = any>({ url, requestChunkSize, }: Props<T>): (query: string) => Promise<Result<T>> | null {
+export function useSqlQueryCallback<T = any>({ url, requestChunkSize, maxBytesToRead, }: Props<T>): (query: string) => Promise<Result<T>> | null {
     const openTimeMsg = `time to query result`
     const dbProps: sql.Props = useMemo(() => ({ url, requestChunkSize }), [ url, requestChunkSize ])
-    const dbOpts = useMemo(() => ({ time: true }), [])
+    const dbOpts = useMemo(() => ({ time: true, maxBytesToRead }), [ maxBytesToRead, ])
     const db = useDb(dbProps, dbOpts)
     const callback = useCallback(
         (query: string): Promise<Result<T>> | null => {

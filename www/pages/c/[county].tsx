@@ -2,9 +2,9 @@ import type { GetStaticProps } from "next";
 import { fromEntries } from "@rdub/base/objs";
 import { useSqlQuery } from "@/src/sqlQuery";
 import { getBasePath } from "@rdub/next-base/basePath";
-import { Result } from "@/src/sql/result";
 import { useMemo, useState } from "react";
 import { loadSync } from "@rdub/base/load";
+import { CrashTable } from "@/src/crash-table";
 
 export type Params = {
     county: string
@@ -79,14 +79,15 @@ export default function CountyPage({ county, cc, mc2mn }: Props) {
         },
         [ page, perPage ]
     )
-    const url = `${basePath}/crashes.db`
-    const result = useSqlQuery({ url, query })
+    const url = `${basePath}/njdot/crashes.db`
+    const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
+    const result = useSqlQuery({ url, requestChunkSize, query })
     const countyTitle = titleCase(county)
 
     return (
         <div>
             <h1>{countyTitle} County</h1>
-            <Result result={result} mc2mn={mc2mn} />
+            <CrashTable result={result} mc2mn={mc2mn} />
         </div>
     )
 }
