@@ -1,7 +1,5 @@
 import { useSqlQuery } from "@rdub/react-sql.js-httpvfs/query";
 import { useMemo } from "react";
-import { Totals } from "@/src/crash";
-import { Either } from "fp-ts/Either";
 
 export type YearStats = {
     y: number

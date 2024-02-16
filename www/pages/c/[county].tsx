@@ -1,17 +1,16 @@
 import type { GetStaticProps } from "next";
-import { useSqlQuery } from "@rdub/react-sql.js-httpvfs/query";
 import { getBasePath } from "@rdub/next-base/basePath";
-import { useMemo, useState } from "react";
-import { Col, crashRows, ResultTable, yearRows } from "@/src/result-table";
+import { useState } from "react";
+import { ResultTable, yearRows } from "@/src/result-table";
 import { keys } from "@rdub/base/objs";
 import { cc2mc2mn, CountyCodes } from "@/server/county";
 import { denormalize, normalize } from "@/src/county";
 import css from "@/pages/c/[county]/city.module.scss";
 import { map } from "fp-ts/Either";
-import { Crash } from "@/src/crash";
 import { useTotals } from "@/src/use-totals";
 import { Urls } from "@/pages/c/[county]/[city]";
 import { useYearStats, YearStats } from "@/src/use-year-stats";
+import { useCrashRows } from "@/src/use-crashes";
 
 export const maxBytesToRead = 20 * 1024 * 1024
 
@@ -50,26 +49,9 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
 export default function CountyPage({ urls, county, cc, mc2mn }: Props) {
     const [ perPage, setPerPage ] = useState<number>(20)
     const [ page, setPage ] = useState<number>(0)
-
-    const query = useMemo(
-        () => {
-            const offset = page * perPage
-            return `
-                select * from crashes
-                where severity='f' and cc=${cc}
-                order by dt desc
-                limit ${perPage} offset ${offset}
-            `
-        },
-        [ page, perPage ]
-    )
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
-    const crashesResult = useSqlQuery({ url: urls.crashes, requestChunkSize, query, maxBytesToRead })
-    const cols: Col[] = [ 'dt', 'mc', 'casualties', 'road', 'cross_street', 'mp', 'll', ]
-    const crashes = useMemo(
-        () => crashesResult && map((crashes: Crash[]) => crashRows({ rows: crashes, cols, mc2mn, }))(crashesResult),
-        [ crashesResult, cols ]
-    )
+
+    const crashes = useCrashRows({ url: urls.crashes, requestChunkSize, cc, page, perPage, mc2mn, })
     const totals = useTotals({ url: urls.ymc, requestChunkSize, cc }) ?? undefined
     // const totalsElem = useTotalsElem({ url: urls.ymc, requestChunkSize, cc })
     const years = useYearStats({ url: urls.ymc, requestChunkSize, cc, })

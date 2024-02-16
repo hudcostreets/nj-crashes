@@ -3,20 +3,14 @@ import { cc2mc2mn, CountyCodes } from "@/server/county";
 import { concat, mapEntries, values } from "@rdub/base/objs";
 import { getBasePath } from "@rdub/next-base/basePath";
 import { useMemo, useState } from "react";
-import { useSqlQuery } from "@rdub/react-sql.js-httpvfs/query";
-import { Col, crashRows, ResultTable, yearRows } from "@/src/result-table";
+import { ResultTable, yearRows } from "@/src/result-table";
 import { denormalize, normalize } from "@/src/county";
 import css from "./city.module.scss"
 import A from "@rdub/next-base/a";
-import { Crash } from "@/src/crash";
 import { map } from "fp-ts/either";
 import { useTotals } from "@/src/use-totals";
 import { useYearStats, YearStats } from "@/src/use-year-stats";
-
-export function singleton<T>(ts: T[]): T {
-    const set = new Set(ts)
-    return (set.size !== 1) ? null : set.values().next().value
-}
+import { useCrashRows } from "@/src/use-crashes";
 
 export type Params = {
     county: string
@@ -74,30 +68,13 @@ export default function CityPage({ urls, county, city, cc, mc }: Props) {
 
     const totals = useTotals({ url: urls.ymc, requestChunkSize, cc, mc }) ?? undefined
     const years = useYearStats({ url: urls.ymc, requestChunkSize, cc, mc })
+    const crashes = useCrashRows({ url: urls.crashes, requestChunkSize, cc, mc, page, perPage, })
 
     const [ title, countyTitle] = useMemo(() => {
         const cityTitle = denormalize(city)
         return [`${cityTitle}`, `${denormalize(county)} County`]
     },  [ city, county ])
 
-    const query = useMemo(
-        () => {
-            const offset = page * perPage
-            return `
-                select * from crashes
-                where severity='f' and cc=${cc} and mc=${mc}
-                order by dt desc
-                limit ${perPage} offset ${offset}
-            `
-        },
-        [ page, perPage ]
-    )
-    const crashesResult = useSqlQuery<Crash>({ url: urls.crashes, requestChunkSize, query })
-    const cols: Col[] = [ 'dt', 'casualties', 'road', 'cross_street', 'mp', 'll', ]
-    const crashes = useMemo(
-        () => crashesResult && map((crashes: Crash[]) => crashRows({ rows: crashes, cols }))(crashesResult),
-        [ crashesResult, cols ]
-    )
     return (
         <div className={css.body}>
             <div className={css.container}>
