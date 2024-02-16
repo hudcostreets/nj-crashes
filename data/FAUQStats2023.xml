@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Feb 15 10:00:06 EST 2024</RUNDATE>
+  <RUNDATE>Fri Feb 16 10:00:06 EST 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -354,19 +354,6 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <COUNTY CCODE="09" CNAME="Hudson">
-    <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
-      <ACCIDENT ACCID="12899" DATE="12/20/2023" TIME="0520">
-        <HIGHWAY>440</HIGHWAY>
-        <LOCATION>State Highway 440</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0436" MNAME="Winslow Twsp">
       <ACCIDENT ACCID="12886" DATE="12/19/2023" TIME="2201">
@@ -376,19 +363,6 @@
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="09" CNAME="Hudson">
-    <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
-      <ACCIDENT ACCID="12951" DATE="12/19/2023" TIME="1745">
-        <HIGHWAY>440</HIGHWAY>
-        <LOCATION>State Highway 440</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -2675,8 +2649,8 @@
   <COUNTY CCODE="06" CNAME="Cumberland">
     <MUNICIPALITY MCODE="0606" MNAME="Greenwich Twsp">
       <ACCIDENT ACCID="12693" DATE="09/19/2023" TIME="1705">
-        <STREET>Tindall Island Road</STREET>
-        <LOCATION>Tindall Island Road</LOCATION>
+        <STREET>Tindall Island Rd</STREET>
+        <LOCATION>Tindall Island Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5573,8 +5547,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1214" MNAME="New Brunswick City">
       <ACCIDENT ACCID="12457" DATE="05/12/2023" TIME="1804">
-        <STREET>Paterson St</STREET>
-        <LOCATION>Paterson St</LOCATION>
+        <STREET>Paterson Street</STREET>
+        <LOCATION>Paterson Street</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7959,7 +7933,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>587</TOTACCIDENTS>
-  <TOTFATALITIES>619</TOTFATALITIES>
+  <TOTACCIDENTS>585</TOTACCIDENTS>
+  <TOTFATALITIES>617</TOTFATALITIES>
   <TOTINJURIES>223</TOTINJURIES>
 </FAUQSTATS>
