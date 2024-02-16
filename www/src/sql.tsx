@@ -62,7 +62,7 @@ export function Input({ label, defaultValue, buttons, ...inputProps }: {
 
 // export const DefaultDbPath = `njsp/year-type-county.db`
 // export const DefaultQuery = `select * from ytc`
-export const DefaultDbPath = `crashes2021.db`
+export const DefaultDbPath = `njdot/crashes.db`
 export const DefaultQuery = `select * from crashes where id=100000`
 
 
@@ -72,7 +72,13 @@ export default function Sql() {
     const [ query, setQuery] = useSessionStorageState<string>(QueryKey, {defaultValue: DefaultQuery})
     const [ requestChunkSize, setRequestChunkSize] = useState<number>(64 * 1024)
     const [ result, setResult] = useState<Query.Result<any> | null>(null)
-    const doQuery = useSqlResult({ url, requestChunkSize, setResult })
+    let doQuery: null | ((query: string) => void) = null
+    try {
+        console.log("try")
+        doQuery = useSqlResult({url, requestChunkSize, setResult})
+    } catch (e) {
+        console.error("Caught error:", e)
+    }
     return (
         <div>
             <Input
@@ -95,7 +101,7 @@ export default function Sql() {
                         cb: query => {
                             setQuery(query)
                             console.log("Running query:", query)
-                            doQuery(query)
+                            if (doQuery) doQuery(query)
                         },
                     }, {
                         value: "Explain",
@@ -103,7 +109,7 @@ export default function Sql() {
                             setQuery(query)
                             const explainQuery = `explain query plan ${query}`
                             console.log("Running query:", explainQuery)
-                            doQuery(explainQuery)
+                            if (doQuery) doQuery(explainQuery)
                         },
                     },
                 ]}
