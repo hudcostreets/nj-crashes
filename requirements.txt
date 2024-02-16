@@ -4,6 +4,7 @@ dask[dataframe]
 fastparquet
 geopandas
 GitPython
+humanize
 kaleido
 ipython
 jupyter

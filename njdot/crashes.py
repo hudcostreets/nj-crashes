@@ -1,3 +1,7 @@
+from humanize import naturalsize
+from os import stat
+from os.path import exists
+
 from math import sqrt
 
 from dataclasses import dataclass, asdict
@@ -6,19 +10,25 @@ import geopandas as gpd
 
 import pandas as pd
 from pandas import read_parquet, isna
-from typing import Union, Tuple
+from typing import Union, Tuple, Optional
 from utz import cached_property, DF, sxs, err
 
 from nj_crashes.geo import is_nj_ll
 from nj_crashes.sri.mp05 import get_mp05_map
 from njdot import NJDOT_DIR
 from njdot.data import END_YEAR, START_YEAR
+from njdot.paths import CRASHES_PQT
 
 Year = Union[str, int]
 Years = Union[Year, list[Year]]
 
 INDEX_NAME = 'id'
-pk_cols = [ 'year', 'cc', 'mc', 'case', ]
+pk_renames = {
+    'County Code': 'cc',
+    'Municipality Code': 'mc',
+    'Department Case Number': 'case',
+}
+pk_cols = ['year'] + list(pk_renames.values())
 ksi_renames = {
     'Total Killed': 'tk',
     'Total Injured': 'ti',
@@ -37,11 +47,9 @@ road_renames = {
 road_cols = list(road_renames.values())
 renames = {
     'Date': 'dt',
-    'County Code': 'cc',
+    **pk_renames,
     'County Name': 'cn',
-    'Municipality Code': 'mc',
     'Municipality Name': 'mn',
-    'Department Case Number': 'case',
     'Police Department Code': 'pdc',
     'Police Department': 'pdn',
     'Police Station': 'station',
@@ -58,6 +66,8 @@ def load(
     years: Years = None,
     county: str = None,
     index: bool = False,
+    read_pqt: Optional[bool] = None,
+    write_pqt: bool = False,
 ):
     if isinstance(years, str):
         years = years.split(',')
@@ -65,6 +75,10 @@ def load(
         years = [str(years)]
     elif years is None:
         years = list(range(START_YEAR, END_YEAR))
+
+    if read_pqt or (read_pqt is None and exists(CRASHES_PQT) and not write_pqt):
+        err(f"Reading {CRASHES_PQT}")
+        return read_parquet(CRASHES_PQT)
 
     dfs = []
     for year in years:
@@ -94,10 +108,14 @@ def load(
     if index:
         df = df.sort_index()
     else:
-        df = df.reset_index(drop=True).sort_values(pk_cols)
+        df = df.reset_index(drop=True).sort_values(pk_cols).reset_index(drop=True)
         cols = pk_cols + [ col for col in df if col not in pk_cols ]
         df = df[cols]
         df.index.name = INDEX_NAME
+    if write_pqt:
+        df.to_parquet(CRASHES_PQT)
+        size = stat(CRASHES_PQT).st_size
+        err(f"Wrote {CRASHES_PQT} ({len(df)} rows, {naturalsize(size)})")
     return df
 
 
@@ -123,8 +141,8 @@ class Crashes:
     df: pd.DataFrame
 
     @classmethod
-    def load(cls, years: Years = None, county: str = None) -> 'Crashes':
-        return cls(load(years, county))
+    def load(cls, *args, **kwargs) -> 'Crashes':
+        return cls(load(*args, **kwargs))
 
     def gdf(self, tpe='') -> 'Crashes':
         df = self.df
