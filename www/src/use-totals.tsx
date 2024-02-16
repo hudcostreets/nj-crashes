@@ -16,7 +16,7 @@ export function useTotals({ cc, mc, timerId = "totals", ...base }: Props): Eithe
             const select = `select cc,${mc ? ` mc,` : ``}`
             const having = `having cc=${cc} ${mc ? `and mc=${mc}` : ""}`
             const sums = [ 'tk', 'ti', 'tv', 'fc', 'ic', 'pc' ].map(c => `sum(${c}) as ${c}`).join(',\n\t')
-            const from = `from ycm group by cc${mc ? `, mc` : ``}`
+            const from = `from cmym group by cc${mc ? `, mc` : ``}`
             return `
                 ${select}
                 ${sums}

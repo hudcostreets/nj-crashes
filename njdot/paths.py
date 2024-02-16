@@ -9,3 +9,6 @@ WWW_DOT = join(PUBLIC_DIR, 'njdot')
 CNS = f'{WWW_DOT}/with_cns.parquet'
 CRASHES_DB = f'{WWW_DOT}/crashes.db'
 CC2MC2MN = f'{WWW_DOT}/cc2mc2mn.json'
+
+CMYM_PQT = f'{WWW_DOT}/cmym.parquet'
+CMYM_DB = f'{WWW_DOT}/cmym.db'

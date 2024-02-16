@@ -72,7 +72,7 @@ export function useYearStats({ cc, mc, timerId = 'year-stats', ...base }: Props)
             const having = `having cc=${cc}${mc ? ` and mc=${mc}` : ""}`
             return `
                 select y, ${sums}
-                from ycm ${groupBy}
+                from cmym ${groupBy}
                 ${having}
                 order by y desc
             `

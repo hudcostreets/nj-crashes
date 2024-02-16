@@ -1,7 +1,6 @@
 import type { GetStaticProps } from "next";
 import { cc2mc2mn, CountyCodes } from "@/server/county";
 import { concat, mapEntries, values } from "@rdub/base/objs";
-import { getBasePath } from "@rdub/next-base/basePath";
 import { useMemo, useState } from "react";
 import { ResultTable } from "@/src/result-table";
 import { denormalize, normalize } from "@/src/county";
@@ -9,17 +8,13 @@ import css from "./city.module.scss"
 import A from "@rdub/next-base/a";
 import { map } from "fp-ts/either";
 import { useTotals } from "@/src/use-totals";
-import { useYearStats, yearStatsRows, YearStats } from "@/src/use-year-stats";
+import { useYearStats, YearStats, yearStatsRows } from "@/src/use-year-stats";
 import { useCrashRows } from "@/src/use-crashes";
+import { getDbUrls, Urls } from "@/src/urls";
 
 export type Params = {
     county: string
     city: string
-}
-
-export type Urls = {
-    crashes: string
-    ymc: string
 }
 
 export type Props = {
@@ -46,12 +41,7 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
     if (!params) {
         return { notFound: true }
     }
-    const basePath = getBasePath()
-    const prefix = process.env['CI'] ? `https://nj-crashes.s3.amazonaws.com/njdot/data` : `${basePath}/njdot`
-    const urls = {
-        crashes: `${prefix}/crashes.db`,
-        ymc: `${prefix}/ycm.db`,
-    }
+    const urls = getDbUrls()
     let { county, city, } = params
     county = normalize(county)
     city = normalize(city)
@@ -66,8 +56,8 @@ export default function CityPage({ urls, county, city, cc, mc }: Props) {
     const [ page, setPage ] = useState<number>(0)
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
 
-    const totals = useTotals({ url: urls.ymc, requestChunkSize, cc, mc }) ?? undefined
-    const years = useYearStats({ url: urls.ymc, requestChunkSize, cc, mc })
+    const totals = useTotals({ url: urls.cmym, requestChunkSize, cc, mc }) ?? undefined
+    const years = useYearStats({ url: urls.cmym, requestChunkSize, cc, mc })
     const crashes = useCrashRows({ url: urls.crashes, requestChunkSize, cc, mc, page, perPage, })
 
     const [ title, countyTitle] = useMemo(() => {
@@ -84,7 +74,7 @@ export default function CityPage({ urls, county, city, cc, mc }: Props) {
                     years && <>
                         <h2>Yearly stats</h2>
                         <ResultTable
-                            className={css.crashesTable}
+                            className={`${css.crashesTable} ${totals ? css.withTotals : ``}`}
                             result={map((years: YearStats[]) => yearStatsRows({ years, totals }))(years)}
                         />
                     </>

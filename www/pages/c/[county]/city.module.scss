@@ -28,6 +28,15 @@
   }
 }
 
+.withTotals {
+  tr:last-child {
+    td {
+      font-weight: bold;
+    }
+    //background-color: #f0f0f0;
+  }
+}
+
 .njspPlot {
 
 }

@@ -1,5 +1,4 @@
 import type { GetStaticProps } from "next";
-import { getBasePath } from "@rdub/next-base/basePath";
 import { useState } from "react";
 import { ResultTable } from "@/src/result-table";
 import { keys } from "@rdub/base/objs";
@@ -8,9 +7,9 @@ import { denormalize, normalize } from "@/src/county";
 import css from "@/pages/c/[county]/city.module.scss";
 import { map } from "fp-ts/Either";
 import { useTotals } from "@/src/use-totals";
-import { Urls } from "@/pages/c/[county]/[city]";
 import { useYearStats, YearStats, yearStatsRows } from "@/src/use-year-stats";
 import { useCrashRows } from "@/src/use-crashes";
+import { getDbUrls, Urls } from "@/src/urls";
 
 export type Params = {
     county: string
@@ -31,12 +30,7 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
     if (!params) {
         return { notFound: true }
     }
-    const basePath = getBasePath()
-    const prefix = process.env['CI'] ? `https://nj-crashes.s3.amazonaws.com/njdot/data` : `${basePath}/njdot`
-    const urls = {
-        crashes: `${prefix}/crashes.db`,
-        ymc: `${prefix}/ycm.db`,
-    }
+    const urls = getDbUrls()
     let { county } = params
     county = normalize(county)
     const cc = CountyCodes[county]
@@ -50,10 +44,10 @@ export default function CountyPage({ urls, county, cc, mc2mn }: Props) {
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
 
     const crashes = useCrashRows({ url: urls.crashes, requestChunkSize, cc, page, perPage, mc2mn, })
-    const totals = useTotals({ url: urls.ymc, requestChunkSize, cc }) ?? undefined
+    const totals = useTotals({ url: urls.cmym, requestChunkSize, cc }) ?? undefined
     // const totalsElem = useTotalsElem({ url: urls.ymc, requestChunkSize, cc })
-    const years = useYearStats({ url: urls.ymc, requestChunkSize, cc, })
-
+    const years = useYearStats({ url: urls.cmym, requestChunkSize, cc, })
+    const yearTableClass = `${css.crashesTable} ${totals ? css.withTotals : ``}`
     const title = `${denormalize(county)} County`
     return (
         <div className={css.body}>
@@ -63,7 +57,7 @@ export default function CountyPage({ urls, county, cc, mc2mn }: Props) {
                     years && <>
                         <h2>Yearly stats</h2>
                         <ResultTable
-                            className={css.crashesTable}
+                            className={yearTableClass}
                             result={map((years: YearStats[]) => yearStatsRows({ years, totals }))(years)}
                         />
                     </>
