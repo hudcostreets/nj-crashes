@@ -1,7 +1,8 @@
 import { Totals } from "@/src/crash";
 import { useMemo } from "react";
-import { Either, flatMap, left, right } from "fp-ts/Either";
+import { Either, flatMap, fold, left, right } from "fp-ts/Either";
 import { useSqlQuery } from "@rdub/react-sql.js-httpvfs/query";
+import css from "@/pages/c/[county]/city.module.scss";
 
 export type Props = {
     url: string
@@ -40,4 +41,19 @@ export function useTotals({ url, requestChunkSize, cc, mc }: Props): Either<Erro
         ),
         [ totalsRes ]
     )
+}
+
+export function useTotalsElem({ url, requestChunkSize, cc, mc }: Props): JSX.Element | null {
+    const totals = useTotals({ url, requestChunkSize, cc, mc })
+    return totals && fold(
+        (e: Error) => <div className={css.sqlError}>err.toString()</div>,
+        ({ tk, ti, tv, fc, ic, pc, }: Totals) => <div>
+            <div>{tk.toLocaleString()} deaths</div>
+            <div>{ti.toLocaleString()} injuries</div>
+            <div>{tv.toLocaleString()} vehicles</div>
+            <div>{fc.toLocaleString()} fatal crashes</div>
+            <div>{(fc + ic).toLocaleString()} injury crashes</div>
+            <div>{(fc + ic + pc).toLocaleString()} property damage crashes</div>
+        </div>,
+    )(totals)
 }

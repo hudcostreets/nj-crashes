@@ -4,15 +4,14 @@ import { concat, mapEntries, values } from "@rdub/base/objs";
 import { getBasePath } from "@rdub/next-base/basePath";
 import { useMemo, useState } from "react";
 import { useSqlQuery } from "@rdub/react-sql.js-httpvfs/query";
-import { Col, crashRows, ResultTable, RowsTable, yearRows } from "@/src/result-table";
+import { Col, crashRows, ResultTable, yearRows } from "@/src/result-table";
 import { denormalize, normalize } from "@/src/county";
 import css from "./city.module.scss"
 import A from "@rdub/next-base/a";
-import { Crash, Totals } from "@/src/crash";
-// import singleton from "@rdub/base/singleton";
-import { map, flatMap, fold } from "fp-ts/either";
-import { left, right } from "fp-ts/Either";
-import { useTotals } from "@/src/use-totals";
+import { Crash } from "@/src/crash";
+import { map } from "fp-ts/either";
+import { useTotalsElem } from "@/src/use-totals";
+import { useYearStats } from "@/src/use-year-stats";
 
 export function singleton<T>(ts: T[]): T {
     const set = new Set(ts)
@@ -34,16 +33,6 @@ export type Props = {
     cc: number
     mc: number
 } & Params
-
-export type YearStats = {
-    y: number
-    tk: number
-    ti: number
-    tv: number
-    fc: number
-    ic: number
-    pc: number
-}
 
 export function getStaticPaths() {
     const paths = concat(
@@ -81,6 +70,15 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
 export default function CityPage({ urls, county, city, cc, mc }: Props) {
     const [ perPage, setPerPage ] = useState<number>(20)
     const [ page, setPage ] = useState<number>(0)
+    const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
+
+    const totalsElem = useTotalsElem({ url: urls.ymc, requestChunkSize, cc, mc })
+    const years = useYearStats({ url: urls.ymc, requestChunkSize, cc, mc })
+
+    const [ title, countyTitle] = useMemo(() => {
+        const cityTitle = denormalize(city)
+        return [`${cityTitle}`, `${denormalize(county)} County`]
+    },  [ city, county ])
 
     const query = useMemo(
         () => {
@@ -94,49 +92,12 @@ export default function CityPage({ urls, county, city, cc, mc }: Props) {
         },
         [ page, perPage ]
     )
-    const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
-    // const ymcRes = useSqlQuery()
-    const totals = useTotals({ url: urls.ymc, requestChunkSize, cc, mc })
-    const totalsElem = totals && fold(
-        (e: Error) => <div className={css.sqlError}>err.toString()</div>,
-        ({ tk, ti, tv, fc, ic, pc, }: Totals) => <div>
-            <div>{tk.toLocaleString()} deaths</div>
-            <div>{ti.toLocaleString()} injuries</div>
-            <div>{tv.toLocaleString()} vehicles</div>
-            <div>{fc.toLocaleString()} fatal crashes</div>
-            <div>{(fc + ic).toLocaleString()} injury crashes</div>
-            <div>{(fc + ic + pc).toLocaleString()} property damage crashes</div>
-        </div>,
-    )(totals)
-
-    const years = useSqlQuery<YearStats>({
-        url: urls.ymc, requestChunkSize,
-        query: `
-            select y,
-                   sum(tk) as tk,
-                   sum(ti) as ti,
-                   sum(tv) as tv,
-                   sum(fc) as fc,
-                   sum(ic) as ic,
-                   sum(pc) as pc
-            from ycm group by cc, mc, y
-            having cc=${cc} and mc=${mc}
-            order by y desc
-        `,
-    })
-    const countyTitle = `${denormalize(county)} County`
-    const title = useMemo(() => {
-        const cityTitle = denormalize(city)
-        return `${cityTitle}`
-    },  [ city, county ])
-    const cols: Col[] = [ 'dt', 'casualties', 'road', 'cross_street', 'mp', 'll', ]
-    // console.log("years:", years)
     const crashesResult = useSqlQuery<Crash>({ url: urls.crashes, requestChunkSize, query })
+    const cols: Col[] = [ 'dt', 'casualties', 'road', 'cross_street', 'mp', 'll', ]
     const crashes = useMemo(
         () => crashesResult && map((crashes: Crash[]) => crashRows({ rows: crashes, cols }))(crashesResult),
         [ crashesResult, cols ]
     )
-    // console.log(`crashes:`, crashes)
     return (
         <div className={css.body}>
             <div className={css.container}>
