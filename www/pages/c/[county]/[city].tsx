@@ -10,8 +10,8 @@ import css from "./city.module.scss"
 import A from "@rdub/next-base/a";
 import { Crash } from "@/src/crash";
 import { map } from "fp-ts/either";
-import { useTotalsElem } from "@/src/use-totals";
-import { useYearStats } from "@/src/use-year-stats";
+import { useTotals } from "@/src/use-totals";
+import { useYearStats, YearStats } from "@/src/use-year-stats";
 
 export function singleton<T>(ts: T[]): T {
     const set = new Set(ts)
@@ -72,7 +72,7 @@ export default function CityPage({ urls, county, city, cc, mc }: Props) {
     const [ page, setPage ] = useState<number>(0)
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
 
-    const totalsElem = useTotalsElem({ url: urls.ymc, requestChunkSize, cc, mc })
+    const totals = useTotals({ url: urls.ymc, requestChunkSize, cc, mc }) ?? undefined
     const years = useYearStats({ url: urls.ymc, requestChunkSize, cc, mc })
 
     const [ title, countyTitle] = useMemo(() => {
@@ -108,7 +108,7 @@ export default function CityPage({ urls, county, city, cc, mc }: Props) {
                         <h2>Yearly stats</h2>
                         <ResultTable
                             className={css.crashesTable}
-                            result={map(yearRows)(years)}
+                            result={map((years: YearStats[]) => yearRows({ years, totals }))(years)}
                         />
                     </>
                 }
@@ -121,8 +121,6 @@ export default function CityPage({ urls, county, city, cc, mc }: Props) {
                         />
                     </>
                 }
-                <h2>2001-2021 totals</h2>
-                {totalsElem}
             </div>
         </div>
     )

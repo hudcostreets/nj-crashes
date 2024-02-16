@@ -9,9 +9,9 @@ import { denormalize, normalize } from "@/src/county";
 import css from "@/pages/c/[county]/city.module.scss";
 import { map } from "fp-ts/Either";
 import { Crash } from "@/src/crash";
-import { useTotalsElem } from "@/src/use-totals";
+import { useTotals } from "@/src/use-totals";
 import { Urls } from "@/pages/c/[county]/[city]";
-import { useYearStats } from "@/src/use-year-stats";
+import { useYearStats, YearStats } from "@/src/use-year-stats";
 
 export const maxBytesToRead = 20 * 1024 * 1024
 
@@ -70,7 +70,8 @@ export default function CountyPage({ urls, county, cc, mc2mn }: Props) {
         () => crashesResult && map((crashes: Crash[]) => crashRows({ rows: crashes, cols, mc2mn, }))(crashesResult),
         [ crashesResult, cols ]
     )
-    const totalsElem = useTotalsElem({ url: urls.ymc, requestChunkSize, cc })
+    const totals = useTotals({ url: urls.ymc, requestChunkSize, cc }) ?? undefined
+    // const totalsElem = useTotalsElem({ url: urls.ymc, requestChunkSize, cc })
     const years = useYearStats({ url: urls.ymc, requestChunkSize, cc, })
 
     const title = `${denormalize(county)} County`
@@ -83,7 +84,7 @@ export default function CountyPage({ urls, county, cc, mc2mn }: Props) {
                         <h2>Yearly stats</h2>
                         <ResultTable
                             className={css.crashesTable}
-                            result={map(yearRows)(years)}
+                            result={map((years: YearStats[]) => yearRows({ years, totals }))(years)}
                         />
                     </>
                 }
@@ -96,8 +97,6 @@ export default function CountyPage({ urls, county, cc, mc2mn }: Props) {
                         />
                     </>
                 }
-                <h2>2001-2021 totals</h2>
-                {totalsElem}
                 <div className={css.njspPlot}>
 
                 </div>

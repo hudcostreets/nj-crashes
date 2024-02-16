@@ -10,10 +10,11 @@ import TableBody from "@mui/material/TableBody";
 import * as React from "react";
 import strftime from "strftime";
 import { MC2MN } from "@/src/county";
-import { Crash } from "@/src/crash";
+import { Crash, Totals } from "@/src/crash";
 import { fromEntries, keys, mapEntries, o2a } from "@rdub/base/objs";
 import { fold } from "fp-ts/either";
-import { YearStats } from "@/pages/c/[county]/[city]";
+import { YearStats } from "@/src/use-year-stats";
+import { Either, map } from "fp-ts/Either";
 
 export const ColLabels = {
     id: "ID",
@@ -31,7 +32,6 @@ export const ColLabels = {
 export type Col = keyof typeof ColLabels
 
 export type Props<Row = any> = {
-    // cols: Col[]
     className?: string
 }
 
@@ -49,8 +49,8 @@ const YearColLabels = {
     pc: "Property Damage Crashes",
 }
 
-export function yearRows(rows: YearStats[]): Row[] {
-    return rows.map(row => {
+export function yearRows({ years, totals }: { years: YearStats[], totals?: Either<Error, Totals> }): Row[] {
+    const rows: Row[] = years.map(row => {
         const { y } = row
         return {
             key: y,
@@ -61,9 +61,25 @@ export function yearRows(rows: YearStats[]): Row[] {
                     col === 'y' ? val : val.toLocaleString(),
                 ]
             ),
-        } //as Row
+        }
     })
-
+    if (totals) {
+        map(
+            (totals: Totals) => {
+                rows.push({
+                    key: '2001–2021',
+                    ...mapEntries(
+                        years[0],
+                        col => [
+                            YearColLabels[col],
+                            col === 'y' ? '2001–2021' : totals[col].toLocaleString(),
+                        ]
+                    ),
+                })
+            }
+        )(totals)
+    }
+    return rows
 }
 
 export function crashRows({ rows, cols, mc2mn }: { rows: Crash[], cols: Col[], mc2mn?: MC2MN }): Row[] {
