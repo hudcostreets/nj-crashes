@@ -1,5 +1,5 @@
 import { keys, values } from "@rdub/base/objs";
-import css from "@/src/sql.module.scss";
+import css from "@/src/sql-repl.module.scss";
 import * as sql from "@rdub/react-sql.js-httpvfs/query";
 import { fold } from "fp-ts/either";
 

@@ -3,13 +3,13 @@ import { cc2mc2mn, CountyCodes } from "@/server/county";
 import { concat, mapEntries, values } from "@rdub/base/objs";
 import { getBasePath } from "@rdub/next-base/basePath";
 import { useMemo, useState } from "react";
-import { ResultTable, yearRows } from "@/src/result-table";
+import { ResultTable } from "@/src/result-table";
 import { denormalize, normalize } from "@/src/county";
 import css from "./city.module.scss"
 import A from "@rdub/next-base/a";
 import { map } from "fp-ts/either";
 import { useTotals } from "@/src/use-totals";
-import { useYearStats, YearStats } from "@/src/use-year-stats";
+import { useYearStats, yearStatsRows, YearStats } from "@/src/use-year-stats";
 import { useCrashRows } from "@/src/use-crashes";
 
 export type Params = {
@@ -85,7 +85,7 @@ export default function CityPage({ urls, county, city, cc, mc }: Props) {
                         <h2>Yearly stats</h2>
                         <ResultTable
                             className={css.crashesTable}
-                            result={map((years: YearStats[]) => yearRows({ years, totals }))(years)}
+                            result={map((years: YearStats[]) => yearStatsRows({ years, totals }))(years)}
                         />
                     </>
                 }

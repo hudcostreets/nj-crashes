@@ -1,17 +1,16 @@
 import { Totals } from "@/src/crash";
 import { useMemo } from "react";
 import { Either, flatMap, fold, left, right } from "fp-ts/Either";
-import { useSqlQuery } from "@rdub/react-sql.js-httpvfs/query";
+import { Base } from "@rdub/react-sql.js-httpvfs/query";
 import css from "@/pages/c/[county]/city.module.scss";
+import { useSqlQuery } from "@/src/sql";
 
-export type Props = {
-    url: string
-    requestChunkSize: number
+export type Props = Base & {
     cc: number
     mc?: number
 }
 
-export function useTotals({ url, requestChunkSize, cc, mc }: Props): Either<Error, Totals> | null {
+export function useTotals({ cc, mc, timerId = "totals", ...base }: Props): Either<Error, Totals> | null {
     const query = useMemo(
         () => {
             const select = `select cc,${mc ? ` mc,` : ``}`
@@ -27,10 +26,7 @@ export function useTotals({ url, requestChunkSize, cc, mc }: Props): Either<Erro
         },
         [ cc, mc ]
     )
-    const totalsRes = useSqlQuery<Totals>({
-        url, requestChunkSize,
-        query,
-    })
+    const totalsRes = useSqlQuery<Totals>({ query, timerId, ...base, })
     return useMemo(
         () => totalsRes && flatMap(
             totalsRes,
@@ -43,8 +39,8 @@ export function useTotals({ url, requestChunkSize, cc, mc }: Props): Either<Erro
     )
 }
 
-export function useTotalsElem({ url, requestChunkSize, cc, mc }: Props): JSX.Element | null {
-    const totals = useTotals({ url, requestChunkSize, cc, mc })
+export function useTotalsElem(props: Props): JSX.Element | null {
+    const totals = useTotals(props)
     return totals && fold(
         (e: Error) => <div className={css.sqlError}>err.toString()</div>,
         ({ tk, ti, tv, fc, ic, pc, }: Totals) => <div>

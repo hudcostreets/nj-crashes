@@ -1,7 +1,7 @@
 import React, { HTMLProps, useEffect, useState } from "react";
 import { getBasePath } from "@rdub/next-base/basePath";
 import useSessionStorageState from "use-session-storage-state";
-import css from "./sql.module.scss"
+import css from "./sql-repl.module.scss"
 import * as Query from "@rdub/react-sql.js-httpvfs/query";
 import { useSqlResult } from "@rdub/react-sql.js-httpvfs/query";
 import { Result } from "@/src/sql/result";
@@ -66,7 +66,7 @@ export const DefaultDbPath = `njdot/crashes.db`
 export const DefaultQuery = `select * from crashes where id=100000`
 
 
-export default function Sql() {
+export default function SqlRepl() {
     const basePath = getBasePath()
     const [ url, setUrl] = useSessionStorageState<string>(UrlKey, {defaultValue: `${basePath}/${DefaultDbPath}`})
     const [ query, setQuery] = useSessionStorageState<string>(QueryKey, {defaultValue: DefaultQuery})

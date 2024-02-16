@@ -1,7 +1,7 @@
 import type { GetStaticProps } from "next";
 import { getBasePath } from "@rdub/next-base/basePath";
 import { useState } from "react";
-import { ResultTable, yearRows } from "@/src/result-table";
+import { ResultTable } from "@/src/result-table";
 import { keys } from "@rdub/base/objs";
 import { cc2mc2mn, CountyCodes } from "@/server/county";
 import { denormalize, normalize } from "@/src/county";
@@ -9,10 +9,8 @@ import css from "@/pages/c/[county]/city.module.scss";
 import { map } from "fp-ts/Either";
 import { useTotals } from "@/src/use-totals";
 import { Urls } from "@/pages/c/[county]/[city]";
-import { useYearStats, YearStats } from "@/src/use-year-stats";
+import { useYearStats, YearStats, yearStatsRows } from "@/src/use-year-stats";
 import { useCrashRows } from "@/src/use-crashes";
-
-export const maxBytesToRead = 20 * 1024 * 1024
 
 export type Params = {
     county: string
@@ -66,7 +64,7 @@ export default function CountyPage({ urls, county, cc, mc2mn }: Props) {
                         <h2>Yearly stats</h2>
                         <ResultTable
                             className={css.crashesTable}
-                            result={map((years: YearStats[]) => yearRows({ years, totals }))(years)}
+                            result={map((years: YearStats[]) => yearStatsRows({ years, totals }))(years)}
                         />
                     </>
                 }
