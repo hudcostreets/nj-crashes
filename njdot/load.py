@@ -41,7 +41,7 @@ class Collable(Protocol):
         ...
 
 
-def normalize(df: pd.DataFrame, cols: list[str], id: str, r_fn: Collable) -> pd.DataFrame:
+def normalize(df: pd.DataFrame, cols: list[str], id: str, r_fn: Collable, drop: bool = True) -> pd.DataFrame:
     r = r_fn(cols=cols)
     dfb = df[cols]
     m = dfb.merge(
@@ -50,7 +50,9 @@ def normalize(df: pd.DataFrame, cols: list[str], id: str, r_fn: Collable) -> pd.
         how='left',
         validate='m:1',
     )
-    dfm = sxs(m[id], df.drop(columns=cols))
+    if drop:
+        df = df.drop(columns=cols)
+    dfm = sxs(m[id], df)
     dfm.index.name = INDEX_NAME
     return dfm
 
@@ -63,7 +65,7 @@ def load_type(
         write_pqt: bool = False,
         pqt_path: Optional[str] = None,
         renames: Optional[dict[str, str]] = None,
-        astype: Optional[dict[str, type]] = None,
+        astype: Optional[dict[str, Union[str, type]]] = None,
         pk_cols: Optional[list[str]] = None,
         cols: Optional[list[str]] = None,
         map_year_df: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,

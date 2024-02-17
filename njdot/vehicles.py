@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import Optional
 
+from nj_crashes.utils.log import err
 from njdot import crashes
 from njdot.load import Years, load_type, pk_base, normalize
 
@@ -36,7 +37,7 @@ renames = {
 }
 
 astype = {
-    'vn': int,
+    'vn': 'int8',
     'vy': 'Int16',
     'ins_co': 'Int16',
     **{ k: 'Int8' for k in [
@@ -63,13 +64,17 @@ pk_cols = pk_base + ['vn']
 
 
 def map_year_df(df: pd.DataFrame) -> pd.DataFrame:
+    # Columns beginning with capital letters are inherited from the original data source; the ones we care about are
+    # listed in `renames` above.
     df = df[df.columns[~df.columns.str.match(r'^[A-Z]')]]
     return df
 
 
 def map_df(v: pd.DataFrame) -> pd.DataFrame:
     err("Merging vehicles with crashes")
-    return normalize(v, pk_cols, 'crash_id', crashes.load)
+    v = normalize(v, pk_base, 'crash_id', crashes.load)
+    v.index = v.index.astype('int32')
+    return v
 
 
 def load(

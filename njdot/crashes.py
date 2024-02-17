@@ -2,6 +2,7 @@ import geopandas as gpd
 import pandas as pd
 from dataclasses import dataclass, asdict
 from math import sqrt
+from numpy import nan
 from pandas import isna
 from typing import Union, Tuple, Optional
 from utz import cached_property, DF, sxs, err
@@ -43,15 +44,69 @@ renames = {
     'Severity': 'severity',
     **road_renames,
     **ksi_renames,
+    'Alcohol Involved': 'alcohol',
+    'HazMat Involved': 'hazmat',
+    'Route': 'route',
+    'Road System': 'road_system',
+    'Road Character': 'road_character',
+    'Road Surface Type': 'road_surface',
+    'Surface Condition': 'surface_condition',
+    'Light Condition': 'light_condition',
+    'Environmental Condition': 'env_condition',
+    'Road Divided By': 'road_divided',
+    'Temporary Traffic Control Zone': 'ttcz',
+    'Distance To Cross Street': 'cross_street_distance',
+    'Ramp To/From Route Name': 'ramp_route',
+    'Ramp To/From Direction': 'ramp_direction',
+    'Posted Speed': 'speed_limit',
+    'Posted Speed Cross Street': 'speed_limit_cross',
+    'Cell Phone In Use Flag': 'cell_phone',
+    'Road Horizontal Alignment': 'horizontal_alignment',
+    'Road Grade': 'road_grade',
+    'First Harmful Event': 'first_harmful_event',
+}
+astype = {
+    'year': 'int16',
+    'cc': 'int8',
+    'mc': 'int8',
+    'tk': 'int8',
+    'ti': 'int8',
+    'pk': 'int8',
+    'pi': 'int8',
+    'tv': 'int8',
+    'crash_type': 'Int8',
+    'road_system': 'Int8',
+    'road_character': 'Int8',
+    'road_surface': 'Int8',
+    'surface_condition': 'Int8',
+    'light_condition': 'Int8',
+    'env_condition': 'Int8',
+    'road_divided': 'Int8',
+    'ttcz': 'Int8',
+    'cross_street_distance': 'Int16',
+    'horizontal_alignment': 'Int8',
+    'road_grade': 'Int8',
+    'first_harmful_event': 'Int8',
+    'mp': 'float32',
 }
 
 
 def map_year_df(df: pd.DataFrame) -> pd.DataFrame:
-    df['cn'] = df.cn.apply(lambda cn: cn.title())
-    df['mn'] = df.mn.apply(lambda mn: mn.title())
+    df = df.drop(columns=['cn', 'mn'])
     df['pdn'] = df.pdn.apply(lambda pdn: pdn.title())
     df['olon'] = -df['olon']  # Longitudes all come in positive, but are actually supposed to be negative (NJ ⊂ [-76, -73])
     df['severity'] = df['severity'].apply(lambda s: s.lower())
+    df['route'] = df['route'].replace('', nan).astype('Int16').replace(0, nan)
+    df['ramp_route'] = df['ramp_route'].replace(r'^\?$', '', regex=True)
+    for k in ['speed_limit', 'speed_limit_cross']:
+        df[k] = df[k].replace('^(?:0|-1)?$', nan, regex=True).astype('Int8')
+    df['cell_phone'] = df['cell_phone'].apply(lambda s: {'Y': True, 'N': False}[s])
+    return df
+
+
+def map_df(df: pd.DataFrame) -> pd.DataFrame:
+    df.index = df.index.astype('int32')
+    df = df[['dt'] + [ c for c in df if c != 'dt' ]]
     return df
 
 
@@ -67,10 +122,12 @@ def load(
         years=years,
         county=county,
         renames=renames,
+        astype=astype,
         cols=cols,
         read_pqt=read_pqt,
         write_pqt=write_pqt,
         map_year_df=map_year_df,
+        map_df=map_df,
     )
 
 

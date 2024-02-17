@@ -1,3 +1,5 @@
+from functools import partial
+
 from numpy import nan
 from typing import Optional
 from utz import sxs
@@ -49,18 +51,27 @@ def map_year_df(df):
     return df
 
 
-def map_df(df):
+def map_df(df, fix_missing_vid: bool = True, drop: bool = True):
     err("Merging occupants with crashes")
-    dfc = normalize(df, pk_base, 'crash_id', crashes.load)
-    err("Merging occupants with vehicles")
-    dfm = normalize(dfc, ['crash_id', 'vn'], 'vehicle_id', vehicles.load)
-    dfm = sxs(dfc.crash_id, dfm)
+    dfc = normalize(df, pk_base, 'crash_id', crashes.load, drop=drop)
 
-    no_vid_mask = dfm.vehicle_id.isna()
-    no_vid = dfm[no_vid_mask]
-    assert len(no_vid) == 1, no_vid
-    assert no_vid.index.tolist() == [12410270], no_vid
-    dfm = dfm[~no_vid_mask].astype({ 'vehicle_id': 'int32' })
+    if fix_missing_vid:
+        # no_vid_mask = dfc.vehicle_id.isna()
+        # no_vid = dfc[no_vid_mask]
+        # assert len(no_vid) == 1, no_vid
+        bad_crash_id = 12410270
+        # assert no_vid.index.tolist() == [bad_crash_id], no_vid
+        assert dfc.loc[bad_crash_id, 'vn'] == 25
+        err(f"Crash {bad_crash_id}: fixing bad vehicle num, 25 → 2")
+        dfc.loc[bad_crash_id, 'vn'] = 2
+        # dfc = dfc.astype({ 'vehicle_id': 'int32' })
+
+    err("Merging occupants with vehicles")
+    dfm = normalize(dfc, ['crash_id', 'vn'], 'vehicle_id', vehicles.load, drop=drop)
+    if drop:
+        dfm = sxs(dfc.crash_id, dfm)
+
+    dfm.index = dfm.index.astype('int32')
 
     return dfm
 
@@ -71,6 +82,8 @@ def load(
         read_pqt: Optional[bool] = None,
         write_pqt: bool = False,
         cols: Optional[list[str]] = None,
+        fix_missing_vid: bool = True,
+        drop: bool = True,
 ):
     df = load_type(
         'Occupants',
@@ -80,7 +93,7 @@ def load(
         astype=astype,
         cols=cols,
         map_year_df=map_year_df,
-        map_df=map_df,
+        map_df=partial(map_df, fix_missing_vid=fix_missing_vid, drop=drop),
         read_pqt=read_pqt,
         write_pqt=write_pqt,
     )
