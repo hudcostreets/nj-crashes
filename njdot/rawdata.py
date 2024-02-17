@@ -137,7 +137,7 @@ regions_opt = parse_opt(
 )
 
 
-def parse_years(years_str):
+def parse_years(years_str) -> list[int]:
     if not years_str:
         return YEARS
     all_years = []
@@ -452,7 +452,7 @@ def pqt(regions, types, years, overwrite, dry_run):
     fields_dict = {}
     for year in years:
         # Load `fields` dict for `year`
-        v2017 = int(year) >= 2017
+        v2017 = year >= 2017
         for region in regions:
             for typ in types:
                 parent_dir = f'{DATA_DIR}/{year}'
@@ -514,7 +514,28 @@ def pqt(regions, types, years, overwrite, dry_run):
                             'Pre- Crash Action': 'Pre-Crash Action',
                         })
                 elif typ == 'Drivers':
-                    df = load(txt_path, fields)
+                    if year == 2021:
+                        # Driver DOB is missing from 2021[Drivers]
+                        new_fields = []
+                        pos = 1
+                        dob_field = None
+                        for f in fields:
+                            if f['Field'] == 'Driver DOB':
+                                dob_field = { **f }
+                            else:
+                                length = f['Length']
+                                new_field = { **f, 'From': pos, 'To': pos + length - 1, }
+                                pos += length
+                                new_fields.append(new_field)
+                        if not dob_field:
+                            raise RuntimeError(f"Couldn't find 'Driver DOB' field in {fields}")
+                        err("Moved 'Driver DOB' to end of fields")
+                        dob_field['From'] = pos
+                        dob_field['To'] = pos + dob_field['Length'] - 1
+                        new_fields.append(dob_field)
+                    else:
+                        new_fields = fields
+                    df = load(txt_path, new_fields)
                     if not v2017:
                         df = df.rename(columns={
                             'Charge': 'Charge 1',
