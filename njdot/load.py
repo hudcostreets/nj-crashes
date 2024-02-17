@@ -23,9 +23,9 @@ pk_renames = {
 }
 pk_base = ['year'] + list(pk_renames.values())
 pk_astype = {
-    'cc': int,
-    'mc': int,
-    'year': int,
+    'cc': 'int8',
+    'mc': 'int8',
+    'year': 'int16',
 }
 
 TYPE_BASENAMES = {
@@ -33,6 +33,7 @@ TYPE_BASENAMES = {
     'Vehicles': 'vehicles.parquet',
     'Drivers': 'drivers.parquet',
     'Occupants': 'occupants.parquet',
+    'Pedestrians': 'pedestrians.parquet',
 }
 
 

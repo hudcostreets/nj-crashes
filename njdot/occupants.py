@@ -28,7 +28,6 @@ renames = {
 
 astype = {
     'vn': int,
-
     'on': 'int8',
     'condition': 'Int8',
     'pos': 'Int8',

@@ -443,6 +443,28 @@ def load(txt_path, fields, ints=None, floats=None, bools=None):
     return df
 
 
+def get_2021_dob_fix_fields(fields, dob_col):
+    """Driver DOB is missing from 2021Drivers (similarly "Date of Birth" in 2021Pedestrians)."""
+    new_fields = []
+    pos = 1
+    dob_field = None
+    for f in fields:
+        if f['Field'] == dob_col:
+            dob_field = { **f }
+        else:
+            length = f['Length']
+            new_field = { **f, 'From': pos, 'To': pos + length - 1, }
+            pos += length
+            new_fields.append(new_field)
+    if not dob_field:
+        raise RuntimeError(f"Couldn't find '{dob_col}' field in {fields}")
+    err(f"Moved '{dob_col}' to end of fields")
+    dob_field['From'] = pos
+    dob_field['To'] = pos + dob_field['Length'] - 1
+    new_fields.append(dob_field)
+    return new_fields
+
+
 @cmd(
     overwrite_opt,
     dry_run_opt,
@@ -501,7 +523,11 @@ def pqt(regions, types, years, overwrite, dry_run):
                             'Pre- Crash Action': 'Pre-Crash Action',
                         })
                 elif typ == 'Pedestrians':
-                    df = load(txt_path, fields, bools=[ 'Is Bycyclist?', 'Is Other?', ]).rename(columns={'Is Bycyclist?': 'Is Bicyclist?'})
+                    if year == 2021:
+                        new_fields = get_2021_dob_fix_fields(fields, 'Date of Birth')
+                    else:
+                        new_fields = fields
+                    df = load(txt_path, new_fields, bools=[ 'Is Bycyclist?', 'Is Other?', ]).rename(columns={'Is Bycyclist?': 'Is Bicyclist?'})
                     if v2017:
                         df = df.rename(columns={
                             'Type of Most Severe Phys Injury': 'Type of Most Severe Physical Injury',
@@ -515,24 +541,7 @@ def pqt(regions, types, years, overwrite, dry_run):
                         })
                 elif typ == 'Drivers':
                     if year == 2021:
-                        # Driver DOB is missing from 2021[Drivers]
-                        new_fields = []
-                        pos = 1
-                        dob_field = None
-                        for f in fields:
-                            if f['Field'] == 'Driver DOB':
-                                dob_field = { **f }
-                            else:
-                                length = f['Length']
-                                new_field = { **f, 'From': pos, 'To': pos + length - 1, }
-                                pos += length
-                                new_fields.append(new_field)
-                        if not dob_field:
-                            raise RuntimeError(f"Couldn't find 'Driver DOB' field in {fields}")
-                        err("Moved 'Driver DOB' to end of fields")
-                        dob_field['From'] = pos
-                        dob_field['To'] = pos + dob_field['Length'] - 1
-                        new_fields.append(dob_field)
+                        new_fields = get_2021_dob_fix_fields(fields, 'Driver DOB')
                     else:
                         new_fields = fields
                     df = load(txt_path, new_fields)

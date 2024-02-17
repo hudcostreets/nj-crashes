@@ -66,9 +66,6 @@ renames = {
     'First Harmful Event': 'first_harmful_event',
 }
 astype = {
-    'year': 'int16',
-    'cc': 'int8',
-    'mc': 'int8',
     'tk': 'int8',
     'ti': 'int8',
     'pk': 'int8',
