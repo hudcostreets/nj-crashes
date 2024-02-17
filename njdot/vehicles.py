@@ -1,9 +1,8 @@
 import pandas as pd
 from typing import Optional
-from utz import sxs
 
 from njdot import crashes
-from njdot.load import Years, load_type, pk_base
+from njdot.load import Years, load_type, pk_base, normalize
 
 renames = {
     'Year': 'year',
@@ -60,6 +59,8 @@ astype = {
     ]},
 }
 
+pk_cols = pk_base + ['vn']
+
 
 def map_year_df(df: pd.DataFrame) -> pd.DataFrame:
     df = df[df.columns[~df.columns.str.match(r'^[A-Z]')]]
@@ -67,16 +68,8 @@ def map_year_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def map_df(v: pd.DataFrame) -> pd.DataFrame:
-    c = crashes.load(cols=pk_base + ['tv'])
-    vb = v[pk_base + ['vn']]
-    m = vb.merge(
-        c[pk_base].reset_index().rename(columns={'id': 'crash_id'}),
-        on=pk_base,
-        how='left',
-        validate='m:1',
-    )
-    vm = sxs(m.crash_id, v.drop(columns=pk_base))
-    return vm
+    err("Merging vehicles with crashes")
+    return normalize(v, pk_cols, 'crash_id', crashes.load)
 
 
 def load(
@@ -85,7 +78,7 @@ def load(
         read_pqt: Optional[bool] = None,
         write_pqt: bool = False,
         cols: Optional[list[str]] = None,
-):
+) -> pd.DataFrame:
     df = load_type(
         'Vehicles',
         years=years,

@@ -2,3 +2,4 @@
 20*/*.zip
 /vehicles.parquet
 /crashes.parquet
+/occupants.parquet

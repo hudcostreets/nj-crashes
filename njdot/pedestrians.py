@@ -4,7 +4,6 @@ from njdot.load import Years, load_type
 
 renames = {
     'Year': 'year',
-    'Vehicle Number': 'vn',
 }
 
 
@@ -16,7 +15,7 @@ def load(
         cols: Optional[list[str]] = None,
 ):
     df = load_type(
-        'Drivers',
+        'Pedestrians',
         years=years,
         county=county,
         renames=renames,

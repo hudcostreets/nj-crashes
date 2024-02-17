@@ -5,8 +5,8 @@ import pandas as pd
 from humanize import naturalsize
 from numpy import nan
 from pandas import read_parquet
-from typing import Union, Optional, Callable
-from utz import err
+from typing import Union, Optional, Callable, Protocol
+from utz import err, sxs
 
 from njdot import NJDOT_DIR
 from njdot.data import YEARS, Type, cn2cc
@@ -36,6 +36,25 @@ TYPE_BASENAMES = {
 }
 
 
+class Collable(Protocol):
+    def __call__(self, cols: list[str]) -> pd.DataFrame:
+        ...
+
+
+def normalize(df: pd.DataFrame, cols: list[str], id: str, r_fn: Collable) -> pd.DataFrame:
+    r = r_fn(cols=cols)
+    dfb = df[cols]
+    m = dfb.merge(
+        r.reset_index().rename(columns={ 'id': id }),
+        on=cols,
+        how='left',
+        validate='m:1',
+    )
+    dfm = sxs(m[id], df.drop(columns=cols))
+    dfm.index.name = INDEX_NAME
+    return dfm
+
+
 def load_type(
         tpe: Type,
         years: Years = None,
@@ -49,7 +68,7 @@ def load_type(
         cols: Optional[list[str]] = None,
         map_year_df: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
         map_df: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
-):
+) -> pd.DataFrame:
     if isinstance(years, str):
         years = list(map(int, years.split(',')))
     elif isinstance(years, int):
@@ -89,7 +108,7 @@ def load_type(
         df = df.astype({ k: v for k, v in astype.items() if k in df })
         for k, v in opt_ints.items():
             if k in df:
-                df[k] = df[k].replace(r'^[\?\*]?$', nan, regex=True).astype(v)
+                df[k] = df[k].replace(r'^[\?\*]?$', nan, regex=True).replace('0?', '00', regex=False).astype(v)
 
         if county:
             df = df[df.cn.str.lower() == county.lower()]

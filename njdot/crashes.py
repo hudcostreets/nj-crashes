@@ -50,7 +50,7 @@ def map_year_df(df: pd.DataFrame) -> pd.DataFrame:
     df['cn'] = df.cn.apply(lambda cn: cn.title())
     df['mn'] = df.mn.apply(lambda mn: mn.title())
     df['pdn'] = df.pdn.apply(lambda pdn: pdn.title())
-    df['olon'] = -df['olon']  # Longitudes all come in positive, but are actually supposed to be negative (NJ ⊂ [-75, -73])
+    df['olon'] = -df['olon']  # Longitudes all come in positive, but are actually supposed to be negative (NJ ⊂ [-76, -73])
     df['severity'] = df['severity'].apply(lambda s: s.lower())
     return df
 
@@ -61,7 +61,7 @@ def load(
     read_pqt: Optional[bool] = None,
     write_pqt: bool = False,
     cols: Optional[list[str]] = None,
-):
+) -> pd.DataFrame:
     return load_type(
         tpe='Accidents',
         years=years,
