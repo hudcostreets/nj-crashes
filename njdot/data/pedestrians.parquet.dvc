@@ -1,0 +1,5 @@
+outs:
+- md5: a98655a32475053eed39570b61191b75
+  size: 4627288
+  hash: md5
+  path: pedestrians.parquet

@@ -3,3 +3,5 @@
 /vehicles.parquet
 /crashes.parquet
 /occupants.parquet
+/pedestrians.parquet
+/drivers.parquet

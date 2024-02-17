@@ -37,6 +37,12 @@ TYPE_BASENAMES = {
 }
 
 
+def print_hists(df: pd.DataFrame, cols: Optional[list[str]] = None):
+    for k in df:
+        if cols is None or k in cols:
+            print(df[k].value_counts(dropna=False).sort_index())
+
+
 class Collable(Protocol):
     def __call__(self, cols: list[str]) -> pd.DataFrame:
         ...

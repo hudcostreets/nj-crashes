@@ -24,7 +24,8 @@ def write(
         tbl: str,
         db_path: str,
         idxs: list[Tuple[str]] = None,
-        rm: bool = True,
+        rm: bool = False,
+        replace: bool = True,
         page_size: Optional[int] = None,
 ):
     if rm and exists(db_path):
@@ -32,7 +33,8 @@ def write(
         remove(db_path)
 
     err(f"Writing {len(df)} rows to {db_path}")
-    df.to_sql(tbl, f'sqlite:///{db_path}')
+    kwargs = dict(if_exists='replace') if replace else dict()
+    df.to_sql(tbl, f'sqlite:///{db_path}', **kwargs)
     err(f"Wrote DB: {stat(db_path).st_size} bytes")
     con = sqlite3.connect(db_path)
     cur = con.cursor()
