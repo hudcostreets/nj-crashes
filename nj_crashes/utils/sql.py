@@ -19,6 +19,27 @@ def del_idx(cur, *cols):
     return cur.execute(f"DROP INDEX {name}")
 
 
+def exec(cur, sql: str):
+    err(sql)
+    return cur.execute(sql)
+
+
+def add_fk(cur, tbl, col, ref_tbl, ref_col):
+    col2 = f"{col}2"
+    exec(cur, f'ALTER TABLE {tbl} ADD COLUMN {col2} REFERENCES {ref_tbl}({ref_col})')
+    exec(cur, f'UPDATE {tbl} SET {col2} = {col}')
+    exec(cur, f'ALTER TABLE {tbl} DROP COLUMN {col}')
+    exec(cur, f'ALTER TABLE {tbl} RENAME COLUMN {col2} TO {col}')
+    exec(cur, f'CREATE INDEX {tbl}_{col} ON {tbl}({col})')
+
+
+def resize(cur, page_size: int, db_path: str = None):
+    cur.execute("pragma journal_mode = delete")
+    cur.execute(f"pragma page_size = {page_size}")
+    cur.execute("vacuum")
+    err(f"After setting page_size={page_size} and vacuum: {stat(db_path).st_size} bytes")
+
+
 def write(
         df: pd.DataFrame,
         tbl: str,
@@ -44,9 +65,6 @@ def write(
         err(f"After indices: {stat(db_path).st_size} bytes")
 
     if page_size:
-        cur.execute("pragma journal_mode = delete")
-        cur.execute(f"pragma page_size = {page_size}")
-        cur.execute("vacuum")
-        err(f"After setting page_size={page_size} and vacuum: {stat(db_path).st_size} bytes")
+        resize(cur, page_size, db_path)
 
     return cur
