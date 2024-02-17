@@ -1,34 +1,18 @@
-from humanize import naturalsize
-from os import stat
-from os.path import exists
-
-from math import sqrt
-
-from dataclasses import dataclass, asdict
-
 import geopandas as gpd
-
 import pandas as pd
-from pandas import read_parquet, isna
+from dataclasses import dataclass, asdict
+from math import sqrt
+from pandas import isna
 from typing import Union, Tuple, Optional
 from utz import cached_property, DF, sxs, err
 
 from nj_crashes.geo import is_nj_ll
 from nj_crashes.sri.mp05 import get_mp05_map
-from njdot import NJDOT_DIR
-from njdot.data import END_YEAR, START_YEAR
-from njdot.paths import CRASHES_PQT
+from njdot.load import load_type, INDEX_NAME, pk_renames
 
 Year = Union[str, int]
 Years = Union[Year, list[Year]]
 
-INDEX_NAME = 'id'
-pk_renames = {
-    'County Code': 'cc',
-    'Municipality Code': 'mc',
-    'Department Case Number': 'case',
-}
-pk_cols = ['year'] + list(pk_renames.values())
 ksi_renames = {
     'Total Killed': 'tk',
     'Total Injured': 'ti',
@@ -62,61 +46,32 @@ renames = {
 }
 
 
+def map_year_df(df: pd.DataFrame) -> pd.DataFrame:
+    df['cn'] = df.cn.apply(lambda cn: cn.title())
+    df['mn'] = df.mn.apply(lambda mn: mn.title())
+    df['pdn'] = df.pdn.apply(lambda pdn: pdn.title())
+    df['olon'] = -df['olon']  # Longitudes all come in positive, but are actually supposed to be negative (NJ ⊂ [-75, -73])
+    df['severity'] = df['severity'].apply(lambda s: s.lower())
+    return df
+
+
 def load(
     years: Years = None,
     county: str = None,
-    index: bool = False,
     read_pqt: Optional[bool] = None,
     write_pqt: bool = False,
+    cols: Optional[list[str]] = None,
 ):
-    if isinstance(years, str):
-        years = years.split(',')
-    elif isinstance(years, int):
-        years = [str(years)]
-    elif years is None:
-        years = list(range(START_YEAR, END_YEAR))
-
-    if read_pqt or (read_pqt is None and exists(CRASHES_PQT) and not write_pqt):
-        err(f"Reading {CRASHES_PQT}")
-        return read_parquet(CRASHES_PQT)
-
-    dfs = []
-    for year in years:
-        crashes = read_parquet(f'{NJDOT_DIR}/data/{year}/NewJersey{year}Accidents.pqt')
-        crashes = crashes.rename(columns=renames)
-        crashes = crashes.astype({
-            'cc': int,
-            'mc': int,
-        })
-        if county:
-            crashes = crashes[crashes.cn.str.lower() == county.lower()]
-        crashes['cn'] = crashes.cn.apply(lambda cn: cn.title())
-        crashes['mn'] = crashes.mn.apply(lambda mn: mn.title())
-        crashes['pdn'] = crashes.pdn.apply(lambda pdn: pdn.title())
-        years_col = crashes.dt.dt.year.rename('year')
-        wrong_year = years_col != int(year)
-        if wrong_year.any():
-            num_wrong_year = wrong_year.sum()
-            err(f'{num_wrong_year} crashes for year {year} have wrong year: {years_col.value_counts()}')
-        crashes['year'] = years_col
-        crashes['olon'] = -crashes['olon']  # Longitudes all come in positive, but are actually supposed to be negative (NJ ⊂ [-75, -73])
-        crashes['severity'] = crashes['severity'].apply(lambda s: s.lower())
-        if index:
-            crashes = crashes.set_index(pk_cols)
-        dfs.append(crashes)
-    df = pd.concat(dfs)
-    if index:
-        df = df.sort_index()
-    else:
-        df = df.reset_index(drop=True).sort_values(pk_cols).reset_index(drop=True)
-        cols = pk_cols + [ col for col in df if col not in pk_cols ]
-        df = df[cols]
-        df.index.name = INDEX_NAME
-    if write_pqt:
-        df.to_parquet(CRASHES_PQT)
-        size = stat(CRASHES_PQT).st_size
-        err(f"Wrote {CRASHES_PQT} ({len(df)} rows, {naturalsize(size)})")
-    return df
+    return load_type(
+        tpe='Accidents',
+        years=years,
+        county=county,
+        renames=renames,
+        cols=cols,
+        read_pqt=read_pqt,
+        write_pqt=write_pqt,
+        map_year_df=map_year_df,
+    )
 
 
 def geocode_mp(r, sris):

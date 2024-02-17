@@ -1,2 +1,4 @@
 20*/*.txt
 20*/*.zip
+/vehicles.parquet
+/crashes.parquet

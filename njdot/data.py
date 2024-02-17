@@ -8,6 +8,8 @@ from typing import Literal, Optional
 from dataclasses import dataclass, field, asdict
 
 START_YEAR, END_YEAR = 2001, 2022
+YEARS: list[int] = list(range(START_YEAR, END_YEAR))
+
 COUNTIES = [
     'Atlantic',
     'Bergen',
@@ -39,7 +41,6 @@ cc2cn = {
 }
 cn2cc = { cn: cc for cc, cn in cc2cn.items() }
 
-YEARS: list[str] = list(map(str, range(START_YEAR, END_YEAR)))
 TYPE_TO_TABLE = {
     'Accidents': 'Crash',
     'Drivers': 'Driver',
@@ -74,7 +75,7 @@ def hist(df, code, desc=None):
 
 @dataclass
 class Data:
-    years: list[str] = field(default_factory=lambda: [*YEARS])
+    years: list[int] = field(default_factory=lambda: [*YEARS])
     types: list[Type] = field(default_factory=lambda: [*TYPES])
     columns: Optional[list[str]] = None
 
@@ -107,15 +108,15 @@ class Data:
             return self.copy(types=[k])
         elif k in self.years:
             return self.copy(years=[k])
-        elif isinstance(k, int) and str(k) in self.years:
-            return self.copy(years=[str(k)])
+        elif isinstance(k, str) and int(k) in self.years:
+            return self.copy(years=[int(k)])
         elif isinstance(k, list):
             if all([ e in self.types for e in k ]):
                 return self.copy(types=k)
             elif all([ e in self.years for e in k ]):
                 return self.copy(years=k)
-            elif all([ isinstance(e, int) and str(e) in self.years for e in k ]):
-                return self.copy(years=list(map(str, k)))
+            elif all([ isinstance(e, str) and int(e) in self.years for e in k ]):
+                return self.copy(years=list(map(int, k)))
         return asdict(self)[k]
 
     def copy(self, **kwargs):

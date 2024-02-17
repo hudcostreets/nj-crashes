@@ -149,10 +149,10 @@ def parse_years(years_str):
             start, end = pcs
             start = int(start) if start else START_YEAR
             end = int(end) if end else END_YEAR
-            all_years += map(str, range(start, end))
+            all_years += list(range(start, end))
         else:
             raise ValueError(f"Unrecognized year piece {years} in {years_str}")
-    return list(sorted(list(set(all_years))))
+    return list(sorted(list(map(int, set(all_years)))))
 
 
 years_opt = parse_opt(
@@ -537,7 +537,7 @@ def pqt(regions, types, years, overwrite, dry_run):
 @cli.command('check-nj-agg', short_help='For one or more years, verify the `NewJersey` file is a concatenation of the county-specific files')
 @option('-y', '--year', 'years')
 def check_nj_agg(years):
-    years = years.split(',') if years else YEARS
+    years = map(int, years.split(',')) if years else YEARS
     for year in years:
         nj = pd.read_parquet(f'{DATA_DIR}/{year}/NewJersey{year}Accidents.pqt')
         cs = pd.concat([
