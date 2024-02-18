@@ -113,8 +113,8 @@ def map_df(df: pd.DataFrame) -> pd.DataFrame:
     joined = sjoin(gdf.df[['olat', 'olon', 'geometry']], cg)
     joined = joined.rename(columns={ 'index_right': 'ocn', })
     with_ocn = sxs(gdf.df, joined.ocn).sort_index()
-    occ = with_ocn.ocn.map(cn2cc).astype('Int64').rename('occ')
-    with_ocn = sxs(with_ocn, occ).drop(columns='ocn')
+    occ = with_ocn.ocn.map(cn2cc).astype('Int8').rename('occ')
+    with_ocn = sxs(with_ocn, occ).drop(columns=['geometry', 'ocn'])
 
     err("crashes: geocoding SRI/MPs")
     ill = Crashes(with_ocn).mp_lls(append=True)
@@ -123,8 +123,8 @@ def map_df(df: pd.DataFrame) -> pd.DataFrame:
     ij = sjoin(igdf.df[['geometry']], cg)
     ij = ij.rename(columns={ 'index_right': 'icn', })
     with_cns = sxs(igdf.df, ij.icn).sort_index()
-    icc = with_cns.icn.map(cn2cc).astype('Int64').rename('icc')
-    with_cns = sxs(with_cns, icc).drop(columns='icn')
+    icc = with_cns.icn.map(cn2cc).astype('Int8').rename('icc')
+    with_cns = sxs(with_cns, icc).drop(columns=['geometry', 'icn'])
 
     return with_cns
 

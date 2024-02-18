@@ -57,14 +57,12 @@ def write(
     kwargs = dict(if_exists='replace') if replace else dict()
     df.to_sql(tbl, f'sqlite:///{db_path}', **kwargs)
     err(f"Wrote DB: {stat(db_path).st_size} bytes")
-    con = sqlite3.connect(db_path)
-    cur = con.cursor()
-    if idxs:
-        for idx_cols in idxs:
-            add_idx(cur, tbl, *idx_cols)
-        err(f"After indices: {stat(db_path).st_size} bytes")
+    with sqlite3.connect(db_path) as con:
+        cur = con.cursor()
+        if idxs:
+            for idx_cols in idxs:
+                add_idx(cur, tbl, *idx_cols)
+            err(f"After indices: {stat(db_path).st_size} bytes")
 
-    if page_size:
-        resize(cur, page_size, db_path)
-
-    return cur
+        if page_size:
+            resize(cur, page_size, db_path)
