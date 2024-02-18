@@ -86,7 +86,7 @@ astype = {
     'horizontal_alignment': 'Int8',
     'road_grade': 'Int8',
     'first_harmful_event': 'Int8',
-    'mp': 'float32',
+    'mp': 'float32',  # TODO: can be imprecise when casted to float64 (e.g. in JS; 0.38999998569488525 instead of 0.39)
 }
 
 
