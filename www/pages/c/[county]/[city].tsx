@@ -58,7 +58,7 @@ export default function CityPage({ urls, county, city, cc, mc }: Props) {
 
     const totals = useTotals({ url: urls.cmym, requestChunkSize, cc, mc }) ?? undefined
     const years = useYearStats({ url: urls.cmym, requestChunkSize, cc, mc })
-    const crashes = useCrashRows({ url: urls.crashes, requestChunkSize, cc, mc, page, perPage, })
+    const crashes = useCrashRows({ urls, requestChunkSize, cc, mc, page, perPage, })
 
     const [ title, countyTitle] = useMemo(() => {
         const cityTitle = denormalize(city)

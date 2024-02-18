@@ -1,9 +1,9 @@
 import { keys, values } from "@rdub/base/objs";
 import css from "@/src/sql-repl.module.scss";
-import * as sql from "@rdub/react-sql.js-httpvfs/query";
 import { fold } from "fp-ts/either";
+import { Result } from "@rdub/react-sql.js-httpvfs/query";
 
-export function Result({ result }: { result: sql.Result<Record<any, any>> | null }) {
+export function SqlResult({ result }: { result: Result<Record<any, any>> | null }) {
     return result &&
         fold(
             (err: Error) => <div className={css.sqlError}>

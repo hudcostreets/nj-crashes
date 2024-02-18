@@ -1,10 +1,8 @@
 import React, { createRef, HTMLProps, useEffect, useState } from "react";
-// const { resolve } = Promise
 import useSessionStorageState from "use-session-storage-state";
 import css from "./sql-repl.module.scss"
-import * as Query from "@rdub/react-sql.js-httpvfs/query";
-import { useSqlResult } from "@rdub/react-sql.js-httpvfs/query";
-import { Result } from "@/src/sql/result";
+import { Result, useSqlResult } from "@rdub/react-sql.js-httpvfs/query";
+import { SqlResult } from "@/src/sql/sqlResult";
 import { getDbUrls } from "@/src/urls";
 
 export const UrlKey = "sql-db-url"
@@ -188,10 +186,14 @@ export default function SqlRepl() {
     const [ url, setUrl] = useSessionStorageState<string>(UrlKey, {defaultValue: `${DefaultDbPath}`})
     const [ query, setQuery] = useSessionStorageState<string>(QueryKey, {defaultValue: DefaultQuery})
     const [ requestChunkSize, setRequestChunkSize] = useState<number>(64 * 1024)
-    const [ result, setResult] = useState<Query.Result<any> | null>(null)
+    const [ result, setResult] = useState<Result<any> | null>(null)
     let doQuery: null | ((query: string) => (Promise<void> | null)) = null
     try {
-        doQuery = useSqlResult({url, requestChunkSize, setResult})
+        doQuery = useSqlResult({
+            url,
+            requestChunkSize,
+            setResult,
+        })
     } catch (e) {
         console.error("Caught error:", e)
     }
@@ -249,7 +251,7 @@ export default function SqlRepl() {
                 defaultValue={query}
             >
             </Input>
-            <Result result={result} />
+            <SqlResult result={result} />
         </div>
     )
 }

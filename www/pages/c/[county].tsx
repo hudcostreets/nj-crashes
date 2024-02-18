@@ -43,7 +43,7 @@ export default function CountyPage({ urls, county, cc, mc2mn }: Props) {
     const [ page, setPage ] = useState<number>(0)
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
 
-    const crashes = useCrashRows({ url: urls.crashes, requestChunkSize, cc, page, perPage, mc2mn, })
+    const crashes = useCrashRows({ urls, requestChunkSize, cc, page, perPage, mc2mn, })
     const totals = useTotals({ url: urls.cmym, requestChunkSize, cc }) ?? undefined
     // const totalsElem = useTotalsElem({ url: urls.ymc, requestChunkSize, cc })
     const years = useYearStats({ url: urls.cmym, requestChunkSize, cc, })
