@@ -7,10 +7,10 @@ import { Base } from "@/src/use-crashes";
 
 export type CrashOccStats = {
     crash_id: number
-    dk: number
-    di: number
-    ok: number
-    oi: number
+    dk: number  // drivers killed
+    di: number  // drivers injured
+    ok: number  // passengers (occupants) killed
+    oi: number  // passengers (occupants) injured
 }
 
 export type CrashesOccStats = { [crash_id: number]: CrashOccStats }

@@ -10,9 +10,10 @@ import strftime from "strftime";
 import { entries, fromEntries } from "@rdub/base/objs";
 import { range } from "@rdub/base/arr";
 import { Urls } from "@/src/urls";
-import { Driver, Passenger } from "@/src/icons";
+import { Cyclist, Driver, Passenger, Pedestrian } from "@/src/icons";
 import css from "./use-crashes.module.scss"
 import { CrashesOccStats, CrashOccStats, useOccupantStats } from "@/src/occ-stats";
+import { CrashesPedStats, CrashPedStats, usePedestrianStats } from "@/src/ped-stats";
 
 export type Base = Omit<sql.Base, 'url'> & {
     urls: Urls
@@ -56,32 +57,46 @@ export const ColLabels = {
 }
 export type Col = keyof typeof ColLabels
 
-export function CrashIcons({ dk, di, ok, oi, }: Omit<CrashOccStats, 'crash_id'>) {
-    const tk = dk + ok
-    const ti = di + oi
+// export function TypeIcons({ icon, k, i }: { icon: string, k: number, i : number }) {
+//     return k ? <span className={css.typeIcons}>
+//             <span className={css.typeIcon}>⚰️</span>
+//             {dk ? range(dk).map(i => <Driver key={i} />) : null}
+//             {ok ? range(ok).map(i => <Passenger key={i} />) : null}
+//         </span> : null
+// }
+
+export function CrashIcons({ dk, di, ok, oi, pk, pi, bk, bi, }: Omit<CrashOccStats, 'crash_id'> & Omit<CrashPedStats, 'crash_id'>) {
+    const tk = dk + ok + pk + bk
+    const ti = di + oi + pi + bi
     return <div className={css.icons}>
         {tk ? <span className={css.typeIcons}>
             <span className={css.typeIcon}>⚰️</span>
             {dk ? range(dk).map(i => <Driver key={i} />) : null}
             {ok ? range(ok).map(i => <Passenger key={i} />) : null}
+            {pk ? range(pk).map(i => <Pedestrian key={i} />) : null}
+            {bk ? range(bk).map(i => <Cyclist key={i} />) : null}
         </span> : null}
         {ti ? <span className={css.typeIcons}>
             <span className={css.typeIcon}>🏥</span>
             {di ? range(di).map(i => <Driver key={i} />) : null}
             {oi ? range(oi).map(i => <Passenger key={i} />) : null}
+            {pi ? range(pi).map(i => <Pedestrian key={i} />) : null}
+            {bi ? range(bi).map(i => <Cyclist key={i} />) : null}
         </span> : null}
     </div>
 }
 
-export function getCrashRows({ rows, cols, mc2mn, occStats, }: {
+export function getCrashRows({ rows, cols, mc2mn, occStats, pedStats, }: {
     rows: Crash[]
     cols: Col[]
     mc2mn?: MC2MN
     occStats: CrashesOccStats | null
+    pedStats: CrashesPedStats | null
 }): Row[] {
     return rows.map(row => {
         const { id } = row
         const occStat = occStats?.[id]
+        const pedStat = pedStats?.[id]
         return fromEntries([
             [ 'key', id ],
             ...cols.map(col => {
@@ -96,7 +111,8 @@ export function getCrashRows({ rows, cols, mc2mn, occStats, }: {
                         : ''
                 } else if (col == 'casualties') {
                     const { dk = 0, di = 0, ok = 0, oi = 0, } = occStat ?? {}
-                    txt = <CrashIcons dk={dk} di={di} ok={ok} oi={oi} />
+                    const { pk = 0, pi = 0, bk = 0, bi = 0 } = pedStat ?? {}
+                    txt = <CrashIcons dk={dk} di={di} ok={ok} oi={oi} pk={pk} pi={pi} bk={bk} bi={bi} />
                 } else if (col == 'mc') {
                     const { mc } = row
                     if (!mc2mn) {
@@ -117,6 +133,7 @@ export function getCrashRows({ rows, cols, mc2mn, occStats, }: {
 export function useCrashRows({ mc2mn, ...props }: Props & { mc2mn?: MC2MN }) {
     const crashesResult = useCrashes({ ...props })
     const occStats = useOccupantStats({ crashesResult, ...props })
+    const pedStats = usePedestrianStats({ crashesResult, ...props })
     const mcCol: Col[] = props.mc ? [] : ['mc']
     const cols: Col[] = [ 'dt', ...mcCol, 'casualties', 'road', 'cross_street', 'mp', 'll', ]
 
@@ -125,7 +142,7 @@ export function useCrashRows({ mc2mn, ...props }: Props & { mc2mn?: MC2MN }) {
             if (!crashesResult) return
             console.log("crashRows effect")
             const crashRows = map(
-                (crashes: Crash[]) => getCrashRows({ rows: crashes, cols, mc2mn, occStats })
+                (crashes: Crash[]) => getCrashRows({ rows: crashes, cols, mc2mn, occStats, pedStats })
             )(crashesResult)
             return crashRows
         },
