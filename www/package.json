@@ -21,7 +21,7 @@
         "@mdx-js/loader": "^2",
         "@mui/material": "^5.15.10",
         "@next/mdx": "^14",
-        "@rdub/base": "0.2.1",
+        "@rdub/base": "0.2.2",
         "@rdub/duckdb": "0.0.1",
         "@rdub/next-base": "0.1.0",
         "@rdub/next-leaflet": "0.1.0",

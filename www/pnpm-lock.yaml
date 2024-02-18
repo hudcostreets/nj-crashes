@@ -39,8 +39,8 @@ dependencies:
     specifier: ^14
     version: 14.0.4(@mdx-js/loader@2.3.0)
   '@rdub/base':
-    specifier: 0.2.1
-    version: 0.2.1(react-dom@18.2.0)(react@18.2.0)
+    specifier: 0.2.2
+    version: 0.2.2(react-dom@18.2.0)(react@18.2.0)
   '@rdub/duckdb':
     specifier: 0.0.1
     version: 0.0.1(@duckdb/duckdb-wasm@1.28.1-dev106.0)(react-dom@18.2.0)(react@18.2.0)
@@ -1680,8 +1680,8 @@ packages:
       react-dom: 18.2.0(react@18.2.0)
     dev: false
 
-  /@rdub/base@0.2.1(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-5rhNX8XNLYXO3MMBoALbvg0hBbFz7W9t4VASP22cyuVt1NMU0s/W9a6fIGO3wSl69s+6UtySRvyeKm/sBqy6OA==}
+  /@rdub/base@0.2.2(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-RiZAkIDF/hR+vK/gqNRQ4v7fvyWNkTqXZct+QoQw1wr8SWhPwyoSOtFe6jyEVqX7xGVu4dYOialgcZ63U7XU6g==}
     peerDependencies:
       react: ^18
       react-dom: ^18
@@ -1790,7 +1790,7 @@ packages:
       react: ^18
       react-dom: ^18
     dependencies:
-      '@rdub/base': 0.2.1(react-dom@18.2.0)(react@18.2.0)
+      '@rdub/base': 0.2.2(react-dom@18.2.0)(react@18.2.0)
       comlink: 4.4.1
       fp-ts: 2.16.2
       react: 18.2.0

@@ -118,3 +118,14 @@ There is a marked decrease in "injury" and "property damage" crashes since the o
 ### Caveats / TODOs <a id="todos"></a>
 
 The fatal crash stats here also seem to differ from NJSP's data (see [the root of this repository](..)) by ≈10%.
+
+---
+
+### Attributions:
+- [Driver](https://thenounproject.com/icon/driver-1847797/) by Musmellow from <a href="https://thenounproject.com/browse/icons/term/driver/" target="_blank" title="Driver Icons">Noun Project</a> (CC BY 3.0)
+- [Passenger](https://thenounproject.com/icon/passenger-4353992/) by Luiz Carvalho from <a href="https://thenounproject.com/browse/icons/term/passenger/" target="_blank" title="passenger Icons">Noun Project</a> (CC BY 3.0)
+- [Pedestrian](https://thenounproject.com/icon/pedestrian-1826968/) by Adrien Coquet from <a href="https://thenounproject.com/browse/icons/term/pedestrian/" target="_blank" title="Pedestrian Icons">Noun Project</a> (CC BY 3.0)
+- [Bicycle](https://thenounproject.com/icon/bicycle-1311416/) by Adrien Coquet from <a href="https://thenounproject.com/browse/icons/term/bicycle/" target="_blank" title="Bicycle Icons">Noun Project</a> (CC BY 3.0)
+- [Car](https://thenounproject.com/icon/car-6583503/) by Nur syifa fauziah from <a href="https://thenounproject.com/browse/icons/term/car/" target="_blank" title="Car Icons">Noun Project</a> (CC BY 3.0)
+
+**TODO:** add to www pages

@@ -7,9 +7,12 @@ import { Row } from "@/src/result-table";
 import { map } from "fp-ts/Either";
 import { MC2MN } from "@/src/county";
 import strftime from "strftime";
-import { entries, fromEntries, o2a } from "@rdub/base/objs";
+import { entries, fromEntries } from "@rdub/base/objs";
+import { range } from "@rdub/base/arr";
 import { fold } from "fp-ts/either";
 import { Urls } from "@/src/urls";
+import { Driver, Passenger } from "@/src/icons";
+import css from "./use-crashes.module.scss"
 
 export type Base = Omit<sql.Base, 'url'> & {
     urls: Urls
@@ -105,6 +108,23 @@ export const ColLabels = {
 }
 export type Col = keyof typeof ColLabels
 
+export function CrashIcons({ dk, di, ok, oi, }: Omit<CrashOccStats, 'crash_id'>) {
+    const tk = dk + ok
+    const ti = di + oi
+    return <div className={css.icons}>
+        {tk ? <span className={css.typeIcons}>
+            <span className={css.typeIcon}>⚰️</span>
+            {dk ? range(dk).map(i => <Driver key={i} />) : null}
+            {ok ? range(ok).map(i => <Passenger key={i} />) : null}
+        </span> : null}
+        {ti ? <span className={css.typeIcons}>
+            <span className={css.typeIcon}>🏥</span>
+            {di ? range(di).map(i => <Driver key={i} />) : null}
+            {oi ? range(oi).map(i => <Passenger key={i} />) : null}
+        </span> : null}
+    </div>
+}
+
 export function getCrashRows({ rows, cols, mc2mn, occStats, }: {
     rows: Crash[]
     cols: Col[]
@@ -130,11 +150,8 @@ export function getCrashRows({ rows, cols, mc2mn, occStats, }: {
                     const os =
                         entries<string, number>(occStat ?? {})
                             .filter(([ k, v ]) => k != 'crash_id' && v > 0)
-                    const oss = os.map(([ k, v ]) => `${v} ${k}`).join(", ")
-                    console.log(`crash id ${id}, os:`, os, "oss:", oss)
-                    // const { dk = 0, di = 0, ok = 0, oi = 0, } = occStat ?? {}
-                    const { tk, ti, tv } = row
-                    txt = "⚰️".repeat(tk) + "🏥".repeat(ti) + "🚗".repeat(tv) + (oss ? ` (${oss})` : "")
+                    const { dk = 0, di = 0, ok = 0, oi = 0, } = occStat ?? {}
+                    txt = <CrashIcons dk={dk} di={di} ok={ok} oi={oi} />
                 } else if (col == 'mc') {
                     const { mc } = row
                     if (!mc2mn) {
