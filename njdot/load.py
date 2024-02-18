@@ -1,6 +1,9 @@
+#!/usr/bin/env python
+
 from os import stat
 from os.path import exists
 
+import click
 import pandas as pd
 from humanize import naturalsize
 from numpy import nan
@@ -8,9 +11,11 @@ from pandas import read_parquet
 from typing import Union, Optional, Callable, Protocol
 from utz import err, sxs
 
+from nj_crashes.utils import sql
 from njdot import NJDOT_DIR
-from njdot.data import YEARS, Type, cn2cc
-from njdot.paths import DOT_DATA
+from njdot.data import YEARS, Type, cn2cc, TYPE_TO_TBL
+from njdot.paths import DOT_DATA, WWW_DOT
+from njdot.rawdata import types_opt
 
 Year = int
 Years = Union[Year, list[Year]]
@@ -158,3 +163,38 @@ def load_type(
         err(f"Wrote {pqt_path} ({len(df)} rows, {naturalsize(size)})")
 
     return df
+
+
+crash_idxs = [
+    ('severity', 'dt', 'cc', 'mc'),
+    ('severity', 'ilat', 'ilon'),
+    ('severity', 'icc', 'dt'),
+]
+
+
+@click.command
+@click.option('-i', '--input-pqt')
+@click.option('-r', '--replace', is_flag=True)
+@click.option('-s', '--page-size', type=int, default=2**16)
+@types_opt
+@click.argument('path', required=False)
+def main(input_pqt, replace, page_size: int, types: list[Type], path):
+    for tpe in types:
+        tbl = TYPE_TO_TBL[tpe]
+        df = load_type(tpe, read_pqt=True, pqt_path=input_pqt)
+        if not path:
+            path = f'{WWW_DOT}/{tbl}.db'
+        idxs = crash_idxs if tbl == 'crashes' else [('crash_id',)]
+        sql.write(
+            df=df,
+            tbl=tbl,
+            db_path=path,
+            idxs=idxs,
+            rm=not replace,
+            replace=replace,
+            page_size=page_size,
+        )
+
+
+if __name__ == '__main__':
+    main()

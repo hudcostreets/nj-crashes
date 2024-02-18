@@ -1,9 +1,13 @@
+#!/usr/bin/env python
+
+import click
 import pandas as pd
 from typing import Optional
 
 from nj_crashes.utils.log import err
 from njdot import crashes
 from njdot.load import Years, load_type, pk_base, normalize
+from njdot.rawdata import years_opt
 
 renames = {
     'Year': 'year',
@@ -25,14 +29,14 @@ renames = {
     'Fourth Sequence of Events': 'ev4',
     'Hit & Run Driver Flag': 'hit_run',
     'Extent of Damage': 'dmg',
-    'Most Harmful Event': 'ev',
-    'Towed': 'towed',
+    'Most Harmful Event': 'ev',  # added in 2017
+    'Towed': 'towed',  # removed ≥2017, folded into `departure` below
     'Removed By': 'rm_by',
     'Initial Impact Location': 'imp_loc',
     'Principal Damage Location': 'dmg_loc',
-    'Driven/Left at Scene/Towed': 'dep',
+    'Driven/Left at Scene/Towed': 'departure',
     'Oversize/Overweight Permit': 'oversize',
-    'Cargo Body Type': 'body',
+    'Cargo Body Type': 'cargo_type',
     'Insurance Company Code': 'ins_co',
 }
 
@@ -56,17 +60,38 @@ astype = {
         'imp_loc',
         'dmg_loc',
         'oversize',
-        'body',
+        'cargo_type',
     ]},
 }
 
 pk_cols = pk_base + ['vn']
 
 
+def map_towed_to_departure(r: pd.Series) -> int:
+    towed = r.towed
+    departure = r.departure
+    if towed == 'T':
+        return 6
+    if towed == 'L':
+        return 2
+    if towed == 'D':
+        return 1
+    if towed == '?' or towed == '':
+        if departure == '':
+            return 0
+        else:
+            return int(departure)
+    raise ValueError(f"Unrecognized `towed` value: {r['towed']}")
+
+
 def map_year_df(df: pd.DataFrame) -> pd.DataFrame:
     # Columns beginning with capital letters are inherited from the original data source; the ones we care about are
     # listed in `renames` above.
     df = df[df.columns[~df.columns.str.match(r'^[A-Z]')]]
+    if 'departure' not in df:
+        df['departure'] = ''
+    df['departure'] = df[['towed', 'departure']].apply(map_towed_to_departure, axis=1).astype('Int8')
+    df = df.drop(columns='towed')
     return df
 
 
@@ -82,6 +107,7 @@ def load(
         county: str = None,
         read_pqt: Optional[bool] = None,
         write_pqt: bool = False,
+        pqt_path: Optional[str] = None,
         cols: Optional[list[str]] = None,
 ) -> pd.DataFrame:
     df = load_type(
@@ -95,5 +121,21 @@ def load(
         map_df=map_df,
         read_pqt=read_pqt,
         write_pqt=write_pqt,
+        pqt_path=pqt_path,
     )
     return df
+
+
+@click.command()
+@years_opt
+@click.argument('path', required=False)
+def main(years, path):
+    load(
+        years=years,
+        write_pqt=True,
+        pqt_path=path,
+    )
+
+
+if __name__ == '__main__':
+    main()

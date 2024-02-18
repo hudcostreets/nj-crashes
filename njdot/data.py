@@ -41,14 +41,21 @@ cc2cn = {
 }
 cn2cc = { cn: cc for cc, cn in cc2cn.items() }
 
-TYPE_TO_TABLE = {
+TYPE_TO_FIELDS = {
     'Accidents': 'Crash',
     'Drivers': 'Driver',
     'Occupants': 'Occupant',
     'Pedestrians': 'Pedestrian',
     'Vehicles': 'Vehicle',
 }
-TYPES = list(TYPE_TO_TABLE.keys())
+TYPE_TO_TBL = {
+    'Accidents': 'crashes',
+    'Drivers': 'drivers',
+    'Occupants': 'occupants',
+    'Pedestrians': 'pedestrians',
+    'Vehicles': 'vehicles',
+}
+TYPES = list(TYPE_TO_FIELDS.keys())
 Type = Literal[ 'Accidents', 'Drivers', 'Occupants', 'Pedestrians', 'Vehicles', ]
 
 YPK = ['County Code', 'Municipality Code', 'Department Case Number']

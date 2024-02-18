@@ -20,8 +20,8 @@ import utz
 from utz import err
 from zipfile import ZipFile
 
-from njdot.data import TYPES, DATA_DIR, COUNTIES, YEARS, FIELDS_DIR, TYPE_TO_TABLE, END_YEAR, START_YEAR, \
-    REGIONS
+from njdot.data import TYPES, DATA_DIR, COUNTIES, YEARS, FIELDS_DIR, TYPE_TO_FIELDS, END_YEAR, START_YEAR, \
+    REGIONS, Type
 
 # Download datasets from https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm
 # The download action on that page doesn't seem to work, but we can access the data directly at URLs like
@@ -56,10 +56,10 @@ def cli():
     pass
 
 
-def parse_type(type_str):
+def parse_type(type_str) -> Type:
     matched_types = [
         typ
-        for typ in TYPE_TO_TABLE
+        for typ in TYPE_TO_FIELDS
         if typ.lower().startswith(type_str.lower())
     ]
     if len(matched_types) != 1:
@@ -67,7 +67,7 @@ def parse_type(type_str):
     return matched_types[0]
 
 
-def parse_types(types_str):
+def parse_types(types_str) -> list[Type]:
     if not types_str:
         return TYPES
     return [ parse_type(type_str) for type_str in types_str.split(',') ]
@@ -224,7 +224,7 @@ def zip(regions, cache_path, force, sleep, types, years):
                     head = requests.head(url, allow_redirects=True)
                     try:
                         head.raise_for_status()
-                    except:
+                    except Exception:
                         raise RuntimeError(f"Failed HEAD for {url}")
                     cache_headers = { k: head.headers[k] for k in CACHE_HEADERS }
                     new_row = { 'url': url, **cache_headers }
@@ -478,7 +478,7 @@ def pqt(regions, types, years, overwrite, dry_run):
         for region in regions:
             for typ in types:
                 parent_dir = f'{DATA_DIR}/{year}'
-                table = TYPE_TO_TABLE[typ]
+                table = TYPE_TO_FIELDS[typ]
                 name = f'{parent_dir}/{region}{year}{typ}'
                 txt_path = f'{name}.txt'
                 pqt_path = f'{name}.pqt'
