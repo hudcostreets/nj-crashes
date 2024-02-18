@@ -15,11 +15,13 @@ def get_counties():
     err(f"Loading {gpd_path}")
     return gpd.read_file(gpd_path, layer='County')
 
+
 @cache
 def get_county_geometries():
     counties = get_counties()
     counties['cn'] = counties.NAMELSAD.str.replace(' County$', '', regex=True)
     return counties.set_index('cn')[['geometry']]
+
 
 @cache
 def get_counties_union():

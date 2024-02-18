@@ -1,14 +1,16 @@
 import geopandas as gpd
 import pandas as pd
 from dataclasses import dataclass, asdict
+from geopandas import sjoin
 from math import sqrt
 from numpy import nan
 from pandas import isna
 from typing import Union, Tuple, Optional
 from utz import cached_property, DF, sxs, err
 
-from nj_crashes.geo import is_nj_ll
+from nj_crashes.geo import is_nj_ll, get_county_geometries
 from nj_crashes.sri.mp05 import get_mp05_map
+from njdot.data import cn2cc
 from njdot.load import load_type, INDEX_NAME, pk_renames
 
 Year = Union[str, int]
@@ -102,9 +104,29 @@ def map_year_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def map_df(df: pd.DataFrame) -> pd.DataFrame:
+    cg = get_county_geometries()
     df.index = df.index.astype('int32')
     df = df[['dt'] + [ c for c in df if c != 'dt' ]]
-    return df
+
+    err("crashes: merging olat/olon with county geometries")
+    gdf = Crashes(df).gdf('o')
+    joined = sjoin(gdf.df[['olat', 'olon', 'geometry']], cg)
+    joined = joined.rename(columns={ 'index_right': 'ocn', })
+    with_ocn = sxs(gdf.df, joined.ocn).sort_index()
+    occ = with_ocn.ocn.map(cn2cc).astype('Int64').rename('occ')
+    with_ocn = sxs(with_ocn, occ).drop(columns='ocn')
+
+    err("crashes: geocoding SRI/MPs")
+    ill = Crashes(with_ocn).mp_lls(append=True)
+    err("crashes: merging ilat/ilon with county geometries")
+    igdf = Crashes(ill).gdf('i')
+    ij = sjoin(igdf.df[['geometry']], cg)
+    ij = ij.rename(columns={ 'index_right': 'icn', })
+    with_cns = sxs(igdf.df, ij.icn).sort_index()
+    icc = with_cns.icn.map(cn2cc).astype('Int64').rename('icc')
+    with_cns = sxs(with_cns, icc).drop(columns='icn')
+
+    return with_cns
 
 
 def load(
