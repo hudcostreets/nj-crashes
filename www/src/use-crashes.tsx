@@ -1,6 +1,6 @@
-import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { ReactNode, useMemo } from "react";
 import * as sql from "@rdub/react-sql.js-httpvfs/query";
-import { Result, useSqlQueryCallback } from "@rdub/react-sql.js-httpvfs/query";
+import { Result } from "@rdub/react-sql.js-httpvfs/query";
 import { useSqlQuery } from "@/src/sql";
 import { Crash } from "@/src/crash";
 import { Row } from "@/src/result-table";
@@ -9,10 +9,10 @@ import { MC2MN } from "@/src/county";
 import strftime from "strftime";
 import { entries, fromEntries } from "@rdub/base/objs";
 import { range } from "@rdub/base/arr";
-import { fold } from "fp-ts/either";
 import { Urls } from "@/src/urls";
 import { Driver, Passenger } from "@/src/icons";
 import css from "./use-crashes.module.scss"
+import { CrashesOccStats, CrashOccStats, useOccupantStats } from "@/src/occ-stats";
 
 export type Base = Omit<sql.Base, 'url'> & {
     urls: Urls
@@ -39,58 +39,6 @@ export function useCrashes({ cc, mc, page, perPage, timerId = "crashes", urls, .
         [ page, perPage ]
     )
     return useSqlQuery<Crash>({ ...base, url: urls.crashes, timerId, query })
-}
-
-export type CrashOccStats = {
-    crash_id: number
-    dk: number
-    di: number
-    ok: number
-    oi: number
-}
-
-export type CrashesOccStats = { [crash_id: number]: CrashOccStats }
-
-export function useOccupantStats({ crashesResult, urls, ...props }: { crashesResult: Result<Crash> | null } & Base): CrashesOccStats | null {
-    const [ occStats, setOccStats ] = useState<CrashesOccStats | null>(null)
-    const fetchOccStats = useSqlQueryCallback<CrashOccStats>({ url: urls.occupants, ...props })
-    useEffect(
-        () => {
-            if (!crashesResult) return
-            console.log("occstats effect")
-            map(
-                (crashes: Crash[]) => {
-                    const crashIds = crashes.map(({ id }) => id)
-                    const query = `
-                        select
-                            crash_id,
-                            sum(case when condition=1 and pos=1 then 1 else 0 end) as dk,
-                            sum(case when condition>1 and condition<5 and pos=1 then 1 else 0 end) as di,
-                            sum(case when condition=1 and pos>1 then 1 else 0 end) as ok,
-                            sum(case when condition>1 and condition<5 and pos>1 then 1 else 0 end) as oi
-                        from occupants
-                        where crash_id in (${crashIds.join(', ')})
-                        group by crash_id
-                    `
-                    console.log("Fetching occStats")
-                    fetchOccStats(query)?.then(occStats => {
-                        fold(
-                            err => {
-                                console.error("error fetching occ stats:", err)
-                                return null
-                            },
-                            (occStats: CrashOccStats[]) => {
-                                console.log("occStats:", occStats)
-                                setOccStats(fromEntries(occStats.map(occStat => [ occStat.crash_id, occStat ])))
-                            }
-                        )(occStats)
-                    })
-                }
-            )(crashesResult)
-        },
-        [ crashesResult, fetchOccStats ]
-    )
-    return occStats
 }
 
 export const ColLabels = {
@@ -147,9 +95,6 @@ export function getCrashRows({ rows, cols, mc2mn, occStats, }: {
                         ? `${lat?.toFixed(6)}, ${lon?.toFixed(6)}`
                         : ''
                 } else if (col == 'casualties') {
-                    const os =
-                        entries<string, number>(occStat ?? {})
-                            .filter(([ k, v ]) => k != 'crash_id' && v > 0)
                     const { dk = 0, di = 0, ok = 0, oi = 0, } = occStat ?? {}
                     txt = <CrashIcons dk={dk} di={di} ok={ok} oi={oi} />
                 } else if (col == 'mc') {
