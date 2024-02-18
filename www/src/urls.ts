@@ -9,7 +9,7 @@ export function getDbUrls(): Urls {
     const basePath = getBasePath()
     const prefix = process.env['S3_DBS'] ? `https://nj-crashes.s3.amazonaws.com/njdot/data` : `${basePath}/njdot`
     return {
-        crashes: `${prefix}/crashes.db`,
+        crashes: `${prefix}/all_2017-2022.db`,
         cmym: `${prefix}/cmym.db`,
     }
 }

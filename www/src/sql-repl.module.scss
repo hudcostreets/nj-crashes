@@ -2,9 +2,13 @@
   margin-bottom: 0.3em;
   label {
     input {
-      min-width: 25em;
+      min-width: 35em;
       padding: 0.2em 0.4em;
     }
+  }
+  textarea {
+    min-width: 55em;
+    padding: 0.2em 0.4em;
   }
   input {
     font-size: 1.1em;

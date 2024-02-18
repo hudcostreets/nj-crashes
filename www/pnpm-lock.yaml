@@ -58,7 +58,7 @@ dependencies:
     version: 0.0.4(@types/node@20.3.0)(mapbox-gl@3.1.2)(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)(sass@1.69.7)(webpack@5.89.0)
   '@rdub/react-sql.js-httpvfs':
     specifier: 0.1.1
-    version: 0.1.1(react-dom@18.2.0)(react@18.2.0)
+    version: link:../../../next-utils/packages/react-sql.js-httpvfs/dist
   '@react-leaflet/core':
     specifier: ^2.1.0
     version: 2.1.0(leaflet@1.9.4)(react-dom@18.2.0)(react@18.2.0)
@@ -1782,21 +1782,6 @@ packages:
       - supports-color
       - terser
       - webpack
-    dev: false
-
-  /@rdub/react-sql.js-httpvfs@0.1.1(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-087ZJ+K4u97gTaW7a/P6CGtzPeVT2Q9hvnMJ98vFmXP9nF6jAJTE3LUkSIS5+1EQpwSpleaUnHLX7zOyKn6Pag==}
-    peerDependencies:
-      react: ^18
-      react-dom: ^18
-    dependencies:
-      '@rdub/base': 0.2.1(react-dom@18.2.0)(react@18.2.0)
-      comlink: 4.4.1
-      fp-ts: 2.16.2
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-      sql.js-httpvfs: 0.8.12
-      use-deep-compare: 1.2.1(react@18.2.0)
     dev: false
 
   /@react-leaflet/core@2.1.0(leaflet@1.9.4)(react-dom@18.2.0)(react@18.2.0):
@@ -5710,15 +5695,6 @@ packages:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
     dependencies:
       punycode: 2.3.1
-    dev: false
-
-  /use-deep-compare@1.2.1(react@18.2.0):
-    resolution: {integrity: sha512-JTnOZAr0fq1ix6CQ4XANoWIh03xAiMFlP/lVAYDdAOZwur6nqBSdATn1/Q9PLIGIW+C7xmFZBCcaA4KLDcQJtg==}
-    peerDependencies:
-      react: '>=16.8.0'
-    dependencies:
-      dequal: 2.0.3
-      react: 18.2.0
     dev: false
 
   /use-session-storage-state@18.2.0(react-dom@18.2.0)(react@18.2.0):
