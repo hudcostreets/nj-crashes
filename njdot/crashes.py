@@ -32,11 +32,14 @@ road_renames = {
     'Cross Street Name': 'cross_street',
 }
 road_cols = list(road_renames.values())
+name_renames = {
+    'County Name': 'cn',
+    'Municipality Name': 'mn',
+}
 renames = {
     'Date': 'dt',
     **pk_renames,
-    'County Name': 'cn',
-    'Municipality Name': 'mn',
+    **name_renames,
     'Police Department Code': 'pdc',
     'Police Department': 'pdn',
     'Police Station': 'station',
@@ -81,7 +84,7 @@ astype = {
     'light_condition': 'Int8',
     'env_condition': 'Int8',
     'road_divided': 'Int8',
-    'ttcz': 'Int8',
+    'tmp_traffic_control_zone': 'Int8',
     'cross_street_distance': 'Int16',
     'horizontal_alignment': 'Int8',
     'road_grade': 'Int8',

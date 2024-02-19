@@ -13,9 +13,10 @@ from utz import err, sxs
 
 from nj_crashes.utils import sql
 from njdot import NJDOT_DIR
-from njdot.data import YEARS, Type, cn2cc, TYPE_TO_TBL
+from njdot.data import YEARS, cn2cc
 from njdot.paths import DOT_DATA, WWW_DOT
 from njdot.rawdata import types_opt
+from njdot.tbls import Type, TYPE_TO_TBL
 
 Year = int
 Years = Union[Year, list[Year]]

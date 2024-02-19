@@ -1,27 +1,27 @@
 #!/usr/bin/env python
-import re
-
-from functools import wraps, partial
-from inspect import getfullargspec
 from os import makedirs
 from os.path import exists, dirname, splitext
 
 import click
 import json
 import pandas as pd
+import re
 import requests
 import shutil
 import sys
 import time
+import utz
 from click import option
+from functools import partial
 from numpy import nan
 from tabula import read_pdf
-import utz
 from utz import err
 from zipfile import ZipFile
 
-from njdot.data import TYPES, DATA_DIR, COUNTIES, YEARS, FIELDS_DIR, TYPE_TO_FIELDS, END_YEAR, START_YEAR, \
-    REGIONS, Type
+from nj_crashes.paths import DATA_DIR
+from njdot.data import COUNTIES, YEARS, FIELDS_DIR, END_YEAR, START_YEAR, REGIONS
+from njdot.opts import parse_opt
+from njdot.tbls import types_opt, parse_type, TYPE_TO_FIELDS
 
 # Download datasets from https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm
 # The download action on that page doesn't seem to work, but we can access the data directly at URLs like
@@ -29,19 +29,6 @@ from njdot.data import TYPES, DATA_DIR, COUNTIES, YEARS, FIELDS_DIR, TYPE_TO_FIE
 
 DEFAULT_CACHE_PATH = f'{DATA_DIR}/.cache.pqt'
 CACHE_HEADERS = [ 'Date', 'Content-Length', 'Content-type', 'Last-modified', 'Etag', ]
-
-
-def parse_opt(*args, parse, kw, **kwargs):
-    spec = getfullargspec(parse)
-    arg = spec.args[0]
-    def opt(fn):
-        @click.option(*args, arg, **kwargs)
-        @wraps(fn)
-        def _fn(*args, **kwargs):
-            str_val = kwargs.pop(arg)
-            return fn(*args, **{ kw: parse(str_val) }, **kwargs)
-        return _fn
-    return opt
 
 
 def maybe_capemay_space(county, year):
@@ -55,29 +42,6 @@ def maybe_capemay_space(county, year):
 def cli():
     pass
 
-
-def parse_type(type_str) -> Type:
-    matched_types = [
-        typ
-        for typ in TYPE_TO_FIELDS
-        if typ.lower().startswith(type_str.lower())
-    ]
-    if len(matched_types) != 1:
-        raise ValueError(f"Table type {type_str} matched {len(matched_types)} types: {matched_types}")
-    return matched_types[0]
-
-
-def parse_types(types_str) -> list[Type]:
-    if not types_str:
-        return TYPES
-    return [ parse_type(type_str) for type_str in types_str.split(',') ]
-
-
-types_opt = parse_opt(
-    '-t', '--types',
-    parse=parse_types, kw='types',
-    help=f"Comma-separated list of record types ({', '.join(TYPES)}); unique, case-insensitive prefixes also supported",
-)
 
 overwrite_opt = option('-f', '--overwrite', is_flag=True, help="Overwrite the output file, if it exists (default: no-op/skip)")
 dry_run_opt = option('-n', '--dry-run', is_flag=True, help="Print conversions that would be performed, don't perform them")

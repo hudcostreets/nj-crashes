@@ -1,11 +1,10 @@
-from os import path
-from os.path import dirname
-
 import dask.dataframe as dd
 import pandas as pd
-from typing import Literal, Optional
-
 from dataclasses import dataclass, field, asdict
+from typing import Optional
+
+from njdot.paths import DOT_DATA
+from njdot.tbls import Type, TYPES
 
 START_YEAR, END_YEAR = 2001, 2022
 YEARS: list[int] = list(range(START_YEAR, END_YEAR))
@@ -41,28 +40,10 @@ cc2cn = {
 }
 cn2cc = { cn: cc for cc, cn in cc2cn.items() }
 
-TYPE_TO_FIELDS = {
-    'Accidents': 'Crash',
-    'Drivers': 'Driver',
-    'Occupants': 'Occupant',
-    'Pedestrians': 'Pedestrian',
-    'Vehicles': 'Vehicle',
-}
-TYPE_TO_TBL = {
-    'Accidents': 'crashes',
-    'Drivers': 'drivers',
-    'Occupants': 'occupants',
-    'Pedestrians': 'pedestrians',
-    'Vehicles': 'vehicles',
-}
-TYPES = list(TYPE_TO_FIELDS.keys())
-Type = Literal[ 'Accidents', 'Drivers', 'Occupants', 'Pedestrians', 'Vehicles', ]
-
 YPK = ['County Code', 'Municipality Code', 'Department Case Number']
 PK = ['Year'] + YPK
 
-DATA_DIR = path.join(dirname(__file__), 'data')
-FIELDS_DIR = f'{DATA_DIR}/fields'
+FIELDS_DIR = f'{DOT_DATA}/fields'
 
 
 def hist(df, code, desc=None):
@@ -89,23 +70,26 @@ class Data:
     @property
     def ddf(self) -> dd.DataFrame:
         types = self.types
-        if len( types) != 1:
+        if len(types) != 1:
             raise RuntimeError(f"Select a type ({ types}) before creating ddf")
         [tpe] = types
         region = 'NewJersey'
         return dd.concat([
-            dd.read_parquet(f'{DATA_DIR}/{year}/{region}{year}{tpe}.pqt', columns=self.columns).assign(Year=year)
+            dd.read_parquet(f'{DOT_DATA}/{year}/{region}{year}{tpe}.pqt', columns=self.columns).assign(Year=year)
             for year in self.years
         ])
 
-    def df(self, cols=None) -> pd.DataFrame:
+    def df(self, cols: Optional[list[str]] = None, index: bool = True) -> pd.DataFrame:
         if cols is None:
-            return self.ddf.compute().set_index(PK)
+            df = self.ddf.compute()
+            if index:
+                df = df.set_index(PK)
+            return df
         else:
             if isinstance(cols, str):
-                return self.cols(YPK + [cols]).df()[cols]
+                return self.cols((YPK + [cols]) if index else [cols]).df(index=index)[cols]
             else:
-                return self.cols(YPK + cols).df()
+                return self.cols((YPK + cols) if index else cols).df(index=index)
 
     def series(self, col):
         return self.cols(YPK + [col]).df()[col]

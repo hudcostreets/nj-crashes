@@ -14,9 +14,10 @@ export type Crash = {
     dt: string
     road: string
     cross_street: string
+    sri: string | null
     mp: number | null
     ilat: number | null
     ilon: number | null
     olat: number | null
     olon: number | null
-} & Totals
+} // & Totals

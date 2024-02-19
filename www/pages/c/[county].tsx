@@ -3,7 +3,7 @@ import { useState } from "react";
 import { ResultTable } from "@/src/result-table";
 import { keys } from "@rdub/base/objs";
 import { cc2mc2mn, CountyCodes } from "@/server/county";
-import { denormalize, normalize } from "@/src/county";
+import { County, denormalize, normalize } from "@/src/county";
 import css from "@/pages/c/[county]/city.module.scss";
 import { map } from "fp-ts/Either";
 import { useTotals } from "@/src/use-totals";
@@ -18,8 +18,7 @@ export type Params = {
 export type Props = {
     urls: Urls
     cc: number
-    mc2mn: { [mc: number]: string }
-} & Params
+} & County & Params
 
 export function getStaticPaths() {
     const paths = keys(CountyCodes).map(county => ({ params: { county: normalize(county) } }))
@@ -34,21 +33,21 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
     let { county } = params
     county = normalize(county)
     const cc = CountyCodes[county]
-    const mc2mn = cc2mc2mn[cc].mc2mn
-    return { props: { urls, county, cc, mc2mn } }
+    return { props: { urls, county, cc, ...cc2mc2mn[cc] } }
 }
 
-export default function CountyPage({ urls, county, cc, mc2mn }: Props) {
+export default function CountyPage({ urls, cc, ...county }: Props) {
     const [ perPage, setPerPage ] = useState<number>(20)
     const [ page, setPage ] = useState<number>(0)
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
 
-    const crashes = useCrashRows({ urls, requestChunkSize, cc, page, perPage, mc2mn, })
+    const crashes = useCrashRows({ urls, requestChunkSize, cc, page, perPage, county, })
     const totals = useTotals({ url: urls.cmym, requestChunkSize, cc }) ?? undefined
     // const totalsElem = useTotalsElem({ url: urls.ymc, requestChunkSize, cc })
     const years = useYearStats({ url: urls.cmym, requestChunkSize, cc, })
     const yearTableClass = `${css.crashesTable} ${totals ? css.withTotals : ``}`
-    const title = `${denormalize(county)} County`
+    const { cn } = county
+    const title = `${denormalize(cn)} County`
     return (
         <div className={css.body}>
             <div className={css.container}>

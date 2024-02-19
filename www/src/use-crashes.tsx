@@ -5,16 +5,16 @@ import { useSqlQuery } from "@/src/sql";
 import { Crash } from "@/src/crash";
 import { Row } from "@/src/result-table";
 import { map } from "fp-ts/Either";
-import { MC2MN } from "@/src/county";
+import { County, MC2MN, normalize } from "@/src/county";
 import strftime from "strftime";
 import { fromEntries } from "@rdub/base/objs";
-import { range } from "@rdub/base/arr";
 import { Urls } from "@/src/urls";
-import { Car, Cyclist, Driver, Passenger, Pedestrian } from "@/src/icons";
+import { Car, Cyclist, Driver, Passenger, Pedestrian as Ped } from "@/src/icons";
 import css from "./use-crashes.module.scss"
 import { CrashesOccupants, Occupant, useCrashOccupants } from "@/src/crash-occupants";
-import { CrashesPedStats, CrashPedStats, usePedestrianStats } from "@/src/ped-stats";
+import { CrashesPedestrians, Pedestrian, useCrashPedestrians } from "@/src/crash-pedestrians";
 import { CrashesVehicles, useCrashVehicles, Vehicle } from "@/src/crash-vehicles";
+import A from "@rdub/next-base/a";
 
 export type Base = Omit<sql.Base, 'url'> & {
     urls: Urls
@@ -46,15 +46,12 @@ export function useCrashes({ cc, mc, page, perPage, timerId = "crashes", urls, .
 export const ColLabels = {
     id: "ID",
     dt: "Date/Time",
-    mc: "City",
+    mc: "Municipality",
     casualties: "Casualties",
     road: "Road",
     cross_street: "Cross Street",
     mp: "MP",
     ll: "Lat, Lon",
-    tk: "Fatalities",
-    ti: "Injuries",
-    tv: "Vehicles",
 }
 export type Col = keyof typeof ColLabels
 
@@ -80,16 +77,14 @@ const ConditionMap = [
 export function CrashIcons(
     {
         occupants,
-        pk, pi,
-        bk, bi,
+        pedestrians,
         vehicles,
     }: {
         occupants?: Occupant[]
+        pedestrians?: Pedestrian[]
         vehicles?: Vehicle[]
-    } & Omit<CrashPedStats, 'crash_id'>
+    }
 ) {
-    const tk = pk + bk
-    const ti = pi + bi
     const deaths = [] as ReactNode[]
     const seriousInjuries = [] as ReactNode[]
     const moderateInjuries = [] as ReactNode[]
@@ -108,31 +103,28 @@ export function CrashIcons(
                 ? [ 'Driver', Driver, ]
                 : [ 'Passenger', Passenger, ]
         const { txt, fill } = ConditionMap[condition]
-        let title = `${type} ${txt}${ejectedStr ? `, ${ejectedStr}` : ''}`
+        const ageSexStr = `${age ?? ''}${sex === 'M' || sex === 'F' ? sex : ''}`
+        let title = `${type}${ageSexStr ? `, ${ageSexStr},` : ''} ${txt}${ejectedStr ? `, ${ejectedStr}` : ''}`
+        const icon = <Component key={idx} title={title} style={{ fill }} />
+        arrs[condition].push(icon)
+    })
+    pedestrians?.forEach(({ condition, age, sex, inj_loc, inj_type, cyclist, }, idx) => {
+        condition = condition ?? 0
+        const [ type, Component, ] =
+            cyclist
+                ? [ 'Cyclist', Cyclist, ]
+                : [ 'Pedestrian', Ped, ]
+        const { txt, fill } = ConditionMap[condition]
+        const ageSexStr = `${age ?? ''}${sex === 'M' || sex === 'F' ? sex : ''}`
+        let title = `${type}${ageSexStr ? `, ${ageSexStr},` : ''} ${txt}`
         const icon = <Component key={idx} title={title} style={{ fill }} />
         arrs[condition].push(icon)
     })
     return <div className={css.icons}>
-        {tk || deaths.length ? <span className={css.typeIcons}>
-            {/*<span className={css.typeIcon}>⚰️</span>*/}
-            {deaths}
-            {pk ? range(pk).map(i => <Pedestrian key={i} />) : null}
-            {bk ? range(bk).map(i => <Cyclist key={i} />) : null}
-        </span> : null}
-        {ti || seriousInjuries.length ? <span className={css.typeIcons}>
-            {/*<span className={css.typeIcon}>🏥</span>*/}
-            {seriousInjuries}
-            {pi ? range(pi).map(i => <Pedestrian key={i} />) : null}
-            {bi ? range(bi).map(i => <Cyclist key={i} />) : null}
-        </span> : null}
-        {moderateInjuries.length ? <span className={css.typeIcons}>
-            {/*<span className={css.typeIcon}>🩹</span>*/}
-            {moderateInjuries}
-        </span> : null}
-        {possibleInjuries.length ? <span className={css.typeIcons}>
-            {/*<span className={css.typeIcon}>🤕</span>*/}
-            {possibleInjuries}
-        </span> : null}
+        {deaths.length ? <span className={css.typeIcons}>{deaths}</span> : null}
+        {seriousInjuries.length ? <span className={css.typeIcons}>{seriousInjuries}</span> : null}
+        {moderateInjuries.length ? <span className={css.typeIcons}>{moderateInjuries}</span> : null}
+        {possibleInjuries.length ? <span className={css.typeIcons}>{possibleInjuries}</span> : null}
         {
             vehicles?.length
                 ? <span className={css.typeIcons}>
@@ -169,18 +161,26 @@ export function CrashIcons(
     </div>
 }
 
-export function getCrashRows({ rows, cols, mc2mn, crashOccupants, pedStats, crashVehicles, }: {
+const MuniSuffixes = [
+    'Boro',
+    'City',
+    'Twp',
+    'Town',
+    'Village',
+]
+
+export function getCrashRows({ rows, cols, county, crashOccupants, crashPedestrians, crashVehicles, }: {
     rows: Crash[]
     cols: Col[]
-    mc2mn?: MC2MN
+    county?: County
     crashOccupants: CrashesOccupants | null
-    pedStats: CrashesPedStats | null
+    crashPedestrians: CrashesPedestrians | null
     crashVehicles: CrashesVehicles | null
 }): Row[] {
     return rows.map(row => {
         const { id } = row
         const occupants = crashOccupants?.[id]
-        const pedStat = pedStats?.[id]
+        const pedestrians = crashPedestrians?.[id]
         const vehicles = crashVehicles?.[id]
         return fromEntries([
             [ 'key', id ],
@@ -194,22 +194,33 @@ export function getCrashRows({ rows, cols, mc2mn, crashOccupants, pedStats, cras
                     txt = (lat && lon)
                         ? `${lat?.toFixed(6)}, ${lon?.toFixed(6)}`
                         : ''
+                } else if (col == 'road') {
+                    const { road, sri } = row
+                    txt = <span title={sri ?? undefined}>{road}</span>
                 } else if (col == 'casualties') {
-                    const { pk = 0, pi = 0, bk = 0, bi = 0 } = pedStat ?? {}
                     txt = <CrashIcons
-                        pk={pk} pi={pi}
-                        bk={bk} bi={bi}
                         occupants={occupants}
+                        pedestrians={pedestrians}
                         vehicles={vehicles}
                     />
                 } else if (col == 'mc') {
                     const { mc } = row
-                    if (!mc2mn) {
+                    if (!county) {
                         throw new Error('`mc2mn` is required for `mc` col')
                     }
-                    txt = mc2mn[mc]
+                    const { cn, mc2mn } = county
+                    const mn = mc2mn[mc]
+                    const city = normalize(mn)
+                    txt = <A href={`/c/${normalize(cn)}/${city}`}>{mn}</A>
                 } else if (col == 'mp') {
-                    txt = row.mp?.toFixed(2) ?? ''
+                    const { mp, ilat, ilon } = row
+                    if (mp) {
+                        txt = mp.toFixed(2)
+                        if (ilat && ilon) {
+                            const href = `https://www.google.com/maps/?q=${ilat},${ilon}`
+                            txt = <A href={href}>{txt}</A>
+                        }
+                    }
                 } else {
                     txt = row[col] ?? ''
                 }
@@ -219,20 +230,20 @@ export function getCrashRows({ rows, cols, mc2mn, crashOccupants, pedStats, cras
     })
 }
 
-export function useCrashRows({ mc2mn, ...props }: Props & { mc2mn?: MC2MN }) {
+export function useCrashRows({ county, ...props }: Props & { county?: County }) {
     const crashesResult = useCrashes({ ...props })
     const crashOccupants = useCrashOccupants({ crashesResult, ...props })
-    const pedStats = usePedestrianStats({ crashesResult, ...props })
+    const crashPedestrians = useCrashPedestrians({ crashesResult, ...props })
     const crashVehicles = useCrashVehicles({ crashesResult, ...props })
     const mcCol: Col[] = props.mc ? [] : ['mc']
-    const cols: Col[] = [ 'dt', ...mcCol, 'casualties', 'road', 'cross_street', 'mp', 'll', ]
+    const cols: Col[] = [ 'dt', ...mcCol, 'casualties', 'road', 'cross_street', 'mp', /*'ll', */]
 
     const crashRows = useMemo(
         () => {
             if (!crashesResult) return
             console.log("crashRows effect")
             const crashRows = map(
-                (crashes: Crash[]) => getCrashRows({ rows: crashes, cols, mc2mn, crashOccupants: crashOccupants, pedStats, crashVehicles, })
+                (crashes: Crash[]) => getCrashRows({ rows: crashes, cols, county, crashOccupants, crashPedestrians, crashVehicles, })
             )(crashesResult)
             return crashRows
         },
