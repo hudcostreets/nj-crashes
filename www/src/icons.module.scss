@@ -1,20 +1,29 @@
 .icon {
   //border: 1px solid black;
   width: 1.3em;
+  //width: 3.9em;
   position: relative;
   top: 0.2em;
 }
 .driver {
   width: 1.4em;
+  //width: 4.2em;
   overflow: visible;
 }
 
 .passenger {
 }
 .pedestrian {
+  width: 1.2em;
 }
 .cyclist {
   width: 1.6em;
+  overflow: visible;
+  //width: 4.8em;
 }
 .car {
+  //line-height: 1em;
+  width: 1.4em;
+  overflow: visible;
+  margin-right: 0.3em;
 }
