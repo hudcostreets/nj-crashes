@@ -17,11 +17,11 @@ export type CrashesVehicles = { [crash_id: number]: Vehicle[] }
 
 export function useCrashVehicles({ crashesResult, urls, ...props }: { crashesResult: Result<Crash> | null } & Base): CrashesVehicles | null {
     const [ crashVehicles, setCrashVehicles ] = useState<CrashesVehicles | null>(null)
-    const fetchVehStats = useSqlQueryCallback<Vehicle>({ url: urls.vehicles, ...props })
+    const fetchVehicles = useSqlQueryCallback<Vehicle>({ url: urls.vehicles, ...props })
     useEffect(
         () => {
             if (!crashesResult) return
-            console.log("vehStats effect")
+            console.log("vehicles effect")
             map(
                 (crashes: Crash[]) => {
                     const crashIds = crashes.map(({ id }) => id)
@@ -36,31 +36,31 @@ export function useCrashVehicles({ crashesResult, urls, ...props }: { crashesRes
                         from vehicles v
                         where crash_id in (${crashIds.join(', ')})
                     `
-                    console.log("Fetching vehStats")
-                    fetchVehStats(query)?.then(vehStats => {
+                    console.log("Fetching vehicles")
+                    fetchVehicles(query)?.then(vehiclesResult => {
                         fold(
                             err => {
-                                console.error("error fetching occ stats:", err)
+                                console.error("error fetching vehicles:", err)
                                 return null
                             },
                             (vehicles: Vehicle[]) => {
                                 console.log("crashVehicles:", vehicles)
                                 const crashVehicles = {} as CrashesVehicles
-                                for (const vehStat of vehicles) {
-                                    const { crash_id } = vehStat
+                                for (const vehicle of vehicles) {
+                                    const { crash_id } = vehicle
                                     if (!crashVehicles[crash_id]) {
                                         crashVehicles[crash_id] = []
                                     }
-                                    crashVehicles[crash_id].push(vehStat)
+                                    crashVehicles[crash_id].push(vehicle)
                                 }
-                                setCrashVehicles(crashVehicles )
+                                setCrashVehicles(crashVehicles)
                             }
-                        )(vehStats)
+                        )(vehiclesResult)
                     })
                 }
             )(crashesResult)
         },
-        [ crashesResult, fetchVehStats ]
+        [ crashesResult, fetchVehicles ]
     )
     return crashVehicles
 }
