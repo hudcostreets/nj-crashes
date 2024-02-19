@@ -2,6 +2,7 @@
 
 from os import stat
 from os.path import exists
+from urllib.parse import urlparse
 
 import click
 import pandas as pd
@@ -173,13 +174,18 @@ crash_idxs = [
 ]
 
 
+S3_PREFIX = 's3://nj-crashes/njdot/data'
+
+
 @click.command
-@click.option('-i', '--input-pqt')
-@click.option('-r', '--replace', is_flag=True)
-@click.option('-s', '--page-size', type=int, default=2**16)
+@click.option('-i', '--input-pqt', help=f'Read from this parquet file (default: {DOT_DATA}/<type>.parquet`')
+@click.option('-r', '--replace', is_flag=True, help='Pass `if_exists="replace"` to `DataFrame.to_sql`')
+@click.option('-s', '--page-size', type=int, default=2**16, help='Page size for SQLite DB (default: 2**16)')
+@click.option('--s3-url', help=f'Upload to this S3 URL (default: `{S3_PREFIX}/<type>.db')
+@click.option('-S', '--no-s3', is_flag=True, help='Do not upload to S3')
 @types_opt
 @click.argument('path', required=False)
-def main(input_pqt, replace, page_size: int, types: list[Type], path):
+def main(input_pqt, replace, page_size: int, s3_url: Optional[str], no_s3: bool, types: list[Type], path):
     for tpe in types:
         tbl = TYPE_TO_TBL[tpe]
         df = load_type(tpe, read_pqt=True, pqt_path=input_pqt)
@@ -195,6 +201,13 @@ def main(input_pqt, replace, page_size: int, types: list[Type], path):
             replace=replace,
             page_size=page_size,
         )
+        if not no_s3:
+            s3_url = s3_url or f'{S3_PREFIX}/{tbl}.db'
+            from boto3 import client
+            s3 = client('s3')
+            parsed = urlparse(s3_url)
+            err(f'Uploading {path} to {s3_url}')
+            s3.upload_file(path, Bucket=parsed.netloc, Key=parsed.path.lstrip('/'))
 
 
 if __name__ == '__main__':
