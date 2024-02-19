@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Feb 18 10:00:08 EST 2024</RUNDATE>
+  <RUNDATE>Mon Feb 19 10:00:07 EST 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -5027,7 +5027,7 @@
     <MUNICIPALITY MCODE="1503" MNAME="Beach Haven Bor">
       <ACCIDENT ACCID="12515" DATE="06/12/2023" TIME="1714">
         <HIGHWAY>607</HIGHWAY>
-        <LOCATION>County 607</LOCATION>
+        <LOCATION>County 607 MP 2.94</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
