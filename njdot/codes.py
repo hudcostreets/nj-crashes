@@ -64,8 +64,7 @@ physical_condition = {
     '01': 'FATAL INJURY',
 
     # If victim has a serious non-fatal injury which includes:
-    # o Severe laceration resulting in exposure of underlying tissues/muscle/organs or resulting in
-    # significant loss of blood
+    # o Severe laceration resulting in exposure of underlying tissues/muscle/organs or resulting in significant loss of blood
     # o Broken or distorted extremity (arm or leg)
     # o Crush injuries
     # o Suspected skull, chest or abdominal injury other than bruises or minor lacerations

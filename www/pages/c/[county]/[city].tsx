@@ -7,8 +7,7 @@ import { denormalize, normalize } from "@/src/county";
 import css from "./city.module.scss"
 import A from "@rdub/next-base/a";
 import { map } from "fp-ts/either";
-import { useTotals } from "@/src/use-totals";
-import { useYearStats, YearStats, yearStatsRows } from "@/src/use-year-stats";
+import { ColTitles, useYearStats, YearStatsDicts, yearStatsRows } from "@/src/use-year-stats";
 import { useCrashRows } from "@/src/use-crashes";
 import { getDbUrls, Urls } from "@/src/urls";
 
@@ -56,8 +55,7 @@ export default function CityPage({ urls, county, city, cc, mc }: Props) {
     const [ page, setPage ] = useState<number>(0)
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
 
-    const totals = useTotals({ url: urls.cmym, requestChunkSize, cc, mc }) ?? undefined
-    const years = useYearStats({ url: urls.cmym, requestChunkSize, cc, mc })
+    const yearStatsResult = useYearStats({ url: urls.cmymc, requestChunkSize, cc, mc })
     const crashes = useCrashRows({ urls, requestChunkSize, cc, mc, page, perPage, })
 
     const [ title, countyTitle] = useMemo(() => {
@@ -71,11 +69,12 @@ export default function CityPage({ urls, county, city, cc, mc }: Props) {
                 <h1 className={css.title}>{title}</h1>
                 <h3 className={css.subtitle}><A href={`/c/${county}`}>{countyTitle}</A></h3>
                 {
-                    years && <>
+                    yearStatsResult && <>
                         <h2>Yearly stats</h2>
                         <ResultTable
-                            className={`${css.crashesTable} ${totals ? css.withTotals : ``}`}
-                            result={map((years: YearStats[]) => yearStatsRows({ years, totals }))(years)}
+                            className={`${css.crashesTable} ${css.withTotals}`}
+                            result={map((ysds: YearStatsDicts) => yearStatsRows({ ysds }))(yearStatsResult)}
+                            colTitles={ColTitles}
                         />
                     </>
                 }

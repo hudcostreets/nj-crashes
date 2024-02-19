@@ -6,8 +6,7 @@ import { cc2mc2mn, CountyCodes } from "@/server/county";
 import { County, denormalize, normalize } from "@/src/county";
 import css from "@/pages/c/[county]/city.module.scss";
 import { map } from "fp-ts/Either";
-import { useTotals } from "@/src/use-totals";
-import { useYearStats, YearStats, yearStatsRows } from "@/src/use-year-stats";
+import { ColTitles, useYearStats, YearStatsDicts, yearStatsRows } from "@/src/use-year-stats";
 import { useCrashRows } from "@/src/use-crashes";
 import { getDbUrls, Urls } from "@/src/urls";
 
@@ -42,10 +41,8 @@ export default function CountyPage({ urls, cc, ...county }: Props) {
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
 
     const crashes = useCrashRows({ urls, requestChunkSize, cc, page, perPage, county, })
-    const totals = useTotals({ url: urls.cmym, requestChunkSize, cc }) ?? undefined
-    // const totalsElem = useTotalsElem({ url: urls.ymc, requestChunkSize, cc })
-    const years = useYearStats({ url: urls.cmym, requestChunkSize, cc, })
-    const yearTableClass = `${css.crashesTable} ${totals ? css.withTotals : ``}`
+    const yearStatsResult = useYearStats({ url: urls.cmymc, requestChunkSize, cc, })
+    const yearTableClass = `${css.crashesTable} ${css.withTotals}`
     const { cn } = county
     const title = `${denormalize(cn)} County`
     return (
@@ -53,11 +50,12 @@ export default function CountyPage({ urls, cc, ...county }: Props) {
             <div className={css.container}>
                 <h1 className={css.title}>{title}</h1>
                 {
-                    years && <>
+                    yearStatsResult && <>
                         <h2>Yearly stats</h2>
                         <ResultTable
                             className={yearTableClass}
-                            result={map((years: YearStats[]) => yearStatsRows({ years, totals }))(years)}
+                            result={map((ysds: YearStatsDicts) => yearStatsRows({ ysds }))(yearStatsResult)}
+                            colTitles={ColTitles}
                         />
                     </>
                 }

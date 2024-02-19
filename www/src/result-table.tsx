@@ -19,14 +19,25 @@ export type Row = {
     key: string | number
 } & Record<string, string | number>
 
-export function RowsTable({ rows, className }: Props & { rows: Row[] }) {
+export function RowsTable({ rows, colTitles, className }: Props & {
+    rows: Row[]
+    colTitles?: Record<string, string>
+}) {
     return (
         <TableContainer component={Paper} className={className}>
             <Table sx={{ minWidth: 450 }} size={"small"} aria-label="simple table">
                 <TableHead className={css.tableHead}>
                     <TableRow>{
-                        keys(rows[0]).map(key =>
-                            key !== 'key' && <TableCell key={key} align="right">{key}</TableCell>
+                        keys(rows[0]).map(
+                            key =>
+                                key !== 'key' &&
+                                <TableCell
+                                    key={key}
+                                    align="right"
+                                    title={colTitles?.[key]}
+                                >
+                                    {key}
+                                </TableCell>
                         )
                     }</TableRow>
                 </TableHead>
@@ -50,7 +61,10 @@ export function RowsTable({ rows, className }: Props & { rows: Row[] }) {
     )
 }
 
-export function ResultTable({ result, className }: Props & { result: Result<Row> }) {
+export function ResultTable({ result, colTitles, className }: Props & {
+    result: Result<Row>
+    colTitles?: Record<string, string>
+}) {
     return fold(
         (err: Error) =>
             <div className={css.sqlError}>
@@ -61,6 +75,7 @@ export function ResultTable({ result, className }: Props & { result: Result<Row>
             <RowsTable
                 rows={rows}
                 className={className}
+                colTitles={colTitles}
             />
     )(result)
 }

@@ -161,13 +161,9 @@ export function CrashIcons(
     </div>
 }
 
-const MuniSuffixes = [
-    'Boro',
-    'City',
-    'Twp',
-    'Town',
-    'Village',
-]
+export function gmapsUrl({ lat, lon, }: { lat: number, lon: number }) {
+    return `https://www.google.com/maps/?q=${lat},${lon}`
+}
 
 export function getCrashRows({ rows, cols, county, crashOccupants, crashPedestrians, crashVehicles, }: {
     rows: Crash[]
@@ -196,7 +192,7 @@ export function getCrashRows({ rows, cols, county, crashOccupants, crashPedestri
                         : ''
                 } else if (col == 'road') {
                     const { road, sri } = row
-                    txt = <span title={sri ?? undefined}>{road}</span>
+                    txt = <span title={sri ? `SRI ${sri}` : undefined}>{road}</span>
                 } else if (col == 'casualties') {
                     txt = <CrashIcons
                         occupants={occupants}
@@ -217,7 +213,7 @@ export function getCrashRows({ rows, cols, county, crashOccupants, crashPedestri
                     if (mp) {
                         txt = mp.toFixed(2)
                         if (ilat && ilon) {
-                            const href = `https://www.google.com/maps/?q=${ilat},${ilon}`
+                            const href = gmapsUrl({ lat: ilat, lon: ilon })
                             txt = <A href={href}>{txt}</A>
                         }
                     }

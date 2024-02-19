@@ -14,6 +14,7 @@ CC2MC2MN = f'{WWW_DOT}/cc2mc2mn.json'
 
 CMYM_PQT = f'{WWW_DOT}/cmym.parquet'
 CMYM_DB = f'{WWW_DOT}/cmym.db'
+CMYMC_DB = f'{WWW_DOT}/cmymc.db'
 
 
 def raw_pqt_path(tpe, year, county=None):

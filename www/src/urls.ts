@@ -7,6 +7,7 @@ export type Urls = {
     vehicles: string
     drivers: string
     cmym: string
+    cmymc: string
 }
 
 export function getDbUrls(): Urls {
@@ -19,5 +20,6 @@ export function getDbUrls(): Urls {
         vehicles: `${prefix}/vehicles.db`,
         drivers: `${prefix}/drivers.db`,
         cmym: `${prefix}/cmym.db`,
+        cmymc: `${prefix}/cmymc.db`,
     }
 }
