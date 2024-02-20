@@ -32,19 +32,6 @@ export type YearStatsDicts = {
     [y: number]: YearStatsDict
     totals: YearStatsDict
 }
-// const YearStatsColLabels = {
-//     y: "Year",
-//     k: "Deaths",
-//     si: "Serious injuries",
-//     mi: "Moderate injuries",
-//     pi: "Possible injuries",
-//     ni: "No apparent injury",
-//     fc: "Fatal Crashes",
-//     sic: "Serious injury crashes",
-//     mic: "Moderate injury crashes",
-//     pic: "Possible injury crashes",
-//     nic: "Property damage crashes",
-// }
 
 export const ColTitles = {
     "Serious Injuries": "If victim has a serious non-fatal injury which includes:\n" +
@@ -83,7 +70,7 @@ export type Props = Base & {
 }
 
 const YSD = {
-    k: 0, fc: 0,
+     k: 0,  fc: 0,
     si: 0, sic: 0,
     mi: 0, mic: 0,
     pi: 0, pic: 0,

@@ -19,6 +19,8 @@
         "@fortawesome/free-solid-svg-icons": "^6",
         "@mapbox/tiny-sdf": "^2.0.6",
         "@mdx-js/loader": "^2",
+        "@mui/base": "5.0.0-beta.36",
+        "@mui/icons-material": "^5.15.10",
         "@mui/material": "^5.15.10",
         "@next/mdx": "^14",
         "@rdub/base": "0.2.2",

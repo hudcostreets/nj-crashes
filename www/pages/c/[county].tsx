@@ -1,6 +1,6 @@
 import type { GetStaticProps } from "next";
-import { useState } from "react";
-import { ResultTable } from "@/src/result-table";
+import { useMemo, useState } from "react";
+import { Pagination, ResultTable } from "@/src/result-table";
 import { keys } from "@rdub/base/objs";
 import { cc2mc2mn, CountyCodes } from "@/server/county";
 import { County, denormalize, normalize } from "@/src/county";
@@ -9,6 +9,7 @@ import { map } from "fp-ts/Either";
 import { ColTitles, useYearStats, YearStatsDicts, yearStatsRows } from "@/src/use-year-stats";
 import { useCrashRows } from "@/src/use-crashes";
 import { getDbUrls, Urls } from "@/src/urls";
+import { fold } from "fp-ts/either";
 
 export type Params = {
     county: string
@@ -43,6 +44,20 @@ export default function CountyPage({ urls, cc, ...county }: Props) {
     const crashes = useCrashRows({ urls, requestChunkSize, cc, page, perPage, county, })
     const yearStatsResult = useYearStats({ url: urls.cmymc, requestChunkSize, cc, })
     const yearTableClass = `${css.crashesTable} ${css.withTotals}`
+    const totalFatalCrashes = useMemo(
+        () =>
+            yearStatsResult
+                ? fold(
+                    () => null,
+                    (ysds: YearStatsDicts) => ysds.totals.fc
+                )(yearStatsResult)
+                : null,
+        [ yearStatsResult ]
+    )
+    const pagination: Pagination | undefined = useMemo(
+        () => totalFatalCrashes === null ? undefined : { page, setPage, perPage, setPerPage, total: totalFatalCrashes },
+        [ page, setPage, perPage, setPerPage, totalFatalCrashes ]
+    )
     const { cn } = county
     const title = `${denormalize(cn)} County`
     return (
@@ -65,6 +80,7 @@ export default function CountyPage({ urls, cc, ...county }: Props) {
                         <ResultTable
                             className={css.crashesTable}
                             result={crashes}
+                            pagination={pagination}
                         />
                     </>
                 }

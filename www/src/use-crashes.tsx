@@ -5,7 +5,7 @@ import { useSqlQuery } from "@/src/sql";
 import { Crash } from "@/src/crash";
 import { Row } from "@/src/result-table";
 import { map } from "fp-ts/Either";
-import { County, MC2MN, normalize } from "@/src/county";
+import { County, normalize } from "@/src/county";
 import strftime from "strftime";
 import { fromEntries } from "@rdub/base/objs";
 import { Urls } from "@/src/urls";
@@ -183,7 +183,7 @@ export function getCrashRows({ rows, cols, county, crashOccupants, crashPedestri
             ...cols.map(col => {
                 let txt: ReactNode = ''
                 if (col == 'dt') {
-                    txt = strftime('%-m/%-d/%-y %-I:%M%p', new Date(row.dt))
+                    txt = strftime('%-m/%-d/%y %-I:%M%p', new Date(row.dt))
                 } else if (col == 'll') {
                     const { ilat, ilon, olat, olon } = row
                     const [ lat, lon ] = ilat && ilon ? [ ilat, ilon ] : [ olat, olon ]
@@ -233,7 +233,6 @@ export function useCrashRows({ county, ...props }: Props & { county?: County }) 
     const crashVehicles = useCrashVehicles({ crashesResult, ...props })
     const mcCol: Col[] = props.mc ? [] : ['mc']
     const cols: Col[] = [ 'dt', ...mcCol, 'casualties', 'road', 'cross_street', 'mp', /*'ll', */]
-
     const crashRows = useMemo(
         () => {
             if (!crashesResult) return
