@@ -8,7 +8,7 @@ from nj_crashes.utils.s3 import output_ctx, input_ctx
 from nj_crashes.utils.log import err
 from njsp.cli.base import njsp
 from njsp.crash_log import get_crashes_df, DEFAULT_ROOT_SHA
-from njsp.paths import CRASHES_RELPATH
+from njsp.paths import CRASHES_RELPATH, S3_CRASH_LOG_PQT
 
 # Enforce column order, otherwise DFs built using 1 or more -a/--append-to chains can have different column orders (e.g.
 # STREET, HIGHWAY, and INJURIES may each appear for the first time, in a given FAUQStats XML file, in different orders).
@@ -46,8 +46,15 @@ def load_prefix(path: str) -> pd.DataFrame:
 @click.option("-p", "--load-parquet", is_flag=True, help=f"Load crashes from {CRASHES_RELPATH} (instead of FAUQStats XML files)")
 @click.option("-r", "--root", help=f"Ref to end at; if -a/--append-to is passed, defaults to the latest SHA in that DataFrame, {DEFAULT_ROOT_SHA} otherwise")
 @click.option("-s", "--since", help="Date to start from")
+@click.option('--s3', is_flag=True, help=f"Shorthand for CI use: `-a {S3_CRASH_LOG_PQT} -i`")
 @click.option("-v", "--verbose", is_flag=True, help="Print debug info")
-def crash_logs(append_to, write_dupes, head, in_place, out_path, load_parquet, root, since, verbose):
+def crash_logs(append_to, write_dupes, head, in_place, out_path, load_parquet, root, since, s3, verbose):
+    if s3:
+        if append_to:
+            raise ValueError("Cannot use --s3 with -a/--append-to")
+        append_to = S3_CRASH_LOG_PQT
+        in_place = True
+
     prefix = None
     if append_to:
         if not root:
