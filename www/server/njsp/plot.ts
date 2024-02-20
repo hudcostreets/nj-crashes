@@ -5,16 +5,15 @@ import { registerTableData, TableData } from "@/src/tableData";
 import { loadTableData } from "@/server/tableData";
 import { AllTypes, getPlotData, PlotParams, Props, TypeCounts, } from "@/src/njsp/plot";
 import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
-import path, { dirname } from "path";
+import { basename } from "path";
 import fs from "fs";
 import { loadSync } from "@rdub/base/load";
 import { fromEntries } from "@rdub/base/objs";
-import { NJSP, RUNDATE_RELPATH } from "../paths";
+import { NJSP, NJSP_DATA, ProjectedCsv, RUNDATE_RELPATH, YearTypeCountyCsv } from "../paths";
 
 export async function getTypeProjections(db: AsyncDuckDB): Promise<TypeCounts> {
-    const projectedCsvPath = path.join(dirname(process.cwd()), "data/njsp/projected.csv")
-    const projectedCsvText = fs.readFileSync(projectedCsvPath).toString()
-    const name = "projected.csv"
+    const projectedCsvText = fs.readFileSync(ProjectedCsv).toString()
+    const name = basename(ProjectedCsv)
     await db.registerFileText(name, projectedCsvText)
     const [ typeProjections ] = await runQuery<TypeCounts>(
         db,
@@ -40,7 +39,7 @@ export async function loadProps(): Promise<Props> {
     } = initialPlot
     const db = await initDuckDb()
     const typeProjections = await getTypeProjections(db)
-    const tableData: TableData = loadTableData({ fmt: 'csv', dir: NJSP, stem: "year-type-county", })
+    const tableData: TableData = loadTableData(YearTypeCountyCsv)
     const target = await registerTableData({ db, tableData, stem: "ytc", })
     const { data, rows, annotations } = await getPlotData({
         db,
