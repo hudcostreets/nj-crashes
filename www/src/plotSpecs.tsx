@@ -7,7 +7,6 @@ const { HalfRoundWiden, filterIdxs, filterValues } = Plots
 export const curYear = (new Date().getFullYear())
 export const prvYear = curYear - 1
 export type Year = "2021" | "2022" | typeof prvYear | typeof curYear
-export type ProjectedTotals = { [k in Year]: number }
 export type YearTotalsMap = { [k in Year]: { total: number, projected: number } }
 export type Data = {
     rundate: string

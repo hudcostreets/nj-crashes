@@ -1,6 +1,6 @@
 import React, { CSSProperties } from "react"
 import css from "./icons.module.scss"
-import { Tooltip } from "@mui/material";
+import { Tooltip } from "@/src/tooltip"
 
 export type Props = {
     className?: string
@@ -28,7 +28,7 @@ export function Driver({ className, style, title }: Props) {
             </g>
         </svg>
     )
-    return title ? <Tooltip arrow title={title}>{svg}</Tooltip> : svg
+    return title ? <Tooltip title={title}>{svg}</Tooltip> : svg
 }
 
 // [Passenger](https://thenounproject.com/icon/passenger-4353992/) by Luiz Carvalho from https://thenounproject.com/browse/icons/term/passenger/ Noun Project (CC BY 3.0)
@@ -48,7 +48,7 @@ export function Passenger({ className, style, title }: Props) {
                 d="M10.80835,16.39038a4.28253,4.28253,0,0,1,1.34692-.21435h2.082l-8.094-8.09424L3.98462,10.24048l6.34888,6.34888A4.42005,4.42005,0,0,1,10.80835,16.39038Z"/>
         </svg>
     )
-    return title ? <Tooltip arrow title={title}>{svg}</Tooltip> : svg
+    return title ? <Tooltip title={title}>{svg}</Tooltip> : svg
 }
 
 // [Pedestrian](https://thenounproject.com/icon/pedestrian-1826968/) by Adrien Coquet from https://thenounproject.com/browse/icons/term/pedestrian/ Noun Project (CC BY 3.0)
@@ -72,7 +72,7 @@ export function Pedestrian({ className, style, title }: Props) {
             </g>
         </svg>
     )
-    return title ? <Tooltip arrow title={title}>{svg}</Tooltip> : svg
+    return title ? <Tooltip title={title}>{svg}</Tooltip> : svg
 }
 
 // [Bicycle](https://thenounproject.com/icon/bicycle-1311416/) by Adrien Coquet from https://thenounproject.com/browse/icons/term/bicycle/ Noun Project (CC BY 3.0)
@@ -97,7 +97,7 @@ export function Cyclist({ className, style, title }: Props) {
             </g>
         </svg>
     )
-    return title ? <Tooltip arrow title={title}>{svg}</Tooltip> : svg
+    return title ? <Tooltip title={title}>{svg}</Tooltip> : svg
 }
 
 export function Car({ className, style, title }: Props) {
@@ -114,5 +114,5 @@ export function Car({ className, style, title }: Props) {
             </g>
         </svg>
     )
-    return title ? <Tooltip arrow title={title}>{svg}</Tooltip> : svg
+    return title ? <Tooltip title={title}>{svg}</Tooltip> : svg
 }

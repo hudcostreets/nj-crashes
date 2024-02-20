@@ -10,8 +10,9 @@ import TableBody from "@mui/material/TableBody";
 import * as React from "react";
 import { keys, o2a } from "@rdub/base/objs";
 import { fold } from "fp-ts/Either";
-import { TableFooter, Tooltip } from "@mui/material";
+import { TableFooter } from "@mui/material";
 import { Pagination } from "@/src/pagination";
+import { Tooltip } from "./tooltip";
 
 export type Props<Row = any> = {
     className?: string
@@ -41,7 +42,7 @@ export function RowsTable(
                             key =>
                                 key !== 'key' &&
                                 <Tooltip title={colTitles?.[key]} key={key} arrow>
-                                    <TableCell align="right">{key}</TableCell>
+                                    <TableCell align="right" className={css.noselect}>{key}</TableCell>
                                 </Tooltip>
                         )
                     }</TableRow>

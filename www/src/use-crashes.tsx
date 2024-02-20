@@ -15,7 +15,7 @@ import { CrashesOccupants, Occupant, useCrashOccupants } from "@/src/crash-occup
 import { CrashesPedestrians, Pedestrian, useCrashPedestrians } from "@/src/crash-pedestrians";
 import { CrashesVehicles, useCrashVehicles, Vehicle } from "@/src/crash-vehicles";
 import A from "@rdub/next-base/a";
-import { Tooltip } from "@mui/material";
+import { Tooltip } from "@/src/tooltip"
 
 export type Base = Omit<sql.Base, 'url'> & {
     urls: Urls
@@ -187,7 +187,7 @@ export function getCrashRows({ rows, cols, county, crashOccupants, crashPedestri
                         : ''
                 } else if (col == 'road') {
                     const { road, sri } = row
-                    txt = <Tooltip arrow title={sri ? `SRI ${sri}` : undefined}><span>{road}</span></Tooltip>
+                    txt = <Tooltip title={sri ? `SRI ${sri}` : undefined}><span>{road}</span></Tooltip>
                 } else if (col == 'casualties') {
                     txt = <CrashIcons
                         occupants={occupants}
