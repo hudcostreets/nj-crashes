@@ -10,6 +10,7 @@ import { map } from "fp-ts/either";
 import { ColTitles, useYearStats, YearStatsDicts, yearStatsRows } from "@/src/use-year-stats";
 import { useCrashRows } from "@/src/use-crashes";
 import { getDbUrls, Urls } from "@/src/urls";
+import { usePaginationControls, useResultPagination } from "@/src/pagination";
 
 export type Params = {
     county: string
@@ -51,17 +52,22 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
 }
 
 export default function CityPage({ urls, county, city, cc, mc }: Props) {
-    const [ perPage, setPerPage ] = useState<number>(20)
-    const [ page, setPage ] = useState<number>(0)
+    const paginationControls = usePaginationControls()
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
 
     const yearStatsResult = useYearStats({ url: urls.cmymc, requestChunkSize, cc, mc })
-    const crashes = useCrashRows({ urls, requestChunkSize, cc, mc, page, perPage, })
+    const crashes = useCrashRows({ urls, requestChunkSize, cc, mc, ...paginationControls, })
 
     const [ title, countyTitle] = useMemo(() => {
         const cityTitle = denormalize(city)
         return [`${cityTitle}`, `${denormalize(county)} County`]
     },  [ city, county ])
+
+    const pagination = useResultPagination(
+        yearStatsResult,
+        (ysds: YearStatsDicts) => ysds.totals.fc,
+        paginationControls,
+    )
 
     return (
         <div className={css.body}>
@@ -84,6 +90,7 @@ export default function CityPage({ urls, county, city, cc, mc }: Props) {
                         <ResultTable
                             className={css.crashesTable}
                             result={crashes}
+                            pagination={pagination}
                         />
                     </>
                 }

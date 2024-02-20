@@ -1,6 +1,6 @@
 import type { GetStaticProps } from "next";
-import { useMemo, useState } from "react";
-import { Pagination, ResultTable } from "@/src/result-table";
+import { useState } from "react";
+import { ResultTable } from "@/src/result-table";
 import { keys } from "@rdub/base/objs";
 import { cc2mc2mn, CountyCodes } from "@/server/county";
 import { County, denormalize, normalize } from "@/src/county";
@@ -9,7 +9,7 @@ import { map } from "fp-ts/Either";
 import { ColTitles, useYearStats, YearStatsDicts, yearStatsRows } from "@/src/use-year-stats";
 import { useCrashRows } from "@/src/use-crashes";
 import { getDbUrls, Urls } from "@/src/urls";
-import { fold } from "fp-ts/either";
+import { usePaginationControls, useResultPagination } from "@/src/pagination";
 
 export type Params = {
     county: string
@@ -37,26 +37,16 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
 }
 
 export default function CountyPage({ urls, cc, ...county }: Props) {
-    const [ perPage, setPerPage ] = useState<number>(20)
-    const [ page, setPage ] = useState<number>(0)
+    const paginationControls = usePaginationControls()
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
 
-    const crashes = useCrashRows({ urls, requestChunkSize, cc, page, perPage, county, })
+    const crashes = useCrashRows({ urls, requestChunkSize, cc, ...paginationControls, county, })
     const yearStatsResult = useYearStats({ url: urls.cmymc, requestChunkSize, cc, })
     const yearTableClass = `${css.crashesTable} ${css.withTotals}`
-    const totalFatalCrashes = useMemo(
-        () =>
-            yearStatsResult
-                ? fold(
-                    () => null,
-                    (ysds: YearStatsDicts) => ysds.totals.fc
-                )(yearStatsResult)
-                : null,
-        [ yearStatsResult ]
-    )
-    const pagination: Pagination | undefined = useMemo(
-        () => totalFatalCrashes === null ? undefined : { page, setPage, perPage, setPerPage, total: totalFatalCrashes },
-        [ page, setPage, perPage, setPerPage, totalFatalCrashes ]
+    const pagination = useResultPagination(
+        yearStatsResult,
+        (ysds: YearStatsDicts) => ysds.totals.fc,
+        paginationControls,
     )
     const { cn } = county
     const title = `${denormalize(cn)} County`
