@@ -3,7 +3,7 @@ import json
 import pandas as pd
 from functools import cached_property
 
-from nj_crashes.paths import RUNDATE_PATH
+from njsp.paths import RUNDATE_PATH
 
 
 def year_dt(year, tz):

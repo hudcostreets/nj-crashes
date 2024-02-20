@@ -14,11 +14,10 @@ from typing import Union, Optional, Tuple, Callable
 from utz import process, cached_property, err
 
 from nj_crashes.fauqstats import get_fauqstats, FAUQStats
-from nj_crashes.paths import RUNDATE_RELPATH
 from nj_crashes.utils.git import git_fmt, get_repo, SHORT_SHA_LEN
 from nj_crashes.utils.github import get_github_repo, load_pqt_github, REPO
 from nj_crashes.utils.log import none
-from njsp.paths import CRASHES_RELPATH
+from njsp.paths import CRASHES_RELPATH, RUNDATE_RELPATH
 
 
 def load_pqt_blob(blob: Object) -> pd.DataFrame:

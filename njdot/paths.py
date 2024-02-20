@@ -1,7 +1,6 @@
 from os.path import join
 
-from nj_crashes import ROOT_DIR
-from nj_crashes.paths import PUBLIC_DIR
+from nj_crashes.paths import PUBLIC_DIR, ROOT_DIR
 from njdot.tbls import parse_type
 
 NJDOT_DIR = join(ROOT_DIR, 'njdot')

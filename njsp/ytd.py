@@ -13,8 +13,7 @@ import pandas as pd
 from git import Repo, Commit
 from utz import err
 
-from nj_crashes.paths import DB_URI, ROOT_DIR, RUNDATE_RELPATH
-from njsp.paths import CRASHES_PQT
+from njsp.paths import CRASHES_PQT, CRASHES_RELPATH, RUNDATE_RELPATH
 from njsp.rundate import Rundate
 from njsp.ytc import to_ytc
 
@@ -105,7 +104,7 @@ class Ytd:
 
     @cached_property
     def crashes(self):
-        crashes = pd.read_sql_table("crashes", DB_URI)
+        crashes = read_parquet(CRASHES_PQT)
         if self.county:
             crashes = crashes[crashes.COUNTY == self.county]
         if self.type:
@@ -159,8 +158,7 @@ class Ytd:
 
     @property
     def prv_crashes(self):
-        crashes_relpath = relpath(CRASHES_PQT, ROOT_DIR)
-        prv_crashes_blob = self.prv_commit.tree[crashes_relpath]
+        prv_crashes_blob = self.prv_commit.tree[CRASHES_RELPATH]
         stream = prv_crashes_blob.data_stream
         blob = stream.read()
         prv_crashes = pd.read_parquet(BytesIO(blob))

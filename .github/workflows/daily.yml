@@ -21,10 +21,6 @@ on:
         default: true
       update_slack_sha:
         description: "\"Update NJSP data\" commit hash (for posting updates to Slack)"
-      sync_aws:
-        type: boolean
-        description: "Sync to AWS"
-        default: true
       update_crash_log:
         type: boolean
         description: "Update crash log in AWS"
@@ -78,24 +74,17 @@ jobs:
       - name: Update parquets
         id: update_pqts
         if: (github.event.schedule || inputs.update_pqts) && (steps.refresh_data.outputs.sha || !inputs.short_circuit)
-        run: njsp -cc update_pqts
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+        run: njsp -cc update_pqts --s3
       - name: Compute Slack update SHA
         # Use the relevant input SHA, if present, otherwise the output SHA from the previous step
         id: update_slack_sha
         if: inputs.update_slack_sha || steps.update_pqts.outputs.sha
         run: |
           echo "sha=${{ inputs.update_slack_sha || steps.update_pqts.outputs.sha }}" >> $GITHUB_OUTPUT
-      - name: AWS sync
-        if: inputs.sync_aws || steps.update_pqts.outputs.sha
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-1
-        run: |
-          aws s3 sync --exclude '*' --include 'nj_crashes.db' ./ s3://nj-crashes/
-          aws s3api put-object-acl --bucket nj-crashes --key nj_crashes.db --acl public-read
-          aws s3 cp data/crashes.pqt s3://nj-crashes/data/crashes.parquet
-          aws s3api put-object-acl --bucket nj-crashes --key data/crashes.parquet --acl public-read
       - name: Update crash log
         if: inputs.update_crash_log || steps.refresh_data.outputs.sha
         env:

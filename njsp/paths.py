@@ -1,15 +1,24 @@
 from os import path
-from os.path import join, relpath
+from os.path import join, dirname
 
-from nj_crashes.paths import DATA_DIR, ROOT_DIR, WWW_NJSP
+from nj_crashes import paths
+from nj_crashes.paths import PUBLIC_DIR, PLOTS_DIR, relpath
+
+S3 = f'{paths.S3}/njsp'
+S3_DATA = f'{S3}/data'
 
 NJSP_DIR = dirname(__file__)
-
-CRASHES_PQT = join(DATA_DIR, 'crashes.pqt')
-CRASHES_RELPATH = relpath(CRASHES_PQT, ROOT_DIR)
-
 NJSP_DATA = join(NJSP_DIR, 'data')
-DATA_RELPATH = relpath(NJSP_DATA, ROOT_DIR)
+DATA_RELPATH = relpath(NJSP_DATA)
+
+WWW_NJSP = join(PUBLIC_DIR, 'njsp')
+RUNDATE_PATH = join(WWW_NJSP, 'rundate.json')
+
+CRASHES_PQT = join(NJSP_DATA, 'crashes.parquet')
+CRASHES_RELPATH = relpath(CRASHES_PQT)
+CRASHES_DB = join(WWW_NJSP, f'crashes.db')
+CRASHES_DB_URI = f'sqlite:///{CRASHES_DB}'
+
 PROJECTED_CSV = join(NJSP_DATA, 'projected.csv')
 
 # Tabula template JSONs and NJSP summary PDFs live in this dir
@@ -26,7 +35,12 @@ YTC_PQT = path.join(NJSP_DATA, 'year-type-county.pqt')
 YTC_DB = path.join(WWW_NJSP, 'year-type-county.db')
 YTC_DB_URI = f'sqlite:///{YTC_DB}'
 
-S3_CRASH_LOG_PQT = f's3://nj-crashes/{DATA_RELPATH}/crash-log.parquet'
+S3_CRASH_LOG_PQT = f'{S3_DATA}/crash-log.parquet'
+
+PROJECTED_TOTALS_PATH = join(PLOTS_DIR, 'projected_totals.json')
+
+RUNDATE_RELPATH = relpath(RUNDATE_PATH)
+PROJECTED_TOTALS_RELPATH = relpath(PROJECTED_TOTALS_PATH)
 
 
 def annual_ytc_url(year):

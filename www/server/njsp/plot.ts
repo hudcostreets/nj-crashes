@@ -9,6 +9,7 @@ import path, { dirname } from "path";
 import fs from "fs";
 import { loadSync } from "@rdub/base/load";
 import { fromEntries } from "@rdub/base/objs";
+import { NJSP, RUNDATE_RELPATH } from "../paths";
 
 export async function getTypeProjections(db: AsyncDuckDB): Promise<TypeCounts> {
     const projectedCsvPath = path.join(dirname(process.cwd()), "data/njsp/projected.csv")
@@ -39,7 +40,7 @@ export async function loadProps(): Promise<Props> {
     } = initialPlot
     const db = await initDuckDb()
     const typeProjections = await getTypeProjections(db)
-    const tableData: TableData = loadTableData({ fmt: 'csv', stem: "data/njsp/year-type-county" })
+    const tableData: TableData = loadTableData({ fmt: 'csv', dir: NJSP, stem: "year-type-county", })
     const target = await registerTableData({ db, tableData, stem: "ytc", })
     const { data, rows, annotations } = await getPlotData({
         db,
@@ -56,7 +57,7 @@ export async function loadProps(): Promise<Props> {
         )
     ) as YearTotalsMap
 
-    const { rundate } = loadSync<{ rundate: string }>(`public/rundate.json`)
+    const { rundate } = loadSync<{ rundate: string }>(RUNDATE_RELPATH)
     console.log(`rundate: ${rundate}`)
     return {
         params: { data, layout: { ...layout, annotations }, ...plotRest },

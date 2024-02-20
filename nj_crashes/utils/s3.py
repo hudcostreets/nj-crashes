@@ -9,21 +9,37 @@ from urllib.parse import ParseResult
 from nj_crashes.utils.log import err
 
 
-@contextmanager
-def s3_upload_ctx(s3_url: Union[ParseResult, str]):
+S3URL = Union[ParseResult, str]
+
+
+_s3 = None
+
+
+def s3():
+    global _s3
+    if _s3 is None:
+        import boto3
+        _s3 = boto3.client('s3')
+    return _s3
+
+
+def upload(path: str, s3_url: S3URL):
     if isinstance(s3_url, str):
         s3_url = urlparse(s3_url)
-        if s3_url.scheme != 's3':
-            raise ValueError(f"Expected s3:// URL, got {s3_url}")
+    if s3_url.scheme != 's3':
+        raise ValueError(f"Expected s3:// URL, got {s3_url}")
+    bucket = s3_url.netloc
+    key = s3_url.path.lstrip('/')
+    s3().upload_file(path, bucket, key)
+    err(f"Uploaded {path} to s3://{bucket}/{key}")
+
+
+@contextmanager
+def s3_upload_ctx(s3_url: S3URL):
     with TemporaryDirectory() as tmpdir:
         tmp_path = join(tmpdir, 'tmpfile')
         yield tmp_path
-        import boto3
-        client = boto3.client('s3')
-        bucket = s3_url.netloc
-        key = s3_url.path.lstrip('/')
-        client.upload_file(tmp_path, bucket, key)
-        err(f"Uploaded {tmp_path} to {bucket}/{key}")
+        upload(tmp_path, s3_url)
 
 
 @contextmanager

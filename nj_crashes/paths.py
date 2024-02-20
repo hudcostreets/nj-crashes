@@ -1,4 +1,5 @@
-from os.path import basename, dirname, join, relpath
+from os import path
+from os.path import basename, dirname, join
 
 PKG_DIR = dirname(__file__)
 ROOT_DIR = dirname(PKG_DIR)
@@ -7,16 +8,14 @@ DATA_DIR = join(ROOT_DIR, 'data')
 SRI_DIR = join(ROOT_DIR, '.sri')
 WWW_DIR = join(ROOT_DIR, 'www')
 PUBLIC_DIR = join(WWW_DIR, 'public')
-WWW_NJSP = join(PUBLIC_DIR, 'njsp')
 PLOTS_DIR = join(PUBLIC_DIR, 'plots')
 PKG_NAME = basename(PKG_DIR)
-RUNDATE_PATH = join(PUBLIC_DIR, 'rundate.json')
-PROJECTED_TOTALS_PATH = join(PLOTS_DIR, 'projected_totals.json')
-DB_PATH = join(ROOT_DIR, f'{PKG_NAME}.db')
-
-DB_URI = f'sqlite:///{DB_PATH}'
-
-RUNDATE_RELPATH = relpath(RUNDATE_PATH, ROOT_DIR)
-PROJECTED_TOTALS_RELPATH = relpath(PROJECTED_TOTALS_PATH, ROOT_DIR)
 
 HOMICIDES_PQT = join(DATA_DIR, 'homicides.parquet')
+
+BKT = 'nj-crashes'
+S3 = f's3://{BKT}'
+
+
+def relpath(dst: str, src: str = ROOT_DIR) -> str:
+    return path.relpath(dst, src)

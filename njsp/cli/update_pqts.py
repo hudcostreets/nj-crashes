@@ -2,6 +2,10 @@
 # - Load XMLs
 # - Clean / Assign some dtypes
 # - Write to parquet and SQLite
+from os import remove
+from os.path import exists
+
+import click
 import json
 
 from dateutil.parser import parse
@@ -14,8 +18,9 @@ from git import Tree
 from utz import sxs
 
 from nj_crashes.fauqstats import FAUQStats
-from nj_crashes.paths import RUNDATE_PATH
+from nj_crashes.utils import s3
 from nj_crashes.utils.log import Log, err
+from njsp.paths import RUNDATE_PATH, NJSP_DATA
 from .base import command
 from ..paths import CRASHES_PQT
 
@@ -56,7 +61,9 @@ def get_crashes_df(
 
 
 @command
-def update_pqts():
+@click.option('--replace-db', is_flag=True, help="Replace DB tables (instead of rm'ing DB and writing new tables from scratch)")
+@click.option('--s3', 'sync_s3', is_flag=True, help=f"Upload to S3 ()")
+def update_pqts(replace_db, sync_s3):
     crashes, totals, rundate = get_crashes_df()
 
     with open(RUNDATE_PATH, 'w') as f:
@@ -89,8 +96,8 @@ def update_pqts():
     )
     print(munis)
 
-    counties.to_frame().to_parquet('data/counties.pqt')
-    munis.to_parquet('data/munis.pqt')
+    counties.to_frame().to_parquet(f'{NJSP_DATA}/counties.parquet')
+    munis.to_parquet(f'{NJSP_DATA}/munis.parquet')
 
     muni_counties = (
         crashes
@@ -126,18 +133,28 @@ def update_pqts():
 
     # ### Save to file
 
-    from nj_crashes.paths import DB_URI
+    from njsp.paths import CRASHES_DB, CRASHES_DB_URI
     from sqlalchemy import create_engine
 
-    engine = create_engine(DB_URI)
+    if exists(CRASHES_DB) and not replace_db:
+        err(f"Removing existing DB {CRASHES_DB}")
+        remove(CRASHES_DB)
+
+    engine = create_engine(CRASHES_DB_URI)
 
     tables = {
         'totals': totals,
         'crashes': crashes,
     }
 
+    replace_kwargs = dict(if_exists='replace') if replace_db else {}
     for name, table in tables.items():
-        table.to_sql(name, con=engine, if_exists='replace')
+        table.to_sql(name, con=engine, **replace_kwargs)
         table.to_parquet(CRASHES_PQT)
+
+    if sync_s3:
+        from njsp.paths import S3_DATA
+        s3.upload(CRASHES_PQT, f'{S3_DATA}/crashes.parquet')
+        s3.upload(CRASHES_DB, f'{S3_DATA}/crashes.db')
 
     return "Update NJSP data"
