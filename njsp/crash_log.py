@@ -5,6 +5,7 @@ from typing import Optional, Union, Literal
 from utz import err
 
 from nj_crashes.fauqstats import FAUQStats
+from nj_crashes.utils import TZ
 from nj_crashes.utils.github import GithubCommit
 from njsp.commit_crashes import get_repo, CommitCrashes, get_rundate, DEFAULT_ROOT_SHA, SHORT_SHA_LEN
 from njsp.paths import CRASHES_RELPATH
@@ -68,9 +69,9 @@ def get_crashes_df(
             try:
                 ts = pd.to_datetime(parse(get_rundate(cur_tree)))
                 if ts.tz is None:
-                    rundate = ts.tz_localize('US/Eastern')
+                    rundate = ts.tz_localize(TZ)
                 else:
-                    rundate = ts.tz_convert('US/Eastern')
+                    rundate = ts.tz_convert(TZ)
                 cur_sha = cur_commit.hexsha[:SHORT_SHA_LEN]
                 cc = CommitCrashes(cur_sha, load_pqt=load_pqt, log=log)
 

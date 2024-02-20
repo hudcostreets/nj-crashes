@@ -7,6 +7,7 @@ from io import BytesIO
 from typing import Tuple
 from utz import err
 
+from nj_crashes.utils import TZ
 from nj_crashes.utils.git import SHORT_SHA_LEN
 from njsp import rundate, crashes
 from njsp.paths import CRASHES_PQT
@@ -168,7 +169,8 @@ class Ytd:
 
     @property
     def prv_rundate_dt(self):
-        return pd.to_datetime(self.prv_rundate)
+        dt = pd.to_datetime(self.prv_rundate)
+        return dt if dt.tz else dt.tz_localize(TZ)
 
     @property
     def cur_year_frac(self):
