@@ -65,6 +65,7 @@ jobs:
           cd www
           pnpm install
           pnpm run gha-export
+          du -sh out
       - if: steps.www-changed.outputs.WWW_CHANGED
         name: Deploy to GH Pages
         uses: JamesIves/github-pages-deploy-action@v4
