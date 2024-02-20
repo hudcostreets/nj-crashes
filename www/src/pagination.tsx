@@ -40,7 +40,7 @@ import FirstPageIcon from '@mui/icons-material/FirstPage';
 import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 import LastPageIcon from '@mui/icons-material/LastPage';
-import { min } from "@rdub/base/math";
+import { floor, min } from "@rdub/base/math";
 
 export type PaginationBase = {
     page: number
@@ -70,8 +70,11 @@ export function Pagination(
             <select
                 value={perPage}
                 onChange={e => {
-                    console.log(`onRowsPerPageChange:`, e, e.target.value)
-                    setPerPage(parseInt(e.target.value))
+                    const newPerPage = parseInt(e.target.value)
+                    console.log(`onRowsPerPageChange:`, e, newPerPage)
+                    setPerPage(newPerPage)
+                    const newPage = floor(page * perPage / newPerPage)
+                    setPage(newPage)
                 }}
             >{
                 PageSizes.map(ps => <option key={ps}>{ps}</option>)
