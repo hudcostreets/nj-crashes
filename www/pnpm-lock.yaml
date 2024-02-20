@@ -12,8 +12,8 @@ dependencies:
     specifier: ^8.9.34
     version: 8.9.34(@deck.gl/core@8.9.34)(@types/react@18.2.48)(react-dom@18.2.0)(react@18.2.0)
   '@duckdb/duckdb-wasm':
-    specifier: 1.28.1-dev106.0
-    version: 1.28.1-dev106.0
+    specifier: ^1.28.0
+    version: 1.28.0
   '@emotion/react':
     specifier: ^11.11.3
     version: 11.11.3(@types/react@18.2.48)(react@18.2.0)
@@ -49,7 +49,7 @@ dependencies:
     version: 0.2.2(react-dom@18.2.0)(react@18.2.0)
   '@rdub/duckdb':
     specifier: 0.0.1
-    version: 0.0.1(@duckdb/duckdb-wasm@1.28.1-dev106.0)(react-dom@18.2.0)(react@18.2.0)
+    version: 0.0.1(@duckdb/duckdb-wasm@1.28.0)(react-dom@18.2.0)(react@18.2.0)
   '@rdub/next-base':
     specifier: 0.1.0
     version: 0.1.0(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)
@@ -456,10 +456,10 @@ packages:
       react-dom: 18.2.0(react@18.2.0)
     dev: false
 
-  /@duckdb/duckdb-wasm@1.28.1-dev106.0:
-    resolution: {integrity: sha512-HcA9q/Yq1t8nAIg2rl8DmOTjKy1tAHSdBGHlCcWAm5StsfAjcm+f0STBEH3hmWPk0qEtOJF30OR+GfeyUOP+hA==}
+  /@duckdb/duckdb-wasm@1.28.0:
+    resolution: {integrity: sha512-YaswpEmxr1Sp20/FZbWR7bZBJqj6xQXX2m4LLzYBnA02g4K1yrpxsBWmkxQyMbrH6AHKhcUUqAlaXfA2Rvaa3w==}
     dependencies:
-      apache-arrow: 14.0.2
+      apache-arrow: 13.0.0
     dev: false
 
   /@emotion/babel-plugin@11.11.0:
@@ -1714,14 +1714,14 @@ packages:
       react-dom: 18.2.0(react@18.2.0)
     dev: false
 
-  /@rdub/duckdb@0.0.1(@duckdb/duckdb-wasm@1.28.1-dev106.0)(react-dom@18.2.0)(react@18.2.0):
+  /@rdub/duckdb@0.0.1(@duckdb/duckdb-wasm@1.28.0)(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-Fxf/twrwmF9XQLPwKSU42lpYZfqZOVCUuASyU3LF3B6eQDxP1LLNMhYk25pyIj68I4C6+7aogyLd1uf8940cRw==}
     peerDependencies:
       '@duckdb/duckdb-wasm': ^1.28.0
       react: ^18
       react-dom: ^18
     dependencies:
-      '@duckdb/duckdb-wasm': 1.28.1-dev106.0
+      '@duckdb/duckdb-wasm': 1.28.0
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
       web-worker: 1.3.0
@@ -2322,8 +2322,8 @@ packages:
       picomatch: 2.3.1
     dev: false
 
-  /apache-arrow@14.0.2:
-    resolution: {integrity: sha512-EBO2xJN36/XoY81nhLcwCJgFwkboDZeyNQ+OPsG7bCoQjc2BT0aTyH/MR6SrL+LirSNz+cYqjGRlupMMlP1aEg==}
+  /apache-arrow@13.0.0:
+    resolution: {integrity: sha512-3gvCX0GDawWz6KFNC28p65U+zGh/LZ6ZNKWNu74N6CQlKzxeoWHpi4CgEQsgRSEMuyrIIXi1Ea2syja7dwcHvw==}
     hasBin: true
     dependencies:
       '@types/command-line-args': 5.2.0

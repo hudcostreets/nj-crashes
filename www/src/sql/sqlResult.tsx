@@ -1,6 +1,6 @@
 import { keys, values } from "@rdub/base/objs";
 import css from "@/src/sql-repl.module.scss";
-import { fold } from "fp-ts/either";
+import { fold } from "fp-ts/Either";
 import { Result } from "@rdub/react-sql.js-httpvfs/query";
 
 export function SqlResult({ result }: { result: Result<Record<any, any>> | null }) {

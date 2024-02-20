@@ -9,7 +9,7 @@ import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
 import * as React from "react";
 import { keys, o2a } from "@rdub/base/objs";
-import { fold } from "fp-ts/either";
+import { fold } from "fp-ts/Either";
 import { TableFooter } from "@mui/material";
 import { Pagination } from "@/src/pagination";
 

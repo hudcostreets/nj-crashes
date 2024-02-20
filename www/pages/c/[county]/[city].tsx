@@ -6,7 +6,7 @@ import { ResultTable } from "@/src/result-table";
 import { denormalize, normalize } from "@/src/county";
 import css from "./city.module.scss"
 import A from "@rdub/next-base/a";
-import { map } from "fp-ts/either";
+import { map } from "fp-ts/Either";
 import { ColTitles, useYearStats, YearStatsDicts, yearStatsRows } from "@/src/use-year-stats";
 import { useCrashRows } from "@/src/use-crashes";
 import { getDbUrls, Urls } from "@/src/urls";
