@@ -5,6 +5,8 @@ from git import Commit, Tree
 from typing import Union, IO
 
 import git
+
+from nj_crashes.utils import TZ
 from nj_crashes.utils.github import Blob, GithubBlob, GithubCommit
 from bs4 import BeautifulSoup as bs
 
@@ -92,7 +94,7 @@ class FAUQStats:
 
         crashes = pd.DataFrame(records)
         if 'DATE' in crashes:
-            crashes['dt'] = crashes[['DATE', 'TIME']].apply(lambda r: pd.to_datetime(f'{r["DATE"]} {r["TIME"]}'), axis=1)
+            crashes['dt'] = crashes[['DATE', 'TIME']].apply(lambda r: pd.to_datetime(f'{r["DATE"]} {r["TIME"]}').tz_localize(TZ), axis=1)
             float_cols = [
                 'FATALITIES',
                 'FATAL_D',
