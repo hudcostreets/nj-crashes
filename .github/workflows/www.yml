@@ -61,6 +61,8 @@ jobs:
           cache-dependency-path: www/pnpm-lock.yaml
       - name: pnpm install, build, export
         if: steps.www-changed.outputs.WWW_CHANGED
+        env:
+          S3_DBS: 1
         run: |
           cd www
           pnpm install
