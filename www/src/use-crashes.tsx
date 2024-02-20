@@ -15,6 +15,7 @@ import { CrashesOccupants, Occupant, useCrashOccupants } from "@/src/crash-occup
 import { CrashesPedestrians, Pedestrian, useCrashPedestrians } from "@/src/crash-pedestrians";
 import { CrashesVehicles, useCrashVehicles, Vehicle } from "@/src/crash-vehicles";
 import A from "@rdub/next-base/a";
+import { Tooltip } from "@mui/material";
 
 export type Base = Omit<sql.Base, 'url'> & {
     urls: Urls
@@ -105,7 +106,7 @@ export function CrashIcons(
         const { txt, fill } = ConditionMap[condition]
         const ageSexStr = `${age ?? ''}${sex === 'M' || sex === 'F' ? sex : ''}`
         let title = `${type}${ageSexStr ? `, ${ageSexStr},` : ''} ${txt}${ejectedStr ? `, ${ejectedStr}` : ''}`
-        const icon = <Component key={idx} title={title} style={{ fill }} />
+        const icon = <Component key={idx} title={title} style={{fill}}/>
         arrs[condition].push(icon)
     })
     pedestrians?.forEach(({ condition, age, sex, inj_loc, inj_type, cyclist, }, idx) => {
@@ -145,13 +146,7 @@ export function CrashIcons(
                                 if (leftAtScene) title += ', left at scene'
                                 if (towed) title += ', towed'
                                 if (impounded) title += ', impounded'
-                                // title += ` (${CarDepartureMap[departure]})`
-                                return <Car
-                                    key={i}
-                                    style={{ fill }}
-                                    title={title}
-                                />
-                                // <span key={i} className={css.typeIcon}>🚗</span>
+                                return <Car key={i} style={{ fill }} title={title} />
                             }
                         )
                     }
@@ -192,7 +187,7 @@ export function getCrashRows({ rows, cols, county, crashOccupants, crashPedestri
                         : ''
                 } else if (col == 'road') {
                     const { road, sri } = row
-                    txt = <span title={sri ? `SRI ${sri}` : undefined}>{road}</span>
+                    txt = <Tooltip arrow title={sri ? `SRI ${sri}` : undefined}><span>{road}</span></Tooltip>
                 } else if (col == 'casualties') {
                     txt = <CrashIcons
                         occupants={occupants}
@@ -232,7 +227,7 @@ export function useCrashRows({ county, ...props }: Props & { county?: County }) 
     const crashPedestrians = useCrashPedestrians({ crashesResult, ...props })
     const crashVehicles = useCrashVehicles({ crashesResult, ...props })
     const mcCol: Col[] = props.mc ? [] : ['mc']
-    const cols: Col[] = [ 'dt', ...mcCol, 'casualties', 'road', 'cross_street', 'mp', /*'ll', */]
+    const cols: Col[] = [ 'dt', ...mcCol, 'casualties', 'road', 'cross_street', 'mp', ]
     const crashRows = useMemo(
         () => {
             if (!crashesResult) return

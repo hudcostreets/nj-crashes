@@ -1,6 +1,6 @@
-import React from "react"
+import React, { CSSProperties } from "react"
 import css from "./icons.module.scss"
-import { CSSProperties } from "react";
+import { Tooltip } from "@mui/material";
 
 export type Props = {
     className?: string
@@ -10,7 +10,7 @@ export type Props = {
 
 // [Driver](https://thenounproject.com/icon/driver-1847797/) by Musmellow from https://thenounproject.com/browse/icons/term/driver/ Noun Project (CC BY 3.0)
 export function Driver({ className, style, title }: Props) {
-    return (
+    const svg = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
             version="1.1"
@@ -28,18 +28,17 @@ export function Driver({ className, style, title }: Props) {
             </g>
         </svg>
     )
+    return title ? <Tooltip arrow title={title}>{svg}</Tooltip> : svg
 }
 
 // [Passenger](https://thenounproject.com/icon/passenger-4353992/) by Luiz Carvalho from https://thenounproject.com/browse/icons/term/passenger/ Noun Project (CC BY 3.0)
 export function Passenger({ className, style, title }: Props) {
-    return (
+    const svg = (
         <svg
-            xmlns="http://www.w3.org/2000/svg"
             viewBox="3 1 26 30"
             className={`${css.icon} ${css.passenger} ${className ?? ''}`}
             style={style}
         >
-            {title && <title>{title}</title>}
             <circle cx="17.94653" cy="7.35815" r="5.35815"/>
             <path
                 d="M7.8689,20.46265V28.469A1.53531,1.53531,0,0,0,9.39966,30h14.3291L10.3335,16.58936A4.26837,4.26837,0,0,0,7.8689,20.46265Z"/>
@@ -49,19 +48,17 @@ export function Passenger({ className, style, title }: Props) {
                 d="M10.80835,16.39038a4.28253,4.28253,0,0,1,1.34692-.21435h2.082l-8.094-8.09424L3.98462,10.24048l6.34888,6.34888A4.42005,4.42005,0,0,1,10.80835,16.39038Z"/>
         </svg>
     )
+    return title ? <Tooltip arrow title={title}>{svg}</Tooltip> : svg
 }
 
 // [Pedestrian](https://thenounproject.com/icon/pedestrian-1826968/) by Adrien Coquet from https://thenounproject.com/browse/icons/term/pedestrian/ Noun Project (CC BY 3.0)
 export function Pedestrian({ className, style, title }: Props) {
-    return (
+    const svg = (
         <svg
-            xmlns="http://www.w3.org/2000/svg"
             viewBox="15 0 70 100"
             className={`${css.icon} ${css.pedestrian} ${className ?? ''}`}
             style={style}
-            xmlSpace="preserve"
         >
-            {title && <title>{title}</title>}
             <g>
                 <path d="M63.3,68.2l-7,11.2l5.4,14.7c0.8,2.1,2.8,3.4,4.9,3.4c0.6,0,1.2-0.1,1.8-0.3c2.7-1,4.1-4,3.1-6.7L63.3,68.2z" />
                 <path d="M78.9,42.4l-5.8-8.5c-1.6-2.3-3.9-4.1-6.5-5.1c-10.6-4.1-12-4-13-4l-7.5,0.5c-2.1,0.1-3.7,0.7-11.6,10.7     c-0.7,0.9-1.7,1.5-2.9,1.8l-7.8,1.7c-2.5,0.5-4,2.9-3.5,5.4c0.5,2.5,3,4,5.4,3.5l7.8-1.7c3.2-0.7,6-2.5,8.1-5     c0.3-0.4,0.6-0.8,0.9-1.1l7.2,21L32.3,89.5c-1.5,2.5-0.8,5.7,1.7,7.2c0.9,0.5,1.8,0.8,2.8,0.8c1.8,0,3.5-0.9,4.4-2.5l21.6-34.7     c2.2-3.5,2.8-7.9,1.7-11.9l-3.5-12c0.7,0.3,1.5,0.6,2.4,0.9c0.9,0.4,1.7,1,2.3,1.8l5.8,8.5c0.9,1.3,2.3,2,3.7,2     c0.9,0,1.8-0.3,2.6-0.8C79.8,47.3,80.4,44.5,78.9,42.4z" />
@@ -75,20 +72,18 @@ export function Pedestrian({ className, style, title }: Props) {
             </g>
         </svg>
     )
+    return title ? <Tooltip arrow title={title}>{svg}</Tooltip> : svg
 }
 
 // [Bicycle](https://thenounproject.com/icon/bicycle-1311416/) by Adrien Coquet from https://thenounproject.com/browse/icons/term/bicycle/ Noun Project (CC BY 3.0)
 export function Cyclist({ className, style, title }: Props) {
-    return (
+    const svg = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
             className={`${css.icon} ${css.cyclist} ${className ?? ''}`}
-            // style={{ fill: 'red', ...(style ?? {}) }}
             style={style}
             viewBox="5 0 90 100"
-            xmlSpace="preserve"
         >
-            {title && <title>{title}</title>}
             <g transform={`translate(0, 5)`}>
                 <path d="M45,81.9c-0.6-1-0.9-2-0.9-3.2h-4.3c-0.6-4.1-2.6-7.6-5.6-10.2l3.5-5.4l6.9,13c0.5-2.4,1-4.8,1.5-7l-4.5-8.5h5.7 c-2.7-1.2-8.6-3.1-13.2-4.3l1.2,2.2l-4.8,7.6c-2.1-1-4.4-1.5-6.8-1.5c-9.1,0-16.4,7.4-16.4,16.4c0,9.1,7.4,16.4,16.4,16.4 c8.3,0,15.2-6.2,16.3-14.2h6.4C45.7,83,45.3,82.5,45,81.9z M23.5,92.9c-6.5,0-11.9-5.3-11.9-11.9c0-6.5,5.3-11.9,11.9-11.9 c1.5,0,3,0.3,4.3,0.8l-6.3,9.8c-0.4,0.7-0.5,1.6-0.1,2.3c0.4,0.7,1.2,1.2,2,1.2h11.6C34.1,88.8,29.3,92.9,23.5,92.9z M27.7,78.8 l4-6.3c1.7,1.7,3,3.8,3.4,6.3H27.7z" />
                 <path d="M76.5,64.6c-1.6,0-3.1,0.2-4.6,0.7l-9.3-20.7c-0.4-0.8-1.2-1.3-2.1-1.3h-2.1c-0.4-0.6-1-1-1.7-1.2 c-4.1-1.1-8.3-2.8-9.4-3.6c-0.9-1.7-3-5.6-4.8-9.1c0.5-3.4,0-8.2-5.7-9c-5.6-0.7-6.6,1.9-8.8,8.3c-2.1,6.1-2.5,15.8-0.9,21.5 c0.5,1.7,1.4,3.3,2.5,3.4c4.3,0.4,16.9,4.3,19.8,6c0,2.9-1.5,11.4-3.2,18.4c-0.5,2.1,0.8,4.2,2.9,4.7c0.5,0.1,1,0.1,1.5,0.1 c1.5-0.2,2.8-1.4,3.2-3c4.8-20.5,3.2-23.1,2.4-24.3c-1.8-2.8-8.4-5.3-14.2-7c-0.1-1.8-0.2-4.4-0.2-7c0,0.1,0.1,0.2,0.1,0.2 c0.4,0.8,1.7,3.1,13,6.3c0.3,0.1,0.6,0.1,0.8,0.1c0.5,0,0.9-0.1,1.4-0.3H59l3.7,8.3h-4.3c0.3,0.9,0.5,2.3,0.4,4.6h2.5l-2.9,4.1 c-0.3,2.7-0.9,6.2-1.9,10.7l9.1-13l2.1,4.6c-4.6,2.9-7.7,8-7.7,13.9c0,9.1,7.4,16.4,16.4,16.4s16.4-7.4,16.4-16.4 C92.9,72,85.5,64.6,76.5,64.6z M76.5,92.9c-6.5,0-11.9-5.3-11.9-11.9c0-4,2-7.5,5-9.7L74.4,82c0.4,0.8,1.2,1.3,2.1,1.3 c0.3,0,0.6-0.1,0.9-0.2c1.2-0.5,1.7-1.9,1.1-3l-4.8-10.6c0.9-0.2,1.8-0.3,2.7-0.3c6.5,0,11.9,5.3,11.9,11.9 C88.3,87.6,83,92.9,76.5,92.9z" />
@@ -102,17 +97,16 @@ export function Cyclist({ className, style, title }: Props) {
             </g>
         </svg>
     )
+    return title ? <Tooltip arrow title={title}>{svg}</Tooltip> : svg
 }
 
 export function Car({ className, style, title }: Props) {
-    return (
+    const svg = (
         <svg
-            xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 56 68"
             className={`${css.icon} ${css.car} ${className ?? ''}`}
             style={style}
         >
-            {title && <title>{title}</title>}
             <g transform={`scale(1, 1.4),translate(0,-3)`}>
                 <path d="M47.1708984,47.4214478c2.4556885,0,4.5087891-1.7954102,4.887207-4.1463623,.0482178-.265686,.0725098-.5313721,.0725098-.8051147s-.024292-.5394287-.0725098-.8051147c-.378418-2.3509521-2.4315186-4.1463623-4.887207-4.1463623-2.4555664,0-4.5004883,1.7954102-4.8789062,4.1463623v.0080566c-.0483398,.2576294-.0725098,.5233154-.0725098,.7970581s.0241699,.5394287,.0725098,.8051147v.0080566c.3864746,2.3428955,2.4233398,4.1383057,4.8789062,4.1383057Z" />
                 <path d="M16.5200195,37.5184937c-2.4556885,0-4.5007324,1.7954102-4.8790283,4.1463623-.0482178,.265686-.0725098,.5313721-.0725098,.8051147s.024292,.5394287,.0725098,.8051147c.3782959,2.3509521,2.4233398,4.1463623,4.8790283,4.1463623,2.4555664,0,4.4925537-1.7954102,4.8790283-4.1383057v-.0080566c.0482178-.265686,.0723877-.5313721,.0723877-.8051147s-.0241699-.5394287-.0723877-.7970581v-.0080566c-.378418-2.3509521-2.4234619-4.1463623-4.8790283-4.1463623Z" />
@@ -120,4 +114,5 @@ export function Car({ className, style, title }: Props) {
             </g>
         </svg>
     )
+    return title ? <Tooltip arrow title={title}>{svg}</Tooltip> : svg
 }
