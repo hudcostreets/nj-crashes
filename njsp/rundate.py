@@ -2,7 +2,7 @@ import json
 import pandas as pd
 from functools import cached_property, partial
 
-from nj_crashes.utils import git
+from nj_crashes.utils import git, TZ
 from njsp.paths import RUNDATE_PATH, RUNDATE_RELPATH, OLD_RUNDATE_RELPATH
 
 
@@ -18,7 +18,7 @@ class Rundate:
     @cached_property
     def cur(self):
         with open(RUNDATE_PATH, 'r') as f:
-            return pd.to_datetime(json.load(f)['rundate'])
+            return pd.to_datetime(json.load(f)['rundate']).tz_localize(TZ)
 
     @property
     def cur_month_str(self):
