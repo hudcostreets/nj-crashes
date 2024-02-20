@@ -7,7 +7,7 @@ from utz.ymd import dates, YMD
 from .base import slack
 from .channel_client import ChannelClient, CHANNEL_OPTS
 from ...commit_crashes import crash_str, CommitCrashes
-from ...crash import Crash
+from ...crashes import Crash
 
 
 def sync_crash(

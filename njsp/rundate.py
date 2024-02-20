@@ -1,13 +1,17 @@
 import json
-
 import pandas as pd
-from functools import cached_property
+from functools import cached_property, partial
 
-from njsp.paths import RUNDATE_PATH
+from nj_crashes.utils import git
+from njsp.paths import RUNDATE_PATH, RUNDATE_RELPATH, OLD_RUNDATE_RELPATH
 
 
 def year_dt(year, tz):
     return pd.to_datetime(f'{year}').tz_localize(tz)
+
+
+RELPATHS = [ RUNDATE_RELPATH, OLD_RUNDATE_RELPATH ]
+blob_from_commit = partial(git.blob_from_commit, relpaths=RELPATHS)
 
 
 class Rundate:

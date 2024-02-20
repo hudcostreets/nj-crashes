@@ -1,19 +1,15 @@
-from typing import Tuple
-
-from io import BytesIO
-
-from dataclasses import dataclass
-
 import json
-
-from functools import cached_property
-from os.path import relpath
-
 import pandas as pd
+from dataclasses import dataclass
+from functools import cached_property
 from git import Repo, Commit
+from io import BytesIO
+from typing import Tuple
 from utz import err
 
-from njsp.paths import CRASHES_PQT, CRASHES_RELPATH, RUNDATE_RELPATH
+from nj_crashes.utils.git import SHORT_SHA_LEN
+from njsp import rundate, crashes
+from njsp.paths import CRASHES_PQT
 from njsp.rundate import Rundate
 from njsp.ytc import to_ytc
 
@@ -67,13 +63,9 @@ def oldest_commit_rundate_since(dt: str) -> Tuple[Commit, str]:
             commit = next(commits)
         except StopIteration:
             raise RuntimeError(f"Ran out of commits after {len(shas)}, looking for {dt}: {','.join(shas)}")
-        tree = commit.tree
-        short_sha = commit.hexsha[:7]
+        short_sha = commit.hexsha[:SHORT_SHA_LEN]
         shas.append(short_sha)
-        try:
-            rundate_blob = tree[RUNDATE_RELPATH]
-        except KeyError:
-            raise RuntimeError(f"Commit {short_sha} is missing {RUNDATE_RELPATH}")
+        rundate_blob = rundate.blob_from_commit(commit)
         rundate_object = json.load(rundate_blob.data_stream)
         commit_rundate = rundate_object["rundate"]
         if commit_rundate < dt:
@@ -104,7 +96,7 @@ class Ytd:
 
     @cached_property
     def crashes(self):
-        crashes = read_parquet(CRASHES_PQT)
+        crashes = pd.read_parquet(CRASHES_PQT)
         if self.county:
             crashes = crashes[crashes.COUNTY == self.county]
         if self.type:
@@ -158,7 +150,7 @@ class Ytd:
 
     @property
     def prv_crashes(self):
-        prv_crashes_blob = self.prv_commit.tree[CRASHES_RELPATH]
+        prv_crashes_blob = crashes.blob_from_commit(self.prv_commit)
         stream = prv_crashes_blob.data_stream
         blob = stream.read()
         prv_crashes = pd.read_parquet(BytesIO(blob))

@@ -1,20 +1,27 @@
-from dataclasses import dataclass
-from datetime import datetime
-from github import UnknownObjectException
-from html.parser import HTMLParser
 from os.path import exists
-from typing import Optional
 
 import click
+from dataclasses import dataclass
+from datetime import datetime
+from functools import partial
+from github import UnknownObjectException
+from html.parser import HTMLParser
+from typing import Optional
 from utz import err
 
+from nj_crashes.utils import git
 from nj_crashes.utils.git import git_fmt
 from nj_crashes.utils.github import load_github
 from njsp.commit_crashes import REPO
+from njsp.paths import OLD_CRASHES_RELPATH, CRASHES_RELPATH
 
 
 def get_xml_path(year: int) -> str:
     return f'data/FAUQStats{year}.xml'
+
+
+RELPATHS = [ CRASHES_RELPATH, OLD_CRASHES_RELPATH ]
+blob_from_commit = partial(git.blob_from_commit, relpaths=RELPATHS)
 
 
 class SourcemapParser(HTMLParser):

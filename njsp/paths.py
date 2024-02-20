@@ -2,7 +2,7 @@ from os import path
 from os.path import join, dirname
 
 from nj_crashes import paths
-from nj_crashes.paths import PUBLIC_DIR, PLOTS_DIR, relpath
+from nj_crashes.paths import PUBLIC_DIR, PLOTS_DIR, relpath, DATA_DIR
 
 S3 = f'{paths.S3}/njsp'
 S3_DATA = f'{S3}/data'
@@ -13,9 +13,14 @@ DATA_RELPATH = relpath(NJSP_DATA)
 
 WWW_NJSP = join(PUBLIC_DIR, 'njsp')
 RUNDATE_PATH = join(WWW_NJSP, 'rundate.json')
+RUNDATE_RELPATH = relpath(RUNDATE_PATH)
+OLD_RUNDATE_PATH = join(PUBLIC_DIR, 'rundate.json')
+OLD_RUNDATE_RELPATH = relpath(OLD_RUNDATE_PATH)
 
 CRASHES_PQT = join(NJSP_DATA, 'crashes.parquet')
 CRASHES_RELPATH = relpath(CRASHES_PQT)
+OLD_CRASHES_PQT = join(DATA_DIR, 'crashes.pqt')
+OLD_CRASHES_RELPATH = relpath(OLD_CRASHES_PQT)
 CRASHES_DB = join(WWW_NJSP, f'crashes.db')
 CRASHES_DB_URI = f'sqlite:///{CRASHES_DB}'
 
@@ -39,7 +44,6 @@ S3_CRASH_LOG_PQT = f'{S3_DATA}/crash-log.parquet'
 
 PROJECTED_TOTALS_PATH = join(PLOTS_DIR, 'projected_totals.json')
 
-RUNDATE_RELPATH = relpath(RUNDATE_PATH)
 PROJECTED_TOTALS_RELPATH = relpath(PROJECTED_TOTALS_PATH)
 
 
