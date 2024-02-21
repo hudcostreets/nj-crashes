@@ -17,7 +17,7 @@ from nj_crashes.fauqstats import get_fauqstats, FAUQStats
 from nj_crashes.utils.git import git_fmt, get_repo, SHORT_SHA_LEN
 from nj_crashes.utils.github import get_github_repo, load_pqt_github, REPO
 from nj_crashes.utils.log import none
-from njsp.paths import CRASHES_RELPATH, RUNDATE_RELPATH
+from njsp.paths import CRASHES_RELPATH, RUNDATE_RELPATH, OLD_CRASHES_RELPATH
 
 
 def load_pqt_blob(blob: Object) -> pd.DataFrame:
@@ -26,10 +26,18 @@ def load_pqt_blob(blob: Object) -> pd.DataFrame:
 
 
 def load_pqt(
-        path: str,
+        path: Union[str, list[str]],
         commit: Union[None, str, Commit, Blob] = None,
         repo: Union[Repo, Github, None] = None,
 ) -> pd.DataFrame:
+    if isinstance(path, list):
+        for p in path:
+            try:
+                return load_pqt(p, commit=commit, repo=repo)
+            except KeyError:
+                pass
+        raise KeyError(f"None of {path} were found in {commit}")
+
     if isinstance(repo, Github):
         return load_pqt_github(path, ref=commit)
 
@@ -210,7 +218,7 @@ class CommitCrashes:
         if self.parent_sha == DEFAULT_ROOT_SHA:
             return pd.DataFrame([], columns=self.df1.columns)
         elif self.load_pqt:
-            return load_pqt(CRASHES_RELPATH, commit=self.parent)
+            return load_pqt([CRASHES_RELPATH, OLD_CRASHES_RELPATH], commit=self.parent)
         else:
             year = self.year
             year_xml_diffs = self.year_xml_diffs
@@ -229,7 +237,7 @@ class CommitCrashes:
     @cached_property
     def df1(self) -> pd.DataFrame:
         if self.load_pqt:
-            return load_pqt(CRASHES_RELPATH, commit=self.commit)
+            return load_pqt([CRASHES_RELPATH, OLD_CRASHES_RELPATH], commit=self.commit)
         else:
             year = self.year
             year_xml_diffs = self.year_xml_diffs
