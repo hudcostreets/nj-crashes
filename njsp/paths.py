@@ -21,7 +21,9 @@ CRASHES_PQT = join(NJSP_DATA, 'crashes.parquet')
 CRASHES_RELPATH = relpath(CRASHES_PQT)
 OLD_CRASHES_PQT = join(DATA_DIR, 'crashes.pqt')
 OLD_CRASHES_RELPATH = relpath(OLD_CRASHES_PQT)
+CRASHES_PQT_S3 = f'{S3_DATA}/crashes.parquet'
 CRASHES_DB = join(WWW_NJSP, f'crashes.db')
+CRASHES_DB_S3 = f'{S3_DATA}/crashes.db'
 CRASHES_DB_URI = f'sqlite:///{CRASHES_DB}'
 
 PROJECTED_CSV = join(NJSP_DATA, 'projected.csv')

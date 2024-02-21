@@ -10,7 +10,7 @@ from utz import err
 from nj_crashes.utils import TZ
 from nj_crashes.utils.git import SHORT_SHA_LEN
 from njsp import rundate, crashes
-from njsp.paths import CRASHES_PQT
+from njsp.crashes import load
 from njsp.rundate import Rundate
 from njsp.ytc import to_ytc
 
@@ -97,7 +97,7 @@ class Ytd:
 
     @cached_property
     def crashes(self):
-        crashes = pd.read_parquet(CRASHES_PQT)
+        crashes = load()
         if self.county:
             crashes = crashes[crashes.COUNTY == self.county]
         if self.type:

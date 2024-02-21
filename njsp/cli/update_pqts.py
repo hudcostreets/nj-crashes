@@ -20,7 +20,7 @@ from utz import sxs
 from nj_crashes.fauqstats import FAUQStats
 from nj_crashes.utils import s3
 from nj_crashes.utils.log import Log, err
-from njsp.paths import RUNDATE_PATH, NJSP_DATA
+from njsp.paths import RUNDATE_PATH, NJSP_DATA, CRASHES_PQT_S3, CRASHES_DB_S3
 from .base import command
 from ..paths import CRASHES_PQT
 
@@ -153,8 +153,7 @@ def update_pqts(replace_db, sync_s3):
         table.to_parquet(CRASHES_PQT)
 
     if sync_s3:
-        from njsp.paths import S3_DATA
-        s3.upload(CRASHES_PQT, f'{S3_DATA}/crashes.parquet')
-        s3.upload(CRASHES_DB, f'{S3_DATA}/crashes.db')
+        s3.upload(CRASHES_PQT, CRASHES_PQT_S3)
+        s3.upload(CRASHES_DB, CRASHES_DB_S3)
 
     return "Update NJSP data"

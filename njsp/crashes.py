@@ -1,6 +1,7 @@
 from os.path import exists
 
 import click
+import pandas as pd
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
@@ -13,7 +14,7 @@ from nj_crashes.utils import git
 from nj_crashes.utils.git import git_fmt
 from nj_crashes.utils.github import load_github
 from njsp.commit_crashes import REPO
-from njsp.paths import OLD_CRASHES_RELPATH, CRASHES_RELPATH
+from njsp.paths import OLD_CRASHES_RELPATH, CRASHES_RELPATH, CRASHES_PQT, CRASHES_PQT_S3
 
 
 def get_xml_path(year: int) -> str:
@@ -22,6 +23,13 @@ def get_xml_path(year: int) -> str:
 
 RELPATHS = [ CRASHES_RELPATH, OLD_CRASHES_RELPATH ]
 blob_from_commit = partial(git.blob_from_commit, relpaths=RELPATHS)
+
+
+def load() -> pd.DataFrame:
+    if exists(CRASHES_PQT):
+        return pd.read_parquet(CRASHES_PQT)
+    else:
+        return pd.read_parquet(CRASHES_PQT_S3)
 
 
 class SourcemapParser(HTMLParser):
