@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Feb 21 10:00:06 EST 2024</RUNDATE>
+  <RUNDATE>Thu Feb 22 10:00:07 EST 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2773,7 +2773,7 @@
     <MUNICIPALITY MCODE="0411" MNAME="Collingswood Boro">
       <ACCIDENT ACCID="12689" DATE="09/14/2023" TIME="0939">
         <HIGHWAY>30</HIGHWAY>
-        <LOCATION>State/Interstate Authority 30</LOCATION>
+        <LOCATION>State/Interstate Authority 30 MP 4.88</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2843,19 +2843,6 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="04" CNAME="Camden">
-    <MUNICIPALITY MCODE="0408" MNAME="Camden City">
-      <ACCIDENT ACCID="12678" DATE="09/09/2023" TIME="2334">
-        <STREET>Lansdowne Ave</STREET>
-        <LOCATION>Lansdowne Ave</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -7952,7 +7939,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>586</TOTACCIDENTS>
-  <TOTFATALITIES>618</TOTFATALITIES>
+  <TOTACCIDENTS>585</TOTACCIDENTS>
+  <TOTFATALITIES>617</TOTFATALITIES>
   <TOTINJURIES>225</TOTINJURIES>
 </FAUQSTATS>
