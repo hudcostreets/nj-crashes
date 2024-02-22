@@ -92,7 +92,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-east-1
-        run: njsp crash_logs --s3 -v
+        run: njsp crash_log compute --s3 -v
       - name: Compute plot_data.changed
         id: plot_data
         if: (github.event.schedule || inputs.update_plots) && (steps.update_slack_sha.outputs.sha || !inputs.short_circuit)

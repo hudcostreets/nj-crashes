@@ -4,6 +4,7 @@ import click
 import pandas as pd
 from utz import singleton
 
+from nj_crashes.utils import TZ
 from nj_crashes.utils.s3 import output_ctx, input_ctx
 from nj_crashes.utils.log import err
 from njsp.cli.base import njsp
@@ -25,7 +26,7 @@ COLS = [
 TBL = "crash_log"
 
 
-def load_prefix(path: str) -> pd.DataFrame:
+def load(path: str) -> pd.DataFrame:
     xtn = splitext(path)[1]
     if xtn in [".pqt", ".parquet"]:
         return pd.read_parquet(path)
@@ -37,8 +38,28 @@ def load_prefix(path: str) -> pd.DataFrame:
             return pd.read_sql(TBL, db_uri)
 
 
-@njsp.command("crash_logs")
-@click.option('-a', '--append-to', help='Append to existing file (typically `crash_logs/<root>.pqt`')
+def save(df: pd.DataFrame, path: str):
+    stem, xtn = splitext(path)
+    if xtn in [".pqt", ".parquet"]:
+        df.to_parquet(path)
+    elif xtn == ".csv":
+        df.to_csv(path)
+    elif xtn in [".db", ".sqlite"]:
+        with output_ctx(path) as local_path:
+            db_uri = f'sqlite:///{local_path}'
+            df.to_sql(TBL, db_uri, if_exists="replace")
+            err(f"Wrote crash log to {local_path}")
+    else:
+        raise ValueError(f"Unrecognized extension: {xtn}")
+
+
+@njsp.group("crash_log")
+def crash_log():
+    pass
+
+
+@crash_log.command
+@click.option('-a', '--append-to', help='Append to existing file (typically `njsp/data/crash-log.parquet`')
 @click.option("-f", "--write-dupes", is_flag=True, help="Write output even when duplicate rows are detected")
 @click.option('-h', '--head', help='Ref to begin ancestor-traversal from')
 @click.option("-i", "--in-place", is_flag=True, help="Overwrite the input file -a/--append-to")
@@ -48,7 +69,7 @@ def load_prefix(path: str) -> pd.DataFrame:
 @click.option("-s", "--since", help="Date to start from")
 @click.option('--s3', is_flag=True, help=f"Shorthand for CI use: `-a {S3_CRASH_LOG_PQT} -i`")
 @click.option("-v", "--verbose", is_flag=True, help="Print debug info")
-def crash_logs(append_to, write_dupes, head, in_place, out_path, load_parquet, root, since, s3, verbose):
+def compute(append_to, write_dupes, head, in_place, out_path, load_parquet, root, since, s3, verbose):
     if s3:
         if append_to:
             raise ValueError("Cannot use --s3 with -a/--append-to")
@@ -58,7 +79,7 @@ def crash_logs(append_to, write_dupes, head, in_place, out_path, load_parquet, r
     prefix = None
     if append_to:
         if not root:
-            prefix = load_prefix(append_to)
+            prefix = load(append_to)
             df_sha = prefix.reset_index(level=0)
             latest_prefix_sha = df_sha.rundate.idxmax()
             root = latest_prefix_sha
@@ -80,7 +101,7 @@ def crash_logs(append_to, write_dupes, head, in_place, out_path, load_parquet, r
     df = df[cols]
     if append_to:
         if prefix is None:
-            prefix = load_prefix(append_to)
+            prefix = load(append_to)
         reset = (
             pd.concat([prefix, df])
             .reset_index()
@@ -103,17 +124,44 @@ def crash_logs(append_to, write_dupes, head, in_place, out_path, load_parquet, r
         )
 
     if out_path:
-        stem, xtn = splitext(out_path)
-        if xtn in [".pqt", ".parquet"]:
-            df.to_parquet(out_path)
-        elif xtn == ".csv":
-            df.to_csv(out_path)
-        elif xtn in [".db", ".sqlite"]:
-            with output_ctx(out_path) as local_path:
-                db_uri = f'sqlite:///{local_path}'
-                df.to_sql(TBL, db_uri, if_exists="replace")
-                err(f"Wrote crash log to {local_path}")
-        else:
-            raise ValueError(f"Unrecognized extension: {xtn}")
+        save(df, out_path)
     else:
         print(df)
+
+
+@crash_log.command
+@click.option("-i", "--in-place", is_flag=True, help="Overwrite the input file -a/--append-to")
+@click.option('-n', '--dry-run', is_flag=True, help='Print the number of rows that would be dropped, but do not actually drop them')
+@click.option("-o", "--out-path", help="Path to save the output")
+@click.option('-r', '--rundate', help='Rundate to end at (exclusive)')
+@click.option('-s', '--sha', help='Ref to end at (exclusive)')
+@click.argument("path")
+def truncate(in_place, dry_run, out_path, rundate, sha, path):
+    df = load(path)
+    if in_place:
+        if out_path:
+            raise ValueError("Cannot use -i/--in-place and -o/--out-path together")
+        out_path = path
+    if not out_path:
+        raise ValueError("Must pass -o/--out-path xor -i/--in-place")
+
+    if rundate:
+        if sha:
+            raise ValueError("Pass -r/--rundate xor -s/--sha")
+        rundate = pd.to_datetime(rundate).tz_localize(TZ)
+        keep_mask = df.rundate < rundate
+        df = df[keep_mask]
+        num_to_drop = (~keep_mask).sum()
+        err(f"Dropped {num_to_drop} rows < {rundate}")
+    elif sha:
+        sha_entries = df.reset_index(level=0).loc[sha, 'rundate']
+        sha_rundate = singleton(sha_entries)
+        keep_mask = df.rundate < sha_rundate
+        df = df[keep_mask]
+        num_to_drop = (~keep_mask).sum()
+        err(f"Dropped {num_to_drop} rows < {sha_rundate} ({sha})")
+    else:
+        raise ValueError("Pass -r/--rundate xor -s/--sha")
+
+    if not dry_run:
+        save(df, out_path)

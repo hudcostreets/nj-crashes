@@ -5,7 +5,7 @@ from .update_pqts import update_pqts
 from .update_plots import update_plots
 from .update_projections import update_projections
 from .slack import slack, sync
-from .crash_logs import crash_logs
+from .crash_log import crash_log
 
 
 def main():
