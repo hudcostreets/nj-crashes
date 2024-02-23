@@ -3,7 +3,7 @@ import useSessionStorageState from "use-session-storage-state";
 import css from "./sql-repl.module.scss"
 import { Result, useSqlResult } from "@rdub/react-sql.js-httpvfs/query";
 import { SqlResult } from "@/src/sql/sqlResult";
-import { getDbUrls } from "@/src/urls";
+import { getDOTDbUrls } from "@/src/urls";
 
 export const UrlKey = "sql-db-url"
 export const QueryKey = "sql-query"
@@ -77,7 +77,7 @@ export function Input({ label, defaultValue, buttons, ...inputProps }: {
 
 // export const DefaultDbPath = `njsp/year-type-county.db`
 // export const DefaultQuery = `select * from ytc`
-export const DefaultDbPath = getDbUrls().crashes
+export const DefaultDbPath = getDOTDbUrls().crashes
 export const DefaultQuery = `select * from crashes where id=100000`
 
 /*

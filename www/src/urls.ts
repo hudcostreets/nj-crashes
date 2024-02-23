@@ -1,6 +1,6 @@
 import { getBasePath } from "@rdub/next-base/basePath";
 
-export type Urls = {
+export type DOTUrls = {
     crashes: string
     occupants: string
     pedestrians: string
@@ -10,9 +10,8 @@ export type Urls = {
     cmymc: string
 }
 
-export function getDbUrls(): Urls {
-    const basePath = getBasePath()
-    const prefix = process.env['S3_DBS'] ? `https://nj-crashes.s3.amazonaws.com/njdot/data` : `${basePath}/njdot`
+export function getDOTDbUrls(): DOTUrls {
+    const prefix = process.env['S3_DBS'] ? `https://nj-crashes.s3.amazonaws.com/njdot/data` : `${getBasePath()}/njdot`
     return {
         crashes: `${prefix}/crashes.db`,
         occupants: `${prefix}/occupants.db`,
@@ -21,5 +20,13 @@ export function getDbUrls(): Urls {
         drivers: `${prefix}/drivers.db`,
         cmym: `${prefix}/cmym.db`,
         cmymc: `${prefix}/cmymc.db`,
+    }
+}
+
+export function getNJSPDbUrls() {
+    const prefix = process.env['S3_DBS'] ? `https://nj-crashes.s3.amazonaws.com/njsp/data` : `${getBasePath()}/njsp`
+    return {
+        crashes: `${prefix}/njsp/data/crashes.db`,
+        crash_log: `${prefix}/njsp/data/crash-log.db`,
     }
 }

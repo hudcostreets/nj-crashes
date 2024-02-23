@@ -8,7 +8,7 @@ import { map } from "fp-ts/Either";
 import { County, normalize } from "@/src/county";
 import strftime from "strftime";
 import { fromEntries } from "@rdub/base/objs";
-import { Urls } from "@/src/urls";
+import { DOTUrls } from "@/src/urls";
 import { Car, Cyclist, Driver, Passenger, Pedestrian as Ped } from "@/src/icons";
 import css from "./use-crashes.module.scss"
 import { CrashesOccupants, Occupant, useCrashOccupants } from "@/src/crash-occupants";
@@ -18,7 +18,7 @@ import A from "@rdub/next-base/a";
 import { Tooltip } from "@/src/tooltip"
 
 export type Base = Omit<sql.Base, 'url'> & {
-    urls: Urls
+    urls: DOTUrls
 }
 
 export type Props = Base & {

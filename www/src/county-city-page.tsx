@@ -5,11 +5,11 @@ import { useCrashRows } from "@/src/use-crashes";
 import css from "@/pages/c/[county]/city.module.scss";
 import { ResultTable } from "@/src/result-table";
 import { map } from "fp-ts/Either";
-import { Urls } from "@/src/urls";
+import { DOTUrls } from "@/src/urls";
 import { MC2MN } from "@/src/county";
 
 export type Props = {
-    urls: Urls
+    urls: DOTUrls
     cc: number
     cn: string
     mc?: number

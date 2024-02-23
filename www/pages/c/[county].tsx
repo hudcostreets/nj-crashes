@@ -2,7 +2,7 @@ import type { GetStaticProps } from "next";
 import { keys } from "@rdub/base/objs";
 import { cc2mc2mn, CountyCodes } from "@/server/county";
 import { County, denormalize, normalize } from "@/src/county";
-import { getDbUrls, Urls } from "@/src/urls";
+import { getDOTDbUrls, DOTUrls } from "@/src/urls";
 import CountyCityPage from "@/src/county-city-page";
 
 export type Params = {
@@ -10,7 +10,7 @@ export type Params = {
 }
 
 export type Props = {
-    urls: Urls
+    urls: DOTUrls
     cc: number
 } & County
 
@@ -23,7 +23,7 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
     if (!params) {
         return { notFound: true }
     }
-    const urls = getDbUrls()
+    const urls = getDOTDbUrls()
     let { county: countyParam } = params
     const cn = normalize(countyParam)
     const cc = CountyCodes[cn]

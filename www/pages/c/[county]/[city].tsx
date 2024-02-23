@@ -3,7 +3,7 @@ import { cc2mc2mn, CountyCodes } from "@/server/county";
 import { concat, mapEntries, values } from "@rdub/base/objs";
 import { denormalize, normalize } from "@/src/county";
 import A from "@rdub/next-base/a";
-import { getDbUrls, Urls } from "@/src/urls";
+import { getDOTDbUrls, DOTUrls } from "@/src/urls";
 import CountyCityPage from "@/src/county-city-page";
 
 export type Params = {
@@ -12,7 +12,7 @@ export type Params = {
 }
 
 export type Props = {
-    urls: Urls
+    urls: DOTUrls
     countyParam: string
     cc: number
     cn: string
@@ -38,7 +38,7 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
     if (!params) {
         return { notFound: true }
     }
-    const urls = getDbUrls()
+    const urls = getDOTDbUrls()
     let { county: countyParam, city, } = params
     countyParam = normalize(countyParam)
     city = normalize(city)
