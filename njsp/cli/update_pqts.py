@@ -2,6 +2,7 @@
 # - Load XMLs
 # - Clean / Assign some dtypes
 # - Write to parquet and SQLite
+import sqlite3
 from os import remove
 from os.path import exists
 
@@ -18,7 +19,8 @@ from git import Tree
 from utz import sxs
 
 from nj_crashes.fauqstats import FAUQStats
-from nj_crashes.utils import s3
+from nj_crashes.paths import DATA_DIR
+from nj_crashes.utils import s3, sql
 from nj_crashes.utils.log import Log, err
 from njsp.paths import RUNDATE_PATH, NJSP_DATA, CRASHES_PQT_S3, CRASHES_DB_S3
 from .base import command
@@ -32,7 +34,7 @@ def get_crashes_df(
     if tree is None:
         fauqstatss = [
             FAUQStats.load(path)
-            for path in glob('data/FAUQStats20*.xml')
+            for path in glob(f'{DATA_DIR}/FAUQStats20*.xml')
         ]
     else:
         fauqstatss = [
@@ -60,6 +62,11 @@ def get_crashes_df(
     return crashes, totals, rundate
 
 
+renames = {
+    'CCODE': 'cc',
+    'MCODE': 'mc',
+}
+
 @command
 @click.option('--replace-db', is_flag=True, help="Replace DB tables (instead of rm'ing DB and writing new tables from scratch)")
 @click.option('--s3', 'sync_s3', is_flag=True, help=f"Upload to S3 ()")
@@ -71,6 +78,7 @@ def update_pqts(replace_db, sync_s3):
 
     counties = (
         crashes
+        #.rename(columns=renames)
         [['CCODE', 'CNAME']]
         .value_counts()
         .rename('accidents')
@@ -151,6 +159,11 @@ def update_pqts(replace_db, sync_s3):
     for name, table in tables.items():
         table.to_sql(name, con=engine, **replace_kwargs)
         table.to_parquet(CRASHES_PQT)
+
+    with sqlite3.connect(CRASHES_DB) as con:
+        cur = con.cursor()
+        sql.add_idx(cur, 'crashes', 'dt')
+        sql.add_idx(cur, 'crashes', 'CCODE', 'MCODE', 'dt')
 
     if sync_s3:
         s3.upload(CRASHES_PQT, CRASHES_PQT_S3)
