@@ -65,12 +65,11 @@ def crash_log():
 @click.option("-i", "--in-place", is_flag=True, help="Overwrite the input file -a/--append-to")
 @click.option('-n', '--dry-run', is_flag=True, help='Print the number of rows that would be dropped, but do not actually drop them')
 @click.option("-o", "--out-paths", multiple=True, help="Path to save the output")
-@click.option("-p", "--load-parquet", is_flag=True, help=f"Load crashes from {CRASHES_RELPATH} (instead of FAUQStats XML files)")
 @click.option("-r", "--root", help=f"Ref to end at; if -a/--append-to is passed, defaults to the latest SHA in that DataFrame, {DEFAULT_ROOT_SHA} otherwise")
 @click.option("-s", "--since", help="Date to start from")
 @click.option('--s3', is_flag=True, help=f"Shorthand for CI use: `-a {S3_CRASH_LOG_PQT} -i -o {S3_CRASH_LOG_DB}`")
 @click.option("-v", "--verbose", is_flag=True, help="Print debug info")
-def compute(append_to, write_dupes, head, in_place, dry_run, out_paths, load_parquet, root, since, s3, verbose):
+def compute(append_to, write_dupes, head, in_place, dry_run, out_paths, root, since, s3, verbose):
     out_paths = list(out_paths) if out_paths else []
     if s3:
         if append_to:
@@ -93,7 +92,7 @@ def compute(append_to, write_dupes, head, in_place, dry_run, out_paths, load_par
     elif in_place:
         raise ValueError("Cannot use -i/--in-place without -a/--append-to")
 
-    df = get_crashes_df(head=head, root=root, since=since, load_pqt=load_parquet, log=verbose)
+    df = get_crashes_df(head=head, root=root, since=since, log=verbose)
     cols = [
         col
         for col in COLS

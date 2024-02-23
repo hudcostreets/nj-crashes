@@ -1,5 +1,5 @@
 import pandas as pd
-from click import option
+from click import option, argument
 from typing import Optional
 from utz import err
 from utz.ymd import dates, YMD
@@ -54,18 +54,15 @@ def sync_crash(
 
 
 @slack.command('sync')
-@option('-c', '--commit', 'commits', multiple=True, help='Commits to parse new crashes from')
 @dates(default_start=YMD(2008), help='Date range to filter crashes to, e.g. `202307-`, `20230710-202308')
 @option('-f', '--overwrite-existing', count=True, help='1x')
 @option(*CHANNEL_OPTS, help='Slack channel ID to post to; defaults to $SLACK_CHANNEL_ID')
 @option('-m', '--fetch-messages', type=int, default=1000, help="Fetch messages from Slack and update cache (as opposed to just reading cached messages")
 @option('-n', '--dry-run', count=True, help="Avoid Slack API requests, cache updates, etc.")
-def sync(commits, start: YMD, end: YMD, overwrite_existing, channel, fetch_messages: Optional[int], dry_run: int):
-    if commits:
-        ccs = [ CommitCrashes(commit) for commit in commits ]
-        crashes = pd.concat([cc.adds_df for cc in ccs])
-    else:
-        crashes = pd.read_parquet('data/crashes.pqt')
+@argument('commit')
+def sync(commit, start: YMD, end: YMD, overwrite_existing, channel, fetch_messages: Optional[int], dry_run: int):
+    cc = CommitCrashes(commit)
+    crashes = cc.adds_df
 
     if crashes.empty:
         err("No new crashes found, breaking")
@@ -75,11 +72,6 @@ def sync(commits, start: YMD, end: YMD, overwrite_existing, channel, fetch_messa
         crashes = crashes[crashes.dt.dt.date >= start.date]
     if end:
         crashes = crashes[crashes.dt.dt.date < end.date]
-
-    if len(commits) == 1:
-        [commit] = commits
-    else:
-        commit = None
 
     crashes = crashes.sort_values('dt')
     err(f"{len(crashes)} crashes:")

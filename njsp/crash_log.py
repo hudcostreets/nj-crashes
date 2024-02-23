@@ -18,7 +18,6 @@ def get_crashes_df(
         head: Union[str, None] = None,
         since: Union[str, datetime, pd.Timestamp, None] = None,
         root: Union[str, None] = DEFAULT_ROOT_SHA,
-        load_pqt: bool = True,
         log: bool = True,
 ) -> pd.DataFrame:
     if isinstance(since, (str, datetime)):
@@ -73,7 +72,7 @@ def get_crashes_df(
                 else:
                     rundate = ts.tz_convert(TZ)
                 cur_sha = cur_commit.hexsha[:SHORT_SHA_LEN]
-                cc = CommitCrashes(cur_sha, load_pqt=load_pqt, log=log)
+                cc = CommitCrashes(cur_sha, log=log)
 
                 def save(accid, crash: Optional[pd.Series], kind: Kind):
                     accid = int(accid)

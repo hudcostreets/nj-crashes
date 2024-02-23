@@ -128,7 +128,6 @@ class CommitCrashes:
             self,
             ref: Union[str, Commit, None] = None,
             log: bool = False,
-            load_pqt: bool = True,
             year: Optional[int] = None,
     ):
         if isinstance(ref, Commit):
@@ -151,7 +150,6 @@ class CommitCrashes:
         else:
             raise TypeError(ref)
         self.log = log
-        self.load_pqt = load_pqt
         self.year = year
 
     def fmt(self, fmt: str) -> str:
@@ -217,8 +215,6 @@ class CommitCrashes:
     def df0(self) -> pd.DataFrame:
         if self.parent_sha == DEFAULT_ROOT_SHA:
             return pd.DataFrame([], columns=self.df1.columns)
-        elif self.load_pqt:
-            return load_pqt([CRASHES_RELPATH, OLD_CRASHES_RELPATH], commit=self.parent)
         else:
             year = self.year
             year_xml_diffs = self.year_xml_diffs
@@ -235,21 +231,18 @@ class CommitCrashes:
 
     @cached_property
     def df1(self) -> pd.DataFrame:
-        if self.load_pqt:
-            return load_pqt([CRASHES_RELPATH, OLD_CRASHES_RELPATH], commit=self.commit)
-        else:
-            year = self.year
-            year_xml_diffs = self.year_xml_diffs
-            if year:
-                if year in year_xml_diffs:
-                    return year_xml_diffs[year][1]
-                else:
-                    return pd.DataFrame([])
+        year = self.year
+        year_xml_diffs = self.year_xml_diffs
+        if year:
+            if year in year_xml_diffs:
+                return year_xml_diffs[year][1]
             else:
-                return pd.concat([
-                    cur_crashes
-                    for year, (_, cur_crashes) in year_xml_diffs.items()
-                ]) if year_xml_diffs else pd.DataFrame([])
+                return pd.DataFrame([])
+        else:
+            return pd.concat([
+                cur_crashes
+                for year, (_, cur_crashes) in year_xml_diffs.items()
+            ]) if year_xml_diffs else pd.DataFrame([])
 
     @cached_property
     def dfs(self) -> Tuple[pd.DataFrame, pd.DataFrame]:

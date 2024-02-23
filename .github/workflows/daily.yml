@@ -80,11 +80,11 @@ jobs:
           AWS_DEFAULT_REGION: us-east-1
         run: njsp -cc update_pqts --s3
       - name: Compute Slack update SHA
-        # Use the relevant input SHA, if present, otherwise the output SHA from the previous step
+        # Use the relevant input SHA, if present, otherwise the output SHA from the `refresh_data` step above
         id: update_slack_sha
-        if: inputs.update_slack_sha || steps.update_pqts.outputs.sha
+        if: inputs.update_slack_sha || steps.refresh_data.outputs.sha
         run: |
-          echo "sha=${{ inputs.update_slack_sha || steps.update_pqts.outputs.sha }}" >> $GITHUB_OUTPUT
+          echo "sha=${{ inputs.update_slack_sha || steps.refresh_data.outputs.sha }}" >> $GITHUB_OUTPUT
       - name: Update crash log
         if: inputs.update_crash_log || steps.refresh_data.outputs.sha
         env:
@@ -119,7 +119,7 @@ jobs:
       - name: Post to Slack
         id: post_to_slack
         if: (github.event.schedule || inputs.post_to_slack) && (steps.update_slack_sha.outputs.sha || !inputs.short_circuit)
-        run: njsp slack sync -c ${{ steps.update_slack_sha.outputs.sha }}
+        run: njsp slack sync ${{ steps.update_slack_sha.outputs.sha }}
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
