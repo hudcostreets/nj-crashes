@@ -19,7 +19,7 @@ from git import Tree
 from utz import sxs
 
 from nj_crashes.fauqstats import FAUQStats
-from nj_crashes.paths import DATA_DIR
+from nj_crashes.paths import DATA_DIR, COUNTY_CITY_CODES_PQT
 from nj_crashes.utils import s3, sql
 from nj_crashes.utils.log import Log, err
 from njsp.paths import RUNDATE_PATH, NJSP_DATA, CRASHES_PQT_S3, CRASHES_DB_S3
@@ -73,64 +73,20 @@ renames = {
 def update_pqts(replace_db, sync_s3):
     crashes, totals, rundate = get_crashes_df()
 
+    ccc = pd.read_parquet(COUNTY_CITY_CODES_PQT)
+    crashes['cc'] = crashes.CCODE.astype(int)
+    crashes['mc_sp'] = crashes.MCODE.str[2:].astype(int)
+    on = ['cc', 'mc_sp']
+    assert not crashes.mc_sp.isna().any()
+    crashes = (
+        crashes
+        .merge(ccc[on], on=on, how='left')
+        .drop(columns='mc_sp')
+        .rename(columns={ 'mc_gin': 'mc' })
+    )
+
     with open(RUNDATE_PATH, 'w') as f:
         json.dump({ 'rundate': str(rundate), }, f)
-
-    counties = (
-        crashes
-        #.rename(columns=renames)
-        [['CCODE', 'CNAME']]
-        .value_counts()
-        .rename('accidents')
-        .reset_index()
-        .set_index('CCODE')
-        .sort_index()
-        .CNAME
-    )
-
-    munis = (
-        crashes
-        .groupby('MCODE')
-        .apply(
-            lambda df: (
-                df
-                [['MNAME', 'CCODE']]
-                .drop_duplicates()
-                .set_index('MNAME', drop=True)
-            )
-        )
-        .reset_index(1)
-        .sort_index()
-    )
-    print(munis)
-
-    counties.to_frame().to_parquet(f'{NJSP_DATA}/counties.parquet')
-    munis.to_parquet(f'{NJSP_DATA}/munis.parquet')
-
-    muni_counties = (
-        crashes
-        .groupby('MNAME')
-        .apply(lambda df: df['CNAME'].unique())
-        .rename('counties')
-    )
-
-    muni_county_counts = muni_counties.apply(len).rename('muni_county_counts').sort_values()
-    multi_county_counts = muni_county_counts[muni_county_counts > 1]
-
-    print(
-        crashes
-        .groupby(['CNAME', 'MNAME'])
-        .size()
-        .rename('accidents')
-        .reset_index()
-        .merge(
-            multi_county_counts,
-            left_on='MNAME',
-            right_index=True,
-        )
-        .set_index(['MNAME', 'CNAME'])
-        .accidents
-    )
 
     # Verify the reported "total deaths" stat reflects what we see in the crash records
     njsp_totals = totals.fatalities.rename('NJSP total')
@@ -142,28 +98,19 @@ def update_pqts(replace_db, sync_s3):
     # ### Save to file
 
     from njsp.paths import CRASHES_DB, CRASHES_DB_URI
-    from sqlalchemy import create_engine
 
     if exists(CRASHES_DB) and not replace_db:
         err(f"Removing existing DB {CRASHES_DB}")
         remove(CRASHES_DB)
 
-    engine = create_engine(CRASHES_DB_URI)
-
-    tables = {
-        'totals': totals,
-        'crashes': crashes,
-    }
-
     replace_kwargs = dict(if_exists='replace') if replace_db else {}
-    for name, table in tables.items():
-        table.to_sql(name, con=engine, **replace_kwargs)
-        table.to_parquet(CRASHES_PQT)
+    crashes.to_sql('crashes', CRASHES_DB_URI, **replace_kwargs)
+    crashes.to_parquet(CRASHES_PQT)
 
     with sqlite3.connect(CRASHES_DB) as con:
         cur = con.cursor()
         sql.add_idx(cur, 'crashes', 'dt')
-        sql.add_idx(cur, 'crashes', 'CCODE', 'MCODE', 'dt')
+        sql.add_idx(cur, 'crashes', 'cc', 'mc', 'dt')
 
     if sync_s3:
         s3.upload(CRASHES_PQT, CRASHES_PQT_S3)

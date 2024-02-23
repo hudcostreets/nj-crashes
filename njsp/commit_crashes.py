@@ -228,7 +228,6 @@ class CommitCrashes:
                 else:
                     return pd.DataFrame([])
             else:
-                # return get_crashes_df(self.parent.tree, log=none)[0]
                 return pd.concat([
                     prv_crashes
                     for year, (prv_crashes, _) in year_xml_diffs.items()
@@ -247,7 +246,6 @@ class CommitCrashes:
                 else:
                     return pd.DataFrame([])
             else:
-                # return get_crashes_df(self.parent.tree, log=none)[0]
                 return pd.concat([
                     cur_crashes
                     for year, (_, cur_crashes) in year_xml_diffs.items()
