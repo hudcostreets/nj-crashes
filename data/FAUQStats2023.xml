@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Feb 22 10:00:07 EST 2024</RUNDATE>
+  <RUNDATE>Fri Feb 23 10:00:05 EST 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2343,6 +2343,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3117,7 +3118,7 @@
     <MUNICIPALITY MCODE="0412" MNAME="Cherry Hill Twsp">
       <ACCIDENT ACCID="12652" DATE="08/28/2023" TIME="0948">
         <HIGHWAY>70</HIGHWAY>
-        <LOCATION>State Highway 70</LOCATION>
+        <LOCATION>State Highway 70 MP 4.64</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5155,7 +5156,7 @@
     <MUNICIPALITY MCODE="1518" MNAME="Manchester Twsp">
       <ACCIDENT ACCID="12489" DATE="06/03/2023" TIME="2230">
         <HIGHWAY>571</HIGHWAY>
-        <LOCATION>County 571 MP 9.99</LOCATION>
+        <LOCATION>County 571 MP 10</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
