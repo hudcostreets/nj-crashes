@@ -13,6 +13,8 @@ PKG_NAME = basename(PKG_DIR)
 
 HOMICIDES_PQT = join(DATA_DIR, 'homicides.parquet')
 
+COUNTY_CITY_CODES_PQT = join(DATA_DIR, 'county-city-codes.parquet')
+
 BKT = 'nj-crashes'
 S3 = f's3://{BKT}'
 
