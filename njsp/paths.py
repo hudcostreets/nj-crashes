@@ -43,6 +43,7 @@ YTC_DB = path.join(WWW_NJSP, 'year-type-county.db')
 YTC_DB_URI = f'sqlite:///{YTC_DB}'
 
 S3_CRASH_LOG_PQT = f'{S3_DATA}/crash-log.parquet'
+S3_CRASH_LOG_DB = f'{S3_DATA}/crash-log.db'
 
 PROJECTED_TOTALS_PATH = join(PLOTS_DIR, 'projected_totals.json')
 
