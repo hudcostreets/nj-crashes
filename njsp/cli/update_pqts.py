@@ -22,7 +22,7 @@ from nj_crashes.fauqstats import FAUQStats
 from nj_crashes.paths import DATA_DIR, COUNTY_CITY_CODES_PQT
 from nj_crashes.utils import s3, sql
 from nj_crashes.utils.log import Log, err
-from njsp.paths import RUNDATE_PATH, NJSP_DATA, CRASHES_PQT_S3, CRASHES_DB_S3
+from njsp.paths import RUNDATE_PATH, CRASHES_PQT_S3, CRASHES_DB_S3
 from .base import command
 from ..paths import CRASHES_PQT
 
@@ -62,11 +62,6 @@ def get_crashes_df(
     return crashes, totals, rundate
 
 
-renames = {
-    'CCODE': 'cc',
-    'MCODE': 'mc',
-}
-
 @command
 @click.option('--replace-db', is_flag=True, help="Replace DB tables (instead of rm'ing DB and writing new tables from scratch)")
 @click.option('--s3', 'sync_s3', is_flag=True, help=f"Upload to S3 ()")
@@ -80,9 +75,21 @@ def update_pqts(replace_db, sync_s3):
     assert not crashes.mc_sp.isna().any()
     crashes = (
         crashes
-        .merge(ccc[on], on=on, how='left')
-        .drop(columns='mc_sp')
-        .rename(columns={ 'mc_gin': 'mc' })
+        .merge(ccc[on + ['mc_gin']], on=on, how='left')
+        .drop(columns=['mc_sp', 'CCODE', 'CNAME', 'MCODE', 'MNAME', ])
+        .rename(columns={
+            'mc_gin': 'mc',
+            'FATALITIES': 'tk',
+            'INJURIES': 'ti',
+            'FATAL_D': 'dk',
+            'FATAL_P': 'ok',
+            'FATAL_T': 'pk',
+            'FATAL_B': 'bk',
+            **{
+                c: c.lower()
+                for c in [ 'STREET', 'HIGHWAY', 'LOCATION', ]
+            }
+        })
     )
 
     with open(RUNDATE_PATH, 'w') as f:
@@ -90,7 +97,7 @@ def update_pqts(replace_db, sync_s3):
 
     # Verify the reported "total deaths" stat reflects what we see in the crash records
     njsp_totals = totals.fatalities.rename('NJSP total')
-    fatalities_per_year = crashes.FATALITIES.groupby(crashes.dt.dt.year).sum().astype(int).rename('NJSP records')
+    fatalities_per_year = crashes.tk.groupby(crashes.dt.dt.year).sum().astype(int).rename('NJSP records')
     njsp_diffs = sxs(njsp_totals, fatalities_per_year)[njsp_totals != fatalities_per_year]
     if not njsp_diffs.empty:
         raise RuntimeError(f"NJSP totals don't match crash records:\n{njsp_diffs}")
