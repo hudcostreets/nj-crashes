@@ -3,16 +3,16 @@ import pandas as pd
 from dataclasses import dataclass
 from functools import cached_property
 from git import Repo, Commit
-from io import BytesIO
 from typing import Tuple
-from utz import err
+from utz import err, singleton
 
-from nj_crashes.utils import TZ
+from nj_crashes.fauqstats import FAUQStats
+from nj_crashes.utils import TZ, git
 from nj_crashes.utils.git import SHORT_SHA_LEN
-from njsp import rundate, crashes
+from njsp import rundate
 from njsp.crashes import load
+from njsp.paths import fauqstats_relpath
 from njsp.rundate import Rundate
-from njsp.ytc import to_ytc
 
 
 def get_all_days():
@@ -149,23 +149,31 @@ class Ytd:
     def prv_rundate(self):
         return self.prv_commit_rundate[1]
 
-    @property
-    def prv_crashes(self):
-        prv_crashes_blob = crashes.blob_from_commit(self.prv_commit)
-        stream = prv_crashes_blob.data_stream
-        blob = stream.read()
-        prv_crashes = pd.read_parquet(BytesIO(blob))
-        return prv_crashes
-
-    @property
-    def prv_ytd_total(self):
-        """Number of deaths reported by NJSP at the closest point in the previous year."""
-        return to_ytc(self.prv_year_crashes).drop(columns='crashes').sum().sum()
+    @cached_property
+    def prv_ytd_fauqstats(self):
+        fauqstats_blob = git.blob_from_commit(self.prv_commit, fauqstats_relpath(self.prv_year))
+        return FAUQStats.load(fauqstats_blob)
 
     @cached_property
-    def prv_year_crashes(self):
-        prv_crashes = self.prv_crashes
-        return prv_crashes[prv_crashes.dt.dt.year == self.prv_year]
+    def prv_ytd_total(self):
+        """Number of deaths reported by NJSP at the closest point in the previous year."""
+        return singleton(self.prv_ytd_fauqstats.totals.fatalities)
+
+    @cached_property
+    def prv_ytd_crashes(self):
+        return self.prv_ytd_fauqstats.crashes
+
+    @cached_property
+    def cur_ytd_fauqstats(self):
+        return FAUQStats.load(fauqstats_relpath(self.cur_year))
+
+    @cached_property
+    def prv_end_crashes(self):
+        return FAUQStats.load(fauqstats_relpath(self.prv_year)).crashes
+
+    @cached_property
+    def cur_ytd_crashes(self):
+        return self.cur_ytd_fauqstats.crashes
 
     @property
     def prv_rundate_dt(self):
@@ -203,7 +211,7 @@ class Ytd:
     def prv_end_deaths(self):
         return self.prv_ytds.iloc[-1]['YTD Deaths']
 
-    @property
+    @cached_property
     def prv_ytd_deaths(self):
         """Adjust death count from previous year by relative ytd fraction of current year vs. previous."""
         return self.prv_ytd_total * self.cur_year_frac / self.prv_year_frac

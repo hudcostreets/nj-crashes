@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 from git import Repo, Commit
 from utz import process, err
@@ -21,8 +21,10 @@ def git_fmt(*refs: str, fmt: str = '%h', log: bool = True, **kwargs) -> str:
     return process.line('git', 'log', '-1', f'--format={fmt}', *refs, log=err if log is True else log, **kwargs)
 
 
-def blob_from_commit(commit: Commit, relpaths: list[str]):
+def blob_from_commit(commit: Commit, relpaths: Union[str, list[str]]):
     tree = commit.tree
+    if isinstance(relpaths, str):
+        relpaths = [relpaths]
     for relpath in relpaths:
         try:
             return tree[relpath]

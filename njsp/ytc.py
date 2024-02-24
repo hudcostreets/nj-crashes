@@ -2,10 +2,10 @@ from utz import sxs
 
 RENAMES = {
     'CNAME': 'county',
-    'dk': 'driver',
-    'ok': 'passenger',
-    'pk': 'pedestrian',
-    'bk': 'cyclist',
+    'FATAL_D': 'driver',
+    'FATAL_P': 'passenger',
+    'FATAL_T': 'pedestrian',
+    'FATAL_B': 'cyclist',
 }
 
 

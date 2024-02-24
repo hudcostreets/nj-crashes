@@ -64,3 +64,7 @@ def annual_ytc_path(year):
 
 def annual_ytd_url(year):
     return f'https://www.nj.gov/njsp/info/fatalacc/pdf/swfcs2_{year % 100:02d}.pdf'
+
+
+def fauqstats_relpath(year: int) -> str:
+    return f'{paths.DATA_RELPATH}/FAUQStats{year}.xml'

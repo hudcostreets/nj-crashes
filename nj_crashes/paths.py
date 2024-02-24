@@ -4,7 +4,8 @@ from os.path import basename, dirname, join
 PKG_DIR = dirname(__file__)
 ROOT_DIR = dirname(PKG_DIR)
 
-DATA_DIR = join(ROOT_DIR, 'data')
+DATA_RELPATH = 'data'
+DATA_DIR = join(ROOT_DIR, DATA_RELPATH)
 SRI_DIR = join(ROOT_DIR, '.sri')
 WWW_DIR = join(ROOT_DIR, 'www')
 PUBLIC_DIR = join(WWW_DIR, 'public')
