@@ -1,7 +1,7 @@
 from functools import partial
 from typing import Optional
 
-from njdot.load import Years, load_type
+from njdot.load import Years, load_tbl
 from njdot.pedestrians import map_year_df, map_df
 
 renames = {
@@ -38,8 +38,8 @@ def load(
         write_pqt: bool = False,
         cols: Optional[list[str]] = None,
 ):
-    df = load_type(
-        'Drivers',
+    df = load_tbl(
+        'drivers',
         years=years,
         county=county,
         renames=renames,

@@ -6,7 +6,7 @@ from typing import Optional
 
 from nj_crashes.utils.log import err
 from njdot import crashes
-from njdot.load import Years, load_type, pk_base, normalize
+from njdot.load import Years, load_tbl, pk_base, normalize
 from njdot.rawdata import years_opt
 
 renames = {
@@ -111,8 +111,8 @@ def load(
         pqt_path: Optional[str] = None,
         cols: Optional[list[str]] = None,
 ) -> pd.DataFrame:
-    df = load_type(
-        'Vehicles',
+    df = load_tbl(
+        'vehicles',
         years=years,
         county=county,
         renames=renames,

@@ -21,7 +21,7 @@ from zipfile import ZipFile
 from nj_crashes.paths import DATA_DIR
 from njdot.data import COUNTIES, YEARS, FIELDS_DIR, END_YEAR, START_YEAR, REGIONS
 from njdot.opts import parse_opt
-from njdot.tbls import types_opt, parse_type, TYPE_TO_FIELDS
+from njdot.tbls import parse_type, TYPE_TO_FIELDS, types_opt
 
 # Download datasets from https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm
 # The download action on that page doesn't seem to work, but we can access the data directly at URLs like

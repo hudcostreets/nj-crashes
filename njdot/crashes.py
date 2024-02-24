@@ -12,7 +12,7 @@ from nj_crashes.geo import is_nj_ll, get_county_geometries
 from nj_crashes.muni_codes import update_mc
 from nj_crashes.sri.mp05 import get_mp05_map
 from njdot.data import cn2cc
-from njdot.load import load_type, INDEX_NAME, pk_renames
+from njdot.load import load_tbl, INDEX_NAME, pk_renames
 
 Year = Union[str, int]
 Years = Union[Year, list[Year]]
@@ -138,8 +138,8 @@ def load(
     write_pqt: bool = False,
     cols: Optional[list[str]] = None,
 ) -> pd.DataFrame:
-    return load_type(
-        tpe='Accidents',
+    return load_tbl(
+        tbl='crashes',
         years=years,
         county=county,
         renames=renames,

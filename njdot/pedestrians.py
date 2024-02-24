@@ -5,7 +5,7 @@ from typing import Optional
 
 from nj_crashes.utils.log import err
 from njdot import crashes
-from njdot.load import Years, load_type, normalize, pk_base
+from njdot.load import Years, load_tbl, normalize, pk_base
 
 renames = {
     'Year': 'year',
@@ -84,8 +84,8 @@ def load(
         write_pqt: bool = False,
         cols: Optional[list[str]] = None,
 ):
-    df = load_type(
-        'Pedestrians',
+    df = load_tbl(
+        'pedestrians',
         years=years,
         county=county,
         renames=renames,

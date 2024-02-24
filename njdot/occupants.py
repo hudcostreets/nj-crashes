@@ -6,7 +6,7 @@ from utz import sxs
 
 from nj_crashes.utils.log import err
 from njdot import vehicles, crashes
-from njdot.load import Years, load_type, normalize, pk_base
+from njdot.load import Years, load_tbl, normalize, pk_base
 
 renames = {
     'Year': 'year',
@@ -84,8 +84,8 @@ def load(
         fix_missing_vid: bool = True,
         drop: bool = True,
 ):
-    df = load_type(
-        'Occupants',
+    df = load_tbl(
+        'occupants',
         years=years,
         county=county,
         renames=renames,

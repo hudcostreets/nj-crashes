@@ -1,23 +1,22 @@
 #!/usr/bin/env python
-from inspect import getfullargspec
 from os import stat, cpu_count
 from os.path import exists
-from urllib.parse import urlparse
 
 import click
 import pandas as pd
 from humanize import naturalsize
+from inspect import getfullargspec
 from numpy import nan
 from pandas import read_parquet
 from typing import Union, Optional, Callable, Protocol
+from urllib.parse import urlparse
 from utz import err, sxs
 
 from nj_crashes.utils import sql
 from njdot import NJDOT_DIR
 from njdot.data import YEARS, cn2cc
 from njdot.paths import DOT_DATA, WWW_DOT
-from njdot.rawdata import types_opt
-from njdot.tbls import Type, TYPE_TO_TBL
+from njdot.tbls import Tbl, tbls_opt, TBL_TO_TYPE
 
 Year = int
 Years = Union[Year, list[Year]]
@@ -33,14 +32,6 @@ pk_astype = {
     'cc': 'int8',
     'mc': 'int8',
     'year': 'int16',
-}
-
-TYPE_BASENAMES = {
-    'Accidents': 'crashes.parquet',
-    'Vehicles': 'vehicles.parquet',
-    'Drivers': 'drivers.parquet',
-    'Occupants': 'occupants.parquet',
-    'Pedestrians': 'pedestrians.parquet',
 }
 
 
@@ -81,8 +72,8 @@ def normalize(df: pd.DataFrame, cols: list[str], id: str, r_fn: Collable, drop: 
     return dfm
 
 
-def load_type(
-        tpe: Type,
+def load_tbl(
+        tbl: Tbl,
         years: Years = None,
         county: str = None,
         read_pqt: Optional[bool] = None,
@@ -102,7 +93,9 @@ def load_type(
     elif years is None:
         years = YEARS
 
-    pqt_path = pqt_path or f'{DOT_DATA}/{TYPE_BASENAMES[tpe]}'
+    typ = TBL_TO_TYPE[tbl]
+
+    pqt_path = pqt_path or f'{DOT_DATA}/{tbl}.parquet'
     if read_pqt or (read_pqt is None and exists(pqt_path) and not write_pqt):
         err(f"Reading {pqt_path}")
         df = read_parquet(pqt_path, columns=cols)
@@ -129,7 +122,7 @@ def load_type(
     }
     dfs = []
     for year in years:
-        df = read_parquet(f'{NJDOT_DIR}/data/{year}/NewJersey{year}{tpe}.pqt')
+        df = read_parquet(f'{NJDOT_DIR}/data/{year}/NewJersey{year}{typ}.pqt')
         df = df.rename(columns=renames)
         df = df.astype({ k: v for k, v in astype.items() if k in df })
         for k, v in opt_ints.items():
@@ -148,7 +141,7 @@ def load_type(
         wrong_year = years_col != int(year)
         if wrong_year.any():
             num_wrong_year = wrong_year.sum()
-            err(f'{num_wrong_year} {tpe} for year {year} have wrong year: {years_col.value_counts()}')
+            err(f'{num_wrong_year} {tbl} for year {year} have wrong year: {years_col.value_counts()}')
 
         if map_year_df:
             spec = getfullargspec(map_year_df)
@@ -189,9 +182,8 @@ crash_idxs = [
 S3_PREFIX = 's3://nj-crashes/njdot/data'
 
 
-def run_type(tpe, input_pqt, path, replace, page_size, s3_url, no_s3):
-    tbl = TYPE_TO_TBL[tpe]
-    df = load_type(tpe, read_pqt=True, pqt_path=input_pqt)
+def run_tbl(tbl: Tbl, input_pqt, path, replace, page_size, s3_url, no_s3):
+    df = load_tbl(tbl, read_pqt=True, pqt_path=input_pqt)
     if not path:
         path = f'{WWW_DOT}/{tbl}.db'
     idxs = crash_idxs if tbl == 'crashes' else [('crash_id',)]
@@ -220,9 +212,9 @@ def run_type(tpe, input_pqt, path, replace, page_size, s3_url, no_s3):
 @click.option('-s', '--page-size', type=int, default=2**16, help='Page size for SQLite DB (default: 2**16)')
 @click.option('--s3-url', help=f'Upload to this S3 URL (default: `{S3_PREFIX}/<type>.db')
 @click.option('-S', '--no-s3', is_flag=True, help='Do not upload to S3')
-@types_opt
+@tbls_opt
 @click.argument('path', required=False)
-def main(input_pqt, n_jobs, replace, page_size: int, s3_url: Optional[str], no_s3: bool, types: list[Type], path):
+def main(input_pqt, n_jobs, replace, page_size: int, s3_url: Optional[str], no_s3: bool, tbls: list[Tbl], path):
     kwargs = dict(
         input_pqt=input_pqt,
         path=path,
@@ -231,14 +223,14 @@ def main(input_pqt, n_jobs, replace, page_size: int, s3_url: Optional[str], no_s
         s3_url=s3_url,
         no_s3=no_s3,
     )
-    if len(types) > 1 and n_jobs != 1:
+    if len(tbls) > 1 and n_jobs != 1:
         if not n_jobs:
             n_jobs = cpu_count()
         from joblib import Parallel, delayed
-        Parallel(n_jobs=n_jobs)(delayed(run_type)(tpe, **kwargs) for tpe in types)
+        Parallel(n_jobs=n_jobs)(delayed(run_tbl)(tbl, **kwargs) for tbl in tbls)
     else:
-        for tpe in types:
-            run_type(tpe, **kwargs)
+        for tbl in tbls:
+            run_tbl(tbl, **kwargs)
 
 
 if __name__ == '__main__':
