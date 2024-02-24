@@ -80,7 +80,7 @@ def update_pqts(replace_db, sync_s3):
         .astype({ 'id': int })
         .merge(ccc[on + ['mc_gin']], on=on, how='left')
         .set_index('id')
-        .sort_index()
+        .sort_values('dt')
         .drop(columns=['mc_sp', 'CCODE', 'CNAME', 'MCODE', 'MNAME', ])
         .rename(columns={
             'mc_gin': 'mc',
