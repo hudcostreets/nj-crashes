@@ -49,6 +49,8 @@ PROJECTED_TOTALS_PATH = join(PLOTS_DIR, 'projected_totals.json')
 
 PROJECTED_TOTALS_RELPATH = relpath(PROJECTED_TOTALS_PATH)
 
+MC_PQT = join(NJSP_DATA, 'muni_codes.parquet')
+
 
 def annual_ytc_url(year):
     return f'https://www.nj.gov/njsp/info/fatalacc/pdf/ptccr_{year % 100:02d}.pdf'

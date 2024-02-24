@@ -15,6 +15,8 @@ CMYM_PQT = f'{WWW_DOT}/cmym.parquet'
 CMYM_DB = f'{WWW_DOT}/cmym.db'
 CMYMC_DB = f'{WWW_DOT}/cmymc.db'
 
+MC_PQT = join(DOT_DATA, 'muni_codes.parquet')
+
 
 def raw_pqt_path(tpe, year, county=None):
     county = county or 'NewJersey'
