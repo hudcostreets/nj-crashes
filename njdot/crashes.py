@@ -9,6 +9,7 @@ from typing import Union, Tuple, Optional
 from utz import cached_property, DF, sxs, err
 
 from nj_crashes.geo import is_nj_ll, get_county_geometries
+from nj_crashes.muni_codes import update_mc
 from nj_crashes.sri.mp05 import get_mp05_map
 from njdot.data import cn2cc
 from njdot.load import load_type, INDEX_NAME, pk_renames
@@ -93,8 +94,9 @@ astype = {
 }
 
 
-def map_year_df(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.drop(columns=['cn', 'mn'])
+def map_year_df(df: pd.DataFrame, year: int) -> pd.DataFrame:
+    df = df.drop(columns=['cn', 'mn']).rename(columns={ 'mc': 'mc_dot' })
+    df = update_mc(df, 'dot')
     df['pdn'] = df.pdn.apply(lambda pdn: pdn.title())
     df['olon'] = -df['olon']  # Longitudes all come in positive, but are actually supposed to be negative (NJ ⊂ [-76, -73])
     df['severity'] = df['severity'].apply(lambda s: s.lower())
@@ -103,15 +105,12 @@ def map_year_df(df: pd.DataFrame) -> pd.DataFrame:
     for k in ['speed_limit', 'speed_limit_cross']:
         df[k] = df[k].replace('^(?:0|-1)?$', nan, regex=True).astype('Int8')
     df['cell_phone'] = df['cell_phone'].apply(lambda s: {'Y': True, 'N': False}[s])
-    return df
 
-
-def map_df(df: pd.DataFrame) -> pd.DataFrame:
     cg = get_county_geometries()
     df.index = df.index.astype('int32')
     df = df[['dt'] + [ c for c in df if c != 'dt' ]]
 
-    err("crashes: merging olat/olon with county geometries")
+    err(f"crashes {year}: merging olat/olon with county geometries")
     gdf = Crashes(df).gdf('o')
     joined = sjoin(gdf.df[['olat', 'olon', 'geometry']], cg)
     joined = joined.rename(columns={ 'index_right': 'ocn', })
@@ -119,9 +118,9 @@ def map_df(df: pd.DataFrame) -> pd.DataFrame:
     occ = with_ocn.ocn.map(cn2cc).astype('Int8').rename('occ')
     with_ocn = sxs(with_ocn, occ).drop(columns=['geometry', 'ocn'])
 
-    err("crashes: geocoding SRI/MPs")
+    err(f"crashes {year}: geocoding SRI/MPs")
     ill = Crashes(with_ocn).mp_lls(append=True)
-    err("crashes: merging ilat/ilon with county geometries")
+    err(f"crashes {year}: merging ilat/ilon with county geometries")
     igdf = Crashes(ill).gdf('i')
     ij = sjoin(igdf.df[['geometry']], cg)
     ij = ij.rename(columns={ 'index_right': 'icn', })
@@ -149,7 +148,6 @@ def load(
         read_pqt=read_pqt,
         write_pqt=write_pqt,
         map_year_df=map_year_df,
-        map_df=map_df,
     )
 
 

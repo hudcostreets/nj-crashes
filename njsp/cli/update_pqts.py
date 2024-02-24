@@ -19,6 +19,7 @@ from git import Tree
 from utz import sxs
 
 from nj_crashes.fauqstats import FAUQStats
+from nj_crashes.muni_codes import update_mc
 from nj_crashes.paths import DATA_DIR, COUNTY_CITY_CODES_PQT
 from nj_crashes.utils import s3, sql
 from nj_crashes.utils.log import Log, err
@@ -72,14 +73,10 @@ def update_pqts(replace_db, sync_s3):
     crashes['cc'] = crashes.CCODE.astype(int)
     crashes['mc_sp'] = crashes.MCODE.str[2:].astype(int)
     crashes.index.name = 'id'
-    on = ['cc', 'mc_sp']
+    crashes.index = crashes.index.astype('int16')
     assert not crashes.mc_sp.isna().any()
     crashes = (
-        crashes
-        .reset_index()
-        .astype({ 'id': 'int16' })
-        .merge(ccc[on + ['mc_gin']], on=on, how='left')
-        .set_index('id')
+        update_mc(crashes, 'sp')
         .sort_values('dt')
         .drop(columns=['mc_sp', 'CCODE', 'CNAME', 'MCODE', 'MNAME', ])
         .rename(columns={

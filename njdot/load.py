@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+from inspect import getfullargspec
 from os import stat, cpu_count
 from os.path import exists
 from urllib.parse import urlparse
@@ -55,6 +55,16 @@ class Collable(Protocol):
         ...
 
 
+class MapYearDF1(Protocol):
+    def __call__(self, df: pd.DataFrame) -> pd.DataFrame:
+        ...
+
+
+class MapYearDF2(Protocol):
+    def __call__(self, df: pd.DataFrame, year: int) -> pd.DataFrame:
+        ...
+
+
 def normalize(df: pd.DataFrame, cols: list[str], id: str, r_fn: Collable, drop: bool = True) -> pd.DataFrame:
     r = r_fn(cols=cols)
     dfb = df[cols]
@@ -82,7 +92,7 @@ def load_type(
         astype: Optional[dict[str, Union[str, type]]] = None,
         pk_cols: Optional[list[str]] = None,
         cols: Optional[list[str]] = None,
-        map_year_df: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
+        map_year_df: Union[None, MapYearDF1, MapYearDF2] = None,
         map_df: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
 ) -> pd.DataFrame:
     if isinstance(years, str):
@@ -141,7 +151,9 @@ def load_type(
             err(f'{num_wrong_year} {tpe} for year {year} have wrong year: {years_col.value_counts()}')
 
         if map_year_df:
-            df = map_year_df(df)
+            spec = getfullargspec(map_year_df)
+            kwargs = dict(year=year) if 'year' in spec.args else {}
+            df = map_year_df(df, **kwargs)
 
         dfs.append(df)
 
