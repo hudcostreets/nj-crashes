@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from os import stat
+from os import stat, cpu_count
 from os.path import exists
 from urllib.parse import urlparse
 
@@ -177,37 +177,56 @@ crash_idxs = [
 S3_PREFIX = 's3://nj-crashes/njdot/data'
 
 
+def run_type(tpe, input_pqt, path, replace, page_size, s3_url, no_s3):
+    tbl = TYPE_TO_TBL[tpe]
+    df = load_type(tpe, read_pqt=True, pqt_path=input_pqt)
+    if not path:
+        path = f'{WWW_DOT}/{tbl}.db'
+    idxs = crash_idxs if tbl == 'crashes' else [('crash_id',)]
+    sql.write(
+        df=df,
+        tbl=tbl,
+        db_path=path,
+        idxs=idxs,
+        rm=not replace,
+        replace=replace,
+        page_size=page_size,
+    )
+    if not no_s3:
+        s3_url = s3_url or f'{S3_PREFIX}/{tbl}.db'
+        from boto3 import client
+        s3 = client('s3')
+        parsed = urlparse(s3_url)
+        err(f'Uploading {path} to {s3_url}')
+        s3.upload_file(path, Bucket=parsed.netloc, Key=parsed.path.lstrip('/'))
+
+
 @click.command
 @click.option('-i', '--input-pqt', help=f'Read from this parquet file (default: {DOT_DATA}/<type>.parquet`')
+@click.option('-j', '--num-jobs', 'n_jobs', type=int, default=0, help='Number of jobs to run in parallel')
 @click.option('-r', '--replace', is_flag=True, help='Pass `if_exists="replace"` to `DataFrame.to_sql`')
 @click.option('-s', '--page-size', type=int, default=2**16, help='Page size for SQLite DB (default: 2**16)')
 @click.option('--s3-url', help=f'Upload to this S3 URL (default: `{S3_PREFIX}/<type>.db')
 @click.option('-S', '--no-s3', is_flag=True, help='Do not upload to S3')
 @types_opt
 @click.argument('path', required=False)
-def main(input_pqt, replace, page_size: int, s3_url: Optional[str], no_s3: bool, types: list[Type], path):
-    for tpe in types:
-        tbl = TYPE_TO_TBL[tpe]
-        df = load_type(tpe, read_pqt=True, pqt_path=input_pqt)
-        if not path:
-            path = f'{WWW_DOT}/{tbl}.db'
-        idxs = crash_idxs if tbl == 'crashes' else [('crash_id',)]
-        sql.write(
-            df=df,
-            tbl=tbl,
-            db_path=path,
-            idxs=idxs,
-            rm=not replace,
-            replace=replace,
-            page_size=page_size,
-        )
-        if not no_s3:
-            s3_url = s3_url or f'{S3_PREFIX}/{tbl}.db'
-            from boto3 import client
-            s3 = client('s3')
-            parsed = urlparse(s3_url)
-            err(f'Uploading {path} to {s3_url}')
-            s3.upload_file(path, Bucket=parsed.netloc, Key=parsed.path.lstrip('/'))
+def main(input_pqt, n_jobs, replace, page_size: int, s3_url: Optional[str], no_s3: bool, types: list[Type], path):
+    kwargs = dict(
+        input_pqt=input_pqt,
+        path=path,
+        replace=replace,
+        page_size=page_size,
+        s3_url=s3_url,
+        no_s3=no_s3,
+    )
+    if len(types) > 1 and n_jobs != 1:
+        if not n_jobs:
+            n_jobs = cpu_count()
+        from joblib import Parallel, delayed
+        Parallel(n_jobs=n_jobs)(delayed(run_type)(tpe, **kwargs) for tpe in types)
+    else:
+        for tpe in types:
+            run_type(tpe, **kwargs)
 
 
 if __name__ == '__main__':
