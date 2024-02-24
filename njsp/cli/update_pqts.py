@@ -77,7 +77,7 @@ def update_pqts(replace_db, sync_s3):
     crashes = (
         crashes
         .reset_index()
-        .astype({ 'id': int })
+        .astype({ 'id': 'int16' })
         .merge(ccc[on + ['mc_gin']], on=on, how='left')
         .set_index('id')
         .sort_values('dt')
@@ -96,6 +96,11 @@ def update_pqts(replace_db, sync_s3):
             }
         })
         [[ 'cc', 'mc', 'dt', 'tk', 'ti', 'dk', 'ok', 'pk', 'bk', 'location', 'street', 'highway', ]]
+        .astype({
+            'cc': 'int8',
+            'mc': 'int8',
+            **{ c: 'Int8' for c in [ 'tk', 'ti', 'dk', 'ok', 'pk', 'bk', ] },
+        })
     )
 
     with open(RUNDATE_PATH, 'w') as f:
