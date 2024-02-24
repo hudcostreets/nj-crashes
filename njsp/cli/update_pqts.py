@@ -94,6 +94,7 @@ def update_pqts(replace_db, sync_s3):
                 for c in [ 'STREET', 'HIGHWAY', 'LOCATION', ]
             }
         })
+        [[ 'cc', 'mc', 'dt', 'tk', 'ti', 'dk', 'ok', 'pk', 'bk', 'location', 'street', 'highway', ]]
     )
 
     with open(RUNDATE_PATH, 'w') as f:
