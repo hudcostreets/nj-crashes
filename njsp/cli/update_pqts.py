@@ -71,11 +71,15 @@ def update_pqts(replace_db, sync_s3):
     ccc = pd.read_parquet(COUNTY_CITY_CODES_PQT)
     crashes['cc'] = crashes.CCODE.astype(int)
     crashes['mc_sp'] = crashes.MCODE.str[2:].astype(int)
+    crashes.index.name = 'id'
     on = ['cc', 'mc_sp']
     assert not crashes.mc_sp.isna().any()
     crashes = (
         crashes
+        .reset_index()
         .merge(ccc[on + ['mc_gin']], on=on, how='left')
+        .set_index('id')
+        .sort_index()
         .drop(columns=['mc_sp', 'CCODE', 'CNAME', 'MCODE', 'MNAME', ])
         .rename(columns={
             'mc_gin': 'mc',
