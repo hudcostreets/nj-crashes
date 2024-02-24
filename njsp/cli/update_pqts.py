@@ -77,6 +77,7 @@ def update_pqts(replace_db, sync_s3):
     crashes = (
         crashes
         .reset_index()
+        .astype({ 'id': int })
         .merge(ccc[on + ['mc_gin']], on=on, how='left')
         .set_index('id')
         .sort_index()
