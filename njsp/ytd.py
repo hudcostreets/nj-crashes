@@ -106,7 +106,7 @@ class Ytd:
 
     @cached_property
     def ytds(self):
-        ytds = self.crashes[['dt', 'FATALITIES']].copy()
+        ytds = self.crashes[['dt', 'tk']].copy()
         ytds['Year'] = ytds.dt.dt.year
         ytds['Days'] = ytds.dt.apply(normalized_ytd_days)
         ytds = (
@@ -114,7 +114,7 @@ class Ytd:
             .groupby('Year', group_keys=False)
             .apply(lambda df: (
                 df.assign(**{
-                    'YTD Deaths': df.FATALITIES.cumsum().astype(int)
+                    'YTD Deaths': df.tk.cumsum().astype(int)
                 })
             ))
         )
