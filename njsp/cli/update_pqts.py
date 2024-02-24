@@ -77,10 +77,9 @@ def update_pqts(replace_db, sync_s3):
     assert not crashes.mc_sp.isna().any()
     crashes = (
         update_mc(crashes, 'sp')
+        .drop(columns=[ 'CCODE', 'CNAME', 'MCODE', 'MNAME', ])
         .sort_values('dt')
-        .drop(columns=['mc_sp', 'CCODE', 'CNAME', 'MCODE', 'MNAME', ])
         .rename(columns={
-            'mc_gin': 'mc',
             'FATALITIES': 'tk',
             'INJURIES': 'ti',
             'FATAL_D': 'dk',

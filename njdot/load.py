@@ -2,21 +2,18 @@
 from os import stat, cpu_count
 from os.path import exists
 
-import click
 import pandas as pd
 from humanize import naturalsize
 from inspect import getfullargspec
 from numpy import nan
 from pandas import read_parquet
 from typing import Union, Optional, Callable, Protocol
-from urllib.parse import urlparse
 from utz import err, sxs
 
-from nj_crashes.utils import sql
 from njdot import NJDOT_DIR
 from njdot.data import YEARS, cn2cc
-from njdot.paths import DOT_DATA, WWW_DOT
-from njdot.tbls import Tbl, tbls_opt, TBL_TO_TYPE
+from njdot.paths import DOT_DATA
+from njdot.tbls import Tbl, TBL_TO_TYPE, Type
 
 Year = int
 Years = Union[Year, list[Year]]
@@ -72,10 +69,50 @@ def normalize(df: pd.DataFrame, cols: list[str], id: str, r_fn: Collable, drop: 
     return dfm
 
 
+def load_year_df(
+        year: int,
+        typ: Type,
+        tbl: str,
+        renames: dict[str, str],
+        astype: dict[str, Union[str, type]],
+        opt_ints: dict[str, str],
+        county: str,
+        map_year_df: Union[None, MapYearDF1, MapYearDF2] = None,
+):
+    df = read_parquet(f'{NJDOT_DIR}/data/{year}/NewJersey{year}{typ}.pqt')
+    df = df.rename(columns=renames)
+    df = df.astype({ k: v for k, v in astype.items() if k in df })
+    for k, v in opt_ints.items():
+        if k in df:
+            df[k] = df[k].replace(r'^[\?\*]?$', nan, regex=True).replace('0?', '00', regex=False).astype(v)
+
+    if county:
+        df = df[df.cn.str.lower() == county.lower()]
+
+    if 'year' in df:
+        years_col = df.year
+    else:
+        years_col = df.dt.dt.year.rename('year')
+        df['year'] = years_col
+
+    wrong_year = years_col != int(year)
+    if wrong_year.any():
+        num_wrong_year = wrong_year.sum()
+        err(f'{num_wrong_year} {tbl} for year {year} have wrong year: {years_col.value_counts()}')
+
+    if map_year_df:
+        spec = getfullargspec(map_year_df)
+        kwargs = dict(year=year) if 'year' in spec.args else {}
+        df = map_year_df(df, **kwargs)
+
+    return df
+
+
 def load_tbl(
         tbl: Tbl,
         years: Years = None,
         county: str = None,
+        n_jobs: int = 0,
         read_pqt: Optional[bool] = None,
         write_pqt: bool = False,
         pqt_path: Optional[str] = None,
@@ -120,35 +157,29 @@ def load_tbl(
         for k, v in astype.items()
         if k not in opt_ints
     }
-    dfs = []
-    for year in years:
-        df = read_parquet(f'{NJDOT_DIR}/data/{year}/NewJersey{year}{typ}.pqt')
-        df = df.rename(columns=renames)
-        df = df.astype({ k: v for k, v in astype.items() if k in df })
-        for k, v in opt_ints.items():
-            if k in df:
-                df[k] = df[k].replace(r'^[\?\*]?$', nan, regex=True).replace('0?', '00', regex=False).astype(v)
-
-        if county:
-            df = df[df.cn.str.lower() == county.lower()]
-
-        if 'year' in df:
-            years_col = df.year
-        else:
-            years_col = df.dt.dt.year.rename('year')
-            df['year'] = years_col
-
-        wrong_year = years_col != int(year)
-        if wrong_year.any():
-            num_wrong_year = wrong_year.sum()
-            err(f'{num_wrong_year} {tbl} for year {year} have wrong year: {years_col.value_counts()}')
-
-        if map_year_df:
-            spec = getfullargspec(map_year_df)
-            kwargs = dict(year=year) if 'year' in spec.args else {}
-            df = map_year_df(df, **kwargs)
-
-        dfs.append(df)
+    kwargs = dict(
+        typ=typ,
+        tbl=tbl,
+        renames=renames,
+        astype=astype,
+        opt_ints=opt_ints,
+        county=county,
+        map_year_df=map_year_df,
+    )
+    if len(years) > 1 and n_jobs != 1:
+        from joblib import Parallel, delayed
+        if not n_jobs:
+            n_jobs = cpu_count()
+        err(f"Parallelizing {len(years)} years {n_jobs} ways")
+        dfs = Parallel(n_jobs=n_jobs)(
+            delayed(load_year_df)(year=year, **kwargs)
+            for year in years
+        )
+    else:
+        dfs = [
+            load_year_df(year=year, **kwargs)
+            for year in years
+        ]
 
     df = pd.concat(dfs)
 
@@ -180,58 +211,3 @@ crash_idxs = [
 
 
 S3_PREFIX = 's3://nj-crashes/njdot/data'
-
-
-def run_tbl(tbl: Tbl, input_pqt, path, replace, page_size, s3_url, no_s3):
-    df = load_tbl(tbl, read_pqt=True, pqt_path=input_pqt)
-    if not path:
-        path = f'{WWW_DOT}/{tbl}.db'
-    idxs = crash_idxs if tbl == 'crashes' else [('crash_id',)]
-    sql.write(
-        df=df,
-        tbl=tbl,
-        db_path=path,
-        idxs=idxs,
-        rm=not replace,
-        replace=replace,
-        page_size=page_size,
-    )
-    if not no_s3:
-        s3_url = s3_url or f'{S3_PREFIX}/{tbl}.db'
-        from boto3 import client
-        s3 = client('s3')
-        parsed = urlparse(s3_url)
-        err(f'Uploading {path} to {s3_url}')
-        s3.upload_file(path, Bucket=parsed.netloc, Key=parsed.path.lstrip('/'))
-
-
-@click.command
-@click.option('-i', '--input-pqt', help=f'Read from this parquet file (default: {DOT_DATA}/<type>.parquet`')
-@click.option('-j', '--num-jobs', 'n_jobs', type=int, default=0, help='Number of jobs to run in parallel')
-@click.option('-r', '--replace', is_flag=True, help='Pass `if_exists="replace"` to `DataFrame.to_sql`')
-@click.option('-s', '--page-size', type=int, default=2**16, help='Page size for SQLite DB (default: 2**16)')
-@click.option('--s3-url', help=f'Upload to this S3 URL (default: `{S3_PREFIX}/<type>.db')
-@click.option('-S', '--no-s3', is_flag=True, help='Do not upload to S3')
-@tbls_opt
-@click.argument('path', required=False)
-def main(input_pqt, n_jobs, replace, page_size: int, s3_url: Optional[str], no_s3: bool, tbls: list[Tbl], path):
-    kwargs = dict(
-        input_pqt=input_pqt,
-        path=path,
-        replace=replace,
-        page_size=page_size,
-        s3_url=s3_url,
-        no_s3=no_s3,
-    )
-    if len(tbls) > 1 and n_jobs != 1:
-        if not n_jobs:
-            n_jobs = cpu_count()
-        from joblib import Parallel, delayed
-        Parallel(n_jobs=n_jobs)(delayed(run_tbl)(tbl, **kwargs) for tbl in tbls)
-    else:
-        for tbl in tbls:
-            run_tbl(tbl, **kwargs)
-
-
-if __name__ == '__main__':
-    main()

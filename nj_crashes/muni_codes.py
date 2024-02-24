@@ -14,11 +14,16 @@ def get_ccc() -> pd.DataFrame:
 
 def update_mc(df: pd.DataFrame, tpe: Literal['sp', 'dot']) -> pd.DataFrame:
     ccc = get_ccc()
-    on = ['cc', f'mc_{tpe}']
+    mc_col = f'mc_{tpe}'
+    on = ['cc', mc_col]
     idx_col = df.index.name
+    if idx_col is None:
+        raise RuntimeError("DataFrame must have an index name")
     return (
         df
         .reset_index()
         .merge(ccc[on + ['mc_gin']], on=on, how='left')
         .set_index(idx_col)
+        .rename(columns={ 'mc_gin': 'mc', })
+        .drop(columns=mc_col)
     )

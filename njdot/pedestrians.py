@@ -82,6 +82,8 @@ def load(
         county: str = None,
         read_pqt: Optional[bool] = None,
         write_pqt: bool = False,
+        pqt_path: Optional[str] = None,
+        n_jobs: int = 0,
         cols: Optional[list[str]] = None,
 ):
     df = load_tbl(
@@ -95,5 +97,7 @@ def load(
         map_df=partial(map_df, tpe='pedestrians'),
         read_pqt=read_pqt,
         write_pqt=write_pqt,
+        pqt_path=pqt_path,
+        n_jobs=n_jobs,
     )
     return df

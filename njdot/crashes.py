@@ -96,6 +96,7 @@ astype = {
 
 def map_year_df(df: pd.DataFrame, year: int) -> pd.DataFrame:
     df = df.drop(columns=['cn', 'mn']).rename(columns={ 'mc': 'mc_dot' })
+    df.index.name = 'id'
     df = update_mc(df, 'dot')
     df['pdn'] = df.pdn.apply(lambda pdn: pdn.title())
     df['olon'] = -df['olon']  # Longitudes all come in positive, but are actually supposed to be negative (NJ ⊂ [-76, -73])
@@ -132,11 +133,13 @@ def map_year_df(df: pd.DataFrame, year: int) -> pd.DataFrame:
 
 
 def load(
-    years: Years = None,
-    county: str = None,
-    read_pqt: Optional[bool] = None,
-    write_pqt: bool = False,
-    cols: Optional[list[str]] = None,
+        years: Years = None,
+        county: str = None,
+        read_pqt: Optional[bool] = None,
+        write_pqt: bool = False,
+        pqt_path: Optional[str] = None,
+        n_jobs: int = 0,
+        cols: Optional[list[str]] = None,
 ) -> pd.DataFrame:
     return load_tbl(
         tbl='crashes',
@@ -147,6 +150,8 @@ def load(
         cols=cols,
         read_pqt=read_pqt,
         write_pqt=write_pqt,
+        pqt_path=pqt_path,
+        n_jobs=n_jobs,
         map_year_df=map_year_df,
     )
 

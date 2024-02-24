@@ -109,6 +109,7 @@ def load(
         read_pqt: Optional[bool] = None,
         write_pqt: bool = False,
         pqt_path: Optional[str] = None,
+        n_jobs: int = 0,
         cols: Optional[list[str]] = None,
 ) -> pd.DataFrame:
     df = load_tbl(
@@ -123,6 +124,7 @@ def load(
         read_pqt=read_pqt,
         write_pqt=write_pqt,
         pqt_path=pqt_path,
+        n_jobs=n_jobs,
     )
     return df
 
