@@ -19,11 +19,17 @@ def update_mc(df: pd.DataFrame, tpe: Literal['sp', 'dot']) -> pd.DataFrame:
     idx_col = df.index.name
     if idx_col is None:
         raise RuntimeError("DataFrame must have an index name")
-    return (
+    m = (
         df
         .reset_index()
-        .merge(ccc[on + ['mc_gin']], on=on, how='left')
+        .merge(ccc[on + ['mc_gin']].dropna(subset=mc_col), on=on, how='left', validate='m:1')
         .set_index(idx_col)
         .rename(columns={ 'mc_gin': 'mc', })
-        .drop(columns=mc_col)
     )
+    missing = m[m.mc.isna()]
+    if not missing.empty:
+        missing_mcs = missing[mc_col].unique()
+        raise RuntimeError(f"Missing {mc_col} for {len(missing_mcs)} mc's: {missing_mcs}")
+
+    m = m.drop(columns=mc_col)
+    return m
