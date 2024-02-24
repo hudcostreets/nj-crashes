@@ -2,7 +2,7 @@ import pandas as pd
 from typing import Literal
 
 
-def update_mc(df: pd.DataFrame, tpe: Literal['sp', 'dot']) -> pd.DataFrame:
+def update_mc(df: pd.DataFrame, tpe: Literal['sp', 'dot'], drop: bool = True) -> pd.DataFrame:
     if tpe == 'sp':
         import njsp
         mc_pqt_path = njsp.paths.MC_PQT
@@ -28,5 +28,6 @@ def update_mc(df: pd.DataFrame, tpe: Literal['sp', 'dot']) -> pd.DataFrame:
         missing_hist = missing[['cc', mc_col]].value_counts().sort_index()
         raise RuntimeError(f"Missing {mc_col} for {len(missing_hist)} (cc,mc) pairs:\n{missing_hist}")
 
-    m = m.drop(columns=mc_col)
+    if drop:
+        m = m.drop(columns=mc_col)
     return m

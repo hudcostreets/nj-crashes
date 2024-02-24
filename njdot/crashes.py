@@ -97,7 +97,7 @@ astype = {
 def map_year_df(df: pd.DataFrame, year: int) -> pd.DataFrame:
     df = df.drop(columns=['cn', 'mn']).rename(columns={ 'mc': 'mc_dot' })
     df.index.name = 'id'
-    df = update_mc(df, 'dot')
+    df = update_mc(df, 'dot', drop=False)
     df['pdn'] = df.pdn.apply(lambda pdn: pdn.title())
     df['olon'] = -df['olon']  # Longitudes all come in positive, but are actually supposed to be negative (NJ ⊂ [-76, -73])
     df['severity'] = df['severity'].apply(lambda s: s.lower())

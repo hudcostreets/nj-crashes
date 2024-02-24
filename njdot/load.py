@@ -53,17 +53,32 @@ class MapYearDF2(Protocol):
         ...
 
 
-def normalize(df: pd.DataFrame, cols: list[str], id: str, r_fn: Collable, drop: bool = True) -> pd.DataFrame:
-    r = r_fn(cols=cols)
-    dfb = df[cols]
+def normalize(
+        df: pd.DataFrame,
+        id: str,
+        r_fn: Collable,
+        drop: bool = True,
+        cols: Optional[list[str]] = None
+) -> pd.DataFrame:
+    if cols:
+        left_on = right_on = cols
+    else:
+        left_on = pk_base
+        right_on = [ 'mc_dot' if c == 'mc' else c for c in pk_base ] if id == 'crash_id' else pk_base
+
+    dfb = df[left_on]
+    r = r_fn(cols=right_on)
     m = dfb.merge(
         r.reset_index().rename(columns={ 'id': id }),
-        on=cols,
+        left_on=left_on,
+        right_on=right_on,
         how='left',
         validate='m:1',
     )
     if drop:
-        df = df.drop(columns=cols)
+        drop_cols = [ c for c in set(left_on + right_on) if c in df ]
+        err(f"Dropping cols: {drop_cols}")
+        df = df.drop(columns=drop_cols)
     dfm = sxs(m[id], df)
     dfm.index.name = INDEX_NAME
     return dfm

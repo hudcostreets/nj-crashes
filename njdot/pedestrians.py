@@ -67,7 +67,7 @@ def map_year_df(df):
 
 def map_df(p, tpe):
     err(f"Merging {tpe} with crashes")
-    p = normalize(p, pk_base, 'crash_id', crashes.load)
+    p = normalize(p, 'crash_id', crashes.load)
     p.index = p.index.astype('int32')
     for i in range(1, 5):
         for c in ['charge', 'summons']:

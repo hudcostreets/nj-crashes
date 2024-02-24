@@ -88,7 +88,7 @@ def map_towed_to_departure(r: pd.Series) -> int:
 def map_year_df(df: pd.DataFrame) -> pd.DataFrame:
     # Columns beginning with capital letters are inherited from the original data source; the ones we care about are
     # listed in `renames` above.
-    df = df[df.columns[~df.columns.str.match(r'^[A-Z]')]]
+    df = df[df.columns[~df.columns.str.match(r'^[A-Z]')]].copy()
     if 'departure' not in df:
         df['departure'] = ''
     df['departure'] = df[['towed', 'departure']].apply(map_towed_to_departure, axis=1).astype('Int8')
@@ -98,7 +98,9 @@ def map_year_df(df: pd.DataFrame) -> pd.DataFrame:
 
 def map_df(v: pd.DataFrame) -> pd.DataFrame:
     err("Merging vehicles with crashes")
-    v = normalize(v, pk_base, 'crash_id', crashes.load)
+    left_on = pk_base
+    right_on = [ 'mc_dot' if c == 'mc' else c for c in pk_base ]
+    v = normalize(v, 'crash_id', crashes.load)
     v.index = v.index.astype('int32')
     return v
 

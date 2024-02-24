@@ -52,7 +52,7 @@ def map_year_df(df):
 
 def map_df(df, fix_missing_vid: bool = True, drop: bool = True):
     err("Merging occupants with crashes")
-    dfc = normalize(df, pk_base, 'crash_id', crashes.load, drop=drop)
+    dfc = normalize(df, 'crash_id', crashes.load, drop=drop)
 
     if fix_missing_vid:
         # no_vid_mask = dfc.vehicle_id.isna()
@@ -66,7 +66,7 @@ def map_df(df, fix_missing_vid: bool = True, drop: bool = True):
         # dfc = dfc.astype({ 'vehicle_id': 'int32' })
 
     err("Merging occupants with vehicles")
-    dfm = normalize(dfc, ['crash_id', 'vn'], 'vehicle_id', vehicles.load, drop=drop)
+    dfm = normalize(dfc, 'vehicle_id', vehicles.load, drop=drop, cols=['crash_id', 'vn'])
     if drop:
         dfm = sxs(dfc.crash_id, dfm)
 
