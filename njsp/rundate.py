@@ -18,7 +18,8 @@ class Rundate:
     @cached_property
     def cur(self):
         with open(RUNDATE_PATH, 'r') as f:
-            return pd.to_datetime(json.load(f)['rundate']).tz_localize(TZ)
+            dt = pd.to_datetime(json.load(f)['rundate'])
+            return dt if dt.tz else dt.tz_localize(TZ)
 
     @property
     def cur_month_str(self):
