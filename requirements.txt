@@ -2,6 +2,8 @@ beautifulsoup4
 boto3
 click
 dask[dataframe]
+dvc
+dvc_s3
 fastparquet
 geopandas
 GitPython
@@ -20,6 +22,7 @@ plotly
 pyarrow
 pygithub
 requests
+s3fs
 simplejson
 slack_sdk
 sqlalchemy==1.4.46
