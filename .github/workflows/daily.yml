@@ -24,7 +24,7 @@ on:
         description: "Update parquets (in this repo)"
         default: true
       update_slack_sha:
-        description: "\"Update NJSP data\" commit hash (for posting updates to Slack)"
+        description: "\"Refresh NJSP data\" commit hash (for posting updates to Slack)"
       update_crash_log:
         type: boolean
         description: "Update crash log in AWS"

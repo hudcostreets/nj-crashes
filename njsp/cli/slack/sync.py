@@ -1,13 +1,14 @@
-import pandas as pd
 from click import option, argument
+from datetime import datetime as dt
 from typing import Optional
-from utz import err
+from utz import err, process
 from utz.ymd import dates, YMD
 
 from .base import slack
 from .channel_client import ChannelClient, CHANNEL_OPTS
 from ...commit_crashes import crash_str, CommitCrashes
 from ...crashes import Crash
+from ...paths import fauqstats_relpath
 
 
 def sync_crash(
@@ -59,8 +60,11 @@ def sync_crash(
 @option(*CHANNEL_OPTS, help='Slack channel ID to post to; defaults to $SLACK_CHANNEL_ID')
 @option('-m', '--fetch-messages', type=int, default=1000, help="Fetch messages from Slack and update cache (as opposed to just reading cached messages")
 @option('-n', '--dry-run', count=True, help="Avoid Slack API requests, cache updates, etc.")
-@argument('commit')
+@argument('commit', required=False)
 def sync(commit, start: YMD, end: YMD, overwrite_existing, channel, fetch_messages: Optional[int], dry_run: int):
+    if not commit:
+        cur_year = dt.now().year
+        commit = process.line('git', 'log', '-1', '--format=%h', '--', fauqstats_relpath(cur_year), fauqstats_relpath(cur_year - 1))
     cc = CommitCrashes(commit)
     crashes = cc.adds_df
 
