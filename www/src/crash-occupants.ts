@@ -2,7 +2,7 @@ import { Result, useSqlQueryCallback } from "@rdub/react-sql.js-httpvfs/query";
 import { Crash } from "@/src/crash";
 import { useEffect, useState } from "react";
 import { fold, map } from "fp-ts/Either";
-import { Base } from "@/src/use-crashes";
+import { Base } from "@/src/use-njdot-crashes";
 
 export type Occupant = {
     crash_id: number
@@ -19,7 +19,7 @@ export type CrashesOccupants = { [crash_id: number]: Occupant[] }
 
 export function useCrashOccupants({ crashesResult, urls, ...props }: { crashesResult: Result<Crash> | null } & Base): CrashesOccupants | null {
     const [ crashOccupants, setCrashOccupants ] = useState<CrashesOccupants | null>(null)
-    const fetchOccpants = useSqlQueryCallback<Occupant>({ url: urls.occupants, ...props })
+    const fetchOccupants = useSqlQueryCallback<Occupant>({ url: urls.dot.occupants, timerId: "occupants", ...props })
     useEffect(
         () => {
             if (!crashesResult) return
@@ -34,7 +34,7 @@ export function useCrashOccupants({ crashesResult, urls, ...props }: { crashesRe
                         order by crash_id, condition, pos
                     `
                     console.log("Fetching occupants")
-                    fetchOccpants(query)?.then(occupantsResult => {
+                    fetchOccupants(query)?.then(occupantsResult => {
                         fold(
                             err => {
                                 console.error("error fetching occupants:", err)
@@ -57,7 +57,7 @@ export function useCrashOccupants({ crashesResult, urls, ...props }: { crashesRe
                 }
             )(crashesResult)
         },
-        [ crashesResult, fetchOccpants ]
+        [ crashesResult, fetchOccupants ]
     )
     return crashOccupants
 }

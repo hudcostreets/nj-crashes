@@ -7,6 +7,7 @@ import A from "@rdub/next-base/a";
 import { Socials } from "@rdub/next-base/socials";
 import { NjspPlot, Props, title } from "@/src/njsp/plot";
 import { loadProps } from "@/server/njsp/plot";
+import { NjspFatalAcc } from "@/src/urls";
 
 export const getStaticProps: GetStaticProps<Props> = async () => {
     const props = await loadProps()
@@ -26,11 +27,7 @@ export default function Page(props: Props) {
             <main className={css.main}>
                 <h1 className={css.title}>{title}</h1>
                 <p>
-                    Data comes from <A
-                        title={"NJ State Police fatal crash data"}
-                        href={"https://nj.gov/njsp/info/fatalacc/"}>
-                        NJ State Police
-                    </A>, and is updated daily (though crashes sometimes take weeks or months to show up).
+                    Data comes from <A title={"NJ State Police fatal crash data"} href={NjspFatalAcc}>NJ State Police</A>, and is updated daily (though crashes sometimes take weeks or months to show up).
                 </p>
                 <div className={css["plot-container"]}>
                     <NjspPlot {...props} />

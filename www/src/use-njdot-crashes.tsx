@@ -5,10 +5,10 @@ import { useSqlQuery } from "@/src/sql";
 import { Crash } from "@/src/crash";
 import { Row } from "@/src/result-table";
 import { map } from "fp-ts/Either";
-import { County, normalize } from "@/src/county";
+import { County, MC2MN, normalize } from "@/src/county";
 import strftime from "strftime";
 import { fromEntries } from "@rdub/base/objs";
-import { DOTUrls } from "@/src/urls";
+import { Urls } from "@/src/urls";
 import { Car, Cyclist, Driver, Passenger, Pedestrian as Ped } from "@/src/icons";
 import css from "./use-crashes.module.scss"
 import { CrashesOccupants, Occupant, useCrashOccupants } from "@/src/crash-occupants";
@@ -18,17 +18,18 @@ import A from "@rdub/next-base/a";
 import { Tooltip } from "@/src/tooltip"
 
 export type Base = Omit<sql.Base, 'url'> & {
-    urls: DOTUrls
+    urls: Urls
 }
 
 export type Props = Base & {
     cc: number
+    cn: string
     mc?: number
     page: number
     perPage: number
 }
 
-export function useCrashes({ cc, mc, page, perPage, timerId = "crashes", urls, ...base }: Props): Result<Crash> | null {
+export function useNjdotCrashes({ cc, mc, page, perPage, timerId = "crashes", urls, ...base }: Props): Result<Crash> | null {
     const query = useMemo(
         () => {
             const offset = page * perPage
@@ -41,7 +42,7 @@ export function useCrashes({ cc, mc, page, perPage, timerId = "crashes", urls, .
         },
         [ page, perPage ]
     )
-    return useSqlQuery<Crash>({ ...base, url: urls.crashes, timerId, query })
+    return useSqlQuery<Crash>({ ...base, url: urls.dot.crashes, timerId, query })
 }
 
 export const ColLabels = {
@@ -67,7 +68,7 @@ const CarDamageMap = [
     { title: 'Vehicle disabled', fill: 'black' },
 ]
 
-const ConditionMap = [
+export const ConditionMap = [
     { txt: "condition unknown", fill: unknown, },
     { txt: "deceased", fill: 'black', },
     { txt: "serious injury", fill: red, },
@@ -221,8 +222,8 @@ export function getCrashRows({ rows, cols, county, crashOccupants, crashPedestri
     })
 }
 
-export function useCrashRows({ county, ...props }: Props & { county?: County }) {
-    const crashesResult = useCrashes({ ...props })
+export function useNjdotCrashRows({ mc2mn, ...props }: Props & { mc2mn?: MC2MN }) {
+    const crashesResult = useNjdotCrashes({ ...props })
     const crashOccupants = useCrashOccupants({ crashesResult, ...props })
     const crashPedestrians = useCrashPedestrians({ crashesResult, ...props })
     const crashVehicles = useCrashVehicles({ crashesResult, ...props })
@@ -232,6 +233,7 @@ export function useCrashRows({ county, ...props }: Props & { county?: County }) 
         () => {
             if (!crashesResult) return
             console.log("crashRows effect")
+            const county = mc2mn ? { cn: props.cn, mc2mn } : undefined
             const crashRows = map(
                 (crashes: Crash[]) => getCrashRows({ rows: crashes, cols, county, crashOccupants, crashPedestrians, crashVehicles, })
             )(crashesResult)

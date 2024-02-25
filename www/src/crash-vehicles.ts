@@ -2,7 +2,7 @@ import { Result, useSqlQueryCallback } from "@rdub/react-sql.js-httpvfs/query";
 import { Crash } from "@/src/crash";
 import { useEffect, useState } from "react";
 import { fold, map } from "fp-ts/Either";
-import { Base } from "@/src/use-crashes";
+import { Base } from "@/src/use-njdot-crashes";
 
 export type Vehicle = {
     crash_id: number
@@ -17,7 +17,7 @@ export type CrashesVehicles = { [crash_id: number]: Vehicle[] }
 
 export function useCrashVehicles({ crashesResult, urls, ...props }: { crashesResult: Result<Crash> | null } & Base): CrashesVehicles | null {
     const [ crashVehicles, setCrashVehicles ] = useState<CrashesVehicles | null>(null)
-    const fetchVehicles = useSqlQueryCallback<Vehicle>({ url: urls.vehicles, ...props })
+    const fetchVehicles = useSqlQueryCallback<Vehicle>({ url: urls.dot.vehicles, timerId: "vehicles", ...props })
     useEffect(
         () => {
             if (!crashesResult) return

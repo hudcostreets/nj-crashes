@@ -127,5 +127,6 @@ The fatal crash stats here also seem to differ from NJSP's data (see [the root o
 - [Pedestrian](https://thenounproject.com/icon/pedestrian-1826968/) by Adrien Coquet from <a href="https://thenounproject.com/browse/icons/term/pedestrian/" target="_blank" title="Pedestrian Icons">Noun Project</a> (CC BY 3.0)
 - [Bicycle](https://thenounproject.com/icon/bicycle-1311416/) by Adrien Coquet from <a href="https://thenounproject.com/browse/icons/term/bicycle/" target="_blank" title="Bicycle Icons">Noun Project</a> (CC BY 3.0)
 - [Car](https://thenounproject.com/icon/car-6583503/) by Nur syifa fauziah from <a href="https://thenounproject.com/browse/icons/term/car/" target="_blank" title="Car Icons">Noun Project</a> (CC BY 3.0)
+- [Person](https://thenounproject.com/icon/person-6627610/) by Rini Bahtiar from <a href="https://thenounproject.com/browse/icons/term/person/" target="_blank" title="person Icons">Noun Project</a> (CC BY 3.0)
 
 **TODO:** add to www pages

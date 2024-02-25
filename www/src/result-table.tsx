@@ -34,7 +34,7 @@ export function RowsTable(
         colTitles?: Record<string, string>
     }) {
     return (
-        <TableContainer component={Paper} className={className}>
+        <TableContainer component={Paper} className={`${css.rowsTable} ${className || ""}`}>
             <Table stickyHeader sx={{minWidth: 450}} size={"small"} aria-label="simple table">
                 <TableHead className={css.tableHead}>
                     <TableRow>{

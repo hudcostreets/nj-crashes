@@ -13,6 +13,7 @@ import { loadPlots } from "@rdub/next-plotly/plot-load";
 import { NjspPlot } from "@/src/njsp/plot";
 import * as Njsp from "@/src/njsp/plot";
 import { loadProps } from "@/server/njsp/plot";
+import { NjdotRawData, NjspFatalAcc } from "@/src/urls";
 
 type Props = {
     plotsDict: PlotsDict
@@ -69,15 +70,10 @@ const Home = ({ plotsDict, njspProps, }: Props) => {
             <main className={css.main}>
                 <h1 className={css.title}>{title}</h1>
                 <p>
-                    <A href={`#per-year`}>The first 5 plots below</A> come from <A
-                    title={"NJ State Police fatal crash data"} href={"https://nj.gov/njsp/info/fatalacc/"}>NJ State
-                    Police fatal crash data</A> (2008-present). {"It's generally current to the previous day."}
+                    <A href={`#per-year`}>The first 5 plots below</A> come from <A title={"NJ State Police fatal crash data"} href={NjspFatalAcc}>NJ State Police fatal crash data</A> (2008-present). {"It's generally current to the previous day."}
                 </p>
                 <p>
-                    <A href={"#njdot"}>Below that</A> are plots of <A title={"NJ DOT raw crash data"}
-                                                                      href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}>NJ
-                    DOT raw crash data</A>, which includes 6MM property-damage, injury, and fatal crashes from
-                    2001-2021. {`It's a richer dataset, but less up to date.`}
+                    <A href={"#njdot"}>Below that</A> are plots of <A title={"NJ DOT raw crash data"} href={NjdotRawData}>NJ DOT raw crash data</A>, which includes 6MM property-damage, injury, and fatal crashes from 2001-2021. {`It's a richer dataset, but less up to date.`}
                 </p>
                 <p>
                     <span className={css.bold}>Work in progress</span> map of NJDOT data: 5 years (2017-2021) of fatal

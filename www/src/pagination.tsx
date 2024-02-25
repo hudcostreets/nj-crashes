@@ -1,14 +1,24 @@
 import { Result } from "@/src/result";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { fold } from "fp-ts/Either";
 import css from "./pagination.module.scss";
+import FirstPageIcon from '@mui/icons-material/FirstPage';
+import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
+import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
+import LastPageIcon from '@mui/icons-material/LastPage';
+import { floor, min } from "@rdub/base/math";
+import useSessionStorageState from "use-session-storage-state";
 
 export const PageSizes = [ 10, 20, 50 ]
-export const DefaultPageSize = PageSizes[1]
+export const DefaultPageSize = PageSizes[0]
 
-export function usePaginationControls(defaults: { page?: number, perPage?: number } = {}): PaginationBase {
-    const [ perPage, setPerPage ] = useState<number>(defaults.perPage ?? DefaultPageSize)
-    const [ page, setPage ] = useState<number>(defaults.page ?? 0)
+export const perPageKey = (id: string) => `${id}-per-page`
+export const pageKey = (id: string) => `${id}-page`
+
+export function usePaginationControls(defaults: { id: string, page?: number, perPage?: number }): PaginationBase {
+    const { id } = defaults
+    const [ perPage, setPerPage ] = useSessionStorageState<number>(perPageKey(id), { defaultValue: defaults.perPage ?? DefaultPageSize })
+    const [ page, setPage ] = useSessionStorageState<number>(pageKey(id), { defaultValue: defaults.page ?? 0 })
     return { perPage, setPerPage, page, setPage }
 }
 
@@ -35,12 +45,6 @@ export function useResultPagination<T>(
         [ page, setPage, perPage, setPerPage, total ]
     )
 }
-
-import FirstPageIcon from '@mui/icons-material/FirstPage';
-import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
-import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
-import LastPageIcon from '@mui/icons-material/LastPage';
-import { floor, min } from "@rdub/base/math";
 
 export type PaginationBase = {
     page: number

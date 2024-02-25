@@ -9,13 +9,14 @@ export type Props = {
 }
 
 // [Driver](https://thenounproject.com/icon/driver-1847797/) by Musmellow from https://thenounproject.com/browse/icons/term/driver/ Noun Project (CC BY 3.0)
+// Other options:
+// - https://thenounproject.com/icon/driver-4058513/ (U)
+// - https://thenounproject.com/icon/driver-3968497/ (F)
+// - https://thenounproject.com/icon/driver-3968501/ (M)
 export function Driver({ className, style, title }: Props) {
     const svg = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            version="1.1"
-            x="0px"
-            y="0px"
             viewBox="14 5 70 88"
             className={`${css.icon} ${css.driver} ${className ?? ''}`}
             style={style}
@@ -31,21 +32,49 @@ export function Driver({ className, style, title }: Props) {
     return title ? <Tooltip title={title}>{svg}</Tooltip> : svg
 }
 
+
+export function Person({ className, style, title }: Props) {
+    const svg = (
+        // <svg
+        //     xmlns="http://www.w3.org/2000/svg"
+        //     viewBox="2 0 20 24"
+        //     className={`${css.icon} ${css.person} ${className ?? ''}`}
+        //     style={style}
+        // >
+        //     <path d="M8.44,11.19c.3,.26,.63,.48,.99,.66,.77,.42,1.64,.65,2.57,.65s1.8-.23,2.57-.65c.36-.18,.69-.4,.99-.66,1.18-1.01,1.94-2.51,1.94-4.19,0-3.03-2.47-5.5-5.5-5.5S6.5,3.97,6.5,7c0,1.68,.76,3.18,1.94,4.19Z" />
+        //     <path d="M5.36,22.5h13.28c.66,0,1.24-.43,1.45-1.07,.26-.83,.39-1.69,.39-2.56,0-2.98-1.54-5.68-3.99-7.18-.09,.09-.18,.18-.28,.26-.17,.15-.35,.28-.54,.41-.21,.14-.42,.27-.65,.38-.91,.5-1.94,.76-3.02,.76s-2.11-.26-3.05-.77c-.21-.1-.42-.23-.62-.37-.19-.12-.37-.26-.54-.41-.1-.08-.19-.17-.28-.26-2.45,1.5-3.99,4.2-3.99,7.18,0,.87,.13,1.73,.39,2.56,.21,.64,.79,1.07,1.45,1.07Z" />
+        // </svg>
+        <svg viewBox="3 0 25 30" className={`${css.icon} ${css.passenger} ${className ?? ''}`} style={style}>
+            <g transform={"translate(15.5 15)"}>
+                <g transform={"translate(-18 -15)"}>
+                    <circle cx="17.94653" cy="7.35815" r="5.35815"/>
+                    <path
+                        d="M7.8689,20.46265V28.469A1.53531,1.53531,0,0,0,9.39966,30h14.3291L10.3335,16.58936A4.26837,4.26837,0,0,0,7.8689,20.46265Z M28.01538,28.469V20.46265A4.27642,4.27642,0,0,0,23.72876,16.176H14.2373L27.60205,29.52539A1.5925,1.5925,0,0,0,28.01538,28.469Z"/>
+                </g>
+                <g transform={"scale(-1 1),translate(-18 -15)"}>
+                    <circle cx="17.94653" cy="7.35815" r="5.35815"/>
+                    <path
+                        d="M7.8689,20.46265V28.469A1.53531,1.53531,0,0,0,9.39966,30h14.3291L10.3335,16.58936A4.26837,4.26837,0,0,0,7.8689,20.46265Z M28.01538,28.469V20.46265A4.27642,4.27642,0,0,0,23.72876,16.176H14.2373L27.60205,29.52539A1.5925,1.5925,0,0,0,28.01538,28.469Z"/>
+                </g>
+            </g>
+        </svg>
+)
+return title ?
+    <Tooltip title={title}>{svg}</Tooltip> : svg
+}
+
 // [Passenger](https://thenounproject.com/icon/passenger-4353992/) by Luiz Carvalho from https://thenounproject.com/browse/icons/term/passenger/ Noun Project (CC BY 3.0)
-export function Passenger({ className, style, title }: Props) {
+export function Passenger({className, style, title}: Props) {
     const svg = (
         <svg
-            viewBox="3 1 26 30"
+            viewBox="5.5 0 25 30"
             className={`${css.icon} ${css.passenger} ${className ?? ''}`}
             style={style}
         >
-            <circle cx="17.94653" cy="7.35815" r="5.35815"/>
-            <path
-                d="M7.8689,20.46265V28.469A1.53531,1.53531,0,0,0,9.39966,30h14.3291L10.3335,16.58936A4.26837,4.26837,0,0,0,7.8689,20.46265Z"/>
-            <path
-                d="M28.01538,28.469V20.46265A4.27642,4.27642,0,0,0,23.72876,16.176H14.2373L27.60205,29.52539A1.5925,1.5925,0,0,0,28.01538,28.469Z"/>
-            <path
-                d="M10.80835,16.39038a4.28253,4.28253,0,0,1,1.34692-.21435h2.082l-8.094-8.09424L3.98462,10.24048l6.34888,6.34888A4.42005,4.42005,0,0,1,10.80835,16.39038Z"/>
+            <circle cx="17.94653" cy="7.35815" r="5.35815" />
+            <path d="M7.8689,20.46265V28.469A1.53531,1.53531,0,0,0,9.39966,30h14.3291L10.3335,16.58936A4.26837,4.26837,0,0,0,7.8689,20.46265Z" />
+            <path d="M28.01538,28.469V20.46265A4.27642,4.27642,0,0,0,23.72876,16.176H14.2373L27.60205,29.52539A1.5925,1.5925,0,0,0,28.01538,28.469Z" />
+            {/*<path d="M10.80835,16.39038a4.28253,4.28253,0,0,1,1.34692-.21435h2.082l-8.094-8.09424L3.98462,10.24048l6.34888,6.34888A4.42005,4.42005,0,0,1,10.80835,16.39038Z" />*/}
         </svg>
     )
     return title ? <Tooltip title={title}>{svg}</Tooltip> : svg

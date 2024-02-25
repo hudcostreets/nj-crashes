@@ -17,10 +17,11 @@
 
 .subtitle {
   margin: 0;
+  font-weight: bold;
 }
 
 .crashesTable {
-  margin: 1em 0;
+  margin: 0.5em 0;
   width: 100%;
   //border-collapse: collapse;
   th {
@@ -39,4 +40,11 @@
 
 .njspPlot {
 
+}
+
+.section {
+    margin: 1em 0 1.5em;
+    h2 {
+        margin: 0.5em 0;
+    }
 }

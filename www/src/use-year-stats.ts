@@ -2,7 +2,6 @@ import { Base } from "@rdub/react-sql.js-httpvfs/query";
 import { useMemo } from "react";
 import { useSqlQuery } from "@/src/sql";
 import { Either, map } from "fp-ts/Either";
-import { Totals } from "@/src/crash";
 import { Row } from "@/src/result-table";
 import { o2a } from "@rdub/base/objs";
 
