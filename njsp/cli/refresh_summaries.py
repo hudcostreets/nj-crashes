@@ -2,8 +2,8 @@ import click
 from datetime import datetime
 from utz import cd, err, process
 
+from nj_crashes.utils.nb import execute
 from njsp.cli.base import command
-from njsp.nb import execute
 from njsp.paths import ANNUAL_SUMMARIES, annual_ytc_relpath
 
 

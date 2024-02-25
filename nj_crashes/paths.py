@@ -16,6 +16,8 @@ HOMICIDES_PQT = join(DATA_DIR, 'homicides.parquet')
 
 COUNTY_CITY_CODES_PQT = join(DATA_DIR, 'county-city-codes.parquet')
 
+MUNIS_GEOJSON = join(PUBLIC_DIR, "Municipal_Boundaries_of_NJ.geojson")
+
 BKT = 'nj-crashes'
 S3 = f's3://{BKT}'
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import click
 
+from nj_crashes.utils.nb import execute
 from njsp.cli.base import command
-from njsp.nb import execute
 
 
 @command

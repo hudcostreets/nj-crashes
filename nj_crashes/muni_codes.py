@@ -1,5 +1,19 @@
+from functools import cache
+from os.path import exists
+
 import pandas as pd
 from typing import Literal
+import geopandas as gpd
+from utz import run
+
+from nj_crashes.paths import MUNIS_GEOJSON, relpath
+
+
+@cache
+def load_munis_geojson() -> gpd.GeoDataFrame:
+    if not exists(MUNIS_GEOJSON):
+        run('dvc', 'pull', relpath(MUNIS_GEOJSON))
+    return gpd.read_file(MUNIS_GEOJSON)
 
 
 def update_mc(df: pd.DataFrame, tpe: Literal['sp', 'dot'], drop: bool = True) -> pd.DataFrame:

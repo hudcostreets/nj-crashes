@@ -15,6 +15,10 @@ on:
         type: boolean
         description: "Refresh data (from NJSP)"
         default: true
+      harmonize_muni_codes:
+        type: boolean
+        description: "Harmonize county/muni codes"
+        default: true
       update_pqts:
         type: boolean
         description: "Update parquets (in this repo)"
@@ -46,7 +50,7 @@ jobs:
     steps:
       - name: Setup Python?
         id: needs_python
-        run: echo "y=${{ github.event.schedule || inputs.refresh_data || inputs.update_pqts || inputs.update_slack_sha || inputs.update_plots || inputs.post_to_slack || '' }}" | tee -a $GITHUB_OUTPUT
+        run: echo "y=${{ github.event.schedule || inputs.refresh_data || inputs.harmonize_muni_codes || inputs.update_pqts || inputs.update_slack_sha || inputs.update_plots || inputs.post_to_slack || '' }}" | tee -a $GITHUB_OUTPUT
       - uses: actions/checkout@v4
         if: steps.needs_python.outputs.y || inputs.build_www
         with:
@@ -71,6 +75,10 @@ jobs:
         id: refresh_data
         if: github.event.schedule || inputs.refresh_data
         run: njsp -cc refresh_data
+      - name: Harmonize county/muni codes
+        id: harmonize_muni_codes
+        if: github.event.schedule || inputs.harmonize_muni_codes
+        run: njsp -cc harmonize_muni_codes
       - name: Update parquets
         id: update_pqts
         if: (github.event.schedule || inputs.update_pqts) && (steps.refresh_data.outputs.sha || !inputs.short_circuit)
