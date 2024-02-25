@@ -5,6 +5,8 @@ from njdot.tbls import parse_type
 
 NJDOT_DIR = join(ROOT_DIR, 'njdot')
 DOT_DATA = join(NJDOT_DIR, 'data')
+DOT_DATA_S3 = 's3://nj-crashes/njdot/data'
+
 WWW_DOT = join(PUBLIC_DIR, 'njdot')
 CNS = f'{WWW_DOT}/with_cns.parquet'
 CRASHES_PQT = f'{DOT_DATA}/crashes.parquet'

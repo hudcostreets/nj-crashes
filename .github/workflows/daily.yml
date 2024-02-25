@@ -18,7 +18,7 @@ on:
       harmonize_muni_codes:
         type: boolean
         description: "Harmonize county/muni codes"
-        default: true
+        default: false
       update_pqts:
         type: boolean
         description: "Update parquets (in this repo)"
@@ -43,6 +43,11 @@ on:
         default: true
       slack_channel_id:
         description: "Slack channel override"
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: us-east-1
+  GH_TOKEN: ${{ secrets.GH_TOKEN }}
 jobs:
   refresh_data:
     name: Refresh NJSP data, dispatch www rebuild (if necessary)
@@ -82,10 +87,6 @@ jobs:
       - name: Update parquets
         id: update_pqts
         if: (github.event.schedule || inputs.update_pqts) && (steps.refresh_data.outputs.sha || !inputs.short_circuit)
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-1
         run: njsp -cc update_pqts --s3
       - name: Compute Slack update SHA
         # Use the relevant input SHA, if present, otherwise the output SHA from the `refresh_data` step above
@@ -95,11 +96,6 @@ jobs:
           echo "sha=${{ inputs.update_slack_sha || steps.refresh_data.outputs.sha }}" >> $GITHUB_OUTPUT
       - name: Update crash log
         if: inputs.update_crash_log || steps.refresh_data.outputs.sha
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-1
         run: njsp crash_log compute --s3 -v
       - name: Compute plot_data.changed
         id: plot_data
@@ -129,7 +125,6 @@ jobs:
         if: (github.event.schedule || inputs.post_to_slack) && (steps.update_slack_sha.outputs.sha || !inputs.short_circuit)
         run: njsp slack sync ${{ steps.update_slack_sha.outputs.sha }}
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ inputs.slack_channel_id || secrets.SLACK_CHANNEL_ID }}
       - name: Decide whether to rebuild www

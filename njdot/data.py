@@ -1,9 +1,11 @@
+from os.path import exists
+
 import dask.dataframe as dd
 import pandas as pd
 from dataclasses import dataclass, field, asdict
 from typing import Optional
 
-from njdot.paths import DOT_DATA
+from njdot.paths import DOT_DATA, DOT_DATA_S3
 from njdot.tbls import Type, TYPES
 
 START_YEAR, END_YEAR = 2001, 2022
@@ -67,15 +69,23 @@ class Data:
     types: list[Type] = field(default_factory=lambda: [*TYPES])
     columns: Optional[list[str]] = None
 
+    @staticmethod
+    def pqt_url(year: int, tpe: Type, region: str = 'NewJersey'):
+        name = f'{region}{year}{tpe}.pqt'
+        local_path = f'{DOT_DATA}/{year}/{name}'
+        if exists(local_path):
+            return local_path
+        else:
+            return f'{DOT_DATA_S3}/{year}/{name}'
+
     @property
     def ddf(self) -> dd.DataFrame:
         types = self.types
         if len(types) != 1:
             raise RuntimeError(f"Select a type ({ types}) before creating ddf")
         [tpe] = types
-        region = 'NewJersey'
         return dd.concat([
-            dd.read_parquet(f'{DOT_DATA}/{year}/{region}{year}{tpe}.pqt', columns=self.columns).assign(Year=year)
+            dd.read_parquet(self.pqt_url(year, tpe), columns=self.columns).assign(Year=year)
             for year in self.years
         ])
 
