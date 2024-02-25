@@ -218,8 +218,10 @@ def load_tbl(
     return df
 
 
-crash_idxs = [
+CRASH_IDXS = [
     ('severity', 'dt', 'cc', 'mc'),
+    ('cc', 'severity', 'dt'),
+    ('cc', 'mc', 'severity', 'dt'),
     ('severity', 'ilat', 'ilon'),
     ('severity', 'icc', 'dt'),
 ]

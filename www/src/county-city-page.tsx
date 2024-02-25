@@ -36,7 +36,10 @@ export default function CityPage(
     const njdotCrashes = useNjdotCrashRows({ urls, cc, cn, mc, mc2mn, ...njdotPaginationControls, requestChunkSize, })
     const njdotPagination = useResultPagination(
         yearStatsResult,
-        (ysds: YearStatsDicts) => ysds.totals.fc,
+        (ysds: YearStatsDicts) => {
+            const { fc, sic, mic, pic, } = ysds.totals
+            return fc + sic + mic + pic
+        },
         njdotPaginationControls,
     )
 
@@ -56,7 +59,7 @@ export default function CityPage(
                 {subtitle && <div className={css.subtitle}>{subtitle}</div>}
                 {
                     njspCrashes && <div className={css.section}>
-                        <h2>Fatal crashes</h2>
+                        <h2>Fatal crashes (2008-present)</h2>
                         <ResultTable
                             className={css.crashesTable}
                             result={njspCrashes}
@@ -67,7 +70,7 @@ export default function CityPage(
                 }
                 {
                     njdotCrashes && <div className={css.section}>
-                        <h2>Fatal crash details (2001-2021)</h2>
+                        <h2>Fatal / Injury crash details (2001-2021)</h2>
                         <ResultTable
                             className={css.crashesTable}
                             result={njdotCrashes}

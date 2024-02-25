@@ -38,7 +38,7 @@ export function RowsTable(
             <Table stickyHeader sx={{minWidth: 450}} size={"small"} aria-label="simple table">
                 <TableHead className={css.tableHead}>
                     <TableRow>{
-                        keys(rows[0]).map(
+                        keys(rows[0] ?? {}).map(
                             key =>
                                 key !== 'key' &&
                                 <Tooltip title={colTitles?.[key]} key={key} arrow>

@@ -13,7 +13,10 @@ from nj_crashes.paths import MUNIS_GEOJSON, relpath
 def load_munis_geojson() -> gpd.GeoDataFrame:
     if not exists(MUNIS_GEOJSON):
         run('dvc', 'pull', relpath(MUNIS_GEOJSON))
-    return gpd.read_file(MUNIS_GEOJSON)
+    gdf = gpd.read_file(MUNIS_GEOJSON)
+    gdf['cc'] = gdf.MUN_CODE.str[:2].astype(int)
+    gdf['mc'] = gdf.MUN_CODE.str[2:].astype(int)
+    return gdf.set_index(['cc', 'mc'])
 
 
 def update_mc(df: pd.DataFrame, tpe: Literal['sp', 'dot'], drop: bool = True) -> pd.DataFrame:

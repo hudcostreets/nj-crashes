@@ -9,7 +9,7 @@ from typing import Union, Tuple, Optional
 from utz import cached_property, DF, sxs, err
 
 from nj_crashes.geo import is_nj_ll, get_county_geometries
-from nj_crashes.muni_codes import update_mc
+from nj_crashes.muni_codes import update_mc, load_munis_geojson
 from nj_crashes.sri.mp05 import get_mp05_map
 from njdot.data import cn2cc
 from njdot.load import load_tbl, INDEX_NAME, pk_renames
@@ -107,29 +107,78 @@ def map_year_df(df: pd.DataFrame, year: int) -> pd.DataFrame:
         df[k] = df[k].replace('^(?:0|-1)?$', nan, regex=True).astype('Int8')
     df['cell_phone'] = df['cell_phone'].apply(lambda s: {'Y': True, 'N': False}[s])
 
-    cg = get_county_geometries()
     df.index = df.index.astype('int32')
+    # Move `dt` column to the front
     df = df[['dt'] + [ c for c in df if c != 'dt' ]]
 
-    err(f"crashes {year}: merging olat/olon with county geometries")
-    gdf = Crashes(df).gdf('o')
-    joined = sjoin(gdf.df[['olat', 'olon', 'geometry']], cg)
-    joined = joined.rename(columns={ 'index_right': 'ocn', })
-    with_ocn = sxs(gdf.df, joined.ocn).sort_index()
-    occ = with_ocn.ocn.map(cn2cc).astype('Int8').rename('occ')
-    with_ocn = sxs(with_ocn, occ).drop(columns=['geometry', 'ocn'])
+    mg = load_munis_geojson()
+    err(f"crashes {year}: merging olat/olon with muni geometries")
+    ogdf = Crashes(df).gdf('o')
+    joined = sjoin(ogdf.df[['olat', 'olon', 'geometry']], mg).rename(columns={
+        'index_right0': 'occ',
+        'index_right1': 'omc',
+    })
+    with_omc = (
+        sxs(
+            ogdf.df,
+            joined.occ,
+            joined.omc,
+        )
+        .sort_index()
+        .drop(columns='geometry')
+        .astype({
+            'occ': 'Int8',
+            'omc': 'Int8',
+        })
+    )
 
     err(f"crashes {year}: geocoding SRI/MPs")
-    ill = Crashes(with_ocn).mp_lls(append=True)
-    err(f"crashes {year}: merging ilat/ilon with county geometries")
+    ill = Crashes(with_omc).mp_lls(append=True)
+    err(f"crashes {year}: merging ilat/ilon with muni geometries")
     igdf = Crashes(ill).gdf('i')
-    ij = sjoin(igdf.df[['geometry']], cg)
-    ij = ij.rename(columns={ 'index_right': 'icn', })
-    with_cns = sxs(igdf.df, ij.icn).sort_index()
-    icc = with_cns.icn.map(cn2cc).astype('Int8').rename('icc')
-    with_cns = sxs(with_cns, icc).drop(columns=['geometry', 'icn'])
+    ij = sjoin(igdf.df[['geometry']], mg).rename(columns={
+        'index_right0': 'icc',
+        'index_right1': 'imc',
+    })
+    dupe_mask = ij.index.duplicated(keep=False)
+    dupe_idxs = ij.index[ dupe_mask]
+    uniq_idxs = ij.index[~dupe_mask]
+    dupes = ij.loc[dupe_idxs]
+    uniqs = ij.loc[uniq_idxs]
 
-    return with_cns
+    cols = ['id', 'cc', 'mc']
+    recovered = (
+        dupes
+        .reset_index()
+        .drop_duplicates()
+        .rename(columns={ 'icc': 'cc', 'imc': 'mc', })
+        .merge(
+            df.reset_index()[cols],
+            on=cols,
+        )
+        .set_index('id')
+        .rename(columns={ 'cc': 'icc', 'mc': 'imc', })
+    )
+    if not dupes.empty:
+        dupe_hist = dupes.index.value_counts().value_counts().to_dict()
+        err(f"Recovered {len(recovered)} (ilat/ilon) / (cc,mc) pairs from {len(dupes)} duplicate mappings ({dupe_hist})")
+
+    ij_deduped = pd.concat([ uniqs, recovered ]).sort_index()
+    assert not ij_deduped.index.duplicated().any()
+    with_imc = (
+        sxs(
+            igdf.df,
+            ij_deduped.icc,
+            ij_deduped.imc,
+        )
+        .sort_index()
+        .drop(columns='geometry')
+        .astype({
+            'icc': 'Int8',
+            'imc': 'Int8',
+        })
+    )
+    return with_imc
 
 
 def load(

@@ -1,5 +1,5 @@
 import { Result } from "@/src/result";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fold } from "fp-ts/Either";
 import css from "./pagination.module.scss";
 import FirstPageIcon from '@mui/icons-material/FirstPage';
@@ -68,7 +68,42 @@ export function Pagination(
         () => Math.floor(total / perPage),
         [total, perPage]
     )
+    const [ pageTxtState, setPageTxtState ] = useState<string>((page + 1).toString())
+    const [ pageTxtStateDirty, setPageTxtStateDirty ] = useState<boolean>(false)
+    useEffect(
+        () => {
+            setPageTxtState((page + 1).toString())
+            setPageTxtStateDirty(false)
+        },
+        [ page ]
+    )
     return <div className={css.tablePagination}>
+        <label className={css.curPage}>
+            {page * perPage + 1}-{min(total, (page + 1) * perPage)} of {total.toLocaleString()}
+        </label>
+        <label className={css.pageNum}>
+            Page:
+            <input
+                // contentEditable
+                className={pageTxtStateDirty ? css.dirty : ''}
+                type="number"
+                value={pageTxtState}
+                onChange={e => {
+                    const pageTxt = e.target.value || ''
+                    setPageTxtState(pageTxt)
+                    const newPage = parseInt(pageTxt) - 1
+                    if ((!newPage && newPage !== 0) || newPage < 0 || newPage > lastPage) {
+                        setPageTxtStateDirty(true)
+                        return
+                    }
+                    if (newPage === page && pageTxtStateDirty) {
+                        setPageTxtStateDirty(false)
+                    }
+                    console.log(`onPageChange:`, e, newPage)
+                    setPage(newPage)
+                }}
+            />
+        </label>
         <label className={css.pageSize}>
             Page size:
             <select
@@ -85,8 +120,6 @@ export function Pagination(
             }</select>
         </label>
         <span className={css.pageCount}>
-            <label
-                className={css.curPage}>{page * perPage + 1}-{min(total, (page + 1) * perPage)} of {total.toLocaleString()}</label>
             <button
                 disabled={page === 0}
                 onClick={() => {

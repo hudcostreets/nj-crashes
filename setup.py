@@ -8,6 +8,7 @@ setup(
     entry_points={
         'console_scripts': [
             'njsp=njsp.cli.main:main',
+            'njdot=njdot.cli.main:main',
         ],
     }
 )
