@@ -1,0 +1,5 @@
+outs:
+- md5: b48c987d6807824e418ee6129249f30c
+  size: 2410020864
+  hash: md5
+  path: crashes.db

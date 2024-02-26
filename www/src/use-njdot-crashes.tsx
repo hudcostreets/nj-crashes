@@ -16,6 +16,7 @@ import { CrashesPedestrians, Pedestrian, useCrashPedestrians } from "@/src/crash
 import { CrashesVehicles, useCrashVehicles, Vehicle } from "@/src/crash-vehicles";
 import A from "@rdub/next-base/a";
 import { Tooltip } from "@/src/tooltip"
+import moment from "moment-timezone";
 
 export type Base = Omit<sql.Base, 'url'> & {
     urls: Urls
@@ -25,22 +26,21 @@ export type Props = Base & {
     cc: number
     cn: string
     mc?: number
-    page: number
+    before: string
     perPage: number
 }
 
-export function useNjdotCrashes({ cc, mc, page, perPage, timerId = "crashes", urls, ...base }: Props): Result<Crash> | null {
+export function useNjdotCrashes({ cc, mc, before, perPage, timerId = "njdot-crashes", urls, ...base }: Props): Result<Crash> | null {
+    const m = moment.tz(before, "America/New_York").add(1, 'day')
+    const mStr = m.format('YYYY-MM-DD')
     const query = useMemo(
-        () => {
-            const offset = page * perPage
-            return `
-                select * from crashes
-                where severity='f' and cc=${cc}${mc ? ` and mc=${mc}` : ""}
-                order by dt desc
-                limit ${perPage} offset ${offset}
-            `
-        },
-        [ page, perPage ]
+        () => `
+            select * from crashes
+            where (severity='i' or severity='f') and cc=${cc}${mc ? ` and mc=${mc}` : ""} and dt < '${mStr}'
+            order by dt desc
+            limit ${perPage}
+        `,
+        [ before, perPage, ]
     )
     return useSqlQuery<Crash>({ ...base, url: urls.dot.crashes, timerId, query })
 }
@@ -161,7 +161,7 @@ export function gmapsUrl({ lat, lon, }: { lat: number, lon: number }) {
     return `https://www.google.com/maps/?q=${lat},${lon}`
 }
 
-export function getCrashRows({ rows, cols, county, crashOccupants, crashPedestrians, crashVehicles, }: {
+export function getNjdotCrashRows({ rows, cols, county, crashOccupants, crashPedestrians, crashVehicles, }: {
     rows: Crash[]
     cols: Col[]
     county?: County
@@ -179,7 +179,11 @@ export function getCrashRows({ rows, cols, county, crashOccupants, crashPedestri
             ...cols.map(col => {
                 let txt: ReactNode = ''
                 if (col == 'dt') {
-                    txt = strftime('%-m/%-d/%y %-I:%M%p', new Date(row.dt))
+                    txt = <Tooltip title={`Crash ID: ${id}`}>
+                        <span>{
+                            strftime('%-m/%-d/%y %-I:%M%p', new Date(row.dt))
+                        }</span>
+                    </Tooltip>
                 } else if (col == 'll') {
                     const { ilat, ilon, olat, olon } = row
                     const [ lat, lon ] = ilat && ilon ? [ ilat, ilon ] : [ olat, olon ]
@@ -235,7 +239,7 @@ export function useNjdotCrashRows({ mc2mn, ...props }: Props & { mc2mn?: MC2MN }
             console.log("crashRows effect")
             const county = mc2mn ? { cn: props.cn, mc2mn } : undefined
             const crashRows = map(
-                (crashes: Crash[]) => getCrashRows({ rows: crashes, cols, county, crashOccupants, crashPedestrians, crashVehicles, })
+                (crashes: Crash[]) => getNjdotCrashRows({ rows: crashes, cols, county, crashOccupants, crashPedestrians, crashVehicles, })
             )(crashesResult)
             return crashRows
         },

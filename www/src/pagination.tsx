@@ -1,5 +1,6 @@
+import moment from 'moment-timezone'
 import { Result } from "@/src/result";
-import { useEffect, useMemo, useState } from "react";
+import { Dispatch, useCallback, useEffect, useMemo, useState } from "react";
 import { fold } from "fp-ts/Either";
 import css from "./pagination.module.scss";
 import FirstPageIcon from '@mui/icons-material/FirstPage';
@@ -8,18 +9,82 @@ import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 import LastPageIcon from '@mui/icons-material/LastPage';
 import { floor, min } from "@rdub/base/math";
 import useSessionStorageState from "use-session-storage-state";
+import strftime from "strftime";
+import { ArrowForward, ArrowForwardIos, SvgIconComponent } from "@mui/icons-material";
+import SvgIcon from "@mui/material/SvgIcon/SvgIcon";
+import { Tooltip } from "@mui/material";
 
 export const PageSizes = [ 10, 20, 50 ]
 export const DefaultPageSize = PageSizes[0]
 
 export const perPageKey = (id: string) => `${id}-per-page`
 export const pageKey = (id: string) => `${id}-page`
+export const beforeKey = (id: string) => `${id}-before`
 
 export function usePaginationControls(defaults: { id: string, page?: number, perPage?: number }): PaginationBase {
     const { id } = defaults
     const [ perPage, setPerPage ] = useSessionStorageState<number>(perPageKey(id), { defaultValue: defaults.perPage ?? DefaultPageSize })
     const [ page, setPage ] = useSessionStorageState<number>(pageKey(id), { defaultValue: defaults.page ?? 0 })
     return { perPage, setPerPage, page, setPage }
+}
+
+export const MDY = /(?<m>\d\d?)\/(?<d>\d\d?)\/(?<y>\d\d)/
+export const YMD = /(?<y>\d\d\d\d)-(?<m>\d\d)-(?<d>\d\d)/
+
+export function useDatePaginationControls(
+    defaults: {
+        id: string
+        before?: string
+        perPage?: number
+    },
+    { start, end }: {
+        start?: string
+        end?: string
+    }
+): DatePaginationBase {
+    const { id } = defaults
+    const [ perPage, setPerPage ] = useSessionStorageState<number>(
+        perPageKey(id),
+        { defaultValue: defaults.perPage ?? DefaultPageSize }
+    )
+    const [ before, _setBefore ] = useSessionStorageState<string>(
+        beforeKey(id),
+        {
+            defaultValue: end ?? defaults.before ?? strftime("%Y-%m-%d", new Date()),
+            serializer: {
+                parse: (s: string) => {
+                    if (!s.match(YMD)) {
+                        console.warn("useDatePaginationControls: invalid date", s)
+                        return end ?? strftime("%Y-%m-%d", new Date())
+                    }
+                    return s
+                },
+                stringify: (s: unknown) => {
+                    const str = s as string
+                    if (!str.match(YMD)) {
+                        console.warn("useDatePaginationControls: invalid date", str)
+                        return end ?? strftime("%Y-%m-%d", new Date())
+                    }
+                    return str
+                }
+            }
+        }
+    )
+    const max = useMemo(() => end ?? strftime("%Y-%m-%d", new Date()), [ end ])
+    const setBefore = useCallback(
+        (before: string) => {
+            console.log("setBefore:", before)
+            if (!before.match(YMD)) {
+                console.warn("setBefore: invalid date", before)
+            } else if (before > max) {
+                _setBefore(max)
+            } else {
+                _setBefore(before)
+            }
+        },
+        [ _setBefore, max ]
+    )
+    return { perPage, setPerPage, before, setBefore, start, end }
 }
 
 export function useResultPagination<T>(
@@ -46,14 +111,53 @@ export function useResultPagination<T>(
     )
 }
 
-export type PaginationBase = {
-    page: number
-    setPage: (page: number) => void
+export function useResultDatePagination<T>(
+    result: Result<T>,
+    totalFn: (t: T) => number,
+    {
+        before, setBefore,
+        start, end,
+        perPage, setPerPage,
+    }: DatePaginationBase
+): DatePagination | undefined {
+    const total = useMemo(
+        () =>
+            result
+                ? fold(
+                    () => null,
+                    totalFn,
+                )(result)
+                : null,
+        [ result ]
+    )
+    return useMemo(
+        () => total === null ? undefined : { before, setBefore, start, end, perPage, setPerPage, total },
+        [ before, setBefore, start, end, perPage, setPerPage, total ]
+    )
+}
+
+export type PaginationCore = {
     perPage: number
     setPerPage: (perPage: number) => void
 }
 
+export type PaginationBase = PaginationCore & {
+    page: number
+    setPage: (page: number) => void
+}
+
 export type Pagination = PaginationBase & {
+    total: number
+}
+
+export type DatePaginationBase = PaginationCore & {
+    before: string
+    setBefore: (before: string) => void
+    start?: string
+    end?: string
+}
+
+export type DatePagination = DatePaginationBase & {
     total: number
 }
 
@@ -148,6 +252,136 @@ export function Pagination(
                     setPage(lastPage)
                 }}
             ><LastPageIcon /></button>
+        </span>
+    </div>
+}
+
+export const TZ = "America/New_York"
+
+export function Button(
+    { cur, disabled, add, unit, Icon, setBefore, className, }: {
+        cur: string
+        disabled?: boolean
+        Icon: SvgIconComponent
+        add: boolean
+        unit: 'day' | 'month' | 'year'
+        setBefore: Dispatch<string>
+        className?: string
+    }
+) {
+    return (
+        <Tooltip title={add ? `Forward 1 ${unit}` : `Back 1 ${unit}`}>
+            <span>
+                <button
+                    disabled={disabled}
+                    onClick={() => {
+                        let m = moment.tz(cur, TZ)
+                        if (add)
+                            m = m.add(1, unit)
+                        else
+                            m = m.subtract(1, unit)
+                        const nxt = m.format("YYYY-MM-DD")
+                        console.log(`new date: ${nxt}`)
+                        setBefore(nxt)
+                    }}
+                >
+                    <Icon className={`${className ?? ""} ${add ? "" : css.back}`} />
+                </button>
+            </span>
+        </Tooltip>
+    )
+}
+
+export function DatePagination(
+    {
+        before, setBefore,
+        start, end,
+        perPage, setPerPage,
+        total,
+    }: DatePagination
+) {
+    console.log("DatePagination: before", before, "end:", end)
+    // const lastPage = useMemo(
+    //     () => Math.floor(total / perPage),
+    //     [ total, perPage ]
+    // )
+    const [dateTxtState, setDateTxtState] = useState<string>(before)
+    const [dateTxtStateDirty, setDateTxtStateDirty] = useState<boolean>(false)
+    const mStr = useMemo(() => moment.tz(before, TZ).format("M/D/YY"), [ before ])
+    useEffect(
+        () => {
+            setDateTxtState(mStr)
+            setDateTxtStateDirty(false)
+        },
+        [ before, mStr ]
+    )
+    const fwdDisabled = useMemo(
+        () => before >= (end ?? strftime("%Y-%m-%d", new Date())),
+        [ before, end ]
+    )
+    return <div className={css.tablePagination}>
+        <label className={css.curPage}>{perPage} crashes before {mStr}</label>
+        <label className={css.curPage}>{total.toLocaleString()} total</label>
+        <label className={css.beforeDate}>
+            Before:
+            <input
+                className={dateTxtStateDirty ? css.dirty : ''}
+                type="text"
+                value={dateTxtState}
+                onChange={e => {
+                    const dateTxt = e.target.value || ''
+                    setDateTxtState(dateTxt)
+                    const match = dateTxt.match(MDY)
+                    if (!match) {
+                        // if (!dateTxt.match(/\d\d\d\d-\d\d-\d\d/)) {
+                        setDateTxtStateDirty(true)
+                        return
+                    }
+                    const { y, m, d } = match.groups as { y: string, m: string, d: string }
+                    let ymd = `20${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
+                    if (end && ymd > end) {
+                        ymd = end
+                    }
+                    if (dateTxt == before && dateTxtStateDirty) {
+                        setDateTxtStateDirty(false)
+                    }
+                    console.log(`new "before" date:`, ymd)
+                    setBefore(ymd)
+                }}
+            />
+        </label>
+        <label className={css.pageSize}>
+            Page size:
+            <select
+                value={perPage}
+                onChange={e => {
+                    const newPerPage = parseInt(e.target.value)
+                    console.log(`onRowsPerPageChange:`, e, newPerPage)
+                    setPerPage(newPerPage)
+                }}
+            >{
+                PageSizes.map(ps => <option key={ps}>{ps}</option>)
+            }</select>
+        </label>
+        <span className={css.pageCount}>
+            {/* TODO: "first page", seek to earliest date, order by dt asc, reverse during display logic */}
+            <Button cur={before} Icon={ArrowForward} add={false} unit={'year'} setBefore={setBefore} />
+            <Button cur={before} Icon={ArrowForwardIos} add={false} unit={'month'} setBefore={setBefore} className={css.reduce} />
+            <Button cur={before} Icon={KeyboardArrowRight} add={false} unit={'day'} setBefore={setBefore} />
+            <Button cur={before} Icon={KeyboardArrowRight} add={true} unit={'day'} setBefore={setBefore} disabled={fwdDisabled} />
+            <Button cur={before} Icon={ArrowForwardIos} add={true} unit={'month'} setBefore={setBefore} disabled={fwdDisabled} className={css.reduce} />
+            <Button cur={before} Icon={ArrowForward} add={true} unit={'year'} setBefore={setBefore} disabled={fwdDisabled} />
+            <Tooltip title={`Seek to end (${end})`}>
+                <button
+                    disabled={fwdDisabled}
+                    onClick={() => {
+                        console.log(`⇾: end`, end)
+                        setBefore(end ?? strftime("%Y-%m-%d", new Date()))
+                    }}
+                >
+                    <LastPageIcon />
+                </button>
+            </Tooltip>
         </span>
     </div>
 }

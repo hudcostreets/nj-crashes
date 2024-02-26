@@ -1,4 +1,4 @@
-import { usePaginationControls, useResultPagination } from "@/src/pagination";
+import { useDatePaginationControls, usePaginationControls, useResultDatePagination, useResultPagination } from "@/src/pagination";
 import { ReactNode, useState } from "react";
 import { ColTitles, useYearStats, YearStatsDicts, yearStatsRows } from "@/src/use-year-stats";
 import { useNjdotCrashRows } from "@/src/use-njdot-crashes";
@@ -31,10 +31,10 @@ export default function CityPage(
 ) {
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
 
-    const njdotPaginationControls = usePaginationControls({ id: "njdot-crashes" })
+    const njdotPaginationControls = useDatePaginationControls({ id: "njdot-crashes" }, { start: "2001-01-01", end: "2022-01-01", })
     const yearStatsResult = useYearStats({ url: urls.dot.cmymc, cc, mc, requestChunkSize, })
     const njdotCrashes = useNjdotCrashRows({ urls, cc, cn, mc, mc2mn, ...njdotPaginationControls, requestChunkSize, })
-    const njdotPagination = useResultPagination(
+    const njdotPagination = useResultDatePagination(
         yearStatsResult,
         (ysds: YearStatsDicts) => {
             const { fc, sic, mic, pic, } = ysds.totals
@@ -59,35 +59,38 @@ export default function CityPage(
                 {subtitle && <div className={css.subtitle}>{subtitle}</div>}
                 {
                     njspCrashes && <div className={css.section}>
-                        <h2>Fatal crashes (2008-present)</h2>
+                        <h2>Fatal crashes</h2>
+                        <div className={css.sectionSubtitle}>2008 – present</div>
                         <ResultTable
                             className={css.crashesTable}
                             result={njspCrashes}
                             pagination={njspPagination}
                         />
-                        <div className={css.footer}>Source: <A href={NjspFatalAcc}>NJ State Police</A> (fatal crashes only, 2008-present; typically published between a day and a few months after the fact)</div>
+                        <div className={css.footer}>Source: <A href={NjspFatalAcc}>NJ State Police</A> (fatal crashes only; typically published between a day and a few months after the fact)</div>
                     </div>
                 }
                 {
                     njdotCrashes && <div className={css.section}>
-                        <h2>Fatal / Injury crash details (2001-2021)</h2>
+                        <h2>Fatal / Injury crash details</h2>
+                        <div className={css.sectionSubtitle}>2001-2021</div>
                         <ResultTable
                             className={css.crashesTable}
                             result={njdotCrashes}
                             pagination={njdotPagination}
                         />
-                        <div className={css.footer}>Source: <A href={NjdotRawData}>NJ DOT</A> (includes non-fatal crashes, published ≈2 years after the fact; most recent data: 2021)</div>
+                        <div className={css.footer}>Source: <A href={NjdotRawData}>NJ DOT</A> (includes non-fatal crashes; most recent data: 2021)</div>
                     </div>
                 }
                 {
-                    yearStatsResult && <>
-                        <h2>Yearly stats (2001-2021)</h2>
+                    yearStatsResult && <div className={css.section}>
+                        <h2>Annual stats</h2>
+                        <div className={css.sectionSubtitle}>2001-2021</div>
                         <ResultTable
                             className={`${css.crashesTable} ${css.withTotals}`}
                             result={map((ysds: YearStatsDicts) => yearStatsRows({ ysds }))(yearStatsResult)}
                             colTitles={ColTitles}
                         />
-                    </>
+                    </div>
                 }
             </div>
         </div>

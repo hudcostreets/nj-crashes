@@ -11,12 +11,12 @@ import * as React from "react";
 import { keys, o2a } from "@rdub/base/objs";
 import { fold } from "fp-ts/Either";
 import { TableFooter } from "@mui/material";
-import { Pagination } from "@/src/pagination";
+import { DatePagination, Pagination } from "@/src/pagination";
 import { Tooltip } from "./tooltip";
 
 export type Props<Row = any> = {
     className?: string
-    pagination?: Pagination
+    pagination?: Pagination | DatePagination
 }
 
 export type Row = {
@@ -66,9 +66,11 @@ export function RowsTable(
                     pagination &&
                     <TableFooter>
                         <TableRow>
-                            <td colSpan={6}>
-                                <Pagination {...pagination} />
-                            </td>
+                            <td colSpan={6}>{
+                                ('before' in pagination)
+                                    ? <DatePagination {...pagination} />
+                                    : <Pagination {...pagination} />
+                            }</td>
                         </TableRow>
                     </TableFooter>
                 }

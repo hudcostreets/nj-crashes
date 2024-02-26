@@ -37,6 +37,7 @@
         "leaflet-edgebuffer": "^1",
         "mapbox-gl": "^3.0.1",
         "maplibre-gl": "^3.6.2",
+        "moment-timezone": "^0.5.45",
         "next": "^14",
         "plotly.js": "^2",
         "react": "^18",

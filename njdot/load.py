@@ -225,6 +225,3 @@ CRASH_IDXS = [
     ('severity', 'ilat', 'ilon'),
     ('severity', 'icc', 'dt'),
 ]
-
-
-S3_PREFIX = 's3://nj-crashes/njdot/data'
