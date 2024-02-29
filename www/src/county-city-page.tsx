@@ -2,7 +2,7 @@ import { useDatePaginationControls, usePaginationControls, useResultDatePaginati
 import { ReactNode, useState } from "react";
 import { ColTitles, useYearStats, YearStatsDicts, yearStatsRows } from "@/src/use-year-stats";
 import { useNjdotCrashRows } from "@/src/use-njdot-crashes";
-import css from "@/pages/c/[county]/city.module.scss";
+import css from "./county-city.module.scss";
 import { ResultTable } from "@/src/result-table";
 import { map } from "fp-ts/Either";
 import { NjdotRawData, NjspFatalAcc, Urls } from "@/src/urls";
@@ -10,6 +10,9 @@ import { MC2MN } from "@/src/county";
 import { Total, useNjspCrashesTotal, useNjspCrashRows } from "@/src/use-njsp-crashes";
 import singleton from "@rdub/base/singleton";
 import A from "@rdub/next-base/a";
+import * as Njsp from "@/src/njsp/plot";
+import { NjspPlot } from "@/src/njsp/plot";
+import { Data, NjspChildren, njspPlotSpec } from "@/src/plotSpecs";
 
 export type Props = {
     urls: Urls
@@ -17,21 +20,26 @@ export type Props = {
     cn: string
     mc?: number
     mc2mn?: MC2MN
+    barProps?: Njsp.Props
     title: string
     subtitle?: ReactNode
 }
+
+export const DOTStart = "2001-01-01"
+export const DOTEnd = "2021-12-31"
 
 export default function CityPage(
     {
         urls,
         cc, cn,
         mc, mc2mn,
-        title, subtitle
+        title, subtitle,
+        barProps,
     }: Props
 ) {
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
 
-    const njdotPaginationControls = useDatePaginationControls({ id: "njdot-crashes" }, { start: "2001-01-01", end: "2022-01-01", })
+    const njdotPaginationControls = useDatePaginationControls({ id: "njdot-crashes" }, { start: DOTStart, end: DOTEnd, })
     const yearStatsResult = useYearStats({ url: urls.dot.cmymc, cc, mc, requestChunkSize, })
     const njdotCrashes = useNjdotCrashRows({ urls, cc, cn, mc, mc2mn, ...njdotPaginationControls, requestChunkSize, })
     const njdotPagination = useResultDatePagination(
@@ -52,11 +60,30 @@ export default function CityPage(
         njspPaginationControls,
     )
 
+    // NJSP plot
+    const spec = {
+        ...njspPlotSpec,
+        children: ({ rundate, yearTotalsMap }: Data) =>
+            <NjspChildren rundate={rundate} yearTotalsMap={yearTotalsMap} includeWorstYearsBlurb={false} />
+    }
+    const plotTitle = `Deaths per year, by type`
+
     return (
         <div className={css.body}>
             <div className={css.container}>
                 <h1 className={css.title}>{title}</h1>
                 {subtitle && <div className={css.subtitle}>{subtitle}</div>}
+                {
+                    barProps &&
+                    <div className={css.njspPlot}>
+                        <NjspPlot
+                            {...barProps}
+                            heading={<h2>{plotTitle}</h2>}
+                            title={plotTitle}
+                            spec={spec}
+                        />
+                    </div>
+                }
                 {
                     njspCrashes && <div className={css.section}>
                         <h2>Fatal crashes</h2>

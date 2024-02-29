@@ -42,23 +42,30 @@ export const YM_SC_PID_SPECS: PlotSpec[] =
 
 export const estimationHref = 'https://nbviewer.org/github/neighbor-ryan/nj-crashes/blob/main/njsp/update-projections.ipynb'
 
+export function NjspChildren({ rundate, yearTotalsMap, includeWorstYearsBlurb }: Data & { includeWorstYearsBlurb?: boolean }) {
+    const total2021 = yearTotalsMap["2021"].total
+    const total2022 = yearTotalsMap["2022"].total
+    const prvYearTotal = yearTotalsMap[prvYear].total
+    const curYearMap = yearTotalsMap[curYear]
+    if (!curYearMap) {
+        console.warn(`NjspChildren: yearTotalsMap doesn't contain ${curYear}:`, yearTotalsMap)
+        return null
+    }
+    const { total: curYearTotal, projected: curYearProjected } = curYearMap
+    const curYearProjectedTotal = curYearTotal + curYearProjected
+    const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
+    return <>
+        <p>Click/Double-click the legend labels to toggle or solo each type.</p>
+        {includeWorstYearsBlurb !== false && <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>}
+        <p><A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, {curYear} has {curYearTotal} reported deaths, and <A href={estimationHref}>is on pace</A> for {curYearProjectedTotal}{curYearProjectedTotal > prvYearTotal ? `, exceeding ${prvYear}'s ${prvYearTotal}` : ""}.</p>
+    </>
+}
+
 export const njspPlotSpec: PlotSpec = {
     title: "NJ Traffic Deaths per Year", id: "per-year", name: "fatalities_per_year_by_type",
     menuName: "Traffic Deaths / Year", dropdownSection: "NJSP",
     filter: filterValues({ mapRange: HalfRoundWiden }),
-    children: ({ rundate, yearTotalsMap }: Data) => {
-        const total2021 = yearTotalsMap["2021"].total
-        const total2022 = yearTotalsMap["2022"].total
-        const prvYearTotal = yearTotalsMap[prvYear].total
-        const { total: curYearTotal, projected: curYearProjected } = yearTotalsMap[curYear]
-        const curYearProjectedTotal = curYearTotal + curYearProjected
-        const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
-        return <>
-            <p>Click/Double-click the legend to toggle/solo individual traces.</p>
-            <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
-            <p><A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, {curYear} has {curYearTotal} reported deaths, and <A href={estimationHref}>is estimated</A> to be on pace {curYearProjectedTotal > prvYearTotal ? `to exceed ${prvYear}, with` : `for`} {curYearProjectedTotal} deaths.</p>
-        </>
-    },
+    children: NjspChildren,
 }
 
 export const plotSpecs: PlotSpec[] = [

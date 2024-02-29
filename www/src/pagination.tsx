@@ -285,7 +285,7 @@ export function Button(
                         setBefore(nxt)
                     }}
                 >
-                    <Icon className={`${className ?? ""} ${add ? "" : css.back}`} />
+                    <Icon className={`${className ?? ""} ${add ? css.left : ""}`} />
                 </button>
             </span>
         </Tooltip>
@@ -301,10 +301,6 @@ export function DatePagination(
     }: DatePagination
 ) {
     console.log("DatePagination: before", before, "end:", end)
-    // const lastPage = useMemo(
-    //     () => Math.floor(total / perPage),
-    //     [ total, perPage ]
-    // )
     const [dateTxtState, setDateTxtState] = useState<string>(before)
     const [dateTxtStateDirty, setDateTxtStateDirty] = useState<boolean>(false)
     const mStr = useMemo(() => moment.tz(before, TZ).format("M/D/YY"), [ before ])
@@ -320,10 +316,22 @@ export function DatePagination(
         [ before, end ]
     )
     return <div className={css.tablePagination}>
-        <label className={css.curPage}>{perPage} crashes before {mStr}</label>
         <label className={css.curPage}>{total.toLocaleString()} total</label>
+        <label className={css.pageSize}>
+            Page size:
+            <select
+                value={perPage}
+                onChange={e => {
+                    const newPerPage = parseInt(e.target.value)
+                    console.log(`onRowsPerPageChange:`, e, newPerPage)
+                    setPerPage(newPerPage)
+                }}
+            >{
+                PageSizes.map(ps => <option key={ps}>{ps}</option>)
+            }</select>
+        </label>
         <label className={css.beforeDate}>
-            Before:
+            On or before:
             <input
                 className={dateTxtStateDirty ? css.dirty : ''}
                 type="text"
@@ -333,7 +341,6 @@ export function DatePagination(
                     setDateTxtState(dateTxt)
                     const match = dateTxt.match(MDY)
                     if (!match) {
-                        // if (!dateTxt.match(/\d\d\d\d-\d\d-\d\d/)) {
                         setDateTxtStateDirty(true)
                         return
                     }
@@ -350,38 +357,27 @@ export function DatePagination(
                 }}
             />
         </label>
-        <label className={css.pageSize}>
-            Page size:
-            <select
-                value={perPage}
-                onChange={e => {
-                    const newPerPage = parseInt(e.target.value)
-                    console.log(`onRowsPerPageChange:`, e, newPerPage)
-                    setPerPage(newPerPage)
-                }}
-            >{
-                PageSizes.map(ps => <option key={ps}>{ps}</option>)
-            }</select>
-        </label>
         <span className={css.pageCount}>
-            {/* TODO: "first page", seek to earliest date, order by dt asc, reverse during display logic */}
-            <Button cur={before} Icon={ArrowForward} add={false} unit={'year'} setBefore={setBefore} />
-            <Button cur={before} Icon={ArrowForwardIos} add={false} unit={'month'} setBefore={setBefore} className={css.reduce} />
-            <Button cur={before} Icon={KeyboardArrowRight} add={false} unit={'day'} setBefore={setBefore} />
-            <Button cur={before} Icon={KeyboardArrowRight} add={true} unit={'day'} setBefore={setBefore} disabled={fwdDisabled} />
-            <Button cur={before} Icon={ArrowForwardIos} add={true} unit={'month'} setBefore={setBefore} disabled={fwdDisabled} className={css.reduce} />
-            <Button cur={before} Icon={ArrowForward} add={true} unit={'year'} setBefore={setBefore} disabled={fwdDisabled} />
             <Tooltip title={`Seek to end (${end})`}>
-                <button
-                    disabled={fwdDisabled}
-                    onClick={() => {
-                        console.log(`⇾: end`, end)
-                        setBefore(end ?? strftime("%Y-%m-%d", new Date()))
-                    }}
-                >
-                    <LastPageIcon />
-                </button>
+                <span>
+                    <button
+                        disabled={fwdDisabled}
+                        onClick={() => {
+                            console.log(`⇾: end`, end)
+                            setBefore(end ?? strftime("%Y-%m-%d", new Date()))
+                        }}
+                    >
+                        <FirstPageIcon/>
+                    </button>
+                </span>
             </Tooltip>
+            <Button cur={before} Icon={ArrowForward} add={true} unit={'year'} setBefore={setBefore} disabled={fwdDisabled}/>
+            <Button cur={before} Icon={ArrowForwardIos} add={true} unit={'month'} setBefore={setBefore} className={css.reduce} disabled={fwdDisabled}/>
+            <Button cur={before} Icon={KeyboardArrowRight} add={true} unit={'day'} setBefore={setBefore} disabled={fwdDisabled}/>
+            <Button cur={before} Icon={KeyboardArrowRight} add={false} unit={'day'} setBefore={setBefore}/>
+            <Button cur={before} Icon={ArrowForwardIos} add={false} unit={'month'} setBefore={setBefore} className={css.reduce}/>
+            <Button cur={before} Icon={ArrowForward} add={false} unit={'year'} setBefore={setBefore}/>
+            {/* TODO: "last page", seek to earliest date, order by dt asc, reverse during display logic */}
         </span>
     </div>
 }

@@ -58,13 +58,13 @@
         height: 1.2em;
         font-size: 1.4em;
       }
-      & > svg.back {
+      & > svg.left {
         transform: scale(-1, 1);
       }
       & > svg.reduce {
         transform: scale(0.8);
       }
-      & > svg.back.reduce {
+      & > svg.left.reduce {
         transform: scale(-0.8, 0.8);
       }
     }

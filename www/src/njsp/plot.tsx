@@ -3,8 +3,8 @@ import * as Plotly from "react-plotly.js";
 import { registerTableData, TableData } from "@/src/tableData";
 import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import { initDuckDb, runQuery } from "@rdub/duckdb/duckdb";
-import { Data, njspPlotSpec, Plot } from "@/src/plotSpecs";
-import React, { useCallback, useEffect, useState } from "react";
+import { curYear, Data, njspPlotSpec, Plot, PlotSpec } from "@/src/plotSpecs";
+import React, { ReactNode, useCallback, useEffect, useState } from "react";
 
 export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
 export type Annotation = Partial<Annotations>
@@ -20,6 +20,10 @@ export type Props = {
     params: PlotParams
     tableData: TableData
     typeProjections: TypeCounts
+    county: string | null
+    title?: string
+    heading?: ReactNode
+    spec?: PlotSpec
 } & Data
 
 export type YtRow = {
@@ -29,17 +33,19 @@ export type YtRow = {
     projected: number
 }
 
-export async function getPlotData({ db, target, typeProjections, initialPlotData, types, }: {
+export async function getPlotData({ db, target, typeProjections, initialPlotData, types, county, }: {
     db: AsyncDuckDB
     target: string
     typeProjections: TypeCounts
     initialPlotData: PlotData[]
     types: Set<Type>
+    county?: string | null
 }): Promise<{
     rows: YtRow[]
     data: PlotData[]
     annotations: Annotation[]
 }> {
+    // console.log("getPlotData: county", county)
     const query = `
         SELECT
             year,
@@ -50,6 +56,7 @@ export async function getPlotData({ db, target, typeProjections, initialPlotData
             CAST(sum(driver + pedestrian + cyclist + passenger) as INT) as total,
             NULL as projected
         FROM ${target}
+        ${county ? `WHERE county = '${county}'` : ``}
         GROUP BY year
     `
     const rows = await runQuery<YtRow>(db, query)
@@ -66,8 +73,21 @@ export async function getPlotData({ db, target, typeProjections, initialPlotData
         return col in typeProjections ? typeProjections[col] : 0
     }).reduce((a, b) => a + b, 0)
     const last = rows[rows.length - 1]
-    const lastTotal = typesArr.map(type => last[typesMap[type]]).reduce((a, b) => a + b, 0)
-    last.projected = projectedTotal - lastTotal
+    if (last.year == curYear) {
+        const lastTotal = typesArr.map(type => last[typesMap[type]]).reduce((a, b) => a + b, 0)
+        last.projected = projectedTotal - lastTotal
+    } else {
+        console.warn(`getPlotData: last year is not ${curYear}:`, last, ` (county: ${county})`)
+        rows.push({
+            year: curYear,
+            driver: 0,
+            pedestrian: 0,
+            cyclist: 0,
+            passenger: 0,
+            total: 0,
+            projected: projectedTotal,
+        })
+    }
     console.log("got ytc data:", rows)
     const isSolo = types.size === 1
     // console.log("getPlotData: types:", types)
@@ -100,13 +120,13 @@ export async function getPlotData({ db, target, typeProjections, initialPlotData
     return { rows, data, annotations }
 }
 
-export const title = "New Jersey Car Crash Deaths"
+export const DefaultTitle = "New Jersey Car Crash Deaths"
 
 export const AllTypes: Type[] = ["Drivers", "Pedestrians", "Cyclists", "Passengers", "Projected"]
 export type Type = "Drivers" | "Pedestrians" | "Cyclists" | "Passengers" | "Projected"
 
-export function NjspPlot({ params, tableData, typeProjections, rundate, yearTotalsMap, }: Props) {
-    const spec = njspPlotSpec
+export function NjspPlot({ params, tableData, typeProjections, rundate, yearTotalsMap, county, title, heading, spec, }: Props) {
+    spec = spec ?? njspPlotSpec
     let { src, name } = spec
     src = src ?? `plots/${name}.png`
     const [ types, setTypes ] = useState<Set<Type>>(new Set(AllTypes))
@@ -177,24 +197,25 @@ export function NjspPlot({ params, tableData, typeProjections, rundate, yearTota
                     typeProjections,
                     initialPlotData,
                     types,
+                    county,
                 })
-                // console.log("data:", data)
+                // console.log("plot data:", data, "county:", county)
                 setRows(rows)
                 setData(data)
                 setAnnotations(annotations)
             }
             query()
         },
-        [ db, target, typeProjections, initialPlotData, types ]
+        [ db, target, typeProjections, initialPlotData, types, county, ]
     )
-
-    console.log("trace visibility:", data.map(d => d.visible))
+    //console.log("trace visibility:", data.map(d => d.visible))
     return (
         <Plot
             {...spec}
-            params={{ data, layout: { ...layout, annotations }, ...plotRest }}
+            params={{ data, layout: { ...layout, annotations, margin: { t: 0, r: 10, b: 0, l: 0, } }, ...plotRest }}
             src={src}
-            title={title}
+            title={title ?? DefaultTitle}
+            heading={heading}
             data={{ rundate, yearTotalsMap }}
             onLegendClick={onLegendClick}
             onLegendDoubleClick={onLegendDoubleClick}

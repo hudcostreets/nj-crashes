@@ -12,11 +12,17 @@
 }
 
 .title {
-  margin: 0.5em 0;
+  position: sticky;
+  top: 0.2em;
+  z-index: 100;
+  background: white;
+  padding: 0.3em;
+  margin: 0.2em 0 0;
+  border: 1px solid;
 }
 
 .subtitle {
-  margin: 0;
+  margin: 0.5em 0;
   font-weight: bold;
 }
 
@@ -39,7 +45,9 @@
 }
 
 .njspPlot {
-
+  max-width: 60em;
+  margin: auto;
+  padding: 0 0.5em;
 }
 
 .section {

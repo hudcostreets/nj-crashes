@@ -9,9 +9,9 @@ import { basename } from "path";
 import fs from "fs";
 import { loadSync } from "@rdub/base/load";
 import { fromEntries } from "@rdub/base/objs";
-import { NJSP, NJSP_DATA, ProjectedCsv, RUNDATE_RELPATH, YearTypeCountyCsv } from "../paths";
+import { ProjectedCsv, RUNDATE_RELPATH, YearTypeCountyCsv } from "../paths";
 
-export async function getTypeProjections(db: AsyncDuckDB): Promise<TypeCounts> {
+export async function getTypeProjections({ db, county, }: { db: AsyncDuckDB, county: string | null, }): Promise<TypeCounts> {
     const projectedCsvText = fs.readFileSync(ProjectedCsv).toString()
     const name = basename(ProjectedCsv)
     await db.registerFileText(name, projectedCsvText)
@@ -24,13 +24,14 @@ export async function getTypeProjections(db: AsyncDuckDB): Promise<TypeCounts> {
             CAST(sum(cyclist) as INT) as cyclist,
             CAST(sum(passenger) as INT) as passenger
         FROM ${name}
+        ${county ? `WHERE county = '${county}'` : ``}
         `,
     )
     console.log("typeProjections:", typeProjections)
     return typeProjections
 }
 
-export async function loadProps(): Promise<Props> {
+export async function loadProps({ county }: { county: string | null } = { county: null }): Promise<Props> {
     const initialPlot = loadPlot<Data, PlotParams>(njspPlotSpec)
     const {
         data: initialPlotData,
@@ -38,7 +39,7 @@ export async function loadProps(): Promise<Props> {
         ...plotRest
     } = initialPlot
     const db = await initDuckDb()
-    const typeProjections = await getTypeProjections(db)
+    const typeProjections = await getTypeProjections({ db, county, })
     const tableData: TableData = loadTableData(YearTypeCountyCsv)
     const target = await registerTableData({ db, tableData, stem: "ytc", })
     const { data, rows, annotations } = await getPlotData({
@@ -46,7 +47,8 @@ export async function loadProps(): Promise<Props> {
         target,
         typeProjections,
         initialPlotData,
-        types: new Set(AllTypes)
+        types: new Set(AllTypes),
+        county,
     })
 
     const yearTotalsMap = fromEntries(
@@ -64,5 +66,6 @@ export async function loadProps(): Promise<Props> {
         typeProjections,
         rundate,
         yearTotalsMap,
+        county,
     }
 }

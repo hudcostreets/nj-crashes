@@ -5,7 +5,7 @@ import { Head } from "@rdub/next-base/head";
 import { GitHub, url } from "@/src/socials";
 import A from "@rdub/next-base/a";
 import { Socials } from "@rdub/next-base/socials";
-import { NjspPlot, Props, title } from "@/src/njsp/plot";
+import { NjspPlot, Props, DefaultTitle } from "@/src/njsp/plot";
 import { loadProps } from "@/server/njsp/plot";
 import { NjspFatalAcc } from "@/src/urls";
 
@@ -18,14 +18,14 @@ export default function Page(props: Props) {
     return (
         <div className={css.container}>
             <Head
-                title={title}
+                title={DefaultTitle}
                 description={"Analysis & Visualization of traffic crash data published by NJ State Police and NJ DOT"}
                 url={url}
                 thumbnail={`${url}/plots/fatalities_per_year_by_type.png`}
             />
 
             <main className={css.main}>
-                <h1 className={css.title}>{title}</h1>
+                <h1 className={css.title}>{DefaultTitle}</h1>
                 <p>
                     Data comes from <A title={"NJ State Police fatal crash data"} href={NjspFatalAcc}>NJ State Police</A>, and is updated daily (though crashes sometimes take weeks or months to show up).
                 </p>
