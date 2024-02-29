@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Feb 28 10:00:02 EST 2024</RUNDATE>
+  <RUNDATE>Thu Feb 29 10:00:03 EST 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,6 +49,19 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0427" MNAME="Pennsauken Twsp">
+      <ACCIDENT ACCID="13031" DATE="02/28/2024" TIME="2102">
+        <STREET>US 130 Northbound &amp; Terrace Ave</STREET>
+        <LOCATION>US 130 Northbound &amp; Terrace Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="17" CNAME="Salem">
     <MUNICIPALITY MCODE="1714" MNAME="Upper Pittsgrove Tw">
       <ACCIDENT ACCID="13029" DATE="02/28/2024" TIME="0202">
@@ -58,6 +71,19 @@
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
+      <ACCIDENT ACCID="13030" DATE="02/27/2024" TIME="1810">
+        <STREET>Washington Road</STREET>
+        <LOCATION>Washington Road</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -1170,7 +1196,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>85</TOTACCIDENTS>
-  <TOTFATALITIES>89</TOTFATALITIES>
+  <TOTACCIDENTS>87</TOTACCIDENTS>
+  <TOTFATALITIES>91</TOTFATALITIES>
   <TOTINJURIES>11</TOTINJURIES>
 </FAUQSTATS>
