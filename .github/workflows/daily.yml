@@ -53,8 +53,12 @@ jobs:
     name: Refresh NJSP data, dispatch www rebuild (if necessary)
     runs-on: ubuntu-latest
     steps:
-      - name: Print event
-        run: echo "event=${{ toJson(github.event) }}"
+      - name: Print github.event
+        run: |
+          echo "event: ${{ toJson(github.event) }}"
+      - name: Print inputs
+        run: |
+          echo "inputs: ${{ toJson(inputs) }}"
       - name: Setup Python?
         id: needs_python
         run: echo "y=${{ github.event.schedule || inputs.refresh_data || inputs.harmonize_muni_codes || inputs.update_pqts || inputs.update_slack_sha || inputs.update_plots || inputs.post_to_slack || '' }}" | tee -a $GITHUB_OUTPUT
