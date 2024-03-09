@@ -3,7 +3,8 @@ import css from "./index.module.scss";
 import React from "react";
 import {getBasePath} from "@rdub/next-base/basePath"
 import {Socials} from "@rdub/next-base/socials"
-import {socials, url} from "../src/socials"
+import { domain, url } from "@/src/site";
+import { socials } from "@/src/socials"
 
 const Home = () => {
     const title = "Page Not Found"
@@ -19,7 +20,7 @@ const Home = () => {
             <main className={css.main}>
                 <h1 className={css.title}>{title}</h1>
                 <p>Maybe you wanted <a href={basePath}>{basePath}</a>?</p>
-                <p>Or <a href={"https://neighbor-ryan.org"}>neighbor-ryan.org</a></p>
+                <p>Or <a href={`https://${domain}`}>{domain}</a></p>
                 <Socials socials={socials} />
             </main>
         </div>

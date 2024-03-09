@@ -2,7 +2,8 @@ import React from 'react'
 import type { GetStaticProps } from "next";
 import css from "@/pages/index.module.scss";
 import { Head } from "@rdub/next-base/head";
-import { GitHub, url } from "@/src/socials";
+import { url } from "@/src/site";
+import { GitHub } from "@/src/socials"
 import A from "@rdub/next-base/a";
 import { Socials } from "@rdub/next-base/socials";
 import { NjspPlot, Props, DefaultTitle } from "@/src/njsp/plot";

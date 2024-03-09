@@ -10,6 +10,7 @@ import { njdotDir, publicDir } from "@/src/dirs";
 import { Props } from "@/pages/map/hudson/diffs";
 import { SettingsGear } from "@rdub/next-leaflet/map/settings";
 import { useMapState } from "@/src/map/hudson/state";
+import * as github from "@/src/github";
 
 export const Map = dynamic(() => import('@/src/map/hudson'), { ssr: false });
 
@@ -81,7 +82,7 @@ export default function Page({ encodedCrashes, hudco, }: Props) {
             }
             className={vcss.settings}
             icons={[
-                { href: "https://github.com/neighbor-ryan/nj-crashes", alt: "View source code on GitHub", src: "logos/gh.png", },
+                { href: github.url, alt: "View source code on GitHub", src: "logos/gh.png", },
                 { href: "/", alt: "Graphs of NJ crash data", src: "plots/crash_homicide_cmp.png", },
                 { href: "https://hudcostreets.org", alt: "Hudson County Complete Streets", src: "logos/hccs.png", },
             ]}

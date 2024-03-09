@@ -2,6 +2,7 @@ import React from "react";
 import * as Plots from "@rdub/next-plotly/plot";
 import A from "@rdub/next-base/a";
 import { GitHub } from "./socials";
+import { repoWithOwner } from "@/src/github";
 const { HalfRoundWiden, filterIdxs, filterValues } = Plots
 
 export const curYear = (new Date().getFullYear())
@@ -40,7 +41,7 @@ export const YM_SC_PID_SPECS: PlotSpec[] =
         ))
     ))
 
-export const estimationHref = 'https://nbviewer.org/github/neighbor-ryan/nj-crashes/blob/main/njsp/update-projections.ipynb'
+export const estimationHref = `https://nbviewer.org/github/${repoWithOwner}/blob/main/njsp/update-projections.ipynb`
 
 export function NjspChildren({ rundate, yearTotalsMap, includeWorstYearsBlurb }: Data & { includeWorstYearsBlurb?: boolean }) {
     const total2021 = yearTotalsMap["2021"].total

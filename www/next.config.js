@@ -2,7 +2,7 @@ const { createVanillaExtractPlugin } = require('@vanilla-extract/next-plugin');
 const withVanillaExtract = createVanillaExtractPlugin();
 const path = require('path')
 
-const basePath = "/nj-crashes"
+const basePath = ""
 
 let distDirArgs = { distDir: `out${basePath}` }
 if (process.env.CI) {

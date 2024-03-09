@@ -6,7 +6,8 @@ import A from "@rdub/next-base/a";
 import { Nav } from "@rdub/next-base/nav";
 import { getBasePath } from "@rdub/next-base/basePath"
 import { Socials } from "@rdub/next-base/socials"
-import { GitHub, url } from "@/src/socials"
+import { url } from "@/src/site";
+import { GitHub } from "@/src/socials"
 import { Plot, plotSpecs } from "@/src/plotSpecs";
 import { buildPlot, buildPlots, PlotsDict } from "@rdub/next-plotly/plot";
 import { loadPlots } from "@rdub/next-plotly/plot-load";
