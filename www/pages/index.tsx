@@ -14,11 +14,10 @@ import { loadPlots } from "@rdub/next-plotly/plot-load";
 import * as Njsp from "@/src/njsp/plot";
 import { NjspPlot } from "@/src/njsp/plot";
 import { loadProps } from "@/server/njsp/plot";
-import { getTypeProjections } from "@/src/njsp/projections";
 import { NjdotRawData, NjspFatalAcc } from "@/src/urls";
 import { cn2cc } from "@/server/county";
-import { o2a } from "@rdub/base/objs";
-import { initDuckDb } from "@rdub/duckdb/duckdb";
+import { keys } from "@rdub/base/objs";
+import { Arr } from '@rdub/base/arr';
 
 type Props = {
     plotsDict: PlotsDict
@@ -32,7 +31,7 @@ export const getStaticProps: GetStaticProps = async () => {
     return { props: { plotsDict, njspProps, cn2cc, }, }
 }
 
-const Home = async ({ plotsDict, njspProps, cn2cc }: Props) => {
+const Home = ({ plotsDict, njspProps, cn2cc }: Props) => {
     // console.log("cc2mc2mn:", cc2mc2mn)
     const basePath = getBasePath()
 
@@ -41,7 +40,7 @@ const Home = async ({ plotsDict, njspProps, cn2cc }: Props) => {
     const [ njspPlotSpec, ...plotSpecs2 ] = plotSpecs
     const njspPlot = buildPlot(njspPlotSpec, plotsDict[njspPlotSpec.id], data)
     const plots: Plot[] = buildPlots(plotSpecs2, plotsDict, data)
-    const sections = [njspPlot, ...plots].map(({id, title, menuName, dropdownSection,}) => ({id, name: menuName || title, dropdownSection}))
+    const sections = [ njspPlot, ...plots ].map(({id, title, menuName, dropdownSection,}) => ({id, name: menuName || title, dropdownSection}))
     const menus = [
         { id: "NJSP", name: "NJSP", },
         { id: "state-years", name: "State x Years", },
@@ -56,8 +55,6 @@ const Home = async ({ plotsDict, njspProps, cn2cc }: Props) => {
     const title = "NJ Traffic Crash Data"
 
     const [ region, setRegion ] = useState("NJ")
-    // const db = await initDuckDb()
-    // const typeProjections = await getTypeProjections({ db, county: region === "NJ" ? null : region, })
     const countySelect = (
         <select
             value={region}
@@ -65,10 +62,7 @@ const Home = async ({ plotsDict, njspProps, cn2cc }: Props) => {
         >
             <option value={"NJ"}>NJ</option>
             {
-                o2a(
-                    cn2cc,
-                    (cn, cc) => <option key={cn} value={cn}>{cn} County</option>,
-                )
+                Arr(keys(cn2cc)).map(cn => <option key={cn} value={cn}>{cn} County</option>)
             }
         </select>
     )
@@ -103,18 +97,18 @@ const Home = async ({ plotsDict, njspProps, cn2cc }: Props) => {
                     <span className={css.bold}>Work in progress</span> map of NJDOT data: 5 years (2017-2021) of fatal
                     and injury crashes in Hudson County:
                 </p>
-                <iframe src={`${basePath}/map/hudson`} className={css.map}/>
+                <iframe src={`${basePath}/map/hudson`} className={css.map} />
                 <ul style={{listStyle: "none"}}>
                     <li><A href={"/map/hudson"}>Full screen map here</A></li>
                     <li>Code and cleaned data are <A href={GitHub.href}>here on GitHub</A>.</li>
                     <li>Click / double-click legend entries below to toggle traces on/off.</li>
                 </ul>
                 <div key={njspPlotSpec.id} className={css["plot-container"]}>
-                    {/*<NjspPlot*/}
-                    {/*    {...njspProps}*/}
-                    {/*    county={region === "NJ" ? null : region}*/}
-                    {/*    heading={<h2>Car Crash Deaths: {countySelect}</h2>}*/}
-                    {/*/>*/}
+                    <NjspPlot
+                        {...njspProps}
+                        county={region === "NJ" ? null : region}
+                        heading={<h2>Car Crash Deaths: {countySelect}</h2>}
+                    />
                     <hr/>
                 </div>
                 {

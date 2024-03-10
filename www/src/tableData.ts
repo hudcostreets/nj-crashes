@@ -1,4 +1,8 @@
 import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
+import { useEffect, useState } from "react";
+import { basename } from "path";
+import { ProjectedCsv } from "@/src/paths";
+import { runQuery } from "@rdub/duckdb/duckdb";
 
 export type CsvData = {
     kind: 'csv'
@@ -8,7 +12,66 @@ export type PqtData = {
     kind: 'pqt'
     base64: string
 }
-export type TableData = CsvData | PqtData
+export type Url = {
+    // kind: 'url'
+    url: string
+}
+export type TableData = CsvData | PqtData // | Url
+
+export type HasDb = {
+    db: AsyncDuckDB
+}
+export type MaybeDb = {
+    db: AsyncDuckDB | null
+}
+export type HasCounty = {
+    county: string | null
+}
+export type Base = HasDb & HasCounty
+export type HasCsvText = {
+    csvText: string
+}
+export type MaybeTable = {
+    table?: string
+}
+export type HasTable = {
+    table: string
+}
+export type DbProps = HasDb & HasTable & HasCsvText
+export type HasQuery = {
+    query: string
+}
+export type Props = Base & HasCsvText
+export type UseProps<T> = Url & MaybeDb & MaybeTable & HasQuery & {
+    init: T[]
+}
+
+export function useCsvText({ url, }: { url: string }): string | null {
+    const [ csvText, setCsvText ] = useState<string | null>(null)
+    useEffect(() => {
+        fetch(url).then(r => r.text()).then(setCsvText)
+    }, [ url, ]);
+    return csvText
+}
+
+export async function getRegisteredDb({ db, table, csvText, }: DbProps): Promise<AsyncDuckDB> {
+    await db.registerFileText(table, csvText)
+    return db
+}
+
+export function useRegisteredDb({ db, table, url }: MaybeDb & HasTable & Url): AsyncDuckDB | null {
+    const [ registeredDb, setRegisteredDb ] = useState<AsyncDuckDB | null>(null)
+    const csvText = useCsvText({ url })
+    useEffect(() => {
+        async function register() {
+            if (!db || !csvText) return
+            console.log(`registering db table ${table}: ${url}`)
+            setRegisteredDb(await getRegisteredDb({ db, table, csvText, }))
+        }
+        register()
+    }, [ db, csvText, ]);
+    return registeredDb
+}
 
 export async function registerTableData({ db, tableData, stem }: {
     db: AsyncDuckDB
@@ -27,4 +90,19 @@ export async function registerTableData({ db, tableData, stem }: {
         await db.registerFileBuffer(path, ytcPqtArr)
     }
     return target
+}
+
+export function useCsvTable<T>({ url, db, table, query, init, }: UseProps<T>): T[] {
+    const registeredDb = useRegisteredDb({ db, table: table ?? basename(url), url })
+    const [ data, setData ] = useState(init)
+    useEffect(() => {
+        async function get() {
+            console.log(`querying table ${table}`)
+            if (!registeredDb) return
+            const res = await runQuery<T>(registeredDb, query)
+            setData(res)
+        }
+        get()
+    }, [ registeredDb, query, ]);
+    return data
 }

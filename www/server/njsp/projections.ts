@@ -1,10 +1,15 @@
 import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import { TypeCounts } from "@/src/njsp/plot";
-import fs from "fs";
 import { ProjectedCsv } from "@/server/paths";
-import * as projections from "@/src/njsp/projections";
+import { table, typeCountsQuery } from "@/src/njsp/projections";
+import { getCsvTable } from "@/server/tableData";
 
 export async function getTypeProjections({ db, county, }: { db: AsyncDuckDB, county: string | null, }): Promise<TypeCounts> {
-    const csvText = fs.readFileSync(ProjectedCsv).toString()
-    return projections.getTypeProjections({ db, county, csvText, })
+    const [ typeCounts ] = await getCsvTable<TypeCounts>({
+        db,
+        path: ProjectedCsv,
+        table,
+        query: typeCountsQuery(county),
+    })
+    return typeCounts
 }

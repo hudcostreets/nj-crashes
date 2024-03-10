@@ -1,5 +1,7 @@
 import fs from "fs";
-import { TableData } from "@/src/tableData";
+import { getRegisteredDb, HasDb, HasQuery, MaybeTable, TableData } from "@/src/tableData";
+import { runQuery } from "@rdub/duckdb/duckdb";
+import { basename } from "path";
 
 export function loadTableData(path: string): TableData {
     if (path.endsWith('.csv')) {
@@ -12,4 +14,10 @@ export function loadTableData(path: string): TableData {
     } else {
         throw new Error(`unknown file type: ${path}`)
     }
+}
+
+export async function getCsvTable<T>({ path, db, table, query, }: { path: string } & HasDb & MaybeTable & HasQuery): Promise<T[]> {
+    const csvText = fs.readFileSync(path).toString()
+    const registeredDb = await getRegisteredDb({ db, table: table ?? basename(path), csvText, })
+    return await runQuery<T>(registeredDb, query,)
 }

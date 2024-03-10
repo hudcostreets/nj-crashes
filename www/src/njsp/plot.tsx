@@ -1,12 +1,13 @@
 import { Annotations, PlotData } from "plotly.js";
 import * as Plotly from "react-plotly.js";
-import { registerTableData, TableData } from "@/src/tableData";
+import { registerTableData, TableData, useCsvTable } from "@/src/tableData";
 import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import { initDuckDb, runQuery } from "@rdub/duckdb/duckdb";
 import { curYear, Data, njspPlotSpec, Plot, PlotSpec } from "@/src/plotSpecs";
 import React, { ReactNode, useCallback, useEffect, useState } from "react";
 import css from "./plot.module.scss"
-import { getTypeProjections } from "./projections";
+import { table, typeCountsQuery } from "./projections";
+import { ProjectedCsv } from "@/src/paths";
 
 export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
 export type Annotation = Partial<Annotations>
@@ -141,15 +142,14 @@ export function NjspPlot({ params, tableData, typeProjections, rundate, yearTota
     const [ data, setData ] = useState<PlotData[]>(initialPlotData)
     const [ annotations, setAnnotations ] = useState<Annotation[] | undefined>(layout.annotations)
     const [ target, setTarget ] = useState<string | null>(null)
-    const [ projections, setProjections ] = useState(typeProjections)
-    useEffect(() => {
-        async function getProjections() {
-            if (!db) return
-            const projections = await getTypeProjections({ db, county, })
-            setProjections(projections)
-        }
-        getProjections()
-    }, [ db, county ]);
+    const [ projections ] = useCsvTable({
+        url: ProjectedCsv,
+        db,
+        table,
+        query: typeCountsQuery(county),
+        init: [ typeProjections ],
+    })
+    // const projections = useTypeProjections({ db, county, init: typeProjections })
 
     const onLegendClick = useCallback(
         (name: Type) => {
@@ -220,7 +220,7 @@ export function NjspPlot({ params, tableData, typeProjections, rundate, yearTota
             }
             query()
         },
-        [ db, target, typeProjections, initialPlotData, types, county, ]
+        [ db, target, projections, initialPlotData, types, county, ]
     )
     //console.log("trace visibility:", data.map(d => d.visible))
     return (
