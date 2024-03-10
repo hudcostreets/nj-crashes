@@ -14,6 +14,7 @@ import { GitHub } from "@/src/socials";
 import { Plot, PlotSpec } from "@rdub/next-plotly/plot";
 import { fromEntries } from "@rdub/base/objs";
 import { NjspFatalAcc } from "@/src/urls";
+import { normalize } from "../county";
 
 export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
 export type Annotation = Partial<Annotations>
@@ -189,7 +190,7 @@ export function CountySelect({ region, setRegion, counties }: {
 
 export const estimationHref = `https://nbviewer.org/github/${repoWithOwner}/blob/main/njsp/update-projections.ipynb`
 
-export function NjspChildren({ rundate, yearTotalsMap, includeWorstYearsBlurb }: Data & { includeWorstYearsBlurb?: boolean }) {
+export function NjspChildren({ rundate, yearTotalsMap, county, }: Data & { county: string | null }) {
     const total2021 = yearTotalsMap["2021"].total
     const total2022 = yearTotalsMap["2022"].total
     const prvYearTotal = yearTotalsMap[prvYear].total
@@ -203,9 +204,12 @@ export function NjspChildren({ rundate, yearTotalsMap, includeWorstYearsBlurb }:
     const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
     return <>
         <p>Click/Double-click the legend labels to toggle or solo each type.</p>
-        <p><A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, {curYear} has {curYearTotal} reported deaths, and <A href={estimationHref}>is on pace</A> for {curYearProjectedTotal}{curYearProjectedTotal > prvYearTotal ? `, exceeding ${prvYear}'s ${prvYearTotal}` : ""}.</p>
+        <p>
+            <A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, {curYear} has {curYearTotal} reported deaths, and <A href={estimationHref}>is on pace</A> for {curYearProjectedTotal}{curYearProjectedTotal > prvYearTotal ? `, exceeding ${prvYear}'s ${prvYearTotal}` : ""}.
+            {county ? <>{' '}<A href={`/c/${normalize(county)}`}>More {county} County data</A>.</> : null}
+        </p>
+        {county === null ? <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p> : null}
         <p>Data comes from <A title={"NJ State Police fatal crash data"} href={NjspFatalAcc}>NJ State Police</A>, and is updated daily (though crashes sometimes take weeks or months to show up).</p>
-        {includeWorstYearsBlurb !== false && <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>}
     </>
 }
 
@@ -345,7 +349,7 @@ export function NjspPlot(
             <NjspChildren
                 rundate={rundate}
                 yearTotalsMap={yearTotalsMap}
-                includeWorstYearsBlurb={county === null}
+                county={county}
             />
         </Plot>
     )

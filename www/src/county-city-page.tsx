@@ -62,16 +62,6 @@ export default function CityPage(
     )
 
     // NJSP plot
-    const spec = {
-        ...njspPlotSpec,
-        children: barProps
-            ? <NjspChildren
-                rundate={barProps.rundate}
-                yearTotalsMap={barProps.yearTotalsMap}
-                includeWorstYearsBlurb={false}
-            />
-            : null,
-    }
     const plotTitle = `Deaths per year, by type`
 
     return (
@@ -86,7 +76,7 @@ export default function CityPage(
                             {...barProps}
                             heading={<h2>{plotTitle}</h2>}
                             title={plotTitle}
-                            spec={spec}
+                            spec={njspPlotSpec}
                         />
                     </div>
                 }

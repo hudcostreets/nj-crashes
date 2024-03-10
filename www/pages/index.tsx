@@ -106,7 +106,7 @@ const Home = ({ plotsDict, njspProps }: Props) => {
                                             raw crash data</A>, including property-damage, injury, and fatal crashes, going
                                             back to 2001 (≈6MM records).
                                         </p>
-                                        <p>{"The data currently ends in 2020, after a drop in all types of crashes due to COVID, and just before a spike in all crash types in 2021 and 2022 (based on the NJSP data above, and other sources). 2021 data should land in early 2023."}</p>
+                                        <p>{"The data currently ends in 2021, after a drop in all types of crashes due to COVID, and mid-way through a spike in fatal crashes in 2021-2022 (based on the NJSP data above). 2022 data should land in early 2024."}</p>
                                     </>
                                 }
                                 <div key={id} className={css["plot-container"]}>
