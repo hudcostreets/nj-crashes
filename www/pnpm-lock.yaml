@@ -48,8 +48,8 @@ dependencies:
     specifier: 0.3.0
     version: 0.3.0(react-dom@18.2.0)(react@18.2.0)
   '@rdub/duckdb':
-    specifier: 0.0.1
-    version: 0.0.1(@duckdb/duckdb-wasm@1.28.0)(react-dom@18.2.0)(react@18.2.0)
+    specifier: 0.0.2
+    version: 0.0.2(@duckdb/duckdb-wasm@1.28.0)(react-dom@18.2.0)(react@18.2.0)
   '@rdub/next-base':
     specifier: 0.1.0
     version: 0.1.0(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)
@@ -60,8 +60,8 @@ dependencies:
     specifier: 0.0.1
     version: 0.0.1(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)
   '@rdub/next-plotly':
-    specifier: 0.0.6
-    version: 0.0.6(@types/node@20.3.0)(mapbox-gl@3.1.2)(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)(sass@1.69.7)(webpack@5.89.0)
+    specifier: 0.1.0
+    version: 0.1.0(@types/node@20.3.0)(mapbox-gl@3.1.2)(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)(sass@1.69.7)(webpack@5.89.0)
   '@rdub/react-sql.js-httpvfs':
     specifier: 0.1.4
     version: 0.1.4(react-dom@18.2.0)(react@18.2.0)
@@ -1717,8 +1717,8 @@ packages:
       react-dom: 18.2.0(react@18.2.0)
     dev: false
 
-  /@rdub/duckdb@0.0.1(@duckdb/duckdb-wasm@1.28.0)(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-Fxf/twrwmF9XQLPwKSU42lpYZfqZOVCUuASyU3LF3B6eQDxP1LLNMhYk25pyIj68I4C6+7aogyLd1uf8940cRw==}
+  /@rdub/duckdb@0.0.2(@duckdb/duckdb-wasm@1.28.0)(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-e2tItk5ZzXiyvtY8NOI4VLodoIOScvbDM0pFq8e3HQq6ymZ61uwtBSvHo3uIpdzFn/9Z/+NzUEYA6RkaF/tVeA==}
     peerDependencies:
       '@duckdb/duckdb-wasm': ^1.28.0
       react: ^18
@@ -1781,8 +1781,8 @@ packages:
       react-dom: 18.2.0(react@18.2.0)
     dev: false
 
-  /@rdub/next-plotly@0.0.6(@types/node@20.3.0)(mapbox-gl@3.1.2)(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)(sass@1.69.7)(webpack@5.89.0):
-    resolution: {integrity: sha512-t4yWKu2aoBpoCjTtQIwnLOldrXJHaYvGD1mqceKyy8tXx+yv5qADNtfXctGkE+hQts61fGzXUOomTtISf7S9gA==}
+  /@rdub/next-plotly@0.1.0(@types/node@20.3.0)(mapbox-gl@3.1.2)(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)(sass@1.69.7)(webpack@5.89.0):
+    resolution: {integrity: sha512-21n0nI8I2SaxGiHlFPVGardNmqWjCK4fjOo6D0NF8BiTxaw8WzOfaplzqh92gCrQtNJtLmdtBuHeseVdKjoq7Q==}
     peerDependencies:
       next: ^14
       react: ^18
