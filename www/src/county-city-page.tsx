@@ -11,8 +11,8 @@ import { Total, useNjspCrashesTotal, useNjspCrashRows } from "@/src/use-njsp-cra
 import singleton from "@rdub/base/singleton";
 import A from "@rdub/next-base/a";
 import * as Njsp from "@/src/njsp/plot";
-import { NjspPlot } from "@/src/njsp/plot";
-import { Data, NjspChildren, njspPlotSpec } from "@/src/plotSpecs";
+import { NjspChildren, NjspPlot } from "@/src/njsp/plot";
+import { njspPlotSpec } from "@/src/plotSpecs";
 
 export type Props = {
     urls: Urls
@@ -63,8 +63,13 @@ export default function CityPage(
     // NJSP plot
     const spec = {
         ...njspPlotSpec,
-        children: ({ rundate, yearTotalsMap }: Data) =>
-            <NjspChildren rundate={rundate} yearTotalsMap={yearTotalsMap} includeWorstYearsBlurb={false} />
+        children: barProps
+            ? <NjspChildren
+                rundate={barProps.rundate}
+                yearTotalsMap={barProps.yearTotalsMap}
+                includeWorstYearsBlurb={false}
+            />
+            : null,
     }
     const plotTitle = `Deaths per year, by type`
 

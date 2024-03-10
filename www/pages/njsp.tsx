@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { GetStaticProps } from "next";
 import css from "@/pages/index.module.scss";
 import { Head } from "@rdub/next-base/head";
@@ -16,6 +16,7 @@ export const getStaticProps: GetStaticProps<Props> = async () => {
 }
 
 export default function Page(props: Props) {
+    const [ county, setCounty ] = useState<string | null>(null)
     return (
         <div className={css.container}>
             <Head
@@ -31,7 +32,7 @@ export default function Page(props: Props) {
                     Data comes from <A title={"NJ State Police fatal crash data"} href={NjspFatalAcc}>NJ State Police</A>, and is updated daily (though crashes sometimes take weeks or months to show up).
                 </p>
                 <div className={css["plot-container"]}>
-                    <NjspPlot {...props} />
+                    <NjspPlot {...props} county={county} setCounty={setCounty} />
                     <hr/>
                 </div>
                 <p>Code and data are <A href={GitHub.href}>on GitHub</A>; feedback / issues <A href={`${GitHub.href}/issues/new`}>here</A>).</p>

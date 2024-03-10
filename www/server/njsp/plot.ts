@@ -9,9 +9,12 @@ import { fromEntries } from "@rdub/base/objs";
 import { RUNDATE_RELPATH, YearTypeCountyCsv } from "../paths";
 import { getTypeProjections } from "./projections";
 import { ytcQuery } from "@/src/njsp/ytc";
+import { cn2cc } from "@/server/county";
+import { keys } from "@rdub/base/objs";
+import { Arr } from '@rdub/base/arr';
 
 export async function loadProps({ county }: { county: string | null } = { county: null }): Promise<Props> {
-    const initialPlot = loadPlot<Data, PlotParams>(njspPlotSpec)
+    const initialPlot = loadPlot<PlotParams>(njspPlotSpec)
     const {
         data: initialPlotData,
         layout,
@@ -37,6 +40,7 @@ export async function loadProps({ county }: { county: string | null } = { county
         )
     ) as YearTotalsMap
 
+    const counties = Arr(keys(cn2cc))
     const { rundate } = loadSync<{ rundate: string }>(RUNDATE_RELPATH)
     console.log(`rundate: ${rundate}`)
     return {
@@ -45,6 +49,7 @@ export async function loadProps({ county }: { county: string | null } = { county
         typeProjections,
         ytRows,
         rundate,
+        counties,
         yearTotalsMap,
         county,
     }

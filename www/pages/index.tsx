@@ -8,38 +8,31 @@ import { getBasePath } from "@rdub/next-base/basePath"
 import { Socials } from "@rdub/next-base/socials"
 import { url } from "@/src/site";
 import { GitHub } from "@/src/socials"
-import { Plot, plotSpecs } from "@/src/plotSpecs";
-import { buildPlot, buildPlots, PlotsDict } from "@rdub/next-plotly/plot";
+import { plotSpecs } from "@/src/plotSpecs";
+import { buildPlot, buildPlots, Plot, PlotsDict } from "@rdub/next-plotly/plot";
 import { loadPlots } from "@rdub/next-plotly/plot-load";
 import * as Njsp from "@/src/njsp/plot";
 import { NjspPlot } from "@/src/njsp/plot";
 import { loadProps } from "@/server/njsp/plot";
 import { NjdotRawData, NjspFatalAcc } from "@/src/urls";
-import { cn2cc } from "@/server/county";
-import { keys } from "@rdub/base/objs";
-import { Arr } from '@rdub/base/arr';
 
 type Props = {
     plotsDict: PlotsDict
     njspProps: Njsp.Props
-    cn2cc: Record<string, number>
 }
 
 export const getStaticProps: GetStaticProps = async () => {
     const plotsDict: PlotsDict = loadPlots(plotSpecs)
     const njspProps = await loadProps()
-    return { props: { plotsDict, njspProps, cn2cc, }, }
+    return { props: { plotsDict, njspProps, }, }
 }
 
-const Home = ({ plotsDict, njspProps, cn2cc }: Props) => {
-    // console.log("cc2mc2mn:", cc2mc2mn)
+const Home = ({ plotsDict, njspProps }: Props) => {
     const basePath = getBasePath()
 
-    const { rundate, yearTotalsMap } = njspProps
-    const data = { rundate, yearTotalsMap }
     const [ njspPlotSpec, ...plotSpecs2 ] = plotSpecs
-    const njspPlot = buildPlot(njspPlotSpec, plotsDict[njspPlotSpec.id], data)
-    const plots: Plot[] = buildPlots(plotSpecs2, plotsDict, data)
+    const njspPlot = buildPlot(njspPlotSpec, plotsDict[njspPlotSpec.id])
+    const plots: Plot[] = buildPlots(plotSpecs2, plotsDict)
     const sections = [ njspPlot, ...plots ].map(({id, title, menuName, dropdownSection,}) => ({id, name: menuName || title, dropdownSection}))
     const menus = [
         { id: "NJSP", name: "NJSP", },
@@ -54,18 +47,7 @@ const Home = ({ plotsDict, njspProps, cn2cc }: Props) => {
 
     const title = "NJ Traffic Crash Data"
 
-    const [ region, setRegion ] = useState("NJ")
-    const countySelect = (
-        <select
-            value={region}
-            onChange={e => setRegion(e.target.value)}
-        >
-            <option value={"NJ"}>NJ</option>
-            {
-                Arr(keys(cn2cc)).map(cn => <option key={cn} value={cn}>{cn} County</option>)
-            }
-        </select>
-    )
+    const [ county, setCounty ] = useState<string | null>(null)
 
     return (
         <div className={css.container}>
@@ -106,8 +88,8 @@ const Home = ({ plotsDict, njspProps, cn2cc }: Props) => {
                 <div key={njspPlotSpec.id} className={css["plot-container"]}>
                     <NjspPlot
                         {...njspProps}
-                        county={region === "NJ" ? null : region}
-                        heading={<h2>Car Crash Deaths: {countySelect}</h2>}
+                        county={county}
+                        setCounty={setCounty}
                     />
                     <hr/>
                 </div>
@@ -132,8 +114,7 @@ const Home = ({ plotsDict, njspProps, cn2cc }: Props) => {
                                         id={id}
                                         basePath={basePath}
                                         {...rest}
-                                        margin={{b: 30,}}
-                                        data={{rundate, yearTotalsMap}}
+                                        margin={{ b: 30, }}
                                     />
                                     <hr/>
                                 </div>

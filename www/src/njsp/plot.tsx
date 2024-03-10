@@ -1,14 +1,17 @@
 import { Annotations, PlotData } from "plotly.js";
 import * as Plotly from "react-plotly.js";
-import { registerTableData, TableData, useCsvTable, useTable } from "@/src/tableData";
-import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
-import { initDuckDb, runQuery, useQuery, useDb, } from "@rdub/duckdb/duckdb";
-import { curYear, Data, njspPlotSpec, Plot, PlotSpec } from "@/src/plotSpecs";
-import React, { ReactNode, useCallback, useEffect, useState } from "react";
+import { TableData, useCsvTable, useTable } from "@/src/tableData";
+import { useDb, useQuery, } from "@rdub/duckdb/duckdb";
+import { curYear, Data, njspPlotSpec, prvYear } from "@/src/plotSpecs";
+import React, { Dispatch, ReactNode, useCallback, useEffect, useState } from "react";
 import css from "./plot.module.scss"
 import { table, typeCountsQuery } from "./projections";
 import { ProjectedCsv } from "@/src/paths";
 import { ytcQuery } from "@/src/njsp/ytc";
+import { repoWithOwner } from "@/src/github";
+import A from "@rdub/next-base/a";
+import { GitHub } from "@/src/socials";
+import { Plot, PlotSpec } from "@rdub/next-plotly/plot";
 
 export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
 export type Annotation = Partial<Annotations>
@@ -26,6 +29,7 @@ export type Props = {
     typeProjections: TypeCounts
     ytRows: YtRow[]
     county: string | null
+    counties: string[]
     title?: string
     heading?: ReactNode
     spec?: PlotSpec
@@ -113,12 +117,51 @@ export async function getPlotData({ ytRows, typeProjections, initialPlotData, ty
     return { rows, data, annotations }
 }
 
-export const DefaultTitle = "New Jersey Car Crash Deaths"
+export const DefaultTitle = "Car Crash Deaths"
 
 export const AllTypes: Type[] = ["Drivers", "Pedestrians", "Cyclists", "Passengers", "Projected"]
 export type Type = "Drivers" | "Pedestrians" | "Cyclists" | "Passengers" | "Projected"
 
-export function NjspPlot({ params, tableData, typeProjections, ytRows: initYtRows, rundate, yearTotalsMap, county, title, heading, spec, }: Props) {
+export function CountySelect({ region, setRegion, counties }: {
+    region: string
+    setRegion: (region: string) => void
+    counties: string[]
+}) {
+    return (
+        <select
+            value={region}
+            onChange={e => setRegion(e.target.value)}
+        >
+            <option value={"NJ"}>NJ</option>
+            {
+                counties.map(cn => <option key={cn} value={cn}>{cn} County</option>)
+            }
+        </select>
+    )
+}
+
+export const estimationHref = `https://nbviewer.org/github/${repoWithOwner}/blob/main/njsp/update-projections.ipynb`
+
+export function NjspChildren({ rundate, yearTotalsMap, includeWorstYearsBlurb }: Data & { includeWorstYearsBlurb?: boolean }) {
+    const total2021 = yearTotalsMap["2021"].total
+    const total2022 = yearTotalsMap["2022"].total
+    const prvYearTotal = yearTotalsMap[prvYear].total
+    const curYearMap = yearTotalsMap[curYear]
+    if (!curYearMap) {
+        console.warn(`NjspChildren: yearTotalsMap doesn't contain ${curYear}:`, yearTotalsMap)
+        return null
+    }
+    const { total: curYearTotal, projected: curYearProjected } = curYearMap
+    const curYearProjectedTotal = curYearTotal + curYearProjected
+    const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
+    return <>
+        <p>Click/Double-click the legend labels to toggle or solo each type.</p>
+        {includeWorstYearsBlurb !== false && <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>}
+        <p><A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, {curYear} has {curYearTotal} reported deaths, and <A href={estimationHref}>is on pace</A> for {curYearProjectedTotal}{curYearProjectedTotal > prvYearTotal ? `, exceeding ${prvYear}'s ${prvYearTotal}` : ""}.</p>
+    </>
+}
+
+export function NjspPlot({ params, tableData, typeProjections, counties, ytRows: initYtRows, rundate, yearTotalsMap, county, title, heading, spec, setCounty }: Props & { setCounty?: Dispatch<string | null> }) {
     spec = spec ?? njspPlotSpec
     let { src, name } = spec
     src = src ?? `plots/${name}.png`
@@ -204,18 +247,37 @@ export function NjspPlot({ params, tableData, typeProjections, ytRows: initYtRow
         [ db, target, ytRows, projections, initialPlotData, types, county, ]
     )
     //console.log("trace visibility:", data.map(d => d.visible))
+    title = title ?? DefaultTitle
     return (
         <div className={css.plotContainer}>
             <Plot
                 {...spec}
                 params={{ data, layout: { ...layout, annotations, margin: { t: 0, r: 10, b: 0, l: 0, } }, ...plotRest }}
                 src={src}
-                title={title ?? DefaultTitle}
-                heading={heading}
-                data={{ rundate, yearTotalsMap }}
+                title={title}
+                heading={
+                    heading ?? (
+                        setCounty
+                            ? <h2>
+                                {title}:
+                                <CountySelect
+                                    region={county ?? "NJ"}
+                                    setRegion={region => setCounty(region === "NJ" ? null : region)}
+                                    counties={counties}
+                                />
+                            </h2>
+                            : null
+                    )
+                }
                 onLegendClick={onLegendClick}
                 onLegendDoubleClick={onLegendDoubleClick}
-            />
+            >
+                <NjspChildren
+                    rundate={rundate}
+                    yearTotalsMap={yearTotalsMap}
+                    includeWorstYearsBlurb={county === null}
+                />
+            </Plot>
         </div>
     )
 }
