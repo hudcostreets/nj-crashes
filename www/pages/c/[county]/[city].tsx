@@ -1,5 +1,5 @@
 import type { GetStaticProps } from "next";
-import { cc2mc2mn, CountyCodes } from "@/server/county";
+import { cc2mc2mn, County2Code } from "@/server/county";
 import { concat, mapEntries, values } from "@rdub/base/objs";
 import { denormalize, normalize } from "@/src/county";
 import A from "@rdub/next-base/a";
@@ -42,7 +42,7 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
     let { county: countyParam, city, } = params
     countyParam = normalize(countyParam)
     city = normalize(city)
-    const cc = CountyCodes[countyParam]
+    const cc = County2Code[countyParam]
     const { cn, mc2mn } = cc2mc2mn[cc]
     const mn2mc = mapEntries(mc2mn, (mc, mn) => [ normalize(mn), mc ])
     const mc = mn2mc[city]

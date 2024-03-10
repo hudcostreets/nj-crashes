@@ -1,6 +1,6 @@
 import type { GetStaticProps } from "next";
 import { keys } from "@rdub/base/objs";
-import { cc2mc2mn, CountyCodes } from "@/server/county";
+import { cc2mc2mn, County2Code } from "@/server/county";
 import { County, denormalize, normalize } from "@/src/county";
 import { getUrls, Urls } from "@/src/urls";
 import CountyCityPage from "@/src/county-city-page";
@@ -19,7 +19,7 @@ export type Props = {
 } & County
 
 export function getStaticPaths() {
-    const paths = keys(CountyCodes).map(county => ({ params: { county: normalize(county) } }))
+    const paths = keys(County2Code).map(county => ({ params: { county: normalize(county) } }))
     return { paths, fallback: false }
 }
 
@@ -30,7 +30,7 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
     const urls = getUrls()
     let { county: countyParam } = params
     const cn = normalize(countyParam)
-    const cc = CountyCodes[cn]
+    const cc = County2Code[cn]
     const { mc2mn } = cc2mc2mn[cc]
     const barProps = await loadProps({ county: denormalize(cn) })
     return { props: { urls, cc, cn, mc2mn, barProps } }

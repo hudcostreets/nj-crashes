@@ -1,35 +1,13 @@
 import { loadPlot } from "@rdub/next-plotly/plot-load";
 import { Data, njspPlotSpec, YearTotalsMap, } from "@/src/plotSpecs";
-import { initDuckDb, runQuery } from "@rdub/duckdb/duckdb";
+import { initDuckDb } from "@rdub/duckdb/duckdb";
 import { registerTableData, TableData } from "@/src/tableData";
 import { loadTableData } from "@/server/tableData";
-import { AllTypes, getPlotData, PlotParams, Props, TypeCounts, } from "@/src/njsp/plot";
-import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
-import { basename } from "path";
-import fs from "fs";
+import { AllTypes, getPlotData, PlotParams, Props, } from "@/src/njsp/plot";
 import { loadSync } from "@rdub/base/load";
 import { fromEntries } from "@rdub/base/objs";
-import { ProjectedCsv, RUNDATE_RELPATH, YearTypeCountyCsv } from "../paths";
-
-export async function getTypeProjections({ db, county, }: { db: AsyncDuckDB, county: string | null, }): Promise<TypeCounts> {
-    const projectedCsvText = fs.readFileSync(ProjectedCsv).toString()
-    const name = basename(ProjectedCsv)
-    await db.registerFileText(name, projectedCsvText)
-    const [ typeProjections ] = await runQuery<TypeCounts>(
-        db,
-        `
-        SELECT
-            CAST(sum(driver) as INT) as driver,
-            CAST(sum(pedestrian) as INT) as pedestrian,
-            CAST(sum(cyclist) as INT) as cyclist,
-            CAST(sum(passenger) as INT) as passenger
-        FROM ${name}
-        ${county ? `WHERE county = '${county}'` : ``}
-        `,
-    )
-    console.log("typeProjections:", typeProjections)
-    return typeProjections
-}
+import { RUNDATE_RELPATH, YearTypeCountyCsv } from "../paths";
+import { getTypeProjections } from "./projections";
 
 export async function loadProps({ county }: { county: string | null } = { county: null }): Promise<Props> {
     const initialPlot = loadPlot<Data, PlotParams>(njspPlotSpec)

@@ -22,11 +22,11 @@ CRASHES_RELPATH = relpath(CRASHES_PQT)
 OLD_CRASHES_PQT = join(DATA_DIR, 'crashes.pqt')
 OLD_CRASHES_RELPATH = relpath(OLD_CRASHES_PQT)
 CRASHES_PQT_S3 = f'{S3_DATA}/crashes.parquet'
-CRASHES_DB = join(WWW_NJSP, f'crashes.db')
+CRASHES_DB = join(WWW_NJSP, 'crashes.db')
 CRASHES_DB_S3 = f'{S3_DATA}/crashes.db'
 CRASHES_DB_URI = f'sqlite:///{CRASHES_DB}'
 
-PROJECTED_CSV = join(NJSP_DATA, 'projected.csv')
+PROJECTED_CSV = join(WWW_NJSP, 'projected.csv')
 
 # Tabula template JSONs and NJSP summary PDFs live in this dir
 ANNUAL_REPORTS = join(NJSP_DATA, 'annual-reports')

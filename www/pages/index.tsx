@@ -1,4 +1,4 @@
-import React, { Fragment } from 'react'
+import React, { Fragment, useState } from 'react'
 import type { GetStaticProps } from 'next'
 import { Head } from '@rdub/next-base/head'
 import css from './index.module.scss'
@@ -11,24 +11,29 @@ import { GitHub } from "@/src/socials"
 import { Plot, plotSpecs } from "@/src/plotSpecs";
 import { buildPlot, buildPlots, PlotsDict } from "@rdub/next-plotly/plot";
 import { loadPlots } from "@rdub/next-plotly/plot-load";
-import { NjspPlot } from "@/src/njsp/plot";
 import * as Njsp from "@/src/njsp/plot";
+import { NjspPlot } from "@/src/njsp/plot";
 import { loadProps } from "@/server/njsp/plot";
+import { getTypeProjections } from "@/src/njsp/projections";
 import { NjdotRawData, NjspFatalAcc } from "@/src/urls";
+import { cn2cc } from "@/server/county";
+import { o2a } from "@rdub/base/objs";
+import { initDuckDb } from "@rdub/duckdb/duckdb";
 
 type Props = {
     plotsDict: PlotsDict
     njspProps: Njsp.Props
+    cn2cc: Record<string, number>
 }
 
 export const getStaticProps: GetStaticProps = async () => {
     const plotsDict: PlotsDict = loadPlots(plotSpecs)
     const njspProps = await loadProps()
-    return { props: { plotsDict, njspProps }, }
+    return { props: { plotsDict, njspProps, cn2cc, }, }
 }
 
-const Home = ({ plotsDict, njspProps, }: Props) => {
-    // console.log("Home plots:", plotsDict)
+const Home = async ({ plotsDict, njspProps, cn2cc }: Props) => {
+    // console.log("cc2mc2mn:", cc2mc2mn)
     const basePath = getBasePath()
 
     const { rundate, yearTotalsMap } = njspProps
@@ -36,7 +41,7 @@ const Home = ({ plotsDict, njspProps, }: Props) => {
     const [ njspPlotSpec, ...plotSpecs2 ] = plotSpecs
     const njspPlot = buildPlot(njspPlotSpec, plotsDict[njspPlotSpec.id], data)
     const plots: Plot[] = buildPlots(plotSpecs2, plotsDict, data)
-    const sections = [ njspPlot, ...plots ].map(({ id, title, menuName, dropdownSection, }) => ({ id, name: menuName || title, dropdownSection }))
+    const sections = [njspPlot, ...plots].map(({id, title, menuName, dropdownSection,}) => ({id, name: menuName || title, dropdownSection}))
     const menus = [
         { id: "NJSP", name: "NJSP", },
         { id: "state-years", name: "State x Years", },
@@ -45,10 +50,28 @@ const Home = ({ plotsDict, njspProps, }: Props) => {
         { id: "county-months", name: "Counties x Months", },
     ].map(s => ({
         ...s,
-        sections: sections.filter(({ dropdownSection }) => s.name == dropdownSection)
+        sections: sections.filter(({dropdownSection}) => s.name == dropdownSection)
     }))
 
     const title = "NJ Traffic Crash Data"
+
+    const [ region, setRegion ] = useState("NJ")
+    // const db = await initDuckDb()
+    // const typeProjections = await getTypeProjections({ db, county: region === "NJ" ? null : region, })
+    const countySelect = (
+        <select
+            value={region}
+            onChange={e => setRegion(e.target.value)}
+        >
+            <option value={"NJ"}>NJ</option>
+            {
+                o2a(
+                    cn2cc,
+                    (cn, cc) => <option key={cn} value={cn}>{cn} County</option>,
+                )
+            }
+        </select>
+    )
 
     return (
         <div className={css.container}>
@@ -65,7 +88,7 @@ const Home = ({ plotsDict, njspProps, }: Props) => {
                 menus={menus}
                 hover={false}
             >
-                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
             </Nav>
 
             <main className={css.main}>
@@ -80,14 +103,18 @@ const Home = ({ plotsDict, njspProps, }: Props) => {
                     <span className={css.bold}>Work in progress</span> map of NJDOT data: 5 years (2017-2021) of fatal
                     and injury crashes in Hudson County:
                 </p>
-                <iframe src={`${basePath}/map/hudson`} className={css.map} />
+                <iframe src={`${basePath}/map/hudson`} className={css.map}/>
                 <ul style={{listStyle: "none"}}>
                     <li><A href={"/map/hudson"}>Full screen map here</A></li>
                     <li>Code and cleaned data are <A href={GitHub.href}>here on GitHub</A>.</li>
                     <li>Click / double-click legend entries below to toggle traces on/off.</li>
                 </ul>
                 <div key={njspPlotSpec.id} className={css["plot-container"]}>
-                    <NjspPlot {...njspProps} />
+                    {/*<NjspPlot*/}
+                    {/*    {...njspProps}*/}
+                    {/*    county={region === "NJ" ? null : region}*/}
+                    {/*    heading={<h2>Car Crash Deaths: {countySelect}</h2>}*/}
+                    {/*/>*/}
                     <hr/>
                 </div>
                 {
@@ -95,7 +122,7 @@ const Home = ({ plotsDict, njspProps, }: Props) => {
                         ({id, ...rest}, idx) =>
                             <Fragment key={id}>
                                 {
-                                    idx == menus[0].sections.length && <>
+                                    idx + 1 == menus[0].sections.length && <>
                                         <h1 id={"njdot"}><a href={`#njdot`}>NJ DOT Raw Crash Data</a></h1>
                                         <p>
                                             NJ DOT <A title={"NJ DOT raw crash data"}

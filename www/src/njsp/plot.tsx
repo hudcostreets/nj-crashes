@@ -5,6 +5,8 @@ import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import { initDuckDb, runQuery } from "@rdub/duckdb/duckdb";
 import { curYear, Data, njspPlotSpec, Plot, PlotSpec } from "@/src/plotSpecs";
 import React, { ReactNode, useCallback, useEffect, useState } from "react";
+import css from "./plot.module.scss"
+import { getTypeProjections } from "./projections";
 
 export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
 export type Annotation = Partial<Annotations>
@@ -59,6 +61,7 @@ export async function getPlotData({ db, target, typeProjections, initialPlotData
         ${county ? `WHERE county = '${county}'` : ``}
         GROUP BY year
     `
+    console.log("query:", query)
     const rows = await runQuery<YtRow>(db, query)
     const typesArr = Array.from(types)
     const typesMap: { [k: string]: keyof YtRow } = {
@@ -68,10 +71,12 @@ export async function getPlotData({ db, target, typeProjections, initialPlotData
         "Passengers": "passenger",
         "Projected": "projected",
     }
+    console.log("typeProjections:", typeProjections)
     const projectedTotal = typesArr.map(type => {
         const col = typesMap[type] as keyof TypeCounts
         return col in typeProjections ? typeProjections[col] : 0
     }).reduce((a, b) => a + b, 0)
+    console.log("rows:", rows)
     const last = rows[rows.length - 1]
     if (last.year == curYear) {
         const lastTotal = typesArr.map(type => last[typesMap[type]]).reduce((a, b) => a + b, 0)
@@ -136,6 +141,15 @@ export function NjspPlot({ params, tableData, typeProjections, rundate, yearTota
     const [ data, setData ] = useState<PlotData[]>(initialPlotData)
     const [ annotations, setAnnotations ] = useState<Annotation[] | undefined>(layout.annotations)
     const [ target, setTarget ] = useState<string | null>(null)
+    const [ projections, setProjections ] = useState(typeProjections)
+    useEffect(() => {
+        async function getProjections() {
+            if (!db) return
+            const projections = await getTypeProjections({ db, county, })
+            setProjections(projections)
+        }
+        getProjections()
+    }, [ db, county ]);
 
     const onLegendClick = useCallback(
         (name: Type) => {
@@ -191,10 +205,10 @@ export function NjspPlot({ params, tableData, typeProjections, rundate, yearTota
             async function query() {
                 if (!db || !target) return
                 // console.log("types:", Array.from(types))
-                const {rows, data, annotations} = await getPlotData({
+                const { rows, data, annotations } = await getPlotData({
                     db,
                     target,
-                    typeProjections,
+                    typeProjections: projections,
                     initialPlotData,
                     types,
                     county,
@@ -210,15 +224,17 @@ export function NjspPlot({ params, tableData, typeProjections, rundate, yearTota
     )
     //console.log("trace visibility:", data.map(d => d.visible))
     return (
-        <Plot
-            {...spec}
-            params={{ data, layout: { ...layout, annotations, margin: { t: 0, r: 10, b: 0, l: 0, } }, ...plotRest }}
-            src={src}
-            title={title ?? DefaultTitle}
-            heading={heading}
-            data={{ rundate, yearTotalsMap }}
-            onLegendClick={onLegendClick}
-            onLegendDoubleClick={onLegendDoubleClick}
-        />
+        <div className={css.plotContainer}>
+            <Plot
+                {...spec}
+                params={{ data, layout: { ...layout, annotations, margin: { t: 0, r: 10, b: 0, l: 0, } }, ...plotRest }}
+                src={src}
+                title={title ?? DefaultTitle}
+                heading={heading}
+                data={{ rundate, yearTotalsMap }}
+                onLegendClick={onLegendClick}
+                onLegendDoubleClick={onLegendDoubleClick}
+            />
+        </div>
     )
 }
