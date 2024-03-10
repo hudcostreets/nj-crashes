@@ -1,8 +1,7 @@
-.plotContainer {
-  position: relative;
-  .countySelect {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-  }
+.countySelect {
+  margin-left: 0.1em;
+  font-size: 1em;
+  font-weight: bold;
+  text-decoration: underline;
+  border: 0;
 }

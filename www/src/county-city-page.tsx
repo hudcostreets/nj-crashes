@@ -13,6 +13,7 @@ import A from "@rdub/next-base/a";
 import * as Njsp from "@/src/njsp/plot";
 import { NjspChildren, NjspPlot } from "@/src/njsp/plot";
 import { njspPlotSpec } from "@/src/plotSpecs";
+import Footer from "./footer";
 
 export type Props = {
     urls: Urls
@@ -124,6 +125,7 @@ export default function CityPage(
                         />
                     </div>
                 }
+                <Footer />
             </div>
         </div>
     )

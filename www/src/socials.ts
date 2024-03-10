@@ -8,3 +8,5 @@ export const Instagram = Socials.Instagram("hudcostreets")
 export const YouTube = Socials.YouTube("@neighborryan")
 
 export const socials = [ GitHub, YouTube, Twitter, Instagram, ]
+
+export const crashDataEmail = "crash-data@hudcostreets.org"

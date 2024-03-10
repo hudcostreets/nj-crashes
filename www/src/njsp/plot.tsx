@@ -2,8 +2,8 @@ import { Annotations, PlotData } from "plotly.js";
 import * as Plotly from "react-plotly.js";
 import { TableData, useCsvTable, useTable } from "@/src/tableData";
 import { useDb, useQuery, } from "@rdub/duckdb/duckdb";
-import { curYear, Data, njspPlotSpec, prvYear } from "@/src/plotSpecs";
-import React, { Dispatch, ReactNode, useCallback, useEffect, useState } from "react";
+import { curYear, Data, njspPlotSpec, prvYear, YearTotalsMap } from "@/src/plotSpecs";
+import React, { Dispatch, ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import css from "./plot.module.scss"
 import { table, typeCountsQuery } from "./projections";
 import { ProjectedCsv } from "@/src/paths";
@@ -12,6 +12,8 @@ import { repoWithOwner } from "@/src/github";
 import A from "@rdub/next-base/a";
 import { GitHub } from "@/src/socials";
 import { Plot, PlotSpec } from "@rdub/next-plotly/plot";
+import { fromEntries } from "@rdub/base/objs";
+import { NjspFatalAcc } from "@/src/urls";
 
 export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
 export type Annotation = Partial<Annotations>
@@ -52,6 +54,7 @@ export async function getPlotData({ ytRows, typeProjections, initialPlotData, ty
     rows: YtRow[]
     data: PlotData[]
     annotations: Annotation[]
+    yearTotalsMap: YearTotalsMap
 }> {
     // console.log("getPlotData: county", county)
     const typesArr = Array.from(types)
@@ -113,8 +116,15 @@ export async function getPlotData({ ytRows, typeProjections, initialPlotData, ty
             yshift: 10,
         }
     })
+    const yearTotalsMap = fromEntries(
+        rows.map(
+            ({ year, total, projected }) =>
+                [ year, { total, projected } ]
+        )
+    ) as YearTotalsMap
+
     // console.log("annotations:", annotations)
-    return { rows, data, annotations }
+    return { rows, data, annotations, yearTotalsMap, }
 }
 
 export const DefaultTitle = "Car Crash Deaths"
@@ -122,20 +132,57 @@ export const DefaultTitle = "Car Crash Deaths"
 export const AllTypes: Type[] = ["Drivers", "Pedestrians", "Cyclists", "Passengers", "Projected"]
 export type Type = "Drivers" | "Pedestrians" | "Cyclists" | "Passengers" | "Projected"
 
+const getTextWidth = (text: string, font: string) => {
+    // Create a temporary span element
+    const span = document.createElement('span');
+    document.body.appendChild(span);
+
+    // Set the same font styling as your select options
+    span.style.font = font;
+    span.style.position = 'absolute'; // Position off-screen
+    span.style.height = 'auto';
+    span.style.width = 'auto';
+    span.style.whiteSpace = 'nowrap';
+    span.textContent = text;
+
+    // Measure the width
+    const width = Math.ceil(span.getBoundingClientRect().width);
+
+    document.body.removeChild(span);
+
+    return width;
+};
+
 export function CountySelect({ region, setRegion, counties }: {
     region: string
     setRegion: (region: string) => void
     counties: string[]
 }) {
+    const selectRef = useRef<HTMLSelectElement>(null)
+    useEffect(() => {
+        if (selectRef.current) {
+            const { fontSize, fontWeight, fontFamily } = window.getComputedStyle(selectRef.current)
+            const font = `${fontWeight} ${fontSize} ${fontFamily}`
+            // console.log("width font:", font, region)
+            const text = region === "NJ" ? "NJ" : `${region} County`
+            const textWidth = getTextWidth(text, font)
+            // console.log("setting width:", textWidth)
+            selectRef.current.style.width = `${textWidth + 30}px` // Add some padding
+        }
+    }, [ region ])
     return (
         <select
+            className={css.countySelect}
+            ref={selectRef}
             value={region}
-            onChange={e => setRegion(e.target.value)}
+            onChange={e => {
+                const select = e.target
+                const region = select.value
+                setRegion(region)
+            }}
         >
             <option value={"NJ"}>NJ</option>
-            {
-                counties.map(cn => <option key={cn} value={cn}>{cn} County</option>)
-            }
+            {counties.map(cn => <option key={cn} value={cn}>{cn} County</option>)}
         </select>
     )
 }
@@ -156,12 +203,33 @@ export function NjspChildren({ rundate, yearTotalsMap, includeWorstYearsBlurb }:
     const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
     return <>
         <p>Click/Double-click the legend labels to toggle or solo each type.</p>
-        {includeWorstYearsBlurb !== false && <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>}
         <p><A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, {curYear} has {curYearTotal} reported deaths, and <A href={estimationHref}>is on pace</A> for {curYearProjectedTotal}{curYearProjectedTotal > prvYearTotal ? `, exceeding ${prvYear}'s ${prvYearTotal}` : ""}.</p>
+        <p>Data comes from <A title={"NJ State Police fatal crash data"} href={NjspFatalAcc}>NJ State Police</A>, and is updated daily (though crashes sometimes take weeks or months to show up).</p>
+        {includeWorstYearsBlurb !== false && <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>}
     </>
 }
 
-export function NjspPlot({ params, tableData, typeProjections, counties, ytRows: initYtRows, rundate, yearTotalsMap, county, title, heading, spec, setCounty }: Props & { setCounty?: Dispatch<string | null> }) {
+export function NjspPlot(
+    {
+        params, tableData,
+        typeProjections,
+        counties,
+        ytRows: initYtRows,
+        rundate,
+        yearTotalsMap: initYearTotalsMap,
+        county,
+        title,
+        subtitle,
+        heading,
+        Heading = 'h2',
+        spec,
+        setCounty,
+    }: Props & {
+        subtitle?: ReactNode
+        setCounty?: Dispatch<string | null>
+        Heading?: keyof JSX.IntrinsicElements
+    }
+) {
     spec = spec ?? njspPlotSpec
     let { src, name } = spec
     src = src ?? `plots/${name}.png`
@@ -177,6 +245,7 @@ export function NjspPlot({ params, tableData, typeProjections, counties, ytRows:
         query: typeCountsQuery(county),
         init: [ typeProjections ],
     })
+    const [ yearTotalsMap, setYearTotalsMap ] = useState<YearTotalsMap>(initYearTotalsMap)
 
     const onLegendClick = useCallback(
         (name: Type) => {
@@ -230,7 +299,7 @@ export function NjspPlot({ params, tableData, typeProjections, counties, ytRows:
             async function query() {
                 if (!db || !target) return
                 // console.log("types:", Array.from(types))
-                const { data, annotations } = await getPlotData({
+                const { data, annotations, yearTotalsMap, } = await getPlotData({
                     ytRows,
                     typeProjections: projections,
                     initialPlotData,
@@ -241,6 +310,7 @@ export function NjspPlot({ params, tableData, typeProjections, counties, ytRows:
                 // setRows(rows)
                 setData(data)
                 setAnnotations(annotations)
+                setYearTotalsMap(yearTotalsMap)
             }
             query()
         },
@@ -249,35 +319,34 @@ export function NjspPlot({ params, tableData, typeProjections, counties, ytRows:
     //console.log("trace visibility:", data.map(d => d.visible))
     title = title ?? DefaultTitle
     return (
-        <div className={css.plotContainer}>
-            <Plot
-                {...spec}
-                params={{ data, layout: { ...layout, annotations, margin: { t: 0, r: 10, b: 0, l: 0, } }, ...plotRest }}
-                src={src}
-                title={title}
-                heading={
-                    heading ?? (
-                        setCounty
-                            ? <h2>
-                                {title}:
-                                <CountySelect
-                                    region={county ?? "NJ"}
-                                    setRegion={region => setCounty(region === "NJ" ? null : region)}
-                                    counties={counties}
-                                />
-                            </h2>
-                            : null
-                    )
-                }
-                onLegendClick={onLegendClick}
-                onLegendDoubleClick={onLegendDoubleClick}
-            >
-                <NjspChildren
-                    rundate={rundate}
-                    yearTotalsMap={yearTotalsMap}
-                    includeWorstYearsBlurb={county === null}
-                />
-            </Plot>
-        </div>
+        <Plot
+            {...spec}
+            params={{ data, layout: { ...layout, annotations, margin: { t: 0, r: 10, b: 0, l: 0, } }, ...plotRest }}
+            src={src}
+            title={title}
+            subtitle={subtitle}
+            heading={
+                heading ?? (
+                    setCounty
+                        ? <Heading>
+                            {title}:
+                            <CountySelect
+                                region={county ?? "NJ"}
+                                setRegion={region => setCounty(region === "NJ" ? null : region)}
+                                counties={counties}
+                            />
+                        </Heading>
+                        : null
+                )
+            }
+            onLegendClick={onLegendClick}
+            onLegendDoubleClick={onLegendDoubleClick}
+        >
+            <NjspChildren
+                rundate={rundate}
+                yearTotalsMap={yearTotalsMap}
+                includeWorstYearsBlurb={county === null}
+            />
+        </Plot>
     )
 }

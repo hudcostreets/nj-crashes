@@ -7,7 +7,7 @@ import { Nav } from "@rdub/next-base/nav";
 import { getBasePath } from "@rdub/next-base/basePath"
 import { Socials } from "@rdub/next-base/socials"
 import { url } from "@/src/site";
-import { GitHub } from "@/src/socials"
+import { GitHub, crashDataEmail } from "@/src/socials"
 import { plotSpecs } from "@/src/plotSpecs";
 import { buildPlot, buildPlots, Plot, PlotsDict } from "@rdub/next-plotly/plot";
 import { loadPlots } from "@rdub/next-plotly/plot-load";
@@ -15,6 +15,7 @@ import * as Njsp from "@/src/njsp/plot";
 import { NjspPlot } from "@/src/njsp/plot";
 import { loadProps } from "@/server/njsp/plot";
 import { NjdotRawData, NjspFatalAcc } from "@/src/urls";
+import Footer from '@/src/footer';
 
 type Props = {
     plotsDict: PlotsDict
@@ -67,7 +68,7 @@ const Home = ({ plotsDict, njspProps }: Props) => {
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
             </Nav>
 
-            <main className={css.main}>
+            <main className={css.index}>
                 <h1 className={css.title}>{title}</h1>
                 <p>
                     <A href={`#per-year`}>The first 5 plots below</A> come from <A title={"NJ State Police fatal crash data"} href={NjspFatalAcc}>NJ State Police fatal crash data</A> (2008-present). {"It's generally current to the previous day."}
@@ -121,21 +122,7 @@ const Home = ({ plotsDict, njspProps }: Props) => {
                             </Fragment>
                     )
                 }
-                <p>Code and data are <A href={GitHub.href}>on GitHub</A>; feedback / issues <A
-                    href={`${GitHub.href}/issues/new`}>here</A>).</p>
-                <Socials
-                    socials={[
-                        GitHub,
-                        // { name: "NJSP", title: "NJ State Police fatal crash data", href: "https://nj.gov/njsp/info/fatalacc/", src: `/njsp.png`, },
-                        // { name: "NJDOT", title: "NJ DOT raw crash data", href: "https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm", src: `/njdot-s.png`, },
-                        {
-                            name: "Hudson County Complete Streets",
-                            title: "Hudson County Complete Streets",
-                            href: "https://hudcostreets.org",
-                            src: `/logos/hccs.png`,
-                        },
-                    ]}
-                />
+                <Footer />
             </main>
         </div>
     )

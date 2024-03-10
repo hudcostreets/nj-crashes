@@ -1,5 +1,5 @@
 import { loadPlot } from "@rdub/next-plotly/plot-load";
-import { Data, njspPlotSpec, YearTotalsMap, } from "@/src/plotSpecs";
+import { njspPlotSpec, YearTotalsMap, } from "@/src/plotSpecs";
 import { initDuckDb, runQuery } from "@rdub/duckdb/duckdb";
 import { registerTableData, TableData } from "@/src/tableData";
 import { loadTableData } from "@/server/tableData";
@@ -25,20 +25,13 @@ export async function loadProps({ county }: { county: string | null } = { county
     const tableData: TableData = loadTableData(YearTypeCountyCsv)
     const target = await registerTableData({ db, tableData, stem: "ytc", })
     const initRows = await runQuery<YtRow>(db, ytcQuery({ county: county ?? null, target }))
-    const { data, rows: ytRows, annotations } = await getPlotData({
+    const { data, rows: ytRows, annotations, yearTotalsMap, } = await getPlotData({
         ytRows: initRows,
         typeProjections,
         initialPlotData,
         types: new Set(AllTypes),
         county,
     })
-
-    const yearTotalsMap = fromEntries(
-        ytRows.map(
-            ({ year, total, projected }) =>
-            [ year, { total, projected } ]
-        )
-    ) as YearTotalsMap
 
     const counties = Arr(keys(cn2cc))
     const { rundate } = loadSync<{ rundate: string }>(RUNDATE_RELPATH)
