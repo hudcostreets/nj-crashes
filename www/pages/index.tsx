@@ -84,7 +84,6 @@ const Home = ({ plotsDict, njspProps }: Props) => {
                 <ul style={{listStyle: "none"}}>
                     <li><A href={"/map/hudson"}>Full screen map here</A></li>
                     <li>Code and cleaned data are <A href={GitHub.href}>here on GitHub</A>.</li>
-                    <li>Click / double-click legend entries below to toggle traces on/off.</li>
                 </ul>
                 <div key={njspPlotSpec.id} className={css["plot-container"]}>
                     <NjspPlot
