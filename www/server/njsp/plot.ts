@@ -1,13 +1,14 @@
 import { loadPlot } from "@rdub/next-plotly/plot-load";
 import { Data, njspPlotSpec, YearTotalsMap, } from "@/src/plotSpecs";
-import { initDuckDb } from "@rdub/duckdb/duckdb";
+import { initDuckDb, runQuery } from "@rdub/duckdb/duckdb";
 import { registerTableData, TableData } from "@/src/tableData";
 import { loadTableData } from "@/server/tableData";
-import { AllTypes, getPlotData, PlotParams, Props, } from "@/src/njsp/plot";
+import { AllTypes, getPlotData, PlotParams, Props, YtRow, } from "@/src/njsp/plot";
 import { loadSync } from "@rdub/base/load";
 import { fromEntries } from "@rdub/base/objs";
 import { RUNDATE_RELPATH, YearTypeCountyCsv } from "../paths";
 import { getTypeProjections } from "./projections";
+import { ytcQuery } from "@/src/njsp/ytc";
 
 export async function loadProps({ county }: { county: string | null } = { county: null }): Promise<Props> {
     const initialPlot = loadPlot<Data, PlotParams>(njspPlotSpec)
@@ -20,9 +21,9 @@ export async function loadProps({ county }: { county: string | null } = { county
     const typeProjections = await getTypeProjections({ db, county, })
     const tableData: TableData = loadTableData(YearTypeCountyCsv)
     const target = await registerTableData({ db, tableData, stem: "ytc", })
-    const { data, rows, annotations } = await getPlotData({
-        db,
-        target,
+    const initRows = await runQuery<YtRow>(db, ytcQuery({ county: county ?? null, target }))
+    const { data, rows: ytRows, annotations } = await getPlotData({
+        ytRows: initRows,
         typeProjections,
         initialPlotData,
         types: new Set(AllTypes),
@@ -30,7 +31,7 @@ export async function loadProps({ county }: { county: string | null } = { county
     })
 
     const yearTotalsMap = fromEntries(
-        rows.map(
+        ytRows.map(
             ({ year, total, projected }) =>
             [ year, { total, projected } ]
         )
@@ -42,6 +43,7 @@ export async function loadProps({ county }: { county: string | null } = { county
         params: { data, layout: { ...layout, annotations }, ...plotRest },
         tableData,
         typeProjections,
+        ytRows,
         rundate,
         yearTotalsMap,
         county,

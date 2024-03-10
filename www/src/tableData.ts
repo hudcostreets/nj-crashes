@@ -1,7 +1,6 @@
 import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import { useEffect, useState } from "react";
 import { basename } from "path";
-import { ProjectedCsv } from "@/src/paths";
 import { runQuery } from "@rdub/duckdb/duckdb";
 
 export type CsvData = {
@@ -77,7 +76,7 @@ export async function registerTableData({ db, tableData, stem }: {
     db: AsyncDuckDB
     tableData: TableData
     stem: string
-}) {
+}): Promise<string> {
     let target: string
     if (tableData.kind === 'csv') {
         const path = `${stem}.csv`
@@ -89,6 +88,24 @@ export async function registerTableData({ db, tableData, stem }: {
         let ytcPqtArr = new Uint8Array(Buffer.from(tableData.base64, 'base64'))
         await db.registerFileBuffer(path, ytcPqtArr)
     }
+    return target
+}
+
+export function useTable({ db, tableData, stem }: { db: AsyncDuckDB | null, tableData: TableData, stem: string }): string | null {
+    const [ target, setTarget ] = useState<string | null>(null)
+    useEffect(
+        () => {
+            async function init() {
+                if (!db) return
+                console.log("got db:", db)
+                const target = await registerTableData({ db, tableData, stem, })
+                console.log("registered target:", target)
+                setTarget(target)
+            }
+            init()
+        },
+        [ db, tableData, ]
+    )
     return target
 }
 
