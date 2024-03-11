@@ -1,17 +1,14 @@
 import { loadPlot } from "@rdub/next-plotly/plot-load";
-import { njspPlotSpec, YearTotalsMap, } from "@/src/plotSpecs";
+import { njspPlotSpec, } from "@/src/plotSpecs";
 import { initDuckDb, runQuery } from "@rdub/duckdb/duckdb";
 import { registerTableData, TableData } from "@/src/tableData";
 import { loadTableData } from "@/server/tableData";
+import { Counties } from "@/server/county";
 import { AllTypes, getPlotData, PlotParams, Props, YtRow, } from "@/src/njsp/plot";
 import { loadSync } from "@rdub/base/load";
-import { fromEntries } from "@rdub/base/objs";
 import { RUNDATE_RELPATH, YearTypeCountyCsv } from "../paths";
 import { getTypeProjections } from "./projections";
 import { ytcQuery } from "@/src/njsp/ytc";
-import { cn2cc } from "@/server/county";
-import { keys } from "@rdub/base/objs";
-import { Arr } from '@rdub/base/arr';
 
 export async function loadProps({ county }: { county: string | null } = { county: null }): Promise<Props> {
     const initialPlot = loadPlot<PlotParams>(njspPlotSpec)
@@ -33,7 +30,6 @@ export async function loadProps({ county }: { county: string | null } = { county
         county,
     })
 
-    const counties = Arr(keys(cn2cc))
     const { rundate } = loadSync<{ rundate: string }>(RUNDATE_RELPATH)
     console.log(`rundate: ${rundate}`)
     return {
@@ -42,8 +38,8 @@ export async function loadProps({ county }: { county: string | null } = { county
         typeProjections,
         ytRows,
         rundate,
-        counties,
         yearTotalsMap,
         county,
+        Counties,
     }
 }

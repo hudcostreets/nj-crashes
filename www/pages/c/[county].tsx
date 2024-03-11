@@ -1,6 +1,6 @@
 import type { GetStaticProps } from "next";
 import { keys } from "@rdub/base/objs";
-import { cc2mc2mn, County2Code } from "@/server/county";
+import { cc2mc2mn, Counties, County2Code } from "@/server/county";
 import { County, denormalize, normalize } from "@/src/county";
 import { getUrls, Urls } from "@/src/urls";
 import RegionPage from "@/src/region-page";
@@ -46,5 +46,6 @@ export default function CountyPage({ urls, cc, cn, mc2mn, barProps, }: Props) {
         barProps={barProps}
         title={`${county} County`}
         setCounty={setCounty}
+        Counties={barProps.Counties}
     />
 }

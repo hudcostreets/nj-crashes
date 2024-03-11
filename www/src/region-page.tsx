@@ -24,6 +24,7 @@ export type Props = {
     mc2mn?: MC2MN
     cc2mc2mn?: CC2MC2MN
     barProps?: Njsp.Props
+    Counties: string[]
     setCounty?: Dispatch<string | null>
     title: string
     subtitle?: ReactNode
@@ -45,6 +46,7 @@ export default function RegionPage(
         cc, cn,
         mc, mc2mn,
         cc2mc2mn,
+        Counties,
         title, subtitle,
         barProps,
         setCounty,
@@ -81,11 +83,11 @@ export default function RegionPage(
         <div className={css.body}>
             <div className={css.container}>
                 <h1 className={css.title}>{
-                    barProps && setCounty
+                    setCounty
                         ? <CountySelect
-                            region={county ?? "NJ"}
-                            setRegion={region => setCounty(region === "NJ" ? null : region)}
-                            counties={barProps.counties}
+                            county={county}
+                            setCounty={setCounty}
+                            Counties={Counties}
                         />
                         : title
                 }</h1>

@@ -32,7 +32,7 @@ export type Props = {
     typeProjections: TypeCounts
     ytRows: YtRow[]
     county: string | null
-    counties: string[]
+    Counties: string[]
     title?: string
     heading?: ReactNode
     spec?: PlotSpec
@@ -173,7 +173,7 @@ export function NjspPlot(
     {
         params, tableData,
         typeProjections,
-        counties,
+        Counties,
         ytRows: initYtRows,
         rundate,
         yearTotalsMap: initYearTotalsMap,
@@ -292,9 +292,9 @@ export function NjspPlot(
                         ? <Heading>
                             <A href={`#${spec.id}`}>{title}</A>:
                             <CountySelect
-                                region={county ?? "NJ"}
-                                setRegion={region => setCounty(region === "NJ" ? null : region)}
-                                counties={counties}
+                                county={county}
+                                setCounty={setCounty}
+                                Counties={Counties}
                             />
                         </Heading>
                         : null
