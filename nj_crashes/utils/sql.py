@@ -53,7 +53,7 @@ def write(
         err(f"Removing {db_path}")
         remove(db_path)
 
-    err(f"Writing {len(df)} rows to {db_path}")
+    err(f"Writing {len(df)} rows to {db_path} ({tbl})")
     kwargs = dict(if_exists='replace') if replace else dict()
     df.to_sql(tbl, f'sqlite:///{db_path}', **kwargs)
     err(f"Wrote DB: {stat(db_path).st_size} bytes")

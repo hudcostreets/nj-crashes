@@ -333,7 +333,7 @@ export function NjspPlot(
                 heading ?? (
                     setCounty
                         ? <Heading>
-                            {title}:
+                            <A href={`#${spec.id}`}>{title}</A>:
                             <CountySelect
                                 region={county ?? "NJ"}
                                 setRegion={region => setCounty(region === "NJ" ? null : region)}

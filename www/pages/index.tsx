@@ -71,7 +71,7 @@ const Home = ({ plotsDict, njspProps }: Props) => {
             <main className={css.index}>
                 <h1 className={css.title}>{title}</h1>
                 <p>
-                    <A href={`#per-year`}>The first 5 plots below</A> come from <A title={"NJ State Police fatal crash data"} href={NjspFatalAcc}>NJ State Police fatal crash data</A> (2008-present). {"It's generally current to the previous day."}
+                    <A href={`#per-year`}>The first {menus[0].sections.length} plots below</A> come from <A title={"NJ State Police fatal crash data"} href={NjspFatalAcc}>NJ State Police fatal crash data</A> (2008-present). {"It's generally current to the previous day."}
                 </p>
                 <p>
                     <A href={"#njdot"}>Below that</A> are plots of <A title={"NJ DOT raw crash data"} href={NjdotRawData}>NJ DOT raw crash data</A>, which includes 6MM property-damage, injury, and fatal crashes from 2001-2021. {`It's a richer dataset, but less up to date.`}

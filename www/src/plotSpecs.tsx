@@ -42,14 +42,6 @@ export const njspPlotSpec: PlotSpec = {
 }
 
 export const plotSpecs: PlotSpec[] = [
-    // {
-    //     id: "crash-map",
-    //     name: "njdot/hudson-pif-crashes",
-    //     title: "Hudson County Crashes (2020)",
-    //     //plot: crashMapPlot,
-    //     //src: "",
-    //     style: { height: 1100, },
-    // },
     njspPlotSpec,
     {
         id: "ytd", name: "ytd-deaths", title: "NJ Traffic Deaths per Year", menuName: "YTD", dropdownSection: "NJSP",
@@ -66,7 +58,6 @@ export const plotSpecs: PlotSpec[] = [
         </>
     },
     { id: "per-month", name: "fatalities_per_month", title: "NJ Traffic Deaths per Month", menuName: "Per Month", dropdownSection: "NJSP", },
-    { id: "per-month-type", name: "fatalities_per_month_by_type", title: "NJ Traffic Deaths per Month (by Victim Type)", menuName: "By Victim Type", dropdownSection: "NJSP", },
     { id: "by-month-bars", name: "fatalities_by_month_bars", title: "NJ Traffic Deaths, grouped by month", menuName: "Grouped by Month", dropdownSection: "NJSP", },
     ...YM_SC_PID_SPECS,
 ]

@@ -64,7 +64,7 @@ export function yearStatsRows({ ysds }: { ysds: YearStatsDicts, }): Row[] {
 }
 
 export type Props = Base & {
-    cc: number
+    cc?: number
     mc?: number
 }
 
@@ -96,14 +96,14 @@ export function toYearStatsDicts(years: YearStats[]): YearStatsDicts {
 export function useYearStats({ cc, mc, timerId = 'year-stats', ...base }: Props): Either<Error, YearStatsDicts> | null {
     const query = useMemo(
         () => {
-            const groupBy = `group by cc${mc ? `, mc` : ``}, y, condition`
-            const having = `having cc=${cc}${mc ? ` and mc=${mc}` : ""}`
+            const where = cc === undefined ? `` : `where cc=${cc}${mc ? ` and mc=${mc}` : ""}`
+            const table = (cc === undefined ? `` : `c`) + (mc === undefined ? '' : 'm') + `yc`
             return `
                 select y, condition,
-                sum(drivers + passengers + pedestrians + cyclists) as total,
-                sum(num_crashes) as num_crashes
-                from cmymc ${groupBy}
-                ${having}
+                drivers + passengers + pedestrians + cyclists as total,
+                num_crashes as num_crashes
+                from ${table}
+                ${where}
                 order by y desc, condition asc
             `
         },
