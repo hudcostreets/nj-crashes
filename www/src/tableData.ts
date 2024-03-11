@@ -23,10 +23,6 @@ export type HasDb = {
 export type MaybeDb = {
     db: AsyncDuckDB | null
 }
-export type HasCounty = {
-    county: string | null
-}
-export type Base = HasDb & HasCounty
 export type HasCsvText = {
     csvText: string
 }
@@ -40,7 +36,6 @@ export type DbProps = HasDb & HasTable & HasCsvText
 export type HasQuery = {
     query: string
 }
-export type Props = Base & HasCsvText
 export type UseProps<T> = Url & MaybeDb & MaybeTable & HasQuery & {
     init: T[]
 }

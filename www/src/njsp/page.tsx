@@ -7,6 +7,7 @@ import { DefaultTitle, NjspPlot } from "@/src/njsp/plot";
 import { url } from "@/src/site";
 import Footer from "@/src/footer";
 import * as Njsp from "@/src/njsp/plot";
+import useSetCounty from "@/src/use-set-county";
 
 export type Props = {
     barProps: Njsp.Props
@@ -14,13 +15,7 @@ export type Props = {
 }
 
 export default function NjspPlotPage({ barProps, county, }: Props) {
-    const router = useRouter()
-    const setCounty = useCallback(
-        (county: string | null) => {
-            router.push(`/njsp/${county ? normalize(county) : ""}`)
-        },
-        [router]
-    )
+    const setCounty = useSetCounty("/njsp")
     return (
         <div className={css.container}>
             <Head
@@ -36,6 +31,7 @@ export default function NjspPlotPage({ barProps, county, }: Props) {
                         Heading={'h1'}
                         county={county}
                         setCounty={setCounty}
+                        includeMoreInfoLink={true}
                     />
                     <hr/>
                 </div>

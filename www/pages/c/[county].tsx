@@ -6,6 +6,7 @@ import { getUrls, Urls } from "@/src/urls";
 import RegionPage from "@/src/region-page";
 import { loadProps } from "@/server/njsp/plot";
 import * as Njsp from "@/src/njsp/plot";
+import useSetCounty from "@/src/use-set-county";
 
 export type Params = {
     county: string
@@ -31,15 +32,19 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
     const cn = normalize(countyParam)
     const cc = County2Code[cn]
     const { mc2mn } = cc2mc2mn[cc]
-    const barProps = await loadProps({ county: denormalize(cn) })
+    const county = denormalize(cn)
+    const barProps = await loadProps({ county })
     return { props: { urls, cc, cn, mc2mn, barProps } }
 }
 
 export default function CountyPage({ urls, cc, cn, mc2mn, barProps, }: Props) {
+    const setCounty = useSetCounty("/c")
+    const { county } = barProps
     return <RegionPage
         urls={urls}
         cc={cc} cn={cn} mc2mn={mc2mn}
         barProps={barProps}
-        title={`${denormalize(cn)} County`}
+        title={`${county} County`}
+        setCounty={setCounty}
     />
 }

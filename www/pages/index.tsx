@@ -90,6 +90,7 @@ const Home = ({ plotsDict, njspProps }: Props) => {
                         {...njspProps}
                         county={county}
                         setCounty={setCounty}
+                        includeMoreInfoLink={true}
                     />
                     <hr/>
                 </div>
