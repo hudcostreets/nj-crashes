@@ -5,7 +5,7 @@ import { useSqlQuery } from "@/src/sql";
 import { Crash } from "@/src/crash";
 import { Row } from "@/src/result-table";
 import { map } from "fp-ts/Either";
-import { County, MC2MN, normalize } from "@/src/county";
+import { CC2MC2MN, County, MC2MN, normalize } from "@/src/county";
 import strftime from "strftime";
 import { fromEntries } from "@rdub/base/objs";
 import { Urls } from "@/src/urls";
@@ -17,14 +17,16 @@ import { CrashesVehicles, useCrashVehicles, Vehicle } from "@/src/crash-vehicles
 import A from "@rdub/next-base/a";
 import { Tooltip } from "@/src/tooltip"
 import moment from "moment-timezone";
+import CityLink from "@/src/city-link";
+import CountyLink from "@/src/county-link";
 
 export type Base = Omit<sql.Base, 'url'> & {
     urls: Urls
 }
 
 export type Props = Base & {
-    cc: number
-    cn: string
+    cc?: number
+    cn?: string
     mc?: number
     before: string
     perPage: number
@@ -33,10 +35,15 @@ export type Props = Base & {
 export function useNjdotCrashes({ cc, mc, before, perPage, timerId = "njdot-crashes", urls, ...base }: Props): Result<Crash> | null {
     const m = moment.tz(before, "America/New_York").add(1, 'day')
     const mStr = m.format('YYYY-MM-DD')
+    const severities = [ 'i', 'f' ]
+    const severitiesFilter = severities.map(s => `severity='${s}'`).join(' or ')
+    const severitiesClause = severitiesFilter ? `(${severitiesFilter}) and ` : ""
+    const regionClause = cc ? `cc=${cc}${mc ? ` and mc=${mc}` : ""} and ` : ""
+    const dtClause = `dt<='${mStr}'`
     const query = useMemo(
         () => `
             select * from crashes
-            where (severity='i' or severity='f') and cc=${cc}${mc ? ` and mc=${mc}` : ""} and dt < '${mStr}'
+            where ${severitiesClause}${regionClause}${dtClause}
             order by dt desc
             limit ${perPage}
         `,
@@ -48,6 +55,7 @@ export function useNjdotCrashes({ cc, mc, before, perPage, timerId = "njdot-cras
 export const ColLabels = {
     id: "ID",
     dt: "Date/Time",
+    cc: "County",
     mc: "Municipality",
     casualties: "Casualties",
     road: "Road",
@@ -161,10 +169,11 @@ export function gmapsUrl({ lat, lon, }: { lat: number, lon: number }) {
     return `https://www.google.com/maps/?q=${lat},${lon}`
 }
 
-export function getNjdotCrashRows({ rows, cols, county, crashOccupants, crashPedestrians, crashVehicles, }: {
+export function getNjdotCrashRows({ rows, cols, county, cc2mc2mn, crashOccupants, crashPedestrians, crashVehicles, }: {
     rows: Crash[]
     cols: Col[]
     county?: County
+    cc2mc2mn?: CC2MC2MN
     crashOccupants: CrashesOccupants | null
     crashPedestrians: CrashesPedestrians | null
     crashVehicles: CrashesVehicles | null
@@ -199,15 +208,10 @@ export function getNjdotCrashRows({ rows, cols, county, crashOccupants, crashPed
                         pedestrians={pedestrians}
                         vehicles={vehicles}
                     />
+                } else if (col == 'cc') {
+                    txt = <CountyLink cc={row.cc} cc2mc2mn={cc2mc2mn} />
                 } else if (col == 'mc') {
-                    const { mc } = row
-                    if (!county) {
-                        throw new Error('`mc2mn` is required for `mc` col')
-                    }
-                    const { cn, mc2mn } = county
-                    const mn = mc2mn[mc]
-                    const city = normalize(mn)
-                    txt = <A href={`/c/${normalize(cn)}/${city}`}>{mn}</A>
+                    txt = <CityLink {...row} county={county} cc2mc2mn={cc2mc2mn} />
                 } else if (col == 'mp') {
                     const { mp, ilat, ilon } = row
                     if (mp) {
@@ -226,20 +230,21 @@ export function getNjdotCrashRows({ rows, cols, county, crashOccupants, crashPed
     })
 }
 
-export function useNjdotCrashRows({ mc2mn, ...props }: Props & { mc2mn?: MC2MN }) {
+export function useNjdotCrashRows({ mc2mn, cc2mc2mn, ...props }: Props & { mc2mn?: MC2MN, cc2mc2mn?: CC2MC2MN}) {
     const crashesResult = useNjdotCrashes({ ...props })
     const crashOccupants = useCrashOccupants({ crashesResult, ...props })
     const crashPedestrians = useCrashPedestrians({ crashesResult, ...props })
     const crashVehicles = useCrashVehicles({ crashesResult, ...props })
+    const ccCol: Col[] = props.cc ? [] : ['cc']
     const mcCol: Col[] = props.mc ? [] : ['mc']
-    const cols: Col[] = [ 'dt', ...mcCol, 'casualties', 'road', 'cross_street', 'mp', ]
+    const cols: Col[] = [ 'dt', ...ccCol, ...mcCol, 'casualties', 'road', 'cross_street', 'mp', ]
     const crashRows = useMemo(
         () => {
             if (!crashesResult) return
             console.log("crashRows effect")
-            const county = mc2mn ? { cn: props.cn, mc2mn } : undefined
+            const county = props.cn && mc2mn ? { cn: props.cn, mc2mn } : undefined
             const crashRows = map(
-                (crashes: Crash[]) => getNjdotCrashRows({ rows: crashes, cols, county, crashOccupants, crashPedestrians, crashVehicles, })
+                (crashes: Crash[]) => getNjdotCrashRows({ rows: crashes, cols, county, cc2mc2mn, crashOccupants, crashPedestrians, crashVehicles, })
             )(crashesResult)
             return crashRows
         },

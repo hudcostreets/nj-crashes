@@ -2,25 +2,26 @@ import { useDatePaginationControls, usePaginationControls, useResultDatePaginati
 import { ReactNode, useState } from "react";
 import { ColTitles, useYearStats, YearStatsDicts, yearStatsRows } from "@/src/use-year-stats";
 import { useNjdotCrashRows } from "@/src/use-njdot-crashes";
-import css from "./county-city.module.scss";
+import css from "./region-page.module.scss";
 import { ResultTable } from "@/src/result-table";
 import { map } from "fp-ts/Either";
 import { NjdotRawData, NjspFatalAcc, Urls } from "@/src/urls";
-import { MC2MN } from "@/src/county";
+import { CC2MC2MN, MC2MN } from "@/src/county";
 import { Total, useNjspCrashesTotal, useNjspCrashRows } from "@/src/use-njsp-crashes";
 import singleton from "@rdub/base/singleton";
 import A from "@rdub/next-base/a";
 import * as Njsp from "@/src/njsp/plot";
-import { NjspChildren, NjspPlot } from "@/src/njsp/plot";
+import { NjspPlot } from "@/src/njsp/plot";
 import { njspPlotSpec } from "@/src/plotSpecs";
 import Footer from "./footer";
 
 export type Props = {
     urls: Urls
-    cc: number
-    cn: string
+    cc?: number
+    cn?: string
     mc?: number
     mc2mn?: MC2MN
+    cc2mc2mn?: CC2MC2MN
     barProps?: Njsp.Props
     title: string
     subtitle?: ReactNode
@@ -29,11 +30,12 @@ export type Props = {
 export const DOTStart = "2001-01-01"
 export const DOTEnd = "2021-12-31"
 
-export default function CityPage(
+export default function RegionPage(
     {
         urls,
         cc, cn,
         mc, mc2mn,
+        cc2mc2mn,
         title, subtitle,
         barProps,
     }: Props
@@ -42,7 +44,7 @@ export default function CityPage(
 
     const njdotPaginationControls = useDatePaginationControls({ id: "njdot-crashes" }, { start: DOTStart, end: DOTEnd, })
     const yearStatsResult = useYearStats({ url: urls.dot.cmymc, cc, mc, requestChunkSize, })
-    const njdotCrashes = useNjdotCrashRows({ urls, cc, cn, mc, mc2mn, ...njdotPaginationControls, requestChunkSize, })
+    const njdotCrashes = useNjdotCrashRows({ urls, cc, cn, mc, mc2mn, cc2mc2mn, ...njdotPaginationControls, requestChunkSize, })
     const njdotPagination = useResultDatePagination(
         yearStatsResult,
         (ysds: YearStatsDicts) => {
@@ -53,7 +55,7 @@ export default function CityPage(
     )
 
     const njspPaginationControls = usePaginationControls({ id: "njsp-crashes" })
-    const njspCrashes = useNjspCrashRows({ urls, cc, cn, mc, mc2mn, ...njspPaginationControls, })
+    const njspCrashes = useNjspCrashRows({ urls, cc, cn, mc, mc2mn, cc2mc2mn, ...njspPaginationControls, })
     const njspCrashesTotal = useNjspCrashesTotal({ urls, cc, mc, requestChunkSize, })
     const njspPagination = useResultPagination(
         njspCrashesTotal,

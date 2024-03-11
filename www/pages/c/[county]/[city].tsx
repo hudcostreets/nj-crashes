@@ -3,8 +3,8 @@ import { cc2mc2mn, County2Code } from "@/server/county";
 import { concat, mapEntries, values } from "@rdub/base/objs";
 import { denormalize, normalize } from "@/src/county";
 import A from "@rdub/next-base/a";
-import { getDOTDbUrls, getUrls, Urls } from "@/src/urls";
-import CountyCityPage from "@/src/county-city-page";
+import { getUrls, Urls } from "@/src/urls";
+import RegionPage from "@/src/region-page";
 
 export type Params = {
     county: string
@@ -51,7 +51,7 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
 }
 
 export default function CityPage({ urls, countyParam, cc, cn, mc, mn }: Props) {
-    return <CountyCityPage
+    return <RegionPage
         urls={urls}
         cc={cc} cn={cn}
         mc={mc}

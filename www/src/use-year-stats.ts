@@ -96,8 +96,8 @@ export function toYearStatsDicts(years: YearStats[]): YearStatsDicts {
 export function useYearStats({ cc, mc, timerId = 'year-stats', ...base }: Props): Either<Error, YearStatsDicts> | null {
     const query = useMemo(
         () => {
-            const where = cc === undefined ? `` : `where cc=${cc}${mc ? ` and mc=${mc}` : ""}`
-            const table = (cc === undefined ? `` : `c`) + (mc === undefined ? '' : 'm') + `yc`
+            const where = cc ? `where cc=${cc}${mc ? ` and mc=${mc}` : ""}` : ""
+            const table = (cc ? "c" : "") + (mc ? "m" : "") + "yc"
             return `
                 select y, condition,
                 drivers + passengers + pedestrians + cyclists as total,

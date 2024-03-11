@@ -3,10 +3,9 @@ import { keys } from "@rdub/base/objs";
 import { cc2mc2mn, County2Code } from "@/server/county";
 import { County, denormalize, normalize } from "@/src/county";
 import { getUrls, Urls } from "@/src/urls";
-import CountyCityPage from "@/src/county-city-page";
+import RegionPage from "@/src/region-page";
 import { loadProps } from "@/server/njsp/plot";
 import * as Njsp from "@/src/njsp/plot";
-import { titleCase } from "@rdub/base/str";
 
 export type Params = {
     county: string
@@ -37,7 +36,7 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
 }
 
 export default function CountyPage({ urls, cc, cn, mc2mn, barProps, }: Props) {
-    return <CountyCityPage
+    return <RegionPage
         urls={urls}
         cc={cc} cn={cn} mc2mn={mc2mn}
         barProps={barProps}

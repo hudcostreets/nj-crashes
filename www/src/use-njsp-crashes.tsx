@@ -1,7 +1,7 @@
 import { Result } from "@rdub/react-sql.js-httpvfs/query";
 import { ReactNode, useMemo } from "react";
 import { useSqlQuery } from "@/src/sql";
-import { County, MC2MN, normalize } from "@/src/county";
+import { CC2MC2MN, County, MC2MN, normalize } from "@/src/county";
 import { map } from "fp-ts/Either";
 import { Base, ConditionMap, } from "./use-njdot-crashes";
 import { Row } from "@/src/result-table";
@@ -12,10 +12,12 @@ import A from "@rdub/next-base/a";
 import css from "@/src/use-crashes.module.scss";
 import { Cyclist, Driver, Passenger, Pedestrian, Person } from "@/src/icons";
 import { Tooltip } from "@/src/tooltip";
+import CityLink from "@/src/city-link";
+import CountyLink from "@/src/county-link";
 
 export type Props = Base & {
-    cc: number
-    cn: string
+    cc?: number
+    cn?: string
     mc?: number
     page: number
     perPage: number
@@ -40,6 +42,7 @@ export type Crash = {
 export const ColLabels = {
     id: "ID",
     dt: "Date/Time",
+    cc: "County",
     mc: "Municipality",
     casualties: "Casualties",
     location: "Location",
@@ -60,9 +63,10 @@ export function useNjspCrashesTotal(
 ): Result<Total> | null {
     const query = useMemo(
         () => {
+            const where = cc ? `where cc=${cc}${mc ? ` and mc=${mc}` : ""}` : ""
             return `
                 select count(*) as total from crashes
-                where cc=${cc}${mc ? ` and mc=${mc}` : ""}
+                ${where}
             `
         },
         [ cc, mc, ]
@@ -72,10 +76,11 @@ export function useNjspCrashesTotal(
 export function useNjspCrashes({ cc, mc, page, perPage, timerId = "njsp-crashes", urls, ...base }: Props): Result<Crash> | null {
     const query = useMemo(
         () => {
+            const where = cc ? `where cc=${cc}${mc ? ` and mc=${mc}` : ""}` : ""
             const offset = page * perPage
             return `
                 select * from crashes
-                where cc=${cc}${mc ? ` and mc=${mc}` : ""}
+                ${where}
                 order by dt desc
                 limit ${perPage} offset ${offset}
             `
@@ -102,10 +107,11 @@ export function CrashIcons({ tk, dk, ok, pk, bk, ti, }: Crash) {
     )
 }
 
-export function getNjspCrashRows({ rows, cols, county, }: {
+export function getNjspCrashRows({ rows, cols, county, cc2mc2mn, }: {
     rows: Crash[]
     cols: Col[]
     county?: County
+    cc2mc2mn?: CC2MC2MN
 }): Row[] {
     return rows.map(row => {
         const { id } = row
@@ -121,15 +127,10 @@ export function getNjspCrashRows({ rows, cols, county, }: {
                     </Tooltip>
                 } else if (col == 'casualties') {
                     txt = <CrashIcons {...row} />
+                } else if (col == 'cc') {
+                    txt = <CountyLink cc={row.cc} cc2mc2mn={cc2mc2mn} />
                 } else if (col == 'mc') {
-                    const { mc } = row
-                    if (!county) {
-                        throw new Error('`mc2mn` is required for `mc` col')
-                    }
-                    const { cn, mc2mn } = county
-                    const mn = mc2mn[mc]
-                    const city = normalize(mn)
-                    txt = <A href={`/c/${normalize(cn)}/${city}`}>{mn}</A>
+                    txt = <CityLink {...row} county={county} cc2mc2mn={cc2mc2mn} />
                 } else {
                     txt = row[col] ?? ''
                 }
@@ -139,17 +140,18 @@ export function getNjspCrashRows({ rows, cols, county, }: {
     })
 }
 
-export function useNjspCrashRows({ mc2mn, ...props }: Props & { mc2mn?: MC2MN }) {
+export function useNjspCrashRows({ mc2mn, cc2mc2mn, ...props }: Props & { mc2mn?: MC2MN, cc2mc2mn?: CC2MC2MN }) {
     const crashesResult = useNjspCrashes({ ...props })
+    const ccCol: Col[] = props.cc ? [] : ['cc']
     const mcCol: Col[] = props.mc ? [] : ['mc']
-    const cols: Col[] = [ 'dt', ...mcCol, 'casualties', 'location', ]  // 'street', 'highway', ]
+    const cols: Col[] = [ 'dt', ...ccCol, ...mcCol, 'casualties', 'location', ]  // 'street', 'highway', ]
     const crashRows = useMemo(
         () => {
             if (!crashesResult) return
             console.log("useNjspCrashRows effect")
-            const county = mc2mn ? { cn: props.cn, mc2mn } : undefined
+            const county = props.cn && mc2mn ? { cn: props.cn, mc2mn } : undefined
             const crashRows = map(
-                (crashes: Crash[]) => getNjspCrashRows({ rows: crashes, cols, county, })
+                (crashes: Crash[]) => getNjspCrashRows({ rows: crashes, cols, county, cc2mc2mn, })
             )(crashesResult)
             return crashRows
         },
