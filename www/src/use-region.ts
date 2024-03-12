@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { keys, mapEntries } from "@rdub/base/objs";
 import { Arr } from "@rdub/base/arr";
 import { useRouter } from "next/router";
+import { TransitionsOptions } from "@mui/material";
 
 export type Region = {
     cn?: string
@@ -27,14 +28,15 @@ export default function useRegion({ cc2mc2mn, urlPrefix, ...props }: {
     const cn2cc: Record<string, number> = useMemo(() => mapEntries(cc2mc2mn, (cc, { cn }) => [ cn, cc ]), [ cc2mc2mn ])
     const [ cc, setCc ] = useState<number | null>(props.cc)
     const [ mc, setMc ] = useState<number | null>(props.mc)
+    // console.log("useRegion", cc, mc)
 
-    useEffect(() => {
-        if (!urlPrefix) return
-        router.beforePopState(({ url, as, options }) => {
-            if (!as.startsWith(urlPrefix + "/")) return true
-            as = as.slice(urlPrefix.length + 1)
-            const [ cn, mn ] = as.split("/").map(s => s ? denormalize(s) : undefined)
-            console.log(`beforePopState url ${url} as ${as} options`, options, `cn ${cn} mn ${mn}`)
+    const updateCodes = useCallback(
+        (url: string) => {
+            if (!urlPrefix) return true
+            if (!url.startsWith(urlPrefix + "/")) return true
+            url = url.slice(urlPrefix.length + 1)
+            const [ cn, mn ] = url.split("/").map(s => s ? denormalize(s) : undefined)
+            console.log(`useRegion: updateCodes url ${url} cn ${cn} mn ${mn}`)
             if (!cn) {
                 const cc = null
                 console.log(`beforePopState setting cc ${cc}`)
@@ -58,8 +60,28 @@ export default function useRegion({ cc2mc2mn, urlPrefix, ...props }: {
                     return true
                 }
             }
+        },
+        [ urlPrefix, setCc, setMc, cn2cc, cc2mc2mn, ]
+    )
+
+    useEffect(() => {
+        if (!urlPrefix) return
+        router.beforePopState(({ url, as, options }) => {
+            return updateCodes(as)
         })
-    }, [ router, urlPrefix, ])
+        const handleRouteChange = (url: string, { shallow }: { shallow: boolean }) => {
+            updateCodes(url)
+            // console.log(`useRegion: App is changing to ${url} ${shallow ? 'with' : 'without'} shallow routing`)
+        }
+
+        router.events.on('routeChangeStart', handleRouteChange)
+
+        // If the component is unmounted, unsubscribe
+        // from the event with the `off` method:
+        return () => {
+            router.events.off('routeChangeStart', handleRouteChange)
+        }
+    }, [ router, urlPrefix, updateCodes, ])
 
     const setCounty = useCallback(
         (county: string | null) => {

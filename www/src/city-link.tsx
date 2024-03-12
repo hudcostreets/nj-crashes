@@ -1,5 +1,5 @@
 import { County, normalize } from "@/src/county";
-import A from "@rdub/next-base/a";
+import Link from "next/link";
 
 export default function CityLink({ cc, mc, cc2mc2mn, }: {
     cc: number
@@ -11,5 +11,5 @@ export default function CityLink({ cc, mc, cc2mc2mn, }: {
     // console.log(`cc ${cc} cn ${cn} mc ${mc} _county`, _county)
     const mn = mc2mn[mc]
     const city = normalize(mn)
-    return <A href={`/c/${normalize(cn)}/${city}`}>{mn}</A>
+    return <Link href={`/c/${normalize(cn)}/${city}`}>{mn}</Link>
 }
