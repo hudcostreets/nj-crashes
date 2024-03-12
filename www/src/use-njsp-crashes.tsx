@@ -1,14 +1,13 @@
 import { Result } from "@rdub/react-sql.js-httpvfs/query";
 import { ReactNode, useMemo } from "react";
 import { useSqlQuery } from "@/src/sql";
-import { CC2MC2MN, County, MC2MN, normalize } from "@/src/county";
+import { CC2MC2MN, County } from "@/src/county";
 import { map } from "fp-ts/Either";
 import { Base, ConditionMap, } from "./use-njdot-crashes";
 import { Row } from "@/src/result-table";
 import { fromEntries } from "@rdub/base/objs";
 import { range } from "@rdub/base/arr";
 import strftime from "strftime";
-import A from "@rdub/next-base/a";
 import css from "@/src/use-crashes.module.scss";
 import { Cyclist, Driver, Passenger, Pedestrian, Person } from "@/src/icons";
 import { Tooltip } from "@/src/tooltip";
@@ -85,7 +84,7 @@ export function useNjspCrashes({ cc, mc, page, perPage, timerId = "njsp-crashes"
                 limit ${perPage} offset ${offset}
             `
         },
-        [ page, perPage ]
+        [ cc, mc, page, perPage ]
     )
     return useSqlQuery<Crash>({ ...base, url: urls.njsp.crashes, timerId, query })
 }
@@ -107,11 +106,10 @@ export function CrashIcons({ tk, dk, ok, pk, bk, ti, }: Crash) {
     )
 }
 
-export function getNjspCrashRows({ rows, cols, county, cc2mc2mn, }: {
+export function getNjspCrashRows({ rows, cols, cc2mc2mn, }: {
     rows: Crash[]
     cols: Col[]
-    county?: County
-    cc2mc2mn?: CC2MC2MN
+    cc2mc2mn: CC2MC2MN
 }): Row[] {
     return rows.map(row => {
         const { id } = row
@@ -130,7 +128,7 @@ export function getNjspCrashRows({ rows, cols, county, cc2mc2mn, }: {
                 } else if (col == 'cc') {
                     txt = <CountyLink cc={row.cc} cc2mc2mn={cc2mc2mn} />
                 } else if (col == 'mc') {
-                    txt = <CityLink {...row} county={county} cc2mc2mn={cc2mc2mn} />
+                    txt = <CityLink {...row} cc2mc2mn={cc2mc2mn} />
                 } else {
                     txt = row[col] ?? ''
                 }
@@ -140,7 +138,7 @@ export function getNjspCrashRows({ rows, cols, county, cc2mc2mn, }: {
     })
 }
 
-export function useNjspCrashRows({ mc2mn, cc2mc2mn, ...props }: Props & { mc2mn?: MC2MN, cc2mc2mn?: CC2MC2MN }) {
+export function useNjspCrashRows({ cc2mc2mn, ...props }: Props & { cc2mc2mn: CC2MC2MN }) {
     const crashesResult = useNjspCrashes({ ...props })
     const ccCol: Col[] = props.cc ? [] : ['cc']
     const mcCol: Col[] = props.mc ? [] : ['mc']
@@ -149,9 +147,8 @@ export function useNjspCrashRows({ mc2mn, cc2mc2mn, ...props }: Props & { mc2mn?
         () => {
             if (!crashesResult) return
             console.log("useNjspCrashRows effect")
-            const county = props.cn && mc2mn ? { cn: props.cn, mc2mn } : undefined
             const crashRows = map(
-                (crashes: Crash[]) => getNjspCrashRows({ rows: crashes, cols, county, cc2mc2mn, })
+                (crashes: Crash[]) => getNjspCrashRows({ rows: crashes, cols, cc2mc2mn, })
             )(crashesResult)
             return crashRows
         },

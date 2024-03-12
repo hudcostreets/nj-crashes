@@ -1,7 +1,7 @@
 import type { GetStaticProps } from "next";
 import { cc2mc2mn, Counties, County2Code } from "@/server/county";
 import { concat, mapEntries, values } from "@rdub/base/objs";
-import { denormalize, MC2MN, normalize } from "@/src/county";
+import { CC2MC2MN, denormalize, normalize } from "@/src/county";
 import A from "@rdub/next-base/a";
 import { getUrls, Urls } from "@/src/urls";
 import RegionPage from "@/src/region-page";
@@ -18,7 +18,7 @@ export type Props = {
     cn: string
     mc: number
     mn: string
-    mc2mn: MC2MN
+    cc2mc2mn: CC2MC2MN
     Counties: string[]
 }
 
@@ -49,17 +49,17 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
     const mn2mc = mapEntries(mc2mn, (mc, mn) => [ normalize(mn), mc ])
     const mc = mn2mc[city]
     const mn = denormalize(city)
-    return { props: { urls, countyParam, cn, cc, mc, mn, mc2mn, Counties } }
+    return { props: { urls, countyParam, cn, cc, mc, mn, cc2mc2mn, Counties } }
 }
 
-export default function CityPage({ urls, countyParam, cc, cn, mc, mn, mc2mn, Counties }: Props) {
+export default function CityPage({ urls, cc, mc, mn, cc2mc2mn, countyParam, cn, Counties }: Props) {
     return <RegionPage
         urls={urls}
-        cc={cc} cn={cn}
+        cc={cc}
         mc={mc}
-        mc2mn={mc2mn}
         Counties={Counties}
         title={mn}
+        cc2mc2mn={cc2mc2mn}
         subtitle={
             <span>
                 (<A href={`/c/${countyParam}`}>{cn} County</A>)

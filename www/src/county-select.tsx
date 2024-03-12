@@ -39,7 +39,7 @@ export function CountySelect({ county, setCounty, Counties }: {
             // console.log("setting width:", textWidth)
             selectRef.current.style.width = `${textWidth + 30}px` // Add some padding
         }
-    }, [ value ])
+    }, [ county ])
     return (
         <select
             className={css.countySelect}
