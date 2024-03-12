@@ -25,9 +25,9 @@ export type Base = Omit<sql.Base, 'url'> & {
 }
 
 export type Props = Base & {
-    cc?: number
+    cc: number | null
     cn?: string
-    mc?: number
+    mc: number | null
     before: string
     perPage: number
 }

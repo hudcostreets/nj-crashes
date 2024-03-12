@@ -15,9 +15,9 @@ import CityLink from "@/src/city-link";
 import CountyLink from "@/src/county-link";
 
 export type Props = Base & {
-    cc?: number
+    cc: number | null
     cn?: string
-    mc?: number
+    mc: number | null
     page: number
     perPage: number
 }

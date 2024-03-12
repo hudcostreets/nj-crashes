@@ -21,10 +21,10 @@ import useRegion from "./use-region";
 
 export type Props = {
     urls: Urls
-    cc?: number
-    mc?: number
+    cc: number | null
+    mc: number | null
     cc2mc2mn: CC2MC2MN
-    barProps?: Njsp.Props
+    barProps: Njsp.Props | null
     Counties: string[]
     title: string
     subtitle?: ReactNode

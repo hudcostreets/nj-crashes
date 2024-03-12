@@ -64,8 +64,8 @@ export function yearStatsRows({ ysds }: { ysds: YearStatsDicts, }): Row[] {
 }
 
 export type Props = Base & {
-    cc?: number
-    mc?: number
+    cc: number | null
+    mc: number | null
 }
 
 const YSD = {

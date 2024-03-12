@@ -8,8 +8,8 @@ export type Region = {
     cn?: string
     mn?: string
     county?: County
-    cc?: number
-    mc?: number
+    cc: number | null
+    mc: number | null
     mc2mn?: MC2MN
     setCounty: (county: string | null) => void
     setCity?: (city: string) => void
@@ -18,15 +18,15 @@ export type Region = {
 }
 
 export default function useRegion({ cc2mc2mn, urlPrefix, ...props }: {
-    cc?: number
-    mc?: number
+    cc: number | null
+    mc: number | null
     cc2mc2mn: CC2MC2MN
     urlPrefix?: string
 }): Region {
     const router = useRouter()
     const cn2cc: Record<string, number> = useMemo(() => mapEntries(cc2mc2mn, (cc, { cn }) => [ cn, cc ]), [ cc2mc2mn ])
-    const [ cc, setCc ] = useState<number | undefined>(props.cc)
-    const [ mc, setMc ] = useState<number | undefined>(props.mc)
+    const [ cc, setCc ] = useState<number | null>(props.cc)
+    const [ mc, setMc ] = useState<number | null>(props.mc)
 
     useEffect(() => {
         if (!urlPrefix) return
@@ -36,7 +36,7 @@ export default function useRegion({ cc2mc2mn, urlPrefix, ...props }: {
             const [ cn, mn ] = as.split("/").map(s => s ? denormalize(s) : undefined)
             console.log(`beforePopState url ${url} as ${as} options`, options, `cn ${cn} mn ${mn}`)
             if (!cn) {
-                const cc = undefined
+                const cc = null
                 console.log(`beforePopState setting cc ${cc}`)
                 setCc(cc)
                 return true
@@ -45,7 +45,7 @@ export default function useRegion({ cc2mc2mn, urlPrefix, ...props }: {
                 console.log(`beforePopState setting cc ${cc}`)
                 setCc(cc)
                 if (!mn) {
-                    const mc = undefined
+                    const mc = null
                     console.log(`beforePopState setting mc ${mc}`)
                     setMc(mc)
                     return true
@@ -63,7 +63,7 @@ export default function useRegion({ cc2mc2mn, urlPrefix, ...props }: {
 
     const setCounty = useCallback(
         (county: string | null) => {
-            const cc = county ? cn2cc[county] : undefined
+            const cc = county ? cn2cc[county] : null
             console.log('new cc', cc)
             setCc(cc)
             if (urlPrefix !== undefined) {
