@@ -25,16 +25,17 @@ export type Props = {
 }
 
 export function getStaticPaths() {
-    const paths = concat(
-        values(cc2mc2mn).map(({ cn, mc2mn }) =>
+    const paths = concat([
+        [{ params: { region: [] } }],  // NJ
+        ...values(cc2mc2mn).map(({ cn, mc2mn }) =>
             [
-                { params: { region: [ normalize(cn) ] } },
+                { params: { region: [ normalize(cn) ] } },  // Counties
                 ...values(mc2mn).map(city => (
-                    { params: { region: [ normalize(cn), normalize(city) ] } }
+                    { params: { region: [ normalize(cn), normalize(city) ] } }  // Cities
                 ))
             ]
         )
-    )
+    ])
     return { paths, fallback: false }
 }
 

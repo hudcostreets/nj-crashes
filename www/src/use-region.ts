@@ -110,7 +110,7 @@ export default function useRegion({ cc2mc2mn, urlPrefix, ...props }: {
         },
         [ setMc, urlPrefix, cn, mn2mc, ]
     )
-    console.log(`region returning cc ${cc} cn ${cn} mc ${mc} mn ${mn}`)
+    // console.log(`region returning cc ${cc} cn ${cn} mc ${mc} mn ${mn}`)
     return {
         cn, mn,
         county,
