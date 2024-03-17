@@ -21,6 +21,8 @@ import { ResultTable } from "@/src/result-table";
 import A from "@rdub/next-base/a";
 import { map } from "fp-ts/Either";
 import Footer from "@/src/footer";
+import { Info, NjdotSource, NjspSource } from "@/src/icons";
+import { Home } from "@mui/icons-material";
 
 export const DOTStart = "2001-01-01"
 export const DOTEnd = "2021-12-31"
@@ -90,7 +92,7 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
     return { props: { urls, cp, cn, cc, mc, mn, cc2mc2mn, Counties, barProps, } }
 }
 
-export default function CityPage({ urls, barProps, cp, Counties, ...regionProps }: Props) {
+export default function RegionPage({ urls, barProps, cp, Counties, ...regionProps }: Props) {
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
     const { cc, mc, cn, mn, mc2mn, cc2mc2mn, setCounty, setCity, } = useRegion({ ...regionProps, urlPrefix: "/c", })
     const njdotPaginationControls = useDatePaginationControls({ id: "njdot-crashes" }, { start: DOTStart, end: DOTEnd, })
@@ -127,32 +129,41 @@ export default function CityPage({ urls, barProps, cp, Counties, ...regionProps 
     return (
         <div className={css.body}>
             <div className={css.container}>
-                <h1 className={css.title}>{
-                    (setCity && mc && mc2mn)
-                        ? <CitySelect
-                            city={mc2mn[mc]}
-                            setCity={setCity}
-                            cities={values(mc2mn)}
-                        />
-                        : setCounty
-                            ? <CountySelect
-                                county={cn ?? null}
-                                setCounty={setCounty}
-                                Counties={Counties}
+                <h1 className={css.title}>
+                    <span className={css.home}>
+                        <A href={"/"}>
+                            <Home fontSize={"medium"} />
+                        </A>
+                    </span>
+                    {
+                        (setCity && mc && mc2mn)
+                            ? <CitySelect
+                                city={mc2mn[mc]}
+                                setCity={setCity}
+                                cities={values(mc2mn)}
                             />
-                            : title
-                }</h1>
+                            : setCounty
+                                ? <CountySelect
+                                    county={cn ?? null}
+                                    setCounty={setCounty}
+                                    Counties={Counties}
+                                />
+                                : title
+                    }
+                </h1>
                 {subtitle && <div className={css.subtitle}>{subtitle}</div>}
                 {
                     barProps
-                        ? <div className={css.njspPlot}>
-                            <NjspPlot
-                                {...barProps}
-                                county={cn ?? null}
-                                Heading={"h1"}
-                                heading={<H2 id={"by-type"}>{plotTitle}</H2>}
-                                spec={njspPlotSpec}
-                            />
+                        ? <div className={css.section}>
+                            <div className={css.njspPlot}>
+                                <NjspPlot
+                                    {...barProps}
+                                    county={cn ?? null}
+                                    Heading={"h1"}
+                                    heading={<H2 id={"by-type"}>{plotTitle}</H2>}
+                                    spec={njspPlotSpec}
+                                />
+                            </div>
                         </div>
                         : null
                 }
@@ -161,11 +172,10 @@ export default function CityPage({ urls, barProps, cp, Counties, ...regionProps 
                         <H2 id={"recent"}>Recent fatal crashes</H2>
                         <div className={css.sectionSubtitle}>2008 – present</div>
                         <ResultTable
-                            className={css.crashesTable}
                             result={njspCrashes}
                             pagination={njspPagination}
                         />
-                        <div className={css.footer}>Source: <A href={NjspFatalAcc}>NJ State Police</A> (fatal crashes only; typically published between a day and a few months after the fact)</div>
+                        <NjspSource />
                     </div>
                 }
                 {
@@ -173,11 +183,10 @@ export default function CityPage({ urls, barProps, cp, Counties, ...regionProps 
                         <H2 id={"dot"}>Fatal / Injury crash details</H2>
                         <div className={css.sectionSubtitle}>2001-2021</div>
                         <ResultTable
-                            className={css.crashesTable}
                             result={njdotCrashes}
                             pagination={njdotPagination}
                         />
-                        <div className={css.footer}>Source: <A href={NjdotRawData}>NJ DOT</A> (includes non-fatal crashes; most recent data: 2021)</div>
+                        <NjdotSource />
                     </div>
                 }
                 {
@@ -185,10 +194,11 @@ export default function CityPage({ urls, barProps, cp, Counties, ...regionProps 
                         <H2 id={"stats"}>Annual stats</H2>
                         <div className={css.sectionSubtitle}>2001-2021</div>
                         <ResultTable
-                            className={`${css.crashesTable} ${css.withTotals}`}
+                            className={css.withTotals}
                             result={map((ysds: YearStatsDicts) => yearStatsRows({ ysds }))(yearStatsResult)}
                             colTitles={ColTitles}
                         />
+                        <NjdotSource />
                     </div>
                 }
                 <Footer />

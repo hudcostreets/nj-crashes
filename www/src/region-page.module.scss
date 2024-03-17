@@ -21,18 +21,14 @@
   border: 1px solid;
 }
 
+.home {
+  position: absolute;
+  left: 0.5em;
+}
+
 .subtitle {
   margin: 0.5em 0;
   font-weight: bold;
-}
-
-.crashesTable {
-  margin: 0.5em 0;
-  width: 100%;
-  //border-collapse: collapse;
-  th {
-    font-weight: bold;
-  }
 }
 
 .withTotals {

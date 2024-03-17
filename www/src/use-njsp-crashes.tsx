@@ -13,6 +13,7 @@ import { Cyclist, Driver, Passenger, Pedestrian, Person } from "@/src/icons";
 import { Tooltip } from "@/src/tooltip";
 import CityLink from "@/src/city-link";
 import CountyLink from "@/src/county-link";
+import { curYear } from "@/src/plotSpecs";
 
 export type Props = Base & {
     cc: number | null
@@ -118,10 +119,10 @@ export function getNjspCrashRows({ rows, cols, cc2mc2mn, }: {
             ...cols.map(col => {
                 let txt: ReactNode = ''
                 if (col == 'dt') {
+                    const date = new Date(row.dt)
+                    const fmt = date.getFullYear() == curYear ? '%a %b %-d %-I:%M%p' : `%-m/%-d/%y, %-I:%M%p`
                     txt = <Tooltip title={`NJSP ACCID: ${id}`}>
-                        <span>{
-                            strftime('%-m/%-d/%y %-I:%M%p', new Date(row.dt))
-                        }</span>
+                        <span>{strftime(fmt, date)}</span>
                     </Tooltip>
                 } else if (col == 'casualties') {
                     txt = <CrashIcons {...row} />

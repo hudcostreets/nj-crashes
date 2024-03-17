@@ -1,6 +1,8 @@
 import React from "react";
 import { PlotSpec, HalfRoundWiden, filterIdxs, filterValues } from "@rdub/next-plotly/plot";
 import A from "@rdub/next-base/a";
+import { NjspSource } from "@/src/icons";
+import css from "@/pages/index.module.scss"
 
 export const curYear = (new Date().getFullYear())
 export const prvYear = curYear - 1
@@ -46,9 +48,9 @@ export const plotSpecs: PlotSpec[] = [
     {
         id: "ytd", name: "ytd-deaths", title: "NJ Traffic Deaths per Year", menuName: "YTD", dropdownSection: "NJSP",
         filter: filterIdxs,
-        children: <>
+        children: <NjspSource className={css.ytdFooter}>
             <p>Some data arrives weeks or months after the fact, so current year numbers are especially subject to change.</p>
-        </>
+        </NjspSource>
     },
     {
         id: "vs-homicides", name: "crash_homicide_cmp", title: "NJ Traffic Deaths vs. Homicides", menuName: "vs. Homicides", dropdownSection: "NJSP",

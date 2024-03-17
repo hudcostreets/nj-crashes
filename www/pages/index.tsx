@@ -5,36 +5,55 @@ import css from './index.module.scss'
 import A from "@rdub/next-base/a";
 import { Nav } from "@rdub/next-base/nav";
 import { getBasePath } from "@rdub/next-base/basePath"
-import { Socials } from "@rdub/next-base/socials"
 import { url } from "@/src/site";
-import { GitHub, crashDataEmail } from "@/src/socials"
+import { GitHub } from "@/src/socials"
 import { plotSpecs } from "@/src/plotSpecs";
 import { buildPlot, buildPlots, Plot, PlotsDict } from "@rdub/next-plotly/plot";
 import { loadPlots } from "@rdub/next-plotly/plot-load";
 import * as Njsp from "@/src/njsp/plot";
 import { NjspPlot } from "@/src/njsp/plot";
 import { loadProps } from "@/server/njsp/plot";
-import { NjdotRawData, NjspFatalAcc } from "@/src/urls";
+import { getUrls, NjdotRawData, NjspFatalAcc, Urls } from "@/src/urls";
 import Footer from '@/src/footer';
+import { ResultTable } from "@/src/result-table";
+import { H2 } from "@/pages/c/[[...region]]";
+import { usePaginationControls, useResultPagination } from "@/src/pagination";
+import { Total, useNjspCrashesTotal, useNjspCrashRows } from "@/src/use-njsp-crashes";
+import singleton from "@rdub/base/singleton";
+import { cc2mc2mn } from "@/server/county";
+import { CC2MC2MN } from "@/src/county";
+import { NjspSource } from "@/src/icons";
 
 type Props = {
     plotsDict: PlotsDict
     njspProps: Njsp.Props
+    urls: Urls
+    cc2mc2mn: CC2MC2MN
 }
 
 export const getStaticProps: GetStaticProps = async () => {
     const plotsDict: PlotsDict = loadPlots(plotSpecs)
     const njspProps = await loadProps()
-    return { props: { plotsDict, njspProps, }, }
+    const urls = getUrls()
+    return { props: { plotsDict, njspProps, urls, cc2mc2mn, }, }
 }
 
-const Home = ({ plotsDict, njspProps }: Props) => {
+const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, }: Props) => {
     const basePath = getBasePath()
+    const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
 
     const [ njspPlotSpec, ...plotSpecs2 ] = plotSpecs
     const njspPlot = buildPlot(njspPlotSpec, plotsDict[njspPlotSpec.id])
     const plots: Plot[] = buildPlots(plotSpecs2, plotsDict)
-    const sections = [ njspPlot, ...plots ].map(({id, title, menuName, dropdownSection,}) => ({id, name: menuName || title, dropdownSection}))
+    const sections = [
+        njspPlot,
+        {
+            id: "recent-fatal-crashes",
+            title: "Recent Fatal Crashes",
+            dropdownSection: "NJSP",
+        },
+        ...plots
+    ].map(({id, title, menuName, dropdownSection,}) => ({id, name: menuName || title, dropdownSection}))
     const menus = [
         { id: "NJSP", name: "NJSP", },
         { id: "state-years", name: "State x Years", },
@@ -49,6 +68,16 @@ const Home = ({ plotsDict, njspProps }: Props) => {
     const title = "NJ Traffic Crash Data"
 
     const [ county, setCounty ] = useState<string | null>(null)
+
+    const cc = null, mc = null
+    const njspPaginationControls = usePaginationControls({ id: "njsp-crashes" })
+    const njspCrashes = useNjspCrashRows({ urls, cc, mc, cc2mc2mn, ...njspPaginationControls, })
+    const njspCrashesTotal = useNjspCrashesTotal({ urls, cc, mc, requestChunkSize, })
+    const njspPagination = useResultPagination(
+        njspCrashesTotal,
+        (totals: Total[]) => singleton(totals).total,
+        njspPaginationControls,
+    )
 
     return (
         <div className={css.container}>
@@ -85,7 +114,7 @@ const Home = ({ plotsDict, njspProps }: Props) => {
                     <li><A href={"/map/hudson"}>Full screen map here</A></li>
                     <li>Code and cleaned data are <A href={GitHub.href}>here on GitHub</A>.</li>
                 </ul>
-                <div key={njspPlotSpec.id} className={css["plot-container"]}>
+                <div className={css["plot-container"]}>
                     <NjspPlot
                         {...njspProps}
                         county={county}
@@ -94,6 +123,21 @@ const Home = ({ plotsDict, njspProps }: Props) => {
                     />
                     <hr/>
                 </div>
+                {
+                    <div className={css["plot-container"]}>
+                        <div id={"recent-fatal-crashes"} className={css.section}>
+                            <H2>Recent fatal crashes</H2>
+                            {
+                                njspCrashes && <ResultTable
+                                    result={njspCrashes}
+                                    pagination={njspPagination}
+                                />
+                            }
+                            <NjspSource />
+                        </div>
+                        <hr/>
+                    </div>
+                }
                 {
                     plots.map(
                         ({id, ...rest}, idx) =>

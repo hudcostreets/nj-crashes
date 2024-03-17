@@ -94,7 +94,7 @@ export function ResultTable(
         (rows: Row[]) =>
             <RowsTable
                 rows={rows}
-                className={className}
+                className={`${css.crashesTable} ${className || ""}`}
                 colTitles={colTitles}
                 pagination={pagination}
             />
