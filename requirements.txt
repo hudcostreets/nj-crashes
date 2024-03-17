@@ -22,7 +22,7 @@ plotly
 pyarrow
 pygithub
 requests
-s3fs
+s3fs<=2024.2
 simplejson
 slack_sdk
 sqlalchemy==1.4.46
