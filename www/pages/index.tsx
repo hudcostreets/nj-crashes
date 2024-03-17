@@ -51,6 +51,7 @@ const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, }: Props) => {
             id: "recent-fatal-crashes",
             title: "Recent Fatal Crashes",
             dropdownSection: "NJSP",
+            menuName: undefined,
         },
         ...plots
     ].map(({id, title, menuName, dropdownSection,}) => ({id, name: menuName || title, dropdownSection}))
@@ -125,8 +126,8 @@ const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, }: Props) => {
                 </div>
                 {
                     <div className={css["plot-container"]}>
-                        <div id={"recent-fatal-crashes"} className={css.section}>
-                            <H2>Recent fatal crashes</H2>
+                        <div className={css.section}>
+                            <H2 id={"recent-fatal-crashes"} className={""}>Recent fatal crashes</H2>
                             {
                                 njspCrashes && <ResultTable
                                     result={njspCrashes}

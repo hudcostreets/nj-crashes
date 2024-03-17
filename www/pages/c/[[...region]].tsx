@@ -2,7 +2,7 @@ import type { GetStaticProps } from "next";
 import { cc2mc2mn, Counties, County2Code } from "@/server/county";
 import { concat, mapEntries, values } from "@rdub/base/objs";
 import { CC2MC2MN, denormalize, normalize } from "@/src/county";
-import { getUrls, NjdotRawData, NjspFatalAcc, Urls } from "@/src/urls";
+import { getUrls, Urls } from "@/src/urls";
 import * as Njsp from "@/src/njsp/plot";
 import { NjspPlot } from "@/src/njsp/plot";
 import { loadProps } from "@/server/njsp/plot";
@@ -21,15 +21,15 @@ import { ResultTable } from "@/src/result-table";
 import A from "@rdub/next-base/a";
 import { map } from "fp-ts/Either";
 import Footer from "@/src/footer";
-import { Info, NjdotSource, NjspSource } from "@/src/icons";
+import { NjdotSource, NjspSource } from "@/src/icons";
 import { Home } from "@mui/icons-material";
 
 export const DOTStart = "2001-01-01"
 export const DOTEnd = "2021-12-31"
 
-export function H2({ id, children }: { id: string, children: ReactNode }) {
+export function H2({ id, className = css.idTarget, children }: { id: string, className?: string, children: ReactNode }) {
     return <h2>
-        <span id={id} className={css.idTarget}/>
+        <span id={id} className={className}/>
         <A href={`#${id}`}>{children}</A>
     </h2>
 }
