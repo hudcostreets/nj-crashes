@@ -1,9 +1,9 @@
-import { Annotations, PlotData } from "plotly.js";
+import { Annotations, Layout, PlotData } from "plotly.js";
 import * as Plotly from "react-plotly.js";
 import { TableData, useCsvTable, useTable } from "@/src/tableData";
 import { useDb, useQuery, } from "@rdub/duckdb/duckdb";
 import { curYear, Data, njspPlotSpec, prvYear, YearTotalsMap } from "@/src/plotSpecs";
-import React, { Dispatch, ReactNode, useCallback, useEffect, useState } from "react";
+import React, { Dispatch, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { HasCounty, table, typeCountsQuery } from "./projections";
 import { ProjectedCsv } from "@/src/paths";
 import { ytcQuery } from "@/src/njsp/ytc";
@@ -280,11 +280,25 @@ export function NjspPlot(
         [ db, target, ytRows, projections, initialPlotData, types, county, ]
     )
     //console.log("trace visibility:", data.map(d => d.visible))
+    const newLayout: Partial<Layout> = useMemo(
+        () => {
+            const { xaxis, yaxis, ...rest } = layout
+            return {
+                ...rest,
+                xaxis: { ...xaxis, fixedrange: true },
+                yaxis: { ...yaxis, fixedrange: true },
+                dragmode: false,
+                annotations,
+                margin: { t: 0, r: 10, b: 0, l: 0, },
+            }
+        },
+        [ layout, annotations ],
+    )
     title = title ?? DefaultTitle
     return (
         <Plot
             {...spec}
-            params={{ data, layout: { ...layout, annotations, margin: { t: 0, r: 10, b: 0, l: 0, } }, ...plotRest }}
+            params={{ data, layout: newLayout, ...plotRest }}
             src={src}
             title={title}
             subtitle={subtitle}

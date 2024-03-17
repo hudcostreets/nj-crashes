@@ -40,7 +40,6 @@ export const YM_SC_PID_SPECS: PlotSpec[] =
 export const njspPlotSpec: PlotSpec = {
     title: "NJ Traffic Deaths per Year", id: "per-year", name: "fatalities_per_year_by_type",
     menuName: "Traffic Deaths / Year", dropdownSection: "NJSP",
-    filter: filterValues({ mapRange: HalfRoundWiden }),
 }
 
 export const plotSpecs: PlotSpec[] = [

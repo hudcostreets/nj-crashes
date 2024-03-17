@@ -60,8 +60,8 @@ dependencies:
     specifier: 0.0.1
     version: 0.0.1(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)
   '@rdub/next-plotly':
-    specifier: 0.1.0
-    version: 0.1.0(@types/node@20.3.0)(mapbox-gl@3.1.2)(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)(sass@1.69.7)(webpack@5.89.0)
+    specifier: 0.1.1
+    version: 0.1.1(@types/node@20.3.0)(mapbox-gl@3.1.2)(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)(sass@1.69.7)(webpack@5.89.0)
   '@rdub/react-sql.js-httpvfs':
     specifier: 0.1.4
     version: 0.1.4(react-dom@18.2.0)(react@18.2.0)
@@ -1781,8 +1781,8 @@ packages:
       react-dom: 18.2.0(react@18.2.0)
     dev: false
 
-  /@rdub/next-plotly@0.1.0(@types/node@20.3.0)(mapbox-gl@3.1.2)(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)(sass@1.69.7)(webpack@5.89.0):
-    resolution: {integrity: sha512-21n0nI8I2SaxGiHlFPVGardNmqWjCK4fjOo6D0NF8BiTxaw8WzOfaplzqh92gCrQtNJtLmdtBuHeseVdKjoq7Q==}
+  /@rdub/next-plotly@0.1.1(@types/node@20.3.0)(mapbox-gl@3.1.2)(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)(sass@1.69.7)(webpack@5.89.0):
+    resolution: {integrity: sha512-v8uLO1jm5jlrz8IjHbrkidmf1DKNSAg0swWJ+s0Eps8vxf4NmH22b/USnrBTYSiA3UADsACNdvCGcUfpirnEhA==}
     peerDependencies:
       next: ^14
       react: ^18
