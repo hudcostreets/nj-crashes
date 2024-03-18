@@ -11,7 +11,7 @@ import { plotSpecs } from "@/src/plotSpecs";
 import { buildPlot, buildPlots, Plot, PlotsDict } from "@rdub/next-plotly/plot";
 import { loadPlots } from "@rdub/next-plotly/plot-load";
 import * as Njsp from "@/src/njsp/plot";
-import { NjspPlot } from "@/src/njsp/plot";
+import { InitProps, NjspPlot } from "@/src/njsp/plot";
 import { loadProps } from "@/server/njsp/plot";
 import { getUrls, NjdotRawData, NjspFatalAcc, Urls } from "@/src/urls";
 import Footer from '@/src/footer';
@@ -23,22 +23,27 @@ import singleton from "@rdub/base/singleton";
 import { cc2mc2mn } from "@/server/county";
 import { CC2MC2MN } from "@/src/county";
 import { NjspSource } from "@/src/icons";
+import { getCrashes, getTotals } from "@/server/njsp/sql";
 
 type Props = {
     plotsDict: PlotsDict
     njspProps: Njsp.Props
     urls: Urls
     cc2mc2mn: CC2MC2MN
-}
+} & InitProps
 
 export const getStaticProps: GetStaticProps = async () => {
     const plotsDict: PlotsDict = loadPlots(plotSpecs)
     const njspProps = await loadProps()
     const urls = getUrls()
-    return { props: { plotsDict, njspProps, urls, cc2mc2mn, }, }
+    const localUrls = getUrls({ local: true })
+    const cc = null, mc = null, page = 0, perPage = 10
+    const crashes = await getCrashes({ urls: localUrls, cc, mc, page, perPage, })
+    const totals = await getTotals({ urls: localUrls, cc, mc, })
+    return { props: { plotsDict, njspProps, urls, cc2mc2mn, crashes, totals, }, }
 }
 
-const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, }: Props) => {
+const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, crashes, totals, }: Props) => {
     const basePath = getBasePath()
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
 
@@ -72,8 +77,8 @@ const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, }: Props) => {
 
     const cc = null, mc = null
     const njspPaginationControls = usePaginationControls({ id: "njsp-crashes" })
-    const njspCrashes = useNjspCrashRows({ urls, cc, mc, cc2mc2mn, ...njspPaginationControls, })
-    const njspCrashesTotal = useNjspCrashesTotal({ urls, cc, mc, requestChunkSize, })
+    const njspCrashes = useNjspCrashRows({ crashes, urls, cc, mc, cc2mc2mn, ...njspPaginationControls, })
+    const njspCrashesTotal = useNjspCrashesTotal({ totals, urls, cc, mc, requestChunkSize, })
     const njspPagination = useResultPagination(
         njspCrashesTotal,
         (totals: Total[]) => singleton(totals).total,

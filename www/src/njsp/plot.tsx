@@ -16,9 +16,15 @@ import { NjspFatalAcc } from "@/src/urls";
 import { normalize } from "../county";
 import { CountySelect } from "../county-select";
 import { NjspSource } from "@/src/icons";
+import { Crash, Total } from "@/src/use-njsp-crashes";
 
 export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
 export type Annotation = Partial<Annotations>
+
+export type InitProps = {
+    crashes: Crash[]
+    totals: Total[]
+}
 
 export type TypeCounts = {
     driver: number
@@ -72,7 +78,7 @@ export async function getPlotData({ ytRows, typeProjections, initialPlotData, ty
         const col = typesMap[type] as keyof TypeCounts
         return col in typeProjections ? typeProjections[col] : 0
     }).reduce((a, b) => a + b, 0)
-    console.log("ytRows:", ytRows)
+    // console.log("ytRows:", ytRows)
     const last = { ...ytRows[ytRows.length - 1] }
     const rows = [ ...ytRows.slice(0, ytRows.length - 1), last ]
     if (last.year == curYear) {
@@ -90,7 +96,7 @@ export async function getPlotData({ ytRows, typeProjections, initialPlotData, ty
             projected: projectedTotal,
         })
     }
-    console.log("got ytc data:", rows)
+    // console.log("got ytc data:", rows)
     const isSolo = types.size === 1
     // console.log("getPlotData: types:", types)
     const data = initialPlotData.map(series => {

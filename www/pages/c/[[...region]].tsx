@@ -4,7 +4,7 @@ import { concat, mapEntries, values } from "@rdub/base/objs";
 import { CC2MC2MN, denormalize, normalize } from "@/src/county";
 import { getUrls, Urls } from "@/src/urls";
 import * as Njsp from "@/src/njsp/plot";
-import { NjspPlot } from "@/src/njsp/plot";
+import { InitProps, NjspPlot } from "@/src/njsp/plot";
 import { loadProps } from "@/server/njsp/plot";
 import { ReactNode, useState } from "react";
 import useRegion from "@/src/use-region";
@@ -23,6 +23,7 @@ import { map } from "fp-ts/Either";
 import Footer from "@/src/footer";
 import { NjdotSource, NjspSource } from "@/src/icons";
 import { Home } from "@mui/icons-material";
+import { getCrashes, getTotals } from "@/server/njsp/sql";
 
 export const DOTStart = "2001-01-01"
 export const DOTEnd = "2021-12-31"
@@ -48,7 +49,7 @@ export type Props = {
     cc2mc2mn: CC2MC2MN
     barProps: Njsp.Props | null
     Counties: string[]
-}
+} & InitProps
 
 export function getStaticPaths() {
     const paths = concat([
@@ -89,10 +90,14 @@ export const getStaticProps: GetStaticProps<Props, Params> = async ({ params }) 
         }
     }
     const barProps = mn === null ? await loadProps({ county: cn }) : null
-    return { props: { urls, cp, cn, cc, mc, mn, cc2mc2mn, Counties, barProps, } }
+    const localUrls = getUrls({ local: true })
+    const page = 0, perPage = 10
+    const crashes = await getCrashes({ urls: localUrls, cc, mc, page, perPage, })
+    const totals = await getTotals({ urls: localUrls, cc, mc, })
+    return { props: { urls, cp, cn, cc, mc, mn, cc2mc2mn, Counties, barProps, crashes, totals, } }
 }
 
-export default function RegionPage({ urls, barProps, cp, Counties, ...regionProps }: Props) {
+export default function RegionPage({ urls, barProps, cp, Counties, crashes, totals, ...regionProps }: Props) {
     const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
     const { cc, mc, cn, mn, mc2mn, cc2mc2mn, setCounty, setCity, } = useRegion({ ...regionProps, urlPrefix: "/c", })
     const njdotPaginationControls = useDatePaginationControls({ id: "njdot-crashes" }, { start: DOTStart, end: DOTEnd, })
@@ -108,8 +113,8 @@ export default function RegionPage({ urls, barProps, cp, Counties, ...regionProp
     )
 
     const njspPaginationControls = usePaginationControls({ id: "njsp-crashes" })
-    const njspCrashes = useNjspCrashRows({ urls, cc, cn, mc, cc2mc2mn, ...njspPaginationControls, })
-    const njspCrashesTotal = useNjspCrashesTotal({ urls, cc, mc, requestChunkSize, })
+    const njspCrashes = useNjspCrashRows({ crashes, urls, cc, cn, mc, cc2mc2mn, ...njspPaginationControls, })
+    const njspCrashesTotal = useNjspCrashesTotal({ totals, urls, cc, mc, requestChunkSize, })
     const njspPagination = useResultPagination(
         njspCrashesTotal,
         (totals: Total[]) => singleton(totals).total,

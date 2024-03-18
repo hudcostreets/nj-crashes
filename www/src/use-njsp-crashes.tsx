@@ -1,6 +1,6 @@
 import { Result } from "@rdub/react-sql.js-httpvfs/query";
 import { ReactNode, useMemo } from "react";
-import { useSqlQuery } from "@/src/sql";
+import { useSqlQuery, useSqlQueryEager } from "@/src/sql";
 import { CC2MC2MN, County } from "@/src/county";
 import { map } from "fp-ts/Either";
 import { Base, ConditionMap, } from "./use-njdot-crashes";
@@ -53,41 +53,43 @@ export type Col = keyof typeof ColLabels
 
 export type Total = { total: number }
 
+export function totalsQuery({ cc, mc, }: { cc: number | null, mc: number | null }) {
+    const where = cc ? `where cc=${cc}${mc ? ` and mc=${mc}` : ""}` : ""
+    return `
+        select count(*) as total from crashes
+        ${where}
+    `}
+
+export function crashesQuery({ cc, mc, page, perPage, }: { cc: number | null, mc: number | null, page: number, perPage: number }) {
+    const where = cc ? `where cc=${cc}${mc ? ` and mc=${mc}` : ""}` : ""
+    const offset = page * perPage
+    return `
+        select * from crashes
+        ${where}
+        order by dt desc
+        limit ${perPage} offset ${offset}
+    `}
+
 export function useNjspCrashesTotal(
     {
         cc, mc,
         timerId = "njsp-crashes-total",
         urls,
+        totals,
         ...base
-    }: Omit<Props, 'cn' | 'page' | 'perPage'>
-): Result<Total> | null {
-    const query = useMemo(
-        () => {
-            const where = cc ? `where cc=${cc}${mc ? ` and mc=${mc}` : ""}` : ""
-            return `
-                select count(*) as total from crashes
-                ${where}
-            `
-        },
-        [ cc, mc, ]
-    )
-    return useSqlQuery<Total>({ ...base, url: urls.njsp.crashes, timerId, query })
+    }: Omit<Props, 'cn' | 'page' | 'perPage'> & { totals: Total[] }
+): Result<Total> {
+    const query = useMemo(() => totalsQuery({ cc, mc, }), [ cc, mc, ])
+    return useSqlQueryEager<Total>({ ...base, url: urls.njsp.crashes, timerId, query, init: totals, })
 }
-export function useNjspCrashes({ cc, mc, page, perPage, timerId = "njsp-crashes", urls, ...base }: Props): Result<Crash> | null {
+export function useNjspCrashes({ cc, mc, page, perPage, timerId = "njsp-crashes", urls, crashes, ...base }: Props & { crashes: Crash[] }): Result<Crash> {
     const query = useMemo(
         () => {
-            const where = cc ? `where cc=${cc}${mc ? ` and mc=${mc}` : ""}` : ""
-            const offset = page * perPage
-            return `
-                select * from crashes
-                ${where}
-                order by dt desc
-                limit ${perPage} offset ${offset}
-            `
+            return crashesQuery({ cc, mc, page, perPage })
         },
         [ cc, mc, page, perPage ]
     )
-    return useSqlQuery<Crash>({ ...base, url: urls.njsp.crashes, timerId, query })
+    return useSqlQueryEager<Crash>({ ...base, url: urls.njsp.crashes, timerId, query, init: crashes, })
 }
 
 export function CrashIcons({ tk, dk, ok, pk, bk, ti, }: Crash) {
@@ -139,15 +141,14 @@ export function getNjspCrashRows({ rows, cols, cc2mc2mn, }: {
     })
 }
 
-export function useNjspCrashRows({ cc2mc2mn, ...props }: Props & { cc2mc2mn: CC2MC2MN }) {
+export function useNjspCrashRows({ cc2mc2mn, ...props }: Props & { cc2mc2mn: CC2MC2MN, crashes: Crash[], }) {
     const crashesResult = useNjspCrashes({ ...props })
     const ccCol: Col[] = props.cc ? [] : ['cc']
     const mcCol: Col[] = props.mc ? [] : ['mc']
     const cols: Col[] = [ 'dt', ...ccCol, ...mcCol, 'casualties', 'location', ]  // 'street', 'highway', ]
     const crashRows = useMemo(
         () => {
-            if (!crashesResult) return
-            console.log("useNjspCrashRows effect")
+            // console.log("useNjspCrashRows effect")
             const crashRows = map(
                 (crashes: Crash[]) => getNjspCrashRows({ rows: crashes, cols, cc2mc2mn, })
             )(crashesResult)

@@ -59,10 +59,21 @@ jobs:
           node-version: 19
           cache: 'pnpm'
           cache-dependency-path: www/pnpm-lock.yaml
+      - uses: actions/setup-python@v5
+        if: steps.www-changed.outputs.WWW_CHANGED
+        with:
+          python-version: 3.11
+          cache: pip
+      - name: Install sql-query
+        if: steps.www-changed.outputs.WWW_CHANGED
+        run: pip install -e sql-query
       - name: pnpm install, build, export
         if: steps.www-changed.outputs.WWW_CHANGED
         env:
           S3_DBS: 1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
         run: |
           cd www
           pnpm install
