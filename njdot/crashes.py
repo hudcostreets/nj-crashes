@@ -8,10 +8,9 @@ from pandas import isna
 from typing import Union, Tuple, Optional
 from utz import cached_property, DF, sxs, err
 
-from nj_crashes.geo import is_nj_ll, get_county_geometries
+from nj_crashes.geo import is_nj_ll
 from nj_crashes.muni_codes import update_mc, load_munis_geojson
 from nj_crashes.sri.mp05 import get_mp05_map
-from njdot.data import cn2cc
 from njdot.load import load_tbl, INDEX_NAME, pk_renames
 
 Year = Union[str, int]
