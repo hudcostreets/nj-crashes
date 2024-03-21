@@ -354,5 +354,5 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2024,Salem,2,1,0,0,2
 2024,Somerset,1,0,0,0,1
 2024,Sussex,1,0,0,0,1
-2024,Union,0,0,0,2,2
+2024,Union,1,0,0,3,4
 2024,Warren,2,0,1,0,3
