@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Mar 25 10:00:05 EDT 2024</RUNDATE>
+  <RUNDATE>Tue Mar 26 10:00:07 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -3809,12 +3809,13 @@
     <MUNICIPALITY MCODE="1352" MNAME="Wall Twsp">
       <ACCIDENT ACCID="12621" DATE="07/29/2023" TIME="0500">
         <HIGHWAY>138</HIGHWAY>
-        <LOCATION>State Highway 138</LOCATION>
+        <LOCATION>State Highway 138 MP 2.92</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5691,6 +5692,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
