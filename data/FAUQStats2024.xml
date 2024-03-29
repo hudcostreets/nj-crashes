@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Mar 28 10:00:03 EDT 2024</RUNDATE>
+  <RUNDATE>Fri Mar 29 10:00:02 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -66,7 +66,7 @@
     <MUNICIPALITY MCODE="0802" MNAME="Deptford Twsp">
       <ACCIDENT ACCID="13082" DATE="03/27/2024" TIME="1009">
         <HIGHWAY>551</HIGHWAY>
-        <LOCATION>551</LOCATION>
+        <LOCATION>County 551</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
