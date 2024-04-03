@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Apr 02 10:00:07 EDT 2024</RUNDATE>
+  <RUNDATE>Wed Apr 03 10:00:08 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -636,7 +636,7 @@
     <MUNICIPALITY MCODE="0248" MNAME="Ramsey Boro">
       <ACCIDENT ACCID="12877" DATE="12/08/2023" TIME="0640">
         <HIGHWAY>17</HIGHWAY>
-        <LOCATION>State Highway 17 MP 23</LOCATION>
+        <LOCATION>State Highway 17 MP 22.9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5422,8 +5422,8 @@
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
       <ACCIDENT ACCID="12460" DATE="05/15/2023" TIME="0220">
-        <STREET>John F. Kennedy Blvd</STREET>
-        <LOCATION>John F. Kennedy Blvd</LOCATION>
+        <HIGHWAY>501</HIGHWAY>
+        <LOCATION>County 501 MP 31.11</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
