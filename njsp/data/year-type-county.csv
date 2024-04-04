@@ -335,7 +335,7 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2023,Sussex,6,2,0,1,6
 2023,Union,13,6,2,15,34
 2023,Warren,7,1,0,3,11
-2024,Atlantic,4,1,1,5,11
+2024,Atlantic,5,1,1,5,12
 2024,Bergen,6,1,0,7,14
 2024,Burlington,8,2,0,2,12
 2024,Camden,5,1,0,5,11
@@ -349,7 +349,7 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2024,Middlesex,8,2,0,6,14
 2024,Monmouth,9,3,0,5,16
 2024,Morris,1,0,0,1,2
-2024,Ocean,4,0,0,5,9
+2024,Ocean,6,0,0,5,11
 2024,Passaic,7,0,0,1,8
 2024,Salem,2,1,0,0,2
 2024,Somerset,1,0,0,0,1
