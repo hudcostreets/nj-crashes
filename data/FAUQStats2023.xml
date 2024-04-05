@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Apr 04 10:00:08 EDT 2024</RUNDATE>
+  <RUNDATE>Fri Apr 05 10:00:07 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -5228,7 +5228,7 @@
   </COUNTY>
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
-      <ACCIDENT ACCID="12472" DATE="05/28/2023" TIME="1227">
+      <ACCIDENT ACCID="12472" DATE="05/28/2023" TIME="1157">
         <STREET>Garfield Ave</STREET>
         <LOCATION>Garfield Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -7343,7 +7343,7 @@
     <MUNICIPALITY MCODE="1102" MNAME="Ewing Twsp">
       <ACCIDENT ACCID="12290" DATE="01/25/2023" TIME="1748">
         <HIGHWAY>31</HIGHWAY>
-        <LOCATION>State Highway 31</LOCATION>
+        <LOCATION>State Highway 31 MP 2.42</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
