@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Apr 11 10:00:02 EDT 2024</RUNDATE>
+  <RUNDATE>Fri Apr 12 10:00:03 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -52,8 +52,8 @@
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
       <ACCIDENT ACCID="13113" DATE="04/10/2024" TIME="2205">
-        <STREET>Lakeview Ave / E 11th Street</STREET>
-        <LOCATION>Lakeview Ave / E 11th Street</LOCATION>
+        <STREET>Lakeview Ave</STREET>
+        <LOCATION>Lakeview Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
