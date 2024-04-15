@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Apr 14 10:00:03 EDT 2024</RUNDATE>
+  <RUNDATE>Mon Apr 15 10:00:02 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,11 +49,50 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
+      <ACCIDENT ACCID="13118" DATE="04/14/2024" TIME="1953">
+        <HIGHWAY>295</HIGHWAY>
+        <LOCATION>Interstate 295 MP 60.6</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="06" CNAME="Cumberland">
+    <MUNICIPALITY MCODE="0605" MNAME="Fairfield Twsp">
+      <ACCIDENT ACCID="13119" DATE="04/14/2024" TIME="1902">
+        <STREET>Back Neck Rd</STREET>
+        <LOCATION>Back Neck Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
+      <ACCIDENT ACCID="13117" DATE="04/14/2024" TIME="0448">
+        <HIGHWAY>444</HIGHWAY>
+        <LOCATION>Garden State Parkway MP 130.2</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="17" CNAME="Salem">
     <MUNICIPALITY MCODE="1705" MNAME="Pennsville Twsp">
       <ACCIDENT ACCID="13116" DATE="04/13/2024" TIME="0752">
-        <STREET>Industrial Park Road</STREET>
-        <LOCATION>Industrial Park Road</LOCATION>
+        <STREET>Industrial Park Rd</STREET>
+        <LOCATION>Industrial Park Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2159,7 +2198,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>160</TOTACCIDENTS>
-  <TOTFATALITIES>166</TOTFATALITIES>
+  <TOTACCIDENTS>163</TOTACCIDENTS>
+  <TOTFATALITIES>169</TOTFATALITIES>
   <TOTINJURIES>21</TOTINJURIES>
 </FAUQSTATS>
