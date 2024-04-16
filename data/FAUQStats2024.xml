@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Apr 15 10:00:02 EDT 2024</RUNDATE>
+  <RUNDATE>Tue Apr 16 10:00:02 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,6 +49,19 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="17" CNAME="Salem">
+    <MUNICIPALITY MCODE="1707" MNAME="Oldmans Twsp">
+      <ACCIDENT ACCID="13120" DATE="04/15/2024" TIME="0414">
+        <STREET>Pennsville Pedricktown Rd</STREET>
+        <LOCATION>Pennsville Pedricktown Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="13118" DATE="04/14/2024" TIME="1953">
@@ -59,6 +72,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -85,6 +99,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -96,6 +111,19 @@
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1221" MNAME="South Brunswick Tws">
+      <ACCIDENT ACCID="13122" DATE="04/12/2024" TIME="0936">
+        <STREET>US Highway 1 South at Ridge Road</STREET>
+        <LOCATION>US Highway 1 South at Ridge Road</LOCATION>
+        <FATALITIES>3</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>2</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
@@ -124,6 +152,19 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
+    <MUNICIPALITY MCODE="1345" MNAME="Shrewsbury Boro">
+      <ACCIDENT ACCID="13123" DATE="04/11/2024" TIME="1405">
+        <STREET>Samara Drive</STREET>
+        <LOCATION>Samara Drive</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2198,7 +2239,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>163</TOTACCIDENTS>
-  <TOTFATALITIES>169</TOTFATALITIES>
+  <TOTACCIDENTS>166</TOTACCIDENTS>
+  <TOTFATALITIES>174</TOTFATALITIES>
   <TOTINJURIES>21</TOTINJURIES>
 </FAUQSTATS>
