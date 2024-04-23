@@ -15,7 +15,7 @@ from utz import process, cached_property, err
 
 from nj_crashes.fauqstats import get_fauqstats, FAUQStats
 from nj_crashes.utils.git import git_fmt, get_repo, SHORT_SHA_LEN
-from nj_crashes.utils.github import get_github_repo, load_pqt_github, REPO
+from nj_crashes.utils.github import get_github_repo, load_pqt_github, REPO, GithubCommit as GithubCommitWrapper
 from nj_crashes.utils.log import none
 from njsp.paths import CRASHES_RELPATH, RUNDATE_RELPATH, OLD_CRASHES_RELPATH
 
@@ -191,7 +191,13 @@ class CommitCrashes:
         if len(parents) > 1:
             parent_shas = [ parent.hexsha[:SHORT_SHA_LEN] for parent in parents ]
             err(f"Expected 1 parent, got {len(parents)}: {parent_shas}; returning first parent")
-        return parents[0]
+        parent = parents[0]
+        try:
+            parent.tree
+        except ValueError:
+            parent = get_github_repo().get_commit(parent.hexsha)
+            parent = GithubCommitWrapper(parent)
+        return parent
 
     @cached_property
     def year_xml_diffs(self) -> dict[int, Tuple[pd.DataFrame, pd.DataFrame]]:
