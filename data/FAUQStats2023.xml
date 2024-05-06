@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun May 05 10:00:09 EDT 2024</RUNDATE>
+  <RUNDATE>Mon May 06 10:00:08 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -140,7 +140,7 @@
     <MUNICIPALITY MCODE="1810" MNAME="Hillsborough Twsp">
       <ACCIDENT ACCID="12914" DATE="12/29/2023" TIME="0007">
         <HIGHWAY>625</HIGHWAY>
-        <LOCATION>County 625</LOCATION>
+        <LOCATION>County 625 MP 7.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
