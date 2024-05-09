@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed May 08 10:00:07 EDT 2024</RUNDATE>
+  <RUNDATE>Thu May 09 10:00:09 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1920,7 +1920,7 @@
     <MUNICIPALITY MCODE="0427" MNAME="Pennsauken Twsp">
       <ACCIDENT ACCID="12744" DATE="10/17/2023" TIME="1854">
         <HIGHWAY>38</HIGHWAY>
-        <LOCATION>State Highway 38 MP 1.1</LOCATION>
+        <LOCATION>State Highway 38 MP 1.12</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1996,9 +1996,9 @@
   </COUNTY>
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0411" MNAME="Collingswood Boro">
-      <ACCIDENT ACCID="12745" DATE="10/13/2023" TIME="1153">
-        <HIGHWAY>30</HIGHWAY>
-        <LOCATION>State Highway 30 MP 4.06</LOCATION>
+      <ACCIDENT ACCID="12745" DATE="10/13/2023" TIME="1156">
+        <HIGHWAY>130</HIGHWAY>
+        <LOCATION>State Highway 130 MP 28.33</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2336,6 +2336,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2403,6 +2404,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
