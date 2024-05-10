@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu May 09 10:00:09 EDT 2024</RUNDATE>
+  <RUNDATE>Fri May 10 10:00:08 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -3559,7 +3559,7 @@
     <MUNICIPALITY MCODE="0824" MNAME="Woolwich Twsp">
       <ACCIDENT ACCID="12612" DATE="08/11/2023" TIME="2204">
         <HIGHWAY>551</HIGHWAY>
-        <LOCATION>County 551 MP 17.9</LOCATION>
+        <LOCATION>County 551 MP 14.72</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3599,7 +3599,7 @@
   </COUNTY>
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
-      <ACCIDENT ACCID="12609" DATE="08/09/2023" TIME="2226">
+      <ACCIDENT ACCID="12609" DATE="08/09/2023" TIME="2223">
         <HIGHWAY>446</HIGHWAY>
         <LOCATION>Atlantic City Expressway MP 23.4</LOCATION>
         <FATALITIES>2</FATALITIES>
@@ -3607,6 +3607,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
