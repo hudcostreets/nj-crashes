@@ -1,5 +1,5 @@
 county,crashes,cyclist,driver,passenger,pedestrian
-Atlantic,45,3,22,7,15
+Atlantic,46,3,22,7,16
 Bergen,43,1,22,6,15
 Burlington,66,1,64,7,4
 Camden,64,3,22,7,48
@@ -11,12 +11,12 @@ Hudson,15,1,8,5,4
 Hunterdon,6,0,2,0,3
 Mercer,41,0,18,8,14
 Middlesex,53,1,28,21,19
-Monmouth,60,4,43,13,10
+Monmouth,57,4,43,9,10
 Morris,16,0,11,2,3
 Ocean,48,1,29,7,13
 Passaic,33,0,27,0,7
 Salem,13,0,8,3,3
 Somerset,24,0,13,3,9
 Sussex,7,0,5,1,2
-Union,23,1,6,3,13
+Union,24,1,7,3,13
 Warren,15,2,13,1,2
