@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon May 13 10:00:03 EDT 2024</RUNDATE>
+  <RUNDATE>Tue May 14 10:00:02 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,19 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0421" MNAME="Lawnside Boro">
+      <ACCIDENT ACCID="13175" DATE="05/12/2024" TIME="2136">
+        <STREET>White Horse Pike (US 30) &amp; Gloucester Pike</STREET>
+        <LOCATION>White Horse Pike (US 30) &amp; Gloucester Pike</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0108" MNAME="Egg Harbor Twsp">
@@ -181,7 +194,7 @@
     <MUNICIPALITY MCODE="0317" MNAME="Willingboro Twsp">
       <ACCIDENT ACCID="13159" DATE="05/01/2024" TIME="0548">
         <HIGHWAY>626</HIGHWAY>
-        <LOCATION>County 626</LOCATION>
+        <LOCATION>County 626 MP 2.1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -2823,7 +2836,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>211</TOTACCIDENTS>
-  <TOTFATALITIES>219</TOTFATALITIES>
+  <TOTACCIDENTS>212</TOTACCIDENTS>
+  <TOTFATALITIES>220</TOTFATALITIES>
   <TOTINJURIES>27</TOTINJURIES>
 </FAUQSTATS>
