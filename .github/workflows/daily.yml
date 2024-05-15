@@ -138,7 +138,7 @@ jobs:
         if: (github.event.schedule || inputs.build_www) && (steps.update_plots.outputs.sha || !inputs.short_circuit)
         run: |
           echo "run=1" >> $GITHUB_OUTPUT
-          echo "sha=$(git log -1 --format=%h)" >> $GITHUB_OUTPUT
+          echo "sha=$(git log -1 --format=%H)" >> $GITHUB_OUTPUT
     outputs:
       update_pqts: ${{ steps.update_pqts.outputs.sha }}
       build_www: ${{ steps.build_www.outputs.run }}
