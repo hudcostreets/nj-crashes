@@ -325,7 +325,7 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2023,Hudson,10,3,3,9,23
 2023,Hunterdon,3,0,1,0,4
 2023,Mercer,16,3,0,11,30
-2023,Middlesex,29,9,2,20,58
+2023,Middlesex,28,9,2,20,57
 2023,Monmouth,18,7,4,9,38
 2023,Morris,14,4,0,4,22
 2023,Ocean,27,7,1,8,40
@@ -341,13 +341,13 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2024,Camden,8,2,0,9,19
 2024,Cape May,1,0,0,0,1
 2024,Cumberland,5,1,0,1,7
-2024,Essex,5,3,0,6,14
+2024,Essex,5,3,0,7,15
 2024,Gloucester,5,2,0,0,7
 2024,Hudson,2,2,0,1,4
 2024,Hunterdon,0,0,0,2,2
 2024,Mercer,6,4,0,3,12
 2024,Middlesex,12,4,0,10,22
-2024,Monmouth,12,3,1,6,21
+2024,Monmouth,13,3,1,6,22
 2024,Morris,3,0,0,2,5
 2024,Ocean,8,1,0,6,15
 2024,Passaic,8,0,0,1,9
