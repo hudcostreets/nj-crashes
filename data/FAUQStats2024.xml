@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue May 21 10:00:02 EDT 2024</RUNDATE>
+  <RUNDATE>Wed May 22 10:00:03 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,32 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1106" MNAME="Hopewell Twsp">
+      <ACCIDENT ACCID="13189" DATE="05/21/2024" TIME="1502">
+        <STREET>Hopewell Rocky hill road</STREET>
+        <LOCATION>Hopewell Rocky hill road</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0810" MNAME="Mantua Twsp">
+      <ACCIDENT ACCID="13188" DATE="05/21/2024" TIME="1201">
+        <STREET>Lambs Road/Tyler Mill Road</STREET>
+        <LOCATION>Lambs Road/Tyler Mill Road</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="14" CNAME="Morris">
     <MUNICIPALITY MCODE="1414" MNAME="Jefferson Twsp">
@@ -582,7 +608,7 @@
     <MUNICIPALITY MCODE="0317" MNAME="Willingboro Twsp">
       <ACCIDENT ACCID="13160" DATE="04/16/2024" TIME="1430">
         <HIGHWAY>626</HIGHWAY>
-        <LOCATION>County 626</LOCATION>
+        <LOCATION>County 626 MP 4.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1320,6 +1346,19 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
+      <ACCIDENT ACCID="13187" DATE="03/16/2024" TIME="0112">
+        <HIGHWAY>9</HIGHWAY>
+        <LOCATION>9</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0431" MNAME="Somerdale Boro">
       <ACCIDENT ACCID="13056" DATE="03/14/2024" TIME="2358">
@@ -1556,6 +1595,17 @@
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+    <MUNICIPALITY MCODE="1514" MNAME="Lakewood Twsp">
+      <ACCIDENT ACCID="13186" DATE="03/03/2024" TIME="0904">
+        <STREET>w county line &amp; laurelwood ave</STREET>
+        <LOCATION>w county line &amp; laurelwood ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2928,7 +2978,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>219</TOTACCIDENTS>
-  <TOTFATALITIES>227</TOTFATALITIES>
+  <TOTACCIDENTS>223</TOTACCIDENTS>
+  <TOTFATALITIES>231</TOTFATALITIES>
   <TOTINJURIES>28</TOTINJURIES>
 </FAUQSTATS>
