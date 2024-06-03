@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Jun 02 10:00:02 EDT 2024</RUNDATE>
+  <RUNDATE>Mon Jun 03 10:00:03 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,11 +49,50 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2001" MNAME="Berkeley Heights Tw">
+      <ACCIDENT ACCID="13223" DATE="06/02/2024" TIME="1806">
+        <HIGHWAY>78</HIGHWAY>
+        <LOCATION>Interstate 78 MP 42.8</LOCATION>
+        <FATALITIES>2</FATALITIES>
+        <FATAL_D>2</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0414" MNAME="Gloucester City">
+      <ACCIDENT ACCID="13222" DATE="06/02/2024" TIME="0945">
+        <HIGHWAY>76</HIGHWAY>
+        <LOCATION>Interstate 76 MP .43</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2012" MNAME="Plainfield City">
+      <ACCIDENT ACCID="13217" DATE="06/01/2024" TIME="1923">
+        <STREET>E. 7th St</STREET>
+        <LOCATION>E. 7th St</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
     <MUNICIPALITY MCODE="2115" MNAME="Lopatcong Twsp">
       <ACCIDENT ACCID="13216" DATE="06/01/2024" TIME="1858">
-        <STREET>County Route 519</STREET>
-        <LOCATION>County Route 519</LOCATION>
+        <HIGHWAY>519</HIGHWAY>
+        <LOCATION>County 519</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -65,8 +104,8 @@
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0108" MNAME="Egg Harbor Twsp">
       <ACCIDENT ACCID="13215" DATE="06/01/2024" TIME="1816">
-        <STREET>West Jersey avenue and Cates Road</STREET>
-        <LOCATION>West Jersey avenue and Cates Road</LOCATION>
+        <STREET>Cates Rd</STREET>
+        <LOCATION>Cates Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -78,8 +117,60 @@
   <COUNTY CCODE="18" CNAME="Somerset">
     <MUNICIPALITY MCODE="1808" MNAME="Franklin Twsp">
       <ACCIDENT ACCID="13214" DATE="06/01/2024" TIME="0017">
-        <STREET>Easton Ave</STREET>
-        <LOCATION>Easton Ave</LOCATION>
+        <HIGHWAY>527</HIGHWAY>
+        <LOCATION>County 527</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
+      <ACCIDENT ACCID="13221" DATE="05/31/2024" TIME="2144">
+        <HIGHWAY>444</HIGHWAY>
+        <LOCATION>Garden State Parkway MP 124.6</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="19" CNAME="Sussex">
+    <MUNICIPALITY MCODE="1902" MNAME="Andover Twsp">
+      <ACCIDENT ACCID="13220" DATE="05/31/2024" TIME="2042">
+        <STREET>Stickles Pond Rd</STREET>
+        <LOCATION>Stickles Pond Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0436" MNAME="Winslow Twsp">
+      <ACCIDENT ACCID="13219" DATE="05/31/2024" TIME="1759">
+        <HIGHWAY>446</HIGHWAY>
+        <LOCATION>Atlantic City Expressway MP 36.4</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="17" CNAME="Salem">
+    <MUNICIPALITY MCODE="1709" MNAME="Pilesgrove Twsp">
+      <ACCIDENT ACCID="13218" DATE="05/31/2024" TIME="1633">
+        <HIGHWAY>660</HIGHWAY>
+        <LOCATION>County 660</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3208,7 +3299,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>241</TOTACCIDENTS>
-  <TOTFATALITIES>252</TOTFATALITIES>
+  <TOTACCIDENTS>248</TOTACCIDENTS>
+  <TOTFATALITIES>260</TOTFATALITIES>
   <TOTINJURIES>29</TOTINJURIES>
 </FAUQSTATS>
