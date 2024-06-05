@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Jun 04 10:00:07 EDT 2024</RUNDATE>
+  <RUNDATE>Wed Jun 05 10:00:08 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1968,7 +1968,7 @@
     <MUNICIPALITY MCODE="1616" MNAME="Woodland Park Boro">
       <ACCIDENT ACCID="12774" DATE="10/15/2023" TIME="1935">
         <HIGHWAY>639</HIGHWAY>
-        <LOCATION>County 639 MP 25</LOCATION>
+        <LOCATION>County 639 MP 1.1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2851,7 +2851,7 @@
     <MUNICIPALITY MCODE="0811" MNAME="Monroe Twsp">
       <ACCIDENT ACCID="12676" DATE="09/07/2023" TIME="0743">
         <HIGHWAY>655</HIGHWAY>
-        <LOCATION>County 655 (Spur (County Routes Only)) MP 6.12</LOCATION>
+        <LOCATION>County 655 MP 6.12</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
