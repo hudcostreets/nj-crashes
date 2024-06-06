@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Jun 05 10:00:08 EDT 2024</RUNDATE>
+  <RUNDATE>Thu Jun 06 10:00:07 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -220,12 +220,13 @@
     <MUNICIPALITY MCODE="1221" MNAME="South Brunswick Tws">
       <ACCIDENT ACCID="12896" DATE="12/24/2023" TIME="0053">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 17.47</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -287,12 +288,13 @@
     <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
       <ACCIDENT ACCID="12894" DATE="12/22/2023" TIME="0647">
         <HIGHWAY>35</HIGHWAY>
-        <LOCATION>State Highway 35</LOCATION>
+        <LOCATION>State Highway 35 MP 51.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2921,12 +2923,13 @@
     <MUNICIPALITY MCODE="2115" MNAME="Lopatcong Twsp">
       <ACCIDENT ACCID="12665" DATE="09/03/2023" TIME="1901">
         <HIGHWAY>646</HIGHWAY>
-        <LOCATION>County 646</LOCATION>
+        <LOCATION>County 646 MP .5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3436,13 +3439,14 @@
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0909" MNAME="Secaucus Town">
       <ACCIDENT ACCID="12635" DATE="08/16/2023" TIME="1222">
-        <STREET>County Ave</STREET>
-        <LOCATION>County Ave</LOCATION>
+        <HIGHWAY>653</HIGHWAY>
+        <LOCATION>County 653 MP 1.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4174,12 +4178,13 @@
     <MUNICIPALITY MCODE="1616" MNAME="Woodland Park Boro">
       <ACCIDENT ACCID="13169" DATE="07/16/2023" TIME="0339">
         <HIGHWAY>46</HIGHWAY>
-        <LOCATION>State Highway 46</LOCATION>
+        <LOCATION>State Highway 46 MP 58.1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
