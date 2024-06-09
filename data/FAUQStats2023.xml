@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Jun 08 10:00:08 EDT 2024</RUNDATE>
+  <RUNDATE>Sun Jun 09 10:00:09 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -193,7 +193,7 @@
     <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
       <ACCIDENT ACCID="12897" DATE="12/25/2023" TIME="1822">
         <HIGHWAY>3</HIGHWAY>
-        <LOCATION>State Highway 3</LOCATION>
+        <LOCATION>State Highway 3 MP 3.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
