@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Jun 09 10:00:03 EDT 2024</RUNDATE>
+  <RUNDATE>Mon Jun 10 10:00:02 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,6 +49,19 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0301" MNAME="Bass River Twsp">
+      <ACCIDENT ACCID="13251" DATE="06/09/2024" TIME="2105">
+        <STREET>Maple Ave</STREET>
+        <LOCATION>Maple Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1506" MNAME="Brick Twsp">
       <ACCIDENT ACCID="13245" DATE="06/08/2024" TIME="1258">
@@ -62,11 +75,48 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
+      <ACCIDENT ACCID="13247" DATE="06/08/2024" TIME="1217">
+        <STREET>Cheesequake Rd</STREET>
+        <LOCATION>Cheesequake Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0710" MNAME="Livingston Twsp">
+      <ACCIDENT ACCID="13250" DATE="06/08/2024" TIME="1151">
+        <HIGHWAY>527</HIGHWAY>
+        <LOCATION>County 527</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+    <MUNICIPALITY MCODE="0714" MNAME="Newark City">
+      <ACCIDENT ACCID="13249" DATE="06/08/2024" TIME="0231">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike MP 104.7</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0808" MNAME="Harrison Twsp">
       <ACCIDENT ACCID="13246" DATE="06/07/2024" TIME="2225">
-        <STREET>Swedesboro Rd</STREET>
-        <LOCATION>Swedesboro Rd</LOCATION>
+        <HIGHWAY>322</HIGHWAY>
+        <LOCATION>State Highway 322</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -79,7 +129,7 @@
     <MUNICIPALITY MCODE="0101" MNAME="Absecon City">
       <ACCIDENT ACCID="13237" DATE="06/07/2024" TIME="2219">
         <HIGHWAY>30</HIGHWAY>
-        <LOCATION>30</LOCATION>
+        <LOCATION>State Highway 30</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -91,8 +141,21 @@
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0325" MNAME="Mount Laurel Twsp">
       <ACCIDENT ACCID="13238" DATE="06/07/2024" TIME="1235">
-        <STREET>elbo lane/amaryllis blvd</STREET>
-        <LOCATION>elbo lane/amaryllis blvd</LOCATION>
+        <STREET>Elbo Lane</STREET>
+        <LOCATION>Elbo Lane</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1101" MNAME="East Windsor Twsp">
+      <ACCIDENT ACCID="13248" DATE="06/07/2024" TIME="0637">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike MP 65.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -188,6 +251,19 @@
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="15" CNAME="Ocean">
+    <MUNICIPALITY MCODE="1507" MNAME="Toms River">
+      <ACCIDENT ACCID="13252" DATE="06/04/2024" TIME="0951">
+        <STREET>BELTANE &amp; KENSINGTON CIRCLE</STREET>
+        <LOCATION>BELTANE &amp; KENSINGTON CIRCLE</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -1134,19 +1210,6 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="15" CNAME="Ocean">
-    <MUNICIPALITY MCODE="1506" MNAME="Brick Twsp">
-      <ACCIDENT ACCID="13236" DATE="04/15/2024" TIME="1240">
-        <STREET>brick blvd/hooper ave</STREET>
-        <LOCATION>brick blvd/hooper ave</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -3520,7 +3583,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>265</TOTACCIDENTS>
-  <TOTFATALITIES>279</TOTFATALITIES>
+  <TOTACCIDENTS>270</TOTACCIDENTS>
+  <TOTFATALITIES>284</TOTFATALITIES>
   <TOTINJURIES>29</TOTINJURIES>
 </FAUQSTATS>
