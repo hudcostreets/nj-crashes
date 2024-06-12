@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Jun 11 10:00:09 EDT 2024</RUNDATE>
+  <RUNDATE>Wed Jun 12 10:00:08 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1020,6 +1020,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3005,9 +3006,9 @@
   </COUNTY>
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
-      <ACCIDENT ACCID="12662" DATE="09/01/2023" TIME="0254">
+      <ACCIDENT ACCID="12662" DATE="09/01/2023" TIME="0211">
         <HIGHWAY>139</HIGHWAY>
-        <LOCATION>State Highway 139</LOCATION>
+        <LOCATION>State Highway 139 (Lower (State Route 139 Only)) MP .35</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
