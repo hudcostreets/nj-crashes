@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Jun 12 10:00:08 EDT 2024</RUNDATE>
+  <RUNDATE>Thu Jun 13 10:00:07 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1218,12 +1218,13 @@
     <MUNICIPALITY MCODE="0431" MNAME="Somerdale Boro">
       <ACCIDENT ACCID="12814" DATE="11/15/2023" TIME="0531">
         <HIGHWAY>30</HIGHWAY>
-        <LOCATION>State Highway 30 MP 11.34</LOCATION>
+        <LOCATION>State Highway 30 MP 11.31</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1279,6 +1280,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1841,6 +1843,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2112,6 +2115,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7925,5 +7929,5 @@
   </COUNTY>
   <TOTACCIDENTS>577</TOTACCIDENTS>
   <TOTFATALITIES>609</TOTFATALITIES>
-  <TOTINJURIES>291</TOTINJURIES>
+  <TOTINJURIES>292</TOTINJURIES>
 </FAUQSTATS>
