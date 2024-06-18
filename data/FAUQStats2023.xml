@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Jun 17 10:00:10 EDT 2024</RUNDATE>
+  <RUNDATE>Tue Jun 18 10:00:10 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2807,12 +2807,13 @@
     <MUNICIPALITY MCODE="1319" MNAME="Howell Twsp">
       <ACCIDENT ACCID="12679" DATE="09/10/2023" TIME="1951">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9</LOCATION>
+        <LOCATION>State Highway 9 MP 110.37</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
