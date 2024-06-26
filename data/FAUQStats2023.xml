@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Jun 25 10:00:09 EDT 2024</RUNDATE>
+  <RUNDATE>Wed Jun 26 10:00:09 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1693,7 +1693,7 @@
     <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
       <ACCIDENT ACCID="12776" DATE="10/28/2023" TIME="0500">
         <HIGHWAY>35</HIGHWAY>
-        <LOCATION>State Highway 35 MP 48.3</LOCATION>
+        <LOCATION>State Highway 35 MP 48.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
