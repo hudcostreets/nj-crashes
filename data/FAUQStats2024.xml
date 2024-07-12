@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Jul 11 10:00:03 EDT 2024</RUNDATE>
+  <RUNDATE>Fri Jul 12 10:00:03 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -106,7 +106,7 @@
     <MUNICIPALITY MCODE="0705" MNAME="Cedar Grove Twsp">
       <ACCIDENT ACCID="13300" DATE="07/09/2024" TIME="1544">
         <HIGHWAY>23</HIGHWAY>
-        <LOCATION>23</LOCATION>
+        <LOCATION>State Highway 23</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
