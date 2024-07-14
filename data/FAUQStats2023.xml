@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Jul 13 10:00:10 EDT 2024</RUNDATE>
+  <RUNDATE>Sun Jul 14 10:00:09 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1181,7 +1181,7 @@
   </COUNTY>
   <COUNTY CCODE="18" CNAME="Somerset">
     <MUNICIPALITY MCODE="1806" MNAME="Bridgewater Twsp">
-      <ACCIDENT ACCID="12819" DATE="11/19/2023" TIME="1835">
+      <ACCIDENT ACCID="12819" DATE="11/19/2023" TIME="0955">
         <HIGHWAY>28</HIGHWAY>
         <LOCATION>State Highway 28 MP 5.6</LOCATION>
         <FATALITIES>1</FATALITIES>
