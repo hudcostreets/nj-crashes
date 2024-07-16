@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Jul 15 10:00:12 EDT 2024</RUNDATE>
+  <RUNDATE>Tue Jul 16 10:19:54 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -925,12 +925,13 @@
     <MUNICIPALITY MCODE="0703" MNAME="Caldwell Boro">
       <ACCIDENT ACCID="12847" DATE="11/26/2023" TIME="1833">
         <HIGHWAY>506</HIGHWAY>
-        <LOCATION>County 506 MP 2.4</LOCATION>
+        <LOCATION>County 506 MP 2.38</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
