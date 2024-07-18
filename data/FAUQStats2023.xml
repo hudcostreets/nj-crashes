@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Jul 17 10:00:05 EDT 2024</RUNDATE>
+  <RUNDATE>Thu Jul 18 10:00:05 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2855,19 +2855,6 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <COUNTY CCODE="07" CNAME="Essex">
-    <MUNICIPALITY MCODE="0706" MNAME="East Orange City">
-      <ACCIDENT ACCID="12682" DATE="09/07/2023" TIME="1155">
-        <STREET>S. Munn Ave</STREET>
-        <LOCATION>S. Munn Ave</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0811" MNAME="Monroe Twsp">
       <ACCIDENT ACCID="12676" DATE="09/07/2023" TIME="0743">
@@ -2919,6 +2906,20 @@
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0246" MNAME="Paramus Boro">
+      <ACCIDENT ACCID="12667" DATE="09/04/2023" TIME="1300">
+        <STREET>224 SH 4 West</STREET>
+        <LOCATION>224 SH 4 West</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
       </ACCIDENT>

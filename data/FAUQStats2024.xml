@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Jul 17 10:00:03 EDT 2024</RUNDATE>
+  <RUNDATE>Thu Jul 18 10:00:02 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,6 +49,45 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="09" CNAME="Hudson">
+    <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
+      <ACCIDENT ACCID="13309" DATE="07/17/2024" TIME="1830">
+        <STREET>Communipaw Ave and Belvidere Ave</STREET>
+        <LOCATION>Communipaw Ave and Belvidere Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2002" MNAME="Clark Twsp">
+      <ACCIDENT ACCID="13308" DATE="07/16/2024" TIME="1952">
+        <STREET>Madison Hill Road</STREET>
+        <LOCATION>Madison Hill Road</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0323" MNAME="Moorestown Twsp">
+      <ACCIDENT ACCID="13305" DATE="07/16/2024" TIME="1428">
+        <HIGHWAY>614</HIGHWAY>
+        <LOCATION>County 614</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="13304" DATE="07/15/2024" TIME="1725">
@@ -84,6 +123,19 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="18" CNAME="Somerset">
+    <MUNICIPALITY MCODE="1808" MNAME="Franklin Twsp">
+      <ACCIDENT ACCID="13306" DATE="07/12/2024" TIME="1904">
+        <HIGHWAY>287</HIGHWAY>
+        <LOCATION>Interstate 287 MP 12</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -189,6 +241,19 @@
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>1</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="19" CNAME="Sussex">
+    <MUNICIPALITY MCODE="1913" MNAME="Lafayette Twsp">
+      <ACCIDENT ACCID="13307" DATE="07/04/2024" TIME="1759">
+        <STREET>Monroe Rd</STREET>
+        <LOCATION>Monroe Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4184,7 +4249,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>316</TOTACCIDENTS>
-  <TOTFATALITIES>331</TOTFATALITIES>
+  <TOTACCIDENTS>321</TOTACCIDENTS>
+  <TOTFATALITIES>336</TOTFATALITIES>
   <TOTINJURIES>41</TOTINJURIES>
 </FAUQSTATS>
