@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Jul 18 10:00:05 EDT 2024</RUNDATE>
+  <RUNDATE>Fri Jul 19 10:02:17 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1870,24 +1870,25 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <COUNTY CCODE="09" CNAME="Hudson">
-    <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
-      <ACCIDENT ACCID="12748" DATE="10/20/2023" TIME="1905">
-        <STREET>Fairmount Ave</STREET>
-        <LOCATION>Fairmount Ave</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0702" MNAME="Bloomfield Boro">
       <ACCIDENT ACCID="12781" DATE="10/20/2023" TIME="1844">
         <HIGHWAY>506</HIGHWAY>
         <LOCATION>County 506 (Spur (County Routes Only)) MP 1.9</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="09" CNAME="Hudson">
+    <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
+      <ACCIDENT ACCID="12748" DATE="10/20/2023" TIME="1838">
+        <STREET>Monticello Avenue</STREET>
+        <LOCATION>Monticello Avenue</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1971,7 +1972,7 @@
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
       <ACCIDENT ACCID="12754" DATE="10/16/2023" TIME="0044">
         <HIGHWAY>681</HIGHWAY>
-        <LOCATION>County 681</LOCATION>
+        <LOCATION>County 681 MP 1.25</LOCATION>
         <FATALITIES>3</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>2</FATAL_P>
@@ -4242,7 +4243,7 @@
     <MUNICIPALITY MCODE="0709" MNAME="Irvington Town">
       <ACCIDENT ACCID="12578" DATE="07/13/2023" TIME="2129">
         <HIGHWAY>603</HIGHWAY>
-        <LOCATION>County 603</LOCATION>
+        <LOCATION>County 603 MP .51</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6072,7 +6073,7 @@
   </COUNTY>
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0907" MNAME="Kearny Town">
-      <ACCIDENT ACCID="12408" DATE="04/14/2023" TIME="0200">
+      <ACCIDENT ACCID="12408" DATE="04/14/2023" TIME="0112">
         <STREET>Bergen Ave</STREET>
         <LOCATION>Bergen Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -6269,12 +6270,13 @@
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12390" DATE="04/02/2023" TIME="0238">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1 (Truck (Rt. 1 and 9 Only)) MP 49.6</LOCATION>
+        <LOCATION>State Highway 1 MP 49.6</LOCATION>
         <FATALITIES>3</FATALITIES>
         <FATAL_D>2</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>

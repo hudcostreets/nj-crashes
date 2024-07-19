@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Jul 18 10:00:02 EDT 2024</RUNDATE>
+  <RUNDATE>Fri Jul 19 10:02:14 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -52,8 +52,21 @@
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
       <ACCIDENT ACCID="13309" DATE="07/17/2024" TIME="1830">
-        <STREET>Communipaw Ave and Belvidere Ave</STREET>
-        <LOCATION>Communipaw Ave and Belvidere Ave</LOCATION>
+        <STREET>Communipaw Ave</STREET>
+        <LOCATION>Communipaw Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="18" CNAME="Somerset">
+    <MUNICIPALITY MCODE="1802" MNAME="Bernards Twsp">
+      <ACCIDENT ACCID="13310" DATE="07/17/2024" TIME="1346">
+        <HIGHWAY>287</HIGHWAY>
+        <LOCATION>Interstate 287 MP 29.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -65,8 +78,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2002" MNAME="Clark Twsp">
       <ACCIDENT ACCID="13308" DATE="07/16/2024" TIME="1952">
-        <STREET>Madison Hill Road</STREET>
-        <LOCATION>Madison Hill Road</LOCATION>
+        <STREET>Madison Hill Rd</STREET>
+        <LOCATION>Madison Hill Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -455,6 +468,19 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0218" MNAME="Fairview Boro">
+      <ACCIDENT ACCID="13311" DATE="06/20/2024" TIME="0733">
+        <STREET>Fairview Avenue</STREET>
+        <LOCATION>Fairview Avenue</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4249,7 +4275,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>321</TOTACCIDENTS>
-  <TOTFATALITIES>336</TOTFATALITIES>
+  <TOTACCIDENTS>323</TOTACCIDENTS>
+  <TOTFATALITIES>338</TOTFATALITIES>
   <TOTINJURIES>41</TOTINJURIES>
 </FAUQSTATS>
