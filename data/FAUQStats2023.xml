@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Jul 22 10:00:07 EDT 2024</RUNDATE>
+  <RUNDATE>Tue Jul 23 10:00:03 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -852,6 +852,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3983,9 +3984,9 @@
   </COUNTY>
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0216" MNAME="Englewood Cliffs Bo">
-      <ACCIDENT ACCID="12590" DATE="07/23/2023" TIME="0118">
+      <ACCIDENT ACCID="12590" DATE="07/23/2023" TIME="0116">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9 (Western Alignment (NJ Turnpike Only)) MP 3.5</LOCATION>
+        <LOCATION>State Highway 9 MP 3.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4272,7 +4273,7 @@
   </COUNTY>
   <COUNTY CCODE="18" CNAME="Somerset">
     <MUNICIPALITY MCODE="1806" MNAME="Bridgewater Twsp">
-      <ACCIDENT ACCID="12558" DATE="07/11/2023" TIME="1933">
+      <ACCIDENT ACCID="12558" DATE="07/11/2023" TIME="1934">
         <HIGHWAY>287</HIGHWAY>
         <LOCATION>Interstate 287 MP 18.4</LOCATION>
         <FATALITIES>1</FATALITIES>
