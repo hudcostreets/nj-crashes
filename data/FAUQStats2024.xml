@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Jul 23 10:00:00 EDT 2024</RUNDATE>
+  <RUNDATE>Wed Jul 24 10:00:02 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -52,8 +52,8 @@
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
       <ACCIDENT ACCID="13319" DATE="07/22/2024" TIME="0907">
-        <STREET>Rt 3 E</STREET>
-        <LOCATION>Rt 3 E</LOCATION>
+        <HIGHWAY>3</HIGHWAY>
+        <LOCATION>State Highway 3</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -79,7 +79,7 @@
     <MUNICIPALITY MCODE="1507" MNAME="Toms River">
       <ACCIDENT ACCID="13318" DATE="07/21/2024" TIME="1449">
         <HIGHWAY>166</HIGHWAY>
-        <LOCATION>166</LOCATION>
+        <LOCATION>State Highway 166</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -194,7 +194,7 @@
     <MUNICIPALITY MCODE="0105" MNAME="Buena Vista Twsp">
       <ACCIDENT ACCID="13303" DATE="07/15/2024" TIME="0322">
         <HIGHWAY>655</HIGHWAY>
-        <LOCATION>County 655</LOCATION>
+        <LOCATION>County 655 MP .1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
