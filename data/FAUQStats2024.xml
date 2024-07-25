@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Jul 24 10:00:02 EDT 2024</RUNDATE>
+  <RUNDATE>Thu Jul 25 10:38:05 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -53,12 +53,13 @@
     <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
       <ACCIDENT ACCID="13319" DATE="07/22/2024" TIME="0907">
         <HIGHWAY>3</HIGHWAY>
-        <LOCATION>State Highway 3</LOCATION>
+        <LOCATION>State Highway 3 MP .5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2511,6 +2512,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3141,6 +3143,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4351,6 +4354,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4382,5 +4386,5 @@
   </COUNTY>
   <TOTACCIDENTS>331</TOTACCIDENTS>
   <TOTFATALITIES>346</TOTFATALITIES>
-  <TOTINJURIES>41</TOTINJURIES>
+  <TOTINJURIES>46</TOTINJURIES>
 </FAUQSTATS>
