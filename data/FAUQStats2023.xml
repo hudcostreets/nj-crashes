@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Jul 30 10:00:03 EDT 2024</RUNDATE>
+  <RUNDATE>Wed Jul 31 10:00:05 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -6212,7 +6212,7 @@
     <MUNICIPALITY MCODE="0250" MNAME="Ridgefield Park Tws">
       <ACCIDENT ACCID="12402" DATE="04/07/2023" TIME="2310">
         <HIGHWAY>46</HIGHWAY>
-        <LOCATION>State Highway 46 MP 70.54</LOCATION>
+        <LOCATION>State Highway 46 MP 70.53</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>

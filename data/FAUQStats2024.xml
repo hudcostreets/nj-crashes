@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Jul 30 10:00:01 EDT 2024</RUNDATE>
+  <RUNDATE>Wed Jul 31 10:00:02 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -302,6 +302,19 @@
       <ACCIDENT ACCID="13306" DATE="07/12/2024" TIME="1904">
         <HIGHWAY>287</HIGHWAY>
         <LOCATION>Interstate 287 MP 12</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0214" MNAME="Emerson Boro">
+      <ACCIDENT ACCID="13327" DATE="07/10/2024" TIME="1800">
+        <HIGHWAY>59</HIGHWAY>
+        <LOCATION>County 59 MP 5.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2071,6 +2084,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2129,13 +2143,14 @@
   <COUNTY CCODE="17" CNAME="Salem">
     <MUNICIPALITY MCODE="1707" MNAME="Oldmans Twsp">
       <ACCIDENT ACCID="13120" DATE="04/15/2024" TIME="0414">
-        <STREET>Pennsville Pedricktown Rd</STREET>
-        <LOCATION>Pennsville Pedricktown Rd</LOCATION>
+        <HIGHWAY>601</HIGHWAY>
+        <LOCATION>County 601 MP 3.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2410,6 +2425,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2672,6 +2688,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3058,13 +3075,14 @@
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0811" MNAME="Monroe Twsp">
       <ACCIDENT ACCID="13061" DATE="03/06/2024" TIME="1822">
-        <STREET>Coles Mill Rd</STREET>
-        <LOCATION>Coles Mill Rd</LOCATION>
+        <HIGHWAY>538</HIGHWAY>
+        <LOCATION>County 538 MP 21.49</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3123,12 +3141,13 @@
     <MUNICIPALITY MCODE="0805" MNAME="Franklin Twsp">
       <ACCIDENT ACCID="13041" DATE="03/02/2024" TIME="2237">
         <HIGHWAY>659</HIGHWAY>
-        <LOCATION>County 659</LOCATION>
+        <LOCATION>County 659 MP .4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4139,6 +4158,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4477,7 +4497,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>338</TOTACCIDENTS>
-  <TOTFATALITIES>354</TOTFATALITIES>
-  <TOTINJURIES>46</TOTINJURIES>
+  <TOTACCIDENTS>339</TOTACCIDENTS>
+  <TOTFATALITIES>355</TOTFATALITIES>
+  <TOTINJURIES>51</TOTINJURIES>
 </FAUQSTATS>
