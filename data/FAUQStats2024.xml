@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Aug 06 10:00:02 EDT 2024</RUNDATE>
+  <RUNDATE>Wed Aug 07 10:00:02 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -286,7 +286,7 @@
     <MUNICIPALITY MCODE="0323" MNAME="Moorestown Twsp">
       <ACCIDENT ACCID="13305" DATE="07/16/2024" TIME="1428">
         <HIGHWAY>614</HIGHWAY>
-        <LOCATION>County 614</LOCATION>
+        <LOCATION>County 614 MP 2.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1860,8 +1860,8 @@
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0324" MNAME="Mount Holly Twsp">
       <ACCIDENT ACCID="13155" DATE="05/01/2024" TIME="0923">
-        <HIGHWAY>541</HIGHWAY>
-        <LOCATION>County 541 MP 2.5</LOCATION>
+        <HIGHWAY>691</HIGHWAY>
+        <LOCATION>County 691 MP 2.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
