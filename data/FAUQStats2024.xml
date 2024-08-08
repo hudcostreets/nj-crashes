@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Aug 07 10:00:02 EDT 2024</RUNDATE>
+  <RUNDATE>Thu Aug 08 10:00:03 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -347,6 +347,19 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="15" CNAME="Ocean">
+    <MUNICIPALITY MCODE="1518" MNAME="Manchester Twsp">
+      <ACCIDENT ACCID="13334" DATE="07/13/2024" TIME="1758">
+        <STREET>Renaissance Blvd</STREET>
+        <LOCATION>Renaissance Blvd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="18" CNAME="Somerset">
     <MUNICIPALITY MCODE="1808" MNAME="Franklin Twsp">
       <ACCIDENT ACCID="13306" DATE="07/12/2024" TIME="1904">
@@ -559,6 +572,32 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0306" MNAME="Burlington Twsp">
+      <ACCIDENT ACCID="13337" DATE="07/01/2024" TIME="2200">
+        <HIGHWAY>634</HIGHWAY>
+        <LOCATION>County 634</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
+    <MUNICIPALITY MCODE="1351" MNAME="Upper Freehold Twsp">
+      <ACCIDENT ACCID="13336" DATE="07/01/2024" TIME="2037">
+        <HIGHWAY>524</HIGHWAY>
+        <LOCATION>County 524 MP 11</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="05" CNAME="Cape May">
     <MUNICIPALITY MCODE="0504" MNAME="Dennis Twsp">
       <ACCIDENT ACCID="13290" DATE="07/01/2024" TIME="1734">
@@ -690,6 +729,20 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
+    <MUNICIPALITY MCODE="1351" MNAME="Upper Freehold Twsp">
+      <ACCIDENT ACCID="13335" DATE="06/24/2024" TIME="1122">
+        <STREET>Sharon Station Rd</STREET>
+        <LOCATION>Sharon Station Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -951,6 +1004,17 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+    <MUNICIPALITY MCODE="1511" MNAME="Jackson Twsp">
+      <ACCIDENT ACCID="13333" DATE="06/09/2024" TIME="1203">
+        <STREET>Farmingdale Rd</STREET>
+        <LOCATION>Farmingdale Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4547,7 +4611,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>343</TOTACCIDENTS>
-  <TOTFATALITIES>359</TOTFATALITIES>
-  <TOTINJURIES>53</TOTINJURIES>
+  <TOTACCIDENTS>348</TOTACCIDENTS>
+  <TOTFATALITIES>364</TOTFATALITIES>
+  <TOTINJURIES>54</TOTINJURIES>
 </FAUQSTATS>
