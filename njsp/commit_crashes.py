@@ -95,7 +95,10 @@ def crash_str(
     else:
         github_link = accid
 
-    location = r.LOCATION.replace('&', '&amp;')
+    if isna(r.LOCATION):
+        location = 'unknown location'
+    else:
+        location = r.LOCATION.replace('&', '&amp;')
     return f'*{dt_str} ({github_link})*: {r.MNAME} ({r.CNAME} County), {location}: {victim_str} deceased'
 
 
