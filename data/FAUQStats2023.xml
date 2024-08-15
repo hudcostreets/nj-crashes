@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Aug 14 10:00:04 EDT 2024</RUNDATE>
+  <RUNDATE>Thu Aug 15 10:00:04 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -4494,7 +4494,7 @@
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12579" DATE="06/29/2023" TIME="1142">
         <HIGHWAY>21</HIGHWAY>
-        <LOCATION>State Highway 21 MP 47.5</LOCATION>
+        <LOCATION>State Highway 21 MP 0</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
