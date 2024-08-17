@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Aug 16 10:00:01 EDT 2024</RUNDATE>
+  <RUNDATE>Sat Aug 17 10:00:00 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,15 +49,67 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
-  <COUNTY CCODE="12" CNAME="Middlesex">
-    <MUNICIPALITY MCODE="1214" MNAME="New Brunswick City">
-      <ACCIDENT ACCID="13359" DATE="08/15/2024" TIME="0048">
-        <STREET>188 Townsend street</STREET>
-        <LOCATION>188 Townsend street</LOCATION>
+  <COUNTY CCODE="21" CNAME="Warren">
+    <MUNICIPALITY MCODE="2115" MNAME="Lopatcong Twsp">
+      <ACCIDENT ACCID="13365" DATE="08/16/2024" TIME="1700">
+        <HIGHWAY>22</HIGHWAY>
+        <LOCATION>22</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1217" MNAME="Piscataway Twsp">
+      <ACCIDENT ACCID="13364" DATE="08/15/2024" TIME="2024">
+        <HIGHWAY>287</HIGHWAY>
+        <LOCATION>Interstate 287 MP 8.8</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="18" CNAME="Somerset">
+    <MUNICIPALITY MCODE="1808" MNAME="Franklin Twsp">
+      <ACCIDENT ACCID="13360" DATE="08/15/2024" TIME="1936">
+        <STREET>Manville Cswy</STREET>
+        <LOCATION>Manville Cswy</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1214" MNAME="New Brunswick City">
+      <ACCIDENT ACCID="13359" DATE="08/15/2024" TIME="0048">
+        <STREET>Townsend St</STREET>
+        <LOCATION>Townsend St</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0220" MNAME="Franklin Lakes Boro">
+      <ACCIDENT ACCID="13363" DATE="08/14/2024" TIME="0926">
+        <HIGHWAY>287</HIGHWAY>
+        <LOCATION>Interstate 287 MP 61.2</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -218,6 +270,17 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+    <MUNICIPALITY MCODE="1335" MNAME="Neptune City Boro">
+      <ACCIDENT ACCID="13361" DATE="08/06/2024" TIME="1445">
+        <HIGHWAY>40</HIGHWAY>
+        <LOCATION>State Highway 40 (Alternate)</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1345" MNAME="Shrewsbury Boro">
@@ -4840,6 +4903,19 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0701" MNAME="Belleville Town">
+      <ACCIDENT ACCID="13362" DATE="01/05/2024" TIME="1808">
+        <HIGHWAY>647</HIGHWAY>
+        <LOCATION>County 647 MP .76</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0248" MNAME="Ramsey Boro">
       <ACCIDENT ACCID="12933" DATE="01/05/2024" TIME="1412">
@@ -4893,7 +4969,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>369</TOTACCIDENTS>
-  <TOTFATALITIES>385</TOTFATALITIES>
+  <TOTACCIDENTS>375</TOTACCIDENTS>
+  <TOTFATALITIES>391</TOTFATALITIES>
   <TOTINJURIES>63</TOTINJURIES>
 </FAUQSTATS>
