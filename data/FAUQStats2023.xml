@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Aug 19 10:00:03 EDT 2024</RUNDATE>
+  <RUNDATE>Tue Aug 20 10:00:04 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2569,6 +2569,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2616,8 +2617,8 @@
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
       <ACCIDENT ACCID="12697" DATE="09/20/2023" TIME="0900">
-        <STREET>Main Ave</STREET>
-        <LOCATION>Main Ave</LOCATION>
+        <HIGHWAY>601</HIGHWAY>
+        <LOCATION>County 601 MP 4.09</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4492,7 +4493,7 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="12579" DATE="06/29/2023" TIME="1142">
+      <ACCIDENT ACCID="12579" DATE="06/29/2023" TIME="1145">
         <HIGHWAY>21</HIGHWAY>
         <LOCATION>State Highway 21 MP 0</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -6221,7 +6222,7 @@
     <MUNICIPALITY MCODE="0250" MNAME="Ridgefield Park Tws">
       <ACCIDENT ACCID="12402" DATE="04/07/2023" TIME="2310">
         <HIGHWAY>46</HIGHWAY>
-        <LOCATION>State Highway 46 MP 70.53</LOCATION>
+        <LOCATION>State Highway 46 MP 70.54</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
