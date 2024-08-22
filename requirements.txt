@@ -19,7 +19,7 @@ openpyxl
 pandas>=2.0.0,<2.2.0
 papermill
 plotly
-pyarrow
+pyarrow==17.0.0
 pygithub
 requests
 s3fs<=2024.2
