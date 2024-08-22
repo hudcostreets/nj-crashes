@@ -56,8 +56,7 @@ const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, crashes, totals, }: Props)
             id: "recent-fatal-crashes",
             title: "Recent Fatal Crashes",
             dropdownSection: "NJSP",
-            menuName: undefined,
-        },
+        } as Plot,
         ...plots
     ].map(({id, title, menuName, dropdownSection,}) => ({id, name: menuName || title, dropdownSection}))
     const menus = [
@@ -70,7 +69,6 @@ const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, crashes, totals, }: Props)
         ...s,
         sections: sections.filter(({dropdownSection}) => s.name == dropdownSection)
     }))
-
     const title = "NJ Traffic Crash Data"
 
     const [ county, setCounty ] = useState<string | null>(null)
@@ -149,7 +147,8 @@ const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, crashes, totals, }: Props)
                         ({id, ...rest}, idx) =>
                             <Fragment key={id}>
                                 {
-                                    idx + 1 == menus[0].sections.length && <>
+                                    // First 2 NJSP "plots" already inlined above
+                                    idx + 2 == menus[0].sections.length && <>
                                         <h1 id={"njdot"}><a href={`#njdot`}>NJ DOT Raw Crash Data</a></h1>
                                         <p>
                                             NJ DOT <A title={"NJ DOT raw crash data"}
