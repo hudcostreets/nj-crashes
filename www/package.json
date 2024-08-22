@@ -7,7 +7,8 @@
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
-        "gha-export": "next build && touch out/.nojekyll"
+        "gha-export": "next build && touch out/.nojekyll",
+        "tc": "tsc"
     },
     "dependencies": {
         "@deck.gl/layers": "^8.9.34",
