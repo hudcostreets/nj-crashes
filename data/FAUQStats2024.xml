@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Aug 23 10:00:04 EDT 2024</RUNDATE>
+  <RUNDATE>Sat Aug 24 10:00:00 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,6 +49,32 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="09" CNAME="Hudson">
+    <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
+      <ACCIDENT ACCID="13380" DATE="08/23/2024" TIME="1158">
+        <STREET>West side Ave and Stevens Ave</STREET>
+        <LOCATION>West side Ave and Stevens Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1204" MNAME="East Brunswick Twsp">
+      <ACCIDENT ACCID="13379" DATE="08/23/2024" TIME="0502">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike MP 81.2</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
     <MUNICIPALITY MCODE="2114" MNAME="Liberty Twsp">
       <ACCIDENT ACCID="13377" DATE="08/22/2024" TIME="0800">
@@ -57,6 +83,19 @@
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="10" CNAME="Hunterdon">
+    <MUNICIPALITY MCODE="1010" MNAME="Franklin Twsp">
+      <ACCIDENT ACCID="13378" DATE="08/22/2024" TIME="0733">
+        <HIGHWAY>617</HIGHWAY>
+        <LOCATION>County 617</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
@@ -5115,7 +5154,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>386</TOTACCIDENTS>
-  <TOTFATALITIES>404</TOTFATALITIES>
+  <TOTACCIDENTS>389</TOTACCIDENTS>
+  <TOTFATALITIES>407</TOTFATALITIES>
   <TOTINJURIES>66</TOTINJURIES>
 </FAUQSTATS>
