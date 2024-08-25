@@ -24,9 +24,10 @@ import { cc2mc2mn } from "@/server/county";
 import { CC2MC2MN } from "@/src/county";
 import { NjspSource } from "@/src/icons";
 import { getCrashes, getTotals } from "@/server/njsp/sql";
+import { PlotParams } from "@/src/njsp/plot";
 
 type Props = {
-    plotsDict: PlotsDict
+    plotsDict: PlotsDict<PlotParams>
     njspProps: Njsp.Props
     urls: Urls
     cc2mc2mn: CC2MC2MN
@@ -45,10 +46,10 @@ export const getStaticProps: GetStaticProps = async () => {
 
 const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, crashes, totals, }: Props) => {
     const basePath = getBasePath()
-    const [ requestChunkSize, setRequestChunkSize ] = useState<number>(64 * 1024)
+    const [ requestChunkSize ] = useState<number>(64 * 1024)
 
     const [ njspPlotSpec, ...plotSpecs2 ] = plotSpecs
-    const njspPlot = buildPlot(njspPlotSpec, plotsDict[njspPlotSpec.id])
+    const njspPlot = buildPlot<string, PlotParams>(njspPlotSpec, plotsDict[njspPlotSpec.id])
     const plots: Plot[] = buildPlots(plotSpecs2, plotsDict)
     const sections = [
         njspPlot,
@@ -121,6 +122,7 @@ const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, crashes, totals, }: Props)
                 <div className={css["plot-container"]}>
                     <NjspPlot
                         {...njspProps}
+                        params={njspPlot.params}
                         county={county}
                         setCounty={setCounty}
                         includeMoreInfoLink={true}
@@ -130,7 +132,7 @@ const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, crashes, totals, }: Props)
                 {
                     <div className={css["plot-container"]}>
                         <div className={css.section}>
-                            <H2 id={"recent-fatal-crashes"} className={""}>Recent fatal crashes</H2>
+                            <H2 id={"recent-fatal-crashes"}>Recent fatal crashes</H2>
                             {
                                 njspCrashes && <ResultTable
                                     result={njspCrashes}
@@ -164,7 +166,7 @@ const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, crashes, totals, }: Props)
                                         id={id}
                                         basePath={basePath}
                                         {...rest}
-                                        margin={{ b: 30, }}
+                                        margin={{ t: 10, b: 30, }}
                                     />
                                     <hr/>
                                 </div>

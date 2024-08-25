@@ -1,5 +1,5 @@
 import React from "react";
-import { PlotSpec, HalfRoundWiden, filterIdxs, filterValues } from "@rdub/next-plotly/plot";
+import { filterIdxs, PlotSpec } from "@rdub/next-plotly/plot";
 import A from "@rdub/next-base/a";
 import { NjspSource } from "@/src/icons";
 import css from "@/pages/index.module.scss"
@@ -38,14 +38,14 @@ export const YM_SC_PID_SPECS: PlotSpec[] =
     ))
 
 export const njspPlotSpec: PlotSpec = {
-    title: "NJ Traffic Deaths per Year", id: "per-year", name: "fatalities_per_year_by_type",
+    id: "per-year", name: "fatalities_per_year_by_type",
     menuName: "Traffic Deaths / Year", dropdownSection: "NJSP",
 }
 
 export const plotSpecs: PlotSpec[] = [
     njspPlotSpec,
     {
-        id: "ytd", name: "ytd-deaths", title: "NJ Traffic Deaths per Year", menuName: "YTD", dropdownSection: "NJSP",
+        id: "ytd", name: "ytd-deaths", menuName: "YTD", dropdownSection: "NJSP",
         filter: filterIdxs,
         children: <NjspSource className={css.ytdFooter}>
             <p>Some data arrives weeks or months after the fact, so current year numbers are especially subject to change.</p>
@@ -58,7 +58,7 @@ export const plotSpecs: PlotSpec[] = [
             <p>Homicide data comes from <A href={"https://nj.gov/njsp/ucr/uniform-crime-reports.shtml"}>NJ State Police</A> and <A href={"https://www.disastercenter.com/crime/njcrimn.htm"}>Disaster Center</A>.</p>
         </>
     },
-    { id: "per-month", name: "fatalities_per_month", title: "NJ Traffic Deaths per Month", menuName: "Per Month", dropdownSection: "NJSP", },
-    { id: "by-month-bars", name: "fatalities_by_month_bars", title: "NJ Traffic Deaths, grouped by month", menuName: "Grouped by Month", dropdownSection: "NJSP", },
+    { id: "per-month", name: "fatalities_per_month", menuName: "Per Month", dropdownSection: "NJSP", },
+    { id: "by-month-bars", name: "fatalities_by_month_bars", menuName: "Grouped by Month", dropdownSection: "NJSP", },
     ...YM_SC_PID_SPECS,
 ]

@@ -12,7 +12,6 @@ import A from "@rdub/next-base/a";
 import { GitHub } from "@/src/socials";
 import { Plot, PlotSpec } from "@rdub/next-plotly/plot";
 import { fromEntries } from "@rdub/base/objs";
-import { NjspFatalAcc } from "@/src/urls";
 import { normalize } from "../county";
 import { CountySelect } from "../county-select";
 import { NjspSource } from "@/src/icons";
@@ -113,7 +112,7 @@ export async function getPlotData({ ytRows, typeProjections, initialPlotData, ty
         return newSeries
     })
     const annotations: Annotation[] = isSolo ? [] : rows.map(row => {
-        const { year, projected, } = row
+        const { year, } = row
         const total = typesArr.map(type => row[typesMap[type]]).reduce((a, b) => a + b, 0)
         const y = total //+ projected
         return {
@@ -179,7 +178,8 @@ export function NjspChildren(
 
 export function NjspPlot(
     {
-        params, tableData,
+        params,
+        tableData,
         typeProjections,
         Counties,
         ytRows: initYtRows,
