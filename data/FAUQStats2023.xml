@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Aug 28 10:00:03 EDT 2024</RUNDATE>
+  <RUNDATE>Thu Aug 29 10:00:02 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1884,8 +1884,8 @@
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
       <ACCIDENT ACCID="12748" DATE="10/20/2023" TIME="1838">
-        <STREET>Monticello Avenue</STREET>
-        <LOCATION>Monticello Avenue</LOCATION>
+        <STREET>Monticello Ave</STREET>
+        <LOCATION>Monticello Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2521,8 +2521,8 @@
   <COUNTY CCODE="21" CNAME="Warren">
     <MUNICIPALITY MCODE="2108" MNAME="Hackettstown Town">
       <ACCIDENT ACCID="12762" DATE="09/21/2023" TIME="1647">
-        <HIGHWAY>182</HIGHWAY>
-        <LOCATION>State Highway 182</LOCATION>
+        <STREET>219 State Highway 182</STREET>
+        <LOCATION>219 State Highway 182</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
