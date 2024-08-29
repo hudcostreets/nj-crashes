@@ -342,10 +342,10 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2024,Cape May,3,0,0,0,3
 2024,Cumberland,13,4,0,2,15
 2024,Essex,13,3,0,18,34
-2024,Gloucester,7,2,0,1,10
+2024,Gloucester,7,2,0,2,11
 2024,Hudson,5,2,0,3,9
 2024,Hunterdon,2,2,0,2,6
-2024,Mercer,12,5,0,7,23
+2024,Mercer,11,5,0,7,22
 2024,Middlesex,19,6,1,15,37
 2024,Monmouth,18,4,3,11,35
 2024,Morris,7,0,1,5,13
@@ -353,6 +353,6 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2024,Passaic,9,2,0,3,13
 2024,Salem,6,2,1,1,9
 2024,Somerset,8,0,0,2,10
-2024,Sussex,4,1,1,2,8
+2024,Sussex,4,2,1,2,9
 2024,Union,9,2,1,9,19
 2024,Warren,8,1,1,2,11
