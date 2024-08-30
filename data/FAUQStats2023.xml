@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Aug 29 10:00:02 EDT 2024</RUNDATE>
+  <RUNDATE>Fri Aug 30 10:00:06 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2958,8 +2958,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12720" DATE="09/02/2023" TIME="1530">
-        <STREET>Frelinghuysen Ave</STREET>
-        <LOCATION>Frelinghuysen Ave</LOCATION>
+        <HIGHWAY>27</HIGHWAY>
+        <LOCATION>State Highway 27</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
