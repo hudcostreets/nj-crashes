@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Sep 03 10:00:01 EDT 2024</RUNDATE>
+  <RUNDATE>Wed Sep 04 10:00:01 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,11 +49,37 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="16" CNAME="Passaic">
+    <MUNICIPALITY MCODE="1607" MNAME="Passaic City">
+      <ACCIDENT ACCID="13401" DATE="09/02/2024" TIME="2219">
+        <HIGHWAY>601</HIGHWAY>
+        <LOCATION>County 601 MP 3.05</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1214" MNAME="New Brunswick City">
+      <ACCIDENT ACCID="13403" DATE="09/02/2024" TIME="1856">
+        <HIGHWAY>18</HIGHWAY>
+        <LOCATION>State Highway 18</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0339" MNAME="Woodland Twsp">
       <ACCIDENT ACCID="13399" DATE="09/02/2024" TIME="1737">
-        <STREET>Savoy Boulevard</STREET>
-        <LOCATION>Savoy Boulevard</LOCATION>
+        <STREET>Savoy Blvd</STREET>
+        <LOCATION>Savoy Blvd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -200,6 +226,19 @@
         <LOCATION>Panther Rd</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>2</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="15" CNAME="Ocean">
+    <MUNICIPALITY MCODE="1518" MNAME="Manchester Twsp">
+      <ACCIDENT ACCID="13402" DATE="08/24/2024" TIME="1557">
+        <HIGHWAY>70</HIGHWAY>
+        <LOCATION>State Highway 70 MP 40.18</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
@@ -5393,7 +5432,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>407</TOTACCIDENTS>
-  <TOTFATALITIES>429</TOTFATALITIES>
+  <TOTACCIDENTS>410</TOTACCIDENTS>
+  <TOTFATALITIES>432</TOTFATALITIES>
   <TOTINJURIES>70</TOTINJURIES>
 </FAUQSTATS>
