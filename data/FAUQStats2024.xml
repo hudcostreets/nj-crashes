@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Sep 06 10:00:04 EDT 2024</RUNDATE>
+  <RUNDATE>Sat Sep 07 10:00:03 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1743,7 +1743,7 @@
     <MUNICIPALITY MCODE="0306" MNAME="Burlington Twsp">
       <ACCIDENT ACCID="13275" DATE="06/18/2024" TIME="0814">
         <HIGHWAY>541</HIGHWAY>
-        <LOCATION>County 541</LOCATION>
+        <LOCATION>County 541 MP 22.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2596,7 +2596,7 @@
     <MUNICIPALITY MCODE="0313" MNAME="Evesham Twsp">
       <ACCIDENT ACCID="13193" DATE="05/20/2024" TIME="2216">
         <HIGHWAY>618</HIGHWAY>
-        <LOCATION>County 618</LOCATION>
+        <LOCATION>County 618 MP .6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
