@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Sep 08 10:00:03 EDT 2024</RUNDATE>
+  <RUNDATE>Mon Sep 09 10:00:05 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,11 +49,63 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0805" MNAME="Franklin Twsp">
+      <ACCIDENT ACCID="13421" DATE="09/08/2024" TIME="1553">
+        <HIGHWAY>55</HIGHWAY>
+        <LOCATION>State Highway 55 MP 39.2</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="15" CNAME="Ocean">
+    <MUNICIPALITY MCODE="1507" MNAME="Toms River">
+      <ACCIDENT ACCID="13420" DATE="09/08/2024" TIME="1300">
+        <HIGHWAY>444</HIGHWAY>
+        <LOCATION>Garden State Parkway MP 81.7</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="19" CNAME="Sussex">
+    <MUNICIPALITY MCODE="1914" MNAME="Montague Twsp">
+      <ACCIDENT ACCID="13419" DATE="09/08/2024" TIME="1029">
+        <HIGHWAY>650</HIGHWAY>
+        <LOCATION>County 650</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1507" MNAME="Toms River">
       <ACCIDENT ACCID="13416" DATE="09/07/2024" TIME="2139">
-        <STREET>Route 37 W and Northampton Blvd</STREET>
-        <LOCATION>Route 37 W and Northampton Blvd</LOCATION>
+        <HIGHWAY>37</HIGHWAY>
+        <LOCATION>State Highway 37</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
+      <ACCIDENT ACCID="13417" DATE="09/06/2024" TIME="2119">
+        <HIGHWAY>33</HIGHWAY>
+        <LOCATION>State Highway 33 MP 2.84</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -408,19 +460,6 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="21" CNAME="Warren">
-    <MUNICIPALITY MCODE="2114" MNAME="Liberty Twsp">
-      <ACCIDENT ACCID="13377" DATE="08/22/2024" TIME="0800">
-        <STREET>Lakeside Drive</STREET>
-        <LOCATION>Lakeside Drive</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -2113,19 +2152,6 @@
       <ACCIDENT ACCID="13231" DATE="06/07/2024" TIME="0130">
         <HIGHWAY>30</HIGHWAY>
         <LOCATION>State Highway 30</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="20" CNAME="Union">
-    <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
-      <ACCIDENT ACCID="13256" DATE="06/06/2024" TIME="2314">
-        <HIGHWAY>27</HIGHWAY>
-        <LOCATION>State Highway 27 MP 34.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5574,7 +5600,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>421</TOTACCIDENTS>
-  <TOTFATALITIES>444</TOTFATALITIES>
+  <TOTACCIDENTS>423</TOTACCIDENTS>
+  <TOTFATALITIES>446</TOTFATALITIES>
   <TOTINJURIES>70</TOTINJURIES>
 </FAUQSTATS>
