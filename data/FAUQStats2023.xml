@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Sep 12 10:00:06 EDT 2024</RUNDATE>
+  <RUNDATE>Fri Sep 13 10:00:06 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2091,8 +2091,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0709" MNAME="Irvington Town">
       <ACCIDENT ACCID="12733" DATE="10/09/2023" TIME="2124">
-        <STREET>Eastern Parkway</STREET>
-        <LOCATION>Eastern Parkway</LOCATION>
+        <HIGHWAY>444</HIGHWAY>
+        <LOCATION>Garden State Parkway MP 145.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3760,7 +3760,7 @@
     <MUNICIPALITY MCODE="1518" MNAME="Manchester Twsp">
       <ACCIDENT ACCID="12599" DATE="08/03/2023" TIME="2204">
         <HIGHWAY>37</HIGHWAY>
-        <LOCATION>State Highway 37 MP 2.01</LOCATION>
+        <LOCATION>State Highway 37 MP 2.02</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4944,8 +4944,8 @@
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1514" MNAME="Lakewood Twsp">
       <ACCIDENT ACCID="12542" DATE="06/13/2023" TIME="1055">
-        <HIGHWAY>54</HIGHWAY>
-        <LOCATION>County 54 MP .84</LOCATION>
+        <STREET>Shorrock St</STREET>
+        <LOCATION>Shorrock St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6712,7 +6712,7 @@
     <MUNICIPALITY MCODE="1111" MNAME="Trenton">
       <ACCIDENT ACCID="12371" DATE="03/05/2023" TIME="2120">
         <HIGHWAY>29</HIGHWAY>
-        <LOCATION>State Highway 29</LOCATION>
+        <LOCATION>State Highway 29 MP 3.1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
