@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Sep 13 10:00:06 EDT 2024</RUNDATE>
+  <RUNDATE>Sat Sep 14 10:00:08 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -3661,7 +3661,7 @@
   </COUNTY>
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1202" MNAME="Cranbury Twsp">
-      <ACCIDENT ACCID="12608" DATE="08/09/2023" TIME="0830">
+      <ACCIDENT ACCID="12608" DATE="08/09/2023" TIME="0831">
         <HIGHWAY>95</HIGHWAY>
         <LOCATION>New Jersey Turnpike MP 70.8</LOCATION>
         <FATALITIES>1</FATALITIES>
