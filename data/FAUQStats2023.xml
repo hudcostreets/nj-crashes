@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Sep 14 10:00:08 EDT 2024</RUNDATE>
+  <RUNDATE>Sun Sep 15 10:00:29 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1544,9 +1544,9 @@
   </COUNTY>
   <COUNTY CCODE="19" CNAME="Sussex">
     <MUNICIPALITY MCODE="1924" MNAME="Wantage Twsp">
-      <ACCIDENT ACCID="12795" DATE="11/03/2023" TIME="1445">
-        <HIGHWAY>656</HIGHWAY>
-        <LOCATION>County 656 MP 5.6</LOCATION>
+      <ACCIDENT ACCID="12795" DATE="11/03/2023" TIME="1444">
+        <HIGHWAY>565</HIGHWAY>
+        <LOCATION>County 565 MP 5.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4228,8 +4228,8 @@
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
         <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
