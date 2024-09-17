@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Sep 16 10:00:06 EDT 2024</RUNDATE>
+  <RUNDATE>Tue Sep 17 10:00:06 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -319,7 +319,7 @@
   </COUNTY>
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0408" MNAME="Camden City">
-      <ACCIDENT ACCID="12906" DATE="12/22/2023" TIME="0545">
+      <ACCIDENT ACCID="12906" DATE="12/22/2023" TIME="0543">
         <HIGHWAY>130</HIGHWAY>
         <LOCATION>State Highway 130 MP 32.1</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -617,8 +617,8 @@
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1111" MNAME="Trenton">
       <ACCIDENT ACCID="12887" DATE="12/08/2023" TIME="2015">
-        <STREET>S. Clinton Ave</STREET>
-        <LOCATION>S. Clinton Ave</LOCATION>
+        <STREET>South Clinton Ave</STREET>
+        <LOCATION>South Clinton Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2416,12 +2416,13 @@
     <MUNICIPALITY MCODE="1507" MNAME="Toms River">
       <ACCIDENT ACCID="12710" DATE="09/27/2023" TIME="0814">
         <HIGHWAY>37</HIGHWAY>
-        <LOCATION>State Highway 37</LOCATION>
+        <LOCATION>State Highway 37 MP 9.14</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>1</FATAL_B>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2676,7 +2677,7 @@
     <MUNICIPALITY MCODE="1111" MNAME="Trenton">
       <ACCIDENT ACCID="12760" DATE="09/17/2023" TIME="2035">
         <HIGHWAY>129</HIGHWAY>
-        <LOCATION>State Highway 129</LOCATION>
+        <LOCATION>State Highway 129 MP 1.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2822,8 +2823,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12779" DATE="09/08/2023" TIME="2222">
-        <STREET>6th Ave</STREET>
-        <LOCATION>6th Ave</LOCATION>
+        <STREET>6th Ave W</STREET>
+        <LOCATION>6th Ave W</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6551,6 +6552,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7530,7 +7532,7 @@
     <MUNICIPALITY MCODE="0706" MNAME="East Orange City">
       <ACCIDENT ACCID="12285" DATE="01/20/2023" TIME="2050">
         <HIGHWAY>508</HIGHWAY>
-        <LOCATION>County 508</LOCATION>
+        <LOCATION>County 508 MP 8.81</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>

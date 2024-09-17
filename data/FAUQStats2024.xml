@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Sep 16 10:00:03 EDT 2024</RUNDATE>
+  <RUNDATE>Tue Sep 17 10:00:05 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,11 +49,87 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="16" CNAME="Passaic">
+    <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
+      <ACCIDENT ACCID="13437" DATE="09/16/2024" TIME="0004">
+        <STREET>Broadway</STREET>
+        <LOCATION>Broadway</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="18" CNAME="Somerset">
+    <MUNICIPALITY MCODE="1811" MNAME="Manville Boro">
+      <ACCIDENT ACCID="13441" DATE="09/15/2024" TIME="1733">
+        <HIGHWAY>533</HIGHWAY>
+        <LOCATION>County 533</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0334" MNAME="Southampton Twsp">
+      <ACCIDENT ACCID="13440" DATE="09/15/2024" TIME="1232">
+        <HIGHWAY>206</HIGHWAY>
+        <LOCATION>State Highway 206 MP 23.3</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
+      <ACCIDENT ACCID="13439" DATE="09/14/2024" TIME="2355">
+        <HIGHWAY>444</HIGHWAY>
+        <LOCATION>Garden State Parkway MP 131.1</LOCATION>
+        <FATALITIES>3</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>2</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+    <MUNICIPALITY MCODE="1214" MNAME="New Brunswick City">
+      <ACCIDENT ACCID="13436" DATE="09/14/2024" TIME="2007">
+        <HIGHWAY>27</HIGHWAY>
+        <LOCATION>State Highway 27</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0811" MNAME="Monroe Twsp">
       <ACCIDENT ACCID="13435" DATE="09/14/2024" TIME="1848">
-        <STREET>North Black Horse Pike</STREET>
-        <LOCATION>North Black Horse Pike</LOCATION>
+        <HIGHWAY>42</HIGHWAY>
+        <LOCATION>State Highway 42</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1112" MNAME="Robbinsville Twsp">
+      <ACCIDENT ACCID="13438" DATE="09/14/2024" TIME="1549">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike MP 61.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -442,7 +518,7 @@
     <MUNICIPALITY MCODE="0614" MNAME="Vineland City">
       <ACCIDENT ACCID="13434" DATE="08/31/2024" TIME="1706">
         <HIGHWAY>47</HIGHWAY>
-        <LOCATION>47</LOCATION>
+        <LOCATION>State Highway 47</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5785,7 +5861,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>437</TOTACCIDENTS>
-  <TOTFATALITIES>461</TOTFATALITIES>
+  <TOTACCIDENTS>443</TOTACCIDENTS>
+  <TOTFATALITIES>469</TOTFATALITIES>
   <TOTINJURIES>72</TOTINJURIES>
 </FAUQSTATS>
