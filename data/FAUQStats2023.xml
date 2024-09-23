@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Sep 22 10:00:07 EDT 2024</RUNDATE>
+  <RUNDATE>Mon Sep 23 10:00:04 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1338,6 +1338,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1609,6 +1610,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2433,8 +2435,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12780" DATE="09/26/2023" TIME="0103">
-        <STREET>Lake St</STREET>
-        <LOCATION>Lake St</LOCATION>
+        <STREET>Lake Street</STREET>
+        <LOCATION>Lake Street</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7944,5 +7946,5 @@
   </COUNTY>
   <TOTACCIDENTS>574</TOTACCIDENTS>
   <TOTFATALITIES>606</TOTFATALITIES>
-  <TOTINJURIES>340</TOTINJURIES>
+  <TOTINJURIES>341</TOTINJURIES>
 </FAUQSTATS>
