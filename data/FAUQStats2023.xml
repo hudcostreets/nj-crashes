@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Oct 03 10:00:05 EDT 2024</RUNDATE>
+  <RUNDATE>Fri Oct 04 10:00:04 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -213,12 +213,13 @@
     <MUNICIPALITY MCODE="2016" MNAME="Scotch Plains Twsp">
       <ACCIDENT ACCID="12938" DATE="12/25/2023" TIME="0605">
         <HIGHWAY>22</HIGHWAY>
-        <LOCATION>State Highway 22 MP 48.41</LOCATION>
+        <LOCATION>State Highway 22 MP 48.42</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -226,7 +227,7 @@
     <MUNICIPALITY MCODE="1221" MNAME="South Brunswick Tws">
       <ACCIDENT ACCID="12896" DATE="12/24/2023" TIME="0053">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1 MP 17.47</LOCATION>
+        <LOCATION>State Highway 1 MP 17.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -260,6 +261,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -295,7 +297,7 @@
     <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
       <ACCIDENT ACCID="12894" DATE="12/22/2023" TIME="0647">
         <HIGHWAY>35</HIGHWAY>
-        <LOCATION>State Highway 35 MP 51</LOCATION>
+        <LOCATION>State Highway 35 MP 51.06</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -351,12 +353,13 @@
     <MUNICIPALITY MCODE="2018" MNAME="Summit City">
       <ACCIDENT ACCID="12890" DATE="12/20/2023" TIME="0620">
         <HIGHWAY>649</HIGHWAY>
-        <LOCATION>County 649 MP 1.4</LOCATION>
+        <LOCATION>County 649 MP 1.41</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -749,7 +752,7 @@
     <MUNICIPALITY MCODE="1509" MNAME="Harvey Cedars Boro">
       <ACCIDENT ACCID="12857" DATE="12/01/2023" TIME="1657">
         <HIGHWAY>607</HIGHWAY>
-        <LOCATION>County 607 MP 13.92</LOCATION>
+        <LOCATION>County 607 MP 13.91</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1274,8 +1277,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
       <ACCIDENT ACCID="12808" DATE="11/13/2023" TIME="1704">
-        <STREET>Ernston Road</STREET>
-        <LOCATION>Ernston Road</LOCATION>
+        <STREET>Ernston Rd</STREET>
+        <LOCATION>Ernston Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1309,6 +1312,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1399,8 +1403,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2017" MNAME="Springfield Twsp">
       <ACCIDENT ACCID="12839" DATE="11/09/2023" TIME="1708">
-        <HIGHWAY>124</HIGHWAY>
-        <LOCATION>State Highway 124 MP 11.2</LOCATION>
+        <STREET>205 SH 124</STREET>
+        <LOCATION>205 SH 124</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1439,8 +1443,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1337" MNAME="Ocean Twsp">
       <ACCIDENT ACCID="12805" DATE="11/09/2023" TIME="0226">
-        <STREET>Deal Road</STREET>
-        <LOCATION>Deal Road</LOCATION>
+        <STREET>Deal Rd</STREET>
+        <LOCATION>Deal Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1481,8 +1485,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="12862" DATE="11/07/2023" TIME="0053">
-        <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1 MP 45.68</LOCATION>
+        <STREET>Spring St</STREET>
+        <LOCATION>Spring St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4846,8 +4850,8 @@
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>1</FATAL_B>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -7978,5 +7982,5 @@
   </COUNTY>
   <TOTACCIDENTS>574</TOTACCIDENTS>
   <TOTFATALITIES>606</TOTFATALITIES>
-  <TOTINJURIES>360</TOTINJURIES>
+  <TOTINJURIES>362</TOTINJURIES>
 </FAUQSTATS>
