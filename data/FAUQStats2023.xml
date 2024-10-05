@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Oct 04 10:00:04 EDT 2024</RUNDATE>
+  <RUNDATE>Sat Oct 05 10:00:06 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -3772,8 +3772,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12602" DATE="08/04/2023" TIME="2239">
-        <STREET>MLK Blvd</STREET>
-        <LOCATION>MLK Blvd</LOCATION>
+        <STREET>Dr. Martin Luther King Jr Blvd</STREET>
+        <LOCATION>Dr. Martin Luther King Jr Blvd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
