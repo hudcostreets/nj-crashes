@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Oct 07 10:00:17 EDT 2024</RUNDATE>
+  <RUNDATE>Tue Oct 08 10:00:04 EDT 2024</RUNDATE>
   <STATSYEAR>2023</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -877,8 +877,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="12935" DATE="11/27/2023" TIME="1714">
-        <STREET>Parker St</STREET>
-        <LOCATION>Parker St</LOCATION>
+        <STREET>Parker Street</STREET>
+        <LOCATION>Parker Street</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2222,6 +2222,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2780,7 +2781,7 @@
     <MUNICIPALITY MCODE="0411" MNAME="Collingswood Boro">
       <ACCIDENT ACCID="12689" DATE="09/14/2023" TIME="0939">
         <HIGHWAY>30</HIGHWAY>
-        <LOCATION>State/Interstate Authority 30 MP 4.88</LOCATION>
+        <LOCATION>State Highway 30 MP 4.88</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3779,6 +3780,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4850,8 +4852,8 @@
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
         <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -7982,5 +7984,5 @@
   </COUNTY>
   <TOTACCIDENTS>574</TOTACCIDENTS>
   <TOTFATALITIES>606</TOTFATALITIES>
-  <TOTINJURIES>362</TOTINJURIES>
+  <TOTINJURIES>364</TOTINJURIES>
 </FAUQSTATS>
