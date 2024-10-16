@@ -1,0 +1,5 @@
+outs:
+- md5: f6c94ba9efb6ee7d63103b80e968baa5
+  size: 1135935488
+  hash: md5
+  path: vehicles.db
