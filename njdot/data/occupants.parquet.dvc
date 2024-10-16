@@ -1,5 +1,5 @@
 outs:
-- md5: a0ce2ec0d982c4454d5cd8966b241357
-  size: 209827233
+- md5: 896cd7a425e147d40c9b5e1cf592a1a3
+  size: 206799159
   hash: md5
   path: occupants.parquet

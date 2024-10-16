@@ -27,11 +27,11 @@ def compute():
 @click.option('-f', '--force-recompute', is_flag=True, help="Force recompute, don't read from existing Parquet")
 @njobs_opt
 @click.option('-n', '--dry-run', is_flag=True, help="Don't write Parquet or DB, or upload to S3")
-@click.option('-p', '--pqt-path', help=f'Write Parquet to this path (default: {DOT_DATA}/<tbl>.parquet`')
+@click.option('-p', '--pqt-path', 'pqt_path0', help=f'Write Parquet to this path (default: {DOT_DATA}/<tbl>.parquet`')
 @tbls_opt
-def compute_pqt(force_recompute, pqt_path, n_jobs, dry_run, tbls: list[Tbl]):
+def compute_pqt(force_recompute, pqt_path0, n_jobs, dry_run, tbls: list[Tbl]):
     for tbl in tbls:
-        pqt_path = pqt_path or f'{DOT_DATA}/{tbl}.parquet'
+        pqt_path = pqt_path0 or f'{DOT_DATA}/{tbl}.parquet'
         if exists(pqt_path):
             if force_recompute:
                 err(f"{pqt_path} exists; overwriting")
@@ -66,17 +66,17 @@ def write_db(
         no_s3: bool = False,
 ):
     db_path = db_path or f'{WWW_DOT}/{tbl}.db'
-    write_db = True
+    do_write_db = True
     if exists(db_path):
         if force_recompute:
             err(f"{db_path} exists; overwriting")
         else:
             err(f"{db_path} exists; use -f/--force-recompute to overwrite")
-            write_db = False
+            do_write_db = False
     else:
         err(f"{db_path} doesn't exist; computing")
 
-    if write_db and not dry_run:
+    if do_write_db and not dry_run:
         pqt_dir = pqt_dir or DOT_DATA
         pqt_path = join(pqt_dir, f'{tbl}.parquet')
         df = pd.read_parquet(pqt_path)

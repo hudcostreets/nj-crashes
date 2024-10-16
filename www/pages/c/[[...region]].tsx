@@ -26,7 +26,8 @@ import { Home } from "@mui/icons-material";
 import { getCrashes, getTotals } from "@/server/njsp/sql";
 
 export const DOTStart = "2001-01-01"
-export const DOTEnd = "2021-12-31"
+export const EndYear = 2022
+export const DOTEnd = `${EndYear}-12-31`
 
 export function H2({ id, className = css.idTarget, children }: { id: string, className?: string, children: ReactNode }) {
     return <h2>
@@ -186,7 +187,7 @@ export default function RegionPage({ urls, barProps, cp, Counties, crashes, tota
                 {
                     njdotCrashes && <div className={css.section}>
                         <H2 id={"dot"}>Fatal / Injury crash details</H2>
-                        <div className={css.sectionSubtitle}>2001-2021</div>
+                        <div className={css.sectionSubtitle}>2001-{EndYear}</div>
                         <ResultTable
                             result={njdotCrashes}
                             pagination={njdotPagination}
@@ -197,7 +198,7 @@ export default function RegionPage({ urls, barProps, cp, Counties, crashes, tota
                 {
                     yearStatsResult && <div className={css.section}>
                         <H2 id={"stats"}>Annual stats</H2>
-                        <div className={css.sectionSubtitle}>2001-2021</div>
+                        <div className={css.sectionSubtitle}>2001-{EndYear}</div>
                         <ResultTable
                             className={css.withTotals}
                             result={map((ysds: YearStatsDicts) => yearStatsRows({ ysds }))(yearStatsResult)}

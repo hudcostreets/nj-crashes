@@ -16,7 +16,7 @@ import { loadProps } from "@/server/njsp/plot";
 import { getUrls, NjdotRawData, NjspFatalAcc, Urls } from "@/src/urls";
 import Footer from '@/src/footer';
 import { ResultTable } from "@/src/result-table";
-import { H2 } from "@/pages/c/[[...region]]";
+import { EndYear, H2 } from "@/pages/c/[[...region]]";
 import { usePaginationControls, useResultPagination } from "@/src/pagination";
 import { Total, useNjspCrashesTotal, useNjspCrashRows } from "@/src/use-njsp-crashes";
 import singleton from "@rdub/base/singleton";
@@ -108,7 +108,7 @@ const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, crashes, totals, }: Props)
                     <A href={`#per-year`}>The first {menus[0].sections.length} plots below</A> come from <A title={"NJ State Police fatal crash data"} href={NjspFatalAcc}>NJ State Police fatal crash data</A> (2008-present). {"It's generally current to the previous day."}
                 </p>
                 <p>
-                    <A href={"#njdot"}>Below that</A> are plots of <A title={"NJ DOT raw crash data"} href={NjdotRawData}>NJ DOT raw crash data</A>, which includes 6MM property-damage, injury, and fatal crashes from 2001-2021. {`It's a richer dataset, but less up to date.`}
+                    <A href={"#njdot"}>Below that</A> are plots of <A title={"NJ DOT raw crash data"} href={NjdotRawData}>NJ DOT raw crash data</A>, which includes 6MM property-damage, injury, and fatal crashes from 2001-{EndYear}. {`It's a richer dataset, but less up to date.`}
                 </p>
                 <p>
                     <span className={css.bold}>Work in progress</span> map of NJDOT data: 5 years (2017-2021) of fatal
@@ -158,7 +158,7 @@ const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, crashes, totals, }: Props)
                                             raw crash data</A>, including property-damage, injury, and fatal crashes, going
                                             back to 2001 (≈6MM records).
                                         </p>
-                                        <p>{"The data currently ends in 2021, after a drop in all types of crashes due to COVID, and mid-way through a spike in fatal crashes in 2021-2022 (based on the NJSP data above). 2022 data should land in early 2024."}</p>
+                                        <p>{`Data is currently public through ${EndYear}, showing all crash types rebounding from COVID lows, and a particular spike in fatalities. 2023 data is expected in Fall 2025.`}</p>
                                     </>
                                 }
                                 <div key={id} className={css["plot-container"]}>

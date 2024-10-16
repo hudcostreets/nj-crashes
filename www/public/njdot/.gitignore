@@ -1,3 +1,7 @@
 /cmym.db
 /cmymc.db
 /crashes.db
+/drivers.db
+/occupants.db
+/pedestrians.db
+/vehicles.db

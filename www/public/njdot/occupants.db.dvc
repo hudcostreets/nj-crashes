@@ -1,0 +1,5 @@
+outs:
+- md5: d10b8f277f9285db7672593eaf490f99
+  size: 918421504
+  hash: md5
+  path: occupants.db

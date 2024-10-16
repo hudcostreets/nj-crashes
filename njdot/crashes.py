@@ -71,6 +71,7 @@ renames = {
     'First Harmful Event': 'first_harmful_event',
 }
 astype = {
+    'dt': '<M8[us]',
     'tk': 'int8',
     'ti': 'int8',
     'pk': 'int8',
