@@ -107,9 +107,9 @@ There is a marked decrease in "injury" and "property damage" crashes since the o
 
 ### Example: Download + Clean Data <a id="example"></a>
 ```bash
-./rawdata.py zip -c NewJersey  # download statewide-aggregated `.zip`s for [2001,2020] x {Accidents,Drivers,Occupants,Pedestrians,Vehicles}
-./rawdata.py txt -c NewJersey  # Extract each `.zip` (to a single `.txt`)
-./rawdata.py pqt -c NewJersey  # Clean (parse dates, assign some dtypes) + convert to Parquet
+./rawdata.py zip -r NewJersey  # download statewide-aggregated `.zip`s for [2001,2020] x {Accidents,Drivers,Occupants,Pedestrians,Vehicles}
+./rawdata.py txt -r NewJersey  # Extract each `.zip` (to a single `.txt`)
+./rawdata.py pqt -r NewJersey  # Clean (parse dates, assign some dtypes) + convert to Parquet
 ```
 
 ### Notebooks <a id="notebooks"></a>

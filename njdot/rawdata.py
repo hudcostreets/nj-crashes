@@ -18,7 +18,7 @@ from tabula import read_pdf
 from utz import err
 from zipfile import ZipFile
 
-from nj_crashes.paths import DATA_DIR
+from njdot.paths import DOT_DATA
 from njdot.data import COUNTIES, YEARS, FIELDS_DIR, END_YEAR, START_YEAR, REGIONS
 from njdot.opts import parse_opt
 from njdot.tbls import parse_type, TYPE_TO_FIELDS, types_opt
@@ -27,7 +27,7 @@ from njdot.tbls import parse_type, TYPE_TO_FIELDS, types_opt
 # The download action on that page doesn't seem to work, but we can access the data directly at URLs like
 # "https://www.state.nj.us/transportation/refdata/accident/2020/Burlington2020Accidents.zip".
 
-DEFAULT_CACHE_PATH = f'{DATA_DIR}/.cache.pqt'
+DEFAULT_CACHE_PATH = f'{DOT_DATA}/.cache.pqt'
 CACHE_HEADERS = [ 'Date', 'Content-Length', 'Content-type', 'Last-modified', 'Etag', ]
 
 
@@ -178,7 +178,7 @@ def zip(regions, cache_path, force, sleep, types, years):
                     name = f'{year}/{region}{year}{typ}.zip'
                     url_name = f'{year}/{url_county}{year}{typ}.zip'
                     url = f'https://www.state.nj.us/transportation/refdata/accident/{url_name}'
-                    out_path = f'{DATA_DIR}/{name}'
+                    out_path = f'{DOT_DATA}/{name}'
                     if exists(out_path):
                         if force:
                             print(f'{url}: force-checking HEAD for extant zip {name}')
@@ -252,7 +252,7 @@ def txt(regions, types, years, overwrite, dry_run):
     for region in regions:
         for year in years:
             for typ in types:
-                parent_dir = f'{DATA_DIR}/{year}'
+                parent_dir = f'{DOT_DATA}/{year}'
                 # table = TABLE_TYPES_MAP[typ]
                 table = typ
                 name = f'{parent_dir}/{region}{year}{table}'
@@ -441,7 +441,7 @@ def pqt(regions, types, years, overwrite, dry_run):
         v2017 = year >= 2017
         for region in regions:
             for typ in types:
-                parent_dir = f'{DATA_DIR}/{year}'
+                parent_dir = f'{DOT_DATA}/{year}'
                 table = TYPE_TO_FIELDS[typ]
                 name = f'{parent_dir}/{region}{year}{typ}'
                 txt_path = f'{name}.txt'
@@ -478,7 +478,7 @@ def pqt(regions, types, years, overwrite, dry_run):
                             'SRI (Std Rte Identifier)': 'SRI (Standard Route Identifier)',
                             'Directn From Cross Street': 'Direction From Cross Street',
                         })
-                        if year == '2021':
+                        if year >= 2021:
                             df['County Name'] = df['County Name'].str.upper().str.replace('CAPEMAY', 'CAPE MAY')
                 elif typ == 'Vehicles':
                     df = load(txt_path, fields, bools=[ 'Hit & Run Driver Flag', ])
@@ -487,7 +487,7 @@ def pqt(regions, types, years, overwrite, dry_run):
                             'Pre- Crash Action': 'Pre-Crash Action',
                         })
                 elif typ == 'Pedestrians':
-                    if year == 2021:
+                    if year >= 2021:
                         new_fields = get_2021_dob_fix_fields(fields, 'Date of Birth')
                     else:
                         new_fields = fields
@@ -504,7 +504,7 @@ def pqt(regions, types, years, overwrite, dry_run):
                             'Pre- Crash Action': 'Pre-Crash Action',
                         })
                 elif typ == 'Drivers':
-                    if year == 2021:
+                    if year >= 2021:
                         new_fields = get_2021_dob_fix_fields(fields, 'Driver DOB')
                     else:
                         new_fields = fields
@@ -533,7 +533,7 @@ def pqt(regions, types, years, overwrite, dry_run):
 def check_nj_agg(years):
     years = map(int, years.split(',')) if years else YEARS
     for year in years:
-        nj = pd.read_parquet(f'{DATA_DIR}/{year}/NewJersey{year}Accidents.pqt')
+        nj = pd.read_parquet(f'{DOT_DATA}/{year}/NewJersey{year}Accidents.pqt')
         cs = pd.concat([
             pd.read_parquet(f'{year}/{county}{year}Accidents.pqt')
             for county in COUNTIES
