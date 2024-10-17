@@ -115,6 +115,14 @@ There is a marked decrease in "injury" and "property damage" crashes since the o
 ### Notebooks <a id="notebooks"></a>
 - [crash-plots.ipynb](crash-plots.ipynb): load all crashes, generate plots above
 
+### SQLite DBs
+```bash
+njdot compute pqt -f
+njdot compute db -f
+```
+
+[cmym.ipynb](cmym.ipynb): generate [cmymc.db](../www/public/njdot/cmymc.db.dvc) containing several {**c**ounty, **m**uni, **y**ear, **m**onth} aggregation tables.
+
 ### Caveats / TODOs <a id="todos"></a>
 
 The fatal crash stats here also seem to differ from NJSP's data (see [the root of this repository](..)) by ≈10%.
