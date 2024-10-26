@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Oct 25 10:00:02 EDT 2024</RUNDATE>
+  <RUNDATE>Sat Oct 26 10:00:03 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,43 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+    <MUNICIPALITY MCODE="0113" MNAME="Hammonton Town">
+      <ACCIDENT ACCID="13516" DATE="10/25/2024" TIME="1921">
+        <HIGHWAY>30</HIGHWAY>
+        <LOCATION>State Highway 30</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+    <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
+      <ACCIDENT ACCID="13513" DATE="10/25/2024" TIME="1200">
+        <STREET>Leipzig Ave</STREET>
+        <LOCATION>Leipzig Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
+      <ACCIDENT ACCID="13514" DATE="10/25/2024" TIME="0307">
+        <HIGHWAY>9</HIGHWAY>
+        <LOCATION>State Highway 9</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
@@ -123,6 +160,19 @@
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="06" CNAME="Cumberland">
+    <MUNICIPALITY MCODE="0610" MNAME="Millville City">
+      <ACCIDENT ACCID="13515" DATE="10/21/2024" TIME="2311">
+        <STREET>Glenside Rd</STREET>
+        <LOCATION>Glenside Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -6693,7 +6743,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>506</TOTACCIDENTS>
-  <TOTFATALITIES>534</TOTFATALITIES>
+  <TOTACCIDENTS>510</TOTACCIDENTS>
+  <TOTFATALITIES>538</TOTFATALITIES>
   <TOTINJURIES>86</TOTINJURIES>
 </FAUQSTATS>
