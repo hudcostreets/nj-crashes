@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Oct 27 10:00:05 EDT 2024</RUNDATE>
+  <RUNDATE>Mon Oct 28 10:00:03 EDT 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,19 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0714" MNAME="Newark City">
+      <ACCIDENT ACCID="13520" DATE="10/27/2024" TIME="0330">
+        <STREET>Weequahic Ave</STREET>
+        <LOCATION>Weequahic Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1336" MNAME="Tinton Falls Boro">
@@ -103,7 +116,7 @@
     <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="13512" DATE="10/25/2024" TIME="0016">
         <HIGHWAY>446</HIGHWAY>
-        <LOCATION>Atlantic City Expressway</LOCATION>
+        <LOCATION>Atlantic City Expressway MP 17.64</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -212,6 +225,19 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0804" MNAME="Elk Twsp">
+      <ACCIDENT ACCID="13519" DATE="10/21/2024" TIME="1610">
+        <HIGHWAY>538</HIGHWAY>
+        <LOCATION>County 538</LOCATION>
+        <FATALITIES>2</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -3584,13 +3610,14 @@
   <COUNTY CCODE="19" CNAME="Sussex">
     <MUNICIPALITY MCODE="1902" MNAME="Andover Twsp">
       <ACCIDENT ACCID="13220" DATE="05/31/2024" TIME="2042">
-        <STREET>Stickles Pond Rd</STREET>
-        <LOCATION>Stickles Pond Rd</LOCATION>
+        <STREET>Yates Avenue</STREET>
+        <LOCATION>Yates Avenue</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4586,14 +4613,15 @@
   </COUNTY>
   <COUNTY CCODE="17" CNAME="Salem">
     <MUNICIPALITY MCODE="1705" MNAME="Pennsville Twsp">
-      <ACCIDENT ACCID="13116" DATE="04/13/2024" TIME="0752">
-        <STREET>Industrial Park Rd</STREET>
-        <LOCATION>Industrial Park Rd</LOCATION>
+      <ACCIDENT ACCID="13116" DATE="04/13/2024" TIME="0904">
+        <HIGHWAY>670</HIGHWAY>
+        <LOCATION>County 670 MP 0</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6769,7 +6797,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>512</TOTACCIDENTS>
-  <TOTFATALITIES>540</TOTFATALITIES>
+  <TOTACCIDENTS>514</TOTACCIDENTS>
+  <TOTFATALITIES>543</TOTFATALITIES>
   <TOTINJURIES>86</TOTINJURIES>
 </FAUQSTATS>
