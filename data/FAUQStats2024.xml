@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Nov 13 10:00:05 EST 2024</RUNDATE>
+  <RUNDATE>Thu Nov 14 10:00:03 EST 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -590,17 +590,6 @@
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
-    <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
-      <ACCIDENT ACCID="13513" DATE="10/25/2024" TIME="1200">
-        <STREET>Leipzig Ave</STREET>
-        <LOCATION>Leipzig Ave</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
@@ -633,6 +622,15 @@
       <ACCIDENT ACCID="13512" DATE="10/25/2024" TIME="0016">
         <HIGHWAY>446</HIGHWAY>
         <LOCATION>Atlantic City Expressway MP 17.64</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+      <ACCIDENT ACCID="13513" DATE="10/24/2024" TIME="2035">
+        <STREET>Leipzig Ave</STREET>
+        <LOCATION>Leipzig Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6538,6 +6536,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>3</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7369,5 +7368,5 @@
   </COUNTY>
   <TOTACCIDENTS>557</TOTACCIDENTS>
   <TOTFATALITIES>588</TOTFATALITIES>
-  <TOTINJURIES>95</TOTINJURIES>
+  <TOTINJURIES>98</TOTINJURIES>
 </FAUQSTATS>
