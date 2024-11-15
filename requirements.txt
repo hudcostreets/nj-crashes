@@ -8,7 +8,7 @@ fastparquet
 geopandas
 GitPython
 humanize
-kaleido
+kaleido==0.2.1
 ipython
 jupyter
 jupyter-client==7.4.9
