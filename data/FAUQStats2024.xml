@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Nov 17 10:00:04 EST 2024</RUNDATE>
+  <RUNDATE>Mon Nov 18 10:00:03 EST 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,58 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0436" MNAME="Winslow Twsp">
+      <ACCIDENT ACCID="13579" DATE="11/17/2024" TIME="1718">
+        <HIGHWAY>536</HIGHWAY>
+        <LOCATION>536 (Spur (County Routes Only))</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="19" CNAME="Sussex">
+    <MUNICIPALITY MCODE="1924" MNAME="Wantage Twsp">
+      <ACCIDENT ACCID="13577" DATE="11/17/2024" TIME="1402">
+        <HIGHWAY>284</HIGHWAY>
+        <LOCATION>State Highway 284 MP 7</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0333" MNAME="Shamong Twsp">
+      <ACCIDENT ACCID="13576" DATE="11/16/2024" TIME="1030">
+        <STREET>Tuckerton Rd</STREET>
+        <LOCATION>Tuckerton Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0706" MNAME="East Orange City">
+      <ACCIDENT ACCID="13575" DATE="11/16/2024" TIME="0523">
+        <STREET>Ampere Plz</STREET>
+        <LOCATION>Ampere Plz</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0211" MNAME="Elmwood Park Boro">
@@ -110,6 +162,19 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2016" MNAME="Scotch Plains Twsp">
+      <ACCIDENT ACCID="13578" DATE="11/11/2024" TIME="1930">
+        <STREET>Sky Top Dr</STREET>
+        <LOCATION>Sky Top Dr</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -7431,7 +7496,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>562</TOTACCIDENTS>
-  <TOTFATALITIES>593</TOTFATALITIES>
+  <TOTACCIDENTS>567</TOTACCIDENTS>
+  <TOTFATALITIES>598</TOTFATALITIES>
   <TOTINJURIES>98</TOTINJURIES>
 </FAUQSTATS>
