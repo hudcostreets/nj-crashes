@@ -36,6 +36,7 @@
         "@vanilla-extract/css": "^1.14.0",
         "@vanilla-extract/next-plugin": "^2",
         "fp-ts": "^2.16.2",
+        "leaflet": "^1.9.4",
         "leaflet-edgebuffer": "^1",
         "mapbox-gl": "^3.0.1",
         "maplibre-gl": "^3.6.2",

@@ -54,7 +54,7 @@ export const plotSpecs: PlotSpec[] = [
     {
         id: "vs-homicides", name: "crash_homicide_cmp", title: "NJ Traffic Deaths vs. Homicides", menuName: "vs. Homicides", dropdownSection: "NJSP",
         children: <>
-            <p>Traffic crashes kill 1.5-2x as many people as homicides in NJ.</p>
+            <p>In 2022, car crashes killed 2.4x as many people as homicides, in NJ.</p>
             <p>Homicide data comes from <A href={"https://nj.gov/njsp/ucr/uniform-crime-reports.shtml"}>NJ State Police</A> and <A href={"https://www.disastercenter.com/crime/njcrimn.htm"}>Disaster Center</A>.</p>
         </>
     },

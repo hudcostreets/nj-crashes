@@ -80,6 +80,9 @@ importers:
       fp-ts:
         specifier: ^2.16.2
         version: 2.16.2
+      leaflet:
+        specifier: ^1.9.4
+        version: 1.9.4
       leaflet-edgebuffer:
         specifier: ^1
         version: 1.0.6
@@ -1240,6 +1243,7 @@ packages:
 
   acorn-import-assertions@1.9.0:
     resolution: {integrity: sha512-cmMwop9x+8KFhxvKrKfPYmN6/pKTYYHBqLa0DfvVZcKMJWNyWLnaqND7dx/qn66R7ewM1UX5XMaDVP5wlVTaVA==}
+    deprecated: package has been renamed to acorn-import-attributes
     peerDependencies:
       acorn: ^8
 
