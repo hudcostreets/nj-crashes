@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Nov 18 10:00:03 EST 2024</RUNDATE>
+  <RUNDATE>Tue Nov 19 10:00:03 EST 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -53,7 +53,7 @@
     <MUNICIPALITY MCODE="0436" MNAME="Winslow Twsp">
       <ACCIDENT ACCID="13579" DATE="11/17/2024" TIME="1718">
         <HIGHWAY>536</HIGHWAY>
-        <LOCATION>536 (Spur (County Routes Only))</LOCATION>
+        <LOCATION>County 536 (Spur (County Routes Only))</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -67,6 +67,19 @@
       <ACCIDENT ACCID="13577" DATE="11/17/2024" TIME="1402">
         <HIGHWAY>284</HIGHWAY>
         <LOCATION>State Highway 284 MP 7</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0822" MNAME="Woodbury City">
+      <ACCIDENT ACCID="13581" DATE="11/17/2024" TIME="0849">
+        <HIGHWAY>644</HIGHWAY>
+        <LOCATION>County 644</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -106,6 +119,19 @@
       <ACCIDENT ACCID="13573" DATE="11/15/2024" TIME="1251">
         <HIGHWAY>80</HIGHWAY>
         <LOCATION>Interstate 80</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+    <MUNICIPALITY MCODE="0107" MNAME="Egg Harbor City">
+      <ACCIDENT ACCID="13580" DATE="11/14/2024" TIME="0648">
+        <HIGHWAY>30</HIGHWAY>
+        <LOCATION>State Highway 30</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -348,7 +374,7 @@
     <MUNICIPALITY MCODE="0318" MNAME="Lumberton Twsp">
       <ACCIDENT ACCID="13550" DATE="11/06/2024" TIME="1504">
         <HIGHWAY>38</HIGHWAY>
-        <LOCATION>State Highway 38</LOCATION>
+        <LOCATION>State Highway 38 MP 15.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -928,13 +954,14 @@
   <COUNTY CCODE="10" CNAME="Hunterdon">
     <MUNICIPALITY MCODE="1015" MNAME="Holland Twsp">
       <ACCIDENT ACCID="13498" DATE="10/18/2024" TIME="2229">
-        <STREET>Stamets Rd</STREET>
-        <LOCATION>Stamets Rd</LOCATION>
+        <STREET>Stamets Road</STREET>
+        <LOCATION>Stamets Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3853,6 +3880,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5616,6 +5644,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5769,7 +5798,7 @@
     <MUNICIPALITY MCODE="0434" MNAME="Voorhees Twsp">
       <ACCIDENT ACCID="13074" DATE="03/22/2024" TIME="2208">
         <HIGHWAY>561</HIGHWAY>
-        <LOCATION>County 561</LOCATION>
+        <LOCATION>County 561 MP 37.71</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7496,7 +7525,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>567</TOTACCIDENTS>
-  <TOTFATALITIES>598</TOTFATALITIES>
+  <TOTACCIDENTS>569</TOTACCIDENTS>
+  <TOTFATALITIES>600</TOTFATALITIES>
   <TOTINJURIES>98</TOTINJURIES>
 </FAUQSTATS>
