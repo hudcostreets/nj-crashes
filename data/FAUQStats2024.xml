@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Nov 20 10:00:04 EST 2024</RUNDATE>
+  <RUNDATE>Thu Nov 21 10:00:03 EST 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -143,8 +143,8 @@
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1604" MNAME="Hawthorne Boro">
       <ACCIDENT ACCID="13582" DATE="11/14/2024" TIME="1936">
-        <STREET>Lafayette Avenue</STREET>
-        <LOCATION>Lafayette Avenue</LOCATION>
+        <HIGHWAY>665</HIGHWAY>
+        <LOCATION>County 665</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -231,6 +231,19 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="14" CNAME="Morris">
+    <MUNICIPALITY MCODE="1409" MNAME="Dover Town">
+      <ACCIDENT ACCID="13585" DATE="11/11/2024" TIME="1804">
+        <HIGHWAY>513</HIGHWAY>
+        <LOCATION>County 513</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0108" MNAME="Egg Harbor Twsp">
       <ACCIDENT ACCID="13562" DATE="11/11/2024" TIME="1759">
@@ -258,6 +271,17 @@
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
+    <MUNICIPALITY MCODE="1352" MNAME="Wall Twsp">
+      <ACCIDENT ACCID="13586" DATE="11/09/2024" TIME="1842">
+        <STREET>NJ State Hwy 35</STREET>
+        <LOCATION>NJ State Hwy 35</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
     <MUNICIPALITY MCODE="1336" MNAME="Tinton Falls Boro">
       <ACCIDENT ACCID="13559" DATE="11/08/2024" TIME="1918">
         <HIGHWAY>444</HIGHWAY>
@@ -869,6 +893,19 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="09" CNAME="Hudson">
+    <MUNICIPALITY MCODE="0901" MNAME="Bayonne City">
+      <ACCIDENT ACCID="13584" DATE="10/22/2024" TIME="0830">
+        <STREET>Avenue C</STREET>
+        <LOCATION>Avenue C</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -3177,6 +3214,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4083,7 +4121,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-        <INJURIES>1</INJURIES>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4924,6 +4962,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0317" MNAME="Willingboro Twsp">
@@ -5248,6 +5287,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6759,12 +6799,13 @@
     <MUNICIPALITY MCODE="1604" MNAME="Hawthorne Boro">
       <ACCIDENT ACCID="13080" DATE="02/12/2024" TIME="1725">
         <HIGHWAY>659</HIGHWAY>
-        <LOCATION>County 659 (Alternate)</LOCATION>
+        <LOCATION>County 659 (Alternate) MP 2.1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7068,7 +7109,7 @@
     <MUNICIPALITY MCODE="1021" MNAME="Raritan Twsp">
       <ACCIDENT ACCID="12977" DATE="01/26/2024" TIME="0555">
         <HIGHWAY>202</HIGHWAY>
-        <LOCATION>State Highway 202 MP 11</LOCATION>
+        <LOCATION>State Highway 202 MP 11.02</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7540,7 +7581,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>570</TOTACCIDENTS>
-  <TOTFATALITIES>601</TOTFATALITIES>
-  <TOTINJURIES>99</TOTINJURIES>
+  <TOTACCIDENTS>573</TOTACCIDENTS>
+  <TOTFATALITIES>604</TOTFATALITIES>
+  <TOTINJURIES>100</TOTINJURIES>
 </FAUQSTATS>
