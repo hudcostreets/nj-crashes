@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Nov 21 10:00:03 EST 2024</RUNDATE>
+  <RUNDATE>Fri Nov 22 10:00:05 EST 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,32 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0816" MNAME="South Harrison Twsp">
+      <ACCIDENT ACCID="13588" DATE="11/20/2024" TIME="1523">
+        <HIGHWAY>45</HIGHWAY>
+        <LOCATION>State Highway 45</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2001" MNAME="Berkeley Heights Tw">
+      <ACCIDENT ACCID="13587" DATE="11/20/2024" TIME="1426">
+        <STREET>Park Ave</STREET>
+        <LOCATION>Park Ave</LOCATION>
+        <FATALITIES>2</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0436" MNAME="Winslow Twsp">
@@ -273,8 +299,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1352" MNAME="Wall Twsp">
       <ACCIDENT ACCID="13586" DATE="11/09/2024" TIME="1842">
-        <STREET>NJ State Hwy 35</STREET>
-        <LOCATION>NJ State Hwy 35</LOCATION>
+        <HIGHWAY>35</HIGHWAY>
+        <LOCATION>State Highway 35</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -618,7 +644,7 @@
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
       <ACCIDENT ACCID="13531" DATE="10/31/2024" TIME="0855">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State/Interstate Authority 1 (Truck (Rt. 1 and 9 Only)) MP 3.09</LOCATION>
+        <LOCATION>State Highway 1 (Truck (Rt. 1 and 9 Only)) MP 3.09</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3817,6 +3843,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4667,6 +4694,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5396,6 +5424,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5466,13 +5495,14 @@
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
       <ACCIDENT ACCID="13113" DATE="04/10/2024" TIME="2205">
-        <STREET>Lakeview Ave</STREET>
-        <LOCATION>Lakeview Ave</LOCATION>
+        <HIGHWAY>624</HIGHWAY>
+        <LOCATION>County 624 MP 1.65</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5646,6 +5676,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6218,6 +6249,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6494,6 +6526,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6636,12 +6669,13 @@
     <MUNICIPALITY MCODE="0412" MNAME="Cherry Hill Twsp">
       <ACCIDENT ACCID="13008" DATE="02/18/2024" TIME="0408">
         <HIGHWAY>38</HIGHWAY>
-        <LOCATION>State Highway 38 MP 3.86</LOCATION>
+        <LOCATION>State Highway 38 MP 3.84</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6649,7 +6683,7 @@
     <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="13047" DATE="02/17/2024" TIME="1806">
         <HIGHWAY>50</HIGHWAY>
-        <LOCATION>State Highway 50 MP 20.8</LOCATION>
+        <LOCATION>State Highway 50 MP 20.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7581,7 +7615,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>573</TOTACCIDENTS>
-  <TOTFATALITIES>604</TOTFATALITIES>
-  <TOTINJURIES>100</TOTINJURIES>
+  <TOTACCIDENTS>575</TOTACCIDENTS>
+  <TOTFATALITIES>607</TOTFATALITIES>
+  <TOTINJURIES>104</TOTINJURIES>
 </FAUQSTATS>
