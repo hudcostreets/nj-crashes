@@ -1,4 +1,7 @@
 import json
+from dataclasses import dataclass
+
+from atproto_client.models.app.bsky.richtext.facet import Main as Facet, ByteSlice, Link
 import pandas as pd
 from datetime import datetime
 from git import Commit, Repo, Tree, Object, Blob
@@ -8,7 +11,7 @@ from github.Commit import Commit as GithubCommit
 from io import BytesIO
 from pandas import isna
 from subprocess import CalledProcessError
-from typing import Union, Optional, Tuple, Callable
+from typing import Union, Optional, Tuple, Callable, Literal
 from utz import process, cached_property, err
 
 from nj_crashes.fauqstats import get_fauqstats, FAUQStats
@@ -65,16 +68,31 @@ VICTIM_TYPES = {
     'T': 'pedestrian',
     'B': 'cyclist',
 }
+Dst = Literal['slack', 'markdown', 'bsky']
+
+@dataclass
+class BskyPost:
+    text: str
+    facets: list[Facet]
 
 
 def crash_str(
     r: pd.Series,
     fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p',
     github_url: Optional[str] = None,
+    dst: Dst = 'slack',
 ) -> str | BskyPost:
     victim_pcs = []
     for suffix, name in VICTIM_TYPES.items():
-        num = r[f'FATAL_{suffix}']
+        cols = [f'FATAL_{suffix}', f'{suffix.lower()}k']
+        num = None
+        for col in cols:
+            if col in r:
+                num = r[col]
+                break
+        if num is None:
+            raise ValueError(f"Couldn't find {cols} in {r}")
+
         if not isna(num) and num > 0:
             num = int(num)
             noun = name if num == 1 else f'{name}s'
@@ -87,17 +105,38 @@ def crash_str(
     else:
         dt_str = dt.strftime(fmt)
 
-    accid = r.name
-    if github_url:
-        github_link = f'<{github_url}|{accid}>'
-    else:
-        github_link = accid
-
-    if isna(r.LOCATION):
+    loc_k = 'LOCATION' if 'LOCATION' in r else 'location'
+    if isna(r[loc_k]):
         location = 'unknown location'
     else:
-        location = r.LOCATION.replace('&', '&amp;')
-    return f'*{dt_str} ({github_link})*: {r.MNAME} ({r.CNAME} County), {location}: {victim_str} deceased'
+        location = r[loc_k].replace('&', '&amp;')
+
+    emph = "" if dst == 'bsky' else "*"
+    prefix = f'{emph}{dt_str} ('
+    suffix = f'){emph}: {r.MNAME} ({r.CNAME} County), {location}: {victim_str} deceased'
+
+    accid = r.name
+    if github_url:
+        if dst == 'slack':
+            github_link = f'<{github_url}|{accid}>'
+        elif dst == 'markdown':
+            github_link = f'[{accid}]({github_url})'
+        else:
+            github_link = f'{accid}'
+    else:
+        github_link = f'{accid}'
+
+    text = f'{prefix}{github_link}{suffix}'
+    if dst == 'bsky' and github_url:
+        start = len(prefix)
+        end = start + len(github_link)
+        facet: Facet = Facet(
+            index=ByteSlice(byte_start=start, byte_end=end),
+            features=[Link(uri=github_url)],
+        )
+        return BskyPost(text=text, facets=[facet])
+    else:
+        return text
 
 
 def get_rundate(tree: Tree) -> str:
@@ -332,9 +371,9 @@ class CommitCrashes:
             diff_objs[id] = diff_obj
         return diff_objs
 
-    def descriptions(self, **kwargs) -> list[str]:
+    def descriptions(self, dst: Dst = 'slack', **kwargs) -> list[str]:
         new_df = self.adds_df
-        descriptions = new_df.apply(crash_str, **kwargs, axis=1)
+        descriptions = new_df.apply(crash_str, dst=dst, **kwargs, axis=1)
         return descriptions.tolist() if len(descriptions) else []
 
     @cached_property

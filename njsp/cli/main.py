@@ -7,7 +7,7 @@ from .update_projections import update_projections
 from .update_plots import update_plots
 from .slack import slack, sync
 from .crash_log import crash_log
-
+from . import bsky
 
 def main():
     njsp()
