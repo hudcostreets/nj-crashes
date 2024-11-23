@@ -3,6 +3,7 @@ from typing import Optional, Union
 from git import Repo, Commit
 from utz import process, err
 
+from nj_crashes import ROOT_DIR
 
 _repo: Optional[Repo] = None
 
@@ -10,7 +11,7 @@ _repo: Optional[Repo] = None
 def get_repo() -> Repo:
     global _repo
     if _repo is None:
-        _repo = Repo()
+        _repo = Repo(ROOT_DIR)
     return _repo
 
 

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import json
 import pandas as pd
 from datetime import datetime
@@ -17,7 +15,7 @@ from nj_crashes.fauqstats import get_fauqstats, FAUQStats
 from nj_crashes.utils.git import git_fmt, get_repo, SHORT_SHA_LEN
 from nj_crashes.utils.github import get_github_repo, load_pqt_github, REPO, GithubCommit as GithubCommitWrapper
 from nj_crashes.utils.log import none
-from njsp.paths import CRASHES_RELPATH, RUNDATE_RELPATH, OLD_CRASHES_RELPATH
+from njsp.paths import RUNDATE_RELPATH
 
 
 def load_pqt_blob(blob: Object) -> pd.DataFrame:
@@ -70,10 +68,10 @@ VICTIM_TYPES = {
 
 
 def crash_str(
-        r: pd.Series,
-        fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p',
-        github_url: Optional[str] = None
-) -> str:
+    r: pd.Series,
+    fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p',
+    github_url: Optional[str] = None,
+) -> str | BskyPost:
     victim_pcs = []
     for suffix, name in VICTIM_TYPES.items():
         num = r[f'FATAL_{suffix}']

@@ -12,11 +12,11 @@ from ...paths import fauqstats_relpath
 
 
 def sync_crash(
-        r,
-        client: ChannelClient,
-        commit: Optional[str],
-        overwrite_existing: int = 0,
-        dry_run: int = 0,
+    r,
+    client: ChannelClient,
+    commit: Optional[str],
+    overwrite_existing: int = 0,
+    dry_run: int = 0,
 ) -> None:
     accid = r.name
     crash = Crash(accid)
@@ -61,7 +61,15 @@ def sync_crash(
 @option('-m', '--fetch-messages', type=int, default=1000, help="Fetch messages from Slack and update cache (as opposed to just reading cached messages")
 @option('-n', '--dry-run', count=True, help="Avoid Slack API requests, cache updates, etc.")
 @argument('commit', required=False)
-def sync(commit, start: YMD, end: YMD, overwrite_existing, channel, fetch_messages: Optional[int], dry_run: int):
+def sync(
+    commit,
+    start: YMD,
+    end: YMD,
+    overwrite_existing,
+    channel,
+    fetch_messages: Optional[int],
+    dry_run: int,
+):
     if not commit:
         cur_year = dt.now().year
         commit = process.line('git', 'log', '-1', '--format=%h', '--', fauqstats_relpath(cur_year), fauqstats_relpath(cur_year - 1))
@@ -86,5 +94,11 @@ def sync(commit, start: YMD, end: YMD, overwrite_existing, channel, fetch_messag
     if fetch_messages:
         client.fetch_messages(limit=fetch_messages)
 
-    crashes.apply(sync_crash, axis=1, client=client, commit=commit, overwrite_existing=overwrite_existing)
+    crashes.apply(
+        sync_crash,
+        axis=1,
+        client=client,
+        commit=commit,
+        overwrite_existing=overwrite_existing,
+    )
     cache.close()

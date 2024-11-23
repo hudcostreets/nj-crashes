@@ -1,4 +1,4 @@
-from os.path import exists
+from os.path import exists, relpath, join
 
 import click
 import pandas as pd
@@ -10,6 +10,7 @@ from html.parser import HTMLParser
 from typing import Optional
 from utz import err
 
+from nj_crashes import ROOT_DIR
 from nj_crashes.utils import git
 from nj_crashes.utils.git import git_fmt
 from nj_crashes.utils.github import load_github
@@ -68,13 +69,16 @@ class Crashes:
     START = 2008
 
     def __init__(self, ref: str, start_year: int = START, end_year: int = None):
+        self.ref = ref
+        self.start_year = start_year
         year = start_year
         accid_map = {}
         while True:
             if year == end_year:
                 break
             xml_path = get_xml_path(year)
-            if not exists(xml_path):
+            xml_abspath = relpath(join(ROOT_DIR, xml_path))
+            if not exists(xml_abspath):
                 now = datetime.now()
                 if year > now.year:
                     break
@@ -91,6 +95,8 @@ class Crashes:
             except UnknownObjectException as e:
                 err(f"{year}: missing XML file {xml_path}@{ref}: {e}")
             year += 1
+
+        self.end_year = year
         self.accid_map = accid_map
 
 

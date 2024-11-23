@@ -14,11 +14,11 @@ Kind = Literal['add', 'update', 'del']
 
 
 def get_crashes_df(
-        repo=None,
-        head: Union[str, None] = None,
-        since: Union[str, datetime, pd.Timestamp, None] = None,
-        root: Union[str, None] = DEFAULT_ROOT_SHA,
-        log: bool = True,
+    repo=None,
+    head: Union[str, None] = None,
+    since: Union[str, datetime, pd.Timestamp, None] = None,
+    root: Union[str, None] = DEFAULT_ROOT_SHA,
+    log: bool = True,
 ) -> pd.DataFrame:
     if isinstance(since, (str, datetime)):
         tz = datetime.now(timezone.utc).astimezone().tzinfo
