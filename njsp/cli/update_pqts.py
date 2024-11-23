@@ -65,11 +65,10 @@ def get_crashes_df(
 
 @command
 @click.option('--replace-db', is_flag=True, help="Replace DB tables (instead of rm'ing DB and writing new tables from scratch)")
-@click.option('--s3', 'sync_s3', is_flag=True, help=f"Upload to S3 ()")
+@click.option('--s3', 'sync_s3', is_flag=True, help=f"Upload to S3")
 def update_pqts(replace_db, sync_s3):
+    """Update crashes Parquet/SQLite with NJSP crash data, update rundate.json."""
     crashes, totals, rundate = get_crashes_df()
-
-    ccc = pd.read_parquet(COUNTY_CITY_CODES_PQT)
     crashes['cc'] = crashes.CCODE.astype(int)
     crashes['mc_sp'] = crashes.MCODE.str[2:].astype(int)
     crashes.index.name = 'id'

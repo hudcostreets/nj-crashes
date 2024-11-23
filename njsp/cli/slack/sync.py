@@ -70,6 +70,7 @@ def sync(
     fetch_messages: Optional[int],
     dry_run: int,
 ):
+    """Post crashes to the #crash-bot channel in HCCS Slack."""
     if not commit:
         cur_year = dt.now().year
         commit = process.line('git', 'log', '-1', '--format=%h', '--', fauqstats_relpath(cur_year), fauqstats_relpath(cur_year - 1))

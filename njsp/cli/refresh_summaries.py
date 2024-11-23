@@ -24,6 +24,7 @@ def refresh_annual_summaries(year, kernel=None):
 @click.option('-k', '--kernel', default='python3')
 @click.argument('years', nargs=-1)
 def refresh_summaries(kernel, years):
+    """Update NJSP annual summary PDFs (fetch-summaries.ipynb)."""
     if not years:
         year = datetime.now().year
         years = [ year - 1 ]

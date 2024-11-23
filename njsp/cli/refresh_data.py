@@ -20,6 +20,7 @@ def update_years(*years):
 @command
 @click.argument('years', nargs=-1)
 def refresh_data(years):
+    """Snapshot NJSP fatal crash data for the given years."""
     if not years:
         year = datetime.now().year
         years = [ year - 2, year - 1, year ]

@@ -55,6 +55,7 @@ def save(df: pd.DataFrame, path: str):
 
 @njsp.group("crash_log")
 def crash_log():
+    """Maintain a history of crash-records adds/updates/deletes."""
     pass
 
 

@@ -71,7 +71,7 @@ def crash_str(
     r: pd.Series,
     fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p',
     github_url: Optional[str] = None,
-) -> str | BskyPost:
+) -> str:
     victim_pcs = []
     for suffix, name in VICTIM_TYPES.items():
         num = r[f'FATAL_{suffix}']
