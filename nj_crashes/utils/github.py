@@ -20,7 +20,7 @@ import pandas as pd
 
 from njdot.rawdata import singleton
 
-REPO = 'neighbor-ryan/nj-crashes'
+REPO = 'hudcostreets/nj-crashes'
 _gh: Optional[Github] = None
 _gh_repo: Optional[Repository] = None
 
