@@ -10,7 +10,7 @@ export type Year = "2021" | "2022" | typeof prvYear | typeof curYear
 export type YearTotalsMap = { [k in Year]: { total: number, projected: number } }
 export type Data = {
     rundate: string
-    yearTotalsMap: YearTotalsMap
+    // yearTotalsMap: YearTotalsMap
 }
 
 export const EMPTY: PlotSpec[] = []

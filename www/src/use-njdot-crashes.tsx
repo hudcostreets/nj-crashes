@@ -26,7 +26,7 @@ export type Base = Omit<sql.Base, 'url'> & {
 
 export type Props = Base & {
     cc: number | null
-    cn?: string
+    cn: string | null
     mc: number | null
     before: string
     perPage: number
@@ -242,16 +242,14 @@ export function useNjdotCrashRows({ cc2mc2mn, ...props }: Props & { cc2mc2mn: CC
     const ccCol: Col[] = props.cc ? [] : ['cc']
     const mcCol: Col[] = props.mc ? [] : ['mc']
     const cols: Col[] = [ 'dt', ...ccCol, ...mcCol, 'casualties', 'road', 'cross_street', 'mp', ]
-    const crashRows = useMemo(
+    return useMemo(
         () => {
             if (!crashesResult) return
             console.log(`crashRows effect`)
-            const crashRows = map(
+            return map(
                 (crashes: Crash[]) => getNjdotCrashRows({ rows: crashes, cols, cc2mc2mn, crashOccupants, crashPedestrians, crashVehicles, })
             )(crashesResult)
-            return crashRows
         },
         [ crashesResult, cols, crashOccupants, ]
     )
-    return crashRows
 }

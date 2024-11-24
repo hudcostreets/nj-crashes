@@ -1,10 +1,10 @@
-import {Head} from "@rdub/next-base/head";
-import css from "./index.module.scss";
 import React from "react";
-import {getBasePath} from "@rdub/next-base/basePath"
+import Head from "@rdub/next-base/head";
+import css from "./index.module.scss"
 import {Socials} from "@rdub/next-base/socials"
-import { domain, url } from "@/src/site";
+import { domain, url } from "@/src/site"
 import { socials } from "@/src/socials"
+import getBasePath from "@rdub/next-base/basePath"
 
 const Home = () => {
     const title = "Page Not Found"

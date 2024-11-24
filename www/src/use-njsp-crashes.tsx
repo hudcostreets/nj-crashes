@@ -1,8 +1,7 @@
 import { Result } from "@rdub/react-sql.js-httpvfs/query";
 import { ReactNode, useMemo } from "react";
-import { useSqlQuery, useSqlQueryEager } from "@/src/sql";
+import { useSqlQueryEager } from "@/src/sql";
 import { CC2MC2MN, County } from "@/src/county";
-import { map } from "fp-ts/Either";
 import { Base, ConditionMap, } from "./use-njdot-crashes";
 import { Row } from "@/src/result-table";
 import { fromEntries } from "@rdub/base/objs";
@@ -14,10 +13,12 @@ import { Tooltip } from "@/src/tooltip";
 import CityLink from "@/src/city-link";
 import CountyLink from "@/src/county-link";
 import { curYear } from "@/src/plotSpecs";
+import { useQuery } from "@tanstack/react-query";
+import { useDb } from "@rdub/react-sql.js-httpvfs/sql";
 
 export type Props = Base & {
     cc: number | null
-    cn?: string
+    cn: string | null
     mc: number | null
     page: number
     perPage: number
@@ -71,16 +72,21 @@ export function crashesQuery({ cc, mc, page, perPage, }: { cc: number | null, mc
     `}
 
 export function useNjspCrashesTotal(
-    {
-        cc, mc,
-        timerId = "njsp-crashes-total",
-        urls,
-        totals,
-        ...base
-    }: Omit<Props, 'cn' | 'page' | 'perPage'> & { totals: Total[] }
-): Result<Total> {
-    const query = useMemo(() => totalsQuery({ cc, mc, }), [ cc, mc, ])
-    return useSqlQueryEager<Total>({ ...base, url: urls.njsp.crashes, timerId, query, init: totals, })
+  { cc, mc, urls, requestChunkSize, }: Pick<Props, 'cc' | 'mc' | 'urls' | 'requestChunkSize'>
+): Total | null {
+    const { db } = useDb({ url: urls.njsp.crashes, requestChunkSize })
+    const { data: total } = useQuery({
+        queryKey: [ "njsp-crashes-total", cc, mc, db === null ],
+        refetchOnWindowFocus: false,
+        refetchInterval: false,
+        queryFn: async () => {
+            if (!db) return null
+            const query = totalsQuery({ cc, mc, })
+            const rows = await db.query(query) as Total[]
+            return rows[0]
+        },
+    })
+    return total ?? null
 }
 export function useNjspCrashes({ cc, mc, page, perPage, timerId = "njsp-crashes", urls, crashes, ...base }: Props & { crashes: Crash[] }): Result<Crash> {
     const query = useMemo(
@@ -119,7 +125,7 @@ export function getNjspCrashRows({ rows, cols, cc2mc2mn, }: {
         return fromEntries([
             [ 'key', id ],
             ...cols.map(col => {
-                let txt: ReactNode = ''
+                let txt: ReactNode
                 if (col == 'dt') {
                     const date = new Date(row.dt)
                     const fmt = date.getFullYear() == curYear ? '%a %b %-d %-I:%M%p' : `%-m/%-d/%y, %-I:%M%p`
@@ -141,21 +147,22 @@ export function getNjspCrashRows({ rows, cols, cc2mc2mn, }: {
     })
 }
 
-export function useNjspCrashRows({ cc2mc2mn, ...props }: Props & { cc2mc2mn: CC2MC2MN, crashes: Crash[], }) {
-    const crashesResult = useNjspCrashes({ ...props })
-    const ccCol: Col[] = props.cc ? [] : ['cc']
-    const mcCol: Col[] = props.mc ? [] : ['mc']
-    const cols: Col[] = [ 'dt', ...ccCol, ...mcCol, 'casualties', 'location', ]  // 'street', 'highway', ]
-    const crashRows = useMemo(
-        () => {
-            // console.log("useNjspCrashRows effect")
-            const crashRows = map(
-                (crashes: Crash[]) => getNjspCrashRows({ rows: crashes, cols, cc2mc2mn, })
-            )(crashesResult)
-            return crashRows
+export function useNjspCrashRows({ cc2mc2mn, cc, mc, page, perPage, urls }: Props & { cc2mc2mn: CC2MC2MN }) {
+    const { db } = useDb({ url: urls.njsp.crashes, requestChunkSize: 64 * 1024, })
+    const { data: crashRows } = useQuery({
+        queryKey: [ "njsp-crash-rows", cc, mc, page, perPage, db === null ],
+        refetchOnWindowFocus: false,
+        refetchInterval: false,
+        queryFn: async () => {
+            if (!db) return null
+            const query = crashesQuery({ cc, mc, page, perPage })
+            const rows = await db.query(query) as Crash[]
+            const ccCol: Col[] = cc ? [] : ['cc']
+            const mcCol: Col[] = mc ? [] : ['mc']
+            const cols: Col[] = [ 'dt', ...ccCol, ...mcCol, 'casualties', 'location', ]  // 'street', 'highway', ]
+            return getNjspCrashRows({ rows, cols, cc2mc2mn, })
         },
-        [ crashesResult, cols, ]
-    )
-    return crashRows
+    })
+    return crashRows ?? null
 }
 

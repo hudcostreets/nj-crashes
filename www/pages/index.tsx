@@ -1,50 +1,51 @@
 import React, { Fragment, useState } from 'react'
 import type { GetStaticProps } from 'next'
-import { Head } from '@rdub/next-base/head'
+import Head from '@rdub/next-base/head'
 import css from './index.module.scss'
 import A from "@rdub/next-base/a";
 import { Nav } from "@rdub/next-base/nav";
-import { getBasePath } from "@rdub/next-base/basePath"
+import getBasePath from "@rdub/next-base/basePath"
 import { url } from "@/src/site";
 import { GitHub } from "@/src/socials"
 import { plotSpecs } from "@/src/plotSpecs";
 import { buildPlot, buildPlots, Plot, PlotsDict } from "@rdub/next-plotly/plot";
 import { loadPlots } from "@rdub/next-plotly/plot-load";
 import * as Njsp from "@/src/njsp/plot";
-import { InitProps, NjspPlot } from "@/src/njsp/plot";
-import { loadProps } from "@/server/njsp/plot";
+import { NjspPlot, PlotParams } from "@/src/njsp/plot";
 import { getUrls, NjdotRawData, NjspFatalAcc, Urls } from "@/src/urls";
 import Footer from '@/src/footer';
 import { ResultTable } from "@/src/result-table";
-import { EndYear, H2 } from "@/pages/c/[[...region]]";
-import { usePaginationControls, useResultPagination } from "@/src/pagination";
-import { Total, useNjspCrashesTotal, useNjspCrashRows } from "@/src/use-njsp-crashes";
-import singleton from "@rdub/base/singleton";
-import { cc2mc2mn } from "@/server/county";
+import { EndYear, H2 } from "@/pages/c";
+import { usePaginationControls } from "@/src/pagination";
+import { useNjspCrashesTotal, useNjspCrashRows } from "@/src/use-njsp-crashes";
+import { cc2mc2mn, Counties } from "@/server/county";
 import { CC2MC2MN } from "@/src/county";
 import { NjspSource } from "@/src/icons";
 import { getCrashes, getTotals } from "@/server/njsp/sql";
-import { PlotParams } from "@/src/njsp/plot";
+import { right } from "fp-ts/Either";
+import { useQuery } from "@tanstack/react-query";
+import { loadProps } from "@/server/njsp/plot";
+import { useDb } from "@rdub/duckdb-wasm/duckdb";
 
 type Props = {
     plotsDict: PlotsDict<PlotParams>
     njspProps: Njsp.Props
     urls: Urls
     cc2mc2mn: CC2MC2MN
-} & InitProps
+    Counties: string[]
+}
 
 export const getStaticProps: GetStaticProps = async () => {
     const plotsDict: PlotsDict = loadPlots(plotSpecs)
-    const njspProps = await loadProps()
     const urls = getUrls()
     const localUrls = getUrls({ local: true })
     const cc = null, mc = null, page = 0, perPage = 10
     const crashes = await getCrashes({ urls: localUrls, cc, mc, page, perPage, })
     const totals = await getTotals({ urls: localUrls, cc, mc, })
-    return { props: { plotsDict, njspProps, urls, cc2mc2mn, crashes, totals, }, }
+    return { props: { plotsDict, urls, cc2mc2mn, crashes, totals, Counties, }, }
 }
 
-const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, crashes, totals, }: Props) => {
+const Home = ({ plotsDict, urls, cc2mc2mn, Counties, }: Props) => {
     const basePath = getBasePath()
     const [ requestChunkSize ] = useState<number>(64 * 1024)
 
@@ -73,16 +74,23 @@ const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, crashes, totals, }: Props)
     const title = "NJ Traffic Crash Data"
 
     const [ county, setCounty ] = useState<string | null>(null)
+    const dbc = useDb()
+    const { data: njspProps } = useQuery({
+        queryKey: [ "njspProps", county, dbc === null, ],
+        refetchOnWindowFocus: false,
+        refetchInterval: false,
+        queryFn: async () => {
+            if (!dbc) return null
+            const { db, conn } = dbc
+            return loadProps({ db, conn, county, Counties, })
+        }
+    })
 
     const cc = null, mc = null
     const njspPaginationControls = usePaginationControls({ id: "njsp-crashes" })
-    const njspCrashes = useNjspCrashRows({ crashes, urls, cc, mc, cc2mc2mn, ...njspPaginationControls, })
-    const njspCrashesTotal = useNjspCrashesTotal({ totals, urls, cc, mc, requestChunkSize, })
-    const njspPagination = useResultPagination(
-        njspCrashesTotal,
-        (totals: Total[]) => singleton(totals).total,
-        njspPaginationControls,
-    )
+    const njspCrashes = useNjspCrashRows({ urls, cc, mc, cn: county, cc2mc2mn, ...njspPaginationControls, }) ?? []
+    const njspCrashesTotal = useNjspCrashesTotal({ urls, cc, mc, requestChunkSize, })
+    const njspPagination = { ...njspPaginationControls, total: njspCrashesTotal?.total ?? 0 }
 
     return (
         <div className={css.container}>
@@ -120,13 +128,16 @@ const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, crashes, totals, }: Props)
                     <li>Code and cleaned data are <A href={GitHub.href}>here on GitHub</A>.</li>
                 </ul>
                 <div className={css["plot-container"]}>
-                    <NjspPlot
-                        {...njspProps}
-                        params={njspPlot.params}
-                        county={county}
-                        setCounty={setCounty}
-                        includeMoreInfoLink={true}
-                    />
+                    {
+                        njspProps
+                          ? <NjspPlot
+                            {...njspProps}
+                            county={county}
+                            setCounty={setCounty}
+                            includeMoreInfoLink={true}
+                          />
+                          : null
+                    }
                     <hr/>
                 </div>
                 {
@@ -135,7 +146,7 @@ const Home = ({ plotsDict, njspProps, urls, cc2mc2mn, crashes, totals, }: Props)
                             <H2 id={"recent-fatal-crashes"}>Recent fatal crashes</H2>
                             {
                                 njspCrashes && <ResultTable
-                                    result={njspCrashes}
+                                    result={right(njspCrashes)}
                                     pagination={njspPagination}
                                 />
                             }

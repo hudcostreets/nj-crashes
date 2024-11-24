@@ -1,4 +1,4 @@
-import { getBasePath } from "@rdub/next-base/basePath";
+import getBasePath from "@rdub/next-base/basePath";
 import { mapValues } from "@rdub/base/objs";
 
 export const NjspFatalAcc = "https://nj.gov/njsp/info/fatalacc/"

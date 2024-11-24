@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { initDuckDb, runQuery } from "@rdub/duckdb/duckdb"
-import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
+import { useEffect, useRef, useState } from "react"
+import { initDuckDb, runQuery } from "@rdub/duckdb-wasm/duckdb"
+import { AsyncDuckDB } from "@duckdb/duckdb-wasm"
 import useSessionStorageState from 'use-session-storage-state'
 
 const QUERY_KEY = 'duckdb-query'
