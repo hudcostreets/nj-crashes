@@ -4,7 +4,7 @@ import { useSqlQuery } from "@/src/sql";
 import { Either, map } from "fp-ts/Either";
 import { Row } from "@/src/result-table";
 import { o2a } from "@rdub/base/objs";
-import { EndYear } from "@/pages/c/[[...region]]";
+import { EndYear } from "@/pages/c";
 
 export type Stats = {
     num_crashes: number

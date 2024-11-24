@@ -1,44 +1,35 @@
-import { loadPlot } from "@rdub/next-plotly/plot-load";
 import { njspPlotSpec, } from "@/src/plotSpecs";
-import { initDuckDb, runQuery } from "@rdub/duckdb/duckdb";
-import { registerTableData, TableData } from "@/src/tableData";
-import { loadTableData } from "@/server/tableData";
-import { Counties } from "@/server/county";
-import { AllTypes, getPlotData, PlotParams, Props, YtRow, } from "@/src/njsp/plot";
-import { loadSync } from "@rdub/base/load";
-import { RUNDATE_RELPATH, YearTypeCountyCsv } from "../paths";
+import { PlotParams, Props, YtRow, } from "@/src/njsp/plot";
+import { ProjectedCsv } from "@/src/paths";
 import { getTypeProjections } from "./projections";
 import { ytcQuery } from "@/src/njsp/ytc";
+import { AsyncDuckDB, AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
 
-export async function loadProps({ county }: { county: string | null } = { county: null }): Promise<Props> {
-    const initialPlot = loadPlot<PlotParams>(njspPlotSpec)
-    const {
-        data: initialPlotData,
-        layout,
-        ...plotRest
-    } = initialPlot
-    const db = await initDuckDb()
-    const typeProjections = await getTypeProjections({ db, county, })
-    const tableData: TableData = loadTableData(YearTypeCountyCsv)
-    const target = await registerTableData({ db, tableData, stem: "ytc", })
-    const initRows = await runQuery<YtRow>(db, ytcQuery({ county: county ?? null, target }))
-    const { data, rows: ytRows, annotations, yearTotalsMap, } = await getPlotData({
-        ytRows: initRows,
-        typeProjections,
-        initialPlotData,
-        types: new Set(AllTypes),
-        county,
-    })
-
-    const { rundate } = loadSync<{ rundate: string }>(RUNDATE_RELPATH)
-    console.log(`rundate: ${rundate}`)
+export async function loadProps(
+  { db, conn, county, Counties, }: {
+      db: AsyncDuckDB
+      conn: AsyncDuckDBConnection
+      county: string | null
+      Counties: string[]
+  }
+): Promise<Props> {
+    const initialPlot = await (await fetch(`/plots/${njspPlotSpec.name}.json`)).json() as PlotParams
+    const rundate = (await (await fetch("/njsp/rundate.json")).json()).rundate as string
+    const projectedCsv = await (await fetch(ProjectedCsv)).text()
+    await db.registerFileText("projected.csv", projectedCsv)
+    const typeProjections = await getTypeProjections({ conn, county, })
+    const ytcCsv = await (await fetch("/njsp/year-type-county.csv")).text()
+    await db.registerFileText("year-type-county.csv", ytcCsv)
+    const target = `read_csv('year-type-county.csv')`
+    const query = ytcQuery({ county: county ?? null, target })
+    console.log("duckdb querying:", query)
+    const ytRows = JSON.parse(JSON.stringify((await conn.query(query)).toArray() as YtRow[]))
+    console.log(`rundate: ${rundate}`, "ytRows:", ytRows)
     return {
-        params: { data, layout: { ...layout, annotations }, ...plotRest },
-        tableData,
+        initialPlot,
         typeProjections,
         ytRows,
         rundate,
-        yearTotalsMap,
         county,
         Counties,
     }

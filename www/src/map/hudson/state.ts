@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { floatParam, llParam, parseHashParams, updateHashParams } from "@rdub/next-params/params";
+import { floatParam, llParam } from "@rdub/next-params/params";
+import { parseHashParams, updateHashParams } from "@rdub/next-params/hash";
 import { LL, Param, ParsedParam } from "@rdub/next-params/params";
 import css from "@/pages/map/map.module.scss";
 
