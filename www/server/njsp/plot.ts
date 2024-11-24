@@ -13,17 +13,25 @@ export async function loadProps(
       Counties: string[]
   }
 ): Promise<Props> {
-    const initialPlot = await (await fetch(`/plots/${njspPlotSpec.name}.json`)).json() as PlotParams
-    const rundate = (await (await fetch("/njsp/rundate.json")).json()).rundate as string
-    const projectedCsv = await (await fetch(ProjectedCsv)).text()
-    await db.registerFileText("projected.csv", projectedCsv)
-    const typeProjections = await getTypeProjections({ conn, county, })
-    const ytcCsv = await (await fetch("/njsp/year-type-county.csv")).text()
-    await db.registerFileText("year-type-county.csv", ytcCsv)
-    const target = `read_csv('year-type-county.csv')`
-    const query = ytcQuery({ county: county ?? null, target })
-    console.log("duckdb querying:", query)
-    const ytRows = JSON.parse(JSON.stringify((await conn.query(query)).toArray() as YtRow[]))
+    const initialPlotP = fetch(`/plots/${njspPlotSpec.name}.json`).then(r => r.json() as Promise<PlotParams>)
+    const rundateP = fetch("/njsp/rundate.json").then(r => r.json()).then(o => o.rundate as string)
+  const typeProjectionsP =
+    fetch(ProjectedCsv)
+        .then(r => r.text())
+        .then(text => db.registerFileText("projected.csv", text))
+        .then(() => getTypeProjections({ conn, county, }))
+    const ytRowsP =
+      fetch("/njsp/year-type-county.csv")
+        .then(r => r.text())
+        .then(text => db.registerFileText("year-type-county.csv", text))
+        .then(() => {
+          const target = `read_csv('year-type-county.csv')`
+          const query = ytcQuery({ county: county ?? null, target })
+          console.log("duckdb querying:", query)
+          return conn.query(query)
+        })
+        .then(r => JSON.parse(JSON.stringify(r.toArray() as YtRow[])))
+    const [ initialPlot, rundate, ytRows, typeProjections, ] = await Promise.all([ initialPlotP, rundateP, ytRowsP, typeProjectionsP, ])
     console.log(`rundate: ${rundate}`, "ytRows:", ytRows)
     return {
         initialPlot,
