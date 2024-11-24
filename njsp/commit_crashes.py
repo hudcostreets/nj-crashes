@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass
 
-from atproto_client.models.app.bsky.richtext.facet import Main as Facet, ByteSlice, Link
+from atproto_client.models.app.bsky.richtext.facet import Main as Facet, ByteSlice, Link as BskyLink
 import pandas as pd
 from datetime import datetime
 from git import Commit, Repo, Tree, Object, Blob
@@ -9,15 +9,17 @@ from gitdb.exc import BadName
 from github import Github
 from github.Commit import Commit as GithubCommit
 from io import BytesIO
-from pandas import isna
+from pandas import isna, Series
 from subprocess import CalledProcessError
 from typing import Union, Optional, Tuple, Callable, Literal
 from utz import process, cached_property, err
 
 from nj_crashes.fauqstats import get_fauqstats, FAUQStats
 from nj_crashes.utils.git import git_fmt, get_repo, SHORT_SHA_LEN
+from nj_crashes.utils import SITE
 from nj_crashes.utils.github import get_github_repo, load_pqt_github, REPO, GithubCommit as GithubCommitWrapper
 from nj_crashes.utils.log import none
+from njdot import normalize_name
 from njsp.paths import RUNDATE_RELPATH
 
 
@@ -68,12 +70,84 @@ VICTIM_TYPES = {
     'T': 'pedestrian',
     'B': 'cyclist',
 }
-Dst = Literal['slack', 'markdown', 'bsky']
+Dst = Literal['slack', 'markdown']
+
+
+@dataclass
+class Link:
+    uri: str
+    text: str
+
 
 @dataclass
 class BskyPost:
     text: str
     facets: list[Facet]
+
+    @staticmethod
+    def mk(*pcs: str | Link) -> 'BskyPost':
+        text = ""
+        facets = []
+        for pc in pcs:
+            if isinstance(pc, str):
+                text += pc
+            elif isinstance(pc, Link):
+                start = len(text)
+                text += pc.text
+                end = len(text)
+                facet: Facet = Facet(
+                    index=ByteSlice(byte_start=start, byte_end=end),
+                    features=[BskyLink(uri=pc.uri)],
+                )
+                facets.append(facet)
+            else:
+                raise TypeError(pc)
+
+        return BskyPost(text=text, facets=facets)
+
+
+def mk_victim_str(r: Series):
+    victim_pcs = []
+    for suffix, name in VICTIM_TYPES.items():
+        num = r[f'FATAL_{suffix}']
+        if not isna(num) and num > 0:
+            num = int(num)
+            noun = name if num == 1 else f'{name}s'
+            victim_pcs.append(f'{num} {noun}')
+
+    return ', '.join(victim_pcs)
+
+
+def mk_dt_str(dt: pd.Timestamp, fmt: Union[Callable, str]) -> str:
+    if callable(fmt):
+        return fmt(dt)
+    else:
+        return dt.strftime(fmt)
+
+
+def bsky_str(
+    r: pd.Series,
+    fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p',
+    github_url: Optional[str] = None,
+) -> BskyPost:
+    victim_str = mk_victim_str(r)
+    dt_str = mk_dt_str(r['dt'], fmt)
+    if isna(r.LOCATION):
+        location = 'unknown location'
+    else:
+        location = r.LOCATION.replace('&', '&amp;')
+
+    accid = str(r.name)
+    gh_link = Link(uri=github_url, text=accid) if github_url else accid
+    cn = normalize_name(r.CNAME)
+    mn = normalize_name(r.MNAME)
+    c_url = f'{SITE}/c/{cn}'
+    m_url = f'{SITE}/c/{cn}/{mn}'
+    c_link = Link(uri=c_url, text=f'{r.CNAME} County')
+    m_link = Link(uri=m_url, text=r.MNAME)
+    return BskyPost.mk(
+        f'{dt_str} (', gh_link, '): ', m_link, ' (', c_link, f'), {location}: {victim_str} deceased',
+    )
 
 
 def crash_str(
@@ -81,62 +155,33 @@ def crash_str(
     fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p',
     github_url: Optional[str] = None,
     dst: Dst = 'slack',
-) -> str | BskyPost:
-    victim_pcs = []
-    for suffix, name in VICTIM_TYPES.items():
-        cols = [f'FATAL_{suffix}', f'{suffix.lower()}k']
-        num = None
-        for col in cols:
-            if col in r:
-                num = r[col]
-                break
-        if num is None:
-            raise ValueError(f"Couldn't find {cols} in {r}")
-
-        if not isna(num) and num > 0:
-            num = int(num)
-            noun = name if num == 1 else f'{name}s'
-            victim_pcs.append(f'{num} {noun}')
-
-    victim_str = ', '.join(victim_pcs)
-    dt = r['dt']
-    if callable(fmt):
-        dt_str = fmt(dt)
-    else:
-        dt_str = dt.strftime(fmt)
-
-    loc_k = 'LOCATION' if 'LOCATION' in r else 'location'
-    if isna(r[loc_k]):
+) -> str:
+    victim_str = mk_victim_str(r)
+    dt_str = mk_dt_str(r['dt'], fmt)
+    if isna(r.LOCATION):
         location = 'unknown location'
     else:
-        location = r[loc_k].replace('&', '&amp;')
+        location = r.LOCATION.replace('&', '&amp;')
 
-    emph = "" if dst == 'bsky' else "*"
-    prefix = f'{emph}{dt_str} ('
-    suffix = f'){emph}: {r.MNAME} ({r.CNAME} County), {location}: {victim_str} deceased'
-
-    accid = r.name
-    if github_url:
+    def link(uri: str, text: str) -> str:
         if dst == 'slack':
-            github_link = f'<{github_url}|{accid}>'
-        elif dst == 'markdown':
-            github_link = f'[{accid}]({github_url})'
+            return f'<{uri}|{text}>'
         else:
-            github_link = f'{accid}'
-    else:
-        github_link = f'{accid}'
+            return f'[{text}]({uri})'
 
-    text = f'{prefix}{github_link}{suffix}'
-    if dst == 'bsky' and github_url:
-        start = len(prefix)
-        end = start + len(github_link)
-        facet: Facet = Facet(
-            index=ByteSlice(byte_start=start, byte_end=end),
-            features=[Link(uri=github_url)],
-        )
-        return BskyPost(text=text, facets=[facet])
+    accid = str(r.name)
+    if github_url:
+        gh_link = link(github_url, accid)
     else:
-        return text
+        gh_link = f'{accid}'
+
+    cn = normalize_name(r.CNAME)
+    mn = normalize_name(r.MNAME)
+    c_url = f'{SITE}/c/{cn}'
+    m_url = f'{SITE}/c/{cn}/{mn}'
+    c_link = link(uri=c_url, text=f'{r.CNAME} County')
+    m_link = link(uri=m_url, text=r.MNAME)
+    return f'*{dt_str} ({gh_link})*: {m_link} ({c_link}), {location}: {victim_str} deceased'
 
 
 def get_rundate(tree: Tree) -> str:
