@@ -11,7 +11,6 @@ import { floor, min } from "@rdub/base/math";
 import useSessionStorageState from "use-session-storage-state";
 import strftime from "strftime";
 import { ArrowForward, ArrowForwardIos, SvgIconComponent } from "@mui/icons-material";
-import SvgIcon from "@mui/material/SvgIcon/SvgIcon";
 import { Tooltip } from "@mui/material";
 
 export const PageSizes = [ 10, 20, 50 ]
@@ -85,30 +84,6 @@ export function useDatePaginationControls(
         [ _setBefore, max ]
     )
     return { perPage, setPerPage, before, setBefore, start, end }
-}
-
-export function useResultPagination<T>(
-    result: Result<T>,
-    totalFn: (t: T) => number,
-    {
-        page, setPage,
-        perPage, setPerPage,
-    }: PaginationBase
-): Pagination | undefined {
-    const total = useMemo(
-        () =>
-            result
-                ? fold(
-                    () => null,
-                    totalFn,
-                )(result)
-                : null,
-        [ result ]
-    )
-    return useMemo(
-        () => total === null ? undefined : { page, setPage, perPage, setPerPage, total },
-        [ page, setPage, perPage, setPerPage, total ]
-    )
 }
 
 export function useResultDatePagination<T>(

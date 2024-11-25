@@ -1,5 +1,4 @@
 import css from "./result-table.module.scss";
-import { Result } from "@rdub/react-sql.js-httpvfs/query";
 import TableContainer from "@mui/material/TableContainer";
 import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
@@ -9,12 +8,16 @@ import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
 import * as React from "react";
 import { keys, o2a } from "@rdub/base/objs";
-import { fold } from "fp-ts/Either";
+import { Either, fold } from "fp-ts/Either";
 import { TableFooter } from "@mui/material";
 import { DatePagination, Pagination } from "@/src/pagination";
 import { Tooltip } from "./tooltip";
 
-export type Props<Row = any> = {
+export type Result<T> = Either<Error, T>
+export type R<T> = Either<Error, T>
+export type Rs<T> = Either<Error, T[]>
+
+export type Props = {
     className?: string
     pagination?: Pagination | DatePagination
 }
@@ -81,7 +84,7 @@ export function RowsTable(
 
 export function ResultTable(
     { result, colTitles, className, pagination, }: Props & {
-        result: Result<Row>
+        result: Rs<Row>
         colTitles ? : Record<string, string>
     }
 ) {

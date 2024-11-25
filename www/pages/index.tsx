@@ -1,46 +1,51 @@
 import React, { Fragment, useState } from 'react'
-import type { GetStaticProps } from 'next'
+import type { GetServerSideProps } from 'next'
 import Head from '@rdub/next-base/head'
 import css from './index.module.scss'
 import A from "@rdub/next-base/a";
 import { Nav } from "@rdub/next-base/nav";
-import getBasePath from "@rdub/next-base/basePath"
 import { url } from "@/src/site";
 import { GitHub } from "@/src/socials"
 import { plotSpecs } from "@/src/plotSpecs";
 import { buildPlot, buildPlots, Plot, PlotsDict } from "@rdub/next-plotly/plot";
 import { loadPlots } from "@rdub/next-plotly/plot-load";
-import { NjspPlot, PlotParams } from "@/src/njsp/plot";
+import { NjspPlot, PlotParams, Props as NjspProps } from "@/src/njsp/plot";
 import { getUrls, NjdotRawData, NjspFatalAcc } from "@/src/urls";
 import Footer from '@/src/footer';
 import { ResultTable } from "@/src/result-table";
-import { EndYear, H2 } from "@/pages/c";
+import { EndYear, H2 } from "@/pages/c/[[...region]]";
 import { usePaginationControls } from "@/src/pagination";
-import { useNjspCrashesTotal, useNjspCrashRows } from "@/src/use-njsp-crashes";
-import { cc2mc2mn, Counties } from "@/server/county";
+import { getNjspCrashRows } from "@/src/use-njsp-crashes";
+import { cc2mc2mn } from "@/server/county";
 import { CC2MC2MN } from "@/src/county";
 import { NjspSource } from "@/src/icons";
 import { right } from "fp-ts/Either";
-import { useQuery } from "@tanstack/react-query";
-import { loadProps } from "@/src/njsp/plot";
-import { useDb } from "@rdub/duckdb-wasm/duckdb";
+import { loadProps } from "@/server/njsp/plot";
+import { Crash } from '@/src/njsp/crash';
+import { Crashes } from '@/server/njsp/sql';
 
 type Props = {
     plotsDict: PlotsDict<PlotParams>
     cc2mc2mn: CC2MC2MN
-    Counties: string[]
+    njspProps: NjspProps
+    crashes: Crash[]
+    njspCrashesTotal: number
 }
 
-export const getStaticProps: GetStaticProps = async () => {
-    const plotsDict: PlotsDict = loadPlots(plotSpecs)
-    return { props: { plotsDict, cc2mc2mn, Counties, }, }
+export const getServerSideProps: GetServerSideProps<Props> = async () => {
+    const plotsDict = loadPlots(plotSpecs) as PlotsDict<PlotParams>
+    const urls = getUrls({ local: true })
+    const page = 0, perPage = 10, cc = null, mc = null
+    const crashDb = new Crashes(urls.njsp.crashes)
+    const [ crashes, njspCrashesTotal, njspProps, ] = await Promise.all([
+        crashDb.crashes({ cc, mc, page, perPage, }),
+        crashDb.total({ cc, mc, }),
+        loadProps({ county: null }),
+    ])
+    return { props: { plotsDict, cc2mc2mn, njspProps, crashes, njspCrashesTotal, } }
 }
 
-const Home = ({ plotsDict, cc2mc2mn, Counties, }: Props) => {
-    const urls = getUrls()
-    const basePath = getBasePath()
-    const [ requestChunkSize ] = useState<number>(64 * 1024)
-
+const Home = ({ plotsDict, cc2mc2mn, njspProps, crashes, njspCrashesTotal, }: Props) => {
     const [ njspPlotSpec, ...plotSpecs2 ] = plotSpecs
     const njspPlot = buildPlot<string, PlotParams>(njspPlotSpec, plotsDict[njspPlotSpec.id])
     const plots: Plot[] = buildPlots(plotSpecs2, plotsDict)
@@ -66,23 +71,10 @@ const Home = ({ plotsDict, cc2mc2mn, Counties, }: Props) => {
     const title = "NJ Traffic Crash Data"
 
     const [ county, setCounty ] = useState<string | null>(null)
-    const dbc = useDb()
-    const { data: njspProps } = useQuery({
-        queryKey: [ "njspProps", county, dbc === null, ],
-        refetchOnWindowFocus: false,
-        refetchInterval: false,
-        queryFn: async () => {
-            if (!dbc) return null
-            const { db, conn } = dbc
-            return loadProps({ db, conn, county, Counties, })
-        }
-    })
-
     const cc = null, mc = null
     const njspPaginationControls = usePaginationControls({ id: "njsp-crashes" })
-    const njspCrashes = useNjspCrashRows({ urls, cc, mc, cn: county, cc2mc2mn, ...njspPaginationControls, }) ?? []
-    const njspCrashesTotal = useNjspCrashesTotal({ urls, cc, mc, requestChunkSize, })
-    const njspPagination = { ...njspPaginationControls, total: njspCrashesTotal?.total ?? 0 }
+    const njspCrashes = getNjspCrashRows({ cc, mc, cc2mc2mn, crashes, }) ?? []
+    const njspPagination = { ...njspPaginationControls, total: njspCrashesTotal }
 
     return (
         <div className={css.container}>
@@ -92,16 +84,12 @@ const Home = ({ plotsDict, cc2mc2mn, Counties, }: Props) => {
                 url={url}
                 thumbnail={`${url}/plots/fatalities_per_year_by_type.png`}
             />
-
             <Nav
                 id={"nav"}
                 classes={"collapsed"}
                 menus={menus}
                 hover={false}
-            >
-                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
-            </Nav>
-
+            />
             <main className={css.index}>
                 <h1 className={css.title}>{title}</h1>
                 <p>
@@ -114,7 +102,7 @@ const Home = ({ plotsDict, cc2mc2mn, Counties, }: Props) => {
                     <span className={css.bold}>Work in progress</span> map of NJDOT data: 5 years (2017-2021) of fatal
                     and injury crashes in Hudson County:
                 </p>
-                <iframe src={`${basePath}/map/hudson`} className={css.map} />
+                <iframe src={`/map/hudson`} className={css.map} />
                 <ul style={{listStyle: "none"}}>
                     <li><A href={"/map/hudson"}>Full screen map here</A></li>
                     <li>Code and cleaned data are <A href={GitHub.href}>here on GitHub</A>.</li>
@@ -167,7 +155,6 @@ const Home = ({ plotsDict, cc2mc2mn, Counties, }: Props) => {
                                 <div key={id} className={css["plot-container"]}>
                                     <Plot
                                         id={id}
-                                        basePath={basePath}
                                         {...rest}
                                         margin={{ t: 10, b: 30, }}
                                     />
