@@ -1,60 +1,21 @@
-import { ReactNode, useMemo } from "react";
-import * as sql from "@rdub/react-sql.js-httpvfs/query";
-import { Result } from "@rdub/react-sql.js-httpvfs/query";
-import { useSqlQuery } from "@/src/sql";
-import { Crash } from "@/src/crash";
+import { ReactNode } from "react";
+import { CrashRec, Occupant, Pedestrian, Vehicle } from "@/src/njdot/crash";
 import { Row } from "@/src/result-table";
-import { map } from "fp-ts/Either";
 import { CC2MC2MN, County } from "@/src/county";
 import strftime from "strftime";
 import { fromEntries } from "@rdub/base/objs";
-import { Urls } from "@/src/urls";
 import { Car, Cyclist, Driver, Passenger, Pedestrian as Ped } from "@/src/icons";
 import css from "./use-crashes.module.scss"
-import { CrashesOccupants, Occupant, useCrashOccupants } from "@/src/crash-occupants";
-import { CrashesPedestrians, Pedestrian, useCrashPedestrians } from "@/src/crash-pedestrians";
-import { CrashesVehicles, useCrashVehicles, Vehicle } from "@/src/crash-vehicles";
 import A from "@rdub/next-base/a";
 import { Tooltip } from "@/src/tooltip"
-import moment from "moment-timezone";
 import CityLink from "@/src/city-link";
 import CountyLink from "@/src/county-link";
 
-export type Base = Omit<sql.Base, 'url'> & {
-    urls: Urls
-}
-
-export type Props = Base & {
+export type Props = {
     cc: number | null
-    cn: string | null
     mc: number | null
-    before: string
-    perPage: number
-}
-
-export function useNjdotCrashes({ cc, mc, before, perPage, timerId = "njdot-crashes", urls, ...base }: Props): Result<Crash> | null {
-    const severities = [ 'i', 'f' ]
-    const query = useMemo(
-        () => {
-            const severitiesFilter = severities.map(s => `severity='${s}'`).join(' or ')
-            const severitiesClause = severitiesFilter ? `(${severitiesFilter}) and ` : ""
-
-            const regionClause = cc ? `cc=${cc}${mc ? ` and mc=${mc}` : ""} and ` : ""
-
-            const m = moment.tz(before, "America/New_York").add(1, 'day')
-            const mStr = m.format('YYYY-MM-DD')
-            const dtClause = `dt<='${mStr}'`
-
-            return `
-                select * from crashes
-                where ${severitiesClause}${regionClause}${dtClause}
-                order by dt desc
-                limit ${perPage}
-            `
-        },
-        [ before, perPage, severities, cc, mc, ]
-    )
-    return useSqlQuery<Crash>({ ...base, url: urls.dot.crashes, timerId, query })
+    recs: CrashRec[]
+    cc2mc2mn: CC2MC2MN
 }
 
 export const ColLabels = {
@@ -91,13 +52,13 @@ export const ConditionMap = [
 
 export function CrashIcons(
     {
-        occupants,
-        pedestrians,
-        vehicles,
+        occs,
+        peds,
+        vehs,
     }: {
-        occupants?: Occupant[]
-        pedestrians?: Pedestrian[]
-        vehicles?: Vehicle[]
+        occs?: Occupant[]
+        peds?: Pedestrian[]
+        vehs?: Vehicle[]
     }
 ) {
     const deaths = [] as ReactNode[]
@@ -105,7 +66,7 @@ export function CrashIcons(
     const moderateInjuries = [] as ReactNode[]
     const possibleInjuries = [] as ReactNode[]
     const arrs = [ [], deaths, seriousInjuries, moderateInjuries, possibleInjuries, ]
-    occupants?.forEach(({ pos, condition, eject, age, sex, inj_loc, inj_type, }, idx) => {
+    occs?.forEach(({ pos, condition, eject, age, sex, inj_loc, inj_type, }, idx) => {
         condition = condition ?? 0
         let ejectedStr: string = ""
         switch (eject) {
@@ -123,7 +84,7 @@ export function CrashIcons(
         const icon = <Component key={idx} title={title} style={{fill}}/>
         arrs[condition].push(icon)
     })
-    pedestrians?.forEach(({ condition, age, sex, inj_loc, inj_type, cyclist, }, idx) => {
+    peds?.forEach(({ condition, age, sex, inj_loc, inj_type, cyclist, }, idx) => {
         condition = condition ?? 0
         const [ type, Component, ] =
             cyclist
@@ -141,11 +102,11 @@ export function CrashIcons(
         {moderateInjuries.length ? <span className={css.typeIcons}>{moderateInjuries}</span> : null}
         {possibleInjuries.length ? <span className={css.typeIcons}>{possibleInjuries}</span> : null}
         {
-            vehicles?.length
+            vehs?.length
                 ? <span className={css.typeIcons}>
                     {/*<span className={css.typeIcon}>🚗</span>*/}
                     {
-                        vehicles.map(
+                        vehs.map(
                             ({ damage, damage_loc, impact_loc, departure }, i) => {
                                 damage = damage ?? 0
                                 const disabled = damage === 4 || departure === 3 || departure === 5
@@ -174,19 +135,12 @@ export function gmapsUrl({ lat, lon, }: { lat: number, lon: number }) {
     return `https://www.google.com/maps/?q=${lat},${lon}`
 }
 
-export function getNjdotCrashRows({ rows, cols, cc2mc2mn, crashOccupants, crashPedestrians, crashVehicles, }: {
-    rows: Crash[]
-    cols: Col[]
-    cc2mc2mn: CC2MC2MN
-    crashOccupants: CrashesOccupants | null
-    crashPedestrians: CrashesPedestrians | null
-    crashVehicles: CrashesVehicles | null
-}): Row[] {
-    return rows.map(row => {
-        const { id } = row
-        const occupants = crashOccupants?.[id]
-        const pedestrians = crashPedestrians?.[id]
-        const vehicles = crashVehicles?.[id]
+export function getNjdotCrashRows({ recs, cc, mc, cc2mc2mn, }: Props): Row[] {
+    const ccCol: Col[] = cc ? [] : ['cc']
+    const mcCol: Col[] = mc ? [] : ['mc']
+    const cols: Col[] = [ 'dt', ...ccCol, ...mcCol, 'casualties', 'road', 'cross_street', 'mp', ]
+    return recs.map(({ crash, occs, peds, vehs }) => {
+        const { id } = crash
         return fromEntries([
             [ 'key', id ],
             ...cols.map(col => {
@@ -194,30 +148,30 @@ export function getNjdotCrashRows({ rows, cols, cc2mc2mn, crashOccupants, crashP
                 if (col == 'dt') {
                     txt = <Tooltip title={`Crash ID: ${id}`}>
                         <span>{
-                            strftime('%-m/%-d/%y %-I:%M%p', new Date(row.dt))
+                            strftime('%-m/%-d/%y %-I:%M%p', new Date(crash.dt))
                         }</span>
                     </Tooltip>
                 } else if (col == 'll') {
-                    const { ilat, ilon, olat, olon } = row
+                    const { ilat, ilon, olat, olon } = crash
                     const [ lat, lon ] = ilat && ilon ? [ ilat, ilon ] : [ olat, olon ]
                     txt = (lat && lon)
                         ? `${lat?.toFixed(6)}, ${lon?.toFixed(6)}`
                         : ''
                 } else if (col == 'road') {
-                    const { road, sri } = row
+                    const { road, sri } = crash
                     txt = <Tooltip title={sri ? `SRI ${sri}` : undefined}><span>{road}</span></Tooltip>
                 } else if (col == 'casualties') {
                     txt = <CrashIcons
-                        occupants={occupants}
-                        pedestrians={pedestrians}
-                        vehicles={vehicles}
+                        occs={occs}
+                        peds={peds}
+                        vehs={vehs}
                     />
                 } else if (col == 'cc') {
-                    txt = <CountyLink cc={row.cc} cc2mc2mn={cc2mc2mn} />
+                    txt = <CountyLink cc={crash.cc} cc2mc2mn={cc2mc2mn} />
                 } else if (col == 'mc') {
-                    txt = <CityLink {...row} cc2mc2mn={cc2mc2mn} />
+                    txt = <CityLink {...crash} cc2mc2mn={cc2mc2mn} />
                 } else if (col == 'mp') {
-                    const { mp, ilat, ilon } = row
+                    const { mp, ilat, ilon } = crash
                     if (mp) {
                         txt = mp.toFixed(2)
                         if (ilat && ilon) {
@@ -226,30 +180,10 @@ export function getNjdotCrashRows({ rows, cols, cc2mc2mn, crashOccupants, crashP
                         }
                     }
                 } else {
-                    txt = row[col] ?? ''
+                    txt = crash[col] ?? ''
                 }
                 return [ ColLabels[col], txt ] as [ string, string | number ]
             })
         ]) as Row
     })
-}
-
-export function useNjdotCrashRows({ cc2mc2mn, ...props }: Props & { cc2mc2mn: CC2MC2MN}) {
-    const crashesResult = useNjdotCrashes({ ...props })
-    const crashOccupants = useCrashOccupants({ crashesResult, ...props })
-    const crashPedestrians = useCrashPedestrians({ crashesResult, ...props })
-    const crashVehicles = useCrashVehicles({ crashesResult, ...props })
-    const ccCol: Col[] = props.cc ? [] : ['cc']
-    const mcCol: Col[] = props.mc ? [] : ['mc']
-    const cols: Col[] = [ 'dt', ...ccCol, ...mcCol, 'casualties', 'road', 'cross_street', 'mp', ]
-    return useMemo(
-        () => {
-            if (!crashesResult) return
-            console.log(`crashRows effect`)
-            return map(
-                (crashes: Crash[]) => getNjdotCrashRows({ rows: crashes, cols, cc2mc2mn, crashOccupants, crashPedestrians, crashVehicles, })
-            )(crashesResult)
-        },
-        [ crashesResult, cols, crashOccupants, ]
-    )
 }

@@ -2,7 +2,6 @@ import { Annotations, Layout, PlotData } from "plotly.js";
 import * as Plotly from "react-plotly.js";
 import { curYear, Data, njspPlotSpec, prvYear, YearTotalsMap } from "@/src/plotSpecs";
 import React, { Dispatch, ReactNode, useCallback, useMemo, useState } from "react";
-import { HasCounty, typeCountsQuery } from "./projections";
 import { repoWithOwner } from "@/src/github";
 import A from "@rdub/next-base/a";
 import { GitHub } from "@/src/socials";
@@ -12,12 +11,13 @@ import { normalize } from "../county";
 import { CountySelect } from "../county-select";
 import { NjspSource } from "@/src/icons";
 import IntrinsicElements = React.JSX.IntrinsicElements;
-import { AsyncDuckDB, AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
-import { ProjectedCsv } from "@/src/paths";
-import { ytcQuery } from "@/src/njsp/ytc";
 
 export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
 export type Annotation = Partial<Annotations>
+
+export type HasCounty = {
+    county: string | null
+}
 
 export type TypeCounts = {
     driver: number
@@ -42,53 +42,6 @@ export type YtRow = {
 } & TypeCounts & {
     total: number
     projected: number
-}
-
-export async function getTypeProjections({ conn, county, }: { conn: AsyncDuckDBConnection, county: string | null, }): Promise<TypeCounts> {
-    const query = typeCountsQuery(county)
-    console.log("getTypeProjections query:", query)
-    // await db.registerFileURL('projected.csv', '/njsp/projected.csv', false)
-    const [ typeCounts ] = JSON.parse(JSON.stringify((await (conn.query(query))).toArray()))
-    // const [ typeCounts ] = await getCsvTable<TypeCounts>({ db, query, })
-    return typeCounts
-}
-
-export async function loadProps(
-  { db, conn, county, Counties, }: {
-      db: AsyncDuckDB
-      conn: AsyncDuckDBConnection
-      county: string | null
-      Counties: string[]
-  }
-): Promise<Props> {
-    const initialPlotP = fetch(`/plots/${njspPlotSpec.name}.json`).then(r => r.json() as Promise<PlotParams>)
-    const rundateP = fetch("/njsp/rundate.json").then(r => r.json()).then(o => o.rundate as string)
-    const typeProjectionsP =
-      fetch(ProjectedCsv)
-        .then(r => r.text())
-        .then(text => db.registerFileText("projected.csv", text))
-        .then(() => getTypeProjections({ conn, county, }))
-    const ytRowsP =
-      fetch("/njsp/year-type-county.csv")
-        .then(r => r.text())
-        .then(text => db.registerFileText("year-type-county.csv", text))
-        .then(() => {
-            const target = `read_csv('year-type-county.csv')`
-            const query = ytcQuery({ county: county ?? null, target })
-            console.log("duckdb querying:", query)
-            return conn.query(query)
-        })
-        .then(r => JSON.parse(JSON.stringify(r.toArray() as YtRow[])))
-    const [ initialPlot, rundate, ytRows, typeProjections, ] = await Promise.all([ initialPlotP, rundateP, ytRowsP, typeProjectionsP, ])
-    console.log(`rundate: ${rundate}`, "ytRows:", ytRows)
-    return {
-        initialPlot,
-        typeProjections,
-        ytRows,
-        rundate,
-        county,
-        Counties,
-    }
 }
 
 export function getPlotData({ ytRows, typeProjections, initialPlotData, types, showProjected, county, }: {
