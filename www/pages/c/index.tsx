@@ -4,7 +4,7 @@ import { values } from "@rdub/base/objs";
 import { CC2MC2MN } from "@/src/county";
 import { getUrls } from "@/src/urls";
 import { NjspPlot } from "@/src/njsp/plot";
-import { loadProps } from "@/server/njsp/plot";
+import { loadProps } from "@/src/njsp/plot";
 import { ReactNode, useEffect, useState } from "react";
 import useRegion from "@/src/use-region";
 import { useDatePaginationControls, usePaginationControls, useResultDatePagination } from "@/src/pagination";

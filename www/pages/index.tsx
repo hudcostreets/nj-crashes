@@ -10,9 +10,8 @@ import { GitHub } from "@/src/socials"
 import { plotSpecs } from "@/src/plotSpecs";
 import { buildPlot, buildPlots, Plot, PlotsDict } from "@rdub/next-plotly/plot";
 import { loadPlots } from "@rdub/next-plotly/plot-load";
-import * as Njsp from "@/src/njsp/plot";
 import { NjspPlot, PlotParams } from "@/src/njsp/plot";
-import { getUrls, NjdotRawData, NjspFatalAcc, Urls } from "@/src/urls";
+import { getUrls, NjdotRawData, NjspFatalAcc } from "@/src/urls";
 import Footer from '@/src/footer';
 import { ResultTable } from "@/src/result-table";
 import { EndYear, H2 } from "@/pages/c";
@@ -21,31 +20,24 @@ import { useNjspCrashesTotal, useNjspCrashRows } from "@/src/use-njsp-crashes";
 import { cc2mc2mn, Counties } from "@/server/county";
 import { CC2MC2MN } from "@/src/county";
 import { NjspSource } from "@/src/icons";
-import { getCrashes, getTotals } from "@/server/njsp/sql";
 import { right } from "fp-ts/Either";
 import { useQuery } from "@tanstack/react-query";
-import { loadProps } from "@/server/njsp/plot";
+import { loadProps } from "@/src/njsp/plot";
 import { useDb } from "@rdub/duckdb-wasm/duckdb";
 
 type Props = {
     plotsDict: PlotsDict<PlotParams>
-    njspProps: Njsp.Props
-    urls: Urls
     cc2mc2mn: CC2MC2MN
     Counties: string[]
 }
 
 export const getStaticProps: GetStaticProps = async () => {
     const plotsDict: PlotsDict = loadPlots(plotSpecs)
-    const urls = getUrls()
-    const localUrls = getUrls({ local: true })
-    const cc = null, mc = null, page = 0, perPage = 10
-    const crashes = await getCrashes({ urls: localUrls, cc, mc, page, perPage, })
-    const totals = await getTotals({ urls: localUrls, cc, mc, })
-    return { props: { plotsDict, urls, cc2mc2mn, crashes, totals, Counties, }, }
+    return { props: { plotsDict, cc2mc2mn, Counties, }, }
 }
 
-const Home = ({ plotsDict, urls, cc2mc2mn, Counties, }: Props) => {
+const Home = ({ plotsDict, cc2mc2mn, Counties, }: Props) => {
+    const urls = getUrls()
     const basePath = getBasePath()
     const [ requestChunkSize ] = useState<number>(64 * 1024)
 
