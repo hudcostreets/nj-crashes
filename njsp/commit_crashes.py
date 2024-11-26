@@ -1,4 +1,5 @@
 import json
+
 import pandas as pd
 from datetime import datetime
 from git import Commit, Repo, Tree, Object, Blob
@@ -6,15 +7,17 @@ from gitdb.exc import BadName
 from github import Github
 from github.Commit import Commit as GithubCommit
 from io import BytesIO
-from pandas import isna
+from pandas import isna, Series
 from subprocess import CalledProcessError
-from typing import Union, Optional, Tuple, Callable
+from typing import Union, Optional, Tuple, Callable, Literal
 from utz import process, cached_property, err
 
 from nj_crashes.fauqstats import get_fauqstats, FAUQStats
 from nj_crashes.utils.git import git_fmt, get_repo, SHORT_SHA_LEN
+from nj_crashes.utils import SITE
 from nj_crashes.utils.github import get_github_repo, load_pqt_github, REPO, GithubCommit as GithubCommitWrapper
 from nj_crashes.utils.log import none
+from njdot import normalize_name
 from njsp.paths import RUNDATE_RELPATH
 
 
@@ -65,13 +68,10 @@ VICTIM_TYPES = {
     'T': 'pedestrian',
     'B': 'cyclist',
 }
+Dst = Literal['slack', 'markdown']
 
 
-def crash_str(
-    r: pd.Series,
-    fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p',
-    github_url: Optional[str] = None,
-) -> str:
+def mk_victim_str(r: Series):
     victim_pcs = []
     for suffix, name in VICTIM_TYPES.items():
         num = r[f'FATAL_{suffix}']
@@ -80,24 +80,48 @@ def crash_str(
             noun = name if num == 1 else f'{name}s'
             victim_pcs.append(f'{num} {noun}')
 
-    victim_str = ', '.join(victim_pcs)
-    dt = r['dt']
+    return ', '.join(victim_pcs)
+
+
+def mk_dt_str(dt: pd.Timestamp, fmt: Union[Callable, str]) -> str:
     if callable(fmt):
-        dt_str = fmt(dt)
+        return fmt(dt)
     else:
-        dt_str = dt.strftime(fmt)
+        return dt.strftime(fmt)
 
-    accid = r.name
-    if github_url:
-        github_link = f'<{github_url}|{accid}>'
-    else:
-        github_link = accid
 
+def crash_str(
+    r: pd.Series,
+    fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p',
+    github_url: Optional[str] = None,
+    dst: Dst = 'slack',
+) -> str:
+    victim_str = mk_victim_str(r)
+    dt_str = mk_dt_str(r['dt'], fmt)
     if isna(r.LOCATION):
         location = 'unknown location'
     else:
         location = r.LOCATION.replace('&', '&amp;')
-    return f'*{dt_str} ({github_link})*: {r.MNAME} ({r.CNAME} County), {location}: {victim_str} deceased'
+
+    def link(uri: str, text: str) -> str:
+        if dst == 'slack':
+            return f'<{uri}|{text}>'
+        else:
+            return f'[{text}]({uri})'
+
+    accid = str(r.name)
+    if github_url:
+        gh_link = link(github_url, accid)
+    else:
+        gh_link = f'{accid}'
+
+    cn = normalize_name(r.CNAME)
+    mn = normalize_name(r.MNAME)
+    c_url = f'{SITE}/c/{cn}'
+    m_url = f'{SITE}/c/{cn}/{mn}'
+    c_link = link(uri=c_url, text=f'{r.CNAME} County')
+    m_link = link(uri=m_url, text=r.MNAME)
+    return f'*{dt_str} ({gh_link})*: {m_link} ({c_link}), {location}: {victim_str} deceased'
 
 
 def get_rundate(tree: Tree) -> str:
@@ -332,9 +356,9 @@ class CommitCrashes:
             diff_objs[id] = diff_obj
         return diff_objs
 
-    def descriptions(self, **kwargs) -> list[str]:
+    def descriptions(self, dst: Dst = 'slack', **kwargs) -> list[str]:
         new_df = self.adds_df
-        descriptions = new_df.apply(crash_str, **kwargs, axis=1)
+        descriptions = new_df.apply(crash_str, dst=dst, **kwargs, axis=1)
         return descriptions.tolist() if len(descriptions) else []
 
     @cached_property

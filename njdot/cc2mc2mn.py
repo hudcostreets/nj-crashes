@@ -18,4 +18,11 @@ def load():
     }
 
 
+def normalize_name(name: str):
+    return name.lower().replace(' ', '-')
+
+def denormalize_name(slug: str):
+    return slug.replace('-', ' ').title()
+
+
 cc2mc2mn = load()

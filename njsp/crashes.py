@@ -1,4 +1,5 @@
 from os.path import exists, relpath, join
+from re import fullmatch
 
 import click
 import pandas as pd
@@ -115,7 +116,9 @@ class Crash:
 
     def xml_url(self, ref: Optional[str] = None):
         if not ref:
-            ref = git_fmt()
+            ref = git_fmt(fmt='%H')
+        if not fullmatch(r'[\da-f]+', ref):
+            ref = git_fmt(ref, fmt='%H')
         accid_map = self.crashes(ref=ref).accid_map
         rng = accid_map[self.accid]
         (start_line, _), (end_line, _) = rng['start'], rng['end']
