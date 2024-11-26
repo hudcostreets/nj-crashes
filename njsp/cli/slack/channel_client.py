@@ -85,10 +85,10 @@ def im_channel(client: WebClient, user_id: str, **kwargs) -> Optional[dict]:
 
 
 def load_slack_config(
-        env: str,
-        basename: str,
-        value: Optional[str] = None,
-        opts: Optional[Iterable[str]] = None,
+    env: str,
+    basename: str,
+    value: Optional[str] = None,
+    opts: Optional[Iterable[str]] = None,
 ) -> str:
     if value:
         return value

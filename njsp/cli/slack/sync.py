@@ -1,7 +1,7 @@
 from click import option, argument
 from datetime import datetime as dt
 from typing import Optional
-from utz import err, process
+from utz import env, err, process
 from utz.ymd import dates, YMD
 
 from .base import slack
@@ -54,23 +54,30 @@ def sync_crash(
         post_msg()
 
 
+SLACK_CHANNEL_ID_VAR = "SLACK_CHANNEL_ID"
+SLACK_CHANNEL_ID = env.get(SLACK_CHANNEL_ID_VAR)
+
 @slack.command('sync')
 @dates(default_start=YMD(2008), help='Date range to filter crashes to, e.g. `202307-`, `20230710-202308')
 @option('-f', '--overwrite-existing', count=True, help='1x')
-@option(*CHANNEL_OPTS, help='Slack channel ID to post to; defaults to $SLACK_CHANNEL_ID')
+@option(*CHANNEL_OPTS, help=f'Slack channel ID to post to; defaults to ${SLACK_CHANNEL_ID_VAR} (currently {SLACK_CHANNEL_ID or "unset"})')
 @option('-m', '--fetch-messages', type=int, default=1000, help="Fetch messages from Slack and update cache (as opposed to just reading cached messages")
 @option('-n', '--dry-run', count=True, help="Avoid Slack API requests, cache updates, etc.")
 @argument('commit', required=False)
 def sync(
-    commit,
+    commit: Optional[str],
     start: YMD,
     end: YMD,
-    overwrite_existing,
-    channel,
+    overwrite_existing: int,
+    channel: Optional[str],
     fetch_messages: Optional[int],
     dry_run: int,
 ):
-    """Post crashes to the #crash-bot channel in HCCS Slack."""
+    """Post crashes to the #crash-bot channel in HCCS Slack.
+
+    <COMMIT> argument should be a "Refresh NJSP data" / `njsp refresh-data` commit hash (that
+    updates `data/FAUQStats*.xml` files).
+    """
     if not commit:
         cur_year = dt.now().year
         commit = process.line('git', 'log', '-1', '--format=%h', '--', fauqstats_relpath(cur_year), fauqstats_relpath(cur_year - 1))
