@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Nov 25 10:00:04 EST 2024</RUNDATE>
+  <RUNDATE>Tue Nov 26 10:00:03 EST 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,6 +49,32 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="14" CNAME="Morris">
+    <MUNICIPALITY MCODE="1435" MNAME="Rockaway Twsp">
+      <ACCIDENT ACCID="13600" DATE="11/25/2024" TIME="2307">
+        <HIGHWAY>80</HIGHWAY>
+        <LOCATION>Interstate 80 MP 37.6</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="16" CNAME="Passaic">
+    <MUNICIPALITY MCODE="1614" MNAME="Wayne Twsp">
+      <ACCIDENT ACCID="13597" DATE="11/25/2024" TIME="1051">
+        <HIGHWAY>80</HIGHWAY>
+        <LOCATION>Interstate 80</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0113" MNAME="Hammonton Town">
       <ACCIDENT ACCID="13591" DATE="11/24/2024" TIME="0318">
@@ -85,6 +111,19 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0253" MNAME="River Vale Twsp">
+      <ACCIDENT ACCID="13598" DATE="11/22/2024" TIME="1641">
+        <HIGHWAY>114</HIGHWAY>
+        <LOCATION>County 114 (Spur (County Routes Only)) MP 1.35</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -373,6 +412,21 @@
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+    <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
+      <ACCIDENT ACCID="13594" DATE="11/09/2024" TIME="0522">
+        <HIGHWAY>40</HIGHWAY>
+        <LOCATION>State Highway 40</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1336" MNAME="Tinton Falls Boro">
       <ACCIDENT ACCID="13559" DATE="11/08/2024" TIME="1918">
         <HIGHWAY>444</HIGHWAY>
@@ -3270,6 +3324,17 @@
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
+      <ACCIDENT ACCID="13599" DATE="07/17/2024" TIME="0704">
+        <STREET>Jersey Gardens Blvd</STREET>
+        <LOCATION>Jersey Gardens Blvd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
     <MUNICIPALITY MCODE="2002" MNAME="Clark Twsp">
       <ACCIDENT ACCID="13308" DATE="07/16/2024" TIME="1952">
         <STREET>Madison Hill Rd</STREET>
@@ -3345,6 +3410,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7170,12 +7236,13 @@
     <MUNICIPALITY MCODE="0435" MNAME="Waterford Twsp">
       <ACCIDENT ACCID="12964" DATE="01/26/2024" TIME="2104">
         <HIGHWAY>716</HIGHWAY>
-        <LOCATION>County 716 MP 7.6</LOCATION>
+        <LOCATION>County 716 MP 3.65</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7382,6 +7449,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7491,6 +7559,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7696,7 +7765,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>581</TOTACCIDENTS>
-  <TOTFATALITIES>613</TOTFATALITIES>
+  <TOTACCIDENTS>586</TOTACCIDENTS>
+  <TOTFATALITIES>618</TOTFATALITIES>
   <TOTINJURIES>107</TOTINJURIES>
 </FAUQSTATS>
