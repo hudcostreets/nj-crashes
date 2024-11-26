@@ -8,6 +8,7 @@ import { ResultTable } from "@/src/result-table";
 import { right } from "fp-ts/Either";
 import { CC2MC2MN } from "@/src/county";
 import { useMemo } from "react";
+import css from "../result-table.module.scss"
 
 export const NjspCrashesId = "njsp-crashes"
 
@@ -62,6 +63,7 @@ export function NjspCrashesTable(
   const njspPagination = { ...njspPaginationControls, total: njsp.total }
   return (
     <ResultTable
+      className={css.njspCrashesTable}
       result={right(njspCrashes)}
       pagination={njspPagination}
     />
