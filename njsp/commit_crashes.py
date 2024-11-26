@@ -1,5 +1,7 @@
 import json
+from dataclasses import dataclass
 
+from atproto_client.models.app.bsky.richtext.facet import Main as Facet, ByteSlice, Link as BskyLink
 import pandas as pd
 from datetime import datetime
 from git import Commit, Repo, Tree, Object, Blob
@@ -71,6 +73,39 @@ VICTIM_TYPES = {
 Dst = Literal['slack', 'markdown']
 
 
+@dataclass
+class Link:
+    uri: str
+    text: str
+
+
+@dataclass
+class BskyPost:
+    text: str
+    facets: list[Facet]
+
+    @staticmethod
+    def mk(*pcs: str | Link) -> 'BskyPost':
+        text = ""
+        facets = []
+        for pc in pcs:
+            if isinstance(pc, str):
+                text += pc
+            elif isinstance(pc, Link):
+                start = len(text)
+                text += pc.text
+                end = len(text)
+                facet: Facet = Facet(
+                    index=ByteSlice(byte_start=start, byte_end=end),
+                    features=[BskyLink(uri=pc.uri)],
+                )
+                facets.append(facet)
+            else:
+                raise TypeError(pc)
+
+        return BskyPost(text=text, facets=facets)
+
+
 def mk_victim_str(r: Series):
     victim_pcs = []
     for suffix, name in VICTIM_TYPES.items():
@@ -88,6 +123,31 @@ def mk_dt_str(dt: pd.Timestamp, fmt: Union[Callable, str]) -> str:
         return fmt(dt)
     else:
         return dt.strftime(fmt)
+
+
+def bsky_str(
+    r: pd.Series,
+    fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p',
+    github_url: Optional[str] = None,
+) -> BskyPost:
+    victim_str = mk_victim_str(r)
+    dt_str = mk_dt_str(r['dt'], fmt)
+    if isna(r.LOCATION):
+        location = 'unknown location'
+    else:
+        location = r.LOCATION.replace('&', '&amp;')
+
+    accid = str(r.name)
+    gh_link = Link(uri=github_url, text=accid) if github_url else accid
+    cn = normalize_name(r.CNAME)
+    mn = normalize_name(r.MNAME)
+    c_url = f'{SITE}/c/{cn}'
+    m_url = f'{SITE}/c/{cn}/{mn}'
+    c_link = Link(uri=c_url, text=f'{r.CNAME} County')
+    m_link = Link(uri=m_url, text=r.MNAME)
+    return BskyPost.mk(
+        f'{dt_str} (', gh_link, '): ', m_link, ' (', c_link, f'), {location}: {victim_str} deceased',
+    )
 
 
 def crash_str(

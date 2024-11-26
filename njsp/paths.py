@@ -26,6 +26,8 @@ CRASHES_DB = join(WWW_NJSP, 'crashes.db')
 CRASHES_DB_S3 = f'{S3_DATA}/crashes.db'
 CRASHES_DB_URI = f'sqlite:///{CRASHES_DB}'
 
+BSKY_CRASH_POSTS = join(NJSP_DATA, 'bsky-crash-posts.parquet')
+
 PROJECTED_CSV = join(WWW_NJSP, 'projected.csv')
 
 # Tabula template JSONs and NJSP summary PDFs live in this dir
