@@ -59,7 +59,7 @@ export function RowsTable(
                                 sx={{'&:last-child td, &:last-child th': {border: 0}}}
                             >{
                                 o2a(row, (col, val) =>
-                                    col !== 'key' && <TableCell key={col} align="right">{val}</TableCell>
+                                    col !== 'key' && <TableCell key={col} className={css.td} align="right">{val}</TableCell>
                                 )
                             }</TableRow>
                         )

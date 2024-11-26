@@ -1,7 +1,5 @@
 import moment from 'moment-timezone'
-import { Result } from "@/src/result";
-import { Dispatch, useCallback, useEffect, useMemo, useState } from "react";
-import { fold } from "fp-ts/Either";
+import { Dispatch, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import css from "./pagination.module.scss";
 import FirstPageIcon from '@mui/icons-material/FirstPage';
 import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
@@ -12,18 +10,29 @@ import useSessionStorageState from "use-session-storage-state";
 import strftime from "strftime";
 import { ArrowForward, ArrowForwardIos, SvgIconComponent } from "@mui/icons-material";
 import { Tooltip } from "@mui/material";
+import { useCookie } from "@/src/use-cookie";
+import { CookiesContext } from './cookies';
 
 export const PageSizes = [ 10, 20, 50 ]
 export const DefaultPageSize = PageSizes[0]
 
-export const perPageKey = (id: string) => `${id}-per-page`
-export const pageKey = (id: string) => `${id}-page`
-export const beforeKey = (id: string) => `${id}-before`
+export const PerPageKey = (id: string) => `${id}-per-page`
+export const PageKey = (id: string) => `${id}-page`
+export const BeforeKey = (id: string) => `${id}-before`
 
-export function usePaginationControls(defaults: { id: string, page?: number, perPage?: number }): PaginationBase {
-    const { id } = defaults
-    const [ perPage, setPerPage ] = useSessionStorageState<number>(perPageKey(id), { defaultValue: defaults.perPage ?? DefaultPageSize })
-    const [ page, setPage ] = useSessionStorageState<number>(pageKey(id), { defaultValue: defaults.page ?? 0 })
+export function usePaginationControls({ id, perPageId, ...defaults }: { id: string, perPageId?: string, page?: number, perPage?: number, }): PaginationBase {
+    const cookies = useContext(CookiesContext)
+    const key = PerPageKey(perPageId ?? id)
+    const cookie = cookies[key]
+    const init = cookie ? parseInt(cookie) : (defaults.perPage ?? DefaultPageSize)
+    const [ perPageCookie, setPerPageCookie ] = useCookie(key)
+    const perPage = useMemo(() => perPageCookie ? parseInt(perPageCookie) : init, [ perPageCookie, init ])
+    console.log(`key ${key}, perPage: ${perPage}, perPageCookie: ${perPageCookie}, cookies:`, cookies)
+    const setPerPage = useCallback(
+        (perPage: number) => { setPerPageCookie(perPage === init ? undefined : perPage.toString()) },
+        [ setPerPageCookie ]
+    )
+    const [ page, setPage ] = useSessionStorageState<number>(PageKey(id), { defaultValue: defaults.page ?? 0 })
     return { perPage, setPerPage, page, setPage }
 }
 
@@ -43,11 +52,11 @@ export function useDatePaginationControls(
 ): DatePaginationBase {
     const { id } = defaults
     const [ perPage, setPerPage ] = useSessionStorageState<number>(
-        perPageKey(id),
+        PerPageKey(id),
         { defaultValue: defaults.perPage ?? DefaultPageSize }
     )
     const [ before, _setBefore ] = useSessionStorageState<string>(
-        beforeKey(id),
+        BeforeKey(id),
         {
             defaultValue: end ?? defaults.before ?? strftime("%Y-%m-%d", new Date()),
             serializer: {
@@ -84,31 +93,6 @@ export function useDatePaginationControls(
         [ _setBefore, max ]
     )
     return { perPage, setPerPage, before, setBefore, start, end }
-}
-
-export function useResultDatePagination<T>(
-    result: Result<T>,
-    totalFn: (t: T) => number,
-    {
-        before, setBefore,
-        start, end,
-        perPage, setPerPage,
-    }: DatePaginationBase
-): DatePagination | undefined {
-    const total = useMemo(
-        () =>
-            result
-                ? fold(
-                    () => null,
-                    totalFn,
-                )(result)
-                : null,
-        [ result ]
-    )
-    return useMemo(
-        () => total === null ? undefined : { before, setBefore, start, end, perPage, setPerPage, total },
-        [ before, setBefore, start, end, perPage, setPerPage, total ]
-    )
 }
 
 export type PaginationCore = {

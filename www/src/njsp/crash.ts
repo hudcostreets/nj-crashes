@@ -15,3 +15,8 @@ export type Crash = {
 }
 
 export type Total = { total: number }
+
+export type CrashPage = {
+  crashes: Crash[]
+  total: number
+}

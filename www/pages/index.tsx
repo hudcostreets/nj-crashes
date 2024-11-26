@@ -12,40 +12,54 @@ import { loadPlots } from "@rdub/next-plotly/plot-load";
 import { NjspPlot, PlotParams, Props as NjspProps } from "@/src/njsp/plot";
 import { getUrls, NjdotRawData, NjspFatalAcc } from "@/src/urls";
 import Footer from '@/src/footer';
-import { ResultTable } from "@/src/result-table";
 import { EndYear, H2 } from "@/pages/c/[[...region]]";
-import { usePaginationControls } from "@/src/pagination";
-import { getNjspCrashRows } from "@/src/use-njsp-crashes";
-import { cc2mc2mn } from "@/server/county";
-import { CC2MC2MN } from "@/src/county";
 import { NjspSource } from "@/src/icons";
-import { right } from "fp-ts/Either";
 import { loadProps } from "@/server/njsp/plot";
-import { Crash } from '@/src/njsp/crash';
+import { CrashPage } from '@/src/njsp/crash';
 import { Crashes } from '@/server/njsp/sql';
+import { NjspCrashesId, NjspCrashesTable } from "@/src/njsp/table";
+import { CC2MC2MN } from "@/src/county";
+import { cc2mc2mn } from "@/server/county";
+import { DefaultPageSize, PerPageKey } from "@/src/pagination";
+import { Cookies, CookiesContext } from '@/src/cookies';
+import { GetServerSidePropsContext } from "next/dist/types";
 
 type Props = {
     plotsDict: PlotsDict<PlotParams>
-    cc2mc2mn: CC2MC2MN
     njspProps: NjspProps
-    crashes: Crash[]
-    njspCrashesTotal: number
+    initNjsp: CrashPage
+    cc2mc2mn: CC2MC2MN
+    cookies: Cookies
 }
 
-export const getServerSideProps: GetServerSideProps<Props> = async () => {
+export function parsePerPage(req: GetServerSidePropsContext["req"], ppKey: string): { perPage: number, cookies: Cookies } {
+    let perPage = DefaultPageSize
+    const cookies: Cookies = {}
+    const cookie = req.cookies[ppKey]
+    if (cookie) {
+        cookies[ppKey] = cookie
+        perPage = parseInt(cookie)
+    }
+    console.log("cookies:", req.cookies, "perPage:", perPage)
+    return { perPage, cookies }
+}
+
+export const getServerSideProps: GetServerSideProps<Props> = async ({ req }) => {
+    const { perPage, cookies } = parsePerPage(req, PerPageKey(NjspCrashesId))
     const plotsDict = loadPlots(plotSpecs) as PlotsDict<PlotParams>
     const urls = getUrls({ local: true })
-    const page = 0, perPage = 10, cc = null, mc = null
+    const page = 0, cc = null, mc = null
     const crashDb = new Crashes(urls.njsp.crashes)
     const [ crashes, njspCrashesTotal, njspProps, ] = await Promise.all([
         crashDb.crashes({ cc, mc, page, perPage, }),
         crashDb.total({ cc, mc, }),
         loadProps({ county: null }),
     ])
-    return { props: { plotsDict, cc2mc2mn, njspProps, crashes, njspCrashesTotal, } }
+    const initNjsp = { crashes, total: njspCrashesTotal, }
+    return { props: { plotsDict, njspProps, initNjsp, cc2mc2mn, cookies, } }
 }
 
-const Home = ({ plotsDict, cc2mc2mn, njspProps, crashes, njspCrashesTotal, }: Props) => {
+const Home = ({ plotsDict, njspProps, initNjsp, cc2mc2mn, cookies, }: Props) => {
     const [ njspPlotSpec, ...plotSpecs2 ] = plotSpecs
     const njspPlot = buildPlot<string, PlotParams>(njspPlotSpec, plotsDict[njspPlotSpec.id])
     const plots: Plot[] = buildPlots(plotSpecs2, plotsDict)
@@ -71,12 +85,9 @@ const Home = ({ plotsDict, cc2mc2mn, njspProps, crashes, njspCrashesTotal, }: Pr
     const title = "NJ Traffic Crash Data"
 
     const [ county, setCounty ] = useState<string | null>(null)
-    const cc = null, mc = null
-    const njspPaginationControls = usePaginationControls({ id: "njsp-crashes" })
-    const njspCrashes = getNjspCrashRows({ cc, mc, cc2mc2mn, crashes, }) ?? []
-    const njspPagination = { ...njspPaginationControls, total: njspCrashesTotal }
 
     return (
+      <CookiesContext.Provider value={cookies}>
         <div className={css.container}>
             <Head
                 title={title}
@@ -124,12 +135,7 @@ const Home = ({ plotsDict, cc2mc2mn, njspProps, crashes, njspCrashesTotal, }: Pr
                     <div className={css["plot-container"]}>
                         <div className={css.section}>
                             <H2 id={"recent-fatal-crashes"}>Recent fatal crashes</H2>
-                            {
-                                njspCrashes && <ResultTable
-                                    result={right(njspCrashes)}
-                                    pagination={njspPagination}
-                                />
-                            }
+                            <NjspCrashesTable initNjsp={initNjsp} cc2mc2mn={cc2mc2mn} />
                             <NjspSource />
                         </div>
                         <hr/>
@@ -166,6 +172,7 @@ const Home = ({ plotsDict, cc2mc2mn, njspProps, crashes, njspCrashesTotal, }: Pr
                 <Footer />
             </main>
         </div>
+      </CookiesContext.Provider>
     )
 }
 
