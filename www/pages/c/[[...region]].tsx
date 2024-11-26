@@ -11,6 +11,7 @@ import { PerPageKey, useDatePaginationControls } from "@/src/pagination";
 import { ColTitles, YearStatsDicts, yearStatsRows } from "@/src/use-year-stats";
 import { getNjdotCrashRows } from "@/src/use-njdot-crashes";
 import css from "@/src/region-page.module.scss";
+import tableCss from "@/src/result-table.module.scss";
 import CitySelect from "@/src/city-select";
 import { CountySelect } from "@/src/county-select";
 import { njspPlotSpec } from "@/src/plotSpecs";
@@ -178,6 +179,7 @@ export default function RegionPage({ urls, njspProps, dotCrashes, initNjsp, year
                         <H2 id={"dot"}>Fatal / Injury crash details</H2>
                         <div className={css.sectionSubtitle}>2001-{EndYear}</div>
                         <ResultTable
+                          className={tableCss.njdotCrashesTable}
                             result={right(njdotCrashes)} // TODO: real error-handling
                             pagination={njdotPagination}
                         />
@@ -189,7 +191,7 @@ export default function RegionPage({ urls, njspProps, dotCrashes, initNjsp, year
                         <H2 id={"stats"}>Annual stats</H2>
                         <div className={css.sectionSubtitle}>2001-{EndYear}</div>
                         <ResultTable
-                            className={css.withTotals}
+                            className={tableCss.yearStatsTable}
                             result={right(ysrs)}
                             colTitles={ColTitles}
                         />

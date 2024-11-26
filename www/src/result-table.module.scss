@@ -1,12 +1,9 @@
-.crashesTable {
+.table {
   margin: 0.5em 0;
   width: 100%;
   //border-collapse: collapse;
   th {
     font-weight: bold;
-  }
-  .td {
-    padding: 1px 15px;
   }
 }
 
@@ -24,4 +21,22 @@
 
 .rowsTable {
   box-shadow: none;
+}
+
+.njspCrashesTable {
+  .td {
+    padding: 1px 15px;
+  }
+}
+
+.njdotCrashesTable {
+  .td {
+    padding: 1px 15px;
+  }
+}
+
+.yearStatsTable {
+  td {
+    padding: 2px 15px;
+  }
 }
