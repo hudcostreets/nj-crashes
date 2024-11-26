@@ -4,6 +4,7 @@ import Database, { Database as Db } from "better-sqlite3"
 import { asyncQuery } from "../sql"
 import { fromEntries } from "@rdub/base/objs"
 import { toYearStatsDicts, YearStats, YearStatsDicts } from "@/src/use-year-stats"
+import { DOTUrls } from "@/src/urls";
 
 export type Props = {
   cc: number | null
@@ -15,33 +16,29 @@ export type Props = {
 export type Ids = number[]
 export type IdMap<T> = Record<number, T[]>
 
-export function idMap<T>(ids: Ids, els: T[]): IdMap<T> {
+export function idMap<T extends { crash_id: number }>(ids: Ids, els: T[]): IdMap<T> {
   const map: IdMap<T> = fromEntries(ids.map(id => [ id, [] ]))
   els.forEach((el, i) => {
-    map[ids[i]].push(el)
+    map[el.crash_id].push(el)
   })
   return map
 }
 
-export class DOTCrashDb {
-  private db: Db
-  constructor(path: string) {
-    this.db = new Database(path, {
-      verbose: console.log  // Remove in production
-    })
-  }
+export class DOTDbs {
+  private crashesDb: Db
+  private yearStatsDb: Db
+  private occupantsDb: Db
+  private pedestriansDb: Db
+  private vehiclesDb: Db
 
-  async yearStats({ cc, mc }: Pick<Props, 'cc' | 'mc'>): Promise<YearStatsDicts> {
-    const where = cc ? `where cc=${cc}${mc ? ` and mc=${mc}` : ""}` : ""
-    const table = (cc ? "c" : "") + (mc ? "m" : "") + "yc"
-    const query = `
-        select y, condition,
-               drivers + passengers + pedestrians + cyclists as total,
-               num_crashes as num_crashes
-        from ${table} ${where}
-        order by y desc, condition asc
-    `
-    return toYearStatsDicts(await asyncQuery<YearStats>(this.db, query, {}))
+  constructor(urls: DOTUrls) {
+    console.log("dot dbs:", urls)
+    const opts = { verbose: console.log }  // Remove in production
+    this.crashesDb = new Database(urls.crashes, opts)
+    this.yearStatsDb = new Database(urls.cmymc, opts)
+    this.occupantsDb = new Database(urls.occupants, opts)
+    this.pedestriansDb = new Database(urls.pedestrians, opts)
+    this.vehiclesDb = new Database(urls.vehicles, opts)
   }
 
   crashes({ cc, mc, before, perPage }: Props): Promise<Crash[]> {
@@ -61,7 +58,7 @@ export class DOTCrashDb {
         order by dt desc
         limit ${perPage}
     `
-    return asyncQuery<Crash>(this.db, query, {})
+    return asyncQuery<Crash>(this.crashesDb, query, {})
   }
 
   async occupants(ids: Ids): Promise<IdMap<Occupant>> {
@@ -71,7 +68,7 @@ export class DOTCrashDb {
         where crash_id in (${ids.join(', ')}) and condition >= 1 and condition < 5
         order by crash_id, condition, pos
     `
-    return idMap(ids, await asyncQuery<Occupant>(this.db, query, {}))
+    return idMap(ids, await asyncQuery<Occupant>(this.occupantsDb, query, {}))
   }
 
   async pedestrians(ids: Ids): Promise<IdMap<Pedestrian>> {
@@ -81,7 +78,7 @@ export class DOTCrashDb {
         where crash_id in (${ids.join(', ')}) and condition >= 1 and condition < 5
         order by crash_id, condition, cyclist
     `
-    return idMap(ids, await asyncQuery<Pedestrian>(this.db, query, {}))
+    return idMap(ids, await asyncQuery<Pedestrian>(this.pedestriansDb, query, {}))
   }
 
   async vehicles(ids: Ids): Promise<IdMap<Vehicle>> {
@@ -96,7 +93,7 @@ export class DOTCrashDb {
         from vehicles
         where crash_id in (${ids.join(', ')})
     `
-    return idMap(ids, await asyncQuery<Vehicle>(this.db, query, {}))
+    return idMap(ids, await asyncQuery<Vehicle>(this.vehiclesDb, query, {}))
   }
 
   async crashRecs({ cc, mc, before, perPage, }: Props): Promise<CrashRec[]> {
@@ -113,5 +110,18 @@ export class DOTCrashDb {
       const vehs = vehMap[crash.id]
       return { crash, occs, peds, vehs, }
     })
+  }
+
+  async yearStats({ cc, mc }: Pick<Props, 'cc' | 'mc'>): Promise<YearStatsDicts> {
+    const where = cc ? `where cc=${cc}${mc ? ` and mc=${mc}` : ""}` : ""
+    const table = (cc ? "c" : "") + (mc ? "m" : "") + "yc"
+    const query = `
+        select y, condition,
+               drivers + passengers + pedestrians + cyclists as total,
+               num_crashes as num_crashes
+        from ${table} ${where}
+        order by y desc, condition asc
+    `
+    return toYearStatsDicts(await asyncQuery<YearStats>(this.yearStatsDb, query, {}))
   }
 }

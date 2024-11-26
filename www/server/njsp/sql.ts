@@ -1,14 +1,12 @@
-import Database, { Database as Db } from 'better-sqlite3'
 import { asyncQuery, Params } from "../sql";
 import { Crash, Total } from "@/src/njsp/crash";
+import Database, { Database as Db } from "better-sqlite3";
 
 export class Crashes {
     private db: Db
+
     constructor(path: string) {
-        console.log("njsp crashes db path:", path)
-        this.db = new Database(path, {
-            verbose: console.log  // Remove in production
-        })
+        this.db = new Database(path, { verbose: console.log })  // Remove in production
     }
 
     where({ cc, mc, }: { cc: number | null, mc: number | null }): { where: string, params: Params } {

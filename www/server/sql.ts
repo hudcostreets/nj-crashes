@@ -1,4 +1,4 @@
-import { Database as Db } from 'better-sqlite3'
+import Database, { Database as Db } from 'better-sqlite3'
 
 export type Params = Record<string, any>
 

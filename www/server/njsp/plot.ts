@@ -1,4 +1,4 @@
-import { loadJson } from "@rdub/base/json";
+import { loadJson } from "@rdub/base/json/load";
 import { join } from "path";
 import { PLOTS, ProjectedCsv, RUNDATE, YearTypeCountyCsv } from "@/server/paths";
 import { njspPlotSpec } from "@/src/plotSpecs";

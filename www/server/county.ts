@@ -1,5 +1,5 @@
 import { keys, mapEntries } from "@rdub/base/objs";
-import { loadJsonSync } from "@rdub/base/json";
+import { loadJsonSync } from "@rdub/base/json/load";
 import { CC2MC2MN, normalize } from "@/src/county";
 import { CC2MC2MN_RELPATH } from "@/server/paths";
 import { Arr } from "@rdub/base/arr";
