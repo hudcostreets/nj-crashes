@@ -1,3 +1,5 @@
+import type { CrashPage as CrashPage0 } from "@/src/crash"
+
 export type Totals = {
     tk: number
     ti: number
@@ -7,7 +9,7 @@ export type Totals = {
     pc: number
 }
 
-export type Crash = {
+export type Crash0 = {
     id: number
     cc: number
     mc: number
@@ -53,9 +55,11 @@ export type Vehicle = {
     type: number
 }
 
-export type CrashRec = {
-    crash: Crash
+export type Crash = {
+    crash: Crash0
     occs: Occupant[]
     peds: Pedestrian[]
     vehs: Vehicle[]
 }
+
+export type CrashPage = CrashPage0<Crash>

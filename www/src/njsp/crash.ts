@@ -1,3 +1,5 @@
+import type { CrashPage as CrashPage0 } from "@/src/crash"
+
 export type Crash = {
   id: number
   cc: number
@@ -14,9 +16,4 @@ export type Crash = {
   highway: string
 }
 
-export type Total = { total: number }
-
-export type CrashPage = {
-  crashes: Crash[]
-  total: number
-}
+export type CrashPage = CrashPage0<Crash>

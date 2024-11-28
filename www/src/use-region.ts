@@ -3,13 +3,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { keys, mapEntries } from "@rdub/base/objs";
 import { Arr } from "@rdub/base/arr";
 import { useRouter } from "next/router";
+import { CCMC } from "@/src/njsp/region";
 
-export type Region = {
+export type Region = CCMC & {
     cn: string | null
     mn: string | null
     county?: County
-    cc: number | null
-    mc: number | null
     mc2mn?: MC2MN
     setCounty: (county: string | null) => void
     setCity?: (city: string) => void
@@ -17,9 +16,7 @@ export type Region = {
     cc2mc2mn: CC2MC2MN
 }
 
-export default function useRegion({ cc2mc2mn, urlPrefix, ...props }: {
-    cc: number | null
-    mc: number | null
+export default function useRegion({ cc2mc2mn, urlPrefix, ...props }: CCMC & {
     cc2mc2mn: CC2MC2MN
     urlPrefix?: string
 }): Region {
