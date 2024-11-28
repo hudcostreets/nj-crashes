@@ -5,6 +5,7 @@
     "scripts": {
         "dev": "next dev",
         "build": "next build",
+        "full-build": "www/full-build.sh",
         "clean": "rm -rf .next out",
         "start": "next start",
         "lint": "next lint",
