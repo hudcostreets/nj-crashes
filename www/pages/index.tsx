@@ -103,21 +103,6 @@ const Home = ({ plotsDict, njspProps, initNjsp, cc2mc2mn, cookies, }: Props) => 
             />
             <main className={css.index}>
                 <h1 className={css.title}>{title}</h1>
-                <p>
-                    <A href={`#per-year`}>The first {menus[0].sections.length} plots below</A> come from <A title={"NJ State Police fatal crash data"} href={NjspFatalAcc}>NJ State Police fatal crash data</A> (2008-present). {"It's generally current to the previous day."}
-                </p>
-                <p>
-                    <A href={"#njdot"}>Below that</A> are plots of <A title={"NJ DOT raw crash data"} href={NjdotRawData}>NJ DOT raw crash data</A>, which includes 6MM property-damage, injury, and fatal crashes from 2001-{EndYear}. {`It's a richer dataset, but less up to date.`}
-                </p>
-                <p>
-                    <span className={css.bold}>Work in progress</span> map of NJDOT data: 5 years (2017-2021) of fatal
-                    and injury crashes in Hudson County:
-                </p>
-                <iframe src={`/map/hudson`} className={css.map} />
-                <ul style={{listStyle: "none"}}>
-                    <li><A href={"/map/hudson"}>Full screen map here</A></li>
-                    <li>Code and cleaned data are <A href={GitHub.href}>here on GitHub</A>.</li>
-                </ul>
                 <div className={css["plot-container"]}>
                     {
                         njspProps
@@ -135,41 +120,48 @@ const Home = ({ plotsDict, njspProps, initNjsp, cc2mc2mn, cookies, }: Props) => 
                     <div className={css["plot-container"]}>
                         <div className={css.section}>
                             <H2 id={"recent-fatal-crashes"}>Recent fatal crashes</H2>
-                            <NjspCrashesTable init={initNjsp} cc2mc2mn={cc2mc2mn} />
-                            <NjspSource />
+                            <NjspCrashesTable init={initNjsp} cc2mc2mn={cc2mc2mn}/>
+                            <NjspSource/>
                         </div>
                         <hr/>
                     </div>
                 }
                 {
                     plots.map(
-                        ({id, ...rest}, idx) =>
-                            <Fragment key={id}>
-                                {
-                                    // First 2 NJSP "plots" already inlined above
-                                    idx + 2 == menus[0].sections.length && <>
-                                        <h1 id={"njdot"}><a href={`#njdot`}>NJ DOT Raw Crash Data</a></h1>
-                                        <p>
-                                            NJ DOT <A title={"NJ DOT raw crash data"}
-                                                      href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}>publishes
-                                            raw crash data</A>, including property-damage, injury, and fatal crashes, going
-                                            back to 2001 (≈6MM records).
-                                        </p>
-                                        <p>{`Data is currently public through ${EndYear}, showing all crash types rebounding from COVID lows, and a particular spike in fatalities. 2023 data is expected in Fall 2025.`}</p>
-                                    </>
-                                }
-                                <div key={id} className={css["plot-container"]}>
-                                    <Plot
-                                        id={id}
-                                        {...rest}
-                                        margin={{ t: 10, b: 30, }}
-                                    />
-                                    <hr/>
-                                </div>
-                            </Fragment>
+                      ({ id, ...rest }, idx) =>
+                        <Fragment key={id}>
+                            {
+                                // First 2 NJSP "plots" already inlined above
+                              idx + 2 == menus[0].sections.length && <>
+                                  <h1 id={"njdot"}><a href={`#njdot`}>NJ DOT Raw Crash Data</a></h1>
+                                  <p>
+                                      NJ DOT <A title={"NJ DOT raw crash data"}
+                                                href={"https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"}>publishes
+                                      raw crash data</A>, including property-damage, injury, and fatal crashes, going
+                                      back to 2001 (≈6MM records).
+                                  </p>
+                                  <p>{`Data is currently public through ${EndYear}, showing all crash types rebounding from COVID lows, and a particular spike in fatalities. 2023 data is expected in Fall 2025.`}</p>
+                              </>
+                            }
+                            <div key={id} className={css["plot-container"]}>
+                                <Plot
+                                  id={id}
+                                  {...rest}
+                                  margin={{ t: 10, b: 30, }}
+                                />
+                                <hr/>
+                            </div>
+                        </Fragment>
                     )
                 }
-                <Footer />
+                <p>
+                    <span className={css.bold}>Work in progress</span> map of NJDOT data: 5 years (2017-2021) of fatal and injury crashes in Hudson County:
+                </p>
+                <iframe src={`/map/hudson`} className={css.map}/>
+                <ul style={{ listStyle: "none" }}>
+                    <li><A href={"/map/hudson"}>Full screen map here</A></li>
+                </ul>
+                <Footer/>
             </main>
         </div>
       </CookiesContext.Provider>
