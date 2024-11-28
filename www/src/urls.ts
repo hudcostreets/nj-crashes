@@ -21,7 +21,6 @@ export type DOTUrls = {
     pedestrians: string
     vehicles: string
     drivers: string
-    cmym: string
     cmymc: string
 }
 
@@ -35,7 +34,6 @@ export function getDOTDbUrls({ local }: Local = {}): DOTUrls {
             pedestrians: `pedestrians.db`,
             vehicles: `vehicles.db`,
             drivers: `drivers.db`,
-            cmym: `cmym.db`,
             cmymc: `cmymc.db`,
         }
     })
