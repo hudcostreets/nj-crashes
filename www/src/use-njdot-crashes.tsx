@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { CrashRec, Occupant, Pedestrian, Vehicle } from "@/src/njdot/crash";
+import { Crash, Occupant, Pedestrian, Vehicle } from "@/src/njdot/crash";
 import { Row } from "@/src/result-table";
 import { CC2MC2MN, County } from "@/src/county";
 import strftime from "strftime";
@@ -10,11 +10,10 @@ import A from "@rdub/next-base/a";
 import { Tooltip } from "@/src/tooltip"
 import CityLink from "@/src/city-link";
 import CountyLink from "@/src/county-link";
+import { CCMC } from "@/src/njsp/region";
 
-export type Props = {
-    cc: number | null
-    mc: number | null
-    recs: CrashRec[]
+export type Props = CCMC & {
+    crashes: Crash[]
     cc2mc2mn: CC2MC2MN
 }
 
@@ -135,11 +134,11 @@ export function gmapsUrl({ lat, lon, }: { lat: number, lon: number }) {
     return `https://www.google.com/maps/?q=${lat},${lon}`
 }
 
-export function getNjdotCrashRows({ recs, cc, mc, cc2mc2mn, }: Props): Row[] {
+export function getNjdotCrashRows({ crashes, cc, mc, cc2mc2mn, }: Props): Row[] {
     const ccCol: Col[] = cc ? [] : ['cc']
     const mcCol: Col[] = mc ? [] : ['mc']
     const cols: Col[] = [ 'dt', ...ccCol, ...mcCol, 'casualties', 'road', 'cross_street', 'mp', ]
-    return recs.map(({ crash, occs, peds, vehs }) => {
+    return crashes.map(({ crash, occs, peds, vehs }) => {
         const { id } = crash
         return fromEntries([
             [ 'key', id ],

@@ -135,7 +135,7 @@ const Home = ({ plotsDict, njspProps, initNjsp, cc2mc2mn, cookies, }: Props) => 
                     <div className={css["plot-container"]}>
                         <div className={css.section}>
                             <H2 id={"recent-fatal-crashes"}>Recent fatal crashes</H2>
-                            <NjspCrashesTable initNjsp={initNjsp} cc2mc2mn={cc2mc2mn} />
+                            <NjspCrashesTable init={initNjsp} cc2mc2mn={cc2mc2mn} />
                             <NjspSource />
                         </div>
                         <hr/>

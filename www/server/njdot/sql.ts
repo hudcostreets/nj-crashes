@@ -1,64 +1,82 @@
-import { Crash, CrashRec, Occupant, Pedestrian, Vehicle } from "@/src/njdot/crash"
-import moment from "moment-timezone"
+import { Crash, Crash0, Occupant, Pedestrian, Vehicle } from "@/src/njdot/crash"
 import Database, { Database as Db } from "better-sqlite3"
-import { asyncQuery } from "../sql"
+import { asyncQuery, CrashDB as CrashDB0, HasCrashPage, Params } from "../sql"
 import { fromEntries } from "@rdub/base/objs"
 import { toYearStatsDicts, YearStats, YearStatsDicts } from "@/src/use-year-stats"
 import { DOTUrls } from "@/src/urls";
+import { CCMC } from "@/src/njsp/region";
+import { PageOpts } from "@/src/pagination";
 
-export type Props = {
-  cc: number | null
-  mc: number | null
-  before: string
-  perPage: number
-}
+export type Props = CCMC & PageOpts
 
 export type Ids = number[]
 export type IdMap<T> = Record<number, T[]>
 
 export function idMap<T extends { crash_id: number }>(ids: Ids, els: T[]): IdMap<T> {
   const map: IdMap<T> = fromEntries(ids.map(id => [ id, [] ]))
-  els.forEach((el, i) => {
+  els.forEach(el => {
     map[el.crash_id].push(el)
   })
   return map
 }
 
-export class DOTDbs {
-  private crashesDb: Db
+export class CrashDB extends CrashDB0<Crash0> {
+  where({ cc, mc, }: CCMC): { where: string; params: Params } {
+    const severities = [ 'i', 'f' ]
+    const severitiesFilter = severities.map(s => `severity='${s}'`).join(' or ')
+    const severitiesClause = severitiesFilter ? `(${severitiesFilter})` : ""
+    let { where, params } = super.where({ cc, mc, });
+    if (severitiesClause) {
+      if (where) {
+        where += ` and ${severitiesClause}`
+      } else {
+        where = `WHERE ${severitiesClause}`
+      }
+    }
+    return { where, params }
+  }
+}
+
+export class DOTDbs extends HasCrashPage<Crash> {
+  private crashDb: CrashDB
   private yearStatsDb: Db
   private occupantsDb: Db
   private pedestriansDb: Db
   private vehiclesDb: Db
 
   constructor(urls: DOTUrls) {
+    super()
     console.log("dot dbs:", urls)
     const opts = { verbose: console.log }  // Remove in production
-    this.crashesDb = new Database(urls.crashes, opts)
+    this.crashDb = new CrashDB(urls.crashes)
     this.yearStatsDb = new Database(urls.cmymc, opts)
     this.occupantsDb = new Database(urls.occupants, opts)
     this.pedestriansDb = new Database(urls.pedestrians, opts)
     this.vehiclesDb = new Database(urls.vehicles, opts)
   }
 
-  crashes({ cc, mc, before, perPage }: Props): Promise<Crash[]> {
-    const severities = [ 'i', 'f' ]
-    const severitiesFilter = severities.map(s => `severity='${s}'`).join(' or ')
-    const severitiesClause = severitiesFilter ? `(${severitiesFilter}) and ` : ""
+  async crashes({ cc, mc, page, perPage, }: Props): Promise<Crash[]> {
+    const crashes = await this._crashes({ cc, mc, page, perPage, })
+    const ids = crashes.map(({ id }) => id)
+    const [ occMap, pedMap, vehMap ] = await Promise.all([
+      this.occupants(ids),
+      this.pedestrians(ids),
+      this.vehicles(ids),
+    ])
+    return crashes.map(crash => {
+      const occs = occMap[crash.id]
+      const peds = pedMap[crash.id]
+      const vehs = vehMap[crash.id]
+      return { crash, occs, peds, vehs, }
+    })
+  }
 
-    const regionClause = cc ? `cc=${cc}${mc ? ` and mc=${mc}` : ""} and ` : ""
+  total({ cc, mc }: CCMC): Promise<number> {
+    return this.crashDb.total({ cc, mc, })
+  }
 
-    const m = moment.tz(before, "America/New_York").add(1, 'day')
-    const mStr = m.format('YYYY-MM-DD')
-    const dtClause = `dt<='${mStr}'`
-
-    const query = `
-        select * from crashes
-        where ${severitiesClause}${regionClause}${dtClause}
-        order by dt desc
-        limit ${perPage}
-    `
-    return asyncQuery<Crash>(this.crashesDb, query, {})
+  _crashes({ cc, mc, page, perPage }: Props): Promise<Crash0[]> {
+    return this.crashDb.crashes({ cc, mc, page, perPage, })
   }
 
   async occupants(ids: Ids): Promise<IdMap<Occupant>> {
@@ -96,23 +114,7 @@ export class DOTDbs {
     return idMap(ids, await asyncQuery<Vehicle>(this.vehiclesDb, query, {}))
   }
 
-  async crashRecs({ cc, mc, before, perPage, }: Props): Promise<CrashRec[]> {
-    const crashes = await this.crashes({ cc, mc, before, perPage, })
-    const ids = crashes.map(({ id }) => id)
-    const [ occMap, pedMap, vehMap ] = await Promise.all([
-      this.occupants(ids),
-      this.pedestrians(ids),
-      this.vehicles(ids),
-    ])
-    return crashes.map(crash => {
-      const occs = occMap[crash.id]
-      const peds = pedMap[crash.id]
-      const vehs = vehMap[crash.id]
-      return { crash, occs, peds, vehs, }
-    })
-  }
-
-  async yearStats({ cc, mc }: Pick<Props, 'cc' | 'mc'>): Promise<YearStatsDicts> {
+  async yearStats({ cc, mc }: CCMC): Promise<YearStatsDicts> {
     const where = cc ? `where cc=${cc}${mc ? ` and mc=${mc}` : ""}` : ""
     const table = (cc ? "c" : "") + (mc ? "m" : "") + "yc"
     const query = `

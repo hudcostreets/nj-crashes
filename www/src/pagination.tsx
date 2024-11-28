@@ -12,6 +12,7 @@ import { ArrowForward, ArrowForwardIos, SvgIconComponent } from "@mui/icons-mate
 import { Tooltip } from "@mui/material";
 import { useCookie } from "@/src/use-cookie";
 import { CookiesContext } from './cookies';
+import { State } from "@rdub/base/state";
 
 export const PageSizes = [ 10, 20, 50 ]
 export const DefaultPageSize = PageSizes[0]
@@ -95,14 +96,12 @@ export function useDatePaginationControls(
     return { perPage, setPerPage, before, setBefore, start, end }
 }
 
-export type PaginationCore = {
-    perPage: number
-    setPerPage: (perPage: number) => void
-}
+export type PaginationCore = State<number, 'perPage'>
+export type PaginationBase = PaginationCore & State<number, 'page'>
 
-export type PaginationBase = PaginationCore & {
-    page: number
-    setPage: (page: number) => void
+export type PageOpts = {
+  page: number
+  perPage: number
 }
 
 export type Pagination = PaginationBase & {

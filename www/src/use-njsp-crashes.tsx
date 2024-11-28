@@ -12,10 +12,9 @@ import CityLink from "@/src/city-link";
 import CountyLink from "@/src/county-link";
 import { curYear } from "@/src/plotSpecs";
 import { Crash } from "./njsp/crash";
+import { CCMC } from "@/src/njsp/region";
 
-export type Props = {
-    cc: number | null
-    mc: number | null
+export type Props = CCMC & {
     crashes: Crash[]
 }
 

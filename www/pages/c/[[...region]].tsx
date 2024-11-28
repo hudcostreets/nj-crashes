@@ -7,9 +7,8 @@ import { NjspPlot, Props as NjspProps } from "@/src/njsp/plot";
 import { loadProps } from "@/server/njsp/plot";
 import { ReactNode } from "react";
 import useRegion from "@/src/use-region";
-import { PerPageKey, useDatePaginationControls } from "@/src/pagination";
+import { PerPageKey } from "@/src/pagination";
 import { ColTitles, YearStatsDicts, yearStatsRows } from "@/src/use-year-stats";
-import { getNjdotCrashRows } from "@/src/use-njdot-crashes";
 import css from "@/src/region-page.module.scss";
 import tableCss from "@/src/result-table.module.scss";
 import CitySelect from "@/src/city-select";
@@ -23,11 +22,14 @@ import { NjdotSource, NjspSource } from "@/src/icons";
 import { Home } from "@mui/icons-material";
 import { Crashes } from "@/server/njsp/sql";
 import { DOTDbs } from "@/server/njdot/sql";
-import { CrashPage } from "@/src/njsp/crash";
-import { CrashRec } from "@/src/njdot/crash";
+import * as SP from "@/src/njsp/crash";
+import * as DOT from "@/src/njdot/crash";
 import { NjspCrashesId, NjspCrashesTable } from "@/src/njsp/table";
 import { Cookies, CookiesContext } from "@/src/cookies";
 import { parsePerPage } from "@/pages";
+import { NjdotCrashesTable } from "@/src/njdot/table";
+import { CCMC } from "@/src/njsp/region";
+import { CrashPage } from "@/src/crash";
 
 export const DOTStart = "2001-01-01"
 export const EndYear = 2022
@@ -42,19 +44,17 @@ export function H2({ id, className = css.idTarget, children }: { id: string, cla
 
 export type Props = {
     urls: Urls
-    cc: number | null
     cp: string | null
     cn: string | null
-    mc: number | null
     mn: string | null
     cc2mc2mn: CC2MC2MN
     njspProps: NjspProps | null
     Counties: string[]
-    dotCrashes: CrashRec[]
-    initNjsp: CrashPage
+    spPage: CrashPage<SP.Crash>
+    dotPage: CrashPage<DOT.Crash>
     yearStatsDicts: YearStatsDicts
     cookies: Cookies
-}
+} & CCMC
 
 export type Params = {
     region: string[]
@@ -85,29 +85,19 @@ export const getServerSideProps: GetServerSideProps<Props, Params> = async ({ pa
         }
     }
     const page = 0
-    const crashDb = new Crashes(urls.njsp.crashes)
+    const spDb = new Crashes(urls.njsp.crashes)
     const dotDbs = new DOTDbs(urls.dot)
-    const [ crashes, njspCrashesTotal, njspProps, dotCrashes, yearStatsDicts, ] = await Promise.all([
-        crashDb.crashes({ cc, mc, page, perPage, }),
-        crashDb.total({ cc, mc, }),
+    const [ spPage, njspProps, dotPage, yearStatsDicts, ] = await Promise.all([
+        spDb.crashPage({ cc, mc, page, perPage, }),
         mn === null ? loadProps({ county: cn }) : Promise.resolve(null),
-        dotDbs.crashRecs({ cc, mc, before: DOTEnd, perPage, }),
+        dotDbs.crashPage({ cc, mc, page, perPage, }),  // before: DOTEnd
         dotDbs.yearStats({ cc, mc, }),
     ])
-    const initNjsp = { crashes, total: njspCrashesTotal, }
-    return { props: { urls, cp, cn, cc, mc, mn, cc2mc2mn, Counties, njspProps, dotCrashes, initNjsp, yearStatsDicts, cookies, } }
+    return { props: { urls, cp, cn, cc, mc, mn, cc2mc2mn, Counties, njspProps, spPage, dotPage, yearStatsDicts, cookies, } }
 }
 
-export default function RegionPage({ urls, njspProps, dotCrashes, initNjsp, yearStatsDicts, cp, cc2mc2mn, Counties, cookies, ...regionProps }: Props) {
+export default function RegionPage({ urls, njspProps, spPage, dotPage, yearStatsDicts, cp, cc2mc2mn, Counties, cookies, ...regionProps }: Props) {
     const { cc, mc, cn, mn, mc2mn, setCounty, setCity, } = useRegion({ ...regionProps, cc2mc2mn, urlPrefix: "/c", })
-    const njdotPaginationControls = useDatePaginationControls({ id: "njdot-crashes" }, { start: DOTStart, end: DOTEnd, })
-    const njdotCrashes = getNjdotCrashRows({ cc, mc, cc2mc2mn, recs: dotCrashes, })
-    const { fc, sic, mic, pic, } = yearStatsDicts.totals
-    const yearStatsTotal =  fc + sic + mic + pic
-    const njdotPagination = {
-        ...njdotPaginationControls,
-        total: yearStatsTotal,
-    }
     const ysrs = yearStatsRows({ ysds: yearStatsDicts, })
     console.log(`cc ${cc} mc ${mc}`)
     const title= mn ?? cn ? `${mn} County` : "New Jersey"
@@ -167,7 +157,7 @@ export default function RegionPage({ urls, njspProps, dotCrashes, initNjsp, year
                         <H2 id={"recent"}>Recent fatal crashes</H2>
                         <div className={css.sectionSubtitle}>2008 – present</div>
                         <NjspCrashesTable
-                          initNjsp={initNjsp}
+                          init={spPage}
                           cc={cc} mc={mc}
                           cc2mc2mn={cc2mc2mn}
                         />
@@ -175,13 +165,13 @@ export default function RegionPage({ urls, njspProps, dotCrashes, initNjsp, year
                     </div>
                 }
                 {
-                    njdotCrashes && <div className={css.section}>
+                    <div className={css.section}>
                         <H2 id={"dot"}>Fatal / Injury crash details</H2>
                         <div className={css.sectionSubtitle}>2001-{EndYear}</div>
-                        <ResultTable
-                          className={tableCss.njdotCrashesTable}
-                            result={right(njdotCrashes)} // TODO: real error-handling
-                            pagination={njdotPagination}
+                        <NjdotCrashesTable
+                          init={dotPage}
+                          cc={cc} mc={mc}
+                          cc2mc2mn={cc2mc2mn}
                         />
                         <NjdotSource />
                     </div>

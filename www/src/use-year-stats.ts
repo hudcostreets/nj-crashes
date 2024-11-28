@@ -3,6 +3,7 @@ import { Either, map } from "fp-ts/Either";
 import { Row } from "@/src/result-table";
 import { o2a } from "@rdub/base/objs";
 import { EndYear } from "@/pages/c/[[...region]]";
+import { CCMC } from "@/src/njsp/region";
 
 export type Stats = {
     num_crashes: number
@@ -62,10 +63,7 @@ export function yearStatsRows({ ysds }: { ysds: YearStatsDicts, }): Row[] {
     return rows
 }
 
-export type Props = {
-    cc: number | null
-    mc: number | null
-}
+export type Props = CCMC
 
 const YSD = {
      k: 0,  fc: 0,
