@@ -11,6 +11,7 @@ import { normalize } from "../county";
 import { CountySelect } from "../county-select";
 import { NjspSource } from "@/src/icons";
 import IntrinsicElements = React.JSX.IntrinsicElements;
+import css from "./plot.module.scss"
 
 export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
 export type Annotation = Partial<Annotations>
@@ -193,8 +194,7 @@ export function NjspChildren(
     const { total: curYearTotal, projected: curYearProjected } = curYearMap
     const curYearProjectedTotal = curYearTotal + curYearProjected
     const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
-    return <>
-        <p>Click/Double-click the legend labels to toggle or solo each type.</p>
+    return <div className={css.plotNotes}>
         <p>
             <A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, {county ? `${county} County` : "NJ"} has {curYearTotal} reported deaths in {curYear}, and <A href={estimationHref}>is on pace</A> for {curYearProjectedTotal}{curYearProjectedTotal > prvYearTotal ? `, exceeding ${prvYear}'s ${prvYearTotal}` : ""}.
             {includeMoreInfoLink ? <>{' '}<A href={`/c/${county ? normalize(county) : ""}`}>More {county ? `${county} County` : "state-wide"} data</A>.</> : null}
@@ -202,8 +202,10 @@ export function NjspChildren(
         {county === null ? <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p> : null}
         <NjspSource />
         {/*<p>Data comes from <A title={"NJ State Police fatal crash data"} href={NjspFatalAcc}>NJ State Police</A>, and is updated daily (though crashes sometimes take weeks or months to show up).</p>*/}
-    </>
+    </div>
 }
+
+const TickOpts = [ 5, 10, 20, 25, 50, 100 ]
 
 export function NjspPlot(
     {
@@ -229,7 +231,8 @@ export function NjspPlot(
     spec = spec ?? njspPlotSpec
     let { src, name } = spec
     src = src ?? `plots/${name}.png`
-    const [ types, setTypes ] = useState<Set<Type>>(new Set(Types))
+    const [ soloType, setSoloType ] = useState<Type>()
+    const [ hoverType, setHoverType ] = useState<Type>()
     const [ showProjected, setShowProjected ] = useState(true)
     const { data: initialPlotData, layout, ...plotRest } = initialPlot as PlotParams
 
@@ -237,41 +240,48 @@ export function NjspPlot(
         (name: LegendType) => {
             if (name === "Projected") {
                 setShowProjected(!showProjected)
-            } else if (types.has(name)) {
-                console.log(`types: disable ${name}`)
-                const newTypes = new Set(Array.from(types))
-                newTypes.delete(name)
-                setTypes(newTypes)
+            } else if (soloType === name) {
+                setSoloType(undefined)
+                setHoverType(undefined)
             } else {
-                console.log(`types: enable ${name}`)
-                const newTypes = new Set(Array.from(types))
-                newTypes.add(name)
-                setTypes(newTypes)
+                setSoloType(name)
             }
             return false
         },
-        [ types, setTypes, showProjected, setShowProjected ]
+        [ soloType, setSoloType, showProjected, setShowProjected ]
     )
 
-    const onLegendDoubleClick = useCallback(
+    const onLegendDoubleClick = useCallback(() => false, [])
+
+    const onLegendMouseOver = useCallback(
         (name: LegendType) => {
-            if (name === "Projected") {
-
-            } else if (types.size <= 1) {
-                // Remove solo; show all traces
-                console.log(`types: remove solo ${name}`)
-                setTypes(new Set(Types))
-            } else {
-                // Solo trace
-                console.log(`types: solo ${name}`)
-                setTypes(new Set([ name ]))
+            console.log("onLegendMouseOver", name)
+            if (name !== "Projected") {
+                setHoverType(name)
             }
-            return false
+            return true
         },
-        [ types ]
+        []
     )
 
-    const tickOpts = [ 5, 10, 20, 25, 50, 100 ]
+    const onLegendMouseOut = useCallback(
+      (name: LegendType) => {
+          console.log("onLegendMouseOut", name)
+          if (name !== "Projected") {
+              setHoverType(undefined)
+          }
+          return true
+      },
+      []
+    )
+
+    const types = useMemo(
+      () => new Set(
+        hoverType ? [ hoverType ] : soloType ? [ soloType, ] : Types
+      ),
+      [ hoverType, soloType, ]
+    )
+    console.log("types:", types, "hoverType:", hoverType, "soloType:", soloType)
     const { data, annotations, yearTotalsMap, maxY, } = getPlotData({
         ytRows,
         typeProjections,
@@ -280,15 +290,17 @@ export function NjspPlot(
         showProjected,
         county,
     })
-    const ytick = tickOpts.filter(tick => maxY / tick <= 20)[0]
+    const ytick = useMemo(() => TickOpts.filter(tick => maxY / tick <= 20)[0], [ maxY, ])
     console.log("plot data:", data, "yearTotalsMap:", yearTotalsMap, "ytick:", ytick, "maxY:", maxY)
+    const [ xTickAngle, setXTickAngle ] = useState(0)
     const newLayout: Partial<Layout> = useMemo(
         () => {
-            const { xaxis, yaxis: { dtick, ...yaxis } = {}, title, ...rest } = layout
+            const { xaxis, yaxis: { dtick, ...yaxis } = {}, title, legend, ...rest } = layout
             return {
                 ...rest,
-                xaxis: { ...xaxis, fixedrange: true },
+                xaxis: { ...xaxis, fixedrange: true, tickangle: xTickAngle, },
                 yaxis: { ...yaxis, fixedrange: true, dtick: ytick, },
+                legend: { ...legend, y: xTickAngle < 0 ? -.1 : -.05, yanchor: "top", },
                 dragmode: false,
                 annotations,
                 margin: { t: 0, r: 10, b: 0, l: 0, },
@@ -296,6 +308,7 @@ export function NjspPlot(
         },
         [ layout, annotations ],
     )
+    // console.log("newLayout:", newLayout, plotRest)
     title = title ?? DefaultTitle
     return (
         <Plot
@@ -320,6 +333,22 @@ export function NjspPlot(
             }
             onLegendClick={onLegendClick}
             onLegendDoubleClick={onLegendDoubleClick}
+            onLegendMouseOver={onLegendMouseOver}
+            onLegendMouseOut={onLegendMouseOut}
+            onRelayout={(e, div) => {
+                // console.log("onRelayout", e, div, div.offsetWidth)
+                if (div.offsetWidth > 600) {
+                    setXTickAngle(0)
+                } else {
+                    setXTickAngle(-45)
+                }
+            }}
+            onXRange={(start, end) => {
+                start = Math.round(start - 0.5) + 0.5
+                end = Math.round(end + 0.5) - 0.5
+                console.log("after rounding", start, end)
+                return [ start, end ]
+            }}
         >
             <NjspChildren
                 rundate={rundate}
