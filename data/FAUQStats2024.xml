@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Nov 28 10:00:03 EST 2024</RUNDATE>
+  <RUNDATE>Fri Nov 29 10:00:04 EST 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -700,12 +700,13 @@
     <MUNICIPALITY MCODE="0404" MNAME="Bellmawr Boro">
       <ACCIDENT ACCID="13540" DATE="11/04/2024" TIME="0204">
         <HIGHWAY>76</HIGHWAY>
-        <LOCATION>Interstate 76</LOCATION>
+        <LOCATION>Interstate 76 MP .43</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -739,12 +740,13 @@
     <MUNICIPALITY MCODE="0810" MNAME="Mantua Twsp">
       <ACCIDENT ACCID="13535" DATE="11/02/2024" TIME="2339">
         <HIGHWAY>55</HIGHWAY>
-        <LOCATION>State Highway 55</LOCATION>
+        <LOCATION>State Highway 55 MP 51.6</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -765,12 +767,13 @@
     <MUNICIPALITY MCODE="0415" MNAME="Gloucester Twsp">
       <ACCIDENT ACCID="13534" DATE="11/02/2024" TIME="1324">
         <HIGHWAY>42</HIGHWAY>
-        <LOCATION>State Highway 42</LOCATION>
+        <LOCATION>State Highway 42 MP 8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0428" MNAME="Pine Hill Boro">
