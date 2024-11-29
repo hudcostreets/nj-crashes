@@ -1,0 +1,24 @@
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    pwd
+    docker buildx create --use
+    mkdir -p /root/.aws
+    echo "[default]" > /root/.aws/credentials
+    echo "aws_access_key_id=$$AWS_ACCESS_KEY_ID" >> /root/.aws/credentials
+    echo "aws_secret_access_key=$$AWS_SECRET_ACCESS_KEY" >> /root/.aws/credentials
+    docker buildx build --push --secret id=aws,src=/root/.aws/credentials -t gcr.io/$PROJECT_ID/nj-crashes .
+  secretEnv: ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY']
+
+availableSecrets:
+  secretManager:
+  - versionName: projects/$PROJECT_NUMBER/secrets/aws-access-key-id/versions/latest
+    env: 'AWS_ACCESS_KEY_ID'
+  - versionName: projects/$PROJECT_NUMBER/secrets/aws-secret-access-key/versions/latest
+    env: 'AWS_SECRET_ACCESS_KEY'
