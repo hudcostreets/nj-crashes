@@ -29,6 +29,7 @@ import { CCMC } from "@/src/njsp/region";
 import { CrashPage } from "@/src/crash";
 import { spDdb } from "@/server/njsp/ddb";
 import { dotDdb } from "@/server/njdot/ddb";
+import { WithRouteIsChanging } from "@rdub/next-base/route-is-changing";
 
 export const DOTStart = "2001-01-01"
 export const EndYear = 2022
@@ -103,89 +104,88 @@ export default function RegionPage({ urls, njspProps, spPage, dotPage, yearStats
             (<A href={`/c/${cp}`}>{cn} County</A>)
         </span>
 
-    // NJSP plot
-    const plotTitle = `Car crash deaths`
-
     return (
-      <CookiesContext.Provider value={cookies}>
-        <div className={css.body}>
-            <div className={css.container}>
-                <h1 className={css.title}>
+      <WithRouteIsChanging>
+          <CookiesContext.Provider value={cookies}>
+              <div className={css.body}>
+                  <div className={css.container}>
+                      <h1 className={css.title}>
                     <span className={css.home}>
                         <A href={"/"}>
                             <Home fontSize={"medium"} />
                         </A>
                     </span>
-                    {
-                        (setCity && mc && mc2mn)
-                            ? <CitySelect
-                                city={mc2mn[mc]}
-                                setCity={setCity}
-                                cities={values(mc2mn)}
-                            />
-                            : setCounty
-                                ? <CountySelect
+                          {
+                              (setCity && mc && mc2mn)
+                                ? <CitySelect
+                                  city={mc2mn[mc]}
+                                  setCity={setCity}
+                                  cities={values(mc2mn)}
+                                />
+                                : setCounty
+                                  ? <CountySelect
                                     county={cn ?? null}
                                     setCounty={setCounty}
                                     Counties={Counties}
-                                />
-                                : title
-                    }
-                </h1>
-                {subtitle && <div className={css.subtitle}>{subtitle}</div>}
-                {
-                    njspProps
-                      ? <div className={css.section}>
-                          <div className={css.njspPlot}>
-                              <NjspPlot
-                                {...njspProps}
-                                county={cn ?? null}
-                                Heading={"h1"}
-                                heading={<H2 id={"by-type"}>{plotTitle}</H2>}
+                                  />
+                                  : title
+                          }
+                      </h1>
+                      {subtitle && <div className={css.subtitle}>{subtitle}</div>}
+                      {
+                          njspProps
+                            ? <div className={css.section}>
+                                <div className={css.njspPlot}>
+                                    <NjspPlot
+                                      {...njspProps}
+                                      county={cn ?? null}
+                                      Heading={"h1"}
+                                      heading={<H2 id={"by-type"}>Car crash deaths</H2>}
+                                    />
+                                </div>
+                            </div>
+                            : null
+                      }
+                      {
+                          <div className={css.section}>
+                              <H2 id={"recent"}>Recent fatal crashes</H2>
+                              <div className={css.sectionSubtitle}>2008 – present</div>
+                              <NjspCrashesTable
+                                init={spPage}
+                                cc={cc} mc={mc}
+                                cc2mc2mn={cc2mc2mn}
                               />
+                              <NjspSource />
                           </div>
-                      </div>
-                      : null
-                }
-                {
-                    <div className={css.section}>
-                        <H2 id={"recent"}>Recent fatal crashes</H2>
-                        <div className={css.sectionSubtitle}>2008 – present</div>
-                        <NjspCrashesTable
-                          init={spPage}
-                          cc={cc} mc={mc}
-                          cc2mc2mn={cc2mc2mn}
-                        />
-                        <NjspSource />
-                    </div>
-                }
-                {
-                    <div className={css.section}>
-                        <H2 id={"dot"}>Fatal / Injury crash details</H2>
-                        <div className={css.sectionSubtitle}>2001-{EndYear}</div>
-                        <NjdotCrashesTable
-                          init={dotPage}
-                          cc={cc} mc={mc}
-                          cc2mc2mn={cc2mc2mn}
-                        />
-                        <NjdotSource />
-                    </div>
-                }
-                {
-                    <div className={css.section}>
-                        <H2 id={"stats"}>Annual stats</H2>
-                        <div className={css.sectionSubtitle}>2001-{EndYear}</div>
-                        <ResultTable
-                            className={tableCss.yearStatsTable}
-                            result={right(ysrs)}
-                            colTitles={ColTitles}
-                        />
-                        <NjdotSource />
-                    </div>
-                }
-                <Footer />
-            </div>
-        </div>
-      </CookiesContext.Provider>
+                      }
+                      {
+                          <div className={css.section}>
+                              <H2 id={"dot"}>Fatal / Injury crash details</H2>
+                              <div className={css.sectionSubtitle}>2001-{EndYear}</div>
+                              <NjdotCrashesTable
+                                init={dotPage}
+                                cc={cc} mc={mc}
+                                cc2mc2mn={cc2mc2mn}
+                              />
+                              <NjdotSource />
+                          </div>
+                      }
+                      {
+                          <div className={css.section}>
+                              <H2 id={"stats"}>Annual stats</H2>
+                              <div className={css.sectionSubtitle}>2001-{EndYear}</div>
+                              <ResultTable
+                                className={tableCss.yearStatsTable}
+                                result={right(ysrs)}
+                                colTitles={ColTitles}
+                              />
+                              <NjdotSource />
+                          </div>
+                      }
+                      <Footer />
+                  </div>
+              </div>
+          </CookiesContext.Provider>
+      </WithRouteIsChanging>
     )
 }

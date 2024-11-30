@@ -27,7 +27,7 @@
         "@mui/material": "^5.15.10",
         "@next/mdx": "^14",
         "@rdub/base": "0.7.0",
-        "@rdub/next-base": "0.3.0",
+        "@rdub/next-base": "0.4.0",
         "@rdub/next-leaflet": "0.1.0",
         "@rdub/next-params": "file:/Users/ryan/c/js/next-params/dist",
         "@rdub/next-plotly": "0.2.0",

@@ -9,6 +9,7 @@ import { useMemo } from "react";
 import css from "../result-table.module.scss"
 import { getNjdotCrashRows } from "@/src/use-njdot-crashes";
 import { CrashPage } from "./crash"
+import { useRouter } from "next/router";
 
 export const NjdotCrashesId = "njdot-crashes"
 
@@ -37,8 +38,9 @@ export function NjdotCrashesTable(
   }, [ cc, mc ])
   const paginationControls = usePaginationControls({ id, perPageId: NjdotCrashesId, })
   const { page, perPage, } = paginationControls
-  const { data: { crashes, total } = init, isFetching, isError, error, } = useQuery({
-    queryKey: [ NjdotCrashesId, page, perPage, cc, mc, ],
+  const router = useRouter()
+  const { data: { crashes, total } = init, isLoading, isFetching, isError, error, } = useQuery({
+    queryKey: [ NjdotCrashesId, router.asPath, page, perPage, cc, mc, ],
     queryFn: async () => {
       const q: CrashPageOpts = {
         p: page,
@@ -54,7 +56,7 @@ export function NjdotCrashesTable(
     enabled: page !== 0,
     placeholderData: keepPreviousData,
   })
-  console.log(`njdot table: isFetching ${isFetching}`, total)
+  console.log(`njdot table: isFetching ${isFetching}, isLoading ${isLoading}`, total)
   if (isError) {
     console.error("/api/njdot/crashes error:", error)
     return <div>Error!</div>
@@ -65,7 +67,7 @@ export function NjdotCrashesTable(
     <ResultTable
       className={css.njdotCrashesTable}
       result={right(rows)}
-      isFetching={isFetching}
+      isFetching={isLoading || isFetching}
       pagination={pagination}
     />
   )

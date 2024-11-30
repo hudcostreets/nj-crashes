@@ -9,6 +9,7 @@ import { right } from "fp-ts/Either";
 import { CC2MC2MN } from "@/src/county";
 import { useMemo } from "react";
 import css from "../result-table.module.scss"
+import { useRouter } from "next/router";
 
 export const NjspCrashesId = "njsp-crashes"
 
@@ -37,8 +38,9 @@ export function NjspCrashesTable(
   }, [ cc, mc ])
   const paginationControls = usePaginationControls({ id, perPageId: NjspCrashesId, })
   const { page, perPage, } = paginationControls
+  const router = useRouter()
   const { data: { crashes, total } = init, isFetching, isError, error, } = useQuery({
-    queryKey: [ NjspCrashesId, page, perPage, cc, mc, ],
+    queryKey: [ NjspCrashesId, router.asPath, page, perPage, cc, mc, ],
     queryFn: async () => {
       const q: CrashPageOpts = {
         p: page,
