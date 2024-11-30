@@ -13,15 +13,14 @@ import css from "@/src/region-page.module.scss";
 import tableCss from "@/src/result-table.module.scss";
 import CitySelect from "@/src/city-select";
 import { CountySelect } from "@/src/county-select";
-import { njspPlotSpec } from "@/src/plotSpecs";
 import { ResultTable } from "@/src/result-table";
 import A from "@rdub/next-base/a";
 import { right } from "fp-ts/Either";
 import Footer from "@/src/footer";
 import { NjdotSource, NjspSource } from "@/src/icons";
 import { Home } from "@mui/icons-material";
-import { Crashes } from "@/server/njsp/sql";
-import { DOTDbs } from "@/server/njdot/sql";
+import { CrashDB } from "@/server/njsp/sql";
+import { DotSql } from "@/server/njdot/sql";
 import * as SP from "@/src/njsp/crash";
 import * as DOT from "@/src/njdot/crash";
 import { NjspCrashesId, NjspCrashesTable } from "@/src/njsp/table";
@@ -85,8 +84,8 @@ export const getServerSideProps: GetServerSideProps<Props, Params> = async ({ pa
         }
     }
     const page = 0
-    const spDb = new Crashes(urls.njsp.crashes)
-    const dotDbs = new DOTDbs(urls.dot)
+    const spDb = new CrashDB(urls.njsp.crashes)
+    const dotDbs = new DotSql(urls.dot)
     const [ spPage, njspProps, dotPage, yearStatsDicts, ] = await Promise.all([
         spDb.crashPage({ cc, mc, page, perPage, }),
         mn === null ? loadProps({ county: cn }) : Promise.resolve(null),
@@ -146,7 +145,6 @@ export default function RegionPage({ urls, njspProps, spPage, dotPage, yearStats
                                 county={cn ?? null}
                                 Heading={"h1"}
                                 heading={<H2 id={"by-type"}>{plotTitle}</H2>}
-                                spec={njspPlotSpec}
                               />
                           </div>
                       </div>
