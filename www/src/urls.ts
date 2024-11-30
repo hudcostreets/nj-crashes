@@ -1,6 +1,7 @@
 import getBasePath from "@rdub/next-base/basePath";
 import { mapValues } from "@rdub/base/objs";
-import { NjspCrashesPqt } from "@/server/paths";
+import { DotPqts, NJDOT_DATA, NjspCrashesPqt } from "@/server/paths";
+import { join } from "path";
 
 export const NjspFatalAcc = "https://nj.gov/njsp/info/fatalacc/"
 export const NjdotRawData = "https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"
@@ -34,24 +35,25 @@ export function getDbUrls<U extends Record<string, string>>({ loc, name, urls, }
     }
 }
 
-export type DotUrls = {
+export type DotTypeUrls = {
     crashes: string
     occupants: string
     pedestrians: string
     vehicles: string
     drivers: string
 }
-export type DotSqlUrls = DotUrls & {
+export type DotSqlUrls = DotTypeUrls & {
     cmymc: string
 }
-export type DotPqtUrls = DotUrls & {
+export type DotPqtUrls = DotTypeUrls & {
     cmyc: string
     cyc: string
     yc: string
 }
+export type DotUrls = DotSqlUrls & DotPqtUrls
 
-export function getDOTDbUrls(loc?: Loc): DotSqlUrls & DotPqtUrls {
-    return getDbUrls({
+export function getDOTDbUrls(loc?: Loc): DotUrls {
+    const urls = getDbUrls({
         loc,
         name: "njdot",
         urls: {
@@ -66,6 +68,14 @@ export function getDOTDbUrls(loc?: Loc): DotSqlUrls & DotPqtUrls {
             yc: 'yc.parquet',
         }
     })
+    if (urls.loc === "local") {
+        return {
+            ...urls,
+            ...DotPqts
+        }
+    } else {
+        return urls
+    }
 }
 
 export type NjspUrls = {
@@ -95,7 +105,7 @@ export function getNJSPDbUrls(loc?: Loc): NjspUrls {
 
 export type Urls = {
     njsp: NjspUrls
-    dot: DotSqlUrls
+    dot: DotUrls
 }
 
 export function getUrls({ loc }: { loc?: Loc } = {}): Urls {
