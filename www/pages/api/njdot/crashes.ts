@@ -11,7 +11,7 @@ export default async function handler(
 ) {
   console.log("/api/njsp/crashes req.query:", req.query)
   const { p: page, pp: perPage, cc, mc } = decode(req, q.CrashPage)
-  const urls = getUrls({ local: true })
+  const urls = getUrls()
   const db = new DotSql(urls.dot)
   const crashPage = await db.crashPage({ cc, mc, page, perPage, })
   res.status(200).json(crashPage)

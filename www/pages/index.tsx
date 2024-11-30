@@ -14,7 +14,6 @@ import { H2 } from "@/pages/c/[[...region]]";
 import { NjspSource } from "@/src/icons";
 import { loadProps } from "@/server/njsp/plot";
 import { CrashPage } from '@/src/njsp/crash';
-import { CrashDB } from '@/server/njsp/sql';
 import { NjspCrashesId, NjspCrashesTable } from "@/src/njsp/table";
 import { CC2MC2MN, normalize } from "@/src/county";
 import { cc2mc2mn, County2Code } from "@/server/county";
@@ -25,13 +24,12 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { fetchJson } from "@rdub/base/json/fetch";
 import { encode } from "@rdub/next-params/query";
 import * as q from "@/src/query";
-import { spCrashesDdb } from "@/server/njsp/ddb";
+import { CrashDDB } from "@/server/njsp/ddb";
 
 type Props = {
     plotsDict: PlotsDict<PlotParams>
     initNjspPlot: NjspProps
     initNjsp: CrashPage
-    pqtPage: CrashPage
     cc2mc2mn: CC2MC2MN
     County2Code: Record<string, number>
     cookies: Cookies
@@ -52,27 +50,21 @@ export function parsePerPage(req: GetServerSidePropsContext["req"], ppKey: strin
 export const getServerSideProps: GetServerSideProps<Props> = async ({ req }) => {
     const { perPage, cookies } = parsePerPage(req, PerPageKey(NjspCrashesId))
     const plotsDict = loadPlots(plotSpecs) as PlotsDict<PlotParams>
-    const urls = getUrls({ local: true })
     const page = 0, cc = null, mc = null
-    const crashDb = new CrashDB(urls.njsp.crashes)
-    const [ crashes, njspCrashesTotal, initNjspPlot, pqtCrashes, pqtTotal ] = await Promise.all([
-        crashDb.crashes({ cc, mc, page, perPage, }),
-        crashDb.total({ cc, mc, }),
+    const urls = getUrls()
+    const crashDDb = new CrashDDB(urls.njsp.crashesPqt)
+    const [ initNjsp, initNjspPlot ] = await Promise.all([
+        crashDDb.crashPage({ cc, mc, page, perPage, }),
         loadProps({ county: null }),
-        spCrashesDdb.crashes({ cc, mc, page, perPage, }),
-        spCrashesDdb.total({ cc, mc, }),
     ])
-    const initNjsp = { crashes, total: njspCrashesTotal, }
-    const pqtPage: CrashPage = { crashes: pqtCrashes, total: pqtTotal }
     // console.log("pqtPage:", pqtPage)
-    return { props: { plotsDict, initNjspPlot, initNjsp, pqtPage, cc2mc2mn, County2Code, cookies, } }
+    return { props: { plotsDict, initNjspPlot, initNjsp, cc2mc2mn, County2Code, cookies, } }
 }
 
-const Home = ({ plotsDict, initNjspPlot, initNjsp, pqtPage, cc2mc2mn, County2Code, cookies, }: Props) => {
+const Home = ({ plotsDict, initNjspPlot, initNjsp, cc2mc2mn, County2Code, cookies, }: Props) => {
     const plots: Plot[] = buildPlots(plotSpecs, plotsDict)
     const title = "NJ Traffic Crash Data"
-    console.log("njsp pqtPage", pqtPage)
-    console.log("njsp sqlPage", initNjsp)
+    // console.log("njsp sqlPage", initNjsp)
 
     const [ county, setCounty ] = useState<string | null>(null)
     console.log("county:", county, County2Code)
