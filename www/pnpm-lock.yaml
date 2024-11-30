@@ -51,8 +51,8 @@ importers:
         specifier: 0.7.0
         version: 0.7.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@rdub/next-base':
-        specifier: 0.3.0
-        version: 0.3.0(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+        specifier: 0.4.0
+        version: 0.4.0(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@rdub/next-leaflet':
         specifier: 0.1.0
         version: 0.1.0(leaflet@1.9.4)(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react-leaflet@4.2.1(leaflet@1.9.4)(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)
@@ -1557,6 +1557,13 @@ packages:
 
   '@rdub/next-base@0.3.0':
     resolution: {integrity: sha512-WYEWeS3MyI18KS1wQxY5BLrR1ORueiDkJxFmsXk9HgDJ1K+a5SlAA7xIfv9Qld8H6AH015WiHqom+d5r3dC0jg==}
+    peerDependencies:
+      next: ^14
+      react: ^18
+      react-dom: ^18
+
+  '@rdub/next-base@0.4.0':
+    resolution: {integrity: sha512-z9W5+64fEMN1w2I5ZEK8X95aphUqQxvaSG586JQMgjbzvgtSy3+BhaU0iXnb436h+BEqyhPxZitlwBJpLhi14w==}
     peerDependencies:
       next: ^14
       react: ^18
@@ -5776,6 +5783,12 @@ snapshots:
     dependencies:
       '@vanilla-extract/css': 1.14.0
       fp-ts: 2.16.9
+      next: 15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7)
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+
+  '@rdub/next-base@0.4.0(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
+    dependencies:
       next: 15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7)
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)

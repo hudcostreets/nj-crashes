@@ -86,7 +86,7 @@ export default function useRegion({ cc2mc2mn, urlPrefix, ...props }: CCMC & {
             if (urlPrefix !== undefined) {
                 const url = `${urlPrefix}/${county ? normalize(county) : ""}`
                 console.log(`pushing ${url}`)
-                router.push(url, undefined, { shallow: true })
+                router.push(url, url, { shallow: false, scroll: false, })
             }
         },
         [ cn2cc, setCc, urlPrefix, ]

@@ -12,6 +12,7 @@ import { Either, fold } from "fp-ts/Either";
 import { TableFooter } from "@mui/material";
 import { DatePagination, Pagination } from "@/src/pagination";
 import { Tooltip } from "./tooltip";
+import { useRouteIsChanging } from "@rdub/next-base/route-is-changing";
 
 export type Result<T> = Either<Error, T>
 export type R<T> = Either<Error, T>
@@ -38,6 +39,7 @@ export function RowsTable(
       isFetching: boolean
         colTitles?: Record<string, string>
     }) {
+    const routeIsChanging = useRouteIsChanging()
     return (
         <TableContainer component={Paper} style={{ boxShadow: "none", }} className={`${css.rowsTable} ${className || ""}`}>
             <Table stickyHeader sx={{minWidth: 450}} size={"small"} aria-label="simple table">
@@ -80,7 +82,7 @@ export function RowsTable(
                     </TableFooter>
                 }
             </Table>
-          {isFetching ? <div className={css.fetchingSpinner}><div className={css.spinner} /></div> : null}
+          {routeIsChanging || isFetching ? <div className={css.fetchingSpinner}><div className={css.spinner} /></div> : null}
         </TableContainer>
     )
 }
