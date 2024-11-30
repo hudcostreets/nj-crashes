@@ -127,7 +127,7 @@ export function Pagination(
     }: Pagination
 ) {
     const lastPage = useMemo(
-        () => Math.floor(total / perPage),
+        () => Math.floor((total - 1) / perPage),
         [total, perPage]
     )
     const [ pageTxtState, setPageTxtState ] = useState<string>((page + 1).toString())

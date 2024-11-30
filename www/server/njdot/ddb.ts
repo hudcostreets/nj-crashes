@@ -1,7 +1,7 @@
 import { Crash, Crash0, Occupant, Pedestrian, Vehicle } from "@/src/njdot/crash"
 import { CrashDDB as CrashDDB0 } from "../ddb"
 import { toYearStatsDicts, YearStats, YearStatsDicts } from "@/src/use-year-stats"
-import { DotPqtUrls } from "@/src/urls";
+import { DotPqtUrls, getUrls, urls } from "@/src/urls";
 import { CCMC } from "@/src/njsp/region";
 import { HasCrashPage } from "@/server/crash-page";
 import { IdMap, idMap, Ids, Props } from "@/server/njdot/crash-page";
@@ -30,7 +30,7 @@ export class DotDdb extends HasCrashPage<Crash> {
 
   constructor(urls: DotPqtUrls) {
     super()
-    console.log("dot dbs:", urls)
+    // console.log("dot dbs:", urls)
     const { crashes, occupants, pedestrians, vehicles, drivers } = urls
     this.urls = {
       ...urls,
@@ -47,10 +47,19 @@ export class DotDdb extends HasCrashPage<Crash> {
     return this.crashDdb.db
   }
 
+  async query<T>(query: string): Promise<T[]> {
+    const msg = `njdot/ddb query: ${query.replace("\n", " ").replace(/\s+/g, " ")}`
+    console.time(msg)
+    const db = await this.db
+    const res = (await db.all(query)) as T[]
+    console.timeEnd(msg)
+    return res
+  }
+
   async crashes({ cc, mc, page, perPage, }: Props): Promise<Crash[]> {
     const crashes = await this._crashes({ cc, mc, page, perPage, })
     const ids = crashes.map(({ id }) => id)
-    console.log("crashes:", crashes, "ids:", ids)
+    // console.log("crashes:", crashes, "ids:", ids)
     const [ occMap, pedMap, vehMap ] = await Promise.all([
       this.occupants(ids),
       this.pedestrians(ids),
@@ -80,9 +89,7 @@ export class DotDdb extends HasCrashPage<Crash> {
         where crash_id in (${ids.join(', ')}) and condition >= 1 and condition < 5
         order by crash_id, condition, pos
     `
-    const db = await this.db
-    console.log("occupants query:", query)
-    return idMap(ids, await db.all(query) as Occupant[])
+    return idMap(ids, await this.query<Occupant>(query))
   }
 
   async pedestrians(ids: Ids): Promise<IdMap<Pedestrian>> {
@@ -93,9 +100,7 @@ export class DotDdb extends HasCrashPage<Crash> {
         where crash_id in (${ids.join(', ')}) and condition >= 1 and condition < 5
         order by crash_id, condition, cyclist
     `
-    const db = await this.db
-    console.log("pedestrians query:", query)
-    return idMap(ids, await db.all(query) as Pedestrian[])
+    return idMap(ids, await this.query<Pedestrian>(query))
   }
 
   async vehicles(ids: Ids): Promise<IdMap<Vehicle>> {
@@ -111,9 +116,7 @@ export class DotDdb extends HasCrashPage<Crash> {
         from '${this.urls.vehicles}'
         where crash_id in (${ids.join(', ')})
     `
-    const db = await this.db
-    console.log("vehicles query:", query)
-    return idMap(ids, await db.all(query) as Vehicle[])
+    return idMap(ids, await this.query<Vehicle>(query))
   }
 
   async yearStats({ cc, mc }: CCMC): Promise<YearStatsDicts> {
@@ -127,9 +130,8 @@ export class DotDdb extends HasCrashPage<Crash> {
         from '${url}' ${where}
         order by y desc, condition asc
     `
-    console.log("yearStats query:", query)
-    const db = await this.db
-    const yearStats = await db.all(query) as YearStats[]
-    return toYearStatsDicts(yearStats)
+    return toYearStatsDicts(await this.query<YearStats>(query))
   }
 }
+
+export const dotDdb = new DotDdb(urls.dot)

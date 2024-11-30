@@ -2,7 +2,7 @@ import type { GetServerSideProps } from "next";
 import { cc2mc2mn, Counties, County2Code } from "@/server/county";
 import { mapEntries, values } from "@rdub/base/objs";
 import { CC2MC2MN, denormalize, normalize } from "@/src/county";
-import { getUrls, Urls } from "@/src/urls";
+import { urls, Urls } from "@/src/urls";
 import { NjspPlot, Props as NjspProps } from "@/src/njsp/plot";
 import { loadProps } from "@/server/njsp/plot";
 import { ReactNode } from "react";
@@ -19,7 +19,6 @@ import { right } from "fp-ts/Either";
 import Footer from "@/src/footer";
 import { NjdotSource, NjspSource } from "@/src/icons";
 import { Home } from "@mui/icons-material";
-import { DotSql } from "@/server/njdot/sql";
 import * as SP from "@/src/njsp/crash";
 import * as DOT from "@/src/njdot/crash";
 import { NjspCrashesId, NjspCrashesTable } from "@/src/njsp/table";
@@ -28,8 +27,8 @@ import { parsePerPage } from "@/pages";
 import { NjdotCrashesTable } from "@/src/njdot/table";
 import { CCMC } from "@/src/njsp/region";
 import { CrashPage } from "@/src/crash";
-import { CrashDDB } from "@/server/njsp/ddb";
-import { DotDdb } from "@/server/njdot/ddb";
+import { spDdb } from "@/server/njsp/ddb";
+import { dotDdb } from "@/server/njdot/ddb";
 
 export const DOTStart = "2001-01-01"
 export const EndYear = 2022
@@ -64,7 +63,6 @@ export const getServerSideProps: GetServerSideProps<Props, Params> = async ({ pa
     if (!params) {
         return { notFound: true }
     }
-    const urls = getUrls()
     let { region = [] } = params
     if (region.length > 2) {
         return { notFound: true }
@@ -85,13 +83,11 @@ export const getServerSideProps: GetServerSideProps<Props, Params> = async ({ pa
         }
     }
     const page = 0
-    const spDb = new CrashDDB(urls.njsp.crashesPqt)
-    const dotDbs = new DotDdb(urls.dot)
     const [ spPage, njspProps, dotPage, yearStatsDicts, ] = await Promise.all([
-        spDb.crashPage({ cc, mc, page, perPage, }),
+        spDdb.crashPage({ cc, mc, page, perPage, }),
         mn === null ? loadProps({ county: cn }) : Promise.resolve(null),
-        dotDbs.crashPage({ cc, mc, page, perPage, }),  // before: DOTEnd
-        dotDbs.yearStats({ cc, mc, }),
+        dotDdb.crashPage({ cc, mc, page, perPage, }),  // before: DOTEnd
+        dotDdb.yearStats({ cc, mc, }),
     ])
     return { props: { urls, cp, cn, cc, mc, mn, cc2mc2mn, Counties, njspProps, spPage, dotPage, yearStatsDicts, cookies, } }
 }

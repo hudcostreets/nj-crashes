@@ -37,7 +37,7 @@ export function NjspCrashesTable(
   }, [ cc, mc ])
   const paginationControls = usePaginationControls({ id, perPageId: NjspCrashesId, })
   const { page, perPage, } = paginationControls
-  const { data: { crashes, total } = init, isLoading, isError, error, } = useQuery({
+  const { data: { crashes, total } = init, isFetching, isError, error, } = useQuery({
     queryKey: [ NjspCrashesId, page, perPage, cc, mc, ],
     queryFn: async () => {
       const q: CrashPageOpts = {
@@ -46,12 +46,14 @@ export function NjspCrashesTable(
         ...(cc === null ? {} : { cc }),
         ...(mc === null ? {} : { mc }),
       }
-      return fetchJson<CrashPage>(`/api/njsp/crashes?${mkQuery(q)}`)
+      const url = `/api/njsp/crashes?${mkQuery(q)}`
+      console.log(`Fetching: ${url}`)
+      return fetchJson<CrashPage>(url)
     },
     initialData: page === 0 ? init : undefined,
+    enabled: page !== 0,
     placeholderData: keepPreviousData,
   })
-  if (isLoading) return "Loading..."
   if (isError) {
     console.error("/api/njsp/crashes error:", error)
     return <div>Error!</div>
@@ -62,6 +64,7 @@ export function NjspCrashesTable(
     <ResultTable
       className={css.njspCrashesTable}
       result={right(rows)}
+      isFetching={isFetching}
       pagination={pagination}
     />
   )

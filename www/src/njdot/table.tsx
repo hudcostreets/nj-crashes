@@ -37,7 +37,7 @@ export function NjdotCrashesTable(
   }, [ cc, mc ])
   const paginationControls = usePaginationControls({ id, perPageId: NjdotCrashesId, })
   const { page, perPage, } = paginationControls
-  const { data: { crashes, total } = init, isLoading, isError, error, } = useQuery({
+  const { data: { crashes, total } = init, isFetching, isError, error, } = useQuery({
     queryKey: [ NjdotCrashesId, page, perPage, cc, mc, ],
     queryFn: async () => {
       const q: CrashPageOpts = {
@@ -46,12 +46,15 @@ export function NjdotCrashesTable(
         ...(cc === null ? {} : { cc }),
         ...(mc === null ? {} : { mc }),
       }
-      return fetchJson<CrashPage>(`/api/njdot/crashes?${mkQuery(q)}`)
+      const url = `/api/njdot/crashes?${mkQuery(q)}`
+      console.log(`Fetching: ${url}`)
+      return fetchJson<CrashPage>(url)
     },
     initialData: page === 0 ? init : undefined,
+    enabled: page !== 0,
     placeholderData: keepPreviousData,
   })
-  if (isLoading) return "Loading..."
+  console.log(`njdot table: isFetching ${isFetching}`, total)
   if (isError) {
     console.error("/api/njdot/crashes error:", error)
     return <div>Error!</div>
@@ -62,6 +65,7 @@ export function NjdotCrashesTable(
     <ResultTable
       className={css.njdotCrashesTable}
       result={right(rows)}
+      isFetching={isFetching}
       pagination={pagination}
     />
   )

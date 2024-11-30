@@ -29,11 +29,13 @@ export type Row = {
 export function RowsTable(
     {
         rows,
+        isFetching,
         colTitles,
         className,
         pagination,
     }: Props & {
         rows: Row[]
+      isFetching: boolean
         colTitles?: Record<string, string>
     }) {
     return (
@@ -78,13 +80,15 @@ export function RowsTable(
                     </TableFooter>
                 }
             </Table>
+          {isFetching ? <div className={css.fetchingSpinner}><div className={css.spinner} /></div> : null}
         </TableContainer>
     )
 }
 
 export function ResultTable(
-    { result, colTitles, className, pagination, }: Props & {
+    { result, isFetching = false, colTitles, className, pagination, }: Props & {
         result: Rs<Row>
+        isFetching?: boolean
         colTitles ? : Record<string, string>
     }
 ) {
@@ -98,6 +102,7 @@ export function ResultTable(
             <RowsTable
                 rows={rows}
                 className={`${css.table} ${className || ""}`}
+                isFetching={isFetching}
                 colTitles={colTitles}
                 pagination={pagination}
             />
