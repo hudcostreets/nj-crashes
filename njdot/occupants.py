@@ -6,7 +6,7 @@ from utz import sxs
 
 from nj_crashes.utils.log import err
 from njdot import vehicles, crashes
-from njdot.load import Years, load_tbl, normalize, pk_base
+from njdot.load import Years, load_tbl, normalize
 
 renames = {
     'Year': 'year',
@@ -66,7 +66,7 @@ def map_df(df, fix_missing_vid: bool = True, drop: bool = True):
         # dfc = dfc.astype({ 'vehicle_id': 'int32' })
 
     err("Merging occupants with vehicles")
-    dfm = normalize(dfc, 'vehicle_id', vehicles.load, drop=drop, cols=['crash_id', 'vn'])
+    dfm = normalize(dfc, 'vehicle_id', vehicles.load, drop=drop, cols=['crash_id', 'vn'], dtype='Int32')
     if drop:
         dfm = sxs(dfc.crash_id, dfm)
 
@@ -76,15 +76,15 @@ def map_df(df, fix_missing_vid: bool = True, drop: bool = True):
 
 
 def load(
-        years: Years = None,
-        county: str = None,
-        read_pqt: Optional[bool] = None,
-        write_pqt: bool = False,
-        pqt_path: Optional[str] = None,
-        n_jobs: int = 0,
-        cols: Optional[list[str]] = None,
-        fix_missing_vid: bool = True,
-        drop: bool = True,
+    years: Years = None,
+    county: str = None,
+    read_pqt: Optional[bool] = None,
+    write_pqt: bool = False,
+    pqt_path: Optional[str] = None,
+    n_jobs: int = 0,
+    cols: Optional[list[str]] = None,
+    fix_missing_vid: bool = True,
+    drop: bool = True,
 ):
     df = load_tbl(
         'occupants',
