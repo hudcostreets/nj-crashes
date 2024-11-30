@@ -1,9 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import * as q from "@/src/query";
-import { getUrls } from "@/src/urls";
 import { CrashPage } from "@/src/njdot/crash";
 import { decode } from "@rdub/next-params/query";
-import { DotDdb } from "@/server/njdot/ddb";
+import { dotDdb } from "@/server/njdot/ddb";
 
 export default async function handler(
   req: NextApiRequest,
@@ -11,8 +10,6 @@ export default async function handler(
 ) {
   console.log("/api/njsp/crashes req.query:", req.query)
   const { p: page, pp: perPage, cc, mc } = decode(req, q.CrashPage)
-  const urls = getUrls()
-  const dotDbs = new DotDdb(urls.dot)
-  const crashPage = await dotDbs.crashPage({ cc, mc, page, perPage, })
+  const crashPage = await dotDdb.crashPage({ cc, mc, page, perPage, })
   res.status(200).json(crashPage)
 }

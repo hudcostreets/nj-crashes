@@ -8,7 +8,6 @@ import { plotSpecs } from "@/src/plotSpecs";
 import { buildPlots, Plot, PlotsDict } from "@rdub/next-plotly/plot";
 import { loadPlots } from "@rdub/next-plotly/plot-load";
 import { NjspPlot, PlotParams, Props as NjspProps } from "@/src/njsp/plot";
-import { getUrls } from "@/src/urls";
 import Footer from '@/src/footer';
 import { H2 } from "@/pages/c/[[...region]]";
 import { NjspSource } from "@/src/icons";
@@ -24,7 +23,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { fetchJson } from "@rdub/base/json/fetch";
 import { encode } from "@rdub/next-params/query";
 import * as q from "@/src/query";
-import { CrashDDB } from "@/server/njsp/ddb";
+import { spDdb } from "@/server/njsp/ddb";
 
 type Props = {
     plotsDict: PlotsDict<PlotParams>
@@ -51,10 +50,8 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req }) => 
     const { perPage, cookies } = parsePerPage(req, PerPageKey(NjspCrashesId))
     const plotsDict = loadPlots(plotSpecs) as PlotsDict<PlotParams>
     const page = 0, cc = null, mc = null
-    const urls = getUrls()
-    const crashDDb = new CrashDDB(urls.njsp.crashesPqt)
     const [ initNjsp, initNjspPlot ] = await Promise.all([
-        crashDDb.crashPage({ cc, mc, page, perPage, }),
+        spDdb.crashPage({ cc, mc, page, perPage, }),
         loadProps({ county: null }),
     ])
     // console.log("pqtPage:", pqtPage)

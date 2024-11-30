@@ -33,7 +33,7 @@ export class DotSql extends HasCrashPage<Crash> {
 
   constructor(urls: DotSqlUrls) {
     super()
-    console.log("dot dbs:", urls)
+    // console.log("dot dbs:", urls)
     const opts = { verbose: console.log }  // Remove in production
     this.crashDb = new CrashDB(urls.crashes)
     this.yearStatsDb = new Database(urls.cmymc, opts)

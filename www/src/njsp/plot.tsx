@@ -103,7 +103,7 @@ export function getPlotData({ ytRows, typeProjections, initialPlotData, types, s
         })
     }
     const isSolo = types.size === 1
-    console.log("got ytc data:", rows, "isSolo:", isSolo)
+    // console.log("got ytc data:", rows, "isSolo:", isSolo)
     // console.log("getPlotData: types:", types)
     const data = initialPlotData.map(series => {
         const { name } = series
@@ -253,7 +253,7 @@ export function NjspPlot(
 
     const onLegendMouseOver = useCallback(
         (name: LegendType) => {
-            console.log("onLegendMouseOver", name)
+            // console.log("onLegendMouseOver", name)
             if (name !== "Projected") {
                 setHoverType(name)
             }
@@ -264,7 +264,7 @@ export function NjspPlot(
 
     const onLegendMouseOut = useCallback(
       (name: LegendType) => {
-          console.log("onLegendMouseOut", name)
+          // console.log("onLegendMouseOut", name)
           if (name !== "Projected") {
               setHoverType(undefined)
           }
@@ -279,7 +279,7 @@ export function NjspPlot(
       ),
       [ hoverType, soloType, ]
     )
-    console.log("types:", types, "hoverType:", hoverType, "soloType:", soloType)
+    // console.log("types:", types, "hoverType:", hoverType, "soloType:", soloType)
     const { data, annotations, yearTotalsMap, maxY, } = getPlotData({
         ytRows,
         typeProjections,
@@ -289,7 +289,7 @@ export function NjspPlot(
         county,
     })
     const ytick = useMemo(() => TickOpts.filter(tick => maxY / tick <= 20)[0], [ maxY, ])
-    console.log("plot data:", data, "yearTotalsMap:", yearTotalsMap, "ytick:", ytick, "maxY:", maxY)
+    // console.log("plot data:", data, "yearTotalsMap:", yearTotalsMap, "ytick:", ytick, "maxY:", maxY)
     const [ xTickAngle, setXTickAngle ] = useState(0)
     const newLayout: Partial<Layout> = useMemo(
         () => {

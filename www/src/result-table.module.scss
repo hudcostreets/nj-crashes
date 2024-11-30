@@ -21,6 +21,40 @@
 
 .rowsTable {
   box-shadow: none;
+  position: relative;
+}
+
+.spinner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  border: 16px solid #aaf;
+  border-top: 16px solid #117;
+  border-radius: 50%;
+  width: 5em;
+  height: 5em;
+  animation: spinner 2s linear infinite;
+  @keyframes spinner {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+}
+
+.fetchingSpinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.5);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .njspCrashesTable, .njdotCrashesTable {

@@ -114,3 +114,5 @@ export function getUrls({ loc }: { loc?: Loc } = {}): Urls {
         dot: getDOTDbUrls(loc),
     }
 }
+
+export const urls = getUrls()
