@@ -1,5 +1,4 @@
-import { CrashDDB } from "@/server/ddb";
-import { NjspCrashesPqt } from "@/server/paths";
+import { CrashDDB as CrashDDB0 } from "@/server/ddb";
 import { Crash } from "@/src/njsp/crash";
 
-export const spCrashesDdb = new CrashDDB<Crash>(NjspCrashesPqt)
+export class CrashDDB extends CrashDDB0<Crash> {}

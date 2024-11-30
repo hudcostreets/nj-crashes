@@ -19,7 +19,6 @@ import { right } from "fp-ts/Either";
 import Footer from "@/src/footer";
 import { NjdotSource, NjspSource } from "@/src/icons";
 import { Home } from "@mui/icons-material";
-import { CrashDB } from "@/server/njsp/sql";
 import { DotSql } from "@/server/njdot/sql";
 import * as SP from "@/src/njsp/crash";
 import * as DOT from "@/src/njdot/crash";
@@ -29,6 +28,7 @@ import { parsePerPage } from "@/pages";
 import { NjdotCrashesTable } from "@/src/njdot/table";
 import { CCMC } from "@/src/njsp/region";
 import { CrashPage } from "@/src/crash";
+import { CrashDDB } from "@/server/njsp/ddb";
 
 export const DOTStart = "2001-01-01"
 export const EndYear = 2022
@@ -63,7 +63,7 @@ export const getServerSideProps: GetServerSideProps<Props, Params> = async ({ pa
     if (!params) {
         return { notFound: true }
     }
-    const urls = getUrls({ local: true })
+    const urls = getUrls()
     let { region = [] } = params
     if (region.length > 2) {
         return { notFound: true }
@@ -84,7 +84,7 @@ export const getServerSideProps: GetServerSideProps<Props, Params> = async ({ pa
         }
     }
     const page = 0
-    const spDb = new CrashDB(urls.njsp.crashes)
+    const spDb = new CrashDDB(urls.njsp.crashesPqt)
     const dotDbs = new DotSql(urls.dot)
     const [ spPage, njspProps, dotPage, yearStatsDicts, ] = await Promise.all([
         spDb.crashPage({ cc, mc, page, perPage, }),

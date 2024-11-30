@@ -1,6 +1,6 @@
 import { dirname, join, relative } from "path";
 import * as paths from "@/src/paths";
-import { DotUrls, DotSqlUrls } from "@/src/urls";
+import { DotUrls } from "@/src/urls";
 
 export const WWW = process.cwd()
 export const PUBLIC = join(WWW, "public")
