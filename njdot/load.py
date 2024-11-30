@@ -10,6 +10,7 @@ from pandas import read_parquet
 from typing import Union, Optional, Callable, Protocol
 from utz import err, sxs
 
+from nj_crashes.paths import relpath
 from njdot import NJDOT_DIR
 from njdot.data import YEARS, cn2cc
 from njdot.paths import DOT_DATA
@@ -149,7 +150,7 @@ def load_tbl(
 
     pqt_path = pqt_path or f'{DOT_DATA}/{tbl}.parquet'
     if read_pqt or (read_pqt is None and exists(pqt_path) and not write_pqt):
-        err(f"Reading {pqt_path}")
+        err(f"Reading {relpath(pqt_path)}")
         df = read_parquet(pqt_path, columns=cols)
         if years != YEARS:
             df = df[df.year.isin(years)]

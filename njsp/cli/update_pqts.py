@@ -19,7 +19,7 @@ from git import Tree
 from utz import sxs
 
 from nj_crashes.muni_codes import update_mc
-from nj_crashes.paths import DATA_DIR, COUNTY_CITY_CODES_PQT
+from nj_crashes.paths import DATA_DIR, COUNTY_CITY_CODES_PQT, relpath
 from nj_crashes.utils import s3, sql
 from nj_crashes.utils.log import Log, err
 from njsp.fauqstats import FAUQStats
@@ -113,7 +113,7 @@ def update_pqts(replace_db, sync_s3):
     from njsp.paths import CRASHES_DB, CRASHES_DB_URI
 
     if exists(CRASHES_DB) and not replace_db:
-        err(f"Removing existing DB {CRASHES_DB}")
+        err(f"Removing existing DB {relpath(CRASHES_DB)}")
         remove(CRASHES_DB)
 
     replace_kwargs = dict(if_exists='replace') if replace_db else {}

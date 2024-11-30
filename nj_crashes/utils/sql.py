@@ -6,6 +6,7 @@ from typing import Tuple, Optional
 
 import sqlite3
 
+from nj_crashes.paths import relpath
 from nj_crashes.utils.log import err
 
 
@@ -50,10 +51,10 @@ def write(
         page_size: Optional[int] = None,
 ):
     if rm and exists(db_path):
-        err(f"Removing {db_path}")
+        err(f"Removing {relpath(db_path)}")
         remove(db_path)
 
-    err(f"Writing {len(df)} rows to {db_path} ({tbl})")
+    err(f"Writing {len(df)} rows to {relpath(db_path)} ({tbl})")
     kwargs = dict(if_exists='replace') if replace else dict()
     df.to_sql(tbl, f'sqlite:///{db_path}', **kwargs)
     err(f"Wrote DB: {stat(db_path).st_size} bytes")

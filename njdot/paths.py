@@ -18,6 +18,9 @@ CC2MC2MN = f'{WWW_DOT}/cc2mc2mn.json'
 CMYM_PQT = f'{WWW_DOT}/cmym.parquet'
 CMYM_DB = f'{WWW_DOT}/cmym.db'
 CMYMC_DB = f'{WWW_DOT}/cmymc.db'
+CMYC_PQT = f'{WWW_DOT}/cmyc.parquet'
+CYC_PQT = f'{WWW_DOT}/cyc.parquet'
+YC_PQT = f'{WWW_DOT}/yc.parquet'
 
 MC_PQT = join(DOT_DATA, 'muni_codes.parquet')
 
