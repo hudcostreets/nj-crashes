@@ -1,17 +1,17 @@
 import { Annotations, Layout, PlotData } from "plotly.js";
 import * as Plotly from "react-plotly.js";
-import { curYear, Data, njspPlotSpec, prvYear, YearTotalsMap } from "@/src/plotSpecs";
+import { curYear, Data, prvYear, YearTotalsMap } from "@/src/plotSpecs";
 import React, { Dispatch, ReactNode, useCallback, useMemo, useState } from "react";
 import { repoWithOwner } from "@/src/github";
 import A from "@rdub/next-base/a";
 import { GitHub } from "@/src/socials";
-import { Plot, PlotSpec } from "@rdub/next-plotly/plot";
+import { Plot } from "@rdub/next-plotly/plot";
 import { fromEntries, sum } from "@rdub/base/objs";
 import { normalize } from "../county";
 import { CountySelect } from "../county-select";
 import { NjspSource } from "@/src/icons";
-import IntrinsicElements = React.JSX.IntrinsicElements;
 import css from "./plot.module.scss"
+import IntrinsicElements = React.JSX.IntrinsicElements;
 
 export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
 export type Annotation = Partial<Annotations>
@@ -35,7 +35,6 @@ export type Props = {
     Counties: string[]
     title?: string
     heading?: ReactNode
-    spec?: PlotSpec
 } & Data
 
 export type YtRow = {
@@ -219,7 +218,6 @@ export function NjspPlot(
         subtitle,
         heading,
         Heading = 'h2',
-        spec,
         setCounty,
         includeMoreInfoLink,
     }: Props & MoreInfoLink & {
@@ -228,9 +226,9 @@ export function NjspPlot(
         Heading?: keyof IntrinsicElements
     }
 ) {
-    spec = spec ?? njspPlotSpec
-    let { src, name } = spec
-    src = src ?? `plots/${name}.png`
+    const id = "per-year"
+    const name = "fatalities_per_year_by_type"
+    const src = `plots/${name}.png`
     const [ soloType, setSoloType ] = useState<Type>()
     const [ hoverType, setHoverType ] = useState<Type>()
     const [ showProjected, setShowProjected ] = useState(true)
@@ -312,16 +310,17 @@ export function NjspPlot(
     title = title ?? DefaultTitle
     return (
         <Plot
-            {...spec}
-            params={{ data, layout: newLayout, ...plotRest }}
+            id={id}
+            name={name}
             src={src}
+            params={{ data, layout: newLayout, ...plotRest }}
             title={title}
             subtitle={subtitle}
             heading={
                 heading ?? (
                     setCounty
                         ? <Heading>
-                            <A href={`#${spec.id}`}>{title}</A>:
+                            <A href={`#${id}`}>{title}</A>:
                             <CountySelect
                                 county={county}
                                 setCounty={setCounty}

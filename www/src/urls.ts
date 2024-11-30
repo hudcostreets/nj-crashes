@@ -15,16 +15,23 @@ export function getDbUrls<U extends Record<string, string>>({ local, name, urls,
     return mapValues(urls, (k, v) => `${prefix}/${v}`) as U
 }
 
-export type DOTUrls = {
+export type DotUrls = {
     crashes: string
     occupants: string
     pedestrians: string
     vehicles: string
     drivers: string
+}
+export type DotSqlUrls = DotUrls & {
     cmymc: string
 }
+export type DotPqtUrls = DotUrls & {
+    cmyc: string
+    cyc: string
+    yc: string
+}
 
-export function getDOTDbUrls({ local }: Local = {}): DOTUrls {
+export function getDOTDbUrls({ local }: Local = {}): DotSqlUrls & DotPqtUrls {
     return getDbUrls({
         local,
         name: "njdot",
@@ -35,6 +42,9 @@ export function getDOTDbUrls({ local }: Local = {}): DOTUrls {
             vehicles: `vehicles.db`,
             drivers: `drivers.db`,
             cmymc: `cmymc.db`,
+            cmyc: 'cmyc.parquet',
+            cyc: 'cyc.parquet',
+            yc: 'yc.parquet',
         }
     })
 }
@@ -59,7 +69,7 @@ export function getNJSPDbUrls({ local }: Local): NjspUrls {
 
 export type Urls = {
     njsp: NjspUrls
-    dot: DOTUrls
+    dot: DotSqlUrls
 }
 
 export function getUrls(props: Local = {}): Urls {

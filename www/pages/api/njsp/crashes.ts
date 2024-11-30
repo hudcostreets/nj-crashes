@@ -1,18 +1,18 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { CrashPageOpts } from "@/src/query";
-import { DefaultPageSize } from "@/src/pagination";
-import { Crashes } from "@/server/njsp/sql";
+import { CrashDB } from "@/server/njsp/sql";
 import { getUrls } from "@/src/urls";
 import { CrashPage } from "@/src/njsp/crash";
+import { decode } from "@rdub/next-params/query";
+import * as q from "@/src/query";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<CrashPage>
 ) {
   console.log("/api/njsp/crashes req.query:", req.query)
-  const { p: page = 0, pp: perPage = DefaultPageSize, cc = null, mc = null } = req.query as CrashPageOpts
+  const { p: page, pp: perPage, cc, mc } = decode(req, q.CrashPage)
   const urls = getUrls({ local: true })
-  const crashDb = new Crashes(urls.njsp.crashes)
+  const crashDb = new CrashDB(urls.njsp.crashes)
   const crashPage = await crashDb.crashPage({ cc, mc, page, perPage, })
   res.status(200).json(crashPage)
 }

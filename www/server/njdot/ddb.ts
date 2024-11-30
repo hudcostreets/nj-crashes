@@ -1,45 +1,42 @@
 import { Crash, Crash0, Occupant, Pedestrian, Vehicle } from "@/src/njdot/crash"
-import Database, { Database as Db } from "better-sqlite3"
-import { asyncQuery, CrashDB as CrashDB0, Params } from "../sql"
+import { CrashDDB as CrashDDB0 } from "../ddb"
 import { toYearStatsDicts, YearStats, YearStatsDicts } from "@/src/use-year-stats"
-import { DotSqlUrls } from "@/src/urls";
+import { DotPqtUrls } from "@/src/urls";
 import { CCMC } from "@/src/njsp/region";
 import { HasCrashPage } from "@/server/crash-page";
 import { IdMap, idMap, Ids, Props } from "@/server/njdot/crash-page";
+import { Database } from "duckdb-async";
 
-export class CrashDB extends CrashDB0<Crash0> {
-  where({ cc, mc, }: CCMC): { where: string; params: Params } {
+export class CrashDDB extends CrashDDB0<Crash0> {
+  where({ cc, mc, }: CCMC): string {
     const severities = [ 'i', 'f' ]
     const severitiesFilter = severities.map(s => `severity='${s}'`).join(' or ')
     const severitiesClause = severitiesFilter ? `(${severitiesFilter})` : ""
-    let { where, params } = super.where({ cc, mc, });
+    let where = super.where({ cc, mc, });
     if (severitiesClause) {
       if (where) {
-        where += ` and ${severitiesClause}`
+        where += ` AND ${severitiesClause}`
       } else {
         where = `WHERE ${severitiesClause}`
       }
     }
-    return { where, params }
+    return where
   }
 }
 
-export class DotSql extends HasCrashPage<Crash> {
-  private crashDb: CrashDB
-  private yearStatsDb: Db
-  private occupantsDb: Db
-  private pedestriansDb: Db
-  private vehiclesDb: Db
+export class DotDdb extends HasCrashPage<Crash> {
+  private crashDb: CrashDDB
+  urls: DotPqtUrls
 
-  constructor(urls: DotSqlUrls) {
+  constructor(urls: DotPqtUrls) {
     super()
     console.log("dot dbs:", urls)
-    const opts = { verbose: console.log }  // Remove in production
-    this.crashDb = new CrashDB(urls.crashes)
-    this.yearStatsDb = new Database(urls.cmymc, opts)
-    this.occupantsDb = new Database(urls.occupants, opts)
-    this.pedestriansDb = new Database(urls.pedestrians, opts)
-    this.vehiclesDb = new Database(urls.vehicles, opts)
+    this.urls = urls
+    this.crashDb = new CrashDDB(urls.crashes)
+  }
+
+  get db(): Promise<Database> {
+    return this.crashDb.db
   }
 
   async crashes({ cc, mc, page, perPage, }: Props): Promise<Crash[]> {
@@ -69,21 +66,23 @@ export class DotSql extends HasCrashPage<Crash> {
   async occupants(ids: Ids): Promise<IdMap<Occupant>> {
     const query = `
         select crash_id, pos, condition, eject, age, sex, inj_loc, inj_type
-        from occupants
+        from '${this.urls.occupants}'
         where crash_id in (${ids.join(', ')}) and condition >= 1 and condition < 5
         order by crash_id, condition, pos
     `
-    return idMap(ids, await asyncQuery<Occupant>(this.occupantsDb, query, {}))
+    const db = await this.db
+    return idMap(ids, await db.all(query) as Occupant[])
   }
 
   async pedestrians(ids: Ids): Promise<IdMap<Pedestrian>> {
     const query = `
         select crash_id, condition, age, sex, inj_loc, inj_type, cyclist
-        from pedestrians
+        from '${this.urls.pedestrians}'
         where crash_id in (${ids.join(', ')}) and condition >= 1 and condition < 5
         order by crash_id, condition, cyclist
     `
-    return idMap(ids, await asyncQuery<Pedestrian>(this.pedestriansDb, query, {}))
+    const db = await this.db
+    return idMap(ids, await db.all(query) as Pedestrian[])
   }
 
   async vehicles(ids: Ids): Promise<IdMap<Vehicle>> {
@@ -95,22 +94,25 @@ export class DotSql extends HasCrashPage<Crash> {
             impact_loc,
             departure,
             type
-        from vehicles
+        from '${this.urls.vehicles}'
         where crash_id in (${ids.join(', ')})
     `
-    return idMap(ids, await asyncQuery<Vehicle>(this.vehiclesDb, query, {}))
+    const db = await this.db
+    return idMap(ids, await db.all(query) as Vehicle[])
   }
 
   async yearStats({ cc, mc }: CCMC): Promise<YearStatsDicts> {
     const where = cc ? `where cc=${cc}${mc ? ` and mc=${mc}` : ""}` : ""
-    const table = (cc ? "c" : "") + (mc ? "m" : "") + "yc"
+    const file = (cc ? "c" : "") + (mc ? "m" : "") + "yc.parquet"
     const query = `
         select y, condition,
                drivers + passengers + pedestrians + cyclists as total,
                num_crashes as num_crashes
-        from ${table} ${where}
+        from '${file}' ${where}
         order by y desc, condition asc
     `
-    return toYearStatsDicts(await asyncQuery<YearStats>(this.yearStatsDb, query, {}))
+    const db = await this.db
+    const yearStats = await db.all(query) as YearStats[]
+    return toYearStatsDicts(yearStats)
   }
 }

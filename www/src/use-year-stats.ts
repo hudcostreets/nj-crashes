@@ -1,5 +1,3 @@
-import { useMemo } from "react";
-import { Either, map } from "fp-ts/Either";
 import { Row } from "@/src/result-table";
 import { o2a } from "@rdub/base/objs";
 import { EndYear } from "@/pages/c/[[...region]]";
@@ -46,7 +44,7 @@ export const ColTitles = {
 }
 
 export function yearStatsRows({ ysds }: { ysds: YearStatsDicts, }): Row[] {
-    const rows: Row[] = o2a(
+    return o2a(
         ysds,
         (y, { k, fc, si, sic, mi, mic, pi, pic, nic }) => {
             return {
@@ -60,12 +58,11 @@ export function yearStatsRows({ ysds }: { ysds: YearStatsDicts, }): Row[] {
             }
         }
     )
-    return rows
 }
 
 export type Props = CCMC
 
-const YSD = {
+const YSD0 = {
      k: 0,  fc: 0,
     si: 0, sic: 0,
     mi: 0, mic: 0,
@@ -73,11 +70,11 @@ const YSD = {
     ni: 0, nic: 0,
 }
 export function toYearStatsDicts(years: YearStats[]): YearStatsDicts {
-    const totals = { ...YSD }
+    const totals = { ...YSD0 }
     const ysds = {} as YearStatsDicts
     years.forEach(({ y, condition, total, num_crashes }) => {
         if (!(y in ysds)) {
-            ysds[y] = { ...YSD }
+            ysds[y] = { ...YSD0 }
         }
         const k = [ null, 'k', 'si', 'mi', 'pi', 'ni' ][condition] as keyof YearStatsDict
         ysds[y][k] += total

@@ -18,7 +18,6 @@ export const njspPlotSpec: PlotSpec = {
 }
 
 export const plotSpecs: PlotSpec[] = [
-    njspPlotSpec,
     {
         id: "ytd", name: "ytd-deaths", menuName: "YTD", dropdownSection: "NJSP",
         filter: filterIdxs,

@@ -1,4 +1,4 @@
-import { CrashDB } from "../sql";
+import * as sql from "../sql";
 import { Crash } from "@/src/njsp/crash";
 
-export class Crashes extends CrashDB<Crash> {}
+export class CrashDB extends sql.CrashDB<Crash> {}

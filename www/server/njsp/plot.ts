@@ -32,11 +32,7 @@ export const ytcQuery = (county: string | null) => `
     ORDER BY year
 `
 
-export async function loadProps(
-  { county, }: {
-    county: string | null
-  }
-): Promise<Props> {
+export async function loadProps({ county, }: { county: string | null }): Promise<Props> {
   const initialPlotP = loadJson<PlotParams>(join(PLOTS, `${njspPlotSpec.name}.json`))
   const rundateP = loadJson<{ rundate: string }>(RUNDATE).then(o => o.rundate as string)
   const ddb = Database.create(':memory:', OPEN_READWRITE)
@@ -49,7 +45,7 @@ export async function loadProps(
       ddb.all(ytcQuery(county)) as Promise<YtRow[]>
     )
   const [ initialPlot, rundate, ytRows, typeProjections, ] = await Promise.all([ initialPlotP, rundateP, ytRowsP, typeProjectionsP, ])
-  console.log(`rundate: ${rundate}`, "ytRows:", ytRows)
+  // console.log(`rundate: ${rundate}`, "ytRows:", ytRows)
   return {
     initialPlot,
     typeProjections,
