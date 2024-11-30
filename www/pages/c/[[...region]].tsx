@@ -29,6 +29,7 @@ import { NjdotCrashesTable } from "@/src/njdot/table";
 import { CCMC } from "@/src/njsp/region";
 import { CrashPage } from "@/src/crash";
 import { CrashDDB } from "@/server/njsp/ddb";
+import { DotDdb } from "@/server/njdot/ddb";
 
 export const DOTStart = "2001-01-01"
 export const EndYear = 2022
@@ -85,7 +86,7 @@ export const getServerSideProps: GetServerSideProps<Props, Params> = async ({ pa
     }
     const page = 0
     const spDb = new CrashDDB(urls.njsp.crashesPqt)
-    const dotDbs = new DotSql(urls.dot)
+    const dotDbs = new DotDdb(urls.dot)
     const [ spPage, njspProps, dotPage, yearStatsDicts, ] = await Promise.all([
         spDb.crashPage({ cc, mc, page, perPage, }),
         mn === null ? loadProps({ county: cn }) : Promise.resolve(null),

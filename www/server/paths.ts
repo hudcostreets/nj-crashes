@@ -1,6 +1,6 @@
 import { dirname, join, relative } from "path";
 import * as paths from "@/src/paths";
-import { DotUrls } from "@/src/urls";
+import { DotTypeUrls, DotUrls } from "@/src/urls";
 
 export const WWW = process.cwd()
 export const PUBLIC = join(WWW, "public")
@@ -19,7 +19,7 @@ export const YearTypeCountyCsv = join(NJSP_DATA, "year-type-county.csv")
 export const NjspCrashesPqt = join(NJSP_DATA, "crashes.parquet")
 
 export const NJDOT_DATA = join(ROOT, "njdot", "data")
-export const DotPqts: DotUrls = {
+export const DotPqts: DotTypeUrls = {
   crashes: join(NJDOT_DATA, "crashes.parquet"),
   drivers: join(NJDOT_DATA, "drivers.parquet"),
   occupants: join(NJDOT_DATA, "occupants.parquet"),
