@@ -106,13 +106,13 @@ def map_df(v: pd.DataFrame) -> pd.DataFrame:
 
 
 def load(
-        years: Years = None,
-        county: str = None,
-        read_pqt: Optional[bool] = None,
-        write_pqt: bool = False,
-        pqt_path: Optional[str] = None,
-        n_jobs: int = 0,
-        cols: Optional[list[str]] = None,
+    years: Years = None,
+    county: str = None,
+    read_pqt: Optional[bool] = None,
+    write_pqt: bool = False,
+    pqt_path: Optional[str] = None,
+    n_jobs: int = 0,
+    cols: Optional[list[str]] = None,
 ) -> pd.DataFrame:
     df = load_tbl(
         'vehicles',

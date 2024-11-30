@@ -55,11 +55,12 @@ class MapYearDF2(Protocol):
 
 
 def normalize(
-        df: pd.DataFrame,
-        id: str,
-        r_fn: Collable,
-        drop: bool = True,
-        cols: Optional[list[str]] = None
+    df: pd.DataFrame,
+    id: str,
+    r_fn: Collable,
+    drop: bool = True,
+    cols: Optional[list[str]] = None,
+    dtype: Optional[str] = None,
 ) -> pd.DataFrame:
     if cols:
         left_on = right_on = cols
@@ -68,9 +69,9 @@ def normalize(
         right_on = [ 'mc_dot' if c == 'mc' else c for c in pk_base ] if id == 'crash_id' else pk_base
 
     dfb = df[left_on]
-    r = r_fn(cols=right_on)
+    r = r_fn(cols=right_on + [INDEX_NAME])
     m = dfb.merge(
-        r.reset_index().rename(columns={ 'id': id }),
+        r.rename(columns={ 'id': id }),
         left_on=left_on,
         right_on=right_on,
         how='left',
@@ -80,20 +81,23 @@ def normalize(
         drop_cols = [ c for c in set(left_on + right_on) if c in df ]
         err(f"Dropping cols: {drop_cols}")
         df = df.drop(columns=drop_cols)
-    dfm = sxs(m[id], df)
+    id_col = m[id]
+    if dtype:
+        id_col = id_col.astype(dtype)
+    dfm = sxs(id_col, df)
     dfm.index.name = INDEX_NAME
     return dfm
 
 
 def load_year_df(
-        year: int,
-        typ: Type,
-        tbl: str,
-        renames: dict[str, str],
-        astype: dict[str, Union[str, type]],
-        opt_ints: dict[str, str],
-        county: str,
-        map_year_df: Union[None, MapYearDF1, MapYearDF2] = None,
+    year: int,
+    typ: Type,
+    tbl: str,
+    renames: dict[str, str],
+    astype: dict[str, Union[str, type]],
+    opt_ints: dict[str, str],
+    county: str,
+    map_year_df: Union[None, MapYearDF1, MapYearDF2] = None,
 ):
     df = read_parquet(f'{NJDOT_DIR}/data/{year}/NewJersey{year}{typ}.pqt')
     df = df.rename(columns=renames)
@@ -125,19 +129,19 @@ def load_year_df(
 
 
 def load_tbl(
-        tbl: Tbl,
-        years: Years = None,
-        county: str = None,
-        n_jobs: int = 0,
-        read_pqt: Optional[bool] = None,
-        write_pqt: bool = False,
-        pqt_path: Optional[str] = None,
-        renames: Optional[dict[str, str]] = None,
-        astype: Optional[dict[str, Union[str, type]]] = None,
-        pk_cols: Optional[list[str]] = None,
-        cols: Optional[list[str]] = None,
-        map_year_df: Union[None, MapYearDF1, MapYearDF2] = None,
-        map_df: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
+    tbl: Tbl,
+    years: Years = None,
+    county: str = None,
+    n_jobs: int = 0,
+    read_pqt: Optional[bool] = None,
+    write_pqt: bool = False,
+    pqt_path: Optional[str] = None,
+    renames: Optional[dict[str, str]] = None,
+    astype: Optional[dict[str, Union[str, type]]] = None,
+    pk_cols: Optional[list[str]] = None,
+    cols: Optional[list[str]] = None,
+    map_year_df: Union[None, MapYearDF1, MapYearDF2] = None,
+    map_df: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
 ) -> pd.DataFrame:
     if isinstance(years, str):
         years = list(map(int, years.split(',')))
@@ -212,7 +216,7 @@ def load_tbl(
         df = map_df(df)
 
     if write_pqt:
-        df.to_parquet(pqt_path)
+        df.reset_index().astype({ INDEX_NAME: 'int32' }).to_parquet(pqt_path, index=False)
         size = stat(pqt_path).st_size
         err(f"Wrote {pqt_path} ({len(df)} rows, {naturalsize(size)})")
 
