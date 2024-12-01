@@ -1404,12 +1404,6 @@ packages:
   '@probe.gl/stats@4.0.4':
     resolution: {integrity: sha512-SDuSY/D4yDL6LQDa69l/GCcnZLRiGYdyvYkxWb0CgnzTPdPrcdrzGkzkvpC3zsA4fEFw2smlDje370QGHwlisg==}
 
-  '@rdub/base@0.1.0':
-    resolution: {integrity: sha512-7M4uXHo35ojYkx60XLa7FxUpRyHOQUrBGKHLkUYjvumQx2XxNzhnbmeuQYzcqd7eRGqj1BxyJ/5unUeQHP/nTA==}
-    peerDependencies:
-      react: ^18
-      react-dom: ^18
-
   '@rdub/base@0.7.0':
     resolution: {integrity: sha512-NPEofIBN+B8detNe28vbKa7v1ssUqgJLZNWuV/gm+uxv8muEMPbgLM9PvDd3YB4n3dh88yS9Olce87M8ppVsCg==}
     peerDependencies:
@@ -5555,12 +5549,6 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.26.0
 
-  '@rdub/base@0.1.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
-    dependencies:
-      node-fetch: 3.3.2
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-
   '@rdub/base@0.7.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
       node-fetch: 3.3.2
@@ -5615,7 +5603,6 @@ snapshots:
       '@fortawesome/react-fontawesome': 0.2.0(@fortawesome/fontawesome-svg-core@6.5.1)(react@18.2.0)
       '@rdub/next-base': 0.1.0(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@react-leaflet/core': 2.1.0(leaflet@1.9.4)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@vanilla-extract/css': 1.14.0
       leaflet: 1.9.4
       next: 15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7)
       react: 18.2.0
@@ -5625,9 +5612,7 @@ snapshots:
 
   '@rdub/next-params@file:../../../js/next-params/dist(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
-      '@rdub/base': 0.1.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@rdub/next-base': 0.1.0(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@vanilla-extract/css': 1.14.0
+      '@rdub/base': 0.7.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       lodash: 4.17.21
       next: 15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7)
       react: 18.2.0
@@ -5642,6 +5627,7 @@ snapshots:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
       react-plotly.js: 2.6.0(plotly.js@2.28.0(mapbox-gl@3.1.2))(react@18.2.0)
+      sass: 1.81.0
     transitivePeerDependencies:
       - mapbox-gl
       - supports-color
