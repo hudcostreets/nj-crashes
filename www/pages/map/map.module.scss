@@ -10,19 +10,14 @@
   height: 100vh;
 }
 .info {
-  //min-width: 10em;
-  //padding: 0.4em 0.4em 0;
+  min-width: 14em;
+  padding: 0.3em 0.4em 0.2em;
   .heading {
     font-weight: bold;
-    //font-size: 1.1em;
+    font-size: 1.1em;
   }
   p {
     padding: 0;
     margin: 0.3em 0;
-    //margin: 0;
   }
 }
-//.iconz {
-//  margin-left: 0.5em;
-//  max-height: 2.5em;
-//}

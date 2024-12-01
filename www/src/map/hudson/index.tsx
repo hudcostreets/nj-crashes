@@ -1,9 +1,8 @@
 import * as clusters from "@/src/map/clusters"
 import { Clusters } from "@/src/map/clusters"
-import React, { Dispatch } from "react"
-import MapContainer from "@rdub/next-leaflet/container"
+import React from "react"
 import type { MapContainerProps } from "@rdub/next-leaflet/container"
-import { OnClick } from "@rdub/next-leaflet/events"
+import MapContainer from "@rdub/next-leaflet/container"
 import { GeoJSON } from "react-leaflet"
 
 export type Props = MapContainerProps & clusters.Props & {

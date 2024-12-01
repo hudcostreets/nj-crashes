@@ -12,19 +12,19 @@ export function Tooltip(
     }: TooltipProps & { offset?: number }
 ) {
     return <MuiTooltip
-        arrow={arrow}
-        slotProps={{
-            popper: {
-                modifiers: [
-                    {
-                        name: 'offset',
-                        options: {
-                            offset: [0, -offset],
-                        },
-                    },
-                ],
-            },
-        }}
+        // arrow={arrow}
+        // slotProps={{
+        //     popper: {
+        //         modifiers: [
+        //             {
+        //                 name: 'offset',
+        //                 options: {
+        //                     offset: [0, -offset],
+        //                 },
+        //             },
+        //         ],
+        //     },
+        // }}
         enterTouchDelay={enterTouchDelay}
         leaveTouchDelay={leaveTouchDelay}
         enterNextDelay={enterNextDelay}

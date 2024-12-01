@@ -36,11 +36,11 @@ export function CrashIcons({ tk, dk, ok, pk, bk, ti, }: Crash) {
     return (
         <div className={css.icons}>
             <span className={css.typeIcons}>
-                {range(dk).map(idx => <Driver key={idx} title={"Driver killed"} />)}
-                {range(ok).map(idx => <Passenger key={idx} title={"Passenger killed"} />)}
-                {range(pk).map(idx => <Pedestrian key={idx} title={"Pedestrian killed"} />)}
-                {range(bk).map(idx => <Cyclist key={idx} title={"Cyclist killed"} />)}
-                {range(uk).map(idx => <Person key={idx} title={"Person killed"} />)}
+                {range(dk).map(idx => <Driver key={idx} title={"Driver died"} />)}
+                {range(ok).map(idx => <Passenger key={idx} title={"Passenger died"} />)}
+                {range(pk).map(idx => <Pedestrian key={idx} title={"Pedestrian died"} />)}
+                {range(bk).map(idx => <Cyclist key={idx} title={"Cyclist died"} />)}
+                {range(uk).map(idx => <Person key={idx} title={"Person died"} />)}
                 {range(ti).map(idx => <Person key={idx} title={"Person injured"} style={{ fill: injuryFill }} />)}
             </span>
         </div>

@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic"
 import css from "@/pages/map/map.module.scss"
-import vcss from "@/src/map/hudson/index.css"
+import vcss from "./index.module.scss"
 import { faInfo } from '@fortawesome/free-solid-svg-icons'
 import fs from "fs"
 import { join } from "path"
