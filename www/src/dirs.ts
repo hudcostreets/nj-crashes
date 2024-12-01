@@ -1,5 +1,5 @@
-import { join, resolve } from "path";
-import { cwd } from "process";
+import { join, resolve } from "path"
+import { cwd } from "process"
 
 export const publicDir = resolve(cwd(), 'public')
 export const plotsDir = join(publicDir, 'plots')

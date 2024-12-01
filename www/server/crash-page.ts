@@ -1,6 +1,6 @@
-import { CCMC } from "@/src/njsp/region";
-import { PageOpts } from "@/src/pagination";
-import { CrashPage } from "@/src/crash";
+import { CrashPage } from "@/src/crash"
+import { CCMC } from "@/src/njsp/region"
+import { PageOpts } from "@/src/pagination"
 
 export abstract class HasCrashPage<Crash> {
   abstract total({ cc, mc, }: CCMC): Promise<number>

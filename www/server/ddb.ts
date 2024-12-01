@@ -1,8 +1,8 @@
-import { HasCrashPage } from "@/server/crash-page";
-import { CCMC } from "@/src/njsp/region";
-import { PageOpts } from "@/src/pagination";
-import { Database } from "duckdb-async";
-import { OPEN_READWRITE } from "duckdb";
+import { OPEN_READWRITE } from "duckdb"
+import { Database } from "duckdb-async"
+import { HasCrashPage } from "@/server/crash-page"
+import { CCMC } from "@/src/njsp/region"
+import { PageOpts } from "@/src/pagination"
 
 export class CrashDDB<Crash> extends HasCrashPage<Crash> {
   readonly db: Promise<Database>
@@ -44,7 +44,7 @@ export class CrashDDB<Crash> extends HasCrashPage<Crash> {
             FROM '${this.url}' ${where}
             ORDER BY dt DESC
             LIMIT ${limit} OFFSET ${offset}
-        `;
+        `
     const db = await this.db
     return (await db.all(query)) as Crash[]
   }

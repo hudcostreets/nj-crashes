@@ -1,15 +1,15 @@
-import { CrashPage } from "@/src/njsp/crash";
-import { usePaginationControls } from "@/src/pagination";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { CrashPageOpts, mkQuery } from "@/src/query";
-import { fetchJson } from "@rdub/base/json/fetch";
-import { getNjspCrashRows } from "@/src/use-njsp-crashes";
-import { ResultTable } from "@/src/result-table";
-import { right } from "fp-ts/Either";
-import { CC2MC2MN } from "@/src/county";
-import { useMemo } from "react";
+import { fetchJson } from "@rdub/base/json/fetch"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
+import { right } from "fp-ts/Either"
+import { useRouter } from "next/router"
+import { useMemo } from "react"
+import { CC2MC2MN } from "@/src/county"
+import { CrashPage } from "@/src/njsp/crash"
+import { usePaginationControls } from "@/src/pagination"
+import { CrashPageOpts, mkQuery } from "@/src/query"
+import { ResultTable } from "@/src/result-table"
+import { getNjspCrashRows } from "@/src/use-njsp-crashes"
 import css from "../result-table.module.scss"
-import { useRouter } from "next/router";
 
 export const NjspCrashesId = "njsp-crashes"
 

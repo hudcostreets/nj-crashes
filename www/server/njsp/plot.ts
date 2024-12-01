@@ -1,11 +1,11 @@
-import { loadJson } from "@rdub/base/json/load";
-import { join } from "path";
-import { PLOTS, ProjectedCsv, RUNDATE, YearTypeCountyCsv } from "@/server/paths";
-import { njspPlotSpec } from "@/src/plotSpecs";
-import { Database } from "duckdb-async";
-import { OPEN_READWRITE } from "duckdb";
-import { PlotParams, Props, TypeCounts, YtRow } from "@/src/njsp/plot";
-import { Counties } from "../county";
+import { join } from "path"
+import { loadJson } from "@rdub/base/json/load"
+import { OPEN_READWRITE } from "duckdb"
+import { Database } from "duckdb-async"
+import { PLOTS, ProjectedCsv, RUNDATE, YearTypeCountyCsv } from "@/server/paths"
+import { PlotParams, Props, TypeCounts, YtRow } from "@/src/njsp/plot"
+import { njspPlotSpec } from "@/src/plotSpecs"
+import { Counties } from "../county"
 
 export const typeCountsQuery = (county: string | null) => `
     SELECT

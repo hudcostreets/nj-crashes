@@ -1,8 +1,8 @@
-import { keys, mapEntries } from "@rdub/base/objs";
-import { loadJsonSync } from "@rdub/base/json/load";
-import { CC2MC2MN, normalize } from "@/src/county";
-import { CC2MC2MN_RELPATH } from "@/server/paths";
-import { Arr } from "@rdub/base/arr";
+import { Arr } from "@rdub/base/arr"
+import { loadJsonSync } from "@rdub/base/json/load"
+import { keys, mapEntries } from "@rdub/base/objs"
+import { CC2MC2MN_RELPATH } from "@/server/paths"
+import { CC2MC2MN, normalize } from "@/src/county"
 
 export const cc2mc2mn = loadJsonSync<CC2MC2MN>(CC2MC2MN_RELPATH)
 export const County2Code: Record<string, number> = mapEntries(cc2mc2mn, (cc, { cn }) => [ normalize(cn), cc ])

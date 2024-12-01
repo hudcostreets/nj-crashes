@@ -1,18 +1,18 @@
-import { Crash, Crash0, Occupant, Pedestrian, Vehicle } from "@/src/njdot/crash"
 import Database, { Database as Db } from "better-sqlite3"
-import { asyncQuery, CrashDB as CrashDB0, Params } from "../sql"
+import { HasCrashPage } from "@/server/crash-page"
+import { IdMap, idMap, Ids, Props } from "@/server/njdot/crash-page"
+import { Crash, Crash0, Occupant, Pedestrian, Vehicle } from "@/src/njdot/crash"
+import { CCMC } from "@/src/njsp/region"
+import { DotSqlUrls } from "@/src/urls"
 import { toYearStatsDicts, YearStats, YearStatsDicts } from "@/src/use-year-stats"
-import { DotSqlUrls } from "@/src/urls";
-import { CCMC } from "@/src/njsp/region";
-import { HasCrashPage } from "@/server/crash-page";
-import { IdMap, idMap, Ids, Props } from "@/server/njdot/crash-page";
+import { asyncQuery, CrashDB as CrashDB0, Params } from "../sql"
 
 export class CrashDB extends CrashDB0<Crash0> {
   where({ cc, mc, }: CCMC): { where: string; params: Params } {
     const severities = [ 'i', 'f' ]
     const severitiesFilter = severities.map(s => `severity='${s}'`).join(' or ')
     const severitiesClause = severitiesFilter ? `(${severitiesFilter})` : ""
-    let { where, params } = super.where({ cc, mc, });
+    let { where, params } = super.where({ cc, mc, })
     if (severitiesClause) {
       if (where) {
         where += ` and ${severitiesClause}`
