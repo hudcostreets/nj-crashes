@@ -1,6 +1,6 @@
-import { CCMC } from "@/src/njsp/region";
-import { PageOpts } from "@/src/pagination";
-import { fromEntries } from "@rdub/base/objs";
+import { fromEntries } from "@rdub/base/objs"
+import { CCMC } from "@/src/njsp/region"
+import { PageOpts } from "@/src/pagination"
 
 export type Props = CCMC & PageOpts
 

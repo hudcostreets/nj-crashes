@@ -1,6 +1,6 @@
-import { dirname, join, relative } from "path";
-import * as paths from "@/src/paths";
-import { DotTypeUrls, DotUrls } from "@/src/urls";
+import { dirname, join, relative } from "path"
+import * as paths from "@/src/paths"
+import { DotTypeUrls } from "@/src/urls"
 
 export const WWW = process.cwd()
 export const PUBLIC = join(WWW, "public")

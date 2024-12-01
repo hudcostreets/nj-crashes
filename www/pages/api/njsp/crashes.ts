@@ -1,8 +1,8 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import { CrashPage } from "@/src/njsp/crash";
-import { decode } from "@rdub/next-params/query";
-import * as q from "@/src/query";
-import { spDdb } from "@/server/njsp/ddb";
+import { decode } from "@rdub/next-params/query"
+import { NextApiRequest, NextApiResponse } from "next"
+import { spDdb } from "@/server/njsp/ddb"
+import { CrashPage } from "@/src/njsp/crash"
+import * as q from "@/src/query"
 
 export default async function handler(
   req: NextApiRequest,

@@ -1,15 +1,15 @@
-import dynamic from "next/dynamic"
-import css from "../map.module.scss"
 import fs from "fs"
 import { join } from "path"
-import { decode, Encoded } from "src/indexed-json";
-import React, { useMemo } from "react";
-import * as Hudson from "@/pages/map/hudson";
-import { njdotDir, publicDir } from "@/src/dirs";
-import { FeatureCollection, MultiPolygon } from "geojson";
-import { useMapState } from "@/src/map/hudson/state";
+import { FeatureCollection, MultiPolygon } from "geojson"
+import dynamic from "next/dynamic"
+import React, { useMemo } from "react"
+import { decode, Encoded } from "src/indexed-json"
+import * as Hudson from "@/pages/map/hudson"
+import { njdotDir, publicDir } from "@/src/dirs"
+import { useMapState } from "@/src/map/hudson/state"
+import css from "../map.module.scss"
 
-export const Map = dynamic(() => import('@/src/map/hudson/diffs'), { ssr: false });
+export const Map = dynamic(() => import('@/src/map/hudson/diffs'), { ssr: false })
 
 export type Crash = Hudson.Crash & {
     oilon: number
@@ -22,35 +22,35 @@ export type Props = {
 }
 
 export function getStaticProps() {
-    const path = join(njdotDir, 'hudson-5yr-lls-if-diffs.json')
-    const encodedCrashes = JSON.parse(fs.readFileSync(path).toString()) as Encoded
-    const hudcoPath = join(publicDir, 'hudson.geojson')
-    const hudco = JSON.parse(fs.readFileSync(hudcoPath).toString())
-    return { props: { encodedCrashes, hudco } }
+  const path = join(njdotDir, 'hudson-5yr-lls-if-diffs.json')
+  const encodedCrashes = JSON.parse(fs.readFileSync(path).toString()) as Encoded
+  const hudcoPath = join(publicDir, 'hudson.geojson')
+  const hudco = JSON.parse(fs.readFileSync(hudcoPath).toString())
+  return { props: { encodedCrashes, hudco } }
 }
 
 export default function Page({ encodedCrashes, hudco }: Props) {
-    const mapState = useMapState()
-    const crashes = useMemo(
-        () => {
-            const crashes = decode<Crash>(encodedCrashes) //.slice(0, 100)
-            // console.log(crashes.slice(0, 100))
-            return crashes
-        },
-        [encodedCrashes]
-    )
+  const mapState = useMapState()
+  const crashes = useMemo(
+    () => {
+      const crashes = decode<Crash>(encodedCrashes) //.slice(0, 100)
+      // console.log(crashes.slice(0, 100))
+      return crashes
+    },
+    [encodedCrashes]
+  )
 
-    const map = useMemo(
-        () => {
-            console.log("page render map")
-            return <Map
-                {...mapState}
-                crashes={crashes}
-                hudco={hudco}
-            />
-        },
-        [ crashes, hudco ]
-    )
+  const map = useMemo(
+    () => {
+      console.log("page render map")
+      return <Map
+        {...mapState}
+        crashes={crashes}
+        hudco={hudco}
+      />
+    },
+    [ crashes, hudco ]
+  )
 
-    return <div className={css.container}>{map}</div>
+  return <div className={css.container}>{map}</div>
 }

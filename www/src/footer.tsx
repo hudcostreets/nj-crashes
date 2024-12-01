@@ -1,5 +1,5 @@
-import React from "react"
 import A from "@rdub/next-base/a"
+import React from "react"
 import GitHub from "@/src/github"
 import css from "./footer.module.scss"
 import { Icons } from "./icons"
@@ -17,11 +17,11 @@ export function Socials() {
 }
 
 export default function Footer() {
-    return (
-        <div className={css.footer}>
-            <p>Code and data are <A href={GitHub.url}>on GitHub</A>. <A href={`${GitHub.url}/issues/new`}>File an issue</A>, <a href={`mailto:${crashDataEmail}`}>send us an email</a>, or <A href={"https://hudcostreets.org/get-involved"}>get involved</A>.</p>
-            <Socials />
-{/*
+  return (
+    <div className={css.footer}>
+      <p>Code and data are <A href={GitHub.url}>on GitHub</A>. <A href={`${GitHub.url}/issues/new`}>File an issue</A>, <a href={`mailto:${crashDataEmail}`}>send us an email</a>, or <A href={"https://hudcostreets.org/get-involved"}>get involved</A>.</p>
+      <Socials />
+      {/*
             <Socials
                 socials={[
                     // GitHub,
@@ -36,6 +36,6 @@ export default function Footer() {
                 ]}
             />
 */}
-        </div>
-    )
+    </div>
+  )
 }

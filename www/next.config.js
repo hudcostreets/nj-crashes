@@ -4,6 +4,4 @@ const nextConfig = {
   transpilePackages: ['@rdub/icons'],
 }
 
-module.exports = {
-  ...nextConfig,
-}
+export default nextConfig

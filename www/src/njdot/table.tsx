@@ -1,15 +1,15 @@
-import { usePaginationControls } from "@/src/pagination";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { CrashPageOpts, mkQuery } from "@/src/query";
-import { fetchJson } from "@rdub/base/json/fetch";
-import { ResultTable } from "@/src/result-table";
-import { right } from "fp-ts/Either";
-import { CC2MC2MN } from "@/src/county";
-import { useMemo } from "react";
+import { fetchJson } from "@rdub/base/json/fetch"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
+import { right } from "fp-ts/Either"
+import { useRouter } from "next/router"
+import { useMemo } from "react"
+import { CC2MC2MN } from "@/src/county"
+import { usePaginationControls } from "@/src/pagination"
+import { CrashPageOpts, mkQuery } from "@/src/query"
+import { ResultTable } from "@/src/result-table"
+import { getNjdotCrashRows } from "@/src/use-njdot-crashes"
 import css from "../result-table.module.scss"
-import { getNjdotCrashRows } from "@/src/use-njdot-crashes";
 import { CrashPage } from "./crash"
-import { useRouter } from "next/router";
 
 export const NjdotCrashesId = "njdot-crashes"
 

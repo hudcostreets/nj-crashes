@@ -1,9 +1,9 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import { Props } from "@/src/njsp/plot";
+import { decode } from "@rdub/next-params/query"
+import { NextApiRequest, NextApiResponse } from "next"
+import { cc2mc2mn } from "@/server/county"
+import { loadProps } from "@/server/njsp/plot"
+import { Props } from "@/src/njsp/plot"
 import { NjspPlot } from "@/src/query"
-import { loadProps } from "@/server/njsp/plot";
-import { cc2mc2mn } from "@/server/county";
-import { decode } from "@rdub/next-params/query";
 
 export default async function handler(
   req: NextApiRequest,
