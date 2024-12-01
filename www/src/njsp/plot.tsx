@@ -2,9 +2,8 @@ import { Annotations, Layout, PlotData } from "plotly.js";
 import * as Plotly from "react-plotly.js";
 import { curYear, Data, prvYear, YearTotalsMap } from "@/src/plotSpecs";
 import React, { Dispatch, ReactNode, useCallback, useMemo, useState } from "react";
-import { repoWithOwner } from "@/src/github";
+import GitHub, { repoWithOwner } from "@/src/github";
 import A from "@rdub/next-base/a";
-import { GitHub } from "@/src/socials";
 import { Plot } from "@rdub/next-plotly/plot";
 import { fromEntries, sum } from "@rdub/base/objs";
 import { normalize } from "../county";
@@ -195,7 +194,7 @@ export function NjspChildren(
     const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
     return <div className={css.plotNotes}>
         <p>
-            <A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, {county ? `${county} County` : "NJ"} has {curYearTotal} reported deaths in {curYear}, and <A href={estimationHref}>is on pace</A> for {curYearProjectedTotal}{curYearProjectedTotal > prvYearTotal ? `, exceeding ${prvYear}'s ${prvYearTotal}` : ""}.
+            <A href={`${GitHub.url}/commits/main`}>As of {shortDate}</A>, {county ? `${county} County` : "NJ"} has {curYearTotal} reported deaths in {curYear}, and <A href={estimationHref}>is on pace</A> for {curYearProjectedTotal}{curYearProjectedTotal > prvYearTotal ? `, exceeding ${prvYear}'s ${prvYearTotal}` : ""}.
             {includeMoreInfoLink ? <>{' '}<A href={`/c/${county ? normalize(county) : ""}`}>More {county ? `${county} County` : "state-wide"} data</A>.</> : null}
         </p>
         {county === null ? <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p> : null}

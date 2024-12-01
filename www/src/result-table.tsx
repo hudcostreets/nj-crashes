@@ -72,13 +72,14 @@ export function RowsTable(
                 {
                     pagination &&
                     <TableFooter>
-                        <TableRow>
+                        {/* TableRow here generates an SSR className mismatch, fsr */}
+                        <tr>
                             <td colSpan={6}>{
                                 ('before' in pagination)
                                     ? <DatePagination {...pagination} />
                                     : <Pagination {...pagination} />
                             }</td>
-                        </TableRow>
+                        </tr>
                     </TableFooter>
                 }
             </Table>

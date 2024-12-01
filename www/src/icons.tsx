@@ -180,7 +180,7 @@ export function NjspSource({ className, children }: { className?: string, childr
     return (
         <div className={className}>
             Source: <A href={NjspFatalAcc}>NJ State Police</A>
-            <Info title={`Fatal crashes only; typically published between a day and a few months after the fact`}/>
+            <Info title={`Fatal crashes only; typically published between a day and a few months after the fact`} />
             {children}
         </div>
     )

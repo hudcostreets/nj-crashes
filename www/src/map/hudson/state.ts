@@ -1,17 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { floatParam, llParam } from "@rdub/next-params/params";
 import { parseHashParams, updateHashParams } from "@rdub/next-params/hash";
-import { LL, Param, ParsedParam } from "@rdub/next-params/params";
+import { LL, Param } from "@rdub/next-params/params";
 import css from "@/pages/map/map.module.scss";
 
 export type Params = {
     ll: Param<LL>
     z: Param<number>
-}
-
-export type ParsedParams = {
-    ll: ParsedParam<LL>
-    z: ParsedParam<number>
 }
 
 export const defaults = {
@@ -27,7 +22,7 @@ export function useMapState() {
     const {
         ll: [ center, setCenter ],
         z: [ zoom, setZoom, ],
-    }: ParsedParams = parseHashParams({ params })
+    } = parseHashParams({ params })
 
     useEffect(
         () => {
