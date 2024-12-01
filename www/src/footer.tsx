@@ -1,9 +1,12 @@
+import React from "react"
 import A from "@rdub/next-base/a"
 import GitHub from "@/src/github"
-import { crashDataEmail } from "@/src/socials"
-import React from "react";
 import css from "./footer.module.scss"
-import { HudCoStreets } from "./socials"
+import { Icons } from "./icons"
+
+export const { HudCoStreets } = Icons
+
+export const crashDataEmail = "crash-data@hudcostreets.org"
 
 export function Socials() {
   return (
