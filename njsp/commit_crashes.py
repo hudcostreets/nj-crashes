@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from re import fullmatch
 
 from atproto_client.models.app.bsky.richtext.facet import Main as Facet, ByteSlice, Link as BskyLink
 import pandas as pd
@@ -9,7 +10,7 @@ from gitdb.exc import BadName
 from github import Github
 from github.Commit import Commit as GithubCommit
 from io import BytesIO
-from pandas import isna, Series
+from pandas import isna, Series, read_parquet
 from subprocess import CalledProcessError
 from typing import Union, Optional, Tuple, Callable, Literal
 from utz import process, cached_property, err
@@ -19,8 +20,8 @@ from nj_crashes.utils.git import git_fmt, get_repo, SHORT_SHA_LEN
 from nj_crashes.utils import SITE
 from nj_crashes.utils.github import get_github_repo, load_pqt_github, REPO, GithubCommit as GithubCommitWrapper
 from nj_crashes.utils.log import none
-from njdot import normalize_name
-from njsp.paths import RUNDATE_RELPATH
+from njdot import cc2mc2mn, normalize_name
+from njsp.paths import RUNDATE_RELPATH, MC_PQT
 
 
 def load_pqt_blob(blob: Object) -> pd.DataFrame:
@@ -125,6 +126,26 @@ def mk_dt_str(dt: pd.Timestamp, fmt: Union[Callable, str]) -> str:
         return dt.strftime(fmt)
 
 
+def get_urls(r: Series) -> Tuple[str, str]:
+    cc = int(r.CCODE)
+    if not fullmatch(r'\d{4}', r.MCODE):
+        raise ValueError(f"Invalid MCODE {r.MCODE}")
+    if r.MCODE[:2] != r.CCODE:
+        raise ValueError(f"Invalid MCODE {r.MCODE} for CCODE {r.CCODE}")
+    mc = int(r.MCODE[2:])
+    sp2gin = read_parquet(MC_PQT)
+    mc_gin = sp2gin[sp2gin.cc == cc].set_index('mc_sp').mc_gin.to_dict()[mc]
+    if mc != mc_gin:
+        err(f"cc {cc}: re-mapping mc {mc} to {mc_gin}")
+        mc = mc_gin
+    county = cc2mc2mn[cc]
+    cs = normalize_name(county.cn)
+    ms = normalize_name(county.mc2mn[mc])
+    c_url = f'{SITE}/c/{cs}'
+    m_url = f'{SITE}/c/{cs}/{ms}'
+    return c_url, m_url
+
+
 def bsky_str(
     r: pd.Series,
     fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p',
@@ -139,10 +160,7 @@ def bsky_str(
 
     accid = str(r.name)
     gh_link = Link(uri=github_url, text=accid) if github_url else accid
-    cn = normalize_name(r.CNAME)
-    mn = normalize_name(r.MNAME)
-    c_url = f'{SITE}/c/{cn}'
-    m_url = f'{SITE}/c/{cn}/{mn}'
+    c_url, m_url = get_urls(r)
     c_link = Link(uri=c_url, text=f'{r.CNAME} County')
     m_link = Link(uri=m_url, text=r.MNAME)
     return BskyPost.mk(
@@ -164,6 +182,7 @@ def crash_str(
         location = r.LOCATION.replace('&', '&amp;')
 
     def link(uri: str, text: str) -> str:
+        nonlocal dst
         if dst == 'slack':
             return f'<{uri}|{text}>'
         else:
@@ -175,10 +194,7 @@ def crash_str(
     else:
         gh_link = f'{accid}'
 
-    cn = normalize_name(r.CNAME)
-    mn = normalize_name(r.MNAME)
-    c_url = f'{SITE}/c/{cn}'
-    m_url = f'{SITE}/c/{cn}/{mn}'
+    c_url, m_url = get_urls(r)
     c_link = link(uri=c_url, text=f'{r.CNAME} County')
     m_link = link(uri=m_url, text=r.MNAME)
     return f'*{dt_str} ({gh_link})*: {m_link} ({c_link}), {location}: {victim_str} deceased'

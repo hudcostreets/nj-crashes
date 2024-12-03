@@ -43,6 +43,7 @@ class ChannelCache:
             if cached_msg:
                 msg = cached_msg
                 err(f"ACCID {accid}: using cached msg {msg['ts']}")
+        return msg
 
     def delete_msg(self, accid: str):
         cache = self.channel_cache

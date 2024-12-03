@@ -53,7 +53,7 @@ def backfill(
     """Create Bluesky posts for existing crashes."""
     c = read_parquet(CRASHES_PQT)
     c['CNAME'] = c.cc.map(cc2cn)
-    c['MNAME'] = c.apply(lambda r: cc2mc2mn[r.cc]['mc2mn'][r.mc], axis=1)
+    c['MNAME'] = c.apply(lambda r: cc2mc2mn[r.cc].mc2mn[r.mc], axis=1)
     c = c.rename(columns=RENAMES)
     if start:
         c = c[c.dt.dt.date >= start.date]

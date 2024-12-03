@@ -8,4 +8,4 @@ from .paths import CRASHES_PQT, WWW_DOT, CRASHES_DB, CMYM_PQT, CMYM_DB, CC2MC2MN
 from .crashes import Crashes
 
 from .data import Data, START_YEAR, END_YEAR, YEARS, cc2cn, cn2cc
-from .cc2mc2mn import cc2mc2mn, normalize_name, denormalize_name
+from .cc2mc2mn import cc2mc2mn, denormalize_name, normalize_name
