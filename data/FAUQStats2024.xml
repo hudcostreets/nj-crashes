@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Dec 03 10:00:00 EST 2024</RUNDATE>
+  <RUNDATE>Wed Dec 04 10:00:03 EST 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -52,8 +52,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1304" MNAME="Colts Neck Twsp">
       <ACCIDENT ACCID="13621" DATE="12/02/2024" TIME="1023">
-        <STREET>County Road 537 and New Street</STREET>
-        <LOCATION>County Road 537 and New Street</LOCATION>
+        <HIGHWAY>537</HIGHWAY>
+        <LOCATION>County 537</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
