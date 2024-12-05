@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Dec 04 10:00:03 EST 2024</RUNDATE>
+  <RUNDATE>Thu Dec 05 10:00:05 EST 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -102,6 +102,19 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0714" MNAME="Newark City">
+      <ACCIDENT ACCID="13624" DATE="11/30/2024" TIME="2147">
+        <HIGHWAY>21</HIGHWAY>
+        <LOCATION>State Highway 21</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1319" MNAME="Howell Twsp">
       <ACCIDENT ACCID="13612" DATE="11/30/2024" TIME="1943">
@@ -149,6 +162,19 @@
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0809" MNAME="Logan Twsp">
+      <ACCIDENT ACCID="13622" DATE="11/28/2024" TIME="1805">
+        <HIGHWAY>322</HIGHWAY>
+        <LOCATION>State Highway 322</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
@@ -1052,8 +1078,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="13520" DATE="10/27/2024" TIME="0330">
-        <STREET>Weequahic Ave</STREET>
-        <LOCATION>Weequahic Ave</LOCATION>
+        <STREET>Bergen Ave</STREET>
+        <LOCATION>Bergen Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1865,6 +1891,19 @@
       <ACCIDENT ACCID="13460" DATE="09/29/2024" TIME="2108">
         <HIGHWAY>95</HIGHWAY>
         <LOCATION>New Jersey Turnpike MP 121.4</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="16" CNAME="Passaic">
+    <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
+      <ACCIDENT ACCID="13623" DATE="09/29/2024" TIME="0038">
+        <STREET>Wait St</STREET>
+        <LOCATION>Wait St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6369,6 +6408,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6458,12 +6498,13 @@
     <MUNICIPALITY MCODE="1612" MNAME="Totowa Boro">
       <ACCIDENT ACCID="13060" DATE="03/13/2024" TIME="1400">
         <HIGHWAY>46</HIGHWAY>
-        <LOCATION>State Highway 46 (Business)</LOCATION>
+        <LOCATION>State Highway 46 (Business) MP 57.58</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6505,6 +6546,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6586,6 +6628,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7125,6 +7168,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8024,7 +8068,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>604</TOTACCIDENTS>
-  <TOTFATALITIES>636</TOTFATALITIES>
-  <TOTINJURIES>120</TOTINJURIES>
+  <TOTACCIDENTS>607</TOTACCIDENTS>
+  <TOTFATALITIES>639</TOTFATALITIES>
+  <TOTINJURIES>122</TOTINJURIES>
 </FAUQSTATS>
