@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Dec 09 10:00:02 EST 2024</RUNDATE>
+  <RUNDATE>Tue Dec 10 10:00:03 EST 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,20 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="17" CNAME="Salem">
+    <MUNICIPALITY MCODE="1709" MNAME="Pilesgrove Twsp">
+      <ACCIDENT ACCID="13637" DATE="12/09/2024" TIME="1010">
+        <HIGHWAY>605</HIGHWAY>
+        <LOCATION>County 605 MP .97</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>3</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="06" CNAME="Cumberland">
     <MUNICIPALITY MCODE="0605" MNAME="Fairfield Twsp">
@@ -6312,23 +6326,25 @@
     <MUNICIPALITY MCODE="1326" MNAME="Manalapan Twsp">
       <ACCIDENT ACCID="13092" DATE="03/29/2024" TIME="2155">
         <HIGHWAY>527</HIGHWAY>
-        <LOCATION>County 527 (Alternate)</LOCATION>
+        <LOCATION>County 527 (Alternate) MP 4.93</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1353" MNAME="West Long Branch Bo">
       <ACCIDENT ACCID="13093" DATE="03/29/2024" TIME="1954">
         <HIGHWAY>36</HIGHWAY>
-        <LOCATION>State Highway 36 MP 2.5</LOCATION>
+        <LOCATION>State Highway 36 MP 2.59</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6342,6 +6358,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7309,8 +7326,8 @@
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1530" MNAME="Stafford Twsp">
       <ACCIDENT ACCID="13098" DATE="02/15/2024" TIME="0939">
-        <STREET>Stafford Park Blvd</STREET>
-        <LOCATION>Stafford Park Blvd</LOCATION>
+        <STREET>Stafford Park Boulevard</STREET>
+        <LOCATION>Stafford Park Boulevard</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -8216,7 +8233,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>618</TOTACCIDENTS>
-  <TOTFATALITIES>655</TOTFATALITIES>
-  <TOTINJURIES>127</TOTINJURIES>
+  <TOTACCIDENTS>619</TOTACCIDENTS>
+  <TOTFATALITIES>656</TOTFATALITIES>
+  <TOTINJURIES>130</TOTINJURIES>
 </FAUQSTATS>
