@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Dec 14 10:00:02 EST 2024</RUNDATE>
+  <RUNDATE>Sun Dec 15 10:00:04 EST 2024</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -53,7 +53,7 @@
     <MUNICIPALITY MCODE="1914" MNAME="Montague Twsp">
       <ACCIDENT ACCID="13651" DATE="12/12/2024" TIME="1322">
         <HIGHWAY>653</HIGHWAY>
-        <LOCATION>County 653 MP 1.9</LOCATION>
+        <LOCATION>County 653 MP 2.1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
