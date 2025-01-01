@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This document provides minimal statistics about Fatal Crashes in
+ the state of New Jersey as recorded by the New Jersey State Police.
+ These statistics are unofficial and subject to change until the
+ associated case is completed by the NJSP Fatal Accident
+ Investigation Unit.-->
+<FAUQSTATS>
+  <RUNDATE>Wed Jan 01 10:00:02 EST 2025</RUNDATE>
+  <STATSYEAR>2025</STATSYEAR>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+  </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+  </COUNTY>
+  <COUNTY CCODE="05" CNAME="Cape May">
+  </COUNTY>
+  <COUNTY CCODE="06" CNAME="Cumberland">
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+  </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+  </COUNTY>
+  <COUNTY CCODE="09" CNAME="Hudson">
+  </COUNTY>
+  <COUNTY CCODE="10" CNAME="Hunterdon">
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
+  </COUNTY>
+  <COUNTY CCODE="14" CNAME="Morris">
+  </COUNTY>
+  <COUNTY CCODE="15" CNAME="Ocean">
+  </COUNTY>
+  <COUNTY CCODE="16" CNAME="Passaic">
+  </COUNTY>
+  <COUNTY CCODE="17" CNAME="Salem">
+  </COUNTY>
+  <COUNTY CCODE="18" CNAME="Somerset">
+  </COUNTY>
+  <COUNTY CCODE="19" CNAME="Sussex">
+  </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+  </COUNTY>
+  <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <TOTACCIDENTS>0</TOTACCIDENTS>
+  <TOTFATALITIES>0</TOTFATALITIES>
+  <TOTINJURIES>0</TOTINJURIES>
+</FAUQSTATS>
