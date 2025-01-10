@@ -358,4 +358,5 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2024,Warren,12,1,1,2,15
 2025,Camden,1,0,0,0,1
 2025,Mercer,0,0,0,1,1
-2025,Middlesex,0,1,0,0,1
+2025,Middlesex,1,1,0,0,2
+2025,Union,0,0,0,1,1
