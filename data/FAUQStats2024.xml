@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Jan 14 10:00:03 EST 2025</RUNDATE>
+  <RUNDATE>Wed Jan 15 10:00:01 EST 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -6085,6 +6085,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6734,12 +6735,13 @@
     <MUNICIPALITY MCODE="1319" MNAME="Howell Twsp">
       <ACCIDENT ACCID="13097" DATE="04/02/2024" TIME="1028">
         <HIGHWAY>33</HIGHWAY>
-        <LOCATION>State Highway 33</LOCATION>
+        <LOCATION>State Highway 33 MP 32.72</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7651,8 +7653,8 @@
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1337" MNAME="Ocean Twsp">
       <ACCIDENT ACCID="13017" DATE="02/21/2024" TIME="1140">
-        <STREET>Carol Avenue</STREET>
-        <LOCATION>Carol Avenue</LOCATION>
+        <STREET>Carol Ave</STREET>
+        <LOCATION>Carol Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7886,8 +7888,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1204" MNAME="East Brunswick Twsp">
       <ACCIDENT ACCID="13000" DATE="02/12/2024" TIME="1754">
-        <STREET>Rues Lane</STREET>
-        <LOCATION>Rues Lane</LOCATION>
+        <STREET>Rues Ln</STREET>
+        <LOCATION>Rues Ln</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7955,8 +7957,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1321" MNAME="Keansburg Boro">
       <ACCIDENT ACCID="12995" DATE="02/10/2024" TIME="1551">
-        <STREET>Forest Avenue</STREET>
-        <LOCATION>Forest Avenue</LOCATION>
+        <STREET>Forest Ave</STREET>
+        <LOCATION>Forest Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -8715,5 +8717,5 @@
   </COUNTY>
   <TOTACCIDENTS>655</TOTACCIDENTS>
   <TOTFATALITIES>692</TOTFATALITIES>
-  <TOTINJURIES>145</TOTINJURIES>
+  <TOTINJURIES>147</TOTINJURIES>
 </FAUQSTATS>
