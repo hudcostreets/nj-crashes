@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Jan 15 10:00:01 EST 2025</RUNDATE>
+  <RUNDATE>Thu Jan 16 10:00:03 EST 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -156,19 +156,6 @@
       <ACCIDENT ACCID="13667" DATE="12/27/2024" TIME="0504">
         <HIGHWAY>70</HIGHWAY>
         <LOCATION>State Highway 70</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="16" CNAME="Passaic">
-    <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
-      <ACCIDENT ACCID="13664" DATE="12/24/2024" TIME="2247">
-        <STREET>Ackerman Ave</STREET>
-        <LOCATION>Ackerman Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6843,12 +6830,13 @@
     <MUNICIPALITY MCODE="0614" MNAME="Vineland City">
       <ACCIDENT ACCID="13085" DATE="03/29/2024" TIME="0652">
         <HIGHWAY>540</HIGHWAY>
-        <LOCATION>County 540</LOCATION>
+        <LOCATION>County 540 MP 33.87</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7456,7 +7444,7 @@
     <MUNICIPALITY MCODE="1113" MNAME="West Windsor Twp">
       <ACCIDENT ACCID="13075" DATE="02/28/2024" TIME="1417">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 9.9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -7807,8 +7795,8 @@
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1530" MNAME="Stafford Twsp">
       <ACCIDENT ACCID="13098" DATE="02/15/2024" TIME="0939">
-        <STREET>Stafford Park Boulevard</STREET>
-        <LOCATION>Stafford Park Boulevard</LOCATION>
+        <STREET>Stafford Park Blvd</STREET>
+        <LOCATION>Stafford Park Blvd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -8193,13 +8181,14 @@
   <COUNTY CCODE="06" CNAME="Cumberland">
     <MUNICIPALITY MCODE="0610" MNAME="Millville City">
       <ACCIDENT ACCID="12963" DATE="01/26/2024" TIME="0649">
-        <STREET>East Broad St</STREET>
-        <LOCATION>East Broad St</LOCATION>
+        <HIGHWAY>552</HIGHWAY>
+        <LOCATION>County 552 (Spur (County Routes Only)) MP .65</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8415,8 +8404,8 @@
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0907" MNAME="Kearny Town">
       <ACCIDENT ACCID="12947" DATE="01/14/2024" TIME="2218">
-        <STREET>Belgrove Drive</STREET>
-        <LOCATION>Belgrove Drive</LOCATION>
+        <STREET>Belgrove Dr</STREET>
+        <LOCATION>Belgrove Dr</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -8715,7 +8704,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>655</TOTACCIDENTS>
-  <TOTFATALITIES>692</TOTFATALITIES>
-  <TOTINJURIES>147</TOTINJURIES>
+  <TOTACCIDENTS>654</TOTACCIDENTS>
+  <TOTFATALITIES>691</TOTFATALITIES>
+  <TOTINJURIES>148</TOTINJURIES>
 </FAUQSTATS>
