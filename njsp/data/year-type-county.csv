@@ -365,4 +365,5 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2025,Middlesex,2,1,0,0,3
 2025,Ocean,1,0,0,1,2
 2025,Salem,1,0,0,0,1
-2025,Union,0,0,0,1,1
+2025,Union,1,0,0,1,2
+2025,Warren,0,1,0,0,1
