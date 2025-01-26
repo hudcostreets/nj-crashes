@@ -32,7 +32,7 @@ def load_mtd(year: int, sha: str | None = None) -> DF | Tuple[DF, str, date]:
     stats = FAUQStats.load(blob, log=silent)
     crashes = stats.crashes
     dt = crashes.dt.dt
-    mtd = crashes[(dt.month <= month) & (dt.day <= day)]
+    mtd = crashes[(dt.month <= month) & (dt.day < day)]
     return (mtd, sha, sha_date) if return_tpl else mtd
 
 year1 = year0 - 1
