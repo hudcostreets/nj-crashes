@@ -1,4 +1,4 @@
-"""Compare YTD fatalities vs. what NJSP had reported 1 year ago.
+"""Compare YTD fatalities vs. what NJSP had reported on the current date 1 and 2 years ago.
 
 This removes some confounding related to crashes being reported on a delay.
 """
