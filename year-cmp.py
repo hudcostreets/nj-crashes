@@ -47,8 +47,8 @@ df2_0 = load_mtd(year2, sha0)       # Current view of 2ya's crashes (includes an
 cols = ['FATAL_D', 'FATAL_P', 'FATAL_T', 'FATAL_B']
 def print_summary(df: DF, as_of: date, sha: str, year: int):
     sums = df[cols].sum().astype(int)
-    type_str = ', '.join([f'{t}: {sums[f"FATAL_{t}"]:>2d}' for t in 'DPTB'])
-    print(f"As of {as_of} (commit {sha}), {year} (until {month}/{day}) had {sums.sum()} deaths: {type_str}")
+    type_str = ' '.join([f'{sums[f"FATAL_{t}"]:>2d}{t}' for t in 'DPTB'])
+    print(f"{year} (as of {as_of}, commit {sha}): {sums.sum():>2} deaths by {month}/{day} ({type_str})")
     return sums
 
 print_summary(df0, date0, sha0, year0)
