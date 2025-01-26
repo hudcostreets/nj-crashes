@@ -1,6 +1,8 @@
-#!/usr/bin/env python
-from utz import *
+"""Compare YTD fatalities vs. what NJSP had reported 1 year ago.
 
+This removes some confounding related to crashes being reported on a delay.
+"""
+from utz import *
 from nj_crashes.fauqstats import FAUQStats
 from njsp.paths import fauqstats_relpath
 
@@ -35,20 +37,6 @@ df0 = load_mtd(year0, sha0)
 df0_2 = load_mtd(year0, sha1)
 
 cols = ['FATAL_D', 'FATAL_P', 'FATAL_T', 'FATAL_B']
-def sums_df(df: DF, ytd: date, as_of: date):
-    sums = df[cols].sum().astype(int).rename('num').to_frame()
-    sums['as of'] = as_of
-    sums['ytd'] = ytd
-    return sums
-
-df = sxs(
-    sums_df(df1, date1, date1),
-    sums_df(df0, date0, date0),
-    sums_df(df0_2, date0, date1)
-)
-print(df)
-print()
-
 def print_summary(df: DF, as_of: date, year: int):
     sums = df[cols].sum().astype(int)
     type_str = ', '.join([f'{t}: {sums[f"FATAL_{t}"]:>2d}' for t in 'DPTB'])
@@ -58,13 +46,3 @@ def print_summary(df: DF, as_of: date, year: int):
 print_summary(df1, date1, year1)
 print_summary(df0, date0, year0)
 print_summary(df0_2, date1, year0)
-
-# sums0 = df0[cols].sum().astype(int)
-# sums0_2 = df0_2[cols].sum().astype(int)
-# sums1 = df1[cols].sum().astype(int)
-# print(f"As of {date0}, {year0} (until {month}/{day}) had {sums0.sum()} deaths:")
-# print(sums0)
-# print()
-# print(f"As of {date1}, {year0} (until {month}/{day}) had {sums0_2.sum()} deaths:")
-# print(sums0_2)
-# print()
