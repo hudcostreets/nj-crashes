@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Jan 25 10:00:04 EST 2025</RUNDATE>
+  <RUNDATE>Sun Jan 26 10:00:04 EST 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -4108,6 +4108,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4371,7 +4372,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-        <INJURIES>3</INJURIES>
+        <INJURIES>5</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7613,6 +7614,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8764,5 +8766,5 @@
   </COUNTY>
   <TOTACCIDENTS>656</TOTACCIDENTS>
   <TOTFATALITIES>693</TOTFATALITIES>
-  <TOTINJURIES>179</TOTINJURIES>
+  <TOTINJURIES>183</TOTINJURIES>
 </FAUQSTATS>
