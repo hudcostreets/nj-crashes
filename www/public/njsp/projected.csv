@@ -1,22 +1,22 @@
 county,crashes,cyclist,driver,passenger,pedestrian
 Atlantic,53,4,29,2,19
 Bergen,36,2,14,5,17
-Burlington,42,1,28,3,10
-Camden,45,0,25,4,13
-Cape May,10,0,9,0,1
-Cumberland,24,0,17,6,6
-Essex,44,0,17,9,24
-Gloucester,29,0,18,7,6
-Hudson,15,1,7,2,6
+Burlington,44,1,30,3,10
+Camden,46,0,25,4,13
+Cape May,12,0,11,0,1
+Cumberland,24,0,17,5,5
+Essex,44,0,16,9,24
+Gloucester,29,0,18,7,5
+Hudson,15,1,7,2,5
 Hunterdon,8,0,4,2,3
-Mercer,32,1,13,6,12
-Middlesex,58,2,38,12,17
-Monmouth,49,5,27,2,17
+Mercer,34,1,14,6,12
+Middlesex,56,2,38,12,16
+Monmouth,48,5,27,2,16
 Morris,19,1,10,1,7
-Ocean,39,2,26,6,9
+Ocean,39,2,26,6,8
 Passaic,31,0,17,1,12
 Salem,15,3,10,3,1
 Somerset,17,0,11,0,7
 Sussex,11,1,6,2,2
-Union,41,1,18,7,13
+Union,42,1,18,7,13
 Warren,19,1,12,3,4
