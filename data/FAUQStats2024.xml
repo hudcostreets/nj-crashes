@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Feb 04 10:00:05 EST 2025</RUNDATE>
+  <RUNDATE>Wed Feb 05 10:00:04 EST 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1748,12 +1748,13 @@
     <MUNICIPALITY MCODE="0113" MNAME="Hammonton Town">
       <ACCIDENT ACCID="13516" DATE="10/25/2024" TIME="1921">
         <HIGHWAY>30</HIGHWAY>
-        <LOCATION>State Highway 30</LOCATION>
+        <LOCATION>State Highway 30 MP 31.58</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1796,13 +1797,14 @@
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
       <ACCIDENT ACCID="13513" DATE="10/24/2024" TIME="2035">
-        <STREET>Leipzig Ave</STREET>
-        <LOCATION>Leipzig Ave</LOCATION>
+        <HIGHWAY>670</HIGHWAY>
+        <LOCATION>County 670 MP 2.64</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1973,6 +1975,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2406,12 +2409,13 @@
     <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="13471" DATE="10/03/2024" TIME="1842">
         <HIGHWAY>40</HIGHWAY>
-        <LOCATION>State Highway 40</LOCATION>
+        <LOCATION>State Highway 40 MP 51.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3762,12 +3766,13 @@
     <MUNICIPALITY MCODE="2115" MNAME="Lopatcong Twsp">
       <ACCIDENT ACCID="13365" DATE="08/16/2024" TIME="1700">
         <HIGHWAY>22</HIGHWAY>
-        <LOCATION>State Highway 22</LOCATION>
+        <LOCATION>State Highway 22 MP 1.84</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3781,6 +3786,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8756,5 +8762,5 @@
   </COUNTY>
   <TOTACCIDENTS>654</TOTACCIDENTS>
   <TOTFATALITIES>691</TOTFATALITIES>
-  <TOTINJURIES>193</TOTINJURIES>
+  <TOTINJURIES>195</TOTINJURIES>
 </FAUQSTATS>
