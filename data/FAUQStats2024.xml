@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Feb 06 10:00:03 EST 2025</RUNDATE>
+  <RUNDATE>Fri Feb 07 10:00:03 EST 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -4455,13 +4455,14 @@
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0245" MNAME="Palisades Park Boro">
       <ACCIDENT ACCID="13314" DATE="07/07/2024" TIME="2206">
-        <STREET>Grand Ave</STREET>
-        <LOCATION>Grand Ave</LOCATION>
+        <HIGHWAY>93</HIGHWAY>
+        <LOCATION>State Highway 93 MP .98</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4797,8 +4798,9 @@
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>1</FATAL_B>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4819,7 +4821,7 @@
     <MUNICIPALITY MCODE="0216" MNAME="Englewood Cliffs Bo">
       <ACCIDENT ACCID="13339" DATE="06/19/2024" TIME="1050">
         <HIGHWAY>505</HIGHWAY>
-        <LOCATION>County 505 MP 9.6</LOCATION>
+        <LOCATION>County 505 MP 9.63</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5652,6 +5654,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6243,6 +6246,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6434,6 +6438,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7668,13 +7673,14 @@
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0219" MNAME="Fort Lee Boro">
       <ACCIDENT ACCID="13023" DATE="02/22/2024" TIME="0707">
-        <HIGHWAY>24</HIGHWAY>
-        <LOCATION>State Highway 24</LOCATION>
+        <HIGHWAY>54</HIGHWAY>
+        <LOCATION>County 54 MP .2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8247,13 +8253,14 @@
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0219" MNAME="Fort Lee Boro">
       <ACCIDENT ACCID="12969" DATE="01/26/2024" TIME="0625">
-        <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9</LOCATION>
+        <HIGHWAY>445</HIGHWAY>
+        <LOCATION>Palisades Interstate Parkway (Spur (County Routes Only)) MP .01</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8761,5 +8768,5 @@
   </COUNTY>
   <TOTACCIDENTS>653</TOTACCIDENTS>
   <TOTFATALITIES>690</TOTFATALITIES>
-  <TOTINJURIES>201</TOTINJURIES>
+  <TOTINJURIES>203</TOTINJURIES>
 </FAUQSTATS>

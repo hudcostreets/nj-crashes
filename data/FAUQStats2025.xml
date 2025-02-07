@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Feb 06 10:00:02 EST 2025</RUNDATE>
+  <RUNDATE>Fri Feb 07 10:00:01 EST 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,19 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0327" MNAME="North Hanover Twsp">
+      <ACCIDENT ACCID="13747" DATE="02/06/2025" TIME="0820">
+        <STREET>Defense Access Highway</STREET>
+        <LOCATION>Defense Access Highway</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="18" CNAME="Somerset">
     <MUNICIPALITY MCODE="1810" MNAME="Hillsborough Twsp">
@@ -659,7 +672,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>47</TOTACCIDENTS>
-  <TOTFATALITIES>47</TOTFATALITIES>
+  <TOTACCIDENTS>48</TOTACCIDENTS>
+  <TOTFATALITIES>48</TOTFATALITIES>
   <TOTINJURIES>4</TOTINJURIES>
 </FAUQSTATS>
