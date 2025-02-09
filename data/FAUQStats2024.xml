@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Feb 08 10:00:04 EST 2025</RUNDATE>
+  <RUNDATE>Sun Feb 09 10:00:03 EST 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -4200,7 +4200,7 @@
   </COUNTY>
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
-      <ACCIDENT ACCID="13309" DATE="07/17/2024" TIME="1830">
+      <ACCIDENT ACCID="13309" DATE="07/17/2024" TIME="1845">
         <STREET>Communipaw Ave</STREET>
         <LOCATION>Communipaw Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
