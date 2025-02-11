@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Feb 09 10:00:03 EST 2025</RUNDATE>
+  <RUNDATE>Tue Feb 11 10:00:02 EST 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -6934,8 +6934,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0706" MNAME="East Orange City">
       <ACCIDENT ACCID="13131" DATE="03/26/2024" TIME="1749">
-        <STREET>Springdale Ave</STREET>
-        <LOCATION>Springdale Ave</LOCATION>
+        <STREET>North 22nd Street</STREET>
+        <LOCATION>North 22nd Street</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
