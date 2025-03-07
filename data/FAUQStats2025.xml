@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Mar 06 10:00:01 EST 2025</RUNDATE>
+  <RUNDATE>Fri Mar 07 10:00:02 EST 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,11 +49,24 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0225" MNAME="Hasbrouck Heights B">
+      <ACCIDENT ACCID="13791" DATE="03/06/2025" TIME="1819">
+        <HIGHWAY>17</HIGHWAY>
+        <LOCATION>State Highway 17</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0811" MNAME="Monroe Twsp">
       <ACCIDENT ACCID="13788" DATE="03/06/2025" TIME="0637">
-        <STREET>W Piney Hollow Road</STREET>
-        <LOCATION>W Piney Hollow Road</LOCATION>
+        <STREET>W Piney Hollow Rd</STREET>
+        <LOCATION>W Piney Hollow Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -97,6 +110,19 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0202" MNAME="Alpine Boro">
+      <ACCIDENT ACCID="13790" DATE="02/28/2025" TIME="0558">
+        <HIGHWAY>445</HIGHWAY>
+        <LOCATION>Palisades Interstate Parkway</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -188,6 +214,19 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0412" MNAME="Cherry Hill Twsp">
+      <ACCIDENT ACCID="13789" DATE="02/21/2025" TIME="1411">
+        <HIGHWAY>566</HIGHWAY>
+        <LOCATION>County 566</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -1073,7 +1112,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>79</TOTACCIDENTS>
-  <TOTFATALITIES>81</TOTFATALITIES>
+  <TOTACCIDENTS>82</TOTACCIDENTS>
+  <TOTFATALITIES>84</TOTFATALITIES>
   <TOTINJURIES>6</TOTINJURIES>
 </FAUQSTATS>
