@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Mar 08 10:00:04 EST 2025</RUNDATE>
+  <RUNDATE>Sun Mar 09 10:00:03 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1056,12 +1056,13 @@
     <MUNICIPALITY MCODE="0211" MNAME="Elmwood Park Boro">
       <ACCIDENT ACCID="13573" DATE="11/15/2024" TIME="1251">
         <HIGHWAY>80</HIGHWAY>
-        <LOCATION>Interstate 80</LOCATION>
+        <LOCATION>Interstate 80 MP 61.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3008,7 +3009,7 @@
   </COUNTY>
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0911" MNAME="Weehawken Twsp">
-      <ACCIDENT ACCID="13445" DATE="09/10/2024" TIME="0350">
+      <ACCIDENT ACCID="13445" DATE="09/10/2024" TIME="0352">
         <HIGHWAY>495</HIGHWAY>
         <LOCATION>State Highway 495</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -3016,6 +3017,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
