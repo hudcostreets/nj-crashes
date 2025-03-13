@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Mar 12 10:00:04 EDT 2025</RUNDATE>
+  <RUNDATE>Thu Mar 13 10:00:01 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,19 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="16" CNAME="Passaic">
+    <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
+      <ACCIDENT ACCID="13803" DATE="03/12/2025" TIME="1139">
+        <STREET>Getty Ave</STREET>
+        <LOCATION>Getty Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2009" MNAME="Linden City">
@@ -126,6 +139,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -139,6 +153,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -817,19 +832,6 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <COUNTY CCODE="13" CNAME="Monmouth">
-    <MUNICIPALITY MCODE="1319" MNAME="Howell Twsp">
-      <ACCIDENT ACCID="13725" DATE="01/27/2025" TIME="1430">
-        <STREET>New Friendship Rd</STREET>
-        <LOCATION>New Friendship Rd</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1221" MNAME="South Brunswick Tws">
       <ACCIDENT ACCID="13723" DATE="01/24/2025" TIME="0225">
@@ -865,19 +867,6 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="12" CNAME="Middlesex">
-    <MUNICIPALITY MCODE="1215" MNAME="North Brunswick Tws">
-      <ACCIDENT ACCID="13718" DATE="01/21/2025" TIME="0905">
-        <STREET>Apple Orchard Ln</STREET>
-        <LOCATION>Apple Orchard Ln</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -1064,19 +1053,6 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <COUNTY CCODE="11" CNAME="Mercer">
-    <MUNICIPALITY MCODE="1102" MNAME="Ewing Twsp">
-      <ACCIDENT ACCID="13732" DATE="01/13/2025" TIME="1809">
-        <HIGHWAY>31</HIGHWAY>
-        <LOCATION>State Highway 31</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1506" MNAME="Brick Twsp">
       <ACCIDENT ACCID="13701" DATE="01/13/2025" TIME="1037">
@@ -1258,7 +1234,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>93</TOTACCIDENTS>
-  <TOTFATALITIES>99</TOTFATALITIES>
+  <TOTACCIDENTS>91</TOTACCIDENTS>
+  <TOTFATALITIES>97</TOTFATALITIES>
   <TOTINJURIES>14</TOTINJURIES>
 </FAUQSTATS>
