@@ -10,6 +10,7 @@ import { njdotDir, publicDir } from "@/src/dirs"
 import * as github from "@/src/github"
 import { decode, Encoded } from "@/src/indexed-json"
 import { useMapState } from "@/src/map/hudson/state"
+import classes from "./index.module.scss"
 import vcss from "./index.module.scss"
 
 export const Map = dynamic(() => import('@/src/map/hudson'), { ssr: false })
@@ -81,6 +82,7 @@ export default function Page({ encodedCrashes, hudco, }: Props) {
         // : undefined
       }
       className={vcss.settings}
+      classes={classes}
       icons={[
         { href: github.url, alt: "View source code on GitHub", src: "logos/gh.png", },
         { href: "/", alt: "Graphs of NJ crash data", src: "plots/crash_homicide_cmp.png", },

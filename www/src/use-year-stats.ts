@@ -1,4 +1,4 @@
-import { o2a } from "@rdub/base/objs"
+import { o2a } from "@rdub/base"
 import { EndYear } from "@/pages/c/[[...region]]"
 import { CCMC } from "@/src/njsp/region"
 import { Row } from "@/src/result-table"

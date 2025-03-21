@@ -1,5 +1,4 @@
-import { fromEntries, sum } from "@rdub/base/objs"
-import A from "@rdub/next-base/a"
+import { A, fromEntries, sum } from "@rdub/base"
 import { Plot } from "@rdub/next-plotly/plot"
 import { Annotations, Layout, PlotData } from "plotly.js"
 import React, { Dispatch, ReactNode, useCallback, useMemo, useState } from "react"

@@ -1,5 +1,5 @@
 import { Home } from "@mui/icons-material"
-import { mapEntries, values } from "@rdub/base/objs"
+import { mapEntries, values } from "@rdub/base"
 import A from "@rdub/next-base/a"
 import { WithRouteIsChanging } from "@rdub/next-base/route-is-changing"
 import { right } from "fp-ts/Either"

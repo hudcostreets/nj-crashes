@@ -1,4 +1,4 @@
-import { fromEntries } from "@rdub/base/objs"
+import { fromEntries } from "@rdub/base"
 import { CCMC } from "@/src/njsp/region"
 import { PageOpts } from "@/src/pagination"
 

@@ -1,13 +1,13 @@
-import getBasePath from "@rdub/next-base/basePath"
 import Head from "@rdub/next-base/head"
+import { useRootUrl } from "@rdub/next-base/use-root-url"
 import React from "react"
 import { Socials } from "@/src/footer"
-import { domain, url } from "@/src/site"
+import { url } from "@/src/site"
 import css from "./index.module.scss"
 
 const Home = () => {
   const title = "Page Not Found"
-  const basePath = getBasePath()
+  const rootUrl = useRootUrl(url)
   return (
     <div className={css.container}>
       <Head
@@ -18,8 +18,7 @@ const Home = () => {
       />
       <main className={css.main}>
         <h1 className={css.title}>{title}</h1>
-        <p>Maybe you wanted <a href={basePath}>{basePath}</a>?</p>
-        <p>Or <a href={`https://${domain}`}>{domain}</a></p>
+        <p>Maybe you wanted <a href={`https://${rootUrl}`}>{rootUrl}</a>?</p>
         <Socials />
       </main>
     </div>

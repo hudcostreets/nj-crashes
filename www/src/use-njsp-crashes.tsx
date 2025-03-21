@@ -1,6 +1,5 @@
 import { Tooltip } from "@mui/material"
-import { range } from "@rdub/base/arr"
-import { fromEntries } from "@rdub/base/objs"
+import { fromEntries, range } from "@rdub/base"
 import { ReactNode } from "react"
 import strftime from "strftime"
 import CityLink from "@/src/city-link"

@@ -57,17 +57,17 @@ importers:
         specifier: ^15.0.3
         version: 15.0.3(@mdx-js/loader@2.3.0(webpack@5.89.0))
       '@rdub/base':
-        specifier: 0.7.0
-        version: 0.7.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+        specifier: 0.8.0
+        version: 0.8.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@rdub/icons':
-        specifier: 0.1.0
-        version: 0.1.0(@types/react@18.2.48)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+        specifier: ^0.1.5
+        version: 0.1.5(@types/react@18.2.48)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@rdub/next-base':
-        specifier: 0.4.0
-        version: 0.4.0(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+        specifier: 0.5.0
+        version: 0.5.0(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@rdub/next-leaflet':
-        specifier: 0.2.0
-        version: 0.2.0(leaflet@1.9.4)(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react-leaflet@4.2.1(leaflet@1.9.4)(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)
+        specifier: 0.2.1
+        version: 0.2.1(leaflet@1.9.4)(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react-leaflet@4.2.1(leaflet@1.9.4)(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)
       '@rdub/next-params':
         specifier: 0.3.0
         version: 0.3.0(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -1484,14 +1484,14 @@ packages:
   '@probe.gl/stats@4.0.4':
     resolution: {integrity: sha512-SDuSY/D4yDL6LQDa69l/GCcnZLRiGYdyvYkxWb0CgnzTPdPrcdrzGkzkvpC3zsA4fEFw2smlDje370QGHwlisg==}
 
-  '@rdub/base@0.7.0':
-    resolution: {integrity: sha512-NPEofIBN+B8detNe28vbKa7v1ssUqgJLZNWuV/gm+uxv8muEMPbgLM9PvDd3YB4n3dh88yS9Olce87M8ppVsCg==}
+  '@rdub/base@0.7.2':
+    resolution: {integrity: sha512-3xIr5BGaVaIbQh6WZXsfmoaJBvT+sbnl4NN9boDIXDopg5mKzkKUJqNB+jWbqJMefkmJSd/rIowSo3otGpOV6w==}
     peerDependencies:
       react: ^18
       react-dom: ^18
 
-  '@rdub/base@0.7.2':
-    resolution: {integrity: sha512-3xIr5BGaVaIbQh6WZXsfmoaJBvT+sbnl4NN9boDIXDopg5mKzkKUJqNB+jWbqJMefkmJSd/rIowSo3otGpOV6w==}
+  '@rdub/base@0.8.0':
+    resolution: {integrity: sha512-c9liZWJd4LDfIPx7M4M2t+VIYyyfbwJLwcnFoU0vXifar66kIK8j+vNhbsyBYPsVsfluP8V70+ILcnD5W3fyYw==}
     peerDependencies:
       react: ^18
       react-dom: ^18
@@ -1501,8 +1501,8 @@ packages:
     peerDependencies:
       eslint: ^9
 
-  '@rdub/icons@0.1.0':
-    resolution: {integrity: sha512-5/DfKAFossckw3UmKEPElw3o9RiQFqs0dABgY5kKZXbSObMaK4kaBf3UBe/Jn3vrXvuAL+SQWwRMifLLb2o0hA==}
+  '@rdub/icons@0.1.5':
+    resolution: {integrity: sha512-8XccbwIZKEyHQ4yhTUSgejxbDe0hiIJklgCS1aNj/j2KieHEVpQkBHLVfJMYnuy4lITYDwe34GyijsxIaZO/zA==}
     peerDependencies:
       react: ^18
       react-dom: ^18
@@ -1514,15 +1514,15 @@ packages:
       react: ^18
       react-dom: ^18
 
-  '@rdub/next-base@0.4.0':
-    resolution: {integrity: sha512-z9W5+64fEMN1w2I5ZEK8X95aphUqQxvaSG586JQMgjbzvgtSy3+BhaU0iXnb436h+BEqyhPxZitlwBJpLhi14w==}
+  '@rdub/next-base@0.5.0':
+    resolution: {integrity: sha512-cEsfnfwunDTY2DknD+vEU7mHZbsAU2N+3OYUKrPGGahhBJzUWvCz6yzooR1Cyq/HntulwLJn4Qs2xVyHafH81g==}
     peerDependencies:
       next: ^14
       react: ^18
       react-dom: ^18
 
-  '@rdub/next-leaflet@0.2.0':
-    resolution: {integrity: sha512-X053yWBsFbZR6aoAckjR5UKRSHTWSzzvUICGc53NE86DG7JZaqBNTX06WodRK76ZlxawQfRDCgu4xAP1YYEImw==}
+  '@rdub/next-leaflet@0.2.1':
+    resolution: {integrity: sha512-HI7SK0bPRPBWEPaI9pUDEmAcDBlTvXTJN7CXBJ/WXtsDlt9I+etTAjfowEOcEGxFkXf2Y6H9La8Twe8/7Qxnyw==}
     peerDependencies:
       leaflet: ^1.9.4
       next: ^14
@@ -2149,6 +2149,9 @@ packages:
 
   clamp@1.0.1:
     resolution: {integrity: sha512-kgMuFyE78OC6Dyu3Dy7vcx4uy97EIbVxJB/B0eJ3bUNAkwdNcxYzgKltnyADiYwsR7SEqkkUPsEUT//OVS6XMA==}
+
+  classnames@2.5.1:
+    resolution: {integrity: sha512-saHYOzhIQs6wy2sVxTM6bUDsQO4F50V9RQ22qBpEdCW+I+/Wmke2HOl6lS6dTpdxVhb88/I6+Hs+438c3lfUow==}
 
   clean-stack@2.2.0:
     resolution: {integrity: sha512-4diC9HaTE+KRAMWhDhrGOECgWZxoevMc5TlkObMqNSsVU62PYzXZ/SMTjzyGAFF1YusgxGcSWTEXBhp0CPwQ1A==}
@@ -6391,14 +6394,14 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.26.0
 
-  '@rdub/base@0.7.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
+  '@rdub/base@0.7.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
       node-fetch: 3.3.2
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
       use-local-storage-state: 19.5.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
 
-  '@rdub/base@0.7.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
+  '@rdub/base@0.8.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
       node-fetch: 3.3.2
       react: 18.2.0
@@ -6421,7 +6424,7 @@ snapshots:
       - supports-color
       - typescript
 
-  '@rdub/icons@0.1.0(@types/react@18.2.48)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
+  '@rdub/icons@0.1.5(@types/react@18.2.48)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
       '@emotion/react': 11.13.5(@types/react@18.2.48)(react@18.2.0)
       '@emotion/styled': 11.13.5(@emotion/react@11.13.5(@types/react@18.2.48)(react@18.2.0))(@types/react@18.2.48)(react@18.2.0)
@@ -6442,19 +6445,21 @@ snapshots:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
 
-  '@rdub/next-base@0.4.0(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
+  '@rdub/next-base@0.5.0(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
+      '@rdub/base': 0.8.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       next: 15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7)
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
 
-  '@rdub/next-leaflet@0.2.0(leaflet@1.9.4)(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react-leaflet@4.2.1(leaflet@1.9.4)(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)':
+  '@rdub/next-leaflet@0.2.1(leaflet@1.9.4)(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react-leaflet@4.2.1(leaflet@1.9.4)(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)':
     dependencies:
       '@fortawesome/fontawesome-svg-core': 6.5.1
       '@fortawesome/free-solid-svg-icons': 6.5.1
       '@fortawesome/react-fontawesome': 0.2.0(@fortawesome/fontawesome-svg-core@6.5.1)(react@18.2.0)
-      '@rdub/next-base': 0.4.0(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      '@rdub/next-base': 0.5.0(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@react-leaflet/core': 2.1.0(leaflet@1.9.4)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      classnames: 2.5.1
       leaflet: 1.9.4
       next: 15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7)
       react: 18.2.0
@@ -6472,7 +6477,7 @@ snapshots:
 
   '@rdub/next-plotly@0.3.0(mapbox-gl@3.1.2)(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
-      '@rdub/base': 0.7.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      '@rdub/base': 0.7.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@rdub/next-base': 0.3.0(next@15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       next: 15.0.3(@babel/core@7.26.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.7)
       plotly.js: 2.28.0(mapbox-gl@3.1.2)
@@ -7191,6 +7196,8 @@ snapshots:
   chrome-trace-event@1.0.3: {}
 
   clamp@1.0.1: {}
+
+  classnames@2.5.1: {}
 
   clean-stack@2.2.0: {}
 

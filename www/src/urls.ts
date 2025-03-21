@@ -1,4 +1,4 @@
-import { mapValues } from "@rdub/base/objs"
+import { mapValues } from "@rdub/base"
 import getBasePath from "@rdub/next-base/basePath"
 import { DotPqts, NjspCrashesPqt } from "@/server/paths"
 
