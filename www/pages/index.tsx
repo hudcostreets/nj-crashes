@@ -86,12 +86,6 @@ const Home = ({ plotsDict, initNjspPlot, initNjsp, cc2mc2mn, County2Code, cookie
           url={url}
           thumbnail={`${url}/plots/fatalities_per_year_by_type.png`}
         />
-        {/*<Nav*/}
-        {/*    id={"nav"}*/}
-        {/*    classes={"collapsed"}*/}
-        {/*    menus={menus}*/}
-        {/*    hover={false}*/}
-        {/*/>*/}
         <main className={css.index}>
           <h1 className={css.title}>{title}</h1>
           <div className={css["plot-container"]}>

@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+const config = {
   trailingSlash: true,
-  transpilePackages: ['@rdub/icons'],
+  transpilePackages: [
+    '@rdub/base',
+    '@rdub/icons',
+  ],
 }
 
-export default nextConfig
+export default config

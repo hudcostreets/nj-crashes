@@ -1,4 +1,4 @@
-import { mapEntries } from "@rdub/base/objs"
+import { mapEntries } from "@rdub/base"
 import { intParam, optIntParam } from "@rdub/next-params/params"
 import { DefaultPageSize } from "@/src/pagination"
 

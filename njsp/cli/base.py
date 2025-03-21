@@ -1,8 +1,8 @@
 from functools import wraps
 
-from click import pass_context, group, option
+from click import group, option, pass_context
 from git import Repo
-from utz import process, env, err
+from utz import env, err, process
 
 
 DEFAULT_AUTHOR_NAME = 'GitHub Actions'

@@ -1,5 +1,5 @@
 import { Tooltip } from "@mui/material"
-import { fromEntries } from "@rdub/base/objs"
+import { fromEntries } from "@rdub/base"
 import A from "@rdub/next-base/a"
 import { ReactNode } from "react"
 import strftime from "strftime"
