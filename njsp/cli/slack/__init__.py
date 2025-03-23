@@ -1,2 +1,2 @@
 from .base import slack
-from .sync import sync
+from . import rm_dups, sync

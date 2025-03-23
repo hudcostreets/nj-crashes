@@ -1,16 +1,16 @@
+from datetime import datetime as dt
+from typing import Tuple
+
 import pandas as pd
 from click import option, argument
-from datetime import datetime as dt
-from typing import Optional, Tuple
-from utz import env, err, process
+from utz import err, process
 from utz.ymd import dates, YMD
 
-from .base import slack
-from .channel_client import ChannelClient, CHANNEL_OPTS
+from .base import slack, dry_run_opt, channel_opt
+from .channel_client import ChannelClient, DEFAULT_BATCH_SIZE, DEFAULT_MAX_MSGS
 from ...commit_crashes import crash_str, CommitCrashes
 from ...crashes import Crash
 from ...paths import fauqstats_relpath
-
 
 RED = '\033[31m'
 GREEN = '\033[32m'
@@ -21,17 +21,17 @@ RESET = '\033[0m'
 def sync_crash(
     r: pd.Series,
     client: ChannelClient,
-    commit: Optional[str],
+    commit: str | None,
     overwrite_existing: int = 0,
-    dry_run: Optional[int] = None,
+    dry_run: int | None = None,
 ) -> None:
     if dry_run is None:
         dry_run = client.dry_run
-    accid = r.name
+    accid = str(r.name)
     crash = Crash(accid)
     xml_url = crash.xml_url(ref=commit)
     new_text = crash_str(r, github_url=xml_url)
-    msg = client.cache.get(accid)
+    # msg = client.cache.get(accid)
 
     def post_msg():
         client.post_msg(accid=accid, text=new_text)
@@ -45,7 +45,7 @@ def sync_crash(
                 err(f"DRY RUN {m}")
             else:
                 err(m)
-                client.delete_msg(ts=ts, accid=accid)
+                client.delete_msg(ts=ts)
             post_msg()
         elif new_text != text or overwrite_existing:
             if new_text != text:
@@ -63,24 +63,23 @@ def sync_crash(
         post_msg()
 
 
-SLACK_CHANNEL_ID_VAR = "SLACK_CHANNEL_ID"
-SLACK_CHANNEL_ID = env.get(SLACK_CHANNEL_ID_VAR)
-
 @slack.command('sync')
+@option('-b', '--batch-size', type=int, default=DEFAULT_BATCH_SIZE, help=f'Batch size for paginated fetches from the Slack API (default: {DEFAULT_BATCH_SIZE})')
 @dates(default_start=YMD(2008), help='Date range to filter crashes to, e.g. `202307-`, `20230710-202308')
-@option('-f', '--overwrite-existing', count=True, help='1x')
-@option(*CHANNEL_OPTS, help=f'Slack channel ID to post to; defaults to ${SLACK_CHANNEL_ID_VAR} (currently {SLACK_CHANNEL_ID or "unset"})')
-@option('-m', '--fetch-messages', type=int, default=1000, help="Fetch messages from Slack and update cache (as opposed to just reading cached messages")
-@option('-n', '--dry-run', count=True, help="Avoid Slack API requests, cache updates, etc.")
+@option('-f', '--overwrite-existing', count=True, help='1x: update existing messages; 2x: delete existing messages and post new ones (default: 0, do nothing)')
+@channel_opt
+@option('-m', '--max-messages', type=int, default=DEFAULT_MAX_MSGS, help=f"Fetch up to this many messages from Slack, and update cache (as opposed to just reading cached messages; default: {DEFAULT_MAX_MSGS})")
+@dry_run_opt
 @argument('commits', nargs=-1)
 def sync(
-    commits: Tuple[str, ...],
+    batch_size: int,
     start: YMD,
     end: YMD,
     overwrite_existing: int,
-    channel: Optional[str],
-    fetch_messages: Optional[int],
-    dry_run: int,
+    channel: str | None,
+    max_messages: int | None,
+    dry_run: bool,
+    commits: Tuple[str, ...],
 ):
     """Post crashes to the #crash-bot channel in HCCS Slack.
 
@@ -93,35 +92,31 @@ def sync(
         commits = (commit,)
 
     client = ChannelClient(channel=channel, dry_run=dry_run)
-    cache = client.cache
-    if fetch_messages:
-        client.fetch_messages(limit=fetch_messages)
+    # if max_messages:
+    #     client.msgs(batch_size=batch_size, max_recs=max_messages)
 
-    try:
-        for commit in commits:
-            err(f"Processing commit {commit}")
-            cc = CommitCrashes(commit)
-            crashes = cc.adds_df
+    for commit in commits:
+        err(f"Processing commit {commit}")
+        cc = CommitCrashes(commit)
+        crashes = cc.adds_df
 
-            if crashes.empty:
-                err("No new crashes found, continuing")
-                continue
+        if crashes.empty:
+            err("No new crashes found, continuing")
+            continue
 
-            if start:
-                crashes = crashes[crashes.dt.dt.date >= start.date]
-            if end:
-                crashes = crashes[crashes.dt.dt.date < end.date]
+        if start:
+            crashes = crashes[crashes.dt.dt.date >= start.date]
+        if end:
+            crashes = crashes[crashes.dt.dt.date < end.date]
 
-            crashes = crashes.sort_values('dt')
-            err(f"{len(crashes)} crashes:")
-            err(str(crashes))
+        crashes = crashes.sort_values('dt')
+        err(f"{len(crashes)} crashes:")
+        err(str(crashes))
 
-            crashes.apply(
-                sync_crash,
-                axis=1,
-                client=client,
-                commit=commit,
-                overwrite_existing=overwrite_existing,
-            )
-    finally:
-        cache.close()
+        crashes.apply(
+            sync_crash,
+            axis=1,
+            client=client,
+            commit=commit,
+            overwrite_existing=overwrite_existing,
+        )

@@ -1,21 +1,33 @@
 import json
+from datetime import datetime
+from functools import cache
 from os import makedirs, environ
 from os.path import exists
 from typing import Optional, Iterable, Callable
 
+from pandas import Series, DataFrame
 from slack_sdk import WebClient
-from utz import cached_property, err, singleton
+from stdlb import fromtimestamp
+from utz import cached_property, err, singleton, Log, silent, solo
 
-from njsp.cli.slack.channel_cache import ChannelCache
 from njsp.cli.slack.config import SLACK_CHANNEL_ID, SLACK_CONFIG_DIR, SLACK_BOT_TOKEN
+from njsp.cli.slack.msg import Reply, Thread
 
 CHANNEL_OPTS = ('-h', '--channel')
 
 
-def resolve_channel(channel: Optional[str], client: 'ChannelClient') -> str:
+def resolve_channel(
+    channel: str | None,
+    client: 'ChannelClient',
+) -> str:
     client = client.client
-    channel = load_slack_config(env=SLACK_CHANNEL_ID, basename='channel', value=channel, opts=CHANNEL_OPTS)
-    print("loaded channel", channel)
+    channel = load_slack_config(
+        env=SLACK_CHANNEL_ID,
+        basename='channel',
+        value=channel,
+        opts=CHANNEL_OPTS,
+    )
+    err(f"Loaded channel: {channel}")
     if channel.startswith('#'):
         channel = channel_by_name(client, channel)
         err(f'Looked up channel ID: {channel}')
@@ -48,6 +60,10 @@ def cached_fetch(basename: str, key: str, method: Callable, **kwargs):
 
 fetch_users = cached_fetch('members.json', 'members', WebClient.users_list)
 fetch_ims = cached_fetch('ims.json', 'channels', WebClient.conversations_list, types=['im'])
+
+
+DEFAULT_BATCH_SIZE = 1_000
+DEFAULT_MAX_MSGS = 10_000
 
 
 def channel_by_name(client: WebClient, name: str) -> str:
@@ -87,8 +103,8 @@ def im_channel(client: WebClient, user_id: str, **kwargs) -> Optional[dict]:
 def load_slack_config(
     env: str,
     basename: str,
-    value: Optional[str] = None,
-    opts: Optional[Iterable[str]] = None,
+    value: str | None = None,
+    opts: Iterable[str] | None = None,
 ) -> str:
     if value:
         return value
@@ -117,13 +133,9 @@ def load_slack_config(
 
 
 class ChannelClient:
-    def __init__(self, channel: str, dry_run: int = 0):
+    def __init__(self, channel: str, dry_run: bool = False):
         self.channel = resolve_channel(channel, client=self)
         self.dry_run = dry_run
-
-    @cached_property
-    def cache(self) -> ChannelCache:
-        return ChannelCache(channel=self.channel)
 
     @cached_property
     def token(self):
@@ -133,17 +145,157 @@ class ChannelClient:
     def client(self):
         return WebClient(token=self.token)
 
-    def fetch_messages(self, limit: int = 1000):
-        msg = f"Slack: fetching {limit} messages"
-        if self.dry_run > 1:
-            err(f"DRY RUN {msg}")
-        else:
-            err(msg)
-            resp = self.client.conversations_history(channel=self.channel, include_all_metadata=True, limit=limit)
-            msgs = resp.data['messages']
-            err(f'Slack: fetched {len(msgs)} messages')
-            for msg in msgs:
-                self.cache.update(msg)
+    @staticmethod
+    def fetch(
+        mth,
+        rec_key: str,
+        index: str | None = None,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+        max_recs: int = DEFAULT_MAX_MSGS,
+        log: Log = err,
+        **kwargs,
+    ) -> DataFrame:
+        log = log or silent
+        recs = []
+        cursor = None
+        while True:
+            limit = min(max_recs - len(recs), batch_size) if max_recs else batch_size
+            if limit < 0:
+                raise RuntimeError(f"{max_recs=} < {len(recs)=}, can't fetch more")
+            elif limit == 0:
+                break
+            res = mth(limit=limit, cursor=cursor, **kwargs)
+            data = res.data
+            batch = data.pop(rec_key, [])
+            assert res.status_code == 200, f"Slack API error: {res.status_code} ({data.get('error')}"
+            log(f"Slack: fetched batch of {len(batch)} {rec_key}")
+            recs += batch
+            cursor = data.get('response_metadata', {}).get('next_cursor')
+            if not cursor:
+                break
+        df = DataFrame(recs)
+        if index:
+            df = df.set_index(index, verify_integrity=True)
+        return df
+
+    @cache
+    def users(self, **kwargs):
+        return self.fetch(
+            mth=self.client.users_list,
+            rec_key='members',
+            index='id',
+            **kwargs,
+        )
+
+    @cached_property
+    def crash_bot_uid(self) -> str:
+        users = self.users()
+        return solo(users[users.is_bot & (users.name == 'crash_bot')].index.tolist())
+
+    @cached_property
+    def roots_msk(self) -> Series:
+        msgs = self.msgs()
+        return msgs.thread_ts.isna() | (msgs.thread_ts == msgs.index.to_series())
+
+    @cached_property
+    def accid_msgs(self) -> Series:
+        root_msgs = self.root_msgs
+        uid = self.crash_bot_uid
+        root_bot_msgs = (
+            root_msgs
+            [root_msgs.user == uid]
+            .metadata
+            .apply(Series)
+            [['event_type', 'event_payload']]
+        )
+        accid_msgs = root_bot_msgs[root_bot_msgs.event_type == 'new_crash'].drop(columns='event_type')
+        accid_msgs['ACCID'] = accid_msgs.event_payload.apply(Series)['ACCID']
+        accid_msgs = accid_msgs.drop(columns='event_payload').ACCID
+        return accid_msgs
+
+    @cached_property
+    def ts2accid(self) -> dict[str, int]:
+        return self.accid_msgs.to_dict()
+
+    @cached_property
+    def accid_dups(self) -> DataFrame:
+        accid_msgs = self.accid_msgs
+        h = accid_msgs.value_counts()
+        multis = h[h > 1]
+        return (
+            accid_msgs
+            [accid_msgs.isin(multis.index)]
+            .reset_index()
+            .sort_values(['ACCID', 'ts'])
+        )
+
+    def accid_dups_to_remove(self) -> DataFrame:
+        return (
+            self.accid_dups
+            .groupby('ACCID')
+            .apply(
+                lambda df: (
+                    df
+                    .assign(dt=df.ts.astype(float).apply(fromtimestamp))
+                    .sort_values('dt')
+                    .iloc[1:]
+                )
+            )
+            .set_index('ts')[['ACCID']]
+            .merge(
+                self.msgs()[['dt', 'text']],
+                how='left',
+                left_index=True,
+                right_index=True,
+            )
+        )
+
+    def verify_accids(self):
+        assert self.accid_dups.empty
+
+    def accid_thread(self, accid: int) -> Thread:
+        accid2ts = self.accid2ts
+        ts = accid2ts[accid]
+        msgs = self.msgs()
+        msg = msgs.loc[ts]
+        thread_ts = msg.thread_ts
+        if thread_ts != ts:
+            raise ValueError(f"ACCID {accid}: {ts=} != {thread_ts=}")
+        replies_df = msgs[(msgs.thread_ts == thread_ts)].reset_index()
+        replies_df = replies_df[replies_df.ts != ts]
+        replies = [
+            Reply(**rec)
+            for rec in replies_df.to_dict('records')
+        ]
+        return Thread(ts=ts, text=msg.text, replies=replies)
+
+    @cached_property
+    def accid2ts(self) -> dict[int, str]:
+        self.verify_accids()
+        return { v: k for k, v in self.ts2accid.items() }
+
+    @cached_property
+    def root_msgs(self) -> DataFrame:
+        msgs = self.msgs()
+        return msgs[self.roots_msk]
+
+    @cached_property
+    def replies(self) -> DataFrame:
+        msgs = self.msgs()
+        return msgs[~self.roots_msk]
+
+    @cache
+    def msgs(self, include_all_metadata: bool = True, **kwargs):
+        df = self.fetch(
+            mth=self.client.conversations_history,
+            rec_key='messages',
+            index='ts',
+            channel=self.channel,
+            include_all_metadata=include_all_metadata,
+            **kwargs,
+        )
+        df['dt'] = df.index.to_series().astype(float).apply(datetime.fromtimestamp)
+        return df
 
     def msg_kwargs(self, accid: str, text: str) -> dict:
         return dict(
@@ -173,11 +325,9 @@ class ChannelClient:
             resp = self.client.chat_postMessage(**msg_kwargs)
             msg = resp.data['message']
             err(f"ACCID {accid}: sent message {msg['ts']}")
-            self.cache.update(msg)
 
-    def delete_msg(self, ts: str, accid: str):
+    def delete_msg(self, ts: str):
         self.client.chat_delete(channel=self.channel, ts=ts)
-        self.cache.delete_msg(accid)
 
     def update_msg(self, ts: str, accid: str, text: str):
         update_kwargs = dict(
@@ -191,4 +341,3 @@ class ChannelClient:
         if ts != new_ts:
             raise RuntimeError(f"Message {ts} updated to {new_ts}")
         new_msg['ts'] = ts  # Not included in chat.update `message` payload
-        self.cache.update(new_msg)
