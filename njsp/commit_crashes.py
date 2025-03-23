@@ -127,17 +127,25 @@ def mk_dt_str(dt: pd.Timestamp, fmt: Union[Callable, str]) -> str:
 
 
 def get_urls(r: Series) -> Tuple[str, str]:
-    cc = int(r.CCODE)
-    if not fullmatch(r'\d{4}', r.MCODE):
-        raise ValueError(f"Invalid MCODE {r.MCODE}")
-    if r.MCODE[:2] != r.CCODE:
-        raise ValueError(f"Invalid MCODE {r.MCODE} for CCODE {r.CCODE}")
-    mc = int(r.MCODE[2:])
-    sp2gin = read_parquet(MC_PQT)
-    mc_gin = sp2gin[sp2gin.cc == cc].set_index('mc_sp').mc_gin.to_dict()[mc]
-    if mc != mc_gin:
-        err(f"cc {cc}: re-mapping mc {mc} to {mc_gin}")
-        mc = mc_gin
+    if 'cc' not in r or 'mc' not in r:
+        if 'cc' in r or 'mc' in r:
+            raise ValueError(f"{'cc' in r=}, {'mc' in r=}")
+        if not 'CCODE' in r and 'MCODE' in r:
+            raise ValueError(f"Missing 'cc' and 'mc', required {'CCODE' in r=} and {'MCODE' in r=}")
+        cc = int(r.CCODE)
+        if not fullmatch(r'\d{4}', r.MCODE):
+            raise ValueError(f"Invalid MCODE {r.MCODE}")
+        if r.MCODE[:2] != r.CCODE:
+            raise ValueError(f"Invalid MCODE {r.MCODE} for CCODE {r.CCODE}")
+        mc = int(r.MCODE[2:])
+        sp2gin = read_parquet(MC_PQT)
+        mc_gin = sp2gin[sp2gin.cc == cc].set_index('mc_sp').mc_gin.to_dict()[mc]
+        if mc != mc_gin:
+            err(f"cc {cc}: re-mapping mc {mc} to {mc_gin}")
+            mc = mc_gin
+    else:
+        cc = r.cc
+        mc = r.mc
     county = cc2mc2mn[cc]
     cs = normalize_name(county.cn)
     ms = normalize_name(county.mc2mn[mc])

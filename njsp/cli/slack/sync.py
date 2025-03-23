@@ -1,3 +1,4 @@
+import pandas as pd
 from click import option, argument
 from datetime import datetime as dt
 from typing import Optional, Tuple
@@ -18,7 +19,7 @@ RESET = '\033[0m'
 
 
 def sync_crash(
-    r,
+    r: pd.Series,
     client: ChannelClient,
     commit: Optional[str],
     overwrite_existing: int = 0,

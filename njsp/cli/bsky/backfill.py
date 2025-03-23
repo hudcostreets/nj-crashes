@@ -35,10 +35,11 @@ RENAMES = {
     'location': 'LOCATION',
 }
 
+DEFAULT_MAX_CRASHES = 1500
 
 @bsky.command
 @dates(default_start=YMD(2008), help='Date range to filter crashes to, e.g. `202307-`, `20230710-202308')
-@option('-m', '--max-crashes', type=int, default=1000, help="Process up to this number of crashes")
+@option('-m', '--max-crashes', type=int, default=DEFAULT_MAX_CRASHES, help=f"Process up to this number of crashes (default: {DEFAULT_MAX_CRASHES})")
 @option('-n', '--dry-run', count=True, help="Avoid Slack API requests, cache updates, etc.")
 @option('-r', '--ref', default=HEAD, help=f"Ref to use for GitHub URLs; defaults to HEAD ({HEAD})")
 @option('-s', '--sleep-s', type=float, default=0.5, help="Sleep this many seconds between Bsky API requests")
