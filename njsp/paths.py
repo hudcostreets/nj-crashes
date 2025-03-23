@@ -4,8 +4,8 @@ from os.path import join, dirname
 from nj_crashes import paths
 from nj_crashes.paths import PUBLIC_DIR, PLOTS_DIR, relpath, DATA_DIR
 
-S3 = f'{paths.S3}/njsp'
-S3_DATA = f'{S3}/data'
+S3_NJSP = f'{paths.S3}/njsp'
+S3_NJSP_DATA = f'{S3_NJSP}/data'
 
 NJSP_DIR = dirname(__file__)
 NJSP_DATA = join(NJSP_DIR, 'data')
@@ -21,12 +21,14 @@ CRASHES_PQT = join(NJSP_DATA, 'crashes.parquet')
 CRASHES_RELPATH = relpath(CRASHES_PQT)
 OLD_CRASHES_PQT = join(DATA_DIR, 'crashes.pqt')
 OLD_CRASHES_RELPATH = relpath(OLD_CRASHES_PQT)
-CRASHES_PQT_S3 = f'{S3_DATA}/crashes.parquet'
+CRASHES_PQT_S3 = f'{S3_NJSP_DATA}/crashes.parquet'
 CRASHES_DB = join(WWW_NJSP, 'crashes.db')
-CRASHES_DB_S3 = f'{S3_DATA}/crashes.db'
+CRASHES_DB_S3 = f'{S3_NJSP_DATA}/crashes.db'
 CRASHES_DB_URI = f'sqlite:///{CRASHES_DB}'
 
-BSKY_CRASH_POSTS = join(NJSP_DATA, 'bsky-crash-posts.parquet')
+BSKY_CRASH_POSTS_NAME = 'bsky-crash-posts.parquet'
+BSKY_CRASH_POSTS = join(NJSP_DATA, BSKY_CRASH_POSTS_NAME)
+BSKY_CRASH_POSTS_S3 = f'{S3_NJSP_DATA}/{BSKY_CRASH_POSTS_NAME}'
 
 PROJECTED_CSV = join(WWW_NJSP, 'projected.csv')
 
@@ -44,8 +46,8 @@ YTC_PQT = path.join(NJSP_DATA, 'year-type-county.pqt')
 YTC_DB = path.join(WWW_NJSP, 'year-type-county.db')
 YTC_DB_URI = f'sqlite:///{YTC_DB}'
 
-S3_CRASH_LOG_PQT = f'{S3_DATA}/crash-log.parquet'
-S3_CRASH_LOG_DB = f'{S3_DATA}/crash-log.db'
+S3_CRASH_LOG_PQT = f'{S3_NJSP_DATA}/crash-log.parquet'
+S3_CRASH_LOG_DB = f'{S3_NJSP_DATA}/crash-log.db'
 
 PROJECTED_TOTALS_PATH = join(PLOTS_DIR, 'projected_totals.json')
 
