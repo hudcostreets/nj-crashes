@@ -1,21 +1,16 @@
+from datetime import datetime
+from functools import partial, cache
+from html.parser import HTMLParser
 from os.path import exists, relpath, join
-from re import fullmatch
 
 import click
 import pandas as pd
-from dataclasses import dataclass
-from datetime import datetime
-from functools import partial
 from github import UnknownObjectException
-from html.parser import HTMLParser
-from typing import Optional
 from utz import err
 
 from nj_crashes import ROOT_DIR
 from nj_crashes.utils import git
-from nj_crashes.utils.git import git_fmt
 from nj_crashes.utils.github import load_github
-from njsp.commit_crashes import REPO
 from njsp.paths import OLD_CRASHES_RELPATH, CRASHES_RELPATH, CRASHES_PQT, CRASHES_PQT_S3
 
 
@@ -69,7 +64,13 @@ class SourcemapParser(HTMLParser):
 class Crashes:
     START = 2008
 
-    def __init__(self, ref: str, start_year: int = START, end_year: int = None):
+    @cache
+    def __init__(
+        self,
+        ref: str,
+        start_year: int = START,
+        end_year: int = None,
+    ):
         self.ref = ref
         self.start_year = start_year
         year = start_year
@@ -99,31 +100,6 @@ class Crashes:
 
         self.end_year = year
         self.accid_map = accid_map
-
-
-_all_crashes: dict[str, Crashes] = {}
-
-
-@dataclass
-class Crash:
-    accid: str
-
-    @staticmethod
-    def crashes(ref: str) -> Crashes:
-        if ref not in _all_crashes:
-            _all_crashes[ref] = Crashes(ref=ref)
-        return _all_crashes[ref]
-
-    def xml_url(self, ref: Optional[str] = None):
-        if not ref:
-            ref = git_fmt(fmt='%H')
-        if not fullmatch(r'[\da-f]+', ref):
-            ref = git_fmt(ref, fmt='%H')
-        accid_map = self.crashes(ref=ref).accid_map
-        rng = accid_map[self.accid]
-        (start_line, _), (end_line, _) = rng['start'], rng['end']
-        path = rng['path']
-        return f'https://github.com/{REPO}/blob/{ref}/{path}#L{start_line}-L{end_line}'
 
 
 @click.command()

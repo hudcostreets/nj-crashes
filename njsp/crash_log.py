@@ -1,7 +1,12 @@
-import pandas as pd
+from __future__ import annotations
+
 from datetime import datetime, timezone
+from typing import Literal
+
+import pandas as pd
 from dateutil.parser import parse
-from typing import Optional, Union, Literal
+from git import Repo
+from pandas import DataFrame, Series
 from utz import err
 
 from nj_crashes.fauqstats import FAUQStats
@@ -13,13 +18,21 @@ from njsp.paths import CRASHES_RELPATH
 Kind = Literal['add', 'update', 'del']
 
 
-def get_crashes_df(
-    repo=None,
-    head: Union[str, None] = None,
-    since: Union[str, datetime, pd.Timestamp, None] = None,
-    root: Union[str, None] = DEFAULT_ROOT_SHA,
+# class CrashesLog:
+#     def __init__(self, df: DataFrame):
+#         self.df = df
+#
+#     def __repr__(self):
+#         return f"CrashesLog({len(self.crash_log)} rows)"
+
+
+def get_crash_log(
+    repo: Repo | None = None,
+    head: str | None = None,
+    since: str | datetime | pd.Timestamp | None = None,
+    root: str | None = DEFAULT_ROOT_SHA,
     log: bool = True,
-) -> pd.DataFrame:
+) -> DataFrame:
     if isinstance(since, (str, datetime)):
         tz = datetime.now(timezone.utc).astimezone().tzinfo
         since = pd.to_datetime(since).tz_localize(tz)
@@ -74,7 +87,7 @@ def get_crashes_df(
                 cur_sha = cur_commit.hexsha[:SHORT_SHA_LEN]
                 cc = CommitCrashes(cur_sha, log=log)
 
-                def save(accid, crash: Optional[pd.Series], kind: Kind):
+                def save(accid, crash: Series | None, kind: Kind):
                     accid = int(accid)
                     if accid not in crash_map:
                         crash_map[accid] = []
@@ -105,16 +118,16 @@ def get_crashes_df(
         cur_tree = prv_tree
         cur_fauqstats_blobs = prv_fauqstats_blobs
 
-    crashes_df = pd.DataFrame([
+    crash_log = DataFrame([
         snapshot
         for snapshots in crash_map.values()
         for snapshot in snapshots
     ])
-    if not crashes_df.empty:
-        crashes_df = (
-            crashes_df
+    if not crash_log.empty:
+        crash_log = (
+            crash_log
             .sort_values(['accid', 'rundate'])
             .set_index(['accid', 'sha'])
         )
 
-    return crashes_df
+    return crash_log

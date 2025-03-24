@@ -6,21 +6,12 @@ from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 from urllib.parse import ParseResult
 
+from utz import s3
+
 from nj_crashes.utils.log import err
 
 
 S3URL = Union[ParseResult, str]
-
-
-_s3 = None
-
-
-def s3():
-    global _s3
-    if _s3 is None:
-        import boto3
-        _s3 = boto3.client('s3')
-    return _s3
 
 
 def upload(path: str, s3_url: S3URL):
@@ -30,7 +21,7 @@ def upload(path: str, s3_url: S3URL):
         raise ValueError(f"Expected s3:// URL, got {s3_url}")
     bucket = s3_url.netloc
     key = s3_url.path.lstrip('/')
-    s3().upload_file(path, bucket, key)
+    s3.client().upload_file(path, bucket, key)
     err(f"Uploaded {path} to s3://{bucket}/{key}")
 
 
@@ -43,7 +34,7 @@ def s3_upload_ctx(s3_url: S3URL):
 
 
 @contextmanager
-def output_ctx(url: Union[ParseResult, str]):
+def output_ctx(url: S3URL):
     if isinstance(url, str):
         url = urlparse(url)
     if url.scheme == 's3':
@@ -56,7 +47,7 @@ def output_ctx(url: Union[ParseResult, str]):
 
 
 @contextmanager
-def input_ctx(url: Union[ParseResult, str]):
+def input_ctx(url: S3URL):
     if isinstance(url, str):
         url = urlparse(url)
     if url.scheme == 's3':

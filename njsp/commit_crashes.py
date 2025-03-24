@@ -1,27 +1,23 @@
 import json
 from dataclasses import dataclass
-from re import fullmatch
-
-from atproto_client.models.app.bsky.richtext.facet import Main as Facet, ByteSlice, Link as BskyLink
-import pandas as pd
 from datetime import datetime
+from io import BytesIO
+from subprocess import CalledProcessError
+from typing import Tuple
+
+import pandas as pd
 from git import Commit, Repo, Tree, Object, Blob
 from gitdb.exc import BadName
 from github import Github
 from github.Commit import Commit as GithubCommit
-from io import BytesIO
-from pandas import isna, Series, read_parquet
-from subprocess import CalledProcessError
-from typing import Union, Optional, Tuple, Callable, Literal
 from utz import process, cached_property, err
 
 from nj_crashes.fauqstats import get_fauqstats, FAUQStats
 from nj_crashes.utils.git import git_fmt, get_repo, SHORT_SHA_LEN
-from nj_crashes.utils import SITE
 from nj_crashes.utils.github import get_github_repo, load_pqt_github, REPO, GithubCommit as GithubCommitWrapper
 from nj_crashes.utils.log import none
-from njdot import cc2mc2mn, normalize_name
-from njsp.paths import RUNDATE_RELPATH, MC_PQT
+from njsp.crash.crash import Crash
+from njsp.paths import RUNDATE_RELPATH
 
 
 def load_pqt_blob(blob: Object) -> pd.DataFrame:
@@ -30,9 +26,9 @@ def load_pqt_blob(blob: Object) -> pd.DataFrame:
 
 
 def load_pqt(
-        path: Union[str, list[str]],
-        commit: Union[None, str, Commit, Blob] = None,
-        repo: Union[Repo, Github, None] = None,
+    path: str | list[str],
+    commit: str | Commit | Blob | None = None,
+    repo: Repo | Github | None = None,
 ) -> pd.DataFrame:
     if isinstance(path, list):
         for p in path:
@@ -65,147 +61,10 @@ def load_pqt(
     return load_pqt_blob(blob)
 
 
-VICTIM_TYPES = {
-    'D': 'driver',
-    'P': 'passenger',
-    'T': 'pedestrian',
-    'B': 'cyclist',
-}
-Dst = Literal['slack', 'markdown']
-
-
 @dataclass
 class Link:
     uri: str
     text: str
-
-
-@dataclass
-class BskyPost:
-    text: str
-    facets: list[Facet]
-
-    @staticmethod
-    def mk(*pcs: str | Link) -> 'BskyPost':
-        text = ""
-        facets = []
-        for pc in pcs:
-            if isinstance(pc, str):
-                text += pc
-            elif isinstance(pc, Link):
-                start = len(text)
-                text += pc.text
-                end = len(text)
-                facet: Facet = Facet(
-                    index=ByteSlice(byte_start=start, byte_end=end),
-                    features=[BskyLink(uri=pc.uri)],
-                )
-                facets.append(facet)
-            else:
-                raise TypeError(pc)
-
-        return BskyPost(text=text, facets=facets)
-
-
-def mk_victim_str(r: Series):
-    victim_pcs = []
-    for suffix, name in VICTIM_TYPES.items():
-        num = r[f'FATAL_{suffix}']
-        if not isna(num) and num > 0:
-            num = int(num)
-            noun = name if num == 1 else f'{name}s'
-            victim_pcs.append(f'{num} {noun}')
-
-    return ', '.join(victim_pcs)
-
-
-def mk_dt_str(dt: pd.Timestamp, fmt: Union[Callable, str]) -> str:
-    if callable(fmt):
-        return fmt(dt)
-    else:
-        return dt.strftime(fmt)
-
-
-def get_urls(r: Series) -> Tuple[str, str]:
-    if 'cc' not in r or 'mc' not in r:
-        if 'cc' in r or 'mc' in r:
-            raise ValueError(f"{'cc' in r=}, {'mc' in r=}")
-        if not 'CCODE' in r and 'MCODE' in r:
-            raise ValueError(f"Missing 'cc' and 'mc', required {'CCODE' in r=} and {'MCODE' in r=}")
-        cc = int(r.CCODE)
-        if not fullmatch(r'\d{4}', r.MCODE):
-            raise ValueError(f"Invalid MCODE {r.MCODE}")
-        if r.MCODE[:2] != r.CCODE:
-            raise ValueError(f"Invalid MCODE {r.MCODE} for CCODE {r.CCODE}")
-        mc = int(r.MCODE[2:])
-        sp2gin = read_parquet(MC_PQT)
-        mc_gin = sp2gin[sp2gin.cc == cc].set_index('mc_sp').mc_gin.to_dict()[mc]
-        if mc != mc_gin:
-            err(f"cc {cc}: re-mapping mc {mc} to {mc_gin}")
-            mc = mc_gin
-    else:
-        cc = r.cc
-        mc = r.mc
-    county = cc2mc2mn[cc]
-    cs = normalize_name(county.cn)
-    ms = normalize_name(county.mc2mn[mc])
-    c_url = f'{SITE}/c/{cs}'
-    m_url = f'{SITE}/c/{cs}/{ms}'
-    return c_url, m_url
-
-
-def bsky_str(
-    r: pd.Series,
-    fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p',
-    github_url: Optional[str] = None,
-) -> BskyPost:
-    victim_str = mk_victim_str(r)
-    dt_str = mk_dt_str(r['dt'], fmt)
-    if isna(r.LOCATION):
-        location = 'unknown location'
-    else:
-        location = r.LOCATION.replace('&', '&amp;')
-
-    accid = str(r.name)
-    gh_link = Link(uri=github_url, text=accid) if github_url else accid
-    c_url, m_url = get_urls(r)
-    c_link = Link(uri=c_url, text=f'{r.CNAME} County')
-    m_link = Link(uri=m_url, text=r.MNAME)
-    return BskyPost.mk(
-        f'{dt_str} (', gh_link, '): ', m_link, ' (', c_link, f'), {location}: {victim_str} deceased',
-    )
-
-
-def crash_str(
-    r: pd.Series,
-    fmt: Union[Callable, str] = '%a %b %-d %Y %-I:%M%p',
-    github_url: Optional[str] = None,
-    dst: Dst = 'slack',
-) -> str:
-    victim_str = mk_victim_str(r)
-    dt_str = mk_dt_str(r['dt'], fmt)
-    if isna(r.LOCATION):
-        location = 'unknown location'
-    else:
-        location = r.LOCATION.replace('&', '&amp;')
-
-    def link(uri: str, text: str) -> str:
-        nonlocal dst
-        if dst == 'slack':
-            return f'<{uri}|{text}>'
-        else:
-            return f'[{text}]({uri})'
-
-    accid = str(r.name)
-    if github_url:
-        gh_link = link(github_url, accid)
-    else:
-        gh_link = f'{accid}'
-
-    c_url, m_url = get_urls(r)
-    c_link = link(uri=c_url, text=f'{r.CNAME} County')
-    m_link = link(uri=m_url, text=r.MNAME)
-    return f'*{dt_str} ({gh_link})*: {m_link} ({c_link}), {location}: {victim_str} deceased'
 
 
 def get_rundate(tree: Tree) -> str:
@@ -234,10 +93,10 @@ DEFAULT_ROOT_SHA = '96faa3bb36b4174bbf485411f9d634804aa89a82'
 
 class CommitCrashes:
     def __init__(
-            self,
-            ref: Union[str, Commit, None] = None,
-            log: bool = False,
-            year: Optional[int] = None,
+        self,
+        ref: str | Commit | None = None,
+        log: bool = False,
+        year: int | None = None,
     ):
         if isinstance(ref, Commit):
             self.ref = ref.hexsha
@@ -440,9 +299,9 @@ class CommitCrashes:
             diff_objs[id] = diff_obj
         return diff_objs
 
-    def descriptions(self, dst: Dst = 'slack', **kwargs) -> list[str]:
+    def descriptions(self, **kwargs) -> list[str]:
         new_df = self.adds_df
-        descriptions = new_df.apply(crash_str, dst=dst, **kwargs, axis=1)
+        descriptions = new_df.apply(lambda r: Crash.load(r).to_str(**kwargs), axis=1)
         return descriptions.tolist() if len(descriptions) else []
 
     @cached_property
@@ -475,7 +334,7 @@ class CommitCrashes:
             "text": self.short_subject,
         }
 
-    def slack_json_str(self, indent: Optional[int] = 2) -> str:
+    def slack_json_str(self, indent: int | None = 2) -> str:
         return json.dumps(self.slack_json, indent=indent)
 
     @cached_property

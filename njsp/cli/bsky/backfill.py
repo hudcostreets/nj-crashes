@@ -15,7 +15,7 @@ import njsp
 from nj_crashes.utils.git import git_fmt
 from njdot import cc2cn, cc2mc2mn
 from njsp.cli.bsky.base import bsky
-from njsp.commit_crashes import bsky_str, BskyPost
+from njsp.cli.bsky.post import BskyPost, bsky_str
 from njsp.crashes import Crash
 from njsp.paths import CRASHES_PQT, BSKY_CRASH_POSTS_S3
 

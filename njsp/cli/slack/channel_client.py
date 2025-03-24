@@ -253,11 +253,14 @@ class ChannelClient:
     def verify_accids(self):
         assert self.accid_dups.empty
 
-    def accid_thread(self, accid: int) -> Thread:
+    def accid_thread(self, accid: int) -> Thread | None:
         accid2ts = self.accid2ts
         ts = accid2ts[accid]
         msgs = self.msgs()
-        msg = msgs.loc[ts]
+        try:
+            msg = msgs.loc[ts]
+        except KeyError:
+            return None
         thread_ts = msg.thread_ts
         if thread_ts != ts:
             raise ValueError(f"ACCID {accid}: {ts=} != {thread_ts=}")
