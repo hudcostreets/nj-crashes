@@ -3,91 +3,33 @@ from typing import Tuple
 
 import pandas as pd
 from click import option, argument
-from pandas import DataFrame
 from utz import err, process
 from utz.ymd import dates, YMD
 
 from .base import slack, dry_run_opt, channel_opt
-from .channel_client import ChannelClient, DEFAULT_BATCH_SIZE, DEFAULT_MAX_MSGS
-from ...commit_crashes import crash_str, CommitCrashes
-from ...crashes import Crash
+from .channel_client import ChannelClient, DEFAULT_BATCH_SIZE, DEFAULT_MAX_RECS
+from ...commit_crashes import CommitCrashes
+from ...crash.crash import Crash
 from ...paths import fauqstats_relpath, S3_CRASH_LOG_PQT
-
-RED = '\033[31m'
-GREEN = '\033[32m'
-BLUE = '\033[34m'
-RESET = '\033[0m'
-
-
-def sync_crash(
-    r: pd.Series,
-    client: ChannelClient,
-    crashes_log: DataFrame,
-    commit: str | None,
-    overwrite_existing: int = 0,
-    dry_run: int | None = None,
-) -> None:
-    if dry_run is None:
-        dry_run = client.dry_run
-    # accid = int(r.name)
-    crash = Crash.load(r)
-    accid = crash.accid
-    xml_url = crash.xml_url(ref=commit)
-    new_text = crash_str(r, github_url=xml_url)
-    thread = client.accid_thread(accid)
-    # msg = client.cache.get(accid)
-    try:
-        crash_log = crashes_log.loc[accid].reset_index().to_dict('records')
-    except KeyError:
-        crash_log = []
-
-    def post_msg():
-        client.post_msg(accid=accid, text=new_text)
-
-    if msg:
-        text = msg['text']
-        ts = msg['ts']
-        if overwrite_existing > 1:
-            m = f"{BLUE}ACCID {accid} deleting{RESET}"
-            if dry_run:
-                err(f"DRY RUN {m}")
-            else:
-                err(m)
-                client.delete_msg(ts=ts)
-            post_msg()
-        elif new_text != text or overwrite_existing:
-            if new_text != text:
-                m = f"{BLUE}ACCID {accid} text doesn't match:\n{RED}-{text}\n{GREEN}+{new_text}{RESET}"
-            else:
-                m = f"{BLUE}ACCID {accid} overwriting message: {text}{RESET}"
-            if dry_run:
-                err(f"DRY RUN {m}")
-            else:
-                err(m)
-                client.update_msg(ts=ts, accid=accid, text=new_text)
-        else:
-            err(f"{BLUE}ACCID {accid} text matches: {text}{RESET}")
-    else:
-        post_msg()
 
 
 @slack.command('sync')
-# @option('-b', '--batch-size', type=int, default=DEFAULT_BATCH_SIZE, help=f'Batch size for paginated fetches from the Slack API (default: {DEFAULT_BATCH_SIZE})')
+@option('-b', '--batch-size', type=int, default=DEFAULT_BATCH_SIZE, help=f'Batch size for paginated fetches from the Slack API (default: {DEFAULT_BATCH_SIZE})')
 @dates(default_start=YMD(2008), help='Date range to filter crashes to, e.g. `202307-`, `20230710-202308')
 @option('-f', '--overwrite-existing', count=True, help='1x: update existing messages; 2x: delete existing messages and post new ones (default: 0, do nothing)')
 @channel_opt
 @option('-l', '--crash-log-url', default=S3_CRASH_LOG_PQT, help=f'File containing crash-update history (default: {S3_CRASH_LOG_PQT})')
-# @option('-m', '--max-messages', type=int, default=DEFAULT_MAX_MSGS, help=f"Fetch up to this many messages from Slack, and update cache (as opposed to just reading cached messages; default: {DEFAULT_MAX_MSGS})")
+@option('-m', '--max-recs', type=int, default=DEFAULT_MAX_RECS, help=f"Fetch up to this many messages from Slack, and update cache (as opposed to just reading cached messages; default: {DEFAULT_MAX_RECS})")
 @dry_run_opt
 @argument('commits', nargs=-1)
 def sync(
-    # batch_size: int,
+    batch_size: int,
     start: YMD,
     end: YMD,
     overwrite_existing: int,
     channel: str | None,
     crash_log_url: str,
-    # max_messages: int | None,
+    max_recs: int | None,
     dry_run: bool,
     commits: Tuple[str, ...],
 ):
@@ -101,7 +43,12 @@ def sync(
         commit = process.line('git', 'log', '-1', '--format=%h', '--', fauqstats_relpath(cur_year), fauqstats_relpath(cur_year - 1))
         commits = (commit,)
 
-    client = ChannelClient(channel=channel, dry_run=dry_run)
+    client = ChannelClient(
+        channel=channel,
+        dry_run=dry_run,
+        batch_size=batch_size,
+        max_recs=max_recs,
+    )
     crashes_log = pd.read_parquet(crash_log_url)
 
     for commit in commits:
@@ -122,11 +69,10 @@ def sync(
         err(f"{len(crashes)} crashes:")
         err(str(crashes))
 
-        crashes.apply(
-            sync_crash,
-            axis=1,
-            client=client,
-            crashes_log=crashes_log,
-            commit=commit,
-            overwrite_existing=overwrite_existing,
-        )
+        for _, r in crashes.iterrows():
+            crash = Crash.load(r)
+            client.sync_crash(
+                crash,
+                crashes_log=crashes_log,
+                overwrite_existing=overwrite_existing,
+            )

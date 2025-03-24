@@ -3,6 +3,12 @@ from typing import Optional
 import pandas as pd
 
 
+RED = '\033[31m'
+GREEN = '\033[32m'
+BLUE = '\033[34m'
+RESET = '\033[0m'
+
+
 def cur_year():
     return pd.to_datetime('now', utc=True).year
 

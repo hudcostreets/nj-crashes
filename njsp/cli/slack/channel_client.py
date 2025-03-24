@@ -1,163 +1,85 @@
-import json
 from datetime import datetime
 from functools import cache
-from os import makedirs, environ
-from os.path import exists
-from typing import Optional, Iterable, Callable
+from os.path import exists, join
 
+from dotenv import dotenv_values
 from pandas import Series, DataFrame
 from slack_sdk import WebClient
 from stdlb import fromtimestamp
-from utz import cached_property, err, singleton, Log, silent, solo
+from utz import cached_property, err, singleton, Log, silent, solo, env
 
-from njsp.cli.slack.config import SLACK_CHANNEL_ID, SLACK_CONFIG_DIR, SLACK_BOT_TOKEN
-from njsp.cli.slack.msg import Reply, Thread
+from njsp.cli.slack.config import SLACK_CHANNEL_ID, SLACK_BOT_TOKEN
+from njsp.cli.slack.msg import Msg, Thread
+from ...crash import Log
+from ...crash.crash import Crash
+from ...utils import RED, GREEN, RESET, BLUE
 
 CHANNEL_OPTS = ('-h', '--channel')
 
 
-def resolve_channel(
-    channel: str | None,
-    client: 'ChannelClient',
-) -> str:
-    client = client.client
-    channel = load_slack_config(
-        env=SLACK_CHANNEL_ID,
-        basename='channel',
-        value=channel,
-        opts=CHANNEL_OPTS,
-    )
-    err(f"Loaded channel: {channel}")
-    if channel.startswith('#'):
-        channel = channel_by_name(client, channel)
-        err(f'Looked up channel ID: {channel}')
-    elif channel.startswith('@'):
-        user = user_by_name(client, channel)
-        user_id = user['id']
-        channel = im_channel(client, user_id=user_id)['id']
-        err(f"Looked up IM channel {channel} for user {user_id}")
-    # else:
-    #     raise ValueError("Expected #<channel> or @<user> for channel")
-    return channel
-
-
-def cached_fetch(basename: str, key: str, method: Callable, **kwargs):
-    def fetch(client: WebClient, cache_read: bool = True, cache_write: bool = True, **extra_kwargs) -> dict:
-        cache_path = f'{SLACK_CONFIG_DIR}/{basename}'
-        if exists(cache_path) and cache_read:
-            with open(cache_path, 'r') as f:
-                return json.load(f)
-        resp = method(client, **kwargs, **extra_kwargs)
-        users = resp.data[key]
-        if cache_write:
-            makedirs(SLACK_CONFIG_DIR, exist_ok=True)
-            with open(cache_path, 'w') as f:
-                json.dump(users, f, indent=2)
-        return users
-
-    return fetch
-
-
-fetch_users = cached_fetch('members.json', 'members', WebClient.users_list)
-fetch_ims = cached_fetch('ims.json', 'channels', WebClient.conversations_list, types=['im'])
-
-
 DEFAULT_BATCH_SIZE = 1_000
-DEFAULT_MAX_MSGS = 10_000
-
-
-def channel_by_name(client: WebClient, name: str) -> str:
-    resp = client.conversations_list()
-    channels = resp.data['channels']
-    if name.startswith('#'):
-        name = name[1:]
-    channel = singleton([ c['id'] for c in channels if c['name'] == name ])
-    return channel
-
-
-def user_by_name(client: WebClient, name: str, **kwargs) -> dict:
-    users = fetch_users(client, **kwargs)
-    if name.startswith('@'):
-        name = name[1:]
-    user = singleton([ u for u in users if u['profile']['display_name'] == name ], dedupe=False, empty_ok=True)
-    if user:
-        return user
-    user = singleton([ u for u in users if u['real_name'] == name ], dedupe=False, empty_ok=True)
-    if user:
-        return user
-    user = singleton([ u for u in users if name in u['profile']['display_name'] ], dedupe=False, empty_ok=True)
-    if user:
-        return user
-    user = singleton([ u for u in users if name in u['real_name'] ], dedupe=False, empty_ok=True)
-    if user:
-        return user
-
-    raise ValueError(f"No user found with \"display_name\" or \"real_name\" matching \"{name}\"")
-
-
-def im_channel(client: WebClient, user_id: str, **kwargs) -> Optional[dict]:
-    ims = fetch_ims(client, **kwargs)
-    return singleton([ c for c in ims if c['user'] == user_id ], dedupe=False, empty_ok=True)
-
-
-def load_slack_config(
-    env: str,
-    basename: str,
-    value: str | None = None,
-    opts: Iterable[str] | None = None,
-) -> str:
-    if value:
-        return value
-    value = environ.get(env)
-    if value:
-        return value
-
-    path = f'{SLACK_CONFIG_DIR}/{basename}'
-    if exists(path):
-        with open(path, 'r') as f:
-            return f.read()
-    else:
-        candidates = [
-            *('/'.join(opts) if opts else []),
-            f'${env}',
-            path,
-        ]
-        if len(candidates) == 1:
-            candidates_str = candidates
-        elif len(candidates) == 2:
-            candidates_str = ' or '.join(candidates)
-        else:
-            [ *prefix, last ] = candidates
-            candidates_str = ', '.join([ *prefix, f'or {last}'])
-        raise RuntimeError(f"No {candidates_str} found")
+DEFAULT_MAX_RECS = 10_000
 
 
 class ChannelClient:
-    def __init__(self, channel: str, dry_run: bool = False):
-        self.channel = resolve_channel(channel, client=self)
+    def __init__(
+        self,
+        channel: str | None = None,
+        dry_run: bool = False,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+        max_recs: int = DEFAULT_MAX_RECS,
+    ):
+        if not channel:
+            channel = env.get(SLACK_CHANNEL_ID)
+        token = env.get(SLACK_BOT_TOKEN)
+        env_path = join('.slack', '.env')
+        if not channel or not token:
+            if exists(env_path):
+                config = dotenv_values(env_path)
+                if not channel:
+                    channel = config.get(SLACK_CHANNEL_ID)
+                if not token:
+                    token = config.get(SLACK_BOT_TOKEN)
+        if not channel:
+            raise RuntimeError(f"Missing {SLACK_CHANNEL_ID} in environment and {env_path}, and no {'/'.join(CHANNEL_OPTS)} passed")
+        if not token:
+            raise RuntimeError(f"Missing {SLACK_BOT_TOKEN} in environment and {env_path}")
+
+        client = WebClient(token=token)
+        err(f"Resolving channel: {channel}")
+        if channel.startswith('#'):
+            channel = self.channel_by_name(channel)
+            err(f'Looked up channel ID: {channel}')
+        elif channel.startswith('@'):
+            user = self.user_by_name(channel)
+            user_id = user['id']
+            channel = self.im_channel(user_id=user_id)['id']
+            err(f"Looked up IM channel {channel} for user {user_id}")
+
+        self.channel = channel
+        self.token = token
         self.dry_run = dry_run
+        self.client = client
+        self.batch_size = batch_size
+        self.max_recs = max_recs
 
-    @cached_property
-    def token(self):
-        return load_slack_config(env=SLACK_BOT_TOKEN, basename='token')
-
-    @cached_property
-    def client(self):
-        return WebClient(token=self.token)
-
-    @staticmethod
     def fetch(
+        self,
         mth,
         rec_key: str,
         index: str | None = None,
-        batch_size: int = DEFAULT_BATCH_SIZE,
-        max_recs: int = DEFAULT_MAX_MSGS,
+        batch_size: int | None = None,
+        max_recs: int | None = None,
         log: Log = err,
         **kwargs,
     ) -> DataFrame:
         log = log or silent
         recs = []
         cursor = None
+        if batch_size is None:
+            batch_size = self.batch_size
+        if max_recs is None:
+            max_recs = self.max_recs
         while True:
             limit = min(max_recs - len(recs), batch_size) if max_recs else batch_size
             if limit < 0:
@@ -186,6 +108,44 @@ class ChannelClient:
             index='id',
             **kwargs,
         )
+
+    def user_by_name(self, name: str, **kwargs) -> dict:
+        users = self.users(**kwargs)
+        if name.startswith('@'):
+            name = name[1:]
+        user = singleton([ u for u in users if u['profile']['display_name'] == name ], dedupe=False, empty_ok=True)
+        if user:
+            return user
+        user = singleton([ u for u in users if u['real_name'] == name ], dedupe=False, empty_ok=True)
+        if user:
+            return user
+        user = singleton([ u for u in users if name in u['profile']['display_name'] ], dedupe=False, empty_ok=True)
+        if user:
+            return user
+        user = singleton([ u for u in users if name in u['real_name'] ], dedupe=False, empty_ok=True)
+        if user:
+            return user
+
+        raise ValueError(f"No user found with \"display_name\" or \"real_name\" matching \"{name}\"")
+
+    @cache
+    def conversations(self, **kwargs):
+        return self.fetch(
+            mth=self.client.conversations_list,
+            rec_key='channels',
+            index='id',
+            **kwargs,
+        )
+
+    def channel_by_name(self, name: str) -> str:
+        channels = self.conversations()
+        if name.startswith('#'):
+            name = name[1:]
+        return solo([ c['id'] for c in channels if c['name'] == name ])
+
+    def im_channel(self, user_id: str, **kwargs: str | int) -> dict | None:
+        ims = self.conversations(types=('im',), **kwargs)
+        return singleton([ c for c in ims if c['user'] == user_id ], dedupe=False, empty_ok=True)
 
     @cached_property
     def crash_bot_uid(self) -> str:
@@ -267,7 +227,7 @@ class ChannelClient:
         replies_df = msgs[(msgs.thread_ts == thread_ts)].reset_index()
         replies_df = replies_df[replies_df.ts != ts]
         replies = [
-            Reply(**rec)
+            Msg(**rec)
             for rec in replies_df.to_dict('records')
         ]
         return Thread(ts=ts, text=msg.text, replies=replies)
@@ -300,7 +260,7 @@ class ChannelClient:
         df['dt'] = df.index.to_series().astype(float).apply(datetime.fromtimestamp)
         return df
 
-    def msg_kwargs(self, accid: str, text: str) -> dict:
+    def msg_kwargs(self, accid: int, text: str) -> dict:
         return dict(
             channel=self.channel,
             text=text,
@@ -308,11 +268,11 @@ class ChannelClient:
             unfurl_media=False,
             metadata={
                 'event_type': 'new_crash',
-                'event_payload': { 'ACCID': accid, },
+                'event_payload': { 'ACCID': str(accid), },
             },
         )
 
-    def post_msg(self, accid: str, text: str):
+    def post_msg(self, accid: int, text: str):
         msg_kwargs = self.msg_kwargs(accid=accid, text=text)
         m = '\n\t'.join([
             f"ACCID {accid} posting new message:",
@@ -332,7 +292,7 @@ class ChannelClient:
     def delete_msg(self, ts: str):
         self.client.chat_delete(channel=self.channel, ts=ts)
 
-    def update_msg(self, ts: str, accid: str, text: str):
+    def update_msg(self, ts: str, accid: int, text: str):
         update_kwargs = dict(
             **self.msg_kwargs(accid=accid, text=text),
             ts=ts,
@@ -344,3 +304,54 @@ class ChannelClient:
         if ts != new_ts:
             raise RuntimeError(f"Message {ts} updated to {new_ts}")
         new_msg['ts'] = ts  # Not included in chat.update `message` payload
+
+    def sync_crash(
+        self,
+        crash: Crash,
+        crashes_log: DataFrame,
+        overwrite_existing: int = 0,
+        dry_run: int | None = None,
+    ) -> None:
+        if dry_run is None:
+            dry_run = self.dry_run
+        accid = crash.accid
+        thread = self.accid_thread(accid)
+        msgs = thread.msgs
+        crash_log = Log.load(crashes_log, accid)
+
+        def log(msg: str):
+            if dry_run:
+                msg = f"DRY RUN {msg}"
+            err(f"{BLUE}{accid:>5d}: {msg}{RESET}")
+
+        for i, v in enumerate(crash_log.versions):
+            xml_url = crash.xml_url(ref=v.sha)
+            new_text = crash.to_str(github_url=xml_url)
+
+            def post_msg():
+                self.post_msg(accid=accid, text=new_text)
+
+            if i < len(msgs):
+                msg = msgs[i]
+                text = msg.text
+                ts = msg.ts
+                if overwrite_existing > 1:
+                    log("deleting")
+                    if not dry_run:
+                        self.delete_msg(ts=ts)
+                    post_msg()
+                elif new_text != text or overwrite_existing:
+                    if new_text != text:
+                        m = f"text doesn't match:\n{RED}-{text}\n{GREEN}+{new_text}"
+                    else:
+                        m = f"overwriting message: {text}"
+                    log(m)
+                    if not dry_run:
+                        self.update_msg(ts=ts, accid=accid, text=new_text)
+                else:
+                    log(f"text matches: {text}")
+            else:
+                post_msg()
+
+
+
