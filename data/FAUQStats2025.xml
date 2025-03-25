@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Mar 24 10:00:01 EDT 2025</RUNDATE>
+  <RUNDATE>Tue Mar 25 10:00:02 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,19 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
+    <MUNICIPALITY MCODE="1332" MNAME="Millstone Twsp">
+      <ACCIDENT ACCID="13820" DATE="03/24/2025" TIME="2233">
+        <HIGHWAY>537</HIGHWAY>
+        <LOCATION>County 537</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0436" MNAME="Winslow Twsp">
@@ -106,19 +119,6 @@
       <ACCIDENT ACCID="13813" DATE="03/19/2025" TIME="0335">
         <HIGHWAY>95</HIGHWAY>
         <LOCATION>New Jersey Turnpike MP 113.6</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="03" CNAME="Burlington">
-    <MUNICIPALITY MCODE="0313" MNAME="Evesham Twsp">
-      <ACCIDENT ACCID="13811" DATE="03/17/2025" TIME="1753">
-        <HIGHWAY>618</HIGHWAY>
-        <LOCATION>County 618</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
