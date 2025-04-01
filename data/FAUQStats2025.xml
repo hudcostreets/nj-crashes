@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Mar 31 10:00:04 EDT 2025</RUNDATE>
+  <RUNDATE>Tue Apr 01 10:00:03 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1033,6 +1033,19 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1110" MNAME="Princeton">
+      <ACCIDENT ACCID="13829" DATE="01/24/2025" TIME="1805">
+        <STREET>Paul Robeson Pl</STREET>
+        <LOCATION>Paul Robeson Pl</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1221" MNAME="South Brunswick Tws">
       <ACCIDENT ACCID="13723" DATE="01/24/2025" TIME="0225">
@@ -1289,19 +1302,6 @@
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="04" CNAME="Camden">
-    <MUNICIPALITY MCODE="0408" MNAME="Camden City">
-      <ACCIDENT ACCID="13697" DATE="01/12/2025" TIME="0933">
-        <HIGHWAY>30</HIGHWAY>
-        <LOCATION>State Highway 30</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>

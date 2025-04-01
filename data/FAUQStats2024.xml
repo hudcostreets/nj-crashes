@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Mar 31 10:00:06 EDT 2025</RUNDATE>
+  <RUNDATE>Tue Apr 01 10:00:04 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -4692,8 +4692,8 @@
   <COUNTY CCODE="19" CNAME="Sussex">
     <MUNICIPALITY MCODE="1915" MNAME="Newton Town">
       <ACCIDENT ACCID="13284" DATE="06/27/2024" TIME="1101">
-        <STREET>Elm Street</STREET>
-        <LOCATION>Elm Street</LOCATION>
+        <STREET>Elm St</STREET>
+        <LOCATION>Elm St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
