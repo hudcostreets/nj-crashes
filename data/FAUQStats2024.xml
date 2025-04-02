@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Apr 01 10:00:04 EDT 2025</RUNDATE>
+  <RUNDATE>Wed Apr 02 10:00:02 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -3740,6 +3740,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4664,7 +4665,7 @@
   </COUNTY>
   <COUNTY CCODE="18" CNAME="Somerset">
     <MUNICIPALITY MCODE="1806" MNAME="Bridgewater Twsp">
-      <ACCIDENT ACCID="13281" DATE="06/27/2024" TIME="1936">
+      <ACCIDENT ACCID="13281" DATE="06/27/2024" TIME="1913">
         <HIGHWAY>287</HIGHWAY>
         <LOCATION>Interstate 287 MP 16.6</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -6034,7 +6035,7 @@
     <MUNICIPALITY MCODE="1507" MNAME="Toms River">
       <ACCIDENT ACCID="13157" DATE="05/01/2024" TIME="2025">
         <HIGHWAY>166</HIGHWAY>
-        <LOCATION>State Highway 166 MP 3.41</LOCATION>
+        <LOCATION>State Highway 166 MP 3.42</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
