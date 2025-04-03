@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Apr 02 10:00:02 EDT 2025</RUNDATE>
+  <RUNDATE>Thu Apr 03 10:00:07 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -815,6 +815,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1555,12 +1556,13 @@
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
       <ACCIDENT ACCID="13531" DATE="10/31/2024" TIME="0855">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1 (Truck (Rt. 1 and 9 Only)) MP 3.09</LOCATION>
+        <LOCATION>State Highway 1 (Truck (Rt. 1 and 9 Only)) MP 3.1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3526,6 +3528,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5557,12 +5560,13 @@
     <MUNICIPALITY MCODE="1511" MNAME="Jackson Twsp">
       <ACCIDENT ACCID="13212" DATE="05/30/2024" TIME="1648">
         <HIGHWAY>527</HIGHWAY>
-        <LOCATION>County 527</LOCATION>
+        <LOCATION>County 527 MP 12.35</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5911,12 +5915,13 @@
     <MUNICIPALITY MCODE="1507" MNAME="Toms River">
       <ACCIDENT ACCID="13183" DATE="05/13/2024" TIME="0339">
         <HIGHWAY>620</HIGHWAY>
-        <LOCATION>County 620</LOCATION>
+        <LOCATION>County 620 MP 1.88</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8804,5 +8809,5 @@
   </COUNTY>
   <TOTACCIDENTS>651</TOTACCIDENTS>
   <TOTFATALITIES>688</TOTFATALITIES>
-  <TOTINJURIES>237</TOTINJURIES>
+  <TOTINJURIES>239</TOTINJURIES>
 </FAUQSTATS>
