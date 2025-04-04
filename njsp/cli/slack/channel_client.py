@@ -6,12 +6,11 @@ from dotenv import dotenv_values
 from pandas import Series, DataFrame
 from slack_sdk import WebClient
 from stdlb import fromtimestamp
-from utz import cached_property, err, singleton, Log, silent, solo, env
+from utz import cached_property, err, singleton, silent, solo, env
 
 from njsp.cli.slack.config import SLACK_CHANNEL_ID, SLACK_BOT_TOKEN
 from njsp.cli.slack.msg import Msg, Thread
-from ...crash import Log
-from ...crash.crash import Crash
+from ...crash import Log, Add, Update
 from ...utils import RED, GREEN, RESET, BLUE
 
 CHANNEL_OPTS = ('-h', '--channel')
@@ -155,6 +154,8 @@ class ChannelClient:
     @cached_property
     def roots_msk(self) -> Series:
         msgs = self.msgs()
+        if 'thread_ts' not in msgs:
+            return msgs.assign(is_root=True).is_root
         return msgs.thread_ts.isna() | (msgs.thread_ts == msgs.index.to_series())
 
     @cached_property
@@ -215,12 +216,11 @@ class ChannelClient:
 
     def accid_thread(self, accid: int) -> Thread | None:
         accid2ts = self.accid2ts
+        if accid not in accid2ts:
+            return None
         ts = accid2ts[accid]
         msgs = self.msgs()
-        try:
-            msg = msgs.loc[ts]
-        except KeyError:
-            return None
+        msg = msgs.loc[ts]
         thread_ts = msg.thread_ts
         if thread_ts != ts:
             raise ValueError(f"ACCID {accid}: {ts=} != {thread_ts=}")
@@ -260,20 +260,33 @@ class ChannelClient:
         df['dt'] = df.index.to_series().astype(float).apply(datetime.fromtimestamp)
         return df
 
-    def msg_kwargs(self, accid: int, text: str) -> dict:
+    def msg_kwargs(
+        self,
+        accid: int,
+        text: str,
+        event_type: str,
+        thread_ts: str | None = None,
+    ) -> dict:
         return dict(
             channel=self.channel,
             text=text,
             unfurl_links=False,
             unfurl_media=False,
+            thread_ts=thread_ts,
             metadata={
-                'event_type': 'new_crash',
+                'event_type': event_type,
                 'event_payload': { 'ACCID': str(accid), },
             },
         )
 
-    def post_msg(self, accid: int, text: str):
-        msg_kwargs = self.msg_kwargs(accid=accid, text=text)
+    def post_msg(
+        self,
+        accid: int,
+        text: str,
+        event_type: str,
+        thread_ts: str | None = None,
+    ) -> str:
+        msg_kwargs = self.msg_kwargs(accid=accid, text=text, event_type=event_type, thread_ts=thread_ts)
         m = '\n\t'.join([
             f"ACCID {accid} posting new message:",
             *[
@@ -283,18 +296,27 @@ class ChannelClient:
         ])
         if self.dry_run:
             err(f"DRY RUN {m}")
+            return 'xxx'
         else:
             err(m)
             resp = self.client.chat_postMessage(**msg_kwargs)
             msg = resp.data['message']
-            err(f"ACCID {accid}: sent message {msg['ts']}")
+            ts = msg['ts']
+            err(f"ACCID {accid}: sent message {ts}")
+            return ts
 
     def delete_msg(self, ts: str):
         self.client.chat_delete(channel=self.channel, ts=ts)
 
-    def update_msg(self, ts: str, accid: int, text: str):
+    def update_msg(
+        self,
+        ts: str,
+        accid: int,
+        text: str,
+        event_type: str,
+    ):
         update_kwargs = dict(
-            **self.msg_kwargs(accid=accid, text=text),
+            **self.msg_kwargs(accid=accid, text=text, event_type=event_type),
             ts=ts,
         )
         resp = self.client.chat_update(**update_kwargs)
@@ -307,17 +329,20 @@ class ChannelClient:
 
     def sync_crash(
         self,
-        crash: Crash,
-        crashes_log: DataFrame,
+        accid: int,
+        crash_log: Log,
         overwrite_existing: int = 0,
         dry_run: int | None = None,
     ) -> None:
         if dry_run is None:
             dry_run = self.dry_run
-        accid = crash.accid
         thread = self.accid_thread(accid)
-        msgs = thread.msgs
-        crash_log = Log.load(crashes_log, accid)
+        if thread:
+            msgs = thread.msgs
+            thread_ts = thread.ts
+        else:
+            msgs = []
+            thread_ts = None
 
         def log(msg: str):
             if dry_run:
@@ -325,12 +350,23 @@ class ChannelClient:
             err(f"{BLUE}{accid:>5d}: {msg}{RESET}")
 
         for i, v in enumerate(crash_log.versions):
-            xml_url = crash.xml_url(ref=v.sha)
-            new_text = crash.to_str(github_url=xml_url)
+            xml_url = v.xml_url(ref=v.sha)
+            if isinstance(v, (Add, Update)):
+                new_text = v.to_str(github_url=xml_url)
+            else:
+                prev = crash_log.versions[i - 1]
+                if isinstance(prev, (Add, Update)):
+                    new_text = f"Deleted: {prev.to_str(github_url=xml_url)}"
+                else:
+                    raise ValueError(f"Invalid version sequence ({i=}): {prev=} → {v=}")
 
-            def post_msg():
-                self.post_msg(accid=accid, text=new_text)
+            event_type = "new_crash" if i == 0 else "update_crash"
+            tts = thread_ts
+            if i > 0 and not tts:
+                raise RuntimeError(f"Missing thread_ts for update {i} of {accid}")
 
+            update_kwargs = dict(accid=accid, text=new_text, event_type=event_type)
+            post_kwargs = dict(**update_kwargs, thread_ts=tts)
             if i < len(msgs):
                 msg = msgs[i]
                 text = msg.text
@@ -339,7 +375,9 @@ class ChannelClient:
                     log("deleting")
                     if not dry_run:
                         self.delete_msg(ts=ts)
-                    post_msg()
+                    ts = self.post_msg(**post_kwargs)
+                    if not thread_ts:
+                        thread_ts = ts
                 elif new_text != text or overwrite_existing:
                     if new_text != text:
                         m = f"text doesn't match:\n{RED}-{text}\n{GREEN}+{new_text}"
@@ -347,11 +385,10 @@ class ChannelClient:
                         m = f"overwriting message: {text}"
                     log(m)
                     if not dry_run:
-                        self.update_msg(ts=ts, accid=accid, text=new_text)
+                        self.update_msg(ts=ts, **update_kwargs)
                 else:
                     log(f"text matches: {text}")
             else:
-                post_msg()
-
-
-
+                ts = self.post_msg(**post_kwargs)
+                if not thread_ts:
+                    thread_ts = ts

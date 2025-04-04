@@ -97,7 +97,7 @@ class Crash:
         if not fullmatch(r'[\da-f]+', ref):
             ref = git_fmt(ref, fmt='%H')
         accid_map = Crashes(ref=ref).accid_map
-        rng = accid_map[self.accid]
+        rng = accid_map[str(self.accid)]
         (start_line, _), (end_line, _) = rng['start'], rng['end']
         path = rng['path']
         return f'https://github.com/{REPO}/blob/{ref}/{path}#L{start_line}-L{end_line}'
@@ -113,7 +113,6 @@ class Crash:
                 victim_pcs.append(f'{num} {noun}')
 
         return ', '.join(victim_pcs)
-
 
     def to_str(
         r,

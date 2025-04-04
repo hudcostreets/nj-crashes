@@ -4,7 +4,8 @@ from typing import Callable
 from atproto_client.models.app.bsky.richtext.facet import Main as Facet, ByteSlice, Link as BskyLink
 from pandas import Series, isna
 
-from njsp.commit_crashes import mk_victim_str, mk_dt_str, Link, get_urls
+from njsp.commit_crashes import Link
+from njsp.crash import Crash, mk_dt_str
 
 
 @dataclass
@@ -39,7 +40,8 @@ def bsky_str(
     fmt: Callable | str = '%a %b %-d %Y %-I:%M%p',
     github_url: str | None = None,
 ) -> BskyPost:
-    victim_str = mk_victim_str(r)
+    crash = Crash.load(r)
+    victim_str = crash.victim_str
     dt_str = mk_dt_str(r['dt'], fmt)
     if isna(r.LOCATION):
         location = 'unknown location'
@@ -48,7 +50,7 @@ def bsky_str(
 
     accid = str(r.name)
     gh_link = Link(uri=github_url, text=accid) if github_url else accid
-    c_url, m_url = get_urls(r)
+    c_url, m_url = crash.urls
     c_link = Link(uri=c_url, text=f'{r.CNAME} County')
     m_link = Link(uri=m_url, text=r.MNAME)
     return BskyPost.mk(
