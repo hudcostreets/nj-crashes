@@ -35,7 +35,8 @@ class Crash:
     FATAL_P: int
     FATAL_T: int
     FATAL_B: int
-    LOCATION: str
+    LOCATION: str | None
+    HIGHWAY: str | None
 
     @staticmethod
     def load(s: Series):

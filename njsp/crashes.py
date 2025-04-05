@@ -20,7 +20,8 @@ def get_xml_path(year: int) -> str:
 
 RELPATHS = [ CRASHES_RELPATH, OLD_CRASHES_RELPATH ]
 blob_from_commit = partial(git.blob_from_commit, relpaths=RELPATHS)
-
+ATTRS = {'DATE', 'TIME'}
+CHILD_TAGS = {'HIGHWAY', 'LOCATION', 'STREET', 'FATALITIES', 'FATAL_D', 'FATAL_P', 'FATAL_T', 'FATAL_B', 'INJURIES'}
 
 def load() -> pd.DataFrame:
     if exists(CRASHES_PQT):
@@ -51,7 +52,11 @@ class SourcemapParser(HTMLParser):
             # print(f'<{tag}>: {attrs}')
             accid = dict(attrs)['accid']
             self.accid = accid
-            self.accid_map[accid] = { 'path': self.path, 'start': self.getpos() }
+            self.accid_map[accid] = { 'path': self.path, 'start': self.getpos(), 'children': {} }
+        elif tag.upper() in CHILD_TAGS:
+            if self.accid is None:
+                raise RuntimeError(f"Missing accident ID for tag {tag}")
+            self.accid_map[self.accid]['children'][tag.upper()] = self.getpos()
 
     def handle_endtag(self, tag: str):
         super().handle_endtag(tag)

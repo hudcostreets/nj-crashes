@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC
 from dataclasses import dataclass
 from hashlib import sha256
@@ -7,7 +9,7 @@ from utz import call
 
 from nj_crashes.utils.github import REPO
 from njsp.crash.crash import Crash
-from njsp.crashes import Crashes
+from njsp.crashes import Crashes, CHILD_TAGS, ATTRS
 
 
 class Version(ABC):
@@ -16,13 +18,13 @@ class Version(ABC):
     rundate: Timestamp
 
     @staticmethod
-    def load(r: Series) -> 'Version':
+    def load(r: Series, prev: 'Version | None') -> 'Version':
         cls = {
             'add': Add,
             'update': Update,
             'del': Delete,
         }[r.kind]
-        return call(cls, **r)
+        return call(cls, **r, prev=prev)
 
     line_range_side = "R"
 
@@ -30,43 +32,15 @@ class Version(ABC):
     def _xml_url_commit(self) -> str:
         return self.sha
 
-
-@dataclass
-class Add(Version, Crash):
-    sha: str
-    rundate: Timestamp
-
-
-@dataclass
-class Update(Version, Crash):
-    sha: str
-    rundate: Timestamp
-
-
-@dataclass
-class Delete(Version):
-    sha: str
-    rundate: Timestamp
-    accid: int
-
-    line_range_side = "L"
-
-    @property
-    def _xml_url_commit(self) -> str:
-        return f"{self.sha}^"
-
     def xml_url(self, ref: str | None = None):
         """Generate a URL to the XML line range corresponding to this crash-record deletion, in GitHub's commit-diff
         view.
 
-        ``Add``s and ``Update``s inherit this method from ``Crash``, which links to the XML line-range corresponding to
-        the crash, at the given SHA (``/blob/<SHA>/<path>#L<start>-L<end>``). In the case of a ``Delete``, however, the
-        crash no longer exists in the XML, so we link to the line range in the commit's "diff" view
-        (``/commit/<SHA>#diff-<path_sha256><line_range>``).
-
         Unfortunately, GitHub's web UI doesn't correctly scroll to the given line range, on page load, but instead drops
-        the user at the top of the relevant XML file. If the user scrolls to the line range in question, it will be
-        highlighted, but overall it's not a great experience.
+        the user at the top of the relevant XML file's diffs. If the user scrolls to the line range in question, it will
+        be highlighted, but overall it's not a great experience. Hopefully GitHub will fix this, because the commit-diff
+        view is a much better representation of what changed in this ``Version`` than linking to the ``/blob`` view (as
+        ``Crash`` does).
 
         TODO: file issue vs. GitHub about commit-diff-line-range links not loading properly.
         """
@@ -82,15 +56,58 @@ class Delete(Version):
         hsh.update(path.encode())
         path_sha256 = hsh.hexdigest()
         side = self.line_range_side
+        if isinstance(self, Update):
+            prev = self.prev
+            diff_field_linenos = []
+            if not prev:
+                raise ValueError(f'Update requires prev: {self}')
+            child_pos_map = rng['children']
+            for tag in CHILD_TAGS.union(ATTRS):
+                if getattr(prev, tag, None) != getattr(self, tag, None):
+                    if tag in ATTRS:
+                        diff_field_linenos.append(start_line)
+                    else:
+                        diff_field_linenos.append(child_pos_map[tag][0])
+            start_line = min(diff_field_linenos)
+            end_line = max(diff_field_linenos)
         line_range = f"{side}{start_line}-{side}{end_line}"
         return f'https://github.com/{REPO}/commit/{sha}#diff-{path_sha256}{line_range}'
 
 
+@dataclass
+class Add(Version, Crash):
+    sha: str
+    rundate: Timestamp
+
+
+@dataclass
+class Update(Version, Crash):
+    sha: str
+    rundate: Timestamp
+    prev: Version
+
+
+@dataclass
+class Delete(Version):
+    sha: str
+    rundate: Timestamp
+    accid: int
+
+    line_range_side = "L"
+
+    @property
+    def _xml_url_commit(self) -> str:
+        return f"{self.sha}^"
+
+
 def versions(df: DataFrame) -> list[Version]:
-    return [
-        Version.load(r)
-        for _, r in df.iterrows()
-    ]
+    prev = None
+    rv = []
+    for _, r in df.iterrows():
+        v = Version.load(r, prev=prev)
+        rv.append(v)
+        prev = v
+    return rv
 
 
 @dataclass
