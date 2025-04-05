@@ -10,7 +10,7 @@ from nj_crashes.utils.github import REPO
 from nj_crashes.utils.log import err
 from njdot import normalize_name, cc2mc2mn
 from njdot.cc2mc2mn import County
-from njsp.crash.utils import Fmt, Dst, mk_dt_str
+from njsp.crash.utils import Fmt, mk_dt_str
 from njsp.crashes import Crashes
 from njsp.paths import MC_PQT
 
@@ -115,11 +115,10 @@ class Crash:
 
         return ', '.join(victim_pcs)
 
-    def to_str(
+    def slack_str(
         r,
         fmt: Fmt = '%a %b %-d %Y %-I:%M%p',
         github_url: str | None = None,
-        dst: Dst = 'slack',
     ) -> str:
         victim_str = r.victim_str
         dt_str = mk_dt_str(r['dt'], fmt)
@@ -129,11 +128,7 @@ class Crash:
             location = r.LOCATION.replace('&', '&amp;')
 
         def link(uri: str, text: str) -> str:
-            nonlocal dst
-            if dst == 'slack':
-                return f'<{uri}|{text}>'
-            else:
-                return f'[{text}]({uri})'
+            return f'<{uri}|{text}>'
 
         if github_url:
             gh_link = link(github_url, str(r.accid))

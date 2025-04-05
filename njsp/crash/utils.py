@@ -1,8 +1,7 @@
-from typing import Callable, Literal
+from typing import Callable
 
 from pandas import Timestamp
 
-Dst = Literal['slack', 'markdown']
 Fmt = Callable[[Timestamp], str] | str
 
 

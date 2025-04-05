@@ -299,34 +299,9 @@ class CommitCrashes:
             diff_objs[id] = diff_obj
         return diff_objs
 
-    def descriptions(self, **kwargs) -> list[str]:
-        new_df = self.adds_df
-        descriptions = new_df.apply(lambda r: Crash.load(r).to_str(**kwargs), axis=1)
-        return descriptions.tolist() if len(descriptions) else []
-
     @cached_property
     def tree(self) -> Tree:
         return self.commit.tree
-
-    @cached_property
-    def md(self) -> str:
-        descriptions = self.descriptions(fmt=lambda dt: f"**{dt.strftime('%-I:%M%p').lower()}**")
-        title = f'**{self.run_date_str}**, {", ".join(self.crash_type_pcs)}'
-        if descriptions:
-            title += ':'
-        lines = [title]
-        lines += [ f'- {line}' for line in descriptions ]
-        return '\n'.join(lines)
-
-    @cached_property
-    def mrkdwn(self) -> str:
-        descriptions = self.descriptions(fmt=lambda dt: f"*{dt.strftime('%-I:%M%p').lower()}*")
-        subject = self.short_subject
-        if descriptions:
-            subject += ':'
-        lines = [subject]
-        lines += [ f'• {line}' for line in descriptions ]
-        return '\n'.join(lines)
 
     @property
     def slack_json(self) -> dict:

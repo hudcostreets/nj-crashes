@@ -1,5 +1,6 @@
 from datetime import datetime
 from functools import cache
+from idlelib.undo import DeleteCommand
 from os.path import exists, join
 
 from dotenv import dotenv_values
@@ -8,9 +9,10 @@ from slack_sdk import WebClient
 from stdlb import fromtimestamp
 from utz import cached_property, err, singleton, silent, solo, env, call
 
+from nj_crashes.utils.github import REPO
 from njsp.cli.slack.config import SLACK_CHANNEL_ID, SLACK_BOT_TOKEN
 from njsp.cli.slack.msg import Msg, Thread
-from ...crash import Log, Add, Update
+from ...crash import Log, Add, Update, Delete
 from ...utils import RED, GREEN, RESET, BLUE
 
 CHANNEL_OPTS = ('-h', '--channel')
@@ -349,16 +351,40 @@ class ChannelClient:
                 msg = f"DRY RUN {msg}"
             err(f"{BLUE}{accid:>5d}: {msg}{RESET}")
 
-        for i, v in enumerate(crash_log.versions):
-            xml_url = v.xml_url(ref=v.sha)
-            if isinstance(v, (Add, Update)):
-                new_text = v.to_str(github_url=xml_url)
+        vs = list(enumerate(crash_log.versions))
+        # Top of thread always shows latest version
+        msg_versions = [vs[-1]]
+        if len(vs) > 1:
+            msg_versions.append(None)  # "Previous versions" message
+            msg_versions += vs[:-1]    # Previous versions
+
+        for i, t in enumerate(msg_versions):
+            if t is None:
+                assert i == 1
+                new_text = "Previous versions:"
             else:
-                prev = crash_log.versions[i - 1]
-                if isinstance(prev, (Add, Update)):
-                    new_text = f"Deleted: {prev.to_str(github_url=xml_url)}"
+                vidx, v = t
+                xml_url = v.xml_url(ref=v.sha)
+                rundate_str = v.rundate.strftime('%Y-%m-%d')
+                commit_url = f'https://github.com/{REPO}/commit/{v.sha}'
+                rundate_link = f'<{commit_url}|{rundate_str}>'
+                if isinstance(v, Add):
+                    slack_str = v.slack_str(github_url=xml_url)
+                    if vidx == 0:
+                        if len(vs) == 1:
+                            new_text = slack_str
+                        else:
+                            new_text = f"Added ({rundate_link}):\n> {slack_str}"
+                    else:
+                        new_text = f"Re-added ({rundate_link}):\n> {slack_str}"
+                elif isinstance(v, Update):
+                    slack_str = v.slack_str(github_url=xml_url)
+                    new_text = f"Updated ({rundate_link}):\n> {slack_str}"
+                elif isinstance(v, Delete):
+                    slack_str = v.prev.slack_str(github_url=xml_url)
+                    new_text = f"Deleted ({rundate_link}):\n> {slack_str}"
                 else:
-                    raise ValueError(f"Invalid version sequence ({i=}): {prev=} → {v=}")
+                    raise ValueError(f"Invalid version type {v=}")
 
             event_type = "new_crash" if i == 0 else "update_crash"
             tts = thread_ts

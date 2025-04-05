@@ -5,11 +5,13 @@ from os.path import exists, relpath, join
 
 import click
 import pandas as pd
+from gitdb.exc import BadName
 from github import UnknownObjectException
 from utz import err
 
 from nj_crashes import ROOT_DIR
 from nj_crashes.utils import git
+from nj_crashes.utils.git import get_repo
 from nj_crashes.utils.github import load_github
 from njsp.paths import OLD_CRASHES_RELPATH, CRASHES_RELPATH, CRASHES_PQT, CRASHES_PQT_S3
 
@@ -92,15 +94,33 @@ class Crashes:
                 else:
                     raise RuntimeError(f"Couldn't find {xml_path}")
 
+            repo = get_repo()
+            xml = None
+            commit = None
             try:
-                xml = load_github(path=xml_path, ref=ref).decode()
+                commit = repo.commit(ref)
+            except BadName:
+                pass
+            if commit:
+                blob = None
+                try:
+                    blob = commit.tree[xml_path]
+                except KeyError:
+                    err(f"{ref} doesn't contain {xml_path}")
+                if blob:
+                    xml = blob.data_stream.read().decode()
+            else:
+                try:
+                    xml = load_github(path=xml_path, ref=ref).decode()
+                except UnknownObjectException as e:
+                    err(f"{ref} doesn't contain {xml_path} ({e})")
+
+            if xml:
                 year_accid_map = SourcemapParser.load(xml_path, xml=xml)
                 extant_keys = set(accid_map).intersection(set(year_accid_map))
                 if extant_keys:
                     raise RuntimeError(f"ACCIDs would be overwritten by year {year}: {list(extant_keys)}")
                 accid_map.update(year_accid_map)
-            except UnknownObjectException as e:
-                err(f"{year}: missing XML file {xml_path}@{ref}: {e}")
             year += 1
 
         self.end_year = year

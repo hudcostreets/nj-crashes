@@ -19,12 +19,17 @@ class Version(ABC):
 
     @staticmethod
     def load(r: Series, prev: 'Version | None') -> 'Version':
-        cls = {
-            'add': Add,
-            'update': Update,
-            'del': Delete,
-        }[r.kind]
-        return call(cls, **r, prev=prev)
+        if r.kind == 'add':
+            assert prev is None or isinstance(prev, Delete), f"{r}, {prev}"
+            return call(Add, **r, prev=prev)
+        elif r.kind == 'update':
+            assert isinstance(prev, (Add, Update)), f"{r}, {prev}"
+            return call(Update, **r, prev=prev)
+        elif r.kind == 'del':
+            assert isinstance(prev, (Add, Update)), f"{r}, {prev}"
+            return call(Delete, **r, prev=prev)
+        else:
+            raise ValueError(f"Invalid {r.kind=}: {r}")
 
     line_range_side = "R"
 
@@ -78,13 +83,14 @@ class Version(ABC):
 class Add(Version, Crash):
     sha: str
     rundate: Timestamp
+    prev: Delete | None
 
 
 @dataclass
 class Update(Version, Crash):
     sha: str
     rundate: Timestamp
-    prev: Version
+    prev: Add | Update
 
 
 @dataclass
@@ -92,6 +98,7 @@ class Delete(Version):
     sha: str
     rundate: Timestamp
     accid: int
+    prev: Add | Update
 
     line_range_side = "L"
 

@@ -18,6 +18,7 @@ from typing import Optional, Union
 
 import pandas as pd
 
+from nj_crashes.utils.git import get_repo
 from njdot.rawdata import singleton
 
 REPO = 'hudcostreets/nj-crashes'
@@ -48,9 +49,9 @@ def get_github_repo() -> Repository:
 
 
 def load_github(
-        path: str,
-        ref: str = None,
-        repo: Optional[Repository] = None,
+    path: str,
+    ref: str | None = None,
+    repo: Optional[Repository] = None,
 ) -> bytes:
     if repo is None:
         repo = get_github_repo()
@@ -65,6 +66,12 @@ def load_pqt_github(
     content_bytes = load_github(path, ref, repo)
     return pd.read_parquet(BytesIO(content_bytes))
 
+
+def load_blob(
+    path: str,
+    ref: str | None = None,
+):
+    repo = get_repo()
 
 @dataclass
 class GithubBlob:
