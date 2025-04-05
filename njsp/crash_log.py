@@ -18,14 +18,6 @@ from njsp.paths import CRASHES_RELPATH
 Kind = Literal['add', 'update', 'del']
 
 
-# class CrashesLog:
-#     def __init__(self, df: DataFrame):
-#         self.df = df
-#
-#     def __repr__(self):
-#         return f"CrashesLog({len(self.crash_log)} rows)"
-
-
 def get_crash_log(
     repo: Repo | None = None,
     head: str | None = None,

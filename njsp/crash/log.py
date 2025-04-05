@@ -76,7 +76,7 @@ class Version(ABC):
             start_line = min(diff_field_linenos)
             end_line = max(diff_field_linenos)
         line_range = f"{side}{start_line}-{side}{end_line}"
-        return f'https://github.com/{REPO}/commit/{sha}#diff-{path_sha256}{line_range}'
+        return f'https://github.com/{REPO}/commit/{sha}?diff=split#diff-{path_sha256}{line_range}'
 
 
 @dataclass

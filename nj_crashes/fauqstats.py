@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import pandas as pd
 import re
 from dataclasses import dataclass
 from git import Commit, Tree
-from typing import Union, IO
+from typing import IO
 
 import git
 
@@ -13,7 +15,7 @@ from bs4 import BeautifulSoup as bs
 from nj_crashes.utils.log import Log, err
 
 
-def get_fauqstats(path: Union[str, IO]):
+def get_fauqstats(path: str | IO):
     if isinstance(path, str):
         with open(path, 'r') as f:
             xml = bs(f, features="xml")
@@ -40,7 +42,7 @@ class FAUQStats:
     totals: pd.DataFrame
 
     @classmethod
-    def blobs(cls, obj: Union[Commit, Tree, GithubCommit]) -> dict[int, Blob]:
+    def blobs(cls, obj: Commit | Tree | GithubCommit) -> dict[int, Blob]:
         if isinstance(obj, (Commit, GithubCommit)):
             tree = obj.tree
         else:
@@ -58,7 +60,7 @@ class FAUQStats:
         return fauqstats_blobs
 
     @classmethod
-    def load(cls, obj: Union[str, Blob], log: Log = err) -> 'FAUQStats':
+    def load(cls, obj: str | Blob, log: Log = err) -> 'FAUQStats':
         if isinstance(obj, (git.Blob, GithubBlob)):
             blob_sha = obj.hexsha
             if blob_sha in fauqstats_cache:

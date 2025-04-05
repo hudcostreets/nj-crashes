@@ -10,7 +10,7 @@ from stdlb import fromtimestamp
 from utz import cached_property, err, singleton, silent, solo, env, call
 
 from nj_crashes.utils.github import REPO
-from njsp.cli.slack.config import SLACK_CHANNEL_ID, SLACK_BOT_TOKEN
+from njsp.cli.slack.config import SLACK_CHANNEL_ID, SLACK_IM_ID, SLACK_BOT_TOKEN
 from njsp.cli.slack.msg import Msg, Thread
 from ...crash import Log, Add, Update, Delete
 from ...utils import RED, GREEN, RESET, BLUE
@@ -32,17 +32,9 @@ class ChannelClient:
     ):
         if not channel:
             channel = env.get(SLACK_CHANNEL_ID)
-        token = env.get(SLACK_BOT_TOKEN)
-        env_path = join('.slack', '.env')
-        if not channel or not token:
-            if exists(env_path):
-                config = dotenv_values(env_path)
-                if not channel:
-                    channel = config.get(SLACK_CHANNEL_ID)
-                if not token:
-                    token = config.get(SLACK_BOT_TOKEN)
         if not channel:
             raise RuntimeError(f"Missing {SLACK_CHANNEL_ID} in environment and {env_path}, and no {'/'.join(CHANNEL_OPTS)} passed")
+        token = env.get(SLACK_BOT_TOKEN)
         if not token:
             raise RuntimeError(f"Missing {SLACK_BOT_TOKEN} in environment and {env_path}")
 
@@ -238,15 +230,18 @@ class ChannelClient:
             uid = self.crash_bot_uid
             replies_df = replies_df.drop(ts)
             replies_df = replies_df[replies_df.user == uid]
-            reply_accids = replies_df.metadata.apply(Series).event_payload.apply(Series).ACCID.astype(int)
-            wrong_accid_msk = reply_accids != accid
-            if wrong_accid_msk.any():
-                raise ValueError(f"Thread {thread_ts} has replies from {uid} for other ACCIDs: {replies_df[wrong_accid_msk.index]}")
+            if replies_df.empty:
+                replies = []
+            else:
+                reply_accids = replies_df.metadata.apply(Series).event_payload.apply(Series).ACCID.astype(int)
+                wrong_accid_msk = reply_accids != accid
+                if wrong_accid_msk.any():
+                    raise ValueError(f"Thread {thread_ts} has replies from {uid} for other ACCIDs: {replies_df[wrong_accid_msk.index]}")
 
-            replies = [
-                call(Msg, **rec)
-                for rec in replies_df.reset_index().to_dict('records')
-            ]
+                replies = [
+                    call(Msg, **rec)
+                    for rec in replies_df.reset_index().to_dict('records')
+                ]
         return Thread(ts=ts, text=msg.text, replies=replies)
 
     @cache
@@ -365,24 +360,22 @@ class ChannelClient:
             else:
                 vidx, v = t
                 xml_url = v.xml_url(ref=v.sha)
-                rundate_str = v.rundate.strftime('%Y-%m-%d')
-                commit_url = f'https://github.com/{REPO}/commit/{v.sha}'
-                rundate_link = f'<{commit_url}|{rundate_str}>'
+                rundate_str = v.rundate.strftime('%Y%m%d')
                 if isinstance(v, Add):
                     slack_str = v.slack_str(github_url=xml_url)
                     if vidx == 0:
                         if len(vs) == 1:
                             new_text = slack_str
                         else:
-                            new_text = f"Added ({rundate_link}):\n> {slack_str}"
+                            new_text = f"Added ({rundate_str}):\n&gt; {slack_str}"
                     else:
-                        new_text = f"Re-added ({rundate_link}):\n> {slack_str}"
+                        new_text = f"Re-added ({rundate_str}):\n&gt; {slack_str}"
                 elif isinstance(v, Update):
                     slack_str = v.slack_str(github_url=xml_url)
-                    new_text = f"Updated ({rundate_link}):\n> {slack_str}"
+                    new_text = f"Updated ({rundate_str}):\n&gt; {slack_str}"
                 elif isinstance(v, Delete):
                     slack_str = v.prev.slack_str(github_url=xml_url)
-                    new_text = f"Deleted ({rundate_link}):\n> {slack_str}"
+                    new_text = f"Deleted ({rundate_str}):\n&gt; {slack_str}"
                 else:
                     raise ValueError(f"Invalid version type {v=}")
 
@@ -398,7 +391,7 @@ class ChannelClient:
                 text = msg.text
                 ts = msg.ts
                 if overwrite_existing > 1:
-                    log("deleting")
+                    log(f"deleting and re-posting:\n{RED}-{text}\n{GREEN}+{new_text}")
                     if not dry_run:
                         self.delete_msg(ts=ts)
                     ts = self.post_msg(**post_kwargs)
@@ -415,6 +408,7 @@ class ChannelClient:
                 else:
                     log(f"text matches: {text}")
             else:
+                log(f"new message:\n{GREEN}+{new_text}")
                 ts = self.post_msg(**post_kwargs)
                 if not thread_ts:
                     thread_ts = ts
