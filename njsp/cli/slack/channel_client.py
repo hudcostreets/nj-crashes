@@ -3,10 +3,10 @@ from functools import cache
 from os.path import exists, join
 
 from dotenv import dotenv_values
-from pandas import Series, DataFrame
+from pandas import Series, DataFrame, isna
 from slack_sdk import WebClient
 from stdlb import fromtimestamp
-from utz import cached_property, err, singleton, silent, solo, env
+from utz import cached_property, err, singleton, silent, solo, env, call
 
 from njsp.cli.slack.config import SLACK_CHANNEL_ID, SLACK_BOT_TOKEN
 from njsp.cli.slack.msg import Msg, Thread
@@ -152,26 +152,19 @@ class ChannelClient:
         return solo(users[users.is_bot & (users.name == 'crash_bot')].index.tolist())
 
     @cached_property
-    def roots_msk(self) -> Series:
-        msgs = self.msgs()
-        if 'thread_ts' not in msgs:
-            return msgs.assign(is_root=True).is_root
-        return msgs.thread_ts.isna() | (msgs.thread_ts == msgs.index.to_series())
-
-    @cached_property
     def accid_msgs(self) -> Series:
-        root_msgs = self.root_msgs
+        msgs = self.msgs()
         uid = self.crash_bot_uid
-        root_bot_msgs = (
-            root_msgs
-            [root_msgs.user == uid]
+        bot_msgs = (
+            msgs
+            [msgs.user == uid]
             .metadata
             .apply(Series)
             [['event_type', 'event_payload']]
         )
-        accid_msgs = root_bot_msgs[root_bot_msgs.event_type == 'new_crash'].drop(columns='event_type')
+        accid_msgs = bot_msgs[bot_msgs.event_type == 'new_crash'].drop(columns='event_type')
         accid_msgs['ACCID'] = accid_msgs.event_payload.apply(Series)['ACCID']
-        accid_msgs = accid_msgs.drop(columns='event_payload').ACCID
+        accid_msgs = accid_msgs.drop(columns='event_payload').ACCID.astype(int)
         return accid_msgs
 
     @cached_property
@@ -214,6 +207,11 @@ class ChannelClient:
     def verify_accids(self):
         assert self.accid_dups.empty
 
+    @cached_property
+    def accid2ts(self) -> dict[int, str]:
+        self.verify_accids()
+        return { v: k for k, v in self.ts2accid.items() }
+
     def accid_thread(self, accid: int) -> Thread | None:
         accid2ts = self.accid2ts
         if accid not in accid2ts:
@@ -222,30 +220,32 @@ class ChannelClient:
         msgs = self.msgs()
         msg = msgs.loc[ts]
         thread_ts = msg.thread_ts
-        if thread_ts != ts:
-            raise ValueError(f"ACCID {accid}: {ts=} != {thread_ts=}")
-        replies_df = msgs[(msgs.thread_ts == thread_ts)].reset_index()
-        replies_df = replies_df[replies_df.ts != ts]
-        replies = [
-            Msg(**rec)
-            for rec in replies_df.to_dict('records')
-        ]
+        if isna(thread_ts):
+            replies = []
+        else:
+            if ts != thread_ts:
+                raise ValueError(f"{ts=} != {thread_ts=}")
+            replies_df = self.fetch(
+                self.client.conversations_replies,
+                'messages',
+                channel=self.channel,
+                ts=ts,
+                index='ts',
+                include_all_metadata=True,
+            )
+            uid = self.crash_bot_uid
+            replies_df = replies_df.drop(ts)
+            replies_df = replies_df[replies_df.user == uid]
+            reply_accids = replies_df.metadata.apply(Series).event_payload.apply(Series).ACCID.astype(int)
+            wrong_accid_msk = reply_accids != accid
+            if wrong_accid_msk.any():
+                raise ValueError(f"Thread {thread_ts} has replies from {uid} for other ACCIDs: {replies_df[wrong_accid_msk.index]}")
+
+            replies = [
+                call(Msg, **rec)
+                for rec in replies_df.reset_index().to_dict('records')
+            ]
         return Thread(ts=ts, text=msg.text, replies=replies)
-
-    @cached_property
-    def accid2ts(self) -> dict[int, str]:
-        self.verify_accids()
-        return { v: k for k, v in self.ts2accid.items() }
-
-    @cached_property
-    def root_msgs(self) -> DataFrame:
-        msgs = self.msgs()
-        return msgs[self.roots_msk]
-
-    @cached_property
-    def replies(self) -> DataFrame:
-        msgs = self.msgs()
-        return msgs[~self.roots_msk]
 
     @cache
     def msgs(self, include_all_metadata: bool = True, **kwargs):

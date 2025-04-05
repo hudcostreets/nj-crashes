@@ -23,67 +23,12 @@ class Version(ABC):
             'del': Delete,
         }[r.kind]
         return call(cls, **r)
-        # kind = r.kind
-        # if kind == 'add':
-        #     return call(Add, **r)
-        # elif kind == 'update':
-        #     return call(Update, **r)
-        # elif kind == 'del':
-        #     return call(Delete, **r)
-        # else:
-        #     raise ValueError(f"Invalid crash version kind: {kind}")
 
     line_range_side = "R"
 
     @property
     def _xml_url_commit(self) -> str:
         return self.sha
-
-    def xml_url(self, ref: str | None = None):
-        sha = self.sha
-        if ref and ref != sha:
-            raise ValueError(f"{ref=} != {sha=}")
-        commit = self._xml_url_commit
-        accid_map = Crashes(ref=commit).accid_map
-        rng = accid_map[str(self.accid)]  #
-        (start_line, _), (end_line, _) = rng['start'], rng['end']
-        path = rng['path']
-        hsh = sha256()
-        hsh.update(path.encode())
-        path_sha256 = hsh.hexdigest()
-        side = self.line_range_side
-        line_range = f"{side}{start_line}-{side}{end_line}"
-        return f'https://github.com/{REPO}/commit/{sha}#diff-{path_sha256}{line_range}'
-
-    # def to_str(
-    #     r,
-    #     fmt: Fmt = '%a %b %-d %Y %-I:%M%p',
-    #     github_url: str | None = None,
-    #     dst: Dst = 'slack',
-    # ) -> str:
-    #     victim_str = r.victim_str
-    #     dt_str = mk_dt_str(r['dt'], fmt)
-    #     if isna(r.LOCATION):
-    #         location = 'unknown location'
-    #     else:
-    #         location = r.LOCATION.replace('&', '&amp;')
-    #
-    #     def link(uri: str, text: str) -> str:
-    #         nonlocal dst
-    #         if dst == 'slack':
-    #             return f'<{uri}|{text}>'
-    #         else:
-    #             return f'[{text}]({uri})'
-    #
-    #     if github_url:
-    #         gh_link = link(github_url, str(r.accid))
-    #     else:
-    #         gh_link = f'{r.accid}'
-    #
-    #     c_url, m_url = r.urls
-    #     c_link = link(uri=c_url, text=f'{r.CNAME} County')
-    #     m_link = link(uri=m_url, text=r.MNAME)
-    #     return f'*{dt_str} ({gh_link})*: {m_link} ({c_link}), {location}: {victim_str} deceased'
 
 
 @dataclass
@@ -109,6 +54,36 @@ class Delete(Version):
     @property
     def _xml_url_commit(self) -> str:
         return f"{self.sha}^"
+
+    def xml_url(self, ref: str | None = None):
+        """Generate a URL to the XML line range corresponding to this crash-record deletion, in GitHub's commit-diff
+        view.
+
+        ``Add``s and ``Update``s inherit this method from ``Crash``, which links to the XML line-range corresponding to
+        the crash, at the given SHA (``/blob/<SHA>/<path>#L<start>-L<end>``). In the case of a ``Delete``, however, the
+        crash no longer exists in the XML, so we link to the line range in the commit's "diff" view
+        (``/commit/<SHA>#diff-<path_sha256><line_range>``).
+
+        Unfortunately, GitHub's web UI doesn't correctly scroll to the given line range, on page load, but instead drops
+        the user at the top of the relevant XML file. If the user scrolls to the line range in question, it will be
+        highlighted, but overall it's not a great experience.
+
+        TODO: file issue vs. GitHub about commit-diff-line-range links not loading properly.
+        """
+        sha = self.sha
+        if ref and ref != sha:
+            raise ValueError(f"{ref=} != {sha=}")
+        commit = self._xml_url_commit
+        accid_map = Crashes(ref=commit).accid_map
+        rng = accid_map[str(self.accid)]  #
+        (start_line, _), (end_line, _) = rng['start'], rng['end']
+        path = rng['path']
+        hsh = sha256()
+        hsh.update(path.encode())
+        path_sha256 = hsh.hexdigest()
+        side = self.line_range_side
+        line_range = f"{side}{start_line}-{side}{end_line}"
+        return f'https://github.com/{REPO}/commit/{sha}#diff-{path_sha256}{line_range}'
 
 
 def versions(df: DataFrame) -> list[Version]:
