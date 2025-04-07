@@ -29,4 +29,4 @@ simplejson
 slack_sdk
 sqlalchemy==1.4.46
 tabula-py
-utz>=0.10.3
+utz>=0.19

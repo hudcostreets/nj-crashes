@@ -129,7 +129,7 @@ jobs:
       - name: Post to Slack
         id: post_to_slack
         if: (github.event.schedule || inputs.post_to_slack) && (steps.update_slack_sha.outputs.sha || !inputs.short_circuit)
-        run: njsp slack sync ${{ steps.update_slack_sha.outputs.sha }}
+        run: njsp slack sync -r ${{ steps.update_slack_sha.outputs.sha }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ inputs.slack_channel_id || secrets.SLACK_CHANNEL_ID }}
