@@ -56,7 +56,7 @@ def save(df: DataFrame, path: str | None = None):
             df.to_sql(TBL, db_uri, if_exists="replace")
             err(f"Wrote crash log to {local_path}")
     else:
-        raise ValueError(f"Unrecognized extension: {xtn}")
+        raise ValueError(f"{path}: unrecognized extension: {xtn}")
 
 
 @njsp.group("crash_log")
@@ -72,7 +72,7 @@ def crash_log_cmd(fn):
     @flag("-i", "--in-place", help="Overwrite the input file -a/--append-to")
     @flag('-n', '--dry-run', help='Print the number of rows that would be dropped, but do not actually drop them')
     @opt("-o", "--out-paths", multiple=True, help="Path to save the output")
-    @opt("-r", "--root", default=DEFAULT_ROOT_SHA, help=f"Ref to end at; if -a/--append-to is passed, defaults to the latest SHA in that DataFrame, {DEFAULT_ROOT_SHA} otherwise")
+    @opt("-r", "--root", help=f"Ref to end at; if -a/--append-to is passed, defaults to the latest SHA in that DataFrame, {DEFAULT_ROOT_SHA} otherwise")
     @flag('--s3', 'auto_s3', help=f"Shorthand for CI use: `-a {S3_CRASH_LOG_PQT} -i -o {S3_CRASH_LOG_DB}`")
     @wraps(fn)
     def _fn(
@@ -106,9 +106,11 @@ def crash_log_cmd(fn):
                 out_paths.append(append_to)
         elif in_place:
             raise ValueError("Cannot use -i/--in-place without -a/--append-to")
+        elif not root:
+            root = DEFAULT_ROOT_SHA
 
         with ctxs([
-            s3.atomic_edit(out_path) if urlparse(out_path).scheme == 's3' else nullcontext(out_path)
+            s3.atomic_edit(out_path, create_ok=True) if urlparse(out_path).scheme == 's3' else nullcontext(out_path)
             for out_path in out_paths
         ]) as out_paths:
             df = call(
@@ -161,7 +163,6 @@ def compute(
     ]
     df = df[cols]
     if prefix is not None:
-        prefix['dt'] = prefix['dt'].dt.tz_localize(UTC).astimezone(TZ)
         df = pd.concat([prefix, df])
         dfr = df.reset_index()
         dupes = dfr[dfr.duplicated(keep=False)]

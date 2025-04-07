@@ -68,7 +68,7 @@ def get_commit_crash_updates(
 
         except Exception:
             raise RuntimeError(f"Error processing commit {cur_commit.hexsha}")
-    return crash_map
+    return prv_fauqstats_blobs, crash_map
 
 
 def get_crash_log(
