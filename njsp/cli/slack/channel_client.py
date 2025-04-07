@@ -12,7 +12,7 @@ from utz import cached_property, err, singleton, silent, solo, env, call
 from nj_crashes.utils.github import REPO
 from njsp.cli.slack.config import SLACK_CHANNEL_ID, SLACK_IM_ID, SLACK_BOT_TOKEN
 from njsp.cli.slack.msg import Msg, Thread
-from ...crash import Log, Add, Update, Delete
+from ...crash import Log, Add, Update, Delete, Version
 from ...utils import RED, GREEN, RESET, BLUE
 
 CHANNEL_OPTS = ('-h', '--channel')
@@ -346,7 +346,26 @@ class ChannelClient:
                 msg = f"DRY RUN {msg}"
             err(f"{BLUE}{accid:>5d}: {msg}{RESET}")
 
-        vs = list(enumerate(crash_log.versions))
+        def keep(v: Version) -> bool:
+            if isinstance(v, Update):
+                updates = v.updates()
+                if not updates['adds'] and not updates['dels']:
+                    updates = updates['both']
+                    if len(updates) == 1 and 'INJURIES' in updates:
+                        i0, i1 = updates['INJURIES']
+                        if isna(i0):
+                            i0 = 0
+                        if isna(i1):
+                            i1 = 0
+                        if i0 == i1 and i0 == 0:
+                            return False
+            return True
+
+        vs = [
+            (idx, v)
+            for idx, v in enumerate(crash_log.versions)
+            if keep(v)
+        ]
         # Top of thread always shows latest version
         msg_versions = [vs[-1]]
         if len(vs) > 1:
@@ -412,3 +431,9 @@ class ChannelClient:
                 ts = self.post_msg(**post_kwargs)
                 if not thread_ts:
                     thread_ts = ts
+
+        if len(msgs) > len(msg_versions):
+            for msg in msgs[len(msg_versions):]:
+                log(f"deleting extra message:\n{RED}-{msg.text}")
+                if not dry_run:
+                    self.delete_msg(ts=msg.ts)

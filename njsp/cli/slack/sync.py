@@ -34,18 +34,21 @@ def sync(
     if accids:
         crashes_log = crashes_log.loc[list(accids)]
 
-    first_dts = crashes_log.groupby(level=0)['dt'].min()
-    msk = first_dts >= start.dt
+    first_dates = crashes_log.groupby(level=0)['dt'].min().dt.date
+    msk = first_dates >= start.date
     if end:
-        msk = msk & (first_dts < end.dt)
-    valid_keys = first_dts[msk].index
+        msk = msk & (first_dates < end.date)
+    valid_keys = first_dates[msk].index
     crashes_log = crashes_log[crashes_log.index.get_level_values(0).isin(valid_keys)]
 
     crashes_log = crashes_log.reset_index()
     for accid, df in iter(crashes_log.groupby('accid')):
         crash_log = Log(accid, versions(df))
-        client.sync_crash(
-            accid=accid,
-            crash_log=crash_log,
-            overwrite_existing=overwrite_existing,
-        )
+        try:
+            client.sync_crash(
+                accid=accid,
+                crash_log=crash_log,
+                overwrite_existing=overwrite_existing,
+            )
+        except Exception:
+            raise RuntimeError(f"Failed to sync crash {accid=}")

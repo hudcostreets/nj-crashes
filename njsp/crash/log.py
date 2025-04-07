@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from hashlib import sha256
 
-from pandas import Timestamp, Series, DataFrame
+from pandas import Timestamp, Series, DataFrame, isna
 from utz import call
 
 from nj_crashes.utils.github import REPO
@@ -68,7 +68,9 @@ class Version(ABC):
                 raise ValueError(f'Update requires prev: {self}')
             child_pos_map = rng['children']
             for tag in CHILD_TAGS.union(ATTRS):
-                if getattr(prev, tag, None) != getattr(self, tag, None):
+                v0 = getattr(prev, tag, None)
+                v1 = getattr(self, tag, None)
+                if v0 != v1 and not (tag == 'INJURIES' and isna(v0) and isna(v1)):
                     if tag in ATTRS:
                         diff_field_linenos.append(start_line)
                     else:
@@ -91,6 +93,14 @@ class Update(Version, Crash):
     sha: str
     rundate: Timestamp
     prev: Add | Update
+
+    def updates(self):
+        d0 = { k: getattr(self.prev, k, None) for k in CHILD_TAGS.union(ATTRS) }
+        d1 = { k: getattr(self, k, None) for k in CHILD_TAGS.union(ATTRS) }
+        adds = { k: v for k, v in d1.items() if k not in d0 }
+        dels = { k: v for k, v in d0.items() if k not in d1 }
+        both = { k: (d0[k], d1[k]) for k in d0 if k in d1 and d0[k] != d1[k] }
+        return dict(adds=adds, dels=dels, both=both)
 
 
 @dataclass

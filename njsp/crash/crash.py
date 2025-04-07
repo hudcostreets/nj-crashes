@@ -35,6 +35,7 @@ class Crash:
     FATAL_P: int
     FATAL_T: int
     FATAL_B: int
+    INJURIES: int | None
     LOCATION: str | None
     HIGHWAY: str | None
 
