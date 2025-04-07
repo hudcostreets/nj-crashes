@@ -19,6 +19,58 @@ from njsp.paths import CRASHES_RELPATH
 Kind = Literal['add', 'update', 'del']
 
 
+def get_commit_crash_updates(
+    prv_commit,
+    prv_tree,
+    prv_short_sha,
+    cur_commit,
+    cur_tree,
+    cur_fauqstats_blobs,
+    log: Log = err,
+):
+    crash_map = {}
+    try:
+        prv_fauqstats_blobs = FAUQStats.blobs(prv_tree)
+    except KeyError:
+        if prv_commit.hexsha == DEFAULT_ROOT_SHA:
+            prv_fauqstats_blobs = None
+        else:
+            raise RuntimeError(f"Commit {prv_short_sha} lacks {CRASHES_RELPATH}")
+    if cur_tree is not None and cur_fauqstats_blobs != prv_fauqstats_blobs:
+        try:
+            ts = pd.to_datetime(parse(get_rundate(cur_tree)))
+            if ts.tz is None:
+                rundate = ts.tz_localize(TZ)
+            else:
+                rundate = ts.tz_convert(TZ)
+            cur_sha = cur_commit.hexsha[:SHORT_SHA_LEN]
+            cc = CommitCrashes(cur_sha, log=log)
+            log(f"{cur_sha} ({cc.run_date_str}): found xml diff")
+
+            def save(accid, crash: Series | None, kind: Kind):
+                accid = int(accid)
+                if accid not in crash_map:
+                    crash_map[accid] = []
+                snapshot = dict(accid=accid, sha=cur_sha, rundate=rundate, kind=kind, **(crash or {}))
+                crash_map[accid].append(snapshot)
+
+            # Added crashes
+            for accid, crash in cc.adds_df.to_dict('index').items():
+                save(accid, crash, 'add')
+
+            # Deleted crashes
+            for accid in cc.del_ids:
+                save(accid, None, 'del')
+
+            # Updated crashes
+            for accid, crash in cc.updated_df.to_dict('index').items():
+                save(accid, crash, 'update')
+
+        except Exception:
+            raise RuntimeError(f"Error processing commit {cur_commit.hexsha}")
+    return crash_map
+
+
 def get_crash_log(
     repo: Repo | None = None,
     head: str | None = None,
@@ -68,45 +120,19 @@ def get_crash_log(
         prv_tree = prv_commit.tree
         prv_short_sha = prv_commit.hexsha[:SHORT_SHA_LEN]
         shas.append(prv_short_sha)
-        try:
-            prv_fauqstats_blobs = FAUQStats.blobs(prv_tree)
-        except KeyError:
-            if prv_commit.hexsha == DEFAULT_ROOT_SHA:
-                prv_fauqstats_blobs = None
-            else:
-                raise RuntimeError(f"Commit {prv_short_sha} lacks {CRASHES_RELPATH}")
-        if cur_tree is not None and cur_fauqstats_blobs != prv_fauqstats_blobs:
-            try:
-                ts = pd.to_datetime(parse(get_rundate(cur_tree)))
-                if ts.tz is None:
-                    rundate = ts.tz_localize(TZ)
-                else:
-                    rundate = ts.tz_convert(TZ)
-                cur_sha = cur_commit.hexsha[:SHORT_SHA_LEN]
-                cc = CommitCrashes(cur_sha, log=log)
-                log(f"{cur_sha} ({cc.run_date_str}): found xml diff")
-
-                def save(accid, crash: Series | None, kind: Kind):
-                    accid = int(accid)
-                    if accid not in crash_map:
-                        crash_map[accid] = []
-                    snapshot = dict(accid=accid, sha=cur_sha, rundate=rundate, kind=kind, **(crash or {}))
-                    crash_map[accid].append(snapshot)
-
-                # Added crashes
-                for accid, crash in cc.adds_df.to_dict('index').items():
-                    save(accid, crash, 'add')
-
-                # Deleted crashes
-                for accid in cc.del_ids:
-                    save(accid, None, 'del')
-
-                # Updated crashes
-                for accid, crash in cc.updated_df.to_dict('index').items():
-                    save(accid, crash, 'update')
-
-            except Exception:
-                raise RuntimeError(f"Error processing commit {cur_commit.hexsha}")
+        prv_fauqstats_blobs, new_crash_versions = get_commit_crash_updates(
+            prv_commit,
+            prv_tree,
+            prv_short_sha,
+            cur_commit,
+            cur_tree,
+            cur_fauqstats_blobs,
+            log=log,
+        )
+        for accid, versions in new_crash_versions.items():
+            if accid not in crash_map:
+                crash_map[accid] = []
+            crash_map[accid].extend(versions)
 
         # Step backward in history: current parent becomes child, next commit popped will be parent's parent
         cur_commit = prv_commit
