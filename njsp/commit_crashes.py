@@ -6,6 +6,7 @@ from subprocess import CalledProcessError
 from typing import Tuple
 
 import pandas as pd
+from dateutil.parser import parse
 from git import Commit, Repo, Tree, Object, Blob
 from gitdb.exc import BadName
 from github import Github
@@ -15,8 +16,7 @@ from utz import process, cached_property, err
 from nj_crashes.fauqstats import get_fauqstats, FAUQStats
 from nj_crashes.utils.git import git_fmt, get_repo, SHORT_SHA_LEN
 from nj_crashes.utils.github import get_github_repo, load_pqt_github, REPO, GithubCommit as GithubCommitWrapper
-from nj_crashes.utils.log import none
-from njsp.crash.crash import Crash
+from nj_crashes.utils.log import none, Log
 from njsp.paths import RUNDATE_RELPATH
 
 
@@ -95,7 +95,7 @@ class CommitCrashes:
     def __init__(
         self,
         ref: str | Commit | None = None,
-        log: bool = False,
+        log: Log = none,
         year: int | None = None,
     ):
         if isinstance(ref, Commit):
@@ -121,7 +121,7 @@ class CommitCrashes:
         self.year = year
 
     def fmt(self, fmt: str) -> str:
-        return git_fmt(self.ref, fmt=fmt, log=False)
+        return git_fmt(self.ref, fmt=fmt, log=none)
 
     @cached_property
     def github_commit(self) -> GithubCommit:
@@ -318,7 +318,7 @@ class CommitCrashes:
 
     @cached_property
     def run_dt(self) -> pd.Timestamp:
-        return pd.to_datetime(self.rundate)
+        return pd.to_datetime(parse(self.rundate))
 
     @cached_property
     def run_date(self) -> datetime.date:

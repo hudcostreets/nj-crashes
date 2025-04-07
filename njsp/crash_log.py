@@ -12,6 +12,7 @@ from utz import err
 from nj_crashes.fauqstats import FAUQStats
 from nj_crashes.utils import TZ
 from nj_crashes.utils.github import GithubCommit
+from nj_crashes.utils.log import Log
 from njsp.commit_crashes import get_repo, CommitCrashes, get_rundate, DEFAULT_ROOT_SHA, SHORT_SHA_LEN
 from njsp.paths import CRASHES_RELPATH
 
@@ -23,7 +24,7 @@ def get_crash_log(
     head: str | None = None,
     since: str | datetime | pd.Timestamp | None = None,
     root: str | None = DEFAULT_ROOT_SHA,
-    log: bool = True,
+    log: Log = err,
 ) -> DataFrame:
     if isinstance(since, (str, datetime)):
         tz = datetime.now(timezone.utc).astimezone().tzinfo
@@ -39,6 +40,10 @@ def get_crash_log(
     cur_tree = None
     cur_fauqstats_blobs = None
     while True:
+        if root and cur_commit and cur_commit.hexsha[:len(root)] == root:
+            err(f"Reached root commit {root} after {len(shas)} commits; breaking")
+            break
+
         try:
             if using_gh_commits:
                 prv_commit = cur_commit.parent
@@ -55,6 +60,7 @@ def get_crash_log(
             cur_fauqstats_blobs = FAUQStats.blobs(cur_tree)
             prv_commit = cur_commit.parent
             using_gh_commits = True
+
         authored_datetime = pd.to_datetime(prv_commit.authored_datetime)
         if since and authored_datetime < since:
             err(f"Reached commit authored at {authored_datetime} before {since}, after {len(shas)} commits; breaking")
@@ -78,6 +84,7 @@ def get_crash_log(
                     rundate = ts.tz_convert(TZ)
                 cur_sha = cur_commit.hexsha[:SHORT_SHA_LEN]
                 cc = CommitCrashes(cur_sha, log=log)
+                log(f"{cur_sha} ({cc.run_date_str}): found xml diff")
 
                 def save(accid, crash: Series | None, kind: Kind):
                     accid = int(accid)
@@ -100,10 +107,6 @@ def get_crash_log(
 
             except Exception:
                 raise RuntimeError(f"Error processing commit {cur_commit.hexsha}")
-
-        if root and prv_commit and prv_commit.hexsha[:len(root)] == root:
-            err(f"Reached root commit {root} after {len(shas)} commits; breaking")
-            break
 
         # Step backward in history: current parent becomes child, next commit popped will be parent's parent
         cur_commit = prv_commit

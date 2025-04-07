@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import UTC
+
 import pandas as pd
 import re
 from dataclasses import dataclass
@@ -96,7 +98,16 @@ class FAUQStats:
 
         crashes = pd.DataFrame(records)
         if 'DATE' in crashes:
-            crashes['dt'] = crashes[['DATE', 'TIME']].apply(lambda r: pd.to_datetime(f'{r["DATE"]} {r["TIME"]}').tz_localize(TZ), axis=1)
+            crashes['dt'] = (
+                crashes[['DATE', 'TIME']]
+                .apply(
+                    lambda r: (
+                        pd.to_datetime(f'{r["DATE"]} {r["TIME"]}')
+                        .tz_localize(TZ)
+                    ),
+                    axis=1
+                )
+            )
             float_cols = [
                 'FATALITIES',
                 'FATAL_D',

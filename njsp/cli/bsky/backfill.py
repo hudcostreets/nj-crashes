@@ -13,6 +13,7 @@ from utz.ymd import dates, YMD
 
 import njsp
 from nj_crashes.utils.git import git_fmt
+from nj_crashes.utils.log import none
 from njdot import cc2cn, cc2mc2mn
 from njsp.cli.bsky.base import bsky
 from njsp.cli.bsky.post import BskyPost, bsky_str
@@ -22,7 +23,7 @@ from njsp.paths import CRASHES_PQT, BSKY_CRASH_POSTS_S3
 
 @cache
 def head():
-    return git_fmt(fmt="%H", log=False)
+    return git_fmt(fmt="%H", log=none)
 
 
 def to_msg(r: Series, ref: str):
@@ -88,7 +89,7 @@ def backfill(
         if max_crashes:
             c = c.head(max_crashes)
 
-        ref = git_fmt(ref, fmt='%H', log=False)
+        ref = git_fmt(ref, fmt='%H', log=none)
         msgs = c.apply(
             to_msg,
             ref=ref,

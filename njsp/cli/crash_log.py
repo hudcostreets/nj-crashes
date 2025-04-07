@@ -1,14 +1,16 @@
 from contextlib import nullcontext, AbstractContextManager
+from datetime import UTC
+from functools import wraps
 from os.path import splitext
 from urllib.parse import urlparse
 
 import pandas as pd
 from pandas import DataFrame
-from utz import singleton, s3, ctxs
+from utz import singleton, s3, ctxs, call
 from utz.cli import arg, flag, opt
 
 from nj_crashes.utils import TZ
-from nj_crashes.utils.log import err
+from nj_crashes.utils.log import err, none, Log
 from nj_crashes.utils.s3 import output_ctx, input_ctx
 from njsp.cli.base import njsp
 from njsp.crash_log import get_crash_log, DEFAULT_ROOT_SHA
@@ -63,40 +65,35 @@ def crash_log():
     pass
 
 
-@crash_log.command
-@opt('-a', '--append-to', help='Append to existing file (typically `njsp/data/crash-log.parquet`')
-@flag("-f", "--write-dupes", help="Write output even when duplicate rows are detected")
-@opt('-h', '--head', help='Ref to begin ancestor-traversal from')
-@flag("-i", "--in-place", help="Overwrite the input file -a/--append-to")
-@flag('-n', '--dry-run', help='Print the number of rows that would be dropped, but do not actually drop them')
-@opt("-o", "--out-paths", multiple=True, help="Path to save the output")
-@opt("-r", "--root", help=f"Ref to end at; if -a/--append-to is passed, defaults to the latest SHA in that DataFrame, {DEFAULT_ROOT_SHA} otherwise")
-@opt("-s", "--since", help="Date to start from")
-@flag('--s3', 'auto_s3', help=f"Shorthand for CI use: `-a {S3_CRASH_LOG_PQT} -i -o {S3_CRASH_LOG_DB}`")
-@flag("-v", "--verbose", help="Print debug info")
-def compute(
-    append_to: str | None,
-    write_dupes: bool,
-    head: str | None,
-    in_place: bool,
-    dry_run: bool,
-    out_paths: tuple[str, ...],
-    root: str | None,
-    since: str | None,
-    auto_s3: bool,
-    verbose: bool,
-):
-    out_paths = list(out_paths) if out_paths else []
-    if auto_s3:
-        if append_to:
-            raise ValueError("Cannot use --s3 with -a/--append-to")
-        append_to = S3_CRASH_LOG_PQT
-        out_paths += [S3_CRASH_LOG_DB]
-        in_place = True
+def crash_log_cmd(fn):
 
-    prefix = None
-    append_ctx: AbstractContextManager[str | None] = s3.atomic_edit(append_to) if append_to else nullcontext(append_to)
-    with append_ctx as append_to:
+    @crash_log.command
+    @opt('-a', '--append-to', help='Append to existing file (typically `njsp/data/crash-log.parquet`')
+    @flag("-i", "--in-place", help="Overwrite the input file -a/--append-to")
+    @flag('-n', '--dry-run', help='Print the number of rows that would be dropped, but do not actually drop them')
+    @opt("-o", "--out-paths", multiple=True, help="Path to save the output")
+    @opt("-r", "--root", default=DEFAULT_ROOT_SHA, help=f"Ref to end at; if -a/--append-to is passed, defaults to the latest SHA in that DataFrame, {DEFAULT_ROOT_SHA} otherwise")
+    @flag('--s3', 'auto_s3', help=f"Shorthand for CI use: `-a {S3_CRASH_LOG_PQT} -i -o {S3_CRASH_LOG_DB}`")
+    @wraps(fn)
+    def _fn(
+        *args,
+        append_to: str | None,
+        in_place: bool,
+        dry_run: bool,
+        out_paths: tuple[str, ...],
+        root: str | None,
+        auto_s3: bool,
+        **kwargs,
+    ):
+        out_paths = list(out_paths) if out_paths else []
+        if auto_s3:
+            if append_to:
+                raise ValueError("Cannot use --s3 with -a/--append-to")
+            append_to = S3_CRASH_LOG_PQT
+            out_paths += [S3_CRASH_LOG_DB]
+            in_place = True
+
+        prefix = None
         if append_to:
             if not root:
                 prefix = load(append_to)
@@ -114,37 +111,18 @@ def compute(
             s3.atomic_edit(out_path) if urlparse(out_path).scheme == 's3' else nullcontext(out_path)
             for out_path in out_paths
         ]) as out_paths:
-            df = get_crash_log(head=head, root=root, since=since, log=verbose)
-            cols = [
-                col
-                for col in COLS
-                if col in df
-            ]
-            df = df[cols]
-            if append_to:
-                if prefix is None:
-                    prefix = load(append_to)
-                reset = (
-                    pd.concat([prefix, df])
-                    .reset_index()
-                )
-                dupes = reset[reset.duplicated(keep=False)]
-                if not dupes.empty:
-                    dupe_shas = dupes.reset_index(level=1).sha.unique()
-                    msg = f"Found {len(dupes)} duplicate rows, from SHAs: {dupe_shas}"
-                    if write_dupes:
-                        err(msg)
-                    else:
-                        raise ValueError(msg)
-
-                err(f"Found {len(df)} new rows, appending to {len(prefix)} from {append_to}:")
-                err(df)
-                df = (
-                    reset
-                    .sort_values(['accid', 'rundate'])
-                    .set_index(['accid', 'sha'])
-                )
-
+            df = call(
+                fn,
+                *args,
+                append_to=append_to,
+                in_place=in_place,
+                dry_run=dry_run,
+                out_paths=out_paths,
+                prefix=prefix,
+                root=root,
+                auto_s3=auto_s3,
+                **kwargs,
+            )
             if out_paths:
                 if dry_run:
                     err(f"DRY RUN: would write {len(df)} rows to {out_paths}")
@@ -153,6 +131,58 @@ def compute(
                         save(df, out_path)
             else:
                 print(df)
+
+
+    return _fn
+
+
+verbose_flag = flag("-v", "--verbose", callback=lambda ctx, param, val: err if val else none, help="Print debug info")
+
+
+@crash_log_cmd
+@flag("-f", "--write-dupes", help="Write output even when duplicate rows are detected")
+@opt('-h', '--head', help='Ref to begin ancestor-traversal from')
+@opt("-s", "--since", help="Date to start from")
+@verbose_flag
+def compute(
+    append_to: str | None,
+    write_dupes: bool,
+    head: str | None,
+    prefix: DataFrame | None,
+    root: str | None,
+    since: str | None,
+    verbose: Log,
+):
+    df = get_crash_log(head=head, root=root, since=since, log=verbose)
+    cols = [
+        col
+        for col in COLS
+        if col in df
+    ]
+    df = df[cols]
+    if prefix is not None:
+        prefix['dt'] = prefix['dt'].dt.tz_localize(UTC).astimezone(TZ)
+        df = pd.concat([prefix, df])
+        dfr = df.reset_index()
+        dupes = dfr[dfr.duplicated(keep=False)]
+        if not dupes.empty:
+            dupe_shas = dupes.reset_index(level=1).sha.unique()
+            msg = f"Found {len(dupes)} duplicate rows, from SHAs: {dupe_shas}"
+            if write_dupes:
+                err(msg)
+            else:
+                raise ValueError(msg)
+        err(f"Found {len(df)} new rows, appending to {len(prefix)} from {append_to}:")
+    df = df.sort_values(['accid', 'rundate'])
+    err(df)
+    return df
+
+
+# @crash_log_cmd
+# def fsck_localize(
+#
+# ):
+#     pass
 
 
 @crash_log.command
