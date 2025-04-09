@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 from base64 import b64decode
 from os import environ
+from re import fullmatch
+from subprocess import CalledProcessError
 
 import git
 from github.Commit import Commit
@@ -18,12 +20,23 @@ from typing import Optional, Union
 
 import pandas as pd
 
-from nj_crashes.utils.git import get_repo
+from nj_crashes.utils.git import get_repo, git_fmt
 from njdot.rawdata import singleton
 
 REPO = 'hudcostreets/nj-crashes'
 _gh: Optional[Github] = None
 _gh_repo: Optional[Repository] = None
+
+
+def expand_ref(ref: str) -> str:
+    if fullmatch(r'^[0-9a-f]{40}$', ref):
+        return ref
+    else:
+        try:
+            return git_fmt(ref, fmt='%H')
+        except CalledProcessError:
+            gh = get_github_repo()
+            return gh.get_commit(ref).sha
 
 
 def get_github_repo() -> Repository:

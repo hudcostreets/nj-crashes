@@ -1,6 +1,6 @@
 from functools import wraps
 
-import click
+from click import pass_context, group, option
 from git import Repo
 from utz import process, env, err
 
@@ -9,10 +9,10 @@ DEFAULT_AUTHOR_NAME = 'GitHub Actions'
 DEFAULT_AUTHOR_EMAIL = 'ryan-williams@users.noreply.github.com'
 
 
-@click.group('njsp')
-@click.pass_context
-@click.option('-a', '--configure-author', 'do_configure_author', is_flag=True, help='Set Git user.{name,email} configs: %s / %s' % (DEFAULT_AUTHOR_NAME, DEFAULT_AUTHOR_EMAIL))
-@click.option('-c', '--commit', 'do_commit', count=True, help='1x: commit changes; 2x: commit and push')
+@group('njsp')
+@pass_context
+@option('-a', '--configure-author', 'do_configure_author', is_flag=True, help='Set Git user.{name,email} configs: %s / %s' % (DEFAULT_AUTHOR_NAME, DEFAULT_AUTHOR_EMAIL))
+@option('-c', '--commit', 'do_commit', count=True, help='1x: commit changes; 2x: commit and push')
 def njsp(ctx, do_configure_author, do_commit):
     ctx.obj = dict(
         do_configure_author=do_configure_author,
@@ -36,7 +36,7 @@ def configure_author(name, email):
 
 def command(fn):
     @njsp.command(fn.__name__)
-    @click.pass_context
+    @pass_context
     @wraps(fn)
     def _fn(ctx, *args, **kwargs):
         do_commit = ctx.obj['do_commit']

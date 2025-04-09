@@ -5,7 +5,7 @@ from click import option, argument
 from utz import solo
 from utz.ymd import dates, YMD
 
-from nj_crashes.utils.git import git_fmt
+from nj_crashes.utils.github import expand_ref
 from .base import slack, channel_client_opts
 from .channel_client import ChannelClient
 from ...crash import Log
@@ -40,12 +40,13 @@ def sync(
             raise ValueError("Cannot specify both --ref and accids")
         reset = crashes_log.reset_index()
         l, n = solo(reset.sha.apply(len).value_counts().to_dict())
-        ref = git_fmt(ref, fmt='%H')[:l]
+        ref = expand_ref(ref)[:l]
         accids = reset.loc[reset.sha == ref, 'accid'].unique().tolist()
         crashes_log = crashes_log.loc[list(accids)]
     elif accids:
         crashes_log = crashes_log.loc[list(accids)]
 
+    # First crash-log entry for each crash ("accid")
     first_dates = crashes_log.groupby(level=0)['dt'].min().dt.date
     msk = first_dates >= start.date
     if end:

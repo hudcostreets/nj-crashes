@@ -2,7 +2,7 @@ from os.path import basename
 
 from datetime import datetime
 
-import click
+from click import argument
 from utz import process
 
 from .base import command
@@ -18,7 +18,7 @@ def update_years(*years):
 
 
 @command
-@click.argument('years', nargs=-1)
+@argument('years', nargs=-1)
 def refresh_data(years):
     """Snapshot NJSP fatal crash data for the given years."""
     if not years:
