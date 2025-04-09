@@ -50,6 +50,16 @@ class Crash:
         return getattr(self, k)
 
     @property
+    def DATE(self) -> str:
+        """Return date as a string, in `%m/%d/%Y` format used in FAUQStats XMLs."""
+        return self.dt.strftime("%m/%d/%Y")
+
+    @property
+    def TIME(self) -> str:
+        """Return time as a 4-digit string, as it appears in FAUQStats XMLs."""
+        return self.dt.strftime("%H%M")
+
+    @property
     def cc(self) -> int:
         return int(self.CCODE)
 

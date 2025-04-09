@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from hashlib import sha256
 
 from pandas import Timestamp, Series, DataFrame, isna
@@ -67,14 +67,14 @@ class Version(ABC):
             if not prev:
                 raise ValueError(f'Update requires prev: {self}')
             child_pos_map = rng['children']
-            for tag in CHILD_TAGS.union(ATTRS):
+            for attr in ATTRS:
+                if getattr(prev, attr, None) != getattr(self, attr, None):
+                    diff_field_linenos.append(start_line)
+            for tag in CHILD_TAGS:
                 v0 = getattr(prev, tag, None)
                 v1 = getattr(self, tag, None)
                 if v0 != v1 and not (tag == 'INJURIES' and isna(v0) and isna(v1)):
-                    if tag in ATTRS:
-                        diff_field_linenos.append(start_line)
-                    else:
-                        diff_field_linenos.append(child_pos_map[tag][0])
+                    diff_field_linenos.append(child_pos_map[tag][0])
             start_line = min(diff_field_linenos)
             end_line = max(diff_field_linenos)
         line_range = f"{side}{start_line}-{side}{end_line}"
