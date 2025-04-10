@@ -8,6 +8,7 @@ from pandas import Timestamp, Series, DataFrame, isna
 from utz import call
 
 from nj_crashes.utils.github import REPO
+from nj_crashes.utils.log import err
 from njsp.crash.crash import Crash
 from njsp.crashes import Crashes, CHILD_TAGS, ATTRS
 
@@ -74,7 +75,11 @@ class Version(ABC):
                 v0 = getattr(prev, tag, None)
                 v1 = getattr(self, tag, None)
                 if v0 != v1 and not (tag == 'INJURIES' and isna(v0) and isna(v1)):
-                    diff_field_linenos.append(child_pos_map[tag][0])
+                    if tag == 'HIGHWAY' and tag not in child_pos_map:
+                        err(f"HIGHWAY was removed, starting range from {start_line=}")
+                        diff_field_linenos.append(start_line)
+                    else:
+                        diff_field_linenos.append(child_pos_map[tag][0])
             start_line = min(diff_field_linenos)
             end_line = max(diff_field_linenos)
         line_range = f"{side}{start_line}-{side}{end_line}"
