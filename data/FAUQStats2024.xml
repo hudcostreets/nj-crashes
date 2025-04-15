@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Apr 14 10:00:03 EDT 2025</RUNDATE>
+  <RUNDATE>Tue Apr 15 10:00:04 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -4297,7 +4297,7 @@
     <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="13302" DATE="07/13/2024" TIME="2135">
         <HIGHWAY>206</HIGHWAY>
-        <LOCATION>State Highway 206</LOCATION>
+        <LOCATION>State Highway 206 MP 39.3</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
