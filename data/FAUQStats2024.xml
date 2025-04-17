@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Apr 16 10:00:03 EDT 2025</RUNDATE>
+  <RUNDATE>Thu Apr 17 10:00:05 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1199,6 +1199,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1678,12 +1679,13 @@
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
       <ACCIDENT ACCID="13551" DATE="10/27/2024" TIME="1230">
         <HIGHWAY>440</HIGHWAY>
-        <LOCATION>State Highway 440</LOCATION>
+        <LOCATION>State Highway 440 MP 24.85</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>1</FATAL_B>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
       <ACCIDENT ACCID="13734" DATE="10/27/2024" TIME="0923">
         <STREET>Sip Ave</STREET>
@@ -1693,6 +1695,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1889,6 +1892,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2460,13 +2464,14 @@
   <COUNTY CCODE="21" CNAME="Warren">
     <MUNICIPALITY MCODE="2119" MNAME="Phillipsburg To">
       <ACCIDENT ACCID="13613" DATE="10/02/2024" TIME="1554">
-        <HIGHWAY>678</HIGHWAY>
-        <LOCATION>County 678</LOCATION>
+        <HIGHWAY>122</HIGHWAY>
+        <LOCATION>State Highway 122 MP .15</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8796,5 +8801,5 @@
   </COUNTY>
   <TOTACCIDENTS>649</TOTACCIDENTS>
   <TOTFATALITIES>686</TOTFATALITIES>
-  <TOTINJURIES>245</TOTINJURIES>
+  <TOTINJURIES>247</TOTINJURIES>
 </FAUQSTATS>
