@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import UTC
-
 import pandas as pd
 import re
 from dataclasses import dataclass
@@ -11,7 +9,7 @@ from typing import IO
 import git
 
 from nj_crashes.utils import TZ
-from nj_crashes.utils.github import Blob, GithubBlob, GithubCommit
+from nj_crashes.utils.github import Blob, GithubBlob, GithubCommit, GithubTree
 from bs4 import BeautifulSoup as bs
 
 from nj_crashes.utils.log import Log, err
@@ -44,7 +42,7 @@ class FAUQStats:
     totals: pd.DataFrame
 
     @classmethod
-    def blobs(cls, obj: Commit | Tree | GithubCommit) -> dict[int, Blob]:
+    def blobs(cls, obj: Commit | Tree | GithubTree | GithubCommit) -> dict[int, Blob]:
         if isinstance(obj, (Commit, GithubCommit)):
             tree = obj.tree
         else:
@@ -54,8 +52,7 @@ class FAUQStats:
 
         fauqstats_blobs = {}
         for blob in blobs:
-            m = re.fullmatch(r'FAUQStats(?P<year>20\d\d)\.xml', blob.name)
-            if not m:
+            if not (m := re.fullmatch(r'FAUQStats(?P<year>20\d\d)\.xml', blob.name)):
                 continue
             year = int(m['year'])
             fauqstats_blobs[year] = blob

@@ -16,16 +16,14 @@ from os.path import exists, expanduser
 from github import Auth, Github
 from github.Repository import Repository
 
-from typing import Optional, Union
-
 import pandas as pd
 
-from nj_crashes.utils.git import get_repo, git_fmt
+from nj_crashes.utils.git import git_fmt
 from njdot.rawdata import singleton
 
 REPO = 'hudcostreets/nj-crashes'
-_gh: Optional[Github] = None
-_gh_repo: Optional[Repository] = None
+_gh: Github | None = None
+_gh_repo: Repository | None = None
 
 
 def expand_ref(ref: str) -> str:
@@ -64,7 +62,7 @@ def get_github_repo() -> Repository:
 def load_github(
     path: str,
     ref: str | None = None,
-    repo: Optional[Repository] = None,
+    repo: Repository | None = None,
 ) -> bytes:
     if repo is None:
         repo = get_github_repo()
@@ -74,17 +72,11 @@ def load_github(
 def load_pqt_github(
         path: str,
         ref: str = None,
-        repo: Optional[Repository] = None,
+        repo: Repository | None = None,
 ) -> pd.DataFrame:
     content_bytes = load_github(path, ref, repo)
     return pd.read_parquet(BytesIO(content_bytes))
 
-
-def load_blob(
-    path: str,
-    ref: str | None = None,
-):
-    repo = get_repo()
 
 @dataclass
 class GithubBlob:
@@ -174,7 +166,7 @@ class GithubTree:
         ]
 
 
-Object = Union[GithubBlob, GithubTree]
+Object = GithubBlob | GithubTree
 
 
 @dataclass
@@ -220,7 +212,7 @@ class GithubCommit:
         return self.raw_commit['author']['date']
 
     @property
-    def parent(self):
+    def parent(self) -> 'GithubCommit':
         return singleton(self.parents)
 
     @cached_property
@@ -231,4 +223,4 @@ class GithubCommit:
 
 
 
-Blob = Union[git.Blob, GithubBlob]
+Blob = git.Blob | GithubBlob

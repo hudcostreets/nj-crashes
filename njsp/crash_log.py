@@ -5,15 +5,14 @@ from typing import Literal
 
 import pandas as pd
 from dateutil.parser import parse
-from git import Repo
-from pandas import DataFrame, Series
+from git import Repo, Commit
+from pandas import DataFrame, Series, to_datetime, Timestamp
 from utz import err
 
 from nj_crashes.utils import TZ
-from nj_crashes.utils.github import GithubCommit
+from nj_crashes.utils.github import GithubCommit, Blob
 from nj_crashes.utils.log import Log
-from njsp.commit_crashes import get_repo, CommitCrashes, get_rundate, DEFAULT_ROOT_SHA, SHORT_SHA_LEN, \
-    DEFAULT_ROOT_SHA_PARENT
+from njsp.commit_crashes import get_repo, CommitCrashes, get_rundate, SHORT_SHA_LEN, DEFAULT_ROOT_SHA_PARENT
 from njsp.fauqstats import FAUQStats
 from njsp.paths import CRASHES_RELPATH
 
@@ -21,22 +20,20 @@ Kind = Literal['add', 'update', 'del']
 
 
 def get_commit_crash_updates(
-    prv_commit,
-    prv_tree,
-    prv_short_sha,
-    cur_commit,
-    cur_tree,
-    cur_fauqstats_blobs,
+    prv_commit: Commit | GithubCommit,
+    cur_commit: Commit | GithubCommit,
+    cur_fauqstats_blobs: dict[int, Blob],
     log: Log = err,
 ):
     crash_map = {}
     try:
-        prv_fauqstats_blobs = FAUQStats.blobs(prv_tree)
+        prv_fauqstats_blobs = FAUQStats.blobs(prv_commit.tree)
     except KeyError:
         if prv_commit.hexsha == DEFAULT_ROOT_SHA_PARENT:
             prv_fauqstats_blobs = None
         else:
-            raise RuntimeError(f"Commit {prv_short_sha} lacks {CRASHES_RELPATH}")
+            raise RuntimeError(f"Commit {prv_commit.hexsha[:SHORT_SHA_LEN]} lacks {CRASHES_RELPATH}")
+    cur_tree = cur_commit.tree
     if cur_tree is not None and cur_fauqstats_blobs != prv_fauqstats_blobs:
         try:
             ts = pd.to_datetime(parse(get_rundate(cur_tree)))
@@ -75,25 +72,29 @@ def get_commit_crash_updates(
 def get_crash_log(
     repo: Repo | None = None,
     head: str | None = None,
-    since: str | datetime | pd.Timestamp | None = None,
+    since: str | datetime | Timestamp | None = None,
     root: str | None = DEFAULT_ROOT_SHA_PARENT,
     log: Log = err,
 ) -> DataFrame:
     if isinstance(since, (str, datetime)):
         tz = datetime.now(timezone.utc).astimezone().tzinfo
-        since = pd.to_datetime(since).tz_localize(tz)
+        since = to_datetime(since).tz_localize(tz)
 
-    crash_map = {}  # (accid: int) -> list[pd.Series]
+    crash_map = {}  # (accid: int) -> list[Series]
     repo = repo or get_repo()
     # TODO: pass CRASHES_RELPATH directly here?
     commits = repo.iter_commits(head)
     shas = []
     using_gh_commits = False
-    cur_commit = None
-    cur_tree = None
-    cur_fauqstats_blobs = None
+    try:
+        cur_commit = next(commits)
+    except StopIteration:
+        err(f"Initial commit {head} not found locally, switching to Github commit traversal")
+        cur_commit = GithubCommit.from_sha(head)
+        using_gh_commits = True
+    cur_fauqstats_blobs = FAUQStats.blobs(cur_commit.tree)
     while True:
-        if root and cur_commit and cur_commit.hexsha[:len(root)] == root:
+        if root and cur_commit.hexsha[:len(root)] == root:
             err(f"Reached root commit {root} after {len(shas)} commits; breaking")
             break
 
@@ -108,25 +109,18 @@ def get_crash_log(
                 else:
                     sha_strs = shas
                 err(f"Ran out of commits after {len(shas)} ({','.join(sha_strs)}), switching to Github commit traversal")
-                cur_commit = GithubCommit.from_git(cur_commit)
-                cur_tree = cur_commit.tree
-                cur_fauqstats_blobs = FAUQStats.blobs(cur_tree)
-                prv_commit = cur_commit.parent
                 using_gh_commits = True
+                prv_commit = cur_commit.parent
 
-        authored_datetime = pd.to_datetime(prv_commit.authored_datetime)
+        authored_datetime = to_datetime(prv_commit.authored_datetime)
         if since and authored_datetime < since:
             err(f"Reached commit authored at {authored_datetime} before {since}, after {len(shas)} commits; breaking")
             break
-        prv_tree = prv_commit.tree
-        prv_short_sha = prv_commit.hexsha[:SHORT_SHA_LEN]
-        shas.append(prv_short_sha)
+        shas.append(prv_commit.hexsha[:SHORT_SHA_LEN])
+
         prv_fauqstats_blobs, new_crash_versions = get_commit_crash_updates(
             prv_commit,
-            prv_tree,
-            prv_short_sha,
             cur_commit,
-            cur_tree,
             cur_fauqstats_blobs,
             log=log,
         )
@@ -137,7 +131,6 @@ def get_crash_log(
 
         # Step backward in history: current parent becomes child, next commit popped will be parent's parent
         cur_commit = prv_commit
-        cur_tree = prv_tree
         cur_fauqstats_blobs = prv_fauqstats_blobs
 
     crash_log = DataFrame([
