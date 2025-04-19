@@ -1,5 +1,4 @@
 from contextlib import nullcontext, AbstractContextManager
-from datetime import UTC
 from functools import wraps
 from os.path import splitext
 from urllib.parse import urlparse
