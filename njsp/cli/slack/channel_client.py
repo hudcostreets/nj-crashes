@@ -1,16 +1,12 @@
 from datetime import datetime
 from functools import cache
-from idlelib.undo import DeleteCommand
-from os.path import exists, join
 
-from dotenv import dotenv_values
 from pandas import Series, DataFrame, isna
 from slack_sdk import WebClient
 from stdlb import fromtimestamp
 from utz import cached_property, err, singleton, silent, solo, env, call
 
-from nj_crashes.utils.github import REPO
-from njsp.cli.slack.config import SLACK_CHANNEL_ID, SLACK_IM_ID, SLACK_BOT_TOKEN
+from njsp.cli.slack.config import SLACK_CHANNEL_ID, SLACK_BOT_TOKEN
 from njsp.cli.slack.msg import Msg, Thread
 from ...crash import Log, Add, Update, Delete, Version
 from ...utils import RED, GREEN, RESET, BLUE

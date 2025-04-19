@@ -26,10 +26,10 @@ def head():
     return git_fmt(fmt="%H", log=none)
 
 
-def to_msg(r: Series, ref: str):
+def to_msg(r: Series, sha: str):
     crash = Crash(str(r.name))
-    github_url = crash.xml_url(ref)
-    msg = bsky_str(r, github_url=github_url)
+    github_url = crash.xml_url(sha)
+    msg = bsky_str(r, sha=sha, github_url=github_url)
     return Series(asdict(msg))
 
 
@@ -60,7 +60,7 @@ def backfill(
     max_crashes: int,
     dry_run: int,
     parquet_url: str,
-    ref: str,
+    sha: str,
     sleep_s: float,
 ):
     """Create Bluesky posts for existing crashes."""
@@ -89,10 +89,10 @@ def backfill(
         if max_crashes:
             c = c.head(max_crashes)
 
-        ref = git_fmt(ref, fmt='%H', log=none)
+        sha = git_fmt(sha, fmt='%H', log=none)
         msgs = c.apply(
             to_msg,
-            ref=ref,
+            sha=sha,
             axis=1,
         )
         if dry_run:
