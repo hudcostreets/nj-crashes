@@ -67,7 +67,7 @@ class FAUQStats:
             blob_sha = obj.hexsha
             if blob_sha in fauqstats_cache:
                 fauqstats = fauqstats_cache[blob_sha]
-                log(f"FAUQStats cache hit: {fauqstats.year}, {fauqstats.rundate}")
+                log(f"{blob_sha}: FAUQStats cache hit: {fauqstats.year}, {fauqstats.rundate}")
                 return fauqstats
             fauqstats = get_fauqstats(obj.data_stream)
         else:
@@ -141,6 +141,6 @@ class FAUQStats:
         )])
         fauqstats = FAUQStats(year=year, rundate=rundate, crashes=crashes, totals=totals_df)
         if blob_sha:
-            log(f"FAUQStats cache miss: {fauqstats.year}, {fauqstats.rundate}")
+            log(f"{blob_sha}: FAUQStats cache miss: {fauqstats.year}, {fauqstats.rundate}")
             fauqstats_cache[blob_sha] = fauqstats
         return fauqstats

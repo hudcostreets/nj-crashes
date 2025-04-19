@@ -3,33 +3,32 @@ from dataclasses import dataclass
 from datetime import datetime
 from io import BytesIO
 from subprocess import CalledProcessError
-from typing import Tuple
 
-import pandas as pd
 from dateutil.parser import parse
 from git import Commit, Repo, Tree, Object, Blob
 from gitdb.exc import BadName
 from github import Github
 from github.Commit import Commit as GithubCommit
+from pandas import DataFrame, to_datetime, Timestamp, MultiIndex, concat, Index, read_parquet
 from utz import process, cached_property, err
 
-from nj_crashes.fauqstats import get_fauqstats, FAUQStats
 from nj_crashes.utils.git import git_fmt, get_repo, SHORT_SHA_LEN
 from nj_crashes.utils.github import get_github_repo, load_pqt_github, REPO, GithubCommit as GithubCommitWrapper
 from nj_crashes.utils.log import none, Log
+from njsp.fauqstats import get_fauqstats, FAUQStats
 from njsp.paths import RUNDATE_RELPATH
 
 
-def load_pqt_blob(blob: Object) -> pd.DataFrame:
+def load_pqt_blob(blob: Object) -> DataFrame:
     data = blob.data_stream.read()
-    return pd.read_parquet(BytesIO(data))
+    return read_parquet(BytesIO(data))
 
 
 def load_pqt(
     path: str | list[str],
     commit: str | Commit | Blob | None = None,
     repo: Repo | Github | None = None,
-) -> pd.DataFrame:
+) -> DataFrame:
     if isinstance(path, list):
         for p in path:
             try:
@@ -89,6 +88,8 @@ def get_rundate(tree: Tree) -> str:
 
 # data/FAUQStats2*.xml have been updated ≈daily since this commit on 2022-11-16
 DEFAULT_ROOT_SHA = '96faa3bb36b4174bbf485411f9d634804aa89a82'
+# crash-log traversal treats this commit as empty, and the "root" above as having introduced all crashes (2008 to 20221116) in one big snapshot
+DEFAULT_ROOT_SHA_PARENT = '9659fae8fcf1fe75939b9549a2aa7a871e1d1605'
 
 
 class CommitCrashes:
@@ -168,9 +169,12 @@ class CommitCrashes:
         return parent
 
     @cached_property
-    def year_xml_diffs(self) -> dict[int, Tuple[pd.DataFrame, pd.DataFrame]]:
+    def year_xml_diffs(self) -> dict[int, tuple[DataFrame, DataFrame]]:
         cur_fauq_blobs = FAUQStats.blobs(self.commit)
-        prv_fauq_blobs = FAUQStats.blobs(self.parent)
+        if self.commit.hexsha == DEFAULT_ROOT_SHA:
+            prv_fauq_blobs = {}
+        else:
+            prv_fauq_blobs = FAUQStats.blobs(self.parent)
         year_xml_diffs = {}
         for year, cur_blob in cur_fauq_blobs.items():
             prv_blob = prv_fauq_blobs.get(year)
@@ -178,7 +182,7 @@ class CommitCrashes:
                 cur_fauqstats = FAUQStats.load(cur_blob, log=err if self.log else none)
                 cur_crashes = cur_fauqstats.crashes
                 if prv_blob is None:
-                    prv_crashes = pd.DataFrame([], columns=cur_crashes.columns)
+                    prv_crashes = DataFrame([], columns=cur_crashes.columns)
                 else:
                     prv_fauqstats = FAUQStats.load(prv_blob, log=err if self.log else none)
                     prv_crashes = prv_fauqstats.crashes
@@ -186,9 +190,9 @@ class CommitCrashes:
         return year_xml_diffs
 
     @cached_property
-    def df0(self) -> pd.DataFrame:
-        if self.parent_sha == DEFAULT_ROOT_SHA:
-            return pd.DataFrame([], columns=self.df1.columns)
+    def df0(self) -> DataFrame:
+        if self.sha == DEFAULT_ROOT_SHA:
+            return DataFrame([], columns=self.df1.columns)
         else:
             year = self.year
             year_xml_diffs = self.year_xml_diffs
@@ -196,38 +200,38 @@ class CommitCrashes:
                 if year in year_xml_diffs:
                     return year_xml_diffs[year][0]
                 else:
-                    return pd.DataFrame([])
+                    return DataFrame([])
             else:
-                return pd.concat([
+                return concat([
                     prv_crashes
                     for year, (prv_crashes, _) in year_xml_diffs.items()
-                ]) if year_xml_diffs else pd.DataFrame([])
+                ]) if year_xml_diffs else DataFrame([])
 
     @cached_property
-    def df1(self) -> pd.DataFrame:
+    def df1(self) -> DataFrame:
         year = self.year
         year_xml_diffs = self.year_xml_diffs
         if year:
             if year in year_xml_diffs:
                 return year_xml_diffs[year][1]
             else:
-                return pd.DataFrame([])
+                return DataFrame([])
         else:
-            return pd.concat([
+            return concat([
                 cur_crashes
                 for year, (_, cur_crashes) in year_xml_diffs.items()
-            ]) if year_xml_diffs else pd.DataFrame([])
+            ]) if year_xml_diffs else DataFrame([])
 
     @cached_property
-    def dfs(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def dfs(self) -> tuple[DataFrame, DataFrame]:
         return self.df0, self.df1
 
     @cached_property
-    def idx0(self) -> pd.Index:
+    def idx0(self) -> Index:
         return self.df0.index
 
     @cached_property
-    def idx1(self) -> pd.Index:
+    def idx1(self) -> Index:
         return self.df1.index
 
     @cached_property
@@ -243,8 +247,8 @@ class CommitCrashes:
         return list(self.idx1.difference(self.ids0))
 
     @cached_property
-    def adds_df(self) -> pd.DataFrame:
-        return self.df1.loc[self.add_ids] if self.add_ids else pd.DataFrame([])
+    def adds_df(self) -> DataFrame:
+        return self.df1.loc[self.add_ids] if self.add_ids else DataFrame([])
 
     @cached_property
     def del_ids(self) -> list[str]:
@@ -255,10 +259,10 @@ class CommitCrashes:
         return list(self.ids0.intersection(self.ids1))
 
     @cached_property
-    def changed_crashes(self) -> pd.DataFrame:
+    def changed_crashes(self) -> DataFrame:
         preserved_ids = self.preserved_ids
         if not preserved_ids:
-            return pd.DataFrame([])
+            return DataFrame([])
         b0 = self.df0.loc[preserved_ids].sort_index().fillna('')
         b1 = self.df1.loc[preserved_ids].sort_index().fillna('')
         if len(b0.columns) != len(b1.columns):
@@ -268,13 +272,13 @@ class CommitCrashes:
                 raise RuntimeError(f"{self.commit.hexsha[:SHORT_SHA_LEN]}: column name mismatch, {b0.columns} vs. {b1.columns}")
             b0 = b0[b1.columns]
         changed_rows = (b0 != b1).any(axis=1)
-        changed_sxs = pd.concat([ b0[changed_rows], b1[changed_rows], ], axis=1)
+        changed_sxs = concat([ b0[changed_rows], b1[changed_rows], ], axis=1)
         columns = [
             (idx, col)
             for idx in [ 0, 1 ]
             for col in b1.columns
         ]
-        changed_sxs.columns = pd.MultiIndex.from_tuples(columns)
+        changed_sxs.columns = MultiIndex.from_tuples(columns)
         return changed_sxs
 
     @cached_property
@@ -282,8 +286,8 @@ class CommitCrashes:
         return self.changed_crashes.index.tolist()
 
     @property
-    def updated_df(self) -> pd.DataFrame:
-        return self.df1.loc[self.updated_ids] if self.updated_ids else pd.DataFrame([])
+    def updated_df(self) -> DataFrame:
+        return self.df1.loc[self.updated_ids] if self.updated_ids else DataFrame([])
 
     @cached_property
     def diff_objs(self) -> dict[str, dict]:
@@ -317,8 +321,8 @@ class CommitCrashes:
         return get_rundate(self.tree)
 
     @cached_property
-    def run_dt(self) -> pd.Timestamp:
-        return pd.to_datetime(parse(self.rundate))
+    def run_dt(self) -> Timestamp:
+        return to_datetime(parse(self.rundate))
 
     @cached_property
     def run_date(self) -> datetime.date:

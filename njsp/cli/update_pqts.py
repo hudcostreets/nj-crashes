@@ -18,11 +18,11 @@ from typing import Optional, Tuple
 from git import Tree
 from utz import sxs
 
-from nj_crashes.fauqstats import FAUQStats
 from nj_crashes.muni_codes import update_mc
 from nj_crashes.paths import DATA_DIR, COUNTY_CITY_CODES_PQT
 from nj_crashes.utils import s3, sql
 from nj_crashes.utils.log import Log, err
+from njsp.fauqstats import FAUQStats
 from njsp.paths import RUNDATE_PATH, CRASHES_PQT_S3, CRASHES_DB_S3
 from .base import command
 from ..paths import CRASHES_PQT

@@ -9,11 +9,12 @@ from git import Repo
 from pandas import DataFrame, Series
 from utz import err
 
-from nj_crashes.fauqstats import FAUQStats
 from nj_crashes.utils import TZ
 from nj_crashes.utils.github import GithubCommit
 from nj_crashes.utils.log import Log
-from njsp.commit_crashes import get_repo, CommitCrashes, get_rundate, DEFAULT_ROOT_SHA, SHORT_SHA_LEN
+from njsp.commit_crashes import get_repo, CommitCrashes, get_rundate, DEFAULT_ROOT_SHA, SHORT_SHA_LEN, \
+    DEFAULT_ROOT_SHA_PARENT
+from njsp.fauqstats import FAUQStats
 from njsp.paths import CRASHES_RELPATH
 
 Kind = Literal['add', 'update', 'del']
@@ -32,7 +33,7 @@ def get_commit_crash_updates(
     try:
         prv_fauqstats_blobs = FAUQStats.blobs(prv_tree)
     except KeyError:
-        if prv_commit.hexsha == DEFAULT_ROOT_SHA:
+        if prv_commit.hexsha == DEFAULT_ROOT_SHA_PARENT:
             prv_fauqstats_blobs = None
         else:
             raise RuntimeError(f"Commit {prv_short_sha} lacks {CRASHES_RELPATH}")
@@ -75,7 +76,7 @@ def get_crash_log(
     repo: Repo | None = None,
     head: str | None = None,
     since: str | datetime | pd.Timestamp | None = None,
-    root: str | None = DEFAULT_ROOT_SHA,
+    root: str | None = DEFAULT_ROOT_SHA_PARENT,
     log: Log = err,
 ) -> DataFrame:
     if isinstance(since, (str, datetime)):
@@ -96,22 +97,22 @@ def get_crash_log(
             err(f"Reached root commit {root} after {len(shas)} commits; breaking")
             break
 
-        try:
-            if using_gh_commits:
-                prv_commit = cur_commit.parent
-            else:
-                prv_commit = next(commits)
-        except StopIteration:
-            if len(shas) > 10:
-                sha_strs = shas[:5] + ['...'] + shas[-5:]
-            else:
-                sha_strs = shas
-            err(f"Ran out of commits after {len(shas)} ({','.join(sha_strs)}), switching to Github commit traversal")
-            cur_commit = GithubCommit.from_git(cur_commit)
-            cur_tree = cur_commit.tree
-            cur_fauqstats_blobs = FAUQStats.blobs(cur_tree)
+        if using_gh_commits:
             prv_commit = cur_commit.parent
-            using_gh_commits = True
+        else:
+            try:
+                prv_commit = next(commits)
+            except StopIteration:
+                if len(shas) > 10:
+                    sha_strs = shas[:5] + ['...'] + shas[-5:]
+                else:
+                    sha_strs = shas
+                err(f"Ran out of commits after {len(shas)} ({','.join(sha_strs)}), switching to Github commit traversal")
+                cur_commit = GithubCommit.from_git(cur_commit)
+                cur_tree = cur_commit.tree
+                cur_fauqstats_blobs = FAUQStats.blobs(cur_tree)
+                prv_commit = cur_commit.parent
+                using_gh_commits = True
 
         authored_datetime = pd.to_datetime(prv_commit.authored_datetime)
         if since and authored_datetime < since:

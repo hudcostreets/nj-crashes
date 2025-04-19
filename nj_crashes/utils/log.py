@@ -5,8 +5,15 @@ import utz
 Log = Callable[[str], None]
 
 
-def none(msg: str):
-    pass
+class SilentLog:
+    def __call__(self, msg: str):
+        pass
+
+    def __bool__(self):
+        return False
+
+
+none = SilentLog()
 
 
 def err(msg):

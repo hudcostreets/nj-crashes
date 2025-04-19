@@ -13,7 +13,8 @@ from nj_crashes.utils import TZ
 from nj_crashes.utils.log import err, none, Log
 from nj_crashes.utils.s3 import output_ctx, input_ctx
 from njsp.cli.base import njsp
-from njsp.crash_log import get_crash_log, DEFAULT_ROOT_SHA
+from njsp.commit_crashes import DEFAULT_ROOT_SHA_PARENT
+from njsp.crash_log import get_crash_log
 from njsp.paths import S3_CRASH_LOG_PQT, S3_CRASH_LOG_DB
 
 # Enforce column order, otherwise DFs built using 1 or more -a/--append-to chains can have different column orders (e.g.
@@ -72,7 +73,7 @@ def crash_log_cmd(fn):
     @flag("-i", "--in-place", help="Overwrite the input file -a/--append-to")
     @flag('-n', '--dry-run', help='Print the number of rows that would be dropped, but do not actually drop them')
     @opt("-o", "--out-paths", multiple=True, help="Path to save the output")
-    @opt("-r", "--root", help=f"Ref to end at; if -a/--append-to is passed, defaults to the latest SHA in that DataFrame, {DEFAULT_ROOT_SHA} otherwise")
+    @opt("-r", "--root", help=f"Ref to end at; if -a/--append-to is passed, defaults to the latest SHA in that DataFrame, {DEFAULT_ROOT_SHA_PARENT} otherwise")
     @flag('--s3', 'auto_s3', help=f"Shorthand for CI use: `-a {S3_CRASH_LOG_PQT} -i -o {S3_CRASH_LOG_DB}`")
     @wraps(fn)
     def _fn(
@@ -107,7 +108,7 @@ def crash_log_cmd(fn):
         elif in_place:
             raise ValueError("Cannot use -i/--in-place without -a/--append-to")
         elif not root:
-            root = DEFAULT_ROOT_SHA
+            root = DEFAULT_ROOT_SHA_PARENT
 
         with ctxs([
             s3.atomic_edit(out_path, create_ok=True) if urlparse(out_path).scheme == 's3' else nullcontext(out_path)

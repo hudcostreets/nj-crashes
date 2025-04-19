@@ -6,11 +6,11 @@ from git import Repo, Commit
 from typing import Tuple
 from utz import err, singleton
 
-from nj_crashes.fauqstats import FAUQStats
 from nj_crashes.utils import TZ, git
 from nj_crashes.utils.git import SHORT_SHA_LEN
 from njsp import rundate
 from njsp.crashes import load
+from njsp.fauqstats import FAUQStats
 from njsp.paths import fauqstats_relpath
 from njsp.rundate import Rundate
 
