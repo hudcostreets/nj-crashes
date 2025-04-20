@@ -1,21 +1,23 @@
 import re
 from dataclasses import dataclass
-from typing import Callable, Sequence
+from typing import Sequence
 
 from atproto_client import models
-from atproto_client.models.app.bsky.feed.defs import FeedViewPost
+from atproto_client.models.app.bsky.feed.defs import PostView
 from atproto_client.models.app.bsky.feed.post import ReplyRef
 from atproto_client.models.app.bsky.richtext.facet import Main as Facet, ByteSlice, Link as BskyLink
-from pandas import Series, isna
+from atproto_client.models.com.atproto.repo.strong_ref import Main
+from pandas import isna
 from utz import solo
 
+from njsp.cli.bsky.utils import HANDLE, uri2tid
 from njsp.commit_crashes import Link
-from njsp.crash import Crash, mk_dt_str, Version, Add, Update, Delete, Fmt
+from njsp.crash import mk_dt_str, Version, Add, Update, Delete, Fmt
 from njsp.crash.utils import DEFAULT_FMT
 
 ACCID_RGX = re.compile(r'\d{4,5}')
 ACCID_HREF_RGX0 = re.compile(r'https://github\.com/hudcostreets/nj-crashes/blob/(?P<sha>[0-9a-f]{40})/data/FAUQStats20\d\d\.xml#L\d+-L\d+')
-ACCID_HREF_RGX1 = re.compile(r'https://github\.com/hudcostreets/nj-crashes/commit/(?P<sha>[0-9a-f]{8,40})?diff=split#diff-[0-9a-f]{64}[LR]\d+-[LR]\d+')
+ACCID_HREF_RGX1 = re.compile(r'https://github\.com/hudcostreets/nj-crashes/commit/(?P<sha>[0-9a-f]{8,40})\?diff=split#diff-[0-9a-f]{64}[LR]\d+-[LR]\d+')
 
 
 def parse_facet(facet: Facet, text: str) -> tuple[int, str] | None:
@@ -80,6 +82,19 @@ class BskyPost:
         else:
             return post.record.reply
 
+    @property
+    def reply_ref(self) -> Main:
+        post = self.post
+        return Main(
+            cid=post.cid,
+            uri=post.uri,
+        )
+
+    @property
+    def url(self) -> str:
+        tid = uri2tid(self.post.uri)
+        return f"https://bsky.app/profile/{HANDLE}/post/{tid}"
+
     @staticmethod
     def mk(
         accid: int,
@@ -106,15 +121,14 @@ class BskyPost:
         return BskyPost(accid=accid, sha=sha, text=text, facets=facets)
 
     @staticmethod
-    def from_feed_post(feed_post: FeedViewPost) -> 'BskyPost | None':
-        post = feed_post.post
+    def from_post(post: PostView) -> 'BskyPost | None':
         record = post.record
         text = record.text
         facets = record.facets
-        post = solo(list(filter(None, [ parse_facet(facet, text) for facet in facets ])), empty_ok=True)
-        if not post:
+        accid_sha = solo(list(filter(None, [ parse_facet(facet, text) for facet in facets ])), empty_ok=True)
+        if not accid_sha:
             return None
-        accid, sha = post
+        accid, sha = accid_sha
         return BskyPost(
             accid=accid,
             sha=sha,

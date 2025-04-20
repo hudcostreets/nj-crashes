@@ -1,3 +1,5 @@
+import json
+from os.path import join, exists
 from typing import Tuple
 
 import pandas as pd
@@ -5,9 +7,12 @@ from utz import solo
 from utz.cli import flag, opt, arg
 from utz.ymd import dates, YMD
 
+from nj_crashes import ROOT_DIR
 from nj_crashes.utils.github import expand_ref
+from nj_crashes.utils.log import err
 from .base import bsky
 from .client import Client
+from .utils import HANDLE
 from ...crash import Log
 from ...crash.log import versions
 from ...paths import S3_CRASH_LOG_PQT
@@ -15,6 +20,7 @@ from ...paths import S3_CRASH_LOG_PQT
 
 @bsky.command
 @dates(default_start=YMD(2020), help='Date range to filter crashes to, e.g. `202307-`, `20230710-202308')
+@flag('-f', '--overwrite-cache')
 @opt('-l', '--crash-log-url', default=S3_CRASH_LOG_PQT, help=f'File containing crash-update history (default: {S3_CRASH_LOG_PQT})')
 @flag('-n', '--dry-run', help="Avoid Slack API requests, cache updates, etc.")
 @opt('-r', '--ref', help='Sync crashes updates at this Git SHA in the crash-log')
@@ -22,6 +28,7 @@ from ...paths import S3_CRASH_LOG_PQT
 def sync(
     start: YMD,
     end: YMD | None,
+    overwrite_cache: bool,
     crash_log_url: str,
     dry_run: bool,
     ref: str | None,
@@ -53,13 +60,29 @@ def sync(
     crashes_log = crashes_log[crashes_log.index.get_level_values(0).isin(valid_keys)]
     crashes_log = crashes_log.reset_index()
 
-    client = Client(dry_run=dry_run)
+    client = Client(
+        dry_run=dry_run,
+        overwrite_cache=overwrite_cache,
+    )
+    all_new_posts = []
     for accid, df in iter(crashes_log.groupby('accid')):
         crash_log = Log(accid, versions(df))
         try:
-            client.sync_crash(
+            new_posts = client.sync_crash(
                 accid=accid,
                 crash_log=crash_log,
             )
+            all_new_posts += new_posts
         except Exception:
             raise RuntimeError(f"Failed to sync crash {accid=}")
+
+    cache_path = join(ROOT_DIR, ".bsky", "cache", f"{HANDLE}.json")
+    if exists(cache_path):
+        with open(cache_path, 'r') as f:
+            arr = json.load(f)
+    else:
+        arr = []
+    arr.extend([ new_post.model_dump() for new_post in all_new_posts ])
+    with open(cache_path, 'w') as f:
+        json.dump(arr, f)
+    err(f"Saved {len(all_new_posts)} new posts to {cache_path=} ({len(arr)} total)")

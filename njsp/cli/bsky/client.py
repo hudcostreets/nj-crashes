@@ -1,26 +1,26 @@
+import json
 from functools import cache, cached_property
+from os import environ as env
+from os import makedirs
 from os.path import join, exists
 
 import atproto
-from os import environ as env
-
-from atproto_client.models.app.bsky.feed.defs import FeedViewPost
+from atproto_client.models.app.bsky.feed.defs import PostView
+from atproto_client.models.app.bsky.feed.post import ReplyRef
 from dotenv import dotenv_values
-from pandas import to_datetime
 from utz import solo
 
 from nj_crashes import ROOT_DIR
 from nj_crashes.utils.log import err
-from njsp.cli.bsky.post import BskyPost
+from njsp.cli.bsky.backfill import backfill
+from njsp.cli.bsky.post import BskyPost, HANDLE
 from njsp.cli.bsky.thread import Thread
-from njsp.crash import Log
+from njsp.cli.bsky.utils import BACKFILL_RUNDATE, uri2tid
+from njsp.crash import Log, Version
+from njsp.utils import BLUE, RESET, GREEN, RED
 
 USER_VAR = 'BSKY_USER'
 PASS_VAR = 'BSKY_PASS'
-
-# @crashes.hudcostreets.org was populated with all crashes from 2021-2025, at this commit ca. 2025-03-22
-INITIAL_BACKFILL_SHA = '76a42ac4a457a47251a7225301f38d58b6d5db82'
-MIN_RUNDATE = to_datetime('2025-03-23').tz_localize('US/Eastern')
 
 
 @cache
@@ -46,15 +46,16 @@ def client():
 
 DEFAULT_BATCH_SIZE = 100  # bsky API max
 DEFAULT_MAX_RECS = 10_000
-HANDLE = 'crashes.hudcostreets.org'
 
 
 class Client:
     def __init__(
         self,
         dry_run: bool = False,
+        overwrite_cache: bool = False,
     ):
         self.dry_run = dry_run
+        self.overwrite_cache = overwrite_cache
 
     @property
     def client(self) -> atproto.Client:
@@ -63,25 +64,61 @@ class Client:
     def feed_posts(
         self,
         batch_size: int = DEFAULT_BATCH_SIZE,
-        max_recs: int = DEFAULT_MAX_RECS,
+        max_recs: int | None = None,
         handle: str = HANDLE,
-    ) -> list[FeedViewPost]:
-        recs = []
+        read_cache: bool = True,
+        write_cache: bool = True,
+        # ttl: str | int = '1d',
+    ) -> list[PostView]:
+        name = handle
+        if max_recs is not None:
+            name += f"_{max_recs}"
+        else:
+            max_recs = DEFAULT_MAX_RECS
+        cache_dir = join(ROOT_DIR, ".bsky", "cache")
+        cache_path = join(cache_dir, f"{name}.json")
+        if exists(cache_path):
+            if read_cache:
+                # stat = os.stat(cache_key)
+                # mtime = stat.st_mtime
+                with open(cache_path, 'r') as f:
+                    arr = json.load(f)
+                posts = [ PostView(**r) for r in arr ]
+                err(f"Bsky: loaded {len(posts)} feed posts from cache")
+                return posts
+            else:
+                err(f"Bsky: skipping cache read {cache_path=}")
+
+        posts = []
         cursor = None
-        while len(recs) < max_recs:
+        while len(posts) < max_recs:
             res = self.client.get_author_feed(actor=handle, limit=batch_size, cursor=cursor)
-            feed = res.feed
-            recs += feed
-            err(f"Bsky: fetched batch of {len(feed)} posts ({len(recs)} total)")
+            batch = [ fpv.post for fpv in res.feed ]
+            posts += batch
+            err(f"Bsky: fetched batch of {len(batch)} posts ({len(posts)} total)")
             cursor = res.cursor
             if not cursor:
                 break
 
-        return recs
+        if write_cache:
+            makedirs(cache_dir, exist_ok=True)
+            with open(cache_path, 'w') as f:
+                arr = [
+                    rec.model_dump()
+                    for rec in posts
+                ]
+                json.dump(arr, f)
+                err(f"Bsky: saved {len(posts)} posts to {cache_path=}")
+        else:
+            err(f"Bsky: skipping cache write {cache_path=}")
+
+        return posts
 
     def posts(self, **kwargs) -> list[BskyPost]:
+        if self.overwrite_cache:
+            kwargs['read_cache'] = False
         return list(filter(None, [
-            BskyPost.from_feed_post(feed_post)
+            BskyPost.from_post(feed_post)
             for feed_post in
             self.feed_posts(**kwargs)
         ]))
@@ -94,62 +131,95 @@ class Client:
         self,
         accid: int,
         crash_log: Log,
-    ):
-        thread = Thread.from_posts(accid, [ p for p in self.all_posts if p.accid == accid ])
-        root, *replies = thread.posts
-        # root = thread.root
-        backfill_root = thread.backfill_root
-        # root = solo([ p for p in posts if not p.reply ], empty_ok=True)
-        # if bool(posts) != bool(root):
-        #     raise RuntimeError(f"{accid} missing root post ({len(posts)}): {posts}")
-
-        v0 = []
-        v1 = []
-        for v in crash_log.versions:
-            if v.rundate > MIN_RUNDATE:
-                v1.append(v)
-            else:
-                v0.append(v)
-        # if v0:
-        #     backfill_post = solo([ p for p in posts if p.sha == INITIAL_BACKFILL_SHA ])
-        # else:
-        #     backfill_post = None
-
-        if v1:
-            if backfill_root:
-                if len(replies) > len(v1):
-                    raise RuntimeError(f"{accid}: {len(replies)=} > {len(v1)=}")
-                for idx, (v, reply) in enumerate(zip(v1, replies)):
-                    if v.sha != reply.sha:
-                        raise RuntimeError(f"{accid}#{idx}: {v.sha=} != {reply.sha=}")
-                for idx in range(len(replies), len(v1)):
-                    v = v1[idx]
-                    reply_to = thread.posts[idx - 1]
-                    post = BskyPost.mk(
-                        accid=accid,
-                        sha=v.sha,
-                        pcs=[
-                            
-                        ]
-                        # text=v.text,
-                        # reply=FeedViewPost(
-                        #     parent=FeedViewPost(
-                        #         uri=reply_to.post.uri,
-                        #         cid=reply_to.post.cid,
-                        #     ),
-                        #     root=FeedViewPost(
-                        #         uri=root.post.uri,
-                        #         cid=root.post.cid,
-                        #     ),
-                        # ),
-                    )
-                    # if v.prev:
-                    #     assert reply.reply.parent.uri == v.prev.sha
-                    #     assert reply.reply.root.uri == INITIAL_BACKFILL_SHA
-                    # else:
-                    #     assert reply.reply is None
-            else:
-                pass
+    ) -> list[PostView]:
+        new_posts = []
+        all_posts = self.all_posts
+        accid_posts = [ p for p in all_posts if p.accid == accid ]
+        if accid_posts:
+            thread = Thread.from_posts(accid, accid_posts)
+            posts = thread.posts
+            root, *replies = posts
+            backfill_root = thread.backfill_root
         else:
-            assert backfill_root
+            posts = replies = []
+            backfill_root = None
+        post_backfill_versions = [
+            v for v in crash_log.versions
+            if v.rundate > BACKFILL_RUNDATE
+        ]
 
+        dry_run = self.dry_run
+        def log(msg: str):
+            if dry_run:
+                msg = f"DRY RUN {msg}"
+            err(f"{BLUE}{accid:>5d}: {msg}{RESET}")
+
+        def get_post(v: Version, idx: int, offset: int) -> tuple[BskyPost, BskyPost | None, ReplyRef | None]:
+            parent_idx = idx - offset
+            if parent_idx >= 0:
+                parent = posts[parent_idx]
+                reply_to = ReplyRef(
+                    parent=parent.reply_ref,
+                    root=root.reply_ref,
+                )
+            else:
+                parent = reply_to = None
+            post = BskyPost.from_version(v, parent_idx + 1, len(post_backfill_versions) + 1 - offset)
+            return post, parent, reply_to
+
+        def sync_posts(post_backfill_posts: list[BskyPost], offset: int = 0):
+            if len(post_backfill_posts) > len(post_backfill_versions):
+                raise RuntimeError(f"{accid}: {len(post_backfill_posts)=} > {len(post_backfill_versions)=}")
+            for idx, (v, post) in enumerate(zip(post_backfill_versions, post_backfill_posts)):
+                if v.sha != post.sha:
+                    raise RuntimeError(f"{accid}#{idx}: {v.sha=} != {post.sha=}")
+                else:
+                    expected_post, _, _ = get_post(v, idx, offset)
+                    expected_post.post = post.post
+                    if post == expected_post:
+                        log(f"post {post.url} is as expected: {post.text}")
+                    else:
+                        log(f"post {post.url} doesn't match expected:\n{RED}-{expected_post}\n{GREEN}+{post})")
+            for idx in range(len(post_backfill_posts), len(post_backfill_versions)):
+                v = post_backfill_versions[idx]
+                post, parent, reply_to = get_post(v, idx, offset)
+                log(f"new post{f' (reply to {parent.url})' if parent else ''}:")
+                log(f"{GREEN}{post.text}")
+                for facet in post.facets:
+                    start = facet.index.byte_start
+                    end = facet.index.byte_end
+                    feature = solo(facet.features, dedupe=False)
+                    url = feature.uri
+                    log(f"{GREEN}{' ' * start}{'^' * (end - start)} {url}")
+                if not self.dry_run:
+                    res = self.client.send_post(
+                        text=post.text,
+                        facets=post.facets,
+                        reply_to=reply_to,
+                    )
+                    uri = res.uri
+                    res = self.client.get_posts([uri])
+                    new_post = solo(res.posts)
+                    post.post = new_post
+                    new_posts.append(new_post)
+                    post_backfill_posts.append(post)
+                    # cache_path = join(ROOT_DIR, ".bsky", "cache", f"{HANDLE}.json")
+                    # if exists(cache_path):
+                    #     with open(cache_path, 'r') as f:
+                    #         arr = json.load(f)
+                    #     arr.append(new_post.model_dump())
+                    #     with open(cache_path, 'w') as f:
+                    #         json.dump(arr, f)
+                    #     log(f"saved new post to {cache_path=} ({len(arr)} total)")
+
+        if post_backfill_versions:
+            if backfill_root:
+                sync_posts(replies)
+            else:
+                sync_posts(posts, offset=1)
+        else:
+            if not backfill_root:
+                raise RuntimeError(f"{accid}: no backfill root or subsequent versions found")
+            log(f"no updates necessary since backfilled {backfill_root.url}")
+
+        return new_posts

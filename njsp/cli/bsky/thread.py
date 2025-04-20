@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from njsp.cli.bsky.client import INITIAL_BACKFILL_SHA
 from njsp.cli.bsky.post import BskyPost
+from njsp.cli.bsky.utils import INITIAL_BACKFILL_SHA
 
 
 @dataclass
