@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 import utz
 from click import option
 from fsspec import filesystem
-from pandas import read_parquet, Series, concat
+from pandas import read_parquet, Series, concat, isna
 from utz import singleton, err
 from utz.ymd import dates, YMD
 
@@ -16,8 +16,10 @@ from nj_crashes.utils.git import git_fmt
 from nj_crashes.utils.log import none
 from njdot import cc2cn, cc2mc2mn
 from njsp.cli.bsky.base import bsky
-from njsp.cli.bsky.post import BskyPost, bsky_str
-from njsp.crash import Crash
+from njsp.cli.bsky.post import BskyPost
+from njsp.commit_crashes import Link
+from njsp.crash import Crash, mk_dt_str
+from njsp.crash.utils import DEFAULT_FMT, Fmt
 from njsp.paths import CRASHES_PQT, BSKY_CRASH_POSTS_S3
 
 
@@ -47,6 +49,34 @@ parquet_url_opt = option('-p', '--parquet-url', default=BSKY_CRASH_POSTS_S3, hel
 sleep_opt = option('-s', '--sleep-s', type=float, default=0.5, help="Sleep this many seconds between Bsky API requests")
 
 
+def bsky_str(
+    r: Series,
+    sha: str,
+    fmt: Fmt = DEFAULT_FMT,
+    github_url: str | None = None,
+) -> BskyPost:
+    """Used in initial ``bsky backfill``."""
+    crash = Crash.load(r)
+    victim_str = crash.victim_str
+    dt_str = mk_dt_str(r['dt'], fmt)
+    if isna(r.LOCATION):
+        location = 'unknown location'
+    else:
+        location = r.LOCATION.replace('&', '&amp;')
+
+    accid = int(r.name)
+    accid_str = str(accid)
+    gh_link = Link(uri=github_url, text=accid_str) if github_url else accid_str
+    c_url, m_url = crash.urls
+    c_link = Link(uri=c_url, text=f'{r.CNAME} County')
+    m_link = Link(uri=m_url, text=r.MNAME)
+    return BskyPost.mk(
+        accid=accid,
+        sha=sha,
+        pcs=[f'{dt_str} (', gh_link, '): ', m_link, ' (', c_link, f'), {location}: {victim_str} deceased'],
+    )
+
+
 @bsky.command
 @dates(default_start=YMD(2020), help='Date range to filter crashes to, e.g. `202307-`, `20230710-202308 (default: "2020-")')
 @max_crashes_opt
@@ -63,7 +93,12 @@ def backfill(
     sha: str,
     sleep_s: float,
 ):
-    """Create Bluesky posts for existing crashes."""
+    """Initial "backfill" of Bluesky posts for existing crashes, 2020–20250322.
+
+    The format of posts has since been updated, and oriented around crash ``Version``s, so this command is not expected
+    to be used/useful going forward. It was run once, at SHA ``INITIAL_BACKFILL_SHA``, to seed the account with a
+    snapshot of ≈3000 crashes from 2020–20250322.
+    """
     c = read_parquet(CRASHES_PQT)
     c['CNAME'] = c.cc.map(cc2cn)
     c['MNAME'] = c.apply(lambda r: cc2mc2mn[r.cc].mc2mn[r.mc], axis=1)

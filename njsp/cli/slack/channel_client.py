@@ -6,12 +6,10 @@ from slack_sdk import WebClient
 from stdlb import fromtimestamp
 from utz import cached_property, err, singleton, silent, solo, env, call
 
-from njsp.cli.slack.config import SLACK_CHANNEL_ID, SLACK_BOT_TOKEN
+from njsp.cli.slack.config import SLACK_CHANNEL_ID_VAR, SLACK_BOT_TOKEN_VAR
 from njsp.cli.slack.msg import Msg, Thread
-from ...crash import Log, Add, Update, Delete, Version
+from ...crash import Log, Update, Version
 from ...utils import RED, GREEN, RESET, BLUE
-
-CHANNEL_OPTS = ('-h', '--channel')
 
 
 DEFAULT_BATCH_SIZE = 1_000
@@ -27,12 +25,12 @@ class ChannelClient:
         max_recs: int = DEFAULT_MAX_RECS,
     ):
         if not channel:
-            channel = env.get(SLACK_CHANNEL_ID)
+            channel = env.get(SLACK_CHANNEL_ID_VAR)
         if not channel:
-            raise RuntimeError(f"Missing {SLACK_CHANNEL_ID} in environment and {env_path}, and no {'/'.join(CHANNEL_OPTS)} passed")
-        token = env.get(SLACK_BOT_TOKEN)
+            raise RuntimeError(f"No channel passed, and {SLACK_CHANNEL_ID_VAR} not set")
+        token = env.get(SLACK_BOT_TOKEN_VAR)
         if not token:
-            raise RuntimeError(f"Missing {SLACK_BOT_TOKEN} in environment and {env_path}")
+            raise RuntimeError(f"{SLACK_BOT_TOKEN_VAR} not set")
 
         client = WebClient(token=token)
         err(f"Resolving channel: {channel}")
@@ -374,25 +372,7 @@ class ChannelClient:
                 new_text = "Previous versions:"
             else:
                 vidx, v = t
-                xml_url = v.xml_url(ref=v.sha)
-                rundate_str = v.rundate.strftime('%Y%m%d')
-                if isinstance(v, Add):
-                    slack_str = v.slack_str(github_url=xml_url)
-                    if vidx == 0:
-                        if len(vs) == 1:
-                            new_text = slack_str
-                        else:
-                            new_text = f"Added ({rundate_str}):\n&gt; {slack_str}"
-                    else:
-                        new_text = f"Re-added ({rundate_str}):\n&gt; {slack_str}"
-                elif isinstance(v, Update):
-                    slack_str = v.slack_str(github_url=xml_url)
-                    new_text = f"Updated ({rundate_str}):\n&gt; {slack_str}"
-                elif isinstance(v, Delete):
-                    slack_str = v.prev.slack_str(github_url=xml_url)
-                    new_text = f"Deleted ({rundate_str}):\n&gt; {slack_str}"
-                else:
-                    raise ValueError(f"Invalid version type {v=}")
+                new_text = v.slack_update_str(vidx, len(vs))
 
             event_type = "new_crash" if i == 0 else "update_crash"
             tts = thread_ts

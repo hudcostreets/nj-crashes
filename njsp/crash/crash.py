@@ -10,7 +10,7 @@ from nj_crashes.utils.github import REPO
 from nj_crashes.utils.log import err
 from njdot import normalize_name, cc2mc2mn
 from njdot.cc2mc2mn import County
-from njsp.crash.utils import Fmt, mk_dt_str
+from njsp.crash.utils import Fmt, mk_dt_str, DEFAULT_FMT
 from njsp.crashes import Crashes
 from njsp.paths import MC_PQT
 
@@ -128,7 +128,7 @@ class Crash:
 
     def slack_str(
         r,
-        fmt: Fmt = '%a %b %-d %Y %-I:%M%p',
+        fmt: Fmt = DEFAULT_FMT,
         github_url: str | None = None,
     ) -> str:
         victim_str = r.victim_str

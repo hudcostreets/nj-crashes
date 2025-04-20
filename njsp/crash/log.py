@@ -42,11 +42,11 @@ class Version(ABC):
         """Generate a URL to the XML line range corresponding to this crash-record deletion, in GitHub's commit-diff
         view.
 
-        Unfortunately, GitHub's web UI doesn't correctly scroll to the given line range, on page load, but instead drops
-        the user at the top of the relevant XML file's diffs. If the user scrolls to the line range in question, it will
-        be highlighted, but overall it's not a great experience. Hopefully GitHub will fix this, because the commit-diff
-        view is a much better representation of what changed in this ``Version`` than linking to the ``/blob`` view (as
-        ``Crash`` does).
+        Unfortunately, GitHub's web UI doesn't always correctly scroll to the given line range, on page load, but
+        instead drops the user at the top of the relevant XML file's diffs. If the user scrolls to the line range in
+        question, it will be highlighted, but overall it's not a great experience. Hopefully GitHub will fix this,
+        because the commit-diff view is a much better representation of what changed in this ``Version`` than linking to
+        the ``/blob`` view (as ``Crash`` does).
 
         TODO: file issue vs. GitHub about commit-diff-line-range links not loading properly.
         """
@@ -75,8 +75,8 @@ class Version(ABC):
                 v0 = getattr(prev, tag, None)
                 v1 = getattr(self, tag, None)
                 if v0 != v1 and not (tag == 'INJURIES' and isna(v0) and isna(v1)):
-                    if tag == 'HIGHWAY' and tag not in child_pos_map:
-                        err(f"HIGHWAY was removed, starting range from {start_line=}")
+                    if tag in ['HIGHWAY', 'STREET', 'LOCATION'] and tag not in child_pos_map:
+                        err(f"{tag} was removed, starting range from {start_line=}")
                         diff_field_linenos.append(start_line)
                     else:
                         diff_field_linenos.append(child_pos_map[tag][0])
@@ -84,6 +84,28 @@ class Version(ABC):
             end_line = max(diff_field_linenos)
         line_range = f"{side}{start_line}-{side}{end_line}"
         return f'https://github.com/{REPO}/commit/{sha}?diff=split#diff-{path_sha256}{line_range}'
+
+    def slack_update_str(v, idx: int, n: int) -> str:
+        xml_url = v.xml_url(ref=v.sha)
+        rundate_str = v.rundate.strftime('%Y%m%d')
+        if isinstance(v, Add):
+            slack_str = v.slack_str(github_url=xml_url)
+            if idx == 0:
+                if n == 1:
+                    return slack_str
+                else:
+                    return f"Added ({rundate_str}):\n&gt; {slack_str}"
+            else:
+                return f"Re-added ({rundate_str}):\n&gt; {slack_str}"
+        elif isinstance(v, Update):
+            slack_str = v.slack_str(github_url=xml_url)
+            return f"Updated ({rundate_str}):\n&gt; {slack_str}"
+        elif isinstance(v, Delete):
+            slack_str = v.prev.slack_str(github_url=xml_url)
+            return f"Deleted ({rundate_str}):\n&gt; {slack_str}"
+        else:
+            raise ValueError(f"Invalid version type {v=}")
+
 
 
 @dataclass

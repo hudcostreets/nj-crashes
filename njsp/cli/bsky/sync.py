@@ -1,28 +1,29 @@
 from typing import Tuple
 
 import pandas as pd
-from click import option, argument
 from utz import solo
+from utz.cli import flag, opt, arg
 from utz.ymd import dates, YMD
 
 from nj_crashes.utils.github import expand_ref
 from .base import bsky
+from .client import Client
 from ...crash import Log
 from ...crash.log import versions
 from ...paths import S3_CRASH_LOG_PQT
 
 
 @bsky.command
-@dates(default_start=YMD(2008), help='Date range to filter crashes to, e.g. `202307-`, `20230710-202308')
-@option('-f', '--overwrite-existing', count=True, help='1x: update existing messages; 2x: delete existing messages and post new ones (default: 0, do nothing)')
-@option('-l', '--crash-log-url', default=S3_CRASH_LOG_PQT, help=f'File containing crash-update history (default: {S3_CRASH_LOG_PQT})')
-@option('-r', '--ref', help='Sync crashes updates at this Git SHA in the crash-log')
-@argument('accids', type=int, nargs=-1)
+@dates(default_start=YMD(2020), help='Date range to filter crashes to, e.g. `202307-`, `20230710-202308')
+@opt('-l', '--crash-log-url', default=S3_CRASH_LOG_PQT, help=f'File containing crash-update history (default: {S3_CRASH_LOG_PQT})')
+@flag('-n', '--dry-run', help="Avoid Slack API requests, cache updates, etc.")
+@opt('-r', '--ref', help='Sync crashes updates at this Git SHA in the crash-log')
+@arg('accids', type=int, nargs=-1)
 def sync(
     start: YMD,
     end: YMD | None,
-    overwrite_existing: int,
     crash_log_url: str,
+    dry_run: bool,
     ref: str | None,
     accids: Tuple[int, ...],
 ):
@@ -50,15 +51,15 @@ def sync(
         msk = msk & (first_dates < end.date)
     valid_keys = first_dates[msk].index
     crashes_log = crashes_log[crashes_log.index.get_level_values(0).isin(valid_keys)]
-
     crashes_log = crashes_log.reset_index()
+
+    client = Client(dry_run=dry_run)
     for accid, df in iter(crashes_log.groupby('accid')):
         crash_log = Log(accid, versions(df))
         try:
             client.sync_crash(
                 accid=accid,
                 crash_log=crash_log,
-                overwrite_existing=overwrite_existing,
             )
         except Exception:
             raise RuntimeError(f"Failed to sync crash {accid=}")
