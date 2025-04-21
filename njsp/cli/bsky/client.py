@@ -9,13 +9,13 @@ import atproto
 from atproto_client.models.app.bsky.feed.defs import PostView
 from atproto_client.models.app.bsky.feed.post import ReplyRef
 from dotenv import dotenv_values
-from utz import solo
+from utz import solo, o
 
 from nj_crashes import ROOT_DIR
 from nj_crashes.utils.log import err
 from njsp.cli.bsky.post import BskyPost, HANDLE
 from njsp.cli.bsky.thread import Thread
-from njsp.cli.bsky.utils import BACKFILL_RUNDATE
+from njsp.cli.bsky.utils import BACKFILL_RUNDATE, NETLOC, PATH_PREFIX
 from njsp.crash import Log, Version
 from njsp.utils import BLUE, RESET, GREEN, RED
 
@@ -170,7 +170,11 @@ class Client:
             post = BskyPost.from_version(v, parent_idx + 1)
             return post, parent, reply_to
 
-        def sync_posts(post_backfill_posts: list[BskyPost], offset: int = 0):
+        def sync_posts(
+            post_backfill_posts: list[BskyPost],
+            all_posts: list[BskyPost] | None = None,
+            offset: int = 0,
+        ):
             if len(post_backfill_posts) > len(post_backfill_versions):
                 raise RuntimeError(f"{accid}: {len(post_backfill_posts)=} > {len(post_backfill_versions)=}")
             for idx, (v, post) in enumerate(zip(post_backfill_versions, post_backfill_posts)):
@@ -194,7 +198,9 @@ class Client:
                     feature = solo(facet.features, dedupe=False)
                     url = feature.uri
                     log(f"{GREEN}{' ' * start}{'^' * (end - start)} {url}")
-                if not self.dry_run:
+                if dry_run:
+                    new_post = o(cid='XXXDRYRUNXXX', uri=f'at://{NETLOC}{PATH_PREFIX}/XXXDRYRUNXXX')
+                else:
                     res = self.client.send_post(
                         text=post.text,
                         facets=post.facets,
@@ -215,18 +221,20 @@ class Client:
                             break
                     if not new_post:
                         raise RuntimeError(f"Failed to fetch new post {uri} after creation (slept for {sleep_ss})")
-                    post.post = new_post
                     new_posts.append(new_post)
-                    nonlocal root
-                    if not root:
-                        root = post
-                    post_backfill_posts.append(post)
+                post.post = new_post
+                nonlocal root
+                if not root:
+                    root = post
+                post_backfill_posts.append(post)
+                if all_posts:
+                    all_posts.append(post)
 
         exc = None
         try:
             if post_backfill_versions:
                 if backfill_root:
-                    sync_posts(replies)
+                    sync_posts(replies, all_posts=posts)
                 else:
                     sync_posts(posts, offset=1)
             else:
