@@ -3,6 +3,7 @@ from typing import Tuple
 import pandas as pd
 from click import option, argument
 from utz import solo
+from utz.cli import multi, opt, arg
 from utz.ymd import dates, YMD
 
 from nj_crashes.utils.github import expand_ref
@@ -16,17 +17,17 @@ from ...paths import S3_CRASH_LOG_PQT
 @slack.command('sync')
 @channel_client_opts
 @dates(default_start=YMD(2008), help='Date range to filter crashes to, e.g. `202307-`, `20230710-202308')
-@option('-f', '--overwrite-existing', count=True, help='1x: update existing messages; 2x: delete existing messages and post new ones (default: 0, do nothing)')
-@option('-l', '--crash-log-url', default=S3_CRASH_LOG_PQT, help=f'File containing crash-update history (default: {S3_CRASH_LOG_PQT})')
-@option('-r', '--ref', help='Sync crashes updates at this Git SHA in the crash-log')
-@argument('accids', type=int, nargs=-1)
+@opt('-f', '--overwrite-existing', count=True, help='1x: update existing messages; 2x: delete existing messages and post new ones (default: 0, do nothing)')
+@opt('-l', '--crash-log-url', default=S3_CRASH_LOG_PQT, help=f'File containing crash-update history (default: {S3_CRASH_LOG_PQT})')
+@multi('-r', '--ref', 'refs', help='Sync crash updates from these Git SHAs in the crash-log')
+@arg('accids', type=int, nargs=-1)
 def sync(
     client: ChannelClient,
     start: YMD,
     end: YMD | None,
     overwrite_existing: int,
     crash_log_url: str,
-    ref: str | None,
+    refs: tuple[str, ...],
     accids: Tuple[int, ...],
 ):
     """Post crashes to the #crash-bot channel in HCCS Slack.
@@ -35,13 +36,13 @@ def sync(
     updates `data/FAUQStats*.xml` files).
     """
     crashes_log = pd.read_parquet(crash_log_url)
-    if ref:
+    if refs:
         if accids:
             raise ValueError("Cannot specify both --ref and accids")
         reset = crashes_log.reset_index()
         l, n = solo(reset.sha.apply(len).value_counts().to_dict())
-        ref = expand_ref(ref)[:l]
-        accids = reset.loc[reset.sha == ref, 'accid'].unique().tolist()
+        refs = [ expand_ref(ref)[:l] for ref in refs ]
+        accids = reset.loc[reset.sha.isin(refs), 'accid'].unique().tolist()
         crashes_log = crashes_log.loc[list(accids)]
     elif accids:
         crashes_log = crashes_log.loc[list(accids)]
