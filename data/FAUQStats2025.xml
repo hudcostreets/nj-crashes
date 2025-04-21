@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Apr 20 10:00:01 EDT 2025</RUNDATE>
+  <RUNDATE>Mon Apr 21 10:00:02 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,11 +49,11 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
-  <COUNTY CCODE="15" CNAME="Ocean">
-    <MUNICIPALITY MCODE="1511" MNAME="Jackson Twsp">
-      <ACCIDENT ACCID="13862" DATE="04/19/2025" TIME="1817">
-        <STREET>1143 Toms River Road</STREET>
-        <LOCATION>1143 Toms River Road</LOCATION>
+  <COUNTY CCODE="04" CNAME="Camden">
+    <MUNICIPALITY MCODE="0411" MNAME="Collingswood Boro">
+      <ACCIDENT ACCID="13866" DATE="04/19/2025" TIME="1606">
+        <STREET>South Park Drive &amp; Browning Road</STREET>
+        <LOCATION>South Park Drive &amp; Browning Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -65,8 +65,8 @@
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0806" MNAME="Glassboro Boro">
       <ACCIDENT ACCID="13864" DATE="04/19/2025" TIME="1548">
-        <STREET>DELSEA DRIVE NORTH</STREET>
-        <LOCATION>DELSEA DRIVE NORTH</LOCATION>
+        <HIGHWAY>47</HIGHWAY>
+        <LOCATION>State Highway 47</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -79,7 +79,20 @@
     <MUNICIPALITY MCODE="1518" MNAME="Manchester Twsp">
       <ACCIDENT ACCID="13861" DATE="04/19/2025" TIME="1522">
         <HIGHWAY>37</HIGHWAY>
-        <LOCATION>37</LOCATION>
+        <LOCATION>State Highway 37</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
+      <ACCIDENT ACCID="13865" DATE="04/19/2025" TIME="0348">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike MP 94.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -118,8 +131,8 @@
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0307" MNAME="Chesterfield Twsp">
       <ACCIDENT ACCID="13863" DATE="04/17/2025" TIME="1522">
-        <STREET>Chesterfield Jacobstown Rd.</STREET>
-        <LOCATION>Chesterfield Jacobstown Rd.</LOCATION>
+        <HIGHWAY>528</HIGHWAY>
+        <LOCATION>County 528</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1869,7 +1882,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>140</TOTACCIDENTS>
-  <TOTFATALITIES>151</TOTFATALITIES>
+  <TOTACCIDENTS>141</TOTACCIDENTS>
+  <TOTFATALITIES>152</TOTFATALITIES>
   <TOTINJURIES>25</TOTINJURIES>
 </FAUQSTATS>
