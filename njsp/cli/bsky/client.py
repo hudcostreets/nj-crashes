@@ -17,7 +17,7 @@ from njsp.cli.bsky.post import BskyPost, HANDLE
 from njsp.cli.bsky.thread import Thread
 from njsp.cli.bsky.utils import BACKFILL_RUNDATE, NETLOC, PATH_PREFIX
 from njsp.crash import Log, Version
-from njsp.utils import BLUE, RESET, GREEN, RED
+from njsp.utils import BLUE, RESET, GREEN, RED, YELLOW
 
 USER_VAR = 'BSKY_USER'
 PASS_VAR = 'BSKY_PASS'
@@ -186,7 +186,7 @@ class Client:
                     if post == expected_post:
                         log(f"post {post.url} is as expected: {post.text}")
                     else:
-                        log(f"post {post.url} doesn't match expected:\n{RED}-{expected_post}\n{GREEN}+{post})")
+                        log(f"{YELLOW}post {post.url} doesn't match expected:\n{RED}-{expected_post}\n{GREEN}+{post})")
             for idx in range(len(post_backfill_posts), len(post_backfill_versions)):
                 v = post_backfill_versions[idx]
                 post, parent, reply_to = get_post(v, idx, offset)
