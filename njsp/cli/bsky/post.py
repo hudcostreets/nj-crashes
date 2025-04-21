@@ -66,7 +66,7 @@ def bsky_text_facets(
         c_link = Link(c_url, f'{v.CNAME} County')
         m_link = Link(m_url, v.MNAME)
         return [
-            f'{dt_str} (', gh_link, '): ', m_link, ' (', c_link, f'), {location}: {victim_str} deceased',
+            f'{dt_str} (', gh_link, '): ', m_link, ' (', c_link, f'), {location}: {victim_str} deceased{v.injuries_str}',
         ]
     else:
         raise ValueError(f"Invalid version type {v=}")

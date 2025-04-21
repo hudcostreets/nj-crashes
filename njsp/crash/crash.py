@@ -126,6 +126,14 @@ class Crash:
 
         return ', '.join(victim_pcs)
 
+    @property
+    def injuries_str(self):
+        injuries = self.INJURIES
+        if isna(injuries) or not injuries:
+            return ""
+        else:
+            return f", {int(injuries)} injuries"
+
     def slack_str(
         r,
         fmt: Fmt = DEFAULT_FMT,
@@ -149,4 +157,4 @@ class Crash:
         c_url, m_url = r.urls
         c_link = link(uri=c_url, text=f'{r.CNAME} County')
         m_link = link(uri=m_url, text=r.MNAME)
-        return f'*{dt_str} ({gh_link})*: {m_link} ({c_link}), {location}: {victim_str} deceased'
+        return f'*{dt_str} ({gh_link})*: {m_link} ({c_link}), {location}: {victim_str} deceased{r.injuries_str}'
