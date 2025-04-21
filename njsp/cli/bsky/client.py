@@ -3,6 +3,7 @@ from functools import cache, cached_property
 from os import environ as env
 from os import makedirs
 from os.path import join, exists
+from time import sleep
 
 import atproto
 from atproto_client.models.app.bsky.feed.defs import PostView
@@ -12,16 +13,15 @@ from utz import solo
 
 from nj_crashes import ROOT_DIR
 from nj_crashes.utils.log import err
-from njsp.cli.bsky.backfill import backfill
 from njsp.cli.bsky.post import BskyPost, HANDLE
 from njsp.cli.bsky.thread import Thread
-from njsp.cli.bsky.utils import BACKFILL_RUNDATE, uri2tid
+from njsp.cli.bsky.utils import BACKFILL_RUNDATE
 from njsp.crash import Log, Version
 from njsp.utils import BLUE, RESET, GREEN, RED
 
 USER_VAR = 'BSKY_USER'
 PASS_VAR = 'BSKY_PASS'
-
+DEFAULT_SLEEPS = [ .2, .5, 1 ]
 
 @cache
 def client():
@@ -61,7 +61,7 @@ class Client:
     def client(self) -> atproto.Client:
         return client()
 
-    def feed_posts(
+    def post_views(
         self,
         batch_size: int = DEFAULT_BATCH_SIZE,
         max_recs: int | None = None,
@@ -117,10 +117,10 @@ class Client:
     def posts(self, **kwargs) -> list[BskyPost]:
         if self.overwrite_cache:
             kwargs['read_cache'] = False
+        post_views = self.post_views(**kwargs)
         return list(filter(None, [
-            BskyPost.from_post(feed_post)
-            for feed_post in
-            self.feed_posts(**kwargs)
+            BskyPost.from_post(post_view, post_views)
+            for post_view in post_views
         ]))
 
     @cached_property
@@ -131,8 +131,11 @@ class Client:
         self,
         accid: int,
         crash_log: Log,
-    ) -> list[PostView]:
+        sleep_ss: list[int] | None = None,
+    ) -> tuple[list[PostView], Exception | None]:
         new_posts = []
+        if not sleep_ss:
+            sleep_ss = DEFAULT_SLEEPS
         all_posts = self.all_posts
         accid_posts = [ p for p in all_posts if p.accid == accid ]
         if accid_posts:
@@ -142,7 +145,7 @@ class Client:
             backfill_root = thread.backfill_root
         else:
             posts = replies = []
-            backfill_root = None
+            root = backfill_root = None
         post_backfill_versions = [
             v for v in crash_log.versions
             if v.rundate > BACKFILL_RUNDATE
@@ -164,7 +167,7 @@ class Client:
                 )
             else:
                 parent = reply_to = None
-            post = BskyPost.from_version(v, parent_idx + 1, len(post_backfill_versions) + 1 - offset)
+            post = BskyPost.from_version(v, parent_idx + 1)
             return post, parent, reply_to
 
         def sync_posts(post_backfill_posts: list[BskyPost], offset: int = 0):
@@ -198,28 +201,40 @@ class Client:
                         reply_to=reply_to,
                     )
                     uri = res.uri
-                    res = self.client.get_posts([uri])
-                    new_post = solo(res.posts)
+                    new_post = None
+                    for idx, sleep_s in enumerate(sleep_ss):
+                        if idx > 0:
+                            if idx == 1:
+                                err(f"Failed to fetch new post {uri} after sleeping for {sleep_ss[0]}s, sleeping another {sleep_s}s then retrying...")
+                            else:
+                                err(f"Failed to fetch new post {uri}; sleeping {sleep_s}s then retrying...")
+                        sleep(sleep_s)
+                        res = self.client.get_posts([uri])
+                        new_post = solo(res.posts, empty_ok=True)
+                        if new_post:
+                            break
+                    if not new_post:
+                        raise RuntimeError(f"Failed to fetch new post {uri} after creation (slept for {sleep_ss})")
                     post.post = new_post
                     new_posts.append(new_post)
+                    nonlocal root
+                    if not root:
+                        root = post
                     post_backfill_posts.append(post)
-                    # cache_path = join(ROOT_DIR, ".bsky", "cache", f"{HANDLE}.json")
-                    # if exists(cache_path):
-                    #     with open(cache_path, 'r') as f:
-                    #         arr = json.load(f)
-                    #     arr.append(new_post.model_dump())
-                    #     with open(cache_path, 'w') as f:
-                    #         json.dump(arr, f)
-                    #     log(f"saved new post to {cache_path=} ({len(arr)} total)")
 
-        if post_backfill_versions:
-            if backfill_root:
-                sync_posts(replies)
+        exc = None
+        try:
+            if post_backfill_versions:
+                if backfill_root:
+                    sync_posts(replies)
+                else:
+                    sync_posts(posts, offset=1)
             else:
-                sync_posts(posts, offset=1)
-        else:
-            if not backfill_root:
-                raise RuntimeError(f"{accid}: no backfill root or subsequent versions found")
-            log(f"no updates necessary since backfilled {backfill_root.url}")
+                if not backfill_root:
+                    log(f"no backfill root or subsequent versions found")
+                else:
+                    log(f"no updates necessary since backfilled {backfill_root.url}")
+        except Exception as e:
+            exc = e
 
-        return new_posts
+        return new_posts, exc

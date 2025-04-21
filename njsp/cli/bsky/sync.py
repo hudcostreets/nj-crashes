@@ -65,24 +65,28 @@ def sync(
         overwrite_cache=overwrite_cache,
     )
     all_new_posts = []
-    for accid, df in iter(crashes_log.groupby('accid')):
-        crash_log = Log(accid, versions(df))
-        try:
-            new_posts = client.sync_crash(
-                accid=accid,
-                crash_log=crash_log,
-            )
-            all_new_posts += new_posts
-        except Exception:
-            raise RuntimeError(f"Failed to sync crash {accid=}")
-
-    cache_path = join(ROOT_DIR, ".bsky", "cache", f"{HANDLE}.json")
-    if exists(cache_path):
-        with open(cache_path, 'r') as f:
-            arr = json.load(f)
-    else:
-        arr = []
-    arr.extend([ new_post.model_dump() for new_post in all_new_posts ])
-    with open(cache_path, 'w') as f:
-        json.dump(arr, f)
-    err(f"Saved {len(all_new_posts)} new posts to {cache_path=} ({len(arr)} total)")
+    try:
+        for accid, df in iter(crashes_log.groupby('accid')):
+            crash_log = Log(accid, versions(df))
+            try:
+                new_posts, exc = client.sync_crash(
+                    accid=accid,
+                    crash_log=crash_log,
+                )
+                all_new_posts += new_posts
+                if exc:
+                    raise exc
+            except Exception:
+                raise RuntimeError(f"Failed to sync crash {accid=}")
+    finally:
+        if all_new_posts:
+            cache_path = join(ROOT_DIR, ".bsky", "cache", f"{HANDLE}.json")
+            if exists(cache_path):
+                with open(cache_path, 'r') as f:
+                    arr = json.load(f)
+            else:
+                arr = []
+            arr.extend([ new_post.model_dump() for new_post in all_new_posts ])
+            with open(cache_path, 'w') as f:
+                json.dump(arr, f)
+            err(f"Saved {len(all_new_posts)} new posts to {cache_path=} ({len(arr)} total)")

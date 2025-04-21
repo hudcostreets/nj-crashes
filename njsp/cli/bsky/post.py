@@ -20,10 +20,10 @@ ACCID_HREF_RGX0 = re.compile(r'https://github\.com/hudcostreets/nj-crashes/blob/
 ACCID_HREF_RGX1 = re.compile(r'https://github\.com/hudcostreets/nj-crashes/commit/(?P<sha>[0-9a-f]{8,40})\?diff=split#diff-[0-9a-f]{64}[LR]\d+-[LR]\d+')
 
 
-def parse_facet(facet: Facet, text: str) -> tuple[int, str] | None:
+def parse_facet(facet: Facet, text: str) -> tuple[int | None, str | None]:
     feature = solo(facet.features)
     if not isinstance(feature, models.AppBskyRichtextFacet.Link):
-        return None
+        return None, None
     uri = feature.uri
 
     index = facet.index
@@ -32,38 +32,44 @@ def parse_facet(facet: Facet, text: str) -> tuple[int, str] | None:
     if ACCID_RGX.fullmatch(text):
         accid = int(text)
     else:
-        return None
+        accid = None
 
     if m := ACCID_HREF_RGX0.fullmatch(uri):
         sha = m['sha']
     elif m := ACCID_HREF_RGX1.fullmatch(uri):
         sha = m['sha']
     else:
-        return None
+        sha = None
 
     return accid, sha
 
 
 def bsky_text_facets(
-    v: Add | Update,
+    v: Version,
     fmt: Fmt = DEFAULT_FMT,
-) -> Sequence[str | Link]:
-    victim_str = v.victim_str
-    dt_str = mk_dt_str(v['dt'], fmt)
-    if isna(v.LOCATION):
-        location = 'unknown location'
-    else:
-        location = v.LOCATION.replace('&', '&amp;')
-
+) -> list[str | Link]:
     github_url = v.xml_url(ref=v.sha)
-    gh_link = Link(github_url, str(v.accid))
+    if isinstance(v, Delete):
+        rundate_str = v.rundate.strftime('%Y-%m-%d')
+        return ['(', Link(github_url, 'deleted'), f' {rundate_str})']
+    elif isinstance(v, (Add, Update)):
+        victim_str = v.victim_str
+        dt_str = mk_dt_str(v['dt'], fmt)
+        if isna(v.LOCATION):
+            location = 'unknown location'
+        else:
+            location = v.LOCATION.replace('&', '&amp;')
 
-    c_url, m_url = v.urls
-    c_link = Link(c_url, f'{v.CNAME} County')
-    m_link = Link(m_url, v.MNAME)
-    return [
-        f'{dt_str} (', gh_link, '): ', m_link, ' (', c_link, f'), {location}: {victim_str} deceased',
-    ]
+        gh_link = Link(github_url, str(v.accid))
+
+        c_url, m_url = v.urls
+        c_link = Link(c_url, f'{v.CNAME} County')
+        m_link = Link(m_url, v.MNAME)
+        return [
+            f'{dt_str} (', gh_link, '): ', m_link, ' (', c_link, f'), {location}: {victim_str} deceased',
+        ]
+    else:
+        raise ValueError(f"Invalid version type {v=}")
 
 
 @dataclass
@@ -121,14 +127,19 @@ class BskyPost:
         return BskyPost(accid=accid, sha=sha, text=text, facets=facets)
 
     @staticmethod
-    def from_post(post: PostView) -> 'BskyPost | None':
+    def from_post(post: PostView, posts: list[PostView] | None = None) -> 'BskyPost | None':
         record = post.record
         text = record.text
         facets = record.facets
-        accid_sha = solo(list(filter(None, [ parse_facet(facet, text) for facet in facets ])), empty_ok=True)
-        if not accid_sha:
-            return None
-        accid, sha = accid_sha
+        accid, sha = solo([ parse_facet(facet, text) for facet in facets ], lambda t: t[1], empty_ok=True)
+        if not accid:
+            if sha and posts and (reply := record.reply):
+                root_uri = reply.root.uri
+                root = solo(posts, lambda p: p.uri == root_uri)
+                root_post = BskyPost.from_post(root)
+                accid = root_post.accid
+            else:
+                return None
         return BskyPost(
             accid=accid,
             sha=sha,
@@ -138,23 +149,18 @@ class BskyPost:
         )
 
     @staticmethod
-    def from_version(v: Version, idx: int, n: int) -> 'BskyPost':
-        rundate_str = v.rundate.strftime('%Y%m%d')
+    def from_version(v: Version, idx: int) -> 'BskyPost':
+        rundate_str = v.rundate.strftime('%Y-%m-%d')
+        pcs = bsky_text_facets(v)
         if isinstance(v, Add):
-            pcs = bsky_text_facets(v)
             if idx == 0:
-                if n == 1:
-                    pass
-                else:
-                    pcs = [ f"Added ({rundate_str}):\n&gt; ", *pcs ]
+                pass
             else:
-                pcs = [ f"Re-added ({rundate_str}):\n&gt; ", *pcs ]
+                pcs.append(f"\n\n(re-added {rundate_str})")
         elif isinstance(v, Update):
-            pcs = bsky_text_facets(v)
-            pcs = [ f"Updated ({rundate_str}):\n&gt; ", *pcs ]
+            pcs.append(f"\n\n(updated {rundate_str})")
         elif isinstance(v, Delete):
-            pcs = bsky_text_facets(v.prev)
-            pcs = [ f"Deleted ({rundate_str}):\n&gt; ", *pcs ]
+            pass
         else:
             raise ValueError(f"Invalid version type {v=}")
         return BskyPost.mk(

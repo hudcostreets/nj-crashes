@@ -11,8 +11,8 @@ class Thread:
 
     @staticmethod
     def from_posts(accid: int, posts: list[BskyPost]) -> 'Thread':
-        root = posts[0]
         posts = list(sorted(posts, key=lambda p: p.post.record.created_at))
+        root = posts[0]
         for idx, (prv, cur) in enumerate(zip([None] + posts[:-1], posts)):
             if prv:
                 p = cur.reply.parent
