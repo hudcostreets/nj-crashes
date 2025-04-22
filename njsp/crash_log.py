@@ -110,7 +110,7 @@ def get_crash_log(
                     sha_strs = shas
                 err(f"Ran out of commits after {len(shas)} ({','.join(sha_strs)}), switching to Github commit traversal")
                 using_gh_commits = True
-                prv_commit = cur_commit.parent
+                prv_commit = GithubCommit.from_sha(f'{cur_commit.hexsha}^')
 
         authored_datetime = to_datetime(prv_commit.authored_datetime)
         if since and authored_datetime < since:
