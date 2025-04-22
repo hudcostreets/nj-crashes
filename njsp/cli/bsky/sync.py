@@ -24,6 +24,7 @@ from ...paths import S3_CRASH_LOG_PQT
 @opt('-l', '--crash-log-url', default=S3_CRASH_LOG_PQT, help=f'File containing crash-update history (default: {S3_CRASH_LOG_PQT})')
 @flag('-n', '--dry-run', help="Avoid Slack API requests, cache updates, etc.")
 @multi('-r', '--ref', 'refs', help='Sync crash updates from these Git SHAs in the crash-log')
+@multi('-s', '--retry-intervals', parse=float, help='Sequence of intervals (in seconds) to sleep when fetching newly-created posts (comma-delimited)')
 @arg('accids', type=int, nargs=-1)
 def sync(
     start: YMD,
@@ -32,6 +33,7 @@ def sync(
     crash_log_url: str,
     dry_run: bool,
     refs: tuple[str, ...],
+    retry_intervals: tuple[float, ...],
     accids: Tuple[int, ...],
 ):
     """Post crashes to the #crash-bot channel in HCCS Slack.
@@ -72,6 +74,7 @@ def sync(
                 new_posts, exc = client.sync_crash(
                     accid=accid,
                     crash_log=crash_log,
+                    retry_intervals=retry_intervals,
                 )
                 all_new_posts += new_posts
                 if exc:

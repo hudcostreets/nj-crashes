@@ -4,6 +4,7 @@ from os import environ as env
 from os import makedirs
 from os.path import join, exists
 from time import sleep
+from typing import Sequence
 
 import atproto
 from atproto_client.models.app.bsky.feed.defs import PostView
@@ -21,7 +22,7 @@ from njsp.utils import BLUE, RESET, GREEN, RED, YELLOW
 
 USER_VAR = 'BSKY_USER'
 PASS_VAR = 'BSKY_PASS'
-DEFAULT_SLEEPS = [ .2, .5, 1 ]
+DEFAULT_RETRY_INTERVALS = [1, 1, 1]
 
 @cache
 def client():
@@ -131,11 +132,11 @@ class Client:
         self,
         accid: int,
         crash_log: Log,
-        sleep_ss: list[int] | None = None,
+        retry_intervals: Sequence[float] | None = None,
     ) -> tuple[list[PostView], Exception | None]:
         new_posts = []
-        if not sleep_ss:
-            sleep_ss = DEFAULT_SLEEPS
+        if not retry_intervals:
+            retry_intervals = DEFAULT_RETRY_INTERVALS
         all_posts = self.all_posts
         accid_posts = [ p for p in all_posts if p.accid == accid ]
         if accid_posts:
@@ -212,10 +213,10 @@ class Client:
                     )
                     uri = res.uri
                     new_post = None
-                    for idx, sleep_s in enumerate(sleep_ss):
+                    for idx, sleep_s in enumerate(retry_intervals):
                         if idx > 0:
                             if idx == 1:
-                                err(f"Failed to fetch new post {uri} after sleeping for {sleep_ss[0]}s, sleeping another {sleep_s}s then retrying...")
+                                err(f"Failed to fetch new post {uri} after sleeping for {retry_intervals[0]}s, sleeping another {sleep_s}s then retrying...")
                             else:
                                 err(f"Failed to fetch new post {uri}; sleeping {sleep_s}s then retrying...")
                         sleep(sleep_s)
@@ -224,7 +225,7 @@ class Client:
                         if new_post:
                             break
                     if not new_post:
-                        raise RuntimeError(f"Failed to fetch new post {uri} after creation (slept for {sleep_ss})")
+                        raise RuntimeError(f"Failed to fetch new post {uri} after creation (slept for {retry_intervals})")
                     new_posts.append(new_post)
                 post.post = new_post
                 nonlocal root
