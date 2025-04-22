@@ -35,6 +35,10 @@ class Version(ABC):
     line_range_side = "R"
 
     @property
+    def is_noop(self) -> bool:
+        return False
+
+    @property
     def _xml_url_commit(self) -> str:
         return self.sha
 
@@ -128,6 +132,21 @@ class Update(Version, Crash):
         dels = { k: v for k, v in d0.items() if k not in d1 }
         both = { k: (d0[k], d1[k]) for k in d0 if k in d1 and d0[k] != d1[k] }
         return dict(adds=adds, dels=dels, both=both)
+
+    @property
+    def is_noop(self) -> bool:
+        updates = self.updates()
+        if not updates['adds'] and not updates['dels']:
+            updates = updates['both']
+            if len(updates) == 1 and 'INJURIES' in updates:
+                i0, i1 = updates['INJURIES']
+                if isna(i0):
+                    i0 = 0
+                if isna(i1):
+                    i1 = 0
+                if i0 == i1 and i0 == 0:
+                    return True
+        return False
 
 
 @dataclass

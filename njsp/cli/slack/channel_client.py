@@ -340,25 +340,10 @@ class ChannelClient:
                 msg = f"DRY RUN {msg}"
             err(f"{BLUE}{accid:>5d}: {msg}{RESET}")
 
-        def keep(v: Version) -> bool:
-            if isinstance(v, Update):
-                updates = v.updates()
-                if not updates['adds'] and not updates['dels']:
-                    updates = updates['both']
-                    if len(updates) == 1 and 'INJURIES' in updates:
-                        i0, i1 = updates['INJURIES']
-                        if isna(i0):
-                            i0 = 0
-                        if isna(i1):
-                            i1 = 0
-                        if i0 == i1 and i0 == 0:
-                            return False
-            return True
-
         vs = [
             (idx, v)
             for idx, v in enumerate(crash_log.versions)
-            if keep(v)
+            if not v.is_noop
         ]
         # Top of thread always shows latest version
         msg_versions = [vs[-1]]

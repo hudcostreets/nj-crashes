@@ -148,7 +148,7 @@ class Client:
             root = backfill_root = None
         post_backfill_versions = [
             v for v in crash_log.versions
-            if v.rundate > BACKFILL_RUNDATE
+            if v.rundate > BACKFILL_RUNDATE and not v.is_noop
         ]
 
         dry_run = self.dry_run
