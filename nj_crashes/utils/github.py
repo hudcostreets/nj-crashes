@@ -17,6 +17,7 @@ from github import Auth, Github
 from github.Repository import Repository
 
 import pandas as pd
+from utz import proc
 
 from nj_crashes.utils.git import git_fmt
 from njdot.rawdata import singleton
@@ -35,6 +36,19 @@ def expand_ref(ref: str) -> str:
         except CalledProcessError:
             gh = get_github_repo()
             return gh.get_commit(ref).sha
+
+
+def expand_refspec(refspec: str, *args: str) -> list[str]:
+    pcs = refspec.split('..')
+    if len(pcs) == 2:
+        cmd = [ 'git', 'log', '--format=%H', f'{pcs[0]}..{pcs[1]}' ]
+        if args:
+            cmd += [ '--', *args ]
+        return proc.lines(cmd)
+    elif len(pcs) == 1:
+        return [expand_ref(pcs[0])]
+    else:
+        raise ValueError(f"Invalid refspec {refspec=}")
 
 
 def get_github_repo() -> Repository:

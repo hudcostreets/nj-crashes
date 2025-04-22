@@ -8,7 +8,7 @@ from utz.cli import flag, opt, arg, multi
 from utz.ymd import dates, YMD
 
 from nj_crashes import ROOT_DIR
-from nj_crashes.utils.github import expand_ref
+from nj_crashes.utils.github import expand_refspec
 from nj_crashes.utils.log import err
 from .base import bsky
 from .client import Client
@@ -23,7 +23,7 @@ from ...paths import S3_CRASH_LOG_PQT
 @flag('-f', '--overwrite-cache')
 @opt('-l', '--crash-log-url', default=S3_CRASH_LOG_PQT, help=f'File containing crash-update history (default: {S3_CRASH_LOG_PQT})')
 @flag('-n', '--dry-run', help="Avoid Slack API requests, cache updates, etc.")
-@multi('-r', '--ref', 'refs', help='Sync crash updates from these Git SHAs in the crash-log')
+@multi('-r', '--refspec', 'refspecs', help='Sync crash updates from these Git SHAs (or ranges) in the crash-log')
 @multi('-s', '--retry-intervals', parse=float, help='Sequence of intervals (in seconds) to sleep when fetching newly-created posts (comma-delimited)')
 @arg('accids', type=int, nargs=-1)
 def sync(
@@ -32,7 +32,7 @@ def sync(
     overwrite_cache: bool,
     crash_log_url: str,
     dry_run: bool,
-    refs: tuple[str, ...],
+    refspecs: tuple[str, ...],
     retry_intervals: tuple[float, ...],
     accids: Tuple[int, ...],
 ):
@@ -42,12 +42,17 @@ def sync(
     updates `data/FAUQStats*.xml` files).
     """
     crashes_log = pd.read_parquet(crash_log_url)
-    if refs:
+    if refspecs:
         if accids:
             raise ValueError("Cannot specify both --ref and accids")
         reset = crashes_log.reset_index()
         l, n = solo(reset.sha.apply(len).value_counts().to_dict())
-        refs = [ expand_ref(ref)[:l] for ref in refs ]
+        refs = [
+            sha[:l]
+            for refspec in refspecs
+            for sha in expand_refspec(refspec, 'data')
+        ]
+        err("Checking commits:\n\t" + "\n\t".join(refs))
         accids = reset.loc[reset.sha.isin(refs), 'accid'].unique().tolist()
         crashes_log = crashes_log.loc[list(accids)]
     elif accids:
