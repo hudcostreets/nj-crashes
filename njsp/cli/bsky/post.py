@@ -168,3 +168,14 @@ class BskyPost:
             sha=v.sha,
             pcs=pcs,
         )
+
+    @property
+    def str_lines(self) -> list[str]:
+        lines = self.text.split('\n')
+        for facet in self.facets:
+            start = facet.index.byte_start
+            end = facet.index.byte_end
+            feature = solo(facet.features, dedupe=False)
+            url = feature.uri
+            lines.append(f"{' ' * start}{'^' * (end - start)} {url}")
+        return lines

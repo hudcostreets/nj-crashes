@@ -186,18 +186,22 @@ class Client:
                     if post == expected_post:
                         log(f"post {post.url} is as expected: {post.text}")
                     else:
-                        log(f"{YELLOW}post {post.url} doesn't match expected:\n{RED}-{expected_post}\n{GREEN}+{post})")
+                        log(f"{YELLOW}post {post.url} doesn't match expected:")
+                        ls0 = expected_post.str_lines
+                        ls1 = post.str_lines
+                        for l0, l1 in zip(ls0, ls1):
+                            if l0 == l1:
+                                log(f"{RESET} {l0}")
+                            else:
+                                log(f"-{RED}{l0}")
+                                log(f"+{GREEN}{l1}")
+
             for idx in range(len(post_backfill_posts), len(post_backfill_versions)):
                 v = post_backfill_versions[idx]
                 post, parent, reply_to = get_post(v, idx, offset)
                 log(f"new post{f' (reply to {parent.url} )' if parent else ''}:")
-                log(f"{GREEN}{post.text}")
-                for facet in post.facets:
-                    start = facet.index.byte_start
-                    end = facet.index.byte_end
-                    feature = solo(facet.features, dedupe=False)
-                    url = feature.uri
-                    log(f"{GREEN}{' ' * start}{'^' * (end - start)} {url}")
+                for line in post.str_lines:
+                    log(f"{GREEN}{line}")
                 if dry_run:
                     new_post = o(cid='XXXDRYRUNXXX', uri=f'at://{NETLOC}{PATH_PREFIX}/XXXDRYRUNXXX')
                 else:
