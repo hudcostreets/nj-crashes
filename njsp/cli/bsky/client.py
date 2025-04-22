@@ -190,7 +190,7 @@ class Client:
             for idx in range(len(post_backfill_posts), len(post_backfill_versions)):
                 v = post_backfill_versions[idx]
                 post, parent, reply_to = get_post(v, idx, offset)
-                log(f"new post{f' (reply to {parent.url})' if parent else ''}:")
+                log(f"new post{f' (reply to {parent.url} )' if parent else ''}:")
                 log(f"{GREEN}{post.text}")
                 for facet in post.facets:
                     start = facet.index.byte_start
