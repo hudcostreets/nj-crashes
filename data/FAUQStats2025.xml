@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Apr 22 10:00:02 EDT 2025</RUNDATE>
+  <RUNDATE>Wed Apr 23 10:00:01 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,30 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1214" MNAME="New Brunswick City">
+      <ACCIDENT ACCID="13871" DATE="04/22/2025" TIME="1315">
+        <STREET>17 us hwy 18 north</STREET>
+        <LOCATION>17 us hwy 18 north</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+    <MUNICIPALITY MCODE="1215" MNAME="North Brunswick Tws">
+      <ACCIDENT ACCID="13870" DATE="04/22/2025" TIME="1307">
+        <STREET>rt 171 and rt 1 s</STREET>
+        <LOCATION>rt 171 and rt 1 s</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
@@ -147,19 +171,6 @@
       <ACCIDENT ACCID="13863" DATE="04/17/2025" TIME="1522">
         <HIGHWAY>528</HIGHWAY>
         <LOCATION>County 528</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="18" CNAME="Somerset">
-    <MUNICIPALITY MCODE="1806" MNAME="Bridgewater Twsp">
-      <ACCIDENT ACCID="13858" DATE="04/17/2025" TIME="1017">
-        <STREET>Woodlawn Ave</STREET>
-        <LOCATION>Woodlawn Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1896,7 +1907,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>142</TOTACCIDENTS>
-  <TOTFATALITIES>153</TOTFATALITIES>
+  <TOTACCIDENTS>143</TOTACCIDENTS>
+  <TOTFATALITIES>154</TOTFATALITIES>
   <TOTINJURIES>25</TOTINJURIES>
 </FAUQSTATS>
