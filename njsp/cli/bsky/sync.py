@@ -1,5 +1,6 @@
 import json
 from os.path import join, exists
+from time import sleep
 from typing import Tuple
 
 import pandas as pd
@@ -25,6 +26,7 @@ from ...paths import S3_CRASH_LOG_PQT
 @flag('-n', '--dry-run', help="Avoid Slack API requests, cache updates, etc.")
 @multi('-r', '--refspec', 'refspecs', help='Sync crash updates from these Git SHAs (or ranges) in the crash-log')
 @multi('-s', '--retry-intervals', parse=float, help='Sequence of intervals (in seconds) to sleep when fetching newly-created posts (comma-delimited)')
+@opt('-S', '--accid-sleep-s', default=1., help='Sleep this many seconds between threads / "ACCID"s')
 @arg('accids', type=int, nargs=-1)
 def sync(
     start: YMD,
@@ -34,6 +36,7 @@ def sync(
     dry_run: bool,
     refspecs: tuple[str, ...],
     retry_intervals: tuple[float, ...],
+    accid_sleep_s: float,
     accids: Tuple[int, ...],
 ):
     """Post crashes to the #crash-bot channel in HCCS Slack.
@@ -84,6 +87,9 @@ def sync(
                 all_new_posts += new_posts
                 if exc:
                     raise exc
+                if accid_sleep_s and not dry_run:
+                    err(f"Sleeping {accid_sleep_s}s between ACCIDs...")
+                    sleep(accid_sleep_s)
             except Exception:
                 raise RuntimeError(f"Failed to sync crash {accid=}")
     finally:
