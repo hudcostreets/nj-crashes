@@ -163,7 +163,10 @@ def compute(
     ]
     df = df[cols]
     if prefix is not None:
-        df = pd.concat([prefix, df])
+        new_rows = df
+        err(f"Found {len(new_rows)} new rows:\n{new_rows}")
+        err(f"Appending to {len(prefix)} from {append_to}:")
+        df = pd.concat([prefix, new_rows])
         dfr = df.reset_index()
         dupes = dfr[dfr.duplicated(keep=False)]
         if not dupes.empty:
@@ -173,17 +176,9 @@ def compute(
                 err(msg)
             else:
                 raise ValueError(msg)
-        err(f"Found {len(df)} new rows, appending to {len(prefix)} from {append_to}:")
     df = df.sort_values(['accid', 'rundate'])
     err(df)
     return df
-
-
-# @crash_log_cmd
-# def fsck_localize(
-#
-# ):
-#     pass
 
 
 @crash_log.command
