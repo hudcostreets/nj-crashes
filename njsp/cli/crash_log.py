@@ -1,11 +1,11 @@
-from contextlib import nullcontext, AbstractContextManager
+from contextlib import nullcontext
 from functools import wraps
 from os.path import splitext
 from urllib.parse import urlparse
 
 import pandas as pd
 from pandas import DataFrame
-from utz import singleton, s3, ctxs, call
+from utz import call, ctxs, solo, s3
 from utz.cli import arg, flag, opt
 
 from nj_crashes.utils import TZ
@@ -100,7 +100,7 @@ def crash_log_cmd(fn):
                 df_sha = prefix.reset_index(level=0)
                 latest_prefix_sha = df_sha.rundate.idxmax()
                 root = latest_prefix_sha
-                latest_rundate = singleton(df_sha.loc[[latest_prefix_sha], 'rundate'].tolist())
+                latest_rundate = solo(df_sha.loc[[latest_prefix_sha], 'rundate'])
                 err(f"Using latest SHA from {append_to} as root: {root} (rundate {latest_rundate})")
             if in_place:
                 out_paths.append(append_to)
@@ -219,7 +219,7 @@ def truncate(
         err(f"Dropped {num_to_drop} rows < {rundate}")
     elif sha:
         sha_entries = df.reset_index(level=0).loc[sha, 'rundate']
-        sha_rundate = singleton(sha_entries)
+        sha_rundate = solo(set(sha_entries))
         keep_mask = df.rundate < sha_rundate
         df = df[keep_mask]
         num_to_drop = (~keep_mask).sum()
