@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu May 01 10:00:07 EDT 2025</RUNDATE>
+  <RUNDATE>Sat May 03 10:00:03 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -295,6 +295,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1248,12 +1249,13 @@
     <MUNICIPALITY MCODE="1336" MNAME="Tinton Falls Boro">
       <ACCIDENT ACCID="13559" DATE="11/08/2024" TIME="1918">
         <HIGHWAY>444</HIGHWAY>
-        <LOCATION>Garden State Parkway</LOCATION>
+        <LOCATION>Garden State Parkway MP 102.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3085,12 +3087,13 @@
     <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="13417" DATE="09/06/2024" TIME="2119">
         <HIGHWAY>33</HIGHWAY>
-        <LOCATION>State Highway 33 MP 2.84</LOCATION>
+        <LOCATION>State Highway 33 MP 2.85</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4036,6 +4039,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4313,12 +4317,13 @@
     <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="13302" DATE="07/13/2024" TIME="2135">
         <HIGHWAY>206</HIGHWAY>
-        <LOCATION>State Highway 206 MP 39.3</LOCATION>
+        <LOCATION>State Highway 206 MP 39.27</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4422,8 +4427,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1319" MNAME="Howell Twsp">
       <ACCIDENT ACCID="13296" DATE="07/09/2024" TIME="1653">
-        <STREET>Fort Plains Rd</STREET>
-        <LOCATION>Fort Plains Rd</LOCATION>
+        <STREET>Fort Plains Road</STREET>
+        <LOCATION>Fort Plains Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4510,6 +4515,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4545,12 +4551,13 @@
     <MUNICIPALITY MCODE="1312" MNAME="Englishtown Boro">
       <ACCIDENT ACCID="13287" DATE="07/04/2024" TIME="0152">
         <HIGHWAY>527</HIGHWAY>
-        <LOCATION>County 527</LOCATION>
+        <LOCATION>County 527 MP 30.43</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5124,8 +5131,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1219" MNAME="Sayreville Boro">
       <ACCIDENT ACCID="13247" DATE="06/08/2024" TIME="1217">
-        <STREET>Cheesequake Road</STREET>
-        <LOCATION>Cheesequake Road</LOCATION>
+        <STREET>Cheesequake Rd</STREET>
+        <LOCATION>Cheesequake Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5272,8 +5279,8 @@
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="13235" DATE="06/06/2024" TIME="1600">
-        <STREET>Crosswicks Hamilton Square Road</STREET>
-        <LOCATION>Crosswicks Hamilton Square Road</LOCATION>
+        <STREET>Crosswicks Hamilton Square Rd</STREET>
+        <LOCATION>Crosswicks Hamilton Square Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5286,8 +5293,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1217" MNAME="Piscataway Twsp">
       <ACCIDENT ACCID="13234" DATE="06/06/2024" TIME="1340">
-        <STREET>Mountain Avenue</STREET>
-        <LOCATION>Mountain Avenue</LOCATION>
+        <STREET>Mountain Ave</STREET>
+        <LOCATION>Mountain Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5341,8 +5348,8 @@
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1507" MNAME="Toms River">
       <ACCIDENT ACCID="13252" DATE="06/04/2024" TIME="0951">
-        <STREET>Beltane Road</STREET>
-        <LOCATION>Beltane Road</LOCATION>
+        <STREET>Beltane Rd</STREET>
+        <LOCATION>Beltane Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -8814,5 +8821,5 @@
   </COUNTY>
   <TOTACCIDENTS>649</TOTACCIDENTS>
   <TOTFATALITIES>686</TOTFATALITIES>
-  <TOTINJURIES>256</TOTINJURIES>
+  <TOTINJURIES>257</TOTINJURIES>
 </FAUQSTATS>
