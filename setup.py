@@ -3,7 +3,6 @@ from setuptools import setup
 setup(
     name="nj_crashes",
     install_requires=open("requirements.txt", "r").read(),
-    # packages=find_packages(),
     packages=[ "nj_crashes", "njsp", "njdot", ],
     entry_points={
         'console_scripts': [
