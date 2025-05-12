@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun May 11 10:00:08 EDT 2025</RUNDATE>
+  <RUNDATE>Mon May 12 10:00:06 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1708,8 +1708,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="13520" DATE="10/27/2024" TIME="0330">
-        <STREET>Bergen Ave</STREET>
-        <LOCATION>Bergen Ave</LOCATION>
+        <STREET>Bergen St</STREET>
+        <LOCATION>Bergen St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
