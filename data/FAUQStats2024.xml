@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue May 13 10:00:02 EDT 2025</RUNDATE>
+  <RUNDATE>Wed May 14 10:00:06 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -529,6 +529,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0305" MNAME="Burlington City">
@@ -4117,12 +4118,13 @@
     <MUNICIPALITY MCODE="1204" MNAME="East Brunswick Twsp">
       <ACCIDENT ACCID="13324" DATE="07/25/2024" TIME="0200">
         <HIGHWAY>18</HIGHWAY>
-        <LOCATION>State Highway 18</LOCATION>
+        <LOCATION>State Highway 18 MP 39.27</LOCATION>
         <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
+        <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
-        <FATAL_B>1</FATAL_B>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6434,12 +6436,13 @@
     <MUNICIPALITY MCODE="1337" MNAME="Ocean Twsp">
       <ACCIDENT ACCID="13128" DATE="04/15/2024" TIME="2104">
         <HIGHWAY>35</HIGHWAY>
-        <LOCATION>State Highway 35</LOCATION>
+        <LOCATION>State Highway 35 MP 25.62</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
