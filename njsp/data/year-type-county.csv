@@ -363,11 +363,11 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2025,Cape May,2,0,0,0,2
 2025,Cumberland,3,2,0,2,6
 2025,Essex,4,1,1,8,14
-2025,Gloucester,7,2,0,2,9
+2025,Gloucester,7,4,0,2,10
 2025,Hudson,1,0,0,2,3
 2025,Hunterdon,3,0,0,0,3
 2025,Mercer,4,0,1,3,8
-2025,Middlesex,10,1,0,4,15
+2025,Middlesex,10,1,0,5,16
 2025,Monmouth,5,1,0,0,5
 2025,Morris,4,3,1,1,6
 2025,Ocean,11,4,1,5,18
