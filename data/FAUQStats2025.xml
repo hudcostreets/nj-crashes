@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue May 20 10:00:01 EDT 2025</RUNDATE>
+  <RUNDATE>Wed May 21 10:00:05 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -286,8 +286,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2012" MNAME="Plainfield City">
       <ACCIDENT ACCID="13916" DATE="05/03/2025" TIME="2042">
-        <STREET>west 2nd st</STREET>
-        <LOCATION>west 2nd st</LOCATION>
+        <STREET>West 2nd St</STREET>
+        <LOCATION>West 2nd St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
