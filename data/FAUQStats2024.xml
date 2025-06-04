@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Jun 03 10:00:03 EDT 2025</RUNDATE>
+  <RUNDATE>Wed Jun 04 10:00:04 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1337,17 +1337,19 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>2</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1805" MNAME="Branchburg Twsp">
       <ACCIDENT ACCID="13549" DATE="11/06/2024" TIME="1508">
         <HIGHWAY>202</HIGHWAY>
-        <LOCATION>State Highway 202</LOCATION>
+        <LOCATION>State Highway 202 MP 20.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2476,6 +2478,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3943,12 +3946,13 @@
     <MUNICIPALITY MCODE="1315" MNAME="Freehold Boro">
       <ACCIDENT ACCID="13356" DATE="08/07/2024" TIME="1123">
         <HIGHWAY>33</HIGHWAY>
-        <LOCATION>State Highway 33 (Business) MP 2.68</LOCATION>
+        <LOCATION>State Highway 33 (Business) MP 2.63</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8804,5 +8808,5 @@
   </COUNTY>
   <TOTACCIDENTS>646</TOTACCIDENTS>
   <TOTFATALITIES>683</TOTFATALITIES>
-  <TOTINJURIES>268</TOTINJURIES>
+  <TOTINJURIES>270</TOTINJURIES>
 </FAUQSTATS>
