@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Jun 07 10:00:04 EDT 2025</RUNDATE>
+  <RUNDATE>Sun Jun 08 10:00:02 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -641,13 +641,14 @@
   <COUNTY CCODE="14" CNAME="Morris">
     <MUNICIPALITY MCODE="1408" MNAME="Denville Twsp">
       <ACCIDENT ACCID="13688" DATE="12/01/2024" TIME="1023">
-        <STREET>125 E. Main St</STREET>
-        <LOCATION>125 E. Main St</LOCATION>
+        <STREET>State Highway 53</STREET>
+        <LOCATION>State Highway 53</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
