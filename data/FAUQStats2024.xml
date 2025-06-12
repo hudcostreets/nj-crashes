@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Jun 11 10:00:06 EDT 2025</RUNDATE>
+  <RUNDATE>Thu Jun 12 10:00:03 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -614,8 +614,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0717" MNAME="Orange City">
       <ACCIDENT ACCID="13614" DATE="12/01/2024" TIME="1524">
-        <STREET>Scotland Rd</STREET>
-        <LOCATION>Scotland Rd</LOCATION>
+        <HIGHWAY>638</HIGHWAY>
+        <LOCATION>County 638 MP 4.59</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4752,6 +4752,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6235,6 +6236,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>3</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6262,6 +6264,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6316,6 +6319,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8814,5 +8818,5 @@
   </COUNTY>
   <TOTACCIDENTS>646</TOTACCIDENTS>
   <TOTFATALITIES>683</TOTFATALITIES>
-  <TOTINJURIES>274</TOTINJURIES>
+  <TOTINJURIES>278</TOTINJURIES>
 </FAUQSTATS>
