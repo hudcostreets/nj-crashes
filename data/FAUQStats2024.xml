@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Jun 15 10:00:03 EDT 2025</RUNDATE>
+  <RUNDATE>Mon Jun 16 10:00:03 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -3784,7 +3784,7 @@
     <MUNICIPALITY MCODE="2111" MNAME="Hope Twsp">
       <ACCIDENT ACCID="13358" DATE="08/13/2024" TIME="1019">
         <HIGHWAY>521</HIGHWAY>
-        <LOCATION>County 521</LOCATION>
+        <LOCATION>County 521 MP 1.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
