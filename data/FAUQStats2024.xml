@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Jun 17 10:00:02 EDT 2025</RUNDATE>
+  <RUNDATE>Wed Jun 18 10:00:04 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -3700,7 +3700,7 @@
     <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="13371" DATE="08/18/2024" TIME="0103">
         <HIGHWAY>559</HIGHWAY>
-        <LOCATION>County 559 MP 12</LOCATION>
+        <LOCATION>County 559 MP 12.05</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4152,9 +4152,9 @@
         <HIGHWAY>18</HIGHWAY>
         <LOCATION>State Highway 18 MP 39.27</LOCATION>
         <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
+        <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
+        <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
       </ACCIDENT>
@@ -4245,8 +4245,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="13599" DATE="07/17/2024" TIME="0705">
-        <STREET>651 Kapkowski Road</STREET>
-        <LOCATION>651 Kapkowski Road</LOCATION>
+        <STREET>651 Kapkowski Rd</STREET>
+        <LOCATION>651 Kapkowski Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4832,6 +4832,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>4</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5848,12 +5849,13 @@
     <MUNICIPALITY MCODE="0411" MNAME="Collingswood Boro">
       <ACCIDENT ACCID="13225" DATE="05/19/2024" TIME="0037">
         <HIGHWAY>130</HIGHWAY>
-        <LOCATION>State Highway 130 MP 3.96</LOCATION>
+        <LOCATION>State Highway 130 MP 29.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8874,5 +8876,5 @@
   </COUNTY>
   <TOTACCIDENTS>650</TOTACCIDENTS>
   <TOTFATALITIES>687</TOTFATALITIES>
-  <TOTINJURIES>285</TOTINJURIES>
+  <TOTINJURIES>290</TOTINJURIES>
 </FAUQSTATS>
