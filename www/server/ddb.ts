@@ -45,6 +45,7 @@ export class CrashDDB<Crash> extends HasCrashPage<Crash> {
             ORDER BY dt DESC
             LIMIT ${limit} OFFSET ${offset}
         `
+    console.log(`server/ddb: ${query}`)
     const db = await this.db
     return (await db.all(query)) as Crash[]
   }

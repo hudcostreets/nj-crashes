@@ -13,7 +13,6 @@ import CitySelect from "@/src/city-select"
 import { Cookies, CookiesContext } from "@/src/cookies"
 import { CC2MC2MN, denormalize, normalize } from "@/src/county"
 import { CountySelect } from "@/src/county-select"
-import { CrashPage } from "@/src/crash"
 import Footer from "@/src/footer"
 import { NjdotSource, NjspSource } from "@/src/icons"
 import * as DOT from "@/src/njdot/crash"
@@ -31,9 +30,7 @@ import useRegion from "@/src/use-region"
 import { ColTitles, YearStatsDicts, yearStatsRows } from "@/src/use-year-stats"
 import type { GetServerSideProps } from "next"
 
-export const DOTStart = "2001-01-01"
 export const EndYear = 2022
-export const DOTEnd = `${EndYear}-12-31`
 
 export function H2({ id, className = css.idTarget, children }: { id: string, className?: string, children: ReactNode }) {
   return <h2>
@@ -50,8 +47,9 @@ export type Props = {
     cc2mc2mn: CC2MC2MN
     njspProps: NjspProps | null
     Counties: string[]
-    spPage: CrashPage<SP.Crash>
-    dotPage: CrashPage<DOT.Crash>
+    spPage: SP.CrashPage
+    dotPage: DOT.CrashPage
+    vsHomicides: VsHomicides
     yearStatsDicts: YearStatsDicts
     cookies: Cookies
 } & CCMC

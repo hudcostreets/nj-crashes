@@ -48,7 +48,8 @@ export class DotDdb extends HasCrashPage<Crash> {
   }
 
   async query<T>(query: string): Promise<T[]> {
-    const msg = `njdot/ddb query: ${query.replace("\n", " ").replace(/\s+/g, " ")}`
+    query = query.replace("\n", " ").replace(/\s+/g, " ")
+    const msg = `njdot/ddb query: ${query}`
     console.time(msg)
     const db = await this.db
     const res = (await db.all(query)) as T[]

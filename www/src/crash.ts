@@ -1,5 +1,5 @@
 export type Total = { total: number }
 export type WithTotal<T> = T & Total
-export type T<T> = T & { total: number }
+export type T<T> = T & Total
 
 export type CrashPage<Crash> = T<{ crashes: Crash[] }>
