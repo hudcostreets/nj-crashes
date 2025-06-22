@@ -102,15 +102,34 @@ export function getNJSPDbUrls(loc?: Loc): NjspUrls {
   return urls
 }
 
+export type CrimeUrls = {
+  loc: Loc
+  homicides: string
+  county_homicides: string
+}
+
+export function getCrimeDbUrls(loc?: Loc) {
+  return getDbUrls({
+    loc,
+    name: "crime",
+    urls: {
+      homicides: `homicides.parquet`,
+      county_homicides: `county-homicides.parquet`,
+    }
+  })
+}
+
 export type Urls = {
-    njsp: NjspUrls
-    dot: DotUrls
+  njsp: NjspUrls
+  dot: DotUrls
+  crime: CrimeUrls
 }
 
 export function getUrls({ loc }: { loc?: Loc } = {}): Urls {
   return {
     njsp: getNJSPDbUrls(loc),
     dot: getDOTDbUrls(loc),
+    crime: getCrimeDbUrls(loc),
   }
 }
 

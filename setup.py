@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name="nj_crashes",
     install_requires=open("requirements.txt", "r").read(),
-    packages=[ "nj_crashes", "njsp", "njdot", ],
+    packages=[ "crime", "nj_crashes", "njsp", "njdot", ],
     entry_points={
         'console_scripts': [
             'njsp=njsp.cli.main:main',

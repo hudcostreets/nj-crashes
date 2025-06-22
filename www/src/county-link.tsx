@@ -1,8 +1,7 @@
 import Link from "next/link"
-import { normalize } from "@/src/county"
+import { CC, normalize } from "@/src/county"
 
-export default function CountyLink({ cc, cc2mc2mn, }: {
-    cc: number
+export default function CountyLink({ cc, cc2mc2mn, }: CC & {
     cc2mc2mn?: { [cc: number]: { cn: string } }
 }) {
   if (!cc2mc2mn) {

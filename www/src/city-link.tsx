@@ -1,9 +1,8 @@
 import Link from "next/link"
 import { County, normalize } from "@/src/county"
+import { MC } from "./muni"
 
-export default function CityLink({ cc, mc, cc2mc2mn, }: {
-    cc: number
-    mc: number
+export default function CityLink({ cc, mc, cc2mc2mn, }: MC & {
     cc2mc2mn: { [cc: number]: County }
 }) {
   const county = cc2mc2mn[cc]

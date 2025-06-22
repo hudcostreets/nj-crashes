@@ -1,9 +1,9 @@
 import type { CrashPage as CrashPage0 } from "@/src/crash"
+import { MC } from "@/src/muni"
 
 export type Crash = {
   id: number
-  cc: number
-  mc: number
+} & MC & {
   dt: string
   tk: number
   ti: number

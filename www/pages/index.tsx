@@ -9,6 +9,7 @@ import { GetServerSidePropsContext } from "next/dist/types"
 import React, { Fragment, useState } from 'react'
 import { H2 } from "@/pages/c/[[...region]]"
 import { cc2mc2mn, County2Code } from "@/server/county"
+import { getCrashPage } from "@/server/crash-page"
 import { spDdb } from "@/server/njsp/ddb"
 import { loadProps } from "@/server/njsp/plot"
 import { Cookies, CookiesContext } from '@/src/cookies'
@@ -51,7 +52,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req }) => 
   const plotsDict = loadPlots(plotSpecs) as PlotsDict<PlotParams>
   const page = 0, cc = null, mc = null
   const [ initNjsp, initNjspPlot ] = await Promise.all([
-    spDdb.crashPage({ cc, mc, page, perPage, }),
+    getCrashPage(spDdb, { cc, mc, page, perPage, }),
     loadProps({ county: null }),
   ])
   // console.log("pqtPage:", pqtPage)

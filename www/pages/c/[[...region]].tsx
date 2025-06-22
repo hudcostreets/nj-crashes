@@ -6,6 +6,9 @@ import { right } from "fp-ts/Either"
 import { ReactNode } from "react"
 import { parsePerPage } from "@/pages"
 import { cc2mc2mn, Counties, County2Code } from "@/server/county"
+import { getCrashPage } from "@/server/crash-page"
+import * as VsHomicides from "@/server/crime/vs-homicides"
+import { getVsHomicides } from "@/server/crime/vs-homicides"
 import { dotDdb } from "@/server/njdot/ddb"
 import { spDdb } from "@/server/njsp/ddb"
 import { loadProps } from "@/server/njsp/plot"
@@ -21,6 +24,7 @@ import * as SP from "@/src/njsp/crash"
 import { NjspPlot, Props as NjspProps } from "@/src/njsp/plot"
 import { CCMC } from "@/src/njsp/region"
 import { NjspCrashesId, NjspCrashesTable } from "@/src/njsp/table"
+import { VsHomicidesPlot } from "@/src/njsp/vs-homicides-plot"
 import { PerPageKey } from "@/src/pagination"
 import css from "@/src/region-page.module.scss"
 import { ResultTable } from "@/src/result-table"
@@ -49,7 +53,7 @@ export type Props = {
     Counties: string[]
     spPage: SP.CrashPage
     dotPage: DOT.CrashPage
-    vsHomicides: VsHomicides
+    vsHomicides: VsHomicides.Row[]
     yearStatsDicts: YearStatsDicts
     cookies: Cookies
 } & CCMC
@@ -82,16 +86,17 @@ export const getServerSideProps: GetServerSideProps<Props, Params> = async ({ pa
     }
   }
   const page = 0
-  const [ spPage, njspProps, dotPage, yearStatsDicts, ] = await Promise.all([
-    spDdb.crashPage({ cc, mc, page, perPage, }),
+  const [ spPage, njspProps, dotPage, vsHomicides, yearStatsDicts, ] = await Promise.all([
+    getCrashPage(spDdb, { cc, mc, page, perPage, }),
     mn === null ? loadProps({ county: cn }) : Promise.resolve(null),
-    dotDdb.crashPage({ cc, mc, page, perPage, }),  // before: DOTEnd
+    getCrashPage(dotDdb, { cc, mc, page, perPage, }),  // before: DOTEnd
+    getVsHomicides({ cc }),
     dotDdb.yearStats({ cc, mc, }),
   ])
-  return { props: { urls, cp, cn, cc, mc, mn, cc2mc2mn, Counties, njspProps, spPage, dotPage, yearStatsDicts, cookies, } }
+  return { props: { urls, cp, cn, cc, mc, mn, cc2mc2mn, Counties, njspProps, spPage, dotPage, vsHomicides, yearStatsDicts, cookies, } }
 }
 
-export default function RegionPage({ urls, njspProps, spPage, dotPage, yearStatsDicts, cp, cc2mc2mn, Counties, cookies, ...regionProps }: Props) {
+export default function RegionPage({ urls, njspProps, spPage, dotPage, vsHomicides, yearStatsDicts, cp, cc2mc2mn, Counties, cookies, ...regionProps }: Props) {
   const { cc, mc, cn, mn, mc2mn, setCounty, setCity, } = useRegion({ ...regionProps, cc2mc2mn, urlPrefix: "/c", })
   const ysrs = yearStatsRows({ ysds: yearStatsDicts, })
   console.log(`cc ${cc} mc ${mc}`)
@@ -156,6 +161,7 @@ export default function RegionPage({ urls, njspProps, spPage, dotPage, yearStats
                 <NjspSource />
               </div>
             }
+            <VsHomicidesPlot rows={vsHomicides} />
             {
               <div className={css.section}>
                 <H2 id={"dot"}>Fatal / Injury crash details</H2>

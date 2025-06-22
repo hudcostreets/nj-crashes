@@ -26,3 +26,7 @@ export const DotPqts: DotTypeUrls = {
   pedestrians: join(NJDOT_DATA, "pedestrians.parquet"),
   vehicles: join(NJDOT_DATA, "vehicles.parquet"),
 }
+
+export const CRIME = join(ROOT, "crime")
+export const HOMICIDES = join(CRIME, "homicides.parquet")
+export const COUNTY_HOMICIDES = join(CRIME, "county-homicides.parquet")

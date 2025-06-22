@@ -12,9 +12,6 @@ PUBLIC_DIR = join(WWW_DIR, 'public')
 PLOTS_DIR = join(PUBLIC_DIR, 'plots')
 PKG_NAME = basename(PKG_DIR)
 
-HOMICIDES_PQT = join(DATA_DIR, 'homicides.parquet')
-COUNTY_HOMICIDES_PQT = join(DATA_DIR, 'county-homicides.parquet')
-
 COUNTY_CITY_CODES_PQT = join(DATA_DIR, 'county-city-codes.parquet')
 
 MUNIS_GEOJSON = join(PUBLIC_DIR, "Municipal_Boundaries_of_NJ.geojson")

@@ -1,7 +1,9 @@
-export function VsHomicidesPlot() {
-    return (
-        <div>
+import { Row } from "@/server/crime/vs-homicides"
 
-        </div>
-    )
+export function VsHomicidesPlot({ rows }: { rows: Row[] }) {
+  return (
+    <div>
+      {JSON.stringify(rows)}
+    </div>
+  )
 }

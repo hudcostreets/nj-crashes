@@ -1,4 +1,3 @@
-import { Database } from "duckdb-async"
 import { HasCrashPage } from "@/server/crash-page"
 import { IdMap, idMap, Ids, Props } from "@/server/njdot/crash-page"
 import { Crash, Crash0, Occupant, Pedestrian, Vehicle } from "@/src/njdot/crash"
@@ -24,12 +23,11 @@ export class CrashDDB extends CrashDDB0<Crash0> {
   }
 }
 
-export class DotDdb extends HasCrashPage<Crash> {
+export class DotDdb implements HasCrashPage<Crash> {
   private crashDdb: CrashDDB
   urls: DotPqtUrls
 
   constructor(urls: DotPqtUrls) {
-    super()
     // console.log("dot dbs:", urls)
     const { crashes, occupants, pedestrians, vehicles, drivers } = urls
     this.urls = {
@@ -43,22 +41,16 @@ export class DotDdb extends HasCrashPage<Crash> {
     this.crashDdb = new CrashDDB(this.urls.crashes)
   }
 
-  get db(): Promise<Database> {
-    return this.crashDdb.db
-  }
+  // get db(): Promise<Database> {
+  //   return this.crashDdb.db
+  // }
 
-  async query<T>(query: string): Promise<T[]> {
-    query = query.replace("\n", " ").replace(/\s+/g, " ")
-    const msg = `njdot/ddb query: ${query}`
-    console.time(msg)
-    const db = await this.db
-    const res = (await db.all(query)) as T[]
-    console.timeEnd(msg)
-    return res
+  query<T>(query: string): Promise<T[]> {
+    return this.crashDdb.query(query)
   }
 
   async crashes({ cc, mc, page, perPage, }: Props): Promise<Crash[]> {
-    const crashes = await this._crashes({ cc, mc, page, perPage, })
+    const crashes = await this.crash0s({ cc, mc, page, perPage, })
     const ids = crashes.map(({ id }) => id)
     // console.log("crashes:", crashes, "ids:", ids)
     const [ occMap, pedMap, vehMap ] = await Promise.all([
@@ -78,7 +70,7 @@ export class DotDdb extends HasCrashPage<Crash> {
     return this.crashDdb.total({ cc, mc, })
   }
 
-  _crashes({ cc, mc, page, perPage }: Props): Promise<Crash0[]> {
+  crash0s({ cc, mc, page, perPage }: Props): Promise<Crash0[]> {
     return this.crashDdb.crashes({ cc, mc, page, perPage, })
   }
 

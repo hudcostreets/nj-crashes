@@ -1,4 +1,5 @@
 import type { CrashPage as CrashPage0 } from "@/src/crash"
+import { MC } from "@/src/muni"
 
 export type Totals = {
     tk: number
@@ -11,8 +12,7 @@ export type Totals = {
 
 export type Crash0 = {
     id: number
-    cc: number
-    mc: number
+} & MC & {
     dt: string
     road: string
     cross_street: string

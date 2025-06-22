@@ -24,7 +24,7 @@ export class CrashDB extends CrashDB0<Crash0> {
   }
 }
 
-export class DotSql extends HasCrashPage<Crash> {
+export class DotSql implements HasCrashPage<Crash> {
   private crashDb: CrashDB
   private yearStatsDb: Db
   private occupantsDb: Db
@@ -32,7 +32,6 @@ export class DotSql extends HasCrashPage<Crash> {
   private vehiclesDb: Db
 
   constructor(urls: DotSqlUrls) {
-    super()
     // console.log("dot dbs:", urls)
     const opts = { verbose: console.log }  // Remove in production
     this.crashDb = new CrashDB(urls.crashes)

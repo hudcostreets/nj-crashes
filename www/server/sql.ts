@@ -18,11 +18,10 @@ export function asyncQuery<T>(db: Db, query: string, params: Params): Promise<T[
   })
 }
 
-export class CrashDB<Crash> extends HasCrashPage<Crash> {
+export class CrashDB<Crash> implements HasCrashPage<Crash> {
   private readonly db: Db
 
   constructor(path: string) {
-    super()
     this.db = new Database(path, { verbose: console.log })  // Remove in production
   }
 

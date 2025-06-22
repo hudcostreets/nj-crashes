@@ -2,15 +2,16 @@ import { CrashPage } from "@/src/crash"
 import { CCMC } from "@/src/njsp/region"
 import { PageOpts } from "@/src/pagination"
 
-export abstract class HasCrashPage<Crash> {
-  abstract total({ cc, mc, }: CCMC): Promise<number>
-  abstract crashes({ cc, mc, page, perPage, }: CCMC & PageOpts): Promise<Crash[]>
+export interface HasCrashPage<Crash> {
+  total({ cc, mc, }: CCMC): Promise<number>
+  crashes({ cc, mc, page, perPage, }: CCMC & PageOpts): Promise<Crash[]>
 
-  async crashPage({ cc, mc, page, perPage, }: CCMC & PageOpts): Promise<CrashPage<Crash>> {
-    const [ crashes, total, ] = await Promise.all([
-      this.crashes({ cc, mc, page, perPage, }),
-      this.total({ cc, mc, }),
-    ])
-    return { crashes, total }
-  }
+}
+
+export async function getCrashPage<Crash>(self: HasCrashPage<Crash>, { cc, mc, page, perPage, }: CCMC & PageOpts): Promise<CrashPage<Crash>> {
+  const [ crashes, total, ] = await Promise.all([
+    self.crashes({ cc, mc, page, perPage, }),
+    self.total({ cc, mc, }),
+  ])
+  return { crashes, total }
 }
