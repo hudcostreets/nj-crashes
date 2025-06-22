@@ -98,6 +98,9 @@ importers:
       leaflet-edgebuffer:
         specifier: ^1
         version: 1.0.6
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
       mapbox-gl:
         specifier: ^3.0.1
         version: 3.1.2
@@ -165,6 +168,9 @@ importers:
       '@types/leaflet':
         specifier: ^1
         version: 1.9.8
+      '@types/lodash':
+        specifier: ^4.17.18
+        version: 4.17.18
       '@types/mapbox-gl':
         specifier: ^2.7.19
         version: 2.7.20
@@ -1634,6 +1640,9 @@ packages:
 
   '@types/leaflet@1.9.8':
     resolution: {integrity: sha512-EXdsL4EhoUtGm2GC2ZYtXn+Fzc6pluVgagvo2VC1RHWToLGlTRwVYoDpqS/7QXa01rmDyBjJk3Catpf60VMkwg==}
+
+  '@types/lodash@4.17.18':
+    resolution: {integrity: sha512-KJ65INaxqxmU6EoCiJmRPZC9H9RVWCRd349tXM2M3O5NA7cY6YL7c0bHAHQ93NOfTObEQ004kd2QVHs/r0+m4g==}
 
   '@types/mapbox-gl@2.7.20':
     resolution: {integrity: sha512-vuczqb42fXjqGa3Pe4ahYv80We/eM//4pelVYxRXV/DYBVGsD+XhmZNUD2aIdH6mcEV601/k6Z5dn6QFtULFCQ==}
@@ -6585,6 +6594,8 @@ snapshots:
   '@types/leaflet@1.9.8':
     dependencies:
       '@types/geojson': 7946.0.13
+
+  '@types/lodash@4.17.18': {}
 
   '@types/mapbox-gl@2.7.20':
     dependencies:

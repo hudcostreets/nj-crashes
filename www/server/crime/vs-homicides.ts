@@ -12,7 +12,7 @@ export function getVsHomicides(
 ): Promise<Row[]> {
   const cn = cc === null ? "NJ" : cc2mc2mn[cc].cn
   if (cn === "NJ") {
-    return Homicides.query(`select year, homicides from parquet_scan('${Homicides.url}')`)
+    return Homicides.query(`select year, homicides from parquet_scan('${Homicides.url}') where year >= 2008`)
   } else {
     return CountyHomicides.query(`select year, murders as homicides from parquet_scan('${CountyHomicides.url}') where county='${cn}'`)
   }

@@ -161,7 +161,13 @@ export default function RegionPage({ urls, njspProps, spPage, dotPage, vsHomicid
                 <NjspSource />
               </div>
             }
-            <VsHomicidesPlot rows={vsHomicides} />
+            {
+              njspProps
+                ? <div className={css.homicidesPlot}>
+                  <VsHomicidesPlot rows={vsHomicides} ytRows={njspProps.ytRows} />
+                </div>
+                : null
+            }
             {
               <div className={css.section}>
                 <H2 id={"dot"}>Fatal / Injury crash details</H2>
