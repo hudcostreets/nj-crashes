@@ -1,0 +1,25 @@
+service: njsp-crashes
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  
+functions:
+  njspCrashes:
+    handler: dist/njsp-crashes.handler
+    events:
+      - http:
+          path: /crashes
+          method: get
+          cors: true
+    environment:
+      NODE_ENV: production
+
+plugins:
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 3001

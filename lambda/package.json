@@ -1,0 +1,33 @@
+{
+  "name": "njsp-crashes-lambda",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/njsp-crashes.js",
+  "scripts": {
+    "build": "tsc",
+    "pkg": "npm run build && zip -r njsp-crashes.zip dist/ node_modules/",
+    "deploy": "aws lambda update-function-code --function-name njsp-crashes --zip-file fileb://njsp-crashes.zip"
+  },
+  "dependencies": {
+    "@rdub/base": "^0.8.0",
+    "@rdub/next-base": "^0.5.0",
+    "@rdub/next-params": "*",
+    "aws-lambda": "^1.0.7",
+    "better-sqlite3": "^12.2.0",
+    "duckdb": "^1.3.1",
+    "duckdb-async": "^1.3.1",
+    "fp-ts": "^2.16.10",
+    "plotly.js": "^3.0.1",
+    "react": "^19.1.0",
+    "react-plotly.js": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.119",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20.0.0",
+    "@types/plotly.js": "^3.0.2",
+    "@types/react": "^19.1.8",
+    "@types/react-plotly.js": "^2.6.3",
+    "typescript": "^5.0.0"
+  }
+}
