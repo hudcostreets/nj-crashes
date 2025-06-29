@@ -5,7 +5,7 @@ import '@fortawesome/fontawesome-free/css/all.min.css'
 import { ThemeProvider } from '@mui/material'
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import React from "react"
-import theme from "@/src/theme"
+import theme from "@/client/theme"
 import type { AppProps } from 'next/app'
 
 export const queryClient = new QueryClient({

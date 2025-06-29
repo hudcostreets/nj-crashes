@@ -1,46 +1,25 @@
 import { A, fromEntries, sum } from "@rdub/base"
 import { Plot } from "@rdub/next-plotly/plot"
-import { Annotations, Layout, PlotData } from "plotly.js"
+import { Layout, PlotData } from "plotly.js"
 import React, { Dispatch, ReactNode, useCallback, useMemo, useState } from "react"
-import * as Plotly from "react-plotly.js"
+import { NjspSource } from "@/client/icons"
+import { normalize } from "@/src/county"
 import GitHub, { repoWithOwner } from "@/src/github"
-import { NjspSource } from "@/src/icons"
-import { curYear, Data, prvYear, YearTotalsMap } from "@/src/plotSpecs"
-import { normalize } from "../county"
+import {
+  Annotation,
+  curYear,
+  Data,
+  HasCounty,
+  PlotParams,
+  Props,
+  prvYear,
+  TypeCounts,
+  YearTotalsMap,
+  YtRow
+} from "@/src/njsp/plot"
 import { CountySelect } from "../county-select"
 import css from "./plot.module.scss"
 import IntrinsicElements = React.JSX.IntrinsicElements;
-
-export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
-export type Annotation = Partial<Annotations>
-
-export type HasCounty = {
-    county: string | null
-}
-
-export type TypeCounts = {
-    driver: number
-    pedestrian: number
-    cyclist: number
-    passenger: number
-}
-
-export type Props = {
-    initialPlot: PlotParams
-    typeProjections: TypeCounts
-    ytRows: YtRow[]
-    county: string | null
-    Counties: string[]
-    title?: string
-    heading?: ReactNode
-} & Data
-
-export type YtRow = {
-    year: number
-} & TypeCounts & {
-    total: number
-    projected: number
-}
 
 export function getPlotData({ ytRows, typeProjections, initialPlotData, types, showProjected, county, }: {
     ytRows: YtRow[]

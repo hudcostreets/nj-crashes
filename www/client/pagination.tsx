@@ -4,21 +4,15 @@ import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft'
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight'
 import LastPageIcon from '@mui/icons-material/LastPage'
 import { Tooltip } from "@mui/material"
-import { floor, min, State } from "@rdub/base"
+import { floor, min } from "@rdub/base"
 import moment from 'moment-timezone'
 import { Dispatch, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import strftime from "strftime"
 import useSessionStorageState from "use-session-storage-state"
-import { useCookie } from "@/src/use-cookie"
+import { useCookie } from "@/client/use-cookie"
+import { BeforeKey, DatePagination, DatePaginationBase, DefaultPageSize, MDY, PageKey, PageSizes, Pagination, PaginationBase, PerPageKey, TZ, YMD } from "@/src/pagination"
 import { CookiesContext } from './cookies'
 import css from "./pagination.module.scss"
-
-export const PageSizes = [ 10, 20, 50 ]
-export const DefaultPageSize = PageSizes[0]
-
-export const PerPageKey = (id: string) => `${id}-per-page`
-export const PageKey = (id: string) => `${id}-page`
-export const BeforeKey = (id: string) => `${id}-before`
 
 export function usePaginationControls({ id, perPageId, ...defaults }: { id: string, perPageId?: string, page?: number, perPage?: number, }): PaginationBase {
   const cookies = useContext(CookiesContext)
@@ -36,19 +30,16 @@ export function usePaginationControls({ id, perPageId, ...defaults }: { id: stri
   return { perPage, setPerPage, page, setPage }
 }
 
-export const MDY = /(?<m>\d\d?)\/(?<d>\d\d?)\/(?<y>\d\d)/
-export const YMD = /(?<y>\d\d\d\d)-(?<m>\d\d)-(?<d>\d\d)/
-
 export function useDatePaginationControls(
   defaults: {
-        id: string
-        before?: string
-        perPage?: number
-    },
+    id: string
+    before?: string
+    perPage?: number
+  },
   { start, end }: {
-        start?: string
-        end?: string
-    }
+    start?: string
+    end?: string
+  }
 ): DatePaginationBase {
   const { id } = defaults
   const [ perPage, setPerPage ] = useSessionStorageState<number>(
@@ -95,29 +86,6 @@ export function useDatePaginationControls(
   return { perPage, setPerPage, before, setBefore, start, end }
 }
 
-export type PaginationCore = State<number, 'perPage'>
-export type PaginationBase = PaginationCore & State<number, 'page'>
-
-export type PageOpts = {
-  page: number
-  perPage: number
-}
-
-export type Pagination = PaginationBase & {
-    total: number
-}
-
-export type DatePaginationBase = PaginationCore & {
-    before: string
-    setBefore: (before: string) => void
-    start?: string
-    end?: string
-}
-
-export type DatePagination = DatePaginationBase & {
-    total: number
-}
-
 export function Pagination(
   {
     page, setPage,
@@ -143,7 +111,7 @@ export function Pagination(
       {page * perPage + 1}-{min(total, (page + 1) * perPage)} of {total.toLocaleString()}
     </label>
     <label className={css.pageNum}>
-            Page:
+      Page:
       <input
         // contentEditable
         className={pageTxtStateDirty ? css.dirty : ''}
@@ -166,7 +134,7 @@ export function Pagination(
       />
     </label>
     <label className={css.pageSize}>
-            Page size:
+      Page size:
       <select
         value={perPage}
         onChange={e => {
@@ -213,18 +181,16 @@ export function Pagination(
   </div>
 }
 
-export const TZ = "America/New_York"
-
 export function Button(
   { cur, disabled, add, unit, Icon, setBefore, className, }: {
-        cur: string
-        disabled?: boolean
-        Icon: SvgIconComponent
-        add: boolean
-        unit: 'day' | 'month' | 'year'
-        setBefore: Dispatch<string>
-        className?: string
-    }
+    cur: string
+    disabled?: boolean
+    Icon: SvgIconComponent
+    add: boolean
+    unit: 'day' | 'month' | 'year'
+    setBefore: Dispatch<string>
+    className?: string
+  }
 ) {
   return (
     <Tooltip title={add ? `Forward 1 ${unit}` : `Back 1 ${unit}`}>
@@ -275,7 +241,7 @@ export function DatePagination(
   return <div className={css.tablePagination}>
     <label className={css.curPage}>{total.toLocaleString()} total</label>
     <label className={css.pageSize}>
-            Page size:
+      Page size:
       <select
         value={perPage}
         onChange={e => {
@@ -288,7 +254,7 @@ export function DatePagination(
         }</select>
     </label>
     <label className={css.beforeDate}>
-            On or before:
+      On or before:
       <input
         className={dateTxtStateDirty ? css.dirty : ''}
         type="text"

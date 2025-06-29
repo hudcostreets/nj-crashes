@@ -3,19 +3,14 @@ import { fromEntries } from "@rdub/base"
 import A from "@rdub/next-base/a"
 import { ReactNode } from "react"
 import strftime from "strftime"
-import CityLink from "@/src/city-link"
+import CityLink from "@/client/city-link"
+import CountyLink from "@/client/county-link"
+import { Car, Cyclist, Driver, Passenger, Pedestrian as Ped } from "@/client/icons"
 import { CC2MC2MN } from "@/src/county"
-import CountyLink from "@/src/county-link"
-import { Car, Cyclist, Driver, Passenger, Pedestrian as Ped } from "@/src/icons"
 import { Crash, Occupant, Pedestrian, Vehicle } from "@/src/njdot/crash"
 import { CCMC } from "@/src/njsp/region"
 import { Row } from "@/src/result-table"
 import css from "./use-crashes.module.scss"
-
-export type Props = CCMC & {
-    crashes: Crash[]
-    cc2mc2mn: CC2MC2MN
-}
 
 export const ColLabels = {
   id: "ID",
@@ -29,6 +24,11 @@ export const ColLabels = {
   ll: "Lat, Lon",
 }
 export type Col = keyof typeof ColLabels
+
+export type Props = CCMC & {
+  crashes: Crash[]
+  cc2mc2mn: CC2MC2MN
+}
 
 const unknown = "#777"
 const red = "#d00"

@@ -1,7 +1,7 @@
 import Head from "@rdub/next-base/head"
 import { useRootUrl } from "@rdub/next-base/use-root-url"
 import React from "react"
-import { Socials } from "@/src/footer"
+import { Socials } from "@/client/footer"
 import { url } from "@/src/site"
 import css from "./index.module.scss"
 

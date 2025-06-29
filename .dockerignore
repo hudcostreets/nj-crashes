@@ -146,10 +146,10 @@
 !www/server/njsp/sql.ts
 !www/server/paths.ts
 !www/server/sql.ts
-!www/src/city-link.tsx
+!www/client/city-link.tsx
 !www/src/city-select.tsx
-!www/src/cookies.ts
-!www/src/county-link.tsx
+!www/client/cookies.ts
+!www/client/county-link.tsx
 !www/src/county-select.module.scss
 !www/src/county-select.tsx
 !www/src/county.ts
@@ -179,7 +179,7 @@
 !www/src/pagination.module.scss
 !www/src/pagination.tsx
 !www/src/paths.ts
-!www/src/plotSpecs.tsx
+!www/client/plotSpecs.tsx
 !www/src/query.ts
 !www/src/region-page.module.scss
 !www/src/result-table.module.scss
@@ -192,7 +192,7 @@
 !www/src/tableData.ts
 !www/src/tooltip.tsx
 !www/src/urls.ts
-!www/src/use-cookie.ts
+!www/client/use-cookie.ts
 !www/src/use-crashes.module.scss
 !www/src/use-njdot-crashes.tsx
 !www/src/use-njsp-crashes.tsx

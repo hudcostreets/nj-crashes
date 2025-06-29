@@ -1,20 +1,7 @@
 import { filterIdxs, PlotSpec } from "@rdub/next-plotly/plot"
 import React from "react"
+import { NjspSource } from "@/client/icons"
 import css from "@/pages/index.module.scss"
-import { NjspSource } from "@/src/icons"
-
-export const curYear = (new Date().getFullYear())
-export const prvYear = curYear - 1
-export type Year = "2021" | "2022" | typeof prvYear | typeof curYear
-export type YearTotalsMap = { [k in Year]: { total: number, projected: number } }
-export type Data = {
-    rundate: string
-}
-
-export const njspPlotSpec: PlotSpec = {
-  id: "per-year", name: "fatalities_per_year_by_type",
-  menuName: "Traffic Deaths / Year", dropdownSection: "NJSP",
-}
 
 export const plotSpecs: PlotSpec[] = [
   {

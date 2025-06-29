@@ -1,5 +1,5 @@
 import React, { Dispatch, useEffect, useRef } from "react"
-import { getTextWidth } from "@/src/county-select"
+import { getTextWidth } from "@/client/county-select"
 import css from "@/src/county-select.module.scss"
 
 export default function CitySelect({ city, setCity, cities }: {

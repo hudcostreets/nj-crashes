@@ -3,7 +3,7 @@ import { IdMap, idMap, Ids, Props } from "@/server/njdot/crash-page"
 import { Crash, Crash0, Occupant, Pedestrian, Vehicle } from "@/src/njdot/crash"
 import { CCMC } from "@/src/njsp/region"
 import { DotPqtUrls, urls } from "@/src/urls"
-import { toYearStatsDicts, YearStats, YearStatsDicts } from "@/src/use-year-stats"
+import { toYearStatsDicts, YearStats, YearStatsDicts } from "@/src/year-stats"
 import { CrashDDB as CrashDDB0 } from "../ddb"
 
 export class CrashDDB extends CrashDDB0<Crash0> {

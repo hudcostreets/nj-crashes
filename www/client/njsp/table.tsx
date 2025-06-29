@@ -3,17 +3,17 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { right } from "fp-ts/Either"
 import { useRouter } from "next/router"
 import { useMemo } from "react"
+import { usePaginationControls } from "@/client/pagination"
+import { ResultTable } from "@/client/result-table"
 import { CC2MC2MN } from "@/src/county"
-import { usePaginationControls } from "@/src/pagination"
+import { CrashPage } from "@/src/njsp/crash"
 import { CrashPageOpts, mkQuery } from "@/src/query"
-import { ResultTable } from "@/src/result-table"
-import { getNjdotCrashRows } from "@/src/use-njdot-crashes"
+import { getNjspCrashRows } from "./crashes"
 import css from "../result-table.module.scss"
-import { CrashPage } from "./crash"
 
-export const NjdotCrashesId = "njdot-crashes"
+export const NjspCrashesId = "njsp-crashes"
 
-export function NjdotCrashesTable(
+export function NjspCrashesTable(
   {
     init,
     cc2mc2mn,
@@ -27,7 +27,7 @@ export function NjdotCrashesTable(
   }
 ) {
   const id = useMemo(() => {
-    let id = NjdotCrashesId
+    let id = NjspCrashesId
     if (cc !== null) {
       id += `-${cc}`
       if (mc !== null) {
@@ -36,11 +36,11 @@ export function NjdotCrashesTable(
     }
     return id
   }, [ cc, mc ])
-  const paginationControls = usePaginationControls({ id, perPageId: NjdotCrashesId, })
+  const paginationControls = usePaginationControls({ id, perPageId: NjspCrashesId, })
   const { page, perPage, } = paginationControls
   const router = useRouter()
-  const { data: { crashes, total } = init, isLoading, isFetching, isError, error, } = useQuery({
-    queryKey: [ NjdotCrashesId, router.asPath, page, perPage, cc, mc, ],
+  const { data: { crashes, total } = init, isFetching, isError, error, } = useQuery({
+    queryKey: [ NjspCrashesId, router.asPath, page, perPage, cc, mc, ],
     queryFn: async () => {
       const q: CrashPageOpts = {
         p: page,
@@ -48,7 +48,7 @@ export function NjdotCrashesTable(
         ...(cc === null ? {} : { cc }),
         ...(mc === null ? {} : { mc }),
       }
-      const url = `/api/njdot/crashes?${mkQuery(q)}`
+      const url = `/api/njsp/crashes?${mkQuery(q)}`
       console.log(`Fetching: ${url}`)
       return fetchJson<CrashPage>(url)
     },
@@ -56,18 +56,17 @@ export function NjdotCrashesTable(
     enabled: page !== 0,
     placeholderData: keepPreviousData,
   })
-  console.log(`njdot table: isFetching ${isFetching}, isLoading ${isLoading}`, total)
   if (isError) {
-    console.error("/api/njdot/crashes error:", error)
+    console.error("/api/njsp/crashes error:", error)
     return <div>Error!</div>
   }
-  const rows = getNjdotCrashRows({ cc, mc, cc2mc2mn, crashes, }) ?? []
+  const rows = getNjspCrashRows({ cc, mc, cc2mc2mn, crashes, }) ?? []
   const pagination = { ...paginationControls, total }
   return (
     <ResultTable
-      className={css.njdotCrashesTable}
+      className={css.njspCrashesTable}
       result={right(rows)}
-      isFetching={isLoading || isFetching}
+      isFetching={isFetching}
       pagination={pagination}
     />
   )

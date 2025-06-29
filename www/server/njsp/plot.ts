@@ -3,8 +3,7 @@ import { loadJson } from "@rdub/base/json/load"
 import { OPEN_READWRITE } from "duckdb"
 import { Database } from "duckdb-async"
 import { PLOTS, ProjectedCsv, RUNDATE, YearTypeCountyCsv } from "@/server/paths"
-import { PlotParams, Props, TypeCounts, YtRow } from "@/src/njsp/plot"
-import { njspPlotSpec } from "@/src/plotSpecs"
+import { name, PlotParams, Props, TypeCounts, YtRow } from "@/src/njsp/plot"
 import { Counties } from "../county"
 
 export const typeCountsQuery = (county: string | null) => `
@@ -33,7 +32,7 @@ export const ytcQuery = (county: string | null) => `
 `
 
 export async function loadProps({ county, }: { county: string | null }): Promise<Props> {
-  const initialPlotP = loadJson<PlotParams>(join(PLOTS, `${njspPlotSpec.name}.json`))
+  const initialPlotP = loadJson<PlotParams>(join(PLOTS, `${name}.json`))
   const rundateP = loadJson<{ rundate: string }>(RUNDATE).then(o => o.rundate as string)
   const ddb = Database.create(':memory:', OPEN_READWRITE)
   const typeProjectionsP =

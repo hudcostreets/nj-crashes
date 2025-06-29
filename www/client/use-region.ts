@@ -3,21 +3,11 @@ import { useRouter } from "next/router"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { CC2MC2MN, County, denormalize, MC2MN, normalize } from "@/src/county"
 import { CCMC } from "@/src/njsp/region"
-
-export type Region = CCMC & {
-    cn: string | null
-    mn: string | null
-    county?: County
-    mc2mn?: MC2MN
-    setCounty: (county: string | null) => void
-    setCity?: (city: string) => void
-    cities?: string[]
-    cc2mc2mn: CC2MC2MN
-}
+import { Region } from "@/src/region"
 
 export default function useRegion({ cc2mc2mn, urlPrefix, ...props }: CCMC & {
-    cc2mc2mn: CC2MC2MN
-    urlPrefix?: string
+  cc2mc2mn: CC2MC2MN
+  urlPrefix?: string
 }): Region {
   const router = useRouter()
   const cn2cc: Record<string, number> = useMemo(() => mapEntries(cc2mc2mn, (cc, { cn }) => [ cn, cc ]), [ cc2mc2mn ])
@@ -91,25 +81,25 @@ export default function useRegion({ cc2mc2mn, urlPrefix, ...props }: CCMC & {
     [ cn2cc, setCc, urlPrefix, ]
   )
   const { county, cn, mn, mc2mn, mn2mc, cities, }: {
-        county?: County
-        cn?: string
-        mn?: string
-        mc2mn?: MC2MN
-        mn2mc?: Record<string, number>
-        cities?: string[]
-    } = useMemo(
-      () => {
-        if (!cc) return {}
-        const county = cc2mc2mn[cc]
-        const { cn, mc2mn } = county
-        const mn2mc = mapEntries(mc2mn, (mc, mn) => [ mn, mc ])
-        const cities = Arr(keys(mn2mc))
-        const mn = mc2mn && mc ? mc2mn[mc] : undefined
-        return { county, cn, mn, mc2mn, mn2mc, cities, }
-      },
-      [ cc, cc2mc2mn, ]
-    )
-    // const mn = useMemo(() => mc2mn && mc ? mc2mn[mc] : undefined, [ mc, mc2mn ])
+    county?: County
+    cn?: string
+    mn?: string
+    mc2mn?: MC2MN
+    mn2mc?: Record<string, number>
+    cities?: string[]
+  } = useMemo(
+    () => {
+      if (!cc) return {}
+      const county = cc2mc2mn[cc]
+      const { cn, mc2mn } = county
+      const mn2mc = mapEntries(mc2mn, (mc, mn) => [ mn, mc ])
+      const cities = Arr(keys(mn2mc))
+      const mn = mc2mn && mc ? mc2mn[mc] : undefined
+      return { county, cn, mn, mc2mn, mn2mc, cities, }
+    },
+    [ cc, cc2mc2mn, ]
+  )
+  // const mn = useMemo(() => mc2mn && mc ? mc2mn[mc] : undefined, [ mc, mc2mn ])
   const setCity = useCallback(
     (city: string) => {
       if (!mn2mc) {

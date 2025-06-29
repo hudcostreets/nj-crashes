@@ -1,5 +1,4 @@
-import { TableFooter } from "@mui/material"
-import { Tooltip } from "@mui/material"
+import { TableFooter, Tooltip } from "@mui/material"
 import Paper from "@mui/material/Paper"
 import Table from "@mui/material/Table"
 import TableBody from "@mui/material/TableBody"
@@ -9,23 +8,11 @@ import TableHead from "@mui/material/TableHead"
 import TableRow from "@mui/material/TableRow"
 import { keys, o2a } from "@rdub/base"
 import { useRouteIsChanging } from "@rdub/next-base/route-is-changing"
-import { Either, fold } from "fp-ts/Either"
+import { fold } from "fp-ts/Either"
 import * as React from "react"
-import { DatePagination, Pagination } from "@/src/pagination"
+import { DatePagination, Pagination } from "@/client/pagination"
+import { Props, Row, Rs } from "@/src/result-table"
 import css from "./result-table.module.scss"
-
-export type Result<T> = Either<Error, T>
-export type R<T> = Either<Error, T>
-export type Rs<T> = Either<Error, T[]>
-
-export type Props = {
-    className?: string
-    pagination?: Pagination | DatePagination
-}
-
-export type Row = {
-    key: string | number
-} & Record<string, string | number>
 
 export function RowsTable(
   {
@@ -35,10 +22,10 @@ export function RowsTable(
     className,
     pagination,
   }: Props & {
-        rows: Row[]
-      isFetching: boolean
-        colTitles?: Record<string, string>
-    }) {
+    rows: Row[]
+    isFetching: boolean
+    colTitles?: Record<string, string>
+  }) {
   const routeIsChanging = useRouteIsChanging()
   return (
     <TableContainer component={Paper} style={{ boxShadow: "none", }} className={`${css.rowsTable} ${className || ""}`}>

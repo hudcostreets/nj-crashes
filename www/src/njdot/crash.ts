@@ -1,6 +1,8 @@
 import type { CrashPage as CrashPage0 } from "@/src/crash"
 import { MC } from "@/src/muni"
 
+export const EndYear = 2022
+
 export type Totals = {
     tk: number
     ti: number

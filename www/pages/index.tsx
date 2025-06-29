@@ -7,6 +7,13 @@ import { loadPlots } from "@rdub/next-plotly/plot-load"
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { GetServerSidePropsContext } from "next/dist/types"
 import React, { Fragment, useState } from 'react'
+import { Cookies, CookiesContext } from '@/client/cookies'
+import Footer from '@/client/footer'
+import { NjspSource } from "@/client/icons"
+import { NjspPlot } from "@/client/njsp/plot"
+import { NjspCrashesId, NjspCrashesTable } from "@/client/njsp/table"
+import { VsHomicidesPlot } from "@/client/njsp/vs-homicides-plot"
+import { plotSpecs } from "@/client/plotSpecs"
 import { H2 } from "@/pages/c/[[...region]]"
 import { cc2mc2mn, County2Code } from "@/server/county"
 import { getCrashPage } from "@/server/crash-page"
@@ -14,16 +21,10 @@ import { getVsHomicides } from "@/server/crime/vs-homicides"
 import * as VsHomicides from "@/server/crime/vs-homicides"
 import { spDdb } from "@/server/njsp/ddb"
 import { loadProps } from "@/server/njsp/plot"
-import { Cookies, CookiesContext } from '@/src/cookies'
 import { CC2MC2MN, normalize } from "@/src/county"
-import Footer from '@/src/footer'
-import { NjspSource } from "@/src/icons"
 import { CrashPage } from '@/src/njsp/crash'
-import { NjspPlot, PlotParams, Props as NjspProps } from "@/src/njsp/plot"
-import { NjspCrashesId, NjspCrashesTable } from "@/src/njsp/table"
-import { VsHomicidesPlot } from "@/src/njsp/vs-homicides-plot"
+import { PlotParams, Props as NjspProps } from "@/src/njsp/plot"
 import { DefaultPageSize, PerPageKey } from "@/src/pagination"
-import { plotSpecs } from "@/src/plotSpecs"
 import * as q from "@/src/query"
 import { url } from "@/src/site"
 import css from './index.module.scss'
