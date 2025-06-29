@@ -358,8 +358,8 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2024,Warren,11,1,1,2,14
 2025,Atlantic,9,1,0,5,14
 2025,Bergen,8,1,0,2,11
-2025,Burlington,13,4,0,3,19
-2025,Camden,11,2,0,7,19
+2025,Burlington,14,4,0,3,20
+2025,Camden,11,2,0,8,20
 2025,Cape May,5,1,0,0,6
 2025,Cumberland,5,2,0,3,9
 2025,Essex,6,3,1,10,20
