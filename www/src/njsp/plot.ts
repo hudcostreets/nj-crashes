@@ -1,8 +1,7 @@
 import { fromEntries, sum } from "@rdub/base"
-import { Annotations, PlotData } from "plotly.js"
-import { ReactNode } from "react"
-import * as Plotly from "react-plotly.js"
 import { repoWithOwner } from "@/src/github"
+import type { Annotations, PlotData } from "plotly.js"
+import type { PlotParams as PlotParams0 } from "react-plotly.js"
 
 export const curYear = (new Date().getFullYear())
 export const prvYear = curYear - 1
@@ -13,7 +12,7 @@ export type Data = {
 }
 export const name = "fatalities_per_year_by_type"
 
-export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
+export type PlotParams = { data: PlotData[] } & Omit<PlotParams0, "data">
 export type Annotation = Partial<Annotations>
 
 export type HasCounty = {
@@ -34,7 +33,6 @@ export type Props = {
   county: string | null
   Counties: string[]
   title?: string
-  heading?: ReactNode
 } & Data
 
 export type YtRow = {

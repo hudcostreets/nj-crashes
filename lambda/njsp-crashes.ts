@@ -1,9 +1,10 @@
-import { decode } from "@rdub/next-params/query"
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda"
 import { getCrashPage } from "./server/crash-page"
 import { spDdb } from "./server/njsp/ddb"
-import {Crash, CrashPage} from "./src/njsp/crash"
+import {CrashPage} from "./src/njsp/crash"
+
 import * as q from "./src/query"
+import {decode} from "@/src/query";
 
 export const handler = async (
   event: APIGatewayProxyEvent,

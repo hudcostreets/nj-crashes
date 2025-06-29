@@ -4,16 +4,16 @@ import { faInfo } from '@fortawesome/free-solid-svg-icons'
 import { SettingsGear } from "@rdub/next-leaflet/map/settings"
 import dynamic from "next/dynamic"
 import React, { useMemo, useState } from "react"
+import { useMapState } from "@/client/map/hudson/state"
 import { Props } from "@/pages/map/hudson/diffs"
 import css from "@/pages/map/map.module.scss"
 import { njdotDir, publicDir } from "@/src/dirs"
 import * as github from "@/src/github"
 import { decode, Encoded } from "@/src/indexed-json"
-import { useMapState } from "@/src/map/hudson/state"
 import classes from "./index.module.scss"
 import vcss from "./index.module.scss"
 
-export const Map = dynamic(() => import('@/src/map/hudson'), { ssr: false })
+export const Map = dynamic(() => import('@/client/map/hudson'), { ssr: false })
 
 export type Crash = {
     dt: Date

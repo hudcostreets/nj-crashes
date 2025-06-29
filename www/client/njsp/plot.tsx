@@ -198,10 +198,11 @@ export function NjspPlot(
     setCounty,
     includeMoreInfoLink,
   }: Props & MoreInfoLink & {
-        subtitle?: ReactNode
-        setCounty?: Dispatch<string | null>
-        Heading?: keyof IntrinsicElements
-    }
+    subtitle?: ReactNode
+    setCounty?: Dispatch<string | null>
+    heading?: ReactNode
+    Heading?: keyof IntrinsicElements
+  }
 ) {
   const id = "per-year"
   const name = "fatalities_per_year_by_type"

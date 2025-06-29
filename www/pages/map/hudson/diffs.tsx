@@ -4,12 +4,12 @@ import { FeatureCollection, MultiPolygon } from "geojson"
 import dynamic from "next/dynamic"
 import React, { useMemo } from "react"
 import { decode, Encoded } from "src/indexed-json"
+import { useMapState } from "@/client/map/hudson/state"
 import * as Hudson from "@/pages/map/hudson"
 import { njdotDir, publicDir } from "@/src/dirs"
-import { useMapState } from "@/src/map/hudson/state"
 import css from "../map.module.scss"
 
-export const Map = dynamic(() => import('@/src/map/hudson/diffs'), { ssr: false })
+export const Map = dynamic(() => import('@/client/map/hudson/diffs'), { ssr: false })
 
 export type Crash = Hudson.Crash & {
     oilon: number

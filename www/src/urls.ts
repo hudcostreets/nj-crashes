@@ -1,5 +1,4 @@
 import { mapValues } from "@rdub/base"
-import getBasePath from "@rdub/next-base/basePath"
 import { DotPqts, NjspCrashesPqt } from "@/server/paths"
 
 export const NjspFatalAcc = "https://nj.gov/njsp/info/fatalacc/"
@@ -22,7 +21,7 @@ export function getDbUrls<U extends Record<string, string>>({ loc, name, urls, }
   if (loc === "local") {
     prefix = `${cwd}/public/${name}`
   } else if (loc === "fetch") {
-    prefix = `${getBasePath()}/${name}`
+    prefix = `/${name}`
   } else if (loc === "s3") {
     prefix = `https://nj-crashes.s3.amazonaws.com/${name}/data`
   } else {

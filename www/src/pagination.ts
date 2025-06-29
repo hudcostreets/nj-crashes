@@ -1,4 +1,4 @@
-import { State } from "@rdub/base"
+import type { State } from "@rdub/base"
 
 export const PageSizes = [ 10, 20, 50 ]
 export const DefaultPageSize = PageSizes[0]
