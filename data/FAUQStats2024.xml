@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Jun 30 10:00:04 EDT 2025</RUNDATE>
+  <RUNDATE>Tue Jul 01 10:00:05 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -4078,12 +4078,13 @@
     <MUNICIPALITY MCODE="1345" MNAME="Shrewsbury Boro">
       <ACCIDENT ACCID="13355" DATE="08/05/2024" TIME="0244">
         <HIGHWAY>13</HIGHWAY>
-        <LOCATION>County 13</LOCATION>
+        <LOCATION>County 13 MP .93</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
