@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Jul 13 10:00:02 EDT 2025</RUNDATE>
+  <RUNDATE>Mon Jul 14 10:00:02 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -298,8 +298,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1214" MNAME="New Brunswick City">
       <ACCIDENT ACCID="14015" DATE="06/29/2025" TIME="2214">
-        <STREET>STATE ROUTE 18 SO AND PAULUS BLVD</STREET>
-        <LOCATION>STATE ROUTE 18 SO AND PAULUS BLVD</LOCATION>
+        <HIGHWAY>18</HIGHWAY>
+        <LOCATION>State Highway 18</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
