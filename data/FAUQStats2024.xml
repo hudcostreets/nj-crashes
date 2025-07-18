@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Jul 17 10:00:06 EDT 2025</RUNDATE>
+  <RUNDATE>Fri Jul 18 10:00:04 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -8565,7 +8565,7 @@
     <MUNICIPALITY MCODE="1336" MNAME="Tinton Falls Boro">
       <ACCIDENT ACCID="12948" DATE="01/15/2024" TIME="2000">
         <HIGHWAY>444</HIGHWAY>
-        <LOCATION>Garden State Parkway MP 104.2</LOCATION>
+        <LOCATION>Garden State Parkway MP 104.23</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
