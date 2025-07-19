@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Jul 18 10:00:04 EDT 2025</RUNDATE>
+  <RUNDATE>Sat Jul 19 10:00:04 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -3977,7 +3977,7 @@
     <MUNICIPALITY MCODE="1316" MNAME="Freehold Twsp">
       <ACCIDENT ACCID="13343" DATE="08/10/2024" TIME="2056">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9 MP 116.27</LOCATION>
+        <LOCATION>State Highway 9 MP 116.31</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4666,7 +4666,7 @@
     <MUNICIPALITY MCODE="1351" MNAME="Upper Freehold Twsp">
       <ACCIDENT ACCID="13336" DATE="07/01/2024" TIME="2037">
         <HIGHWAY>524</HIGHWAY>
-        <LOCATION>County 524 MP 11</LOCATION>
+        <LOCATION>County 524 MP 10.57</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
