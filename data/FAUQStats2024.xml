@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Jul 21 10:00:04 EDT 2025</RUNDATE>
+  <RUNDATE>Tue Jul 22 10:00:04 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -3893,8 +3893,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1318" MNAME="Holmdel Twsp">
       <ACCIDENT ACCID="13351" DATE="08/12/2024" TIME="0753">
-        <STREET>Bethany Rd</STREET>
-        <LOCATION>Bethany Rd</LOCATION>
+        <STREET>Bethany Road</STREET>
+        <LOCATION>Bethany Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4818,8 +4818,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1351" MNAME="Upper Freehold Twsp">
       <ACCIDENT ACCID="13335" DATE="06/24/2024" TIME="1122">
-        <STREET>Sharon Station Rd</STREET>
-        <LOCATION>Sharon Station Rd</LOCATION>
+        <STREET>Sharon Station Road</STREET>
+        <LOCATION>Sharon Station Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
