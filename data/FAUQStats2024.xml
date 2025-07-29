@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Jul 28 10:00:06 EDT 2025</RUNDATE>
+  <RUNDATE>Tue Jul 29 10:00:04 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1043,15 +1043,16 @@
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
-    <MUNICIPALITY MCODE="0333" MNAME="Shamong Twsp">
+    <MUNICIPALITY MCODE="0336" MNAME="Tabernacle Twsp">
       <ACCIDENT ACCID="13576" DATE="11/16/2024" TIME="1030">
-        <STREET>Tuckerton Rd</STREET>
-        <LOCATION>Tuckerton Rd</LOCATION>
+        <STREET>Forked Neck Rd.</STREET>
+        <LOCATION>Forked Neck Rd.</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2626,6 +2627,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2653,6 +2655,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3173,14 +3176,15 @@
   </COUNTY>
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0810" MNAME="Mantua Twsp">
-      <ACCIDENT ACCID="13412" DATE="09/05/2024" TIME="0858">
+      <ACCIDENT ACCID="13412" DATE="09/05/2024" TIME="0859">
         <HIGHWAY>55</HIGHWAY>
-        <LOCATION>State Highway 55 MP 51.8</LOCATION>
+        <LOCATION>State Highway 55 MP 51.75</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>2</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3888,8 +3892,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1318" MNAME="Holmdel Twsp">
       <ACCIDENT ACCID="13351" DATE="08/12/2024" TIME="0753">
-        <STREET>Bethany Road</STREET>
-        <LOCATION>Bethany Road</LOCATION>
+        <STREET>Bethany Rd</STREET>
+        <LOCATION>Bethany Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4813,8 +4817,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1351" MNAME="Upper Freehold Twsp">
       <ACCIDENT ACCID="13335" DATE="06/24/2024" TIME="1122">
-        <STREET>Sharon Station Road</STREET>
-        <LOCATION>Sharon Station Road</LOCATION>
+        <STREET>Sharon Station Rd</STREET>
+        <LOCATION>Sharon Station Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -8880,5 +8884,5 @@
   </COUNTY>
   <TOTACCIDENTS>648</TOTACCIDENTS>
   <TOTFATALITIES>685</TOTFATALITIES>
-  <TOTINJURIES>304</TOTINJURIES>
+  <TOTINJURIES>305</TOTINJURIES>
 </FAUQSTATS>
