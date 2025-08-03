@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Aug 02 10:00:07 EDT 2025</RUNDATE>
+  <RUNDATE>Sun Aug 03 10:00:08 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2811,7 +2811,7 @@
   </COUNTY>
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
-      <ACCIDENT ACCID="13437" DATE="09/16/2024" TIME="0004">
+      <ACCIDENT ACCID="13437" DATE="09/16/2024" TIME="0006">
         <STREET>Broadway</STREET>
         <LOCATION>Broadway</LOCATION>
         <FATALITIES>1</FATALITIES>
