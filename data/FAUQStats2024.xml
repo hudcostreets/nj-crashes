@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Aug 05 10:00:02 EDT 2025</RUNDATE>
+  <RUNDATE>Wed Aug 06 10:00:06 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1020,12 +1020,13 @@
     <MUNICIPALITY MCODE="0822" MNAME="Woodbury City">
       <ACCIDENT ACCID="13581" DATE="11/17/2024" TIME="0849">
         <HIGHWAY>644</HIGHWAY>
-        <LOCATION>County 644</LOCATION>
+        <LOCATION>County 644 MP 3.68</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1154,12 +1155,13 @@
     <MUNICIPALITY MCODE="0818" MNAME="Washington Twsp">
       <ACCIDENT ACCID="13567" DATE="11/11/2024" TIME="2026">
         <HIGHWAY>654</HIGHWAY>
-        <LOCATION>County 654</LOCATION>
+        <LOCATION>County 654 MP 5.08</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1318,7 +1320,7 @@
     <MUNICIPALITY MCODE="1213" MNAME="Monroe Twsp">
       <ACCIDENT ACCID="13565" DATE="11/07/2024" TIME="1844">
         <HIGHWAY>615</HIGHWAY>
-        <LOCATION>County 615</LOCATION>
+        <LOCATION>County 615 MP 6.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1449,12 +1451,13 @@
     <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
       <ACCIDENT ACCID="13539" DATE="11/04/2024" TIME="0406">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 29.09</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1665,12 +1668,13 @@
     <MUNICIPALITY MCODE="1215" MNAME="North Brunswick Tws">
       <ACCIDENT ACCID="13527" DATE="10/28/2024" TIME="2110">
         <HIGHWAY>27</HIGHWAY>
-        <LOCATION>State Highway 27</LOCATION>
+        <LOCATION>State Highway 27 MP 11.3</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
