@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Aug 07 10:00:10 EDT 2025</RUNDATE>
+  <RUNDATE>Fri Aug 08 10:00:06 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2712,12 +2712,13 @@
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="13479" DATE="09/22/2024" TIME="0803">
         <HIGHWAY>27</HIGHWAY>
-        <LOCATION>State Highway 27</LOCATION>
+        <LOCATION>State Highway 27 MP 33.21</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3248,6 +3249,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3337,13 +3339,14 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="13398" DATE="09/02/2024" TIME="0312">
-        <STREET>Spring St</STREET>
-        <LOCATION>Spring St</LOCATION>
+        <HIGHWAY>1</HIGHWAY>
+        <LOCATION>State Highway 1 MP 45.17</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4564,8 +4567,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0706" MNAME="East Orange City">
       <ACCIDENT ACCID="13293" DATE="07/05/2024" TIME="2120">
-        <STREET>Park Ave</STREET>
-        <LOCATION>Park Ave</LOCATION>
+        <HIGHWAY>658</HIGHWAY>
+        <LOCATION>County 658 MP 2.26</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5127,12 +5130,13 @@
     <MUNICIPALITY MCODE="0701" MNAME="Belleville Town">
       <ACCIDENT ACCID="13273" DATE="06/10/2024" TIME="1514">
         <HIGHWAY>647</HIGHWAY>
-        <LOCATION>County 647</LOCATION>
+        <LOCATION>County 647 MP 0</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5236,6 +5240,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5955,6 +5960,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7061,6 +7067,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8895,5 +8902,5 @@
   </COUNTY>
   <TOTACCIDENTS>648</TOTACCIDENTS>
   <TOTFATALITIES>685</TOTFATALITIES>
-  <TOTINJURIES>312</TOTINJURIES>
+  <TOTINJURIES>313</TOTINJURIES>
 </FAUQSTATS>
