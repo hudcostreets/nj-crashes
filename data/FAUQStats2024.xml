@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Aug 09 10:00:07 EDT 2025</RUNDATE>
+  <RUNDATE>Sun Aug 10 10:00:08 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1143,13 +1143,14 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="13569" DATE="11/12/2024" TIME="1947">
-        <HIGHWAY>508</HIGHWAY>
-        <LOCATION>County 508</LOCATION>
+        <STREET>1st Street</STREET>
+        <LOCATION>1st Street</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2240,7 +2241,7 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="13485" DATE="10/12/2024" TIME="0408">
+      <ACCIDENT ACCID="13485" DATE="10/12/2024" TIME="0402">
         <HIGHWAY>1</HIGHWAY>
         <LOCATION>State Highway 1 (Truck (Rt. 1 and 9 Only)) MP .6</LOCATION>
         <FATALITIES>2</FATALITIES>
@@ -2248,6 +2249,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4369,6 +4371,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4576,6 +4579,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8904,5 +8908,5 @@
   </COUNTY>
   <TOTACCIDENTS>648</TOTACCIDENTS>
   <TOTFATALITIES>685</TOTFATALITIES>
-  <TOTINJURIES>315</TOTINJURIES>
+  <TOTINJURIES>317</TOTINJURIES>
 </FAUQSTATS>
