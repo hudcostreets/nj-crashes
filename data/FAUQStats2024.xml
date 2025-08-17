@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Aug 16 10:00:11 EDT 2025</RUNDATE>
+  <RUNDATE>Sun Aug 17 10:00:11 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2062,12 +2062,13 @@
     <MUNICIPALITY MCODE="1331" MNAME="Middletown Twsp">
       <ACCIDENT ACCID="13496" DATE="10/18/2024" TIME="2007">
         <HIGHWAY>36</HIGHWAY>
-        <LOCATION>State Highway 36</LOCATION>
+        <LOCATION>State Highway 36 MP 17.04</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
