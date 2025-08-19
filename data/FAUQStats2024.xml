@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Aug 18 10:00:05 EDT 2025</RUNDATE>
+  <RUNDATE>Tue Aug 19 10:00:02 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -993,6 +993,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1040,13 +1041,14 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="13583" DATE="11/16/2024" TIME="1927">
-        <STREET>835 Madison Ave</STREET>
-        <LOCATION>835 Madison Ave</LOCATION>
+        <STREET>Madison Avenue</STREET>
+        <LOCATION>Madison Avenue</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1136,13 +1138,14 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2001" MNAME="Berkeley Heights Tw">
       <ACCIDENT ACCID="13571" DATE="11/13/2024" TIME="1745">
-        <STREET>Plainfield Ave</STREET>
-        <LOCATION>Plainfield Ave</LOCATION>
+        <HIGHWAY>641</HIGHWAY>
+        <LOCATION>County 641 MP .55</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1176,14 +1179,15 @@
   </COUNTY>
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2016" MNAME="Scotch Plains Twsp">
-      <ACCIDENT ACCID="13578" DATE="11/11/2024" TIME="1930">
-        <STREET>Sky Top Dr</STREET>
-        <LOCATION>Sky Top Dr</LOCATION>
+      <ACCIDENT ACCID="13578" DATE="11/11/2024" TIME="1931">
+        <HIGHWAY>642</HIGHWAY>
+        <LOCATION>County 642 MP 1.3</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1302,12 +1306,13 @@
     <MUNICIPALITY MCODE="1810" MNAME="Hillsborough Twsp">
       <ACCIDENT ACCID="13560" DATE="11/08/2024" TIME="0947">
         <HIGHWAY>514</HIGHWAY>
-        <LOCATION>County 514</LOCATION>
+        <LOCATION>County 514 MP 11.76</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1448,12 +1453,13 @@
     <MUNICIPALITY MCODE="0818" MNAME="Washington Twsp">
       <ACCIDENT ACCID="13542" DATE="11/04/2024" TIME="2009">
         <HIGHWAY>655</HIGHWAY>
-        <LOCATION>County 655</LOCATION>
+        <LOCATION>County 655 MP 8.12</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1556,12 +1562,13 @@
     <MUNICIPALITY MCODE="2014" MNAME="Roselle Boro">
       <ACCIDENT ACCID="13544" DATE="10/31/2024" TIME="2340">
         <HIGHWAY>27</HIGHWAY>
-        <LOCATION>State Highway 27</LOCATION>
+        <LOCATION>State Highway 27 MP 31.79</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2886,6 +2893,7 @@
         <FATAL_P>2</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1214" MNAME="New Brunswick City">
@@ -3129,6 +3137,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8922,5 +8931,5 @@
   </COUNTY>
   <TOTACCIDENTS>648</TOTACCIDENTS>
   <TOTFATALITIES>685</TOTFATALITIES>
-  <TOTINJURIES>325</TOTINJURIES>
+  <TOTINJURIES>327</TOTINJURIES>
 </FAUQSTATS>
