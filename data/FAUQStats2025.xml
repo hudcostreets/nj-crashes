@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Aug 19 10:00:01 EDT 2025</RUNDATE>
+  <RUNDATE>Wed Aug 20 10:00:01 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -66,12 +66,13 @@
     <MUNICIPALITY MCODE="0507" MNAME="North Wildwood City">
       <ACCIDENT ACCID="14085" DATE="08/16/2025" TIME="2152">
         <HIGHWAY>147</HIGHWAY>
-        <LOCATION>State Highway 147</LOCATION>
+        <LOCATION>State Highway 147 MP 3.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -92,12 +93,13 @@
     <MUNICIPALITY MCODE="0109" MNAME="Estell Manor City">
       <ACCIDENT ACCID="14088" DATE="08/12/2025" TIME="1335">
         <HIGHWAY>557</HIGHWAY>
-        <LOCATION>County 557</LOCATION>
+        <LOCATION>County 557 MP 15.9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -128,8 +130,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="14079" DATE="08/11/2025" TIME="0550">
-        <STREET>West Market St</STREET>
-        <LOCATION>West Market St</LOCATION>
+        <STREET>334 West Market St</STREET>
+        <LOCATION>334 West Market St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -479,7 +481,7 @@
     <MUNICIPALITY MCODE="0427" MNAME="Pennsauken Twsp">
       <ACCIDENT ACCID="14087" DATE="07/27/2025" TIME="1835">
         <HIGHWAY>30</HIGHWAY>
-        <LOCATION>State Highway 30</LOCATION>
+        <LOCATION>State Highway 30 MP 3</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4368,5 +4370,5 @@
   </COUNTY>
   <TOTACCIDENTS>331</TOTACCIDENTS>
   <TOTFATALITIES>352</TOTFATALITIES>
-  <TOTINJURIES>64</TOTINJURIES>
+  <TOTINJURIES>65</TOTINJURIES>
 </FAUQSTATS>
