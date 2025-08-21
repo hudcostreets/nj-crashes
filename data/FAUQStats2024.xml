@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Aug 20 10:00:03 EDT 2025</RUNDATE>
+  <RUNDATE>Thu Aug 21 10:00:02 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -316,19 +316,6 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <COUNTY CCODE="01" CNAME="Atlantic">
-    <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
-      <ACCIDENT ACCID="13650" DATE="12/12/2024" TIME="0755">
-        <HIGHWAY>446</HIGHWAY>
-        <LOCATION>Atlantic City Expressway MP 1.4</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="13647" DATE="12/12/2024" TIME="0042">
@@ -339,6 +326,20 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+    <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
+      <ACCIDENT ACCID="13650" DATE="12/11/2024" TIME="1955">
+        <HIGHWAY>446</HIGHWAY>
+        <LOCATION>Atlantic City Expressway MP 1.4</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -477,8 +478,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="13698" DATE="12/07/2024" TIME="0003">
-        <STREET>Park Ave</STREET>
-        <LOCATION>Park Ave</LOCATION>
+        <HIGHWAY>658</HIGHWAY>
+        <LOCATION>County 658 MP 3.04</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1069,7 +1070,7 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0706" MNAME="East Orange City">
-      <ACCIDENT ACCID="13575" DATE="11/16/2024" TIME="0523">
+      <ACCIDENT ACCID="13575" DATE="11/16/2024" TIME="0521">
         <STREET>Ampere Plz</STREET>
         <LOCATION>Ampere Plz</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -1908,8 +1909,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="13518" DATE="10/23/2024" TIME="1024">
-        <STREET>Dr. Martin Luther King Blvd</STREET>
-        <LOCATION>Dr. Martin Luther King Blvd</LOCATION>
+        <STREET>Dr. Martin Luther King Jr Blvd</STREET>
+        <LOCATION>Dr. Martin Luther King Jr Blvd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1996,6 +1997,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2750,12 +2752,13 @@
     <MUNICIPALITY MCODE="0108" MNAME="Egg Harbor Twsp">
       <ACCIDENT ACCID="13449" DATE="09/21/2024" TIME="0927">
         <HIGHWAY>444</HIGHWAY>
-        <LOCATION>Garden State Parkway MP 37.22</LOCATION>
+        <LOCATION>Garden State Parkway MP 37.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6712,6 +6715,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
@@ -8919,5 +8923,5 @@
   </COUNTY>
   <TOTACCIDENTS>647</TOTACCIDENTS>
   <TOTFATALITIES>684</TOTFATALITIES>
-  <TOTINJURIES>331</TOTINJURIES>
+  <TOTINJURIES>333</TOTINJURIES>
 </FAUQSTATS>
