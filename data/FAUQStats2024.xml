@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Aug 22 10:00:05 EDT 2025</RUNDATE>
+  <RUNDATE>Sat Aug 23 10:00:04 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -609,7 +609,7 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
     <MUNICIPALITY MCODE="2111" MNAME="Hope Twsp">
-      <ACCIDENT ACCID="13615" DATE="12/01/2024" TIME="2021">
+      <ACCIDENT ACCID="13615" DATE="12/01/2024" TIME="2020">
         <HIGHWAY>80</HIGHWAY>
         <LOCATION>Interstate 80 MP 11.3</LOCATION>
         <FATALITIES>1</FATALITIES>
