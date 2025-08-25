@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Aug 24 10:00:05 EDT 2025</RUNDATE>
+  <RUNDATE>Mon Aug 25 10:00:04 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,15 +49,81 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
-  <COUNTY CCODE="15" CNAME="Ocean">
-    <MUNICIPALITY MCODE="1511" MNAME="Jackson Twsp">
-      <ACCIDENT ACCID="14092" DATE="08/23/2025" TIME="0627">
-        <STREET>Metedeconk Trail</STREET>
-        <LOCATION>Metedeconk Trail</LOCATION>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0813" MNAME="Newfield Boro">
+      <ACCIDENT ACCID="14094" DATE="08/24/2025" TIME="1118">
+        <STREET>Madison Ave</STREET>
+        <LOCATION>Madison Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="06" CNAME="Cumberland">
+    <MUNICIPALITY MCODE="0614" MNAME="Vineland City">
+      <ACCIDENT ACCID="14093" DATE="08/24/2025" TIME="0650">
+        <STREET>E. Landis Ave</STREET>
+        <LOCATION>E. Landis Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="19" CNAME="Sussex">
+    <MUNICIPALITY MCODE="1924" MNAME="Wantage Twsp">
+      <ACCIDENT ACCID="14098" DATE="08/23/2025" TIME="2014">
+        <HIGHWAY>23</HIGHWAY>
+        <LOCATION>State Highway 23 MP 47.9</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="06" CNAME="Cumberland">
+    <MUNICIPALITY MCODE="0607" MNAME="Hopewell Twsp">
+      <ACCIDENT ACCID="14097" DATE="08/23/2025" TIME="1115">
+        <HIGHWAY>49</HIGHWAY>
+        <LOCATION>State Highway 49 MP 24.3</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="15" CNAME="Ocean">
+    <MUNICIPALITY MCODE="1511" MNAME="Jackson Twsp">
+      <ACCIDENT ACCID="14092" DATE="08/23/2025" TIME="0627">
+        <STREET>Metedeconk Tr</STREET>
+        <LOCATION>Metedeconk Tr</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0714" MNAME="Newark City">
+      <ACCIDENT ACCID="14096" DATE="08/22/2025" TIME="2154">
+        <STREET>Clifton Ave</STREET>
+        <LOCATION>Clifton Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -4419,7 +4485,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>335</TOTACCIDENTS>
-  <TOTFATALITIES>356</TOTFATALITIES>
-  <TOTINJURIES>66</TOTINJURIES>
+  <TOTACCIDENTS>340</TOTACCIDENTS>
+  <TOTFATALITIES>361</TOTFATALITIES>
+  <TOTINJURIES>67</TOTINJURIES>
 </FAUQSTATS>
