@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Aug 25 10:00:04 EDT 2025</RUNDATE>
+  <RUNDATE>Tue Aug 26 10:00:02 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2811,7 +2811,7 @@
       </ACCIDENT>
       <ACCIDENT ACCID="13852" DATE="04/13/2025" TIME="0239">
         <HIGHWAY>27</HIGHWAY>
-        <LOCATION>State Highway 27</LOCATION>
+        <LOCATION>State Highway 27 MP 36.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
