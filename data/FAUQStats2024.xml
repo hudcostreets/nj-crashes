@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Aug 26 10:00:07 EDT 2025</RUNDATE>
+  <RUNDATE>Wed Aug 27 10:00:03 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2310,8 +2310,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1222" MNAME="South Plainfield Bo">
       <ACCIDENT ACCID="13484" DATE="10/11/2024" TIME="1511">
-        <STREET>Oak Tree Ave</STREET>
-        <LOCATION>Oak Tree Ave</LOCATION>
+        <STREET>Oak Tree Ave.</STREET>
+        <LOCATION>Oak Tree Ave.</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
