@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Aug 27 10:00:03 EDT 2025</RUNDATE>
+  <RUNDATE>Thu Aug 28 10:00:03 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -735,12 +735,13 @@
     <MUNICIPALITY MCODE="0436" MNAME="Winslow Twsp">
       <ACCIDENT ACCID="13611" DATE="11/28/2024" TIME="2015">
         <HIGHWAY>536</HIGHWAY>
-        <LOCATION>County 536 MP 2.02</LOCATION>
+        <LOCATION>County 536 (Spur (County Routes Only)) MP 2.02</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1563,6 +1564,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
