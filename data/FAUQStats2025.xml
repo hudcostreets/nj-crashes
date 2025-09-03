@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Sep 02 10:00:01 EDT 2025</RUNDATE>
+  <RUNDATE>Wed Sep 03 10:00:05 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,19 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
+      <ACCIDENT ACCID="14108" DATE="09/03/2025" TIME="0229">
+        <STREET>Brunswick Ave</STREET>
+        <LOCATION>Brunswick Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0333" MNAME="Shamong Twsp">
@@ -1019,20 +1032,6 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="10" CNAME="Hunterdon">
-    <MUNICIPALITY MCODE="1001" MNAME="Alexandria Twsp">
-      <ACCIDENT ACCID="14018" DATE="07/15/2025" TIME="1212">
-        <HIGHWAY>519</HIGHWAY>
-        <LOCATION>County 519 MP 14.2</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4301,7 +4300,7 @@
     <MUNICIPALITY MCODE="0216" MNAME="Englewood Cliffs Bo">
       <ACCIDENT ACCID="13716" DATE="01/16/2025" TIME="1454">
         <HIGHWAY>445</HIGHWAY>
-        <LOCATION>Palisades Interstate Parkway</LOCATION>
+        <LOCATION>Palisades Interstate Parkway MP .8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
