@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Sep 03 10:00:05 EDT 2025</RUNDATE>
+  <RUNDATE>Thu Sep 04 10:00:02 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -129,9 +129,9 @@
   </COUNTY>
   <COUNTY CCODE="17" CNAME="Salem">
     <MUNICIPALITY MCODE="1709" MNAME="Pilesgrove Twsp">
-      <ACCIDENT ACCID="14101" DATE="08/29/2025" TIME="0151">
-        <STREET>Whig Lane Rd</STREET>
-        <LOCATION>Whig Lane Rd</LOCATION>
+      <ACCIDENT ACCID="14101" DATE="08/29/2025" TIME="0121">
+        <HIGHWAY>660</HIGHWAY>
+        <LOCATION>County 660 MP 3.77</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
