@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Sep 04 10:00:03 EDT 2025</RUNDATE>
+  <RUNDATE>Fri Sep 05 10:00:02 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -5217,13 +5217,14 @@
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1511" MNAME="Jackson Twsp">
       <ACCIDENT ACCID="13333" DATE="06/09/2024" TIME="1203">
-        <STREET>Farmingdale Rd</STREET>
-        <LOCATION>Farmingdale Rd</LOCATION>
+        <STREET>Farmingdale Road</STREET>
+        <LOCATION>Farmingdale Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8938,5 +8939,5 @@
   </COUNTY>
   <TOTACCIDENTS>647</TOTACCIDENTS>
   <TOTFATALITIES>684</TOTFATALITIES>
-  <TOTINJURIES>341</TOTINJURIES>
+  <TOTINJURIES>342</TOTINJURIES>
 </FAUQSTATS>
