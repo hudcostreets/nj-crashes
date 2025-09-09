@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Sep 08 10:00:03 EDT 2025</RUNDATE>
+  <RUNDATE>Tue Sep 09 10:00:04 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -209,7 +209,7 @@
   </COUNTY>
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0108" MNAME="Egg Harbor Twsp">
-      <ACCIDENT ACCID="13658" DATE="12/19/2024" TIME="2013">
+      <ACCIDENT ACCID="13658" DATE="12/19/2024" TIME="2020">
         <HIGHWAY>152</HIGHWAY>
         <LOCATION>State Highway 152 MP .17</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -645,12 +645,13 @@
     <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
       <ACCIDENT ACCID="13938" DATE="12/01/2024" TIME="1449">
         <HIGHWAY>640</HIGHWAY>
-        <LOCATION>County 640</LOCATION>
+        <LOCATION>County 640 MP 6.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1250,12 +1251,13 @@
     <MUNICIPALITY MCODE="1352" MNAME="Wall Twsp">
       <ACCIDENT ACCID="13586" DATE="11/09/2024" TIME="1842">
         <HIGHWAY>35</HIGHWAY>
-        <LOCATION>State Highway 35</LOCATION>
+        <LOCATION>State Highway 35 MP 19.13</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2368,6 +2370,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5219,8 +5222,8 @@
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1511" MNAME="Jackson Twsp">
       <ACCIDENT ACCID="13333" DATE="06/09/2024" TIME="1203">
-        <STREET>Farmingdale Road</STREET>
-        <LOCATION>Farmingdale Road</LOCATION>
+        <HIGHWAY>50</HIGHWAY>
+        <LOCATION>County 50 MP 1.02</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
