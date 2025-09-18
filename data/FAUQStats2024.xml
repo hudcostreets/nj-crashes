@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Sep 17 10:00:13 EDT 2025</RUNDATE>
+  <RUNDATE>Thu Sep 18 10:00:02 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2137,12 +2137,13 @@
     <MUNICIPALITY MCODE="1335" MNAME="Neptune City Boro">
       <ACCIDENT ACCID="13504" DATE="10/16/2024" TIME="1846">
         <HIGHWAY>33</HIGHWAY>
-        <LOCATION>State Highway 33</LOCATION>
+        <LOCATION>State Highway 33 MP 40.33</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
