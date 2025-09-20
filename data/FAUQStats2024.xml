@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Sep 19 10:00:06 EDT 2025</RUNDATE>
+  <RUNDATE>Sat Sep 20 10:00:07 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2437,8 +2437,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="13570" DATE="10/07/2024" TIME="0954">
-        <STREET>Division St</STREET>
-        <LOCATION>Division St</LOCATION>
+        <STREET>Division St.</STREET>
+        <LOCATION>Division St.</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -2489,8 +2489,8 @@
         <INJURIES>1</INJURIES>
       </ACCIDENT>
       <ACCIDENT ACCID="13473" DATE="10/03/2024" TIME="2333">
-        <HIGHWAY>287</HIGHWAY>
-        <LOCATION>Interstate 287 MP 0</LOCATION>
+        <HIGHWAY>278</HIGHWAY>
+        <LOCATION>Interstate 278 MP 0</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3297,6 +3297,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
