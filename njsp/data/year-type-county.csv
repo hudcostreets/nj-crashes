@@ -358,22 +358,22 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2024,Warren,11,1,1,2,14
 2025,Atlantic,16,3,0,6,24
 2025,Bergen,15,1,0,4,20
-2025,Burlington,17,5,0,5,25
+2025,Burlington,17,5,0,6,26
 2025,Camden,16,2,1,9,27
 2025,Cape May,7,3,0,0,9
 2025,Cumberland,8,2,0,3,12
-2025,Essex,10,3,1,19,33
+2025,Essex,10,3,1,20,34
 2025,Gloucester,15,4,0,3,19
 2025,Hudson,5,1,1,4,10
 2025,Hunterdon,4,0,0,1,5
-2025,Mercer,7,3,1,5,16
+2025,Mercer,7,3,1,6,17
 2025,Middlesex,19,4,0,12,35
-2025,Monmouth,11,2,0,1,13
+2025,Monmouth,12,2,0,1,14
 2025,Morris,10,3,3,2,15
 2025,Ocean,24,9,1,11,38
 2025,Passaic,7,4,1,7,18
 2025,Salem,9,1,0,2,12
 2025,Somerset,4,4,0,0,8
 2025,Sussex,5,1,0,2,8
-2025,Union,8,4,2,4,17
+2025,Union,9,4,2,4,18
 2025,Warren,4,4,0,1,9
