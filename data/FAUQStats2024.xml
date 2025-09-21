@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Sep 20 10:00:07 EDT 2025</RUNDATE>
+  <RUNDATE>Sun Sep 21 10:00:03 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -499,7 +499,7 @@
       </ACCIDENT>
       <ACCIDENT ACCID="13633" DATE="12/06/2024" TIME="2328">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 51.5</LOCATION>
         <FATALITIES>6</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>5</FATAL_P>
