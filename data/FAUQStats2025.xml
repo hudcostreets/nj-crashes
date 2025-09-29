@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Sep 28 10:00:01 EDT 2025</RUNDATE>
+  <RUNDATE>Mon Sep 29 10:00:04 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,11 +49,24 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
+      <ACCIDENT ACCID="14166" DATE="09/28/2025" TIME="0602">
+        <HIGHWAY>295</HIGHWAY>
+        <LOCATION>Interstate 295</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1304" MNAME="Colts Neck Twsp">
       <ACCIDENT ACCID="14165" DATE="09/26/2025" TIME="2312">
         <HIGHWAY>18</HIGHWAY>
-        <LOCATION>18 (Freeway)</LOCATION>
+        <LOCATION>State Highway 18</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -829,13 +842,13 @@
   <COUNTY CCODE="19" CNAME="Sussex">
     <MUNICIPALITY MCODE="1911" MNAME="Hardyston Twsp">
       <ACCIDENT ACCID="14164" DATE="08/12/2025" TIME="1508">
-        <STREET>Wits End Road</STREET>
-        <LOCATION>Wits End Road</LOCATION>
+        <STREET>Wits End Rd</STREET>
+        <LOCATION>Wits End Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>1</FATAL_B>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2045,19 +2058,6 @@
       <ACCIDENT ACCID="13987" DATE="06/24/2025" TIME="1745">
         <STREET>Brookside Dr</STREET>
         <LOCATION>Brookside Dr</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>1</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="01" CNAME="Atlantic">
-    <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
-      <ACCIDENT ACCID="14158" DATE="06/24/2025" TIME="1204">
-        <STREET>Baltic Ave</STREET>
-        <LOCATION>Baltic Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -4423,19 +4423,6 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <COUNTY CCODE="12" CNAME="Middlesex">
-    <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
-      <ACCIDENT ACCID="14157" DATE="02/18/2025" TIME="1141">
-        <HIGHWAY>95</HIGHWAY>
-        <LOCATION>New Jersey Turnpike</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>1</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0119" MNAME="Pleasantville City">
       <ACCIDENT ACCID="13826" DATE="02/17/2025" TIME="1749">
@@ -5173,7 +5160,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>392</TOTACCIDENTS>
-  <TOTFATALITIES>415</TOTFATALITIES>
+  <TOTACCIDENTS>391</TOTACCIDENTS>
+  <TOTFATALITIES>414</TOTFATALITIES>
   <TOTINJURIES>92</TOTINJURIES>
 </FAUQSTATS>
