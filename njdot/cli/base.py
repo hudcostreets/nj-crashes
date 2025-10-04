@@ -144,3 +144,11 @@ def compute_db(force_recompute, db_path, n_jobs, dry_run, pqt_dir, replace, page
     else:
         for tbl in tbls:
             write_db(tbl, **kwargs)
+
+
+# Add rawdata subcommand at end to avoid import ordering issues
+try:
+    from njdot.rawdata import rawdata
+    njdot.add_command(rawdata)
+except ImportError:
+    pass  # rawdata available as standalone CLI if dependencies missing

@@ -8,6 +8,7 @@ setup(
         'console_scripts': [
             'njsp=njsp.cli.main:main',
             'njdot=njdot.cli.main:main',
+            'rawdata=njdot.rawdata.main:main',
         ],
     }
 )
