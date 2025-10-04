@@ -53,6 +53,7 @@ slack = [
 [project.scripts]
 njsp = "njsp.cli.main:main"
 njdot = "njdot.cli.main:main"
+rawdata = "njdot.rawdata.main:main"
 
 [build-system]
 requires = ["hatchling"]

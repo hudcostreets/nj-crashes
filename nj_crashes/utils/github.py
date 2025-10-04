@@ -8,19 +8,17 @@ from re import fullmatch
 from subprocess import CalledProcessError
 
 import git
+from github import Auth, Github
 from github.Commit import Commit
 from github.GitTree import GitTree
+from github.Repository import Repository
 from io import BytesIO
 from os.path import exists, expanduser
-
-from github import Auth, Github
-from github.Repository import Repository
-
 import pandas as pd
 from utz import proc
 
 from nj_crashes.utils.git import git_fmt
-from njdot.rawdata import singleton
+from njdot.rawdata.utils import singleton
 
 REPO = 'hudcostreets/nj-crashes'
 _gh: Github | None = None
