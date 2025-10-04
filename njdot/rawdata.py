@@ -43,6 +43,12 @@ def cli():
     pass
 
 
+@cli.group('fsck', short_help='Verify and analyze data file structure')
+def fsck():
+    """File system check commands for verifying data integrity."""
+    pass
+
+
 overwrite_opt = option('-f', '--overwrite', is_flag=True, help="Overwrite the output file, if it exists (default: no-op/skip)")
 dry_run_opt = option('-n', '--dry-run', is_flag=True, help="Print conversions that would be performed, don't perform them")
 
@@ -177,7 +183,7 @@ def zip(regions, cache_path, force, sleep, types, years):
                 for typ in types:
                     name = f'{year}/{region}{year}{typ}.zip'
                     url_name = f'{year}/{url_county}{year}{typ}.zip'
-                    url = f'https://www.state.nj.us/transportation/refdata/accident/{url_name}'
+                    url = f'https://dot.nj.gov/transportation/refdata/accident/{url_name}'
                     out_path = f'{DOT_DATA}/{name}'
                     if exists(out_path):
                         if force:
@@ -185,7 +191,8 @@ def zip(regions, cache_path, force, sleep, types, years):
                         else:
                             print(f'{url}: skipping, {name} exists')
                             continue
-                    head = requests.head(url, allow_redirects=True)
+                    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+                    head = requests.head(url, allow_redirects=True, headers=headers)
                     try:
                         head.raise_for_status()
                     except Exception:
@@ -195,7 +202,7 @@ def zip(regions, cache_path, force, sleep, types, years):
                     new_row_df = pd.DataFrame([ new_row ]).set_index('url')
 
                     def download():
-                        r = requests.get(url)
+                        r = requests.get(url, headers=headers)
                         r.raise_for_status()
                         makedirs(dirname(out_path), exist_ok=True)
                         with open(out_path, 'wb') as f:
@@ -298,21 +305,97 @@ def parse_row(f, idx, fields):
             row[fname] = fval
     last = f.read(1)
     if last != '\n':
-        raise RuntimeError(f'Row {idx}: expected newline at position {f.tell()}, found "{last}", row {row}')
+        raise RuntimeError(f'Row {idx}: expected newline at position {f.tell()}, found {last!r}, row {row}')
     return row
 
 
 def parse_rows(txt_path, fields):
+    # Calculate expected record size in chars (all field lengths)
+    data_size = sum(f['Length'] for f in fields)
+
+    # Read file, decode from UTF-8 (handles 2023+ files with UTF-8 chars),
+    # then normalize to ASCII/ISO-8859-1 compatible characters
+    with open(txt_path, 'rb') as f:
+        raw_bytes = f.read()
+
+    # Try UTF-8 first (for 2023+ files), fall back to ISO-8859-1
+    try:
+        text = raw_bytes.decode('utf-8', errors='replace')
+    except:
+        text = raw_bytes.decode('ISO-8859-1')
+
+    # Replace problematic Unicode characters with ASCII equivalents
+    replacements = {
+        '\u2013': '-',      # en-dash
+        '\u2014': '-',      # em-dash
+        '\u2019': "'",      # right single quote
+        '\xa0': ' ',        # non-breaking space
+        '\ufffd': ' ',      # replacement character (from UTF-8 decode errors)
+        '\xad': '-',        # soft hyphen
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+
+    # Detect line ending style (LF vs CRLF) and check for trailing padding
+    first_lf = text.find('\n')
+    if first_lf > 0 and text[first_lf-1:first_lf] == '\r':
+        line_ending = '\r\n'
+        expected_record_size = data_size + 2
+    else:
+        line_ending = '\n'
+        expected_record_size = data_size + 1
+
+    # Check actual record size (some files have extra chars)
+    actual_first_record_size = first_lf + 1
+    if actual_first_record_size == expected_record_size + 1:
+        # 2023+ Vehicles files have +1 char (undocumented format change)
+        record_size = expected_record_size + 1
+        has_extra_char = True
+        err(f'Detected extra character in data: record size {record_size} (schema expects {expected_record_size})')
+    else:
+        record_size = expected_record_size
+        has_extra_char = False
+
+    # Process records by character count
+    from io import StringIO
     rows = []
     idx = 0
-    with open(txt_path, 'r', encoding='ISO-8859-1') as f:
-        while True:
-            row = parse_row(f, idx=idx, fields=fields)
-            if row:
-                rows.append(row)
-                idx += 1
-            else:
-                break
+    pos = 0
+
+    while pos < len(text):
+        # Read one record (fixed char count)
+        record_text = text[pos:pos+record_size]
+        if len(record_text) < record_size:
+            # Incomplete last record
+            break
+
+        # Strip extra character if present (e.g., 2023 Vehicles have +1 undocumented char)
+        if has_extra_char:
+            # Remove the last character before line ending
+            record_text = record_text[:-(len(line_ending)+1)] + line_ending
+
+        # Replace embedded newlines/carriage returns with spaces (except the trailing line ending)
+        record_content = record_text[:-len(line_ending)]
+        record_content = record_content.replace('\r', ' ').replace('\n', ' ')
+        record_text = record_content + line_ending
+
+        # Verify it ends with correct line ending
+        if not record_text.endswith(line_ending):
+            raise RuntimeError(f'Record at byte position {pos} (idx {idx}) does not end with {line_ending!r}: {record_text[-20:]!r}')
+
+        # Normalize to LF for parsing
+        if line_ending == '\r\n':
+            record_text = record_content + '\n'
+
+        # Parse this record
+        record_io = StringIO(record_text)
+        row = parse_row(record_io, idx=idx, fields=fields)
+        if row:
+            rows.append(row)
+            idx += 1
+
+        pos += record_size
+
     return pd.DataFrame(rows)
 
 
@@ -321,8 +404,7 @@ def parse_rows(txt_path, fields):
 @overwrite_opt
 @dry_run_opt
 @types_opt
-def parse_fields_pdf(version2017, overwrite, dry_run, type_strs):
-    types = [ parse_type(type_str) for type_str in type_strs.split(',') ]
+def parse_fields_pdf(version2017, overwrite, dry_run, types):
     if version2017 == 0:
         versions = [ 2001 ]
     elif version2017 == 1:
@@ -399,7 +481,7 @@ BOOLS = { 'Y': True, 'N': False, '1': True, '0': False, '': False }
 def load(txt_path, fields, ints=None, floats=None, bools=None):
     df = parse_rows(txt_path, fields)
     for k in ints or []:
-        df[k] = df[k].astype(int)
+        df[k] = df[k].replace('', '0').astype(int)
     for k in floats or []:
         df[k] = df[k].replace('', nan).astype(float)
     for k in bools or []:
@@ -407,8 +489,12 @@ def load(txt_path, fields, ints=None, floats=None, bools=None):
     return df
 
 
-def get_2021_dob_fix_fields(fields, dob_col):
-    """Driver DOB is missing from 2021Drivers (similarly "Date of Birth" in 2021Pedestrians)."""
+def get_2021_dob_fix_fields(fields, dob_col, year):
+    """Driver DOB is missing from 2021+ Drivers (similarly "Date of Birth" in 2021+ Pedestrians).
+
+    For 2021-2022: DOB field is moved to end of record (as trailing spaces).
+    For 2023+: DOB field is omitted entirely from the record.
+    """
     new_fields = []
     pos = 1
     dob_field = None
@@ -420,12 +506,20 @@ def get_2021_dob_fix_fields(fields, dob_col):
             new_field = { **f, 'From': pos, 'To': pos + length - 1, }
             pos += length
             new_fields.append(new_field)
+
     if not dob_field:
         raise RuntimeError(f"Couldn't find '{dob_col}' field in {fields}")
-    err(f"Moved '{dob_col}' to end of fields")
-    dob_field['From'] = pos
-    dob_field['To'] = pos + dob_field['Length'] - 1
-    new_fields.append(dob_field)
+
+    if year < 2023:
+        # 2021-2022: DOB moved to end as trailing spaces
+        err(f"Moved '{dob_col}' to end of fields (year {year})")
+        dob_field['From'] = pos
+        dob_field['To'] = pos + dob_field['Length'] - 1
+        new_fields.append(dob_field)
+    else:
+        # 2023+: DOB omitted entirely
+        err(f"Removed '{dob_col}' from fields (year {year}, field omitted from data)")
+
     return new_fields
 
 
@@ -454,7 +548,7 @@ def pqt(regions, types, years, overwrite, dry_run):
                     with open(json_path, 'r') as f:
                         fields = json.load(f)
                         fields_dict[json_path] = fields
-                    if typ == 'Crash' and year == '2013' and region == 'Atlantic':
+                    if typ == 'Crash' and year == 2013 and region == 'Atlantic':
                         # For some reason, "Reporting Badge No." in Atlantic2013[Accidents] is 18 chars long, not 5
                         [ *fields, rest ] = fields
                         fields = [ *fields, { **rest, 'Length': 18 } ]
@@ -488,10 +582,16 @@ def pqt(regions, types, years, overwrite, dry_run):
                         })
                 elif typ == 'Pedestrians':
                     if year >= 2021:
-                        new_fields = get_2021_dob_fix_fields(fields, 'Date of Birth')
+                        new_fields = get_2021_dob_fix_fields(fields, 'Date of Birth', year)
                     else:
                         new_fields = fields
                     df = load(txt_path, new_fields, bools=[ 'Is Bycyclist?', 'Is Other?', ]).rename(columns={'Is Bycyclist?': 'Is Bicyclist?'})
+                    # Validate 2021-2022: DOB field should be all spaces
+                    if 2021 <= year < 2023 and 'Date of Birth' in df.columns:
+                        non_empty_dob = df[df['Date of Birth'].str.strip() != '']
+                        if len(non_empty_dob) > 0:
+                            raise RuntimeError(f"Expected 'Date of Birth' to be all spaces for year {year}, but found {len(non_empty_dob)} non-empty values: {non_empty_dob['Date of Birth'].unique()[:10]}")
+                        err(f"✓ Verified 'Date of Birth' field is all spaces ({len(df)} records)")
                     if v2017:
                         df = df.rename(columns={
                             'Type of Most Severe Phys Injury': 'Type of Most Severe Physical Injury',
@@ -505,10 +605,16 @@ def pqt(regions, types, years, overwrite, dry_run):
                         })
                 elif typ == 'Drivers':
                     if year >= 2021:
-                        new_fields = get_2021_dob_fix_fields(fields, 'Driver DOB')
+                        new_fields = get_2021_dob_fix_fields(fields, 'Driver DOB', year)
                     else:
                         new_fields = fields
                     df = load(txt_path, new_fields)
+                    # Validate 2021-2022: DOB field should be all spaces
+                    if 2021 <= year < 2023 and 'Driver DOB' in df.columns:
+                        non_empty_dob = df[df['Driver DOB'].str.strip() != '']
+                        if len(non_empty_dob) > 0:
+                            raise RuntimeError(f"Expected 'Driver DOB' to be all spaces for year {year}, but found {len(non_empty_dob)} non-empty values: {non_empty_dob['Driver DOB'].unique()[:10]}")
+                        err(f"✓ Verified 'Driver DOB' field is all spaces ({len(df)} records)")
                     if not v2017:
                         df = df.rename(columns={
                             'Charge': 'Charge 1',
@@ -571,6 +677,200 @@ def check_nj_agg(years):
             sys.exit(1)
         else:
             print(f'{year}: {len(nj)} NJ records match {len(cs)} county-level records')
+
+
+@fsck.command('newlines', short_help='Verify line endings and record structure')
+@regions_opt
+@types_opt
+@years_opt
+@option('-n', '--num-records', type=int, default=None, help='Number of records to check (default: all)')
+def fsck_newlines(regions, types, years, num_records):
+    """Verify line endings, record lengths, and detect internal newlines."""
+    for region in regions:
+        for year in years:
+            for typ in types:
+                txt_path = f'{DOT_DATA}/{year}/{region}{year}{typ}.txt'
+                if not exists(txt_path):
+                    err(f'{txt_path}: not found, skipping')
+                    continue
+
+                err(f'Checking {txt_path}...')
+
+                with open(txt_path, 'rb') as f:
+                    data = f.read()
+
+                # Detect line ending from first line
+                first_lf = data.find(b'\n')
+                if first_lf < 0:
+                    err(f'  ERROR: No newline found in file')
+                    continue
+
+                if first_lf > 0 and data[first_lf-1:first_lf] == b'\r':
+                    line_ending = b'\r\n'
+                    line_ending_name = 'CRLF'
+                    first_record_len = first_lf + 1
+                else:
+                    line_ending = b'\n'
+                    line_ending_name = 'LF'
+                    first_record_len = first_lf + 1
+
+                err(f'  Line ending: {line_ending_name}')
+                err(f'  First record: {first_record_len} bytes')
+
+                # Check all records
+                record_size = first_record_len
+                pos = 0
+                record_num = 0
+                issues = []
+                length_histogram = {}
+                records_with_internal_newlines = 0
+
+                max_records = num_records if num_records else float('inf')
+
+                while pos < len(data) and record_num < max_records:
+                    # Find next line ending
+                    next_lf = data.find(b'\n', pos)
+                    if next_lf < 0:
+                        break
+
+                    actual_record_len = next_lf - pos + 1
+                    length_histogram[actual_record_len] = length_histogram.get(actual_record_len, 0) + 1
+
+                    # Check if this record has the expected length
+                    if actual_record_len != record_size:
+                        if len(issues) < 10:
+                            issues.append(f'Record {record_num}: expected {record_size} bytes, got {actual_record_len}')
+
+                    # Check for internal newlines (between pos and next_lf-len(line_ending))
+                    record_content_end = next_lf if line_ending == b'\n' else next_lf - 1
+                    record_content = data[pos:record_content_end]
+                    if b'\n' in record_content or b'\r' in record_content:
+                        records_with_internal_newlines += 1
+
+                    pos = next_lf + 1
+                    record_num += 1
+
+                err(f'  Records checked: {record_num}')
+
+                if len(length_histogram) == 1:
+                    err(f'  ✓ All records same length: {list(length_histogram.keys())[0]} bytes')
+                else:
+                    err(f'  WARNING: Variable record lengths:')
+                    for length, count in sorted(length_histogram.items()):
+                        err(f'    {length} bytes: {count} records')
+
+                if records_with_internal_newlines:
+                    err(f'  WARNING: {records_with_internal_newlines} records with internal newlines')
+                else:
+                    err(f'  ✓ No internal newlines')
+
+                if issues:
+                    err(f'  Issues found:')
+                    for issue in issues:
+                        err(f'    {issue}')
+                    if len(issues) == 10:
+                        err(f'    ... (showing first 10)')
+
+
+@fsck.command('fields', short_help='Analyze field boundaries via comma positions')
+@regions_opt
+@types_opt
+@years_opt
+@option('-n', '--num-records', type=int, default=10, help='Number of records to analyze (default: 10)')
+@option('-s', '--show-deltas', is_flag=True, help='Show field widths (chars between commas) instead of absolute positions')
+def fsck_fields(regions, types, years, num_records, show_deltas):
+    """Analyze comma positions to infer field boundaries."""
+    for region in regions:
+        for year in years:
+            for typ in types:
+                txt_path = f'{DOT_DATA}/{year}/{region}{year}{typ}.txt'
+                if not exists(txt_path):
+                    err(f'{txt_path}: not found, skipping')
+                    continue
+
+                err(f'Analyzing {txt_path}...')
+
+                with open(txt_path, 'rb') as f:
+                    data = f.read()
+
+                # Detect line ending
+                first_lf = data.find(b'\n')
+                if first_lf > 0 and data[first_lf-1:first_lf] == b'\r':
+                    line_ending = b'\r\n'
+                else:
+                    line_ending = b'\n'
+
+                # Find record boundaries
+                pos = 0
+                records_analyzed = 0
+                comma_positions_by_record = []
+
+                while pos < len(data) and records_analyzed < num_records:
+                    next_lf = data.find(b'\n', pos)
+                    if next_lf < 0:
+                        break
+
+                    # Get record content (without line ending)
+                    record_end = next_lf if line_ending == b'\n' else next_lf - 1
+                    record_content = data[pos:record_end]
+
+                    # Find all comma positions in this record
+                    comma_positions = []
+                    for i, byte in enumerate(record_content):
+                        if byte == ord(b','):
+                            comma_positions.append(i)
+
+                    comma_positions_by_record.append(comma_positions)
+                    records_analyzed += 1
+                    pos = next_lf + 1
+
+                if not comma_positions_by_record:
+                    err(f'  No records found')
+                    continue
+
+                # Build histogram of comma positions
+                from collections import Counter
+                comma_position_histogram = Counter()
+                for positions in comma_positions_by_record:
+                    for pos in positions:
+                        comma_position_histogram[pos] += 1
+
+                err(f'  Analyzed {records_analyzed} records')
+                err(f'  Unique comma count per record: {len(set(len(p) for p in comma_positions_by_record))}')
+
+                # Show positions that appear in all records (likely structural commas)
+                structural_positions = sorted([pos for pos, count in comma_position_histogram.items() if count == records_analyzed])
+
+                if show_deltas:
+                    # Show field widths (distance between commas)
+                    err(f'  Field widths (chars between commas):')
+                    if structural_positions:
+                        prev = 0
+                        for i, pos in enumerate(structural_positions):
+                            width = pos - prev
+                            err(f'    Field {i}: {width} chars')
+                            prev = pos + 1  # +1 to skip the comma itself
+                        # Last field - get length of first record content
+                        first_lf = data.find(b'\n')
+                        record_end = first_lf if line_ending == b'\n' else first_lf - 1
+                        record_len = record_end
+                        last_width = record_len - structural_positions[-1] - 1
+                        err(f'    Field {len(structural_positions)}: {last_width} chars (to end)')
+                else:
+                    # Show absolute positions
+                    err(f'  Structural comma positions (appear in all {records_analyzed} records):')
+                    for pos in structural_positions:
+                        err(f'    Position {pos}')
+
+                # Show variable positions
+                variable_positions = sorted([pos for pos, count in comma_position_histogram.items() if count < records_analyzed])
+                if variable_positions:
+                    err(f'  Variable comma positions (not in all records):')
+                    for pos in variable_positions[:20]:  # Show first 20
+                        count = comma_position_histogram[pos]
+                        err(f'    Position {pos}: {count}/{records_analyzed} records')
+                    if len(variable_positions) > 20:
+                        err(f'    ... ({len(variable_positions) - 20} more)')
 
 
 if __name__ == '__main__':
