@@ -68,6 +68,7 @@ def zip(regions, cache_path, force, sleep, types, years):
                             f.write(r.content)
 
                     needs_download = True
+                    downloaded = False
                     if cache is not None and url in cache.index:
                         cur_row = cache.loc[url]
                         cur_row_headers = cur_row.to_dict()
@@ -82,12 +83,13 @@ def zip(regions, cache_path, force, sleep, types, years):
                             if list(header_diffs.keys()) != [ 'Date' ]:
                                 print(f'{url} downloading (updated headers)')
                                 download()
+                                downloaded = True
+                                needs_download = False
                             elif force == 2:
                                 print(f'{url} forced re-download')
+                                # Let the needs_download block below handle it
                             else:
                                 needs_download = False
-                            cache = pd.concat([ cache.drop(url), new_row_df])
-                            updated_paths.append(out_path)
                         else:
                             print(f'{url} cache hit')
                             needs_download = False
@@ -98,7 +100,13 @@ def zip(regions, cache_path, force, sleep, types, years):
                         else:
                             print(f'{url} downloading (cache miss)')
                         download()
-                        cache = pd.concat([ cache, new_row_df])
+                        downloaded = True
+
+                    if downloaded:
+                        if cache is not None and url in cache.index:
+                            cache = pd.concat([ cache.drop(url), new_row_df])
+                        else:
+                            cache = pd.concat([ cache, new_row_df])
                         updated_paths.append(out_path)
 
                 if sleep:
