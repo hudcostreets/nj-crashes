@@ -81,19 +81,31 @@ regions_opt = parse_opt(
 def parse_years(years_str) -> list[int]:
     if not years_str:
         return YEARS
+
+    def normalize_year(y):
+        """Convert 2-digit year to 4-digit (assume 2000s)"""
+        if not y:
+            return None
+        y_int = int(y)
+        if y_int < 100:
+            return 2000 + y_int
+        return y_int
+
     all_years = []
     for years in years_str.split(','):
         pcs = years.split('-')
         if len(pcs) == 1:
-            all_years += pcs
+            normalized = normalize_year(pcs[0])
+            if normalized:
+                all_years.append(normalized)
         elif len(pcs) == 2:
             start, end = pcs
-            start = int(start) if start else START_YEAR
-            end = int(end) if end else END_YEAR
+            start = normalize_year(start) if start else START_YEAR
+            end = normalize_year(end) if end else END_YEAR
             all_years += list(range(start, end))
         else:
             raise ValueError(f"Unrecognized year piece {years} in {years_str}")
-    return list(sorted(list(map(int, set(all_years)))))
+    return list(sorted(list(set(all_years))))
 
 
 years_opt = parse_opt(
