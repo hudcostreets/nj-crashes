@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Oct 04 10:00:01 EDT 2025</RUNDATE>
+  <RUNDATE>Sun Oct 05 10:00:03 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,11 +49,50 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1112" MNAME="Robbinsville Twsp">
+      <ACCIDENT ACCID="14179" DATE="10/04/2025" TIME="1215">
+        <HIGHWAY>130</HIGHWAY>
+        <LOCATION>State Highway 130</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="16" CNAME="Passaic">
+    <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
+      <ACCIDENT ACCID="14182" DATE="10/04/2025" TIME="0812">
+        <HIGHWAY>3</HIGHWAY>
+        <LOCATION>State Highway 3</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0714" MNAME="Newark City">
+      <ACCIDENT ACCID="14181" DATE="10/04/2025" TIME="0304">
+        <STREET>Washington Ave</STREET>
+        <LOCATION>Washington Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
       <ACCIDENT ACCID="14178" DATE="10/03/2025" TIME="2156">
         <HIGHWAY>27</HIGHWAY>
-        <LOCATION>27</LOCATION>
+        <LOCATION>State Highway 27</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -63,10 +102,21 @@
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0336" MNAME="Tabernacle Twsp">
+      <ACCIDENT ACCID="14180" DATE="10/03/2025" TIME="1915">
+        <STREET>Goosepond Rd</STREET>
+        <LOCATION>Goosepond Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
     <MUNICIPALITY MCODE="0306" MNAME="Burlington Twsp">
       <ACCIDENT ACCID="14177" DATE="09/30/2025" TIME="0557">
-        <STREET>CR541 Spur (Burlington Bypass) &amp; Fountain Ave</STREET>
-        <LOCATION>CR541 Spur (Burlington Bypass) &amp; Fountain Ave</LOCATION>
+        <HIGHWAY>541</HIGHWAY>
+        <LOCATION>County 541 (Spur (County Routes Only))</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5293,7 +5343,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>401</TOTACCIDENTS>
-  <TOTFATALITIES>426</TOTFATALITIES>
+  <TOTACCIDENTS>405</TOTACCIDENTS>
+  <TOTFATALITIES>430</TOTFATALITIES>
   <TOTINJURIES>94</TOTINJURIES>
 </FAUQSTATS>
