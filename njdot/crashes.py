@@ -97,6 +97,16 @@ astype = {
 def map_year_df(df: pd.DataFrame, year: int) -> pd.DataFrame:
     df = df.drop(columns=['cn', 'mn']).rename(columns={ 'mc': 'mc_dot' })
     df.index.name = 'id'
+
+    # Fix 2023 regression: duplicate (year, cc, mc_dot, case) keys (5,745 records)
+    # Keep the last record (likely the most recent/corrected version)
+    pk_cols = ['year', 'cc', 'mc_dot', 'case']
+    dupe_mask = df.duplicated(pk_cols, keep='last')
+    if dupe_mask.any():
+        num_dupes = dupe_mask.sum()
+        err(f"crashes {year}: Dropping {num_dupes} duplicate records (keeping last)")
+        df = df[~dupe_mask]
+
     df = update_mc(df, 'dot', drop=False)
     df['pdn'] = df.pdn.apply(lambda pdn: pdn.title())
     df['olon'] = -df['olon']  # Longitudes all come in positive, but are actually supposed to be negative (NJ ⊂ [-76, -73])
@@ -114,9 +124,9 @@ def map_year_df(df: pd.DataFrame, year: int) -> pd.DataFrame:
     mg = load_munis_geojson()
     err(f"crashes {year}: merging olat/olon with muni geometries")
     ogdf = Crashes(df).gdf('o')
-    joined = sjoin(ogdf.df[['olat', 'olon', 'geometry']], mg).rename(columns={
-        'index_right0': 'occ',
-        'index_right1': 'omc',
+    joined = sjoin(ogdf.df[['olat', 'olon', 'geometry']], mg)[['cc', 'mc']].rename(columns={
+        'cc': 'occ',
+        'mc': 'omc',
     })
     with_omc = (
         sxs(
@@ -136,9 +146,9 @@ def map_year_df(df: pd.DataFrame, year: int) -> pd.DataFrame:
     ill = Crashes(with_omc).mp_lls(append=True)
     err(f"crashes {year}: merging ilat/ilon with muni geometries")
     igdf = Crashes(ill).gdf('i')
-    ij = sjoin(igdf.df[['geometry']], mg).rename(columns={
-        'index_right0': 'icc',
-        'index_right1': 'imc',
+    ij = sjoin(igdf.df[['geometry']], mg)[['cc', 'mc']].rename(columns={
+        'cc': 'icc',
+        'mc': 'imc',
     })
     dupe_mask = ij.index.duplicated(keep=False)
     dupe_idxs = ij.index[ dupe_mask]

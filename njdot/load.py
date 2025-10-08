@@ -95,11 +95,72 @@ def load_year_df(
         map_year_df: Union[None, MapYearDF1, MapYearDF2] = None,
 ):
     df = read_parquet(f'{NJDOT_DIR}/data/{year}/NewJersey{year}{typ}.pqt')
+
+    # Fix 2023 regression: "Distance To Cross Street" has unnecessary decimal formatting
+    # 2001-2022: clean integers ('50', '100')
+    # 2023: decimal formatting ('50.0', '0.00', '100.', etc.)
+    # See njdot/README.md #5 for details
+    DISTANCE_FIELD = 'Distance To Cross Street'
+    if DISTANCE_FIELD in df:
+        field = df[DISTANCE_FIELD]
+        if field.dtype in ['object', 'string']:
+            # Find values with decimals
+            has_decimal = field.astype(str).str.contains(r'\.\d', regex=True, na=False)
+            if has_decimal.any():
+                decimal_vals = field[has_decimal].astype(float)
+
+                # Check for non-zero fractional parts
+                has_fraction = (decimal_vals % 1 != 0)
+                if has_fraction.any():
+                    fractional_vals = decimal_vals[has_fraction]
+                    frac_hist = fractional_vals.value_counts().to_dict()
+
+                    # Expected fractional values (from 2023 analysis)
+                    expected = {0.5: 2, 2.7: 1}
+                    if frac_hist != expected:
+                        err(f"WARNING: {tbl} {year}: Unexpected fractional values in '{DISTANCE_FIELD}'")
+                        err(f"  Expected: {expected}")
+                        err(f"  Found:    {frac_hist}")
+                    else:
+                        err(f"{tbl} {year}: Stripping decimals from '{DISTANCE_FIELD}': "
+                            f"{has_decimal.sum()} values ({has_fraction.sum()} fractional: {frac_hist})")
+
+                # Strip all trailing decimals (including fractional parts)
+                df[DISTANCE_FIELD] = field.astype(str).str.replace(r'\.\d*$', '', regex=True).replace('nan', nan).replace('', nan)
+
+    # Fix 2023 regression: "Vehicle Number" has non-numeric values
+    # 2001-2022: clean integers ('1', '2', '01', '02')
+    # 2023: various patterns ('V1', 'V2', 'O1', etc.)
+    VEHICLE_NUMBER_FIELD = 'Vehicle Number'
+    if VEHICLE_NUMBER_FIELD in df:
+        field = df[VEHICLE_NUMBER_FIELD]
+        if field.dtype in ['object', 'string']:
+            # Find non-numeric values
+            non_numeric = ~field.str.match(r'^[0-9]+$', na=False)
+            if non_numeric.any():
+                non_numeric_vals = field[non_numeric]
+                hist = non_numeric_vals.value_counts().to_dict()
+
+                # Expected patterns from 2023: V#, O#, and a few edge cases
+                # Clean by stripping 'V' prefix, replacing 'O' with '0', and removing other non-digits
+                cleaned = field.copy()
+                cleaned = cleaned.str.replace('!', '1', regex=False)  # ! → 1 (data entry error, holding shift)
+                cleaned = cleaned.str.replace(r'^V', '', regex=True)  # V1 → 1
+                cleaned = cleaned.str.replace(r'^O', '0', regex=True)  # O1 → 01
+                cleaned = cleaned.str.replace(r'[^0-9]', '', regex=True)  # Remove other non-digits
+                cleaned = cleaned.replace('', nan)  # Empty string → NaN
+
+                err(f"{tbl} {year}: Cleaning non-numeric '{VEHICLE_NUMBER_FIELD}': {non_numeric.sum()} values")
+                err(f"  Histogram: {hist}")
+
+                df[VEHICLE_NUMBER_FIELD] = cleaned
+
     df = df.rename(columns=renames)
+
     df = df.astype({ k: v for k, v in astype.items() if k in df })
     for k, v in opt_ints.items():
         if k in df:
-            df[k] = df[k].replace(r'^[\?\*]?$', nan, regex=True).replace('0?', '00', regex=False).astype(v)
+            df[k] = df[k].replace(r'^[\?\*]?$', nan, regex=True).replace('0?', '00', regex=False).replace('nan', nan).replace('', nan).astype(v)
 
     if county:
         df = df[df.cn.str.lower() == county.lower()]
