@@ -110,6 +110,76 @@ def pqt(regions, types, years, overwrite, dry_run):
                         })
                         if year >= 2021:
                             df['County Name'] = df['County Name'].str.upper().str.replace('CAPEMAY', 'CAPE MAY')
+
+                        # Fix 2023 records with empty municipality names
+                        # These can't be handled by harmonize nb's majority voting since there's no name to vote on
+                        if year == 2023 and region == 'NewJersey':
+                            # Assign fake codes to Port Authority crashes (cc=0, mc=0)
+                            # These are on GWB and Lincoln Tunnel - outside NJ boundaries but legitimate crash records
+                            port_authority_mask = (df['County Code'] == '00') & (df['Municipality Code'] == '00')
+                            if port_authority_mask.any():
+                                num_pa = port_authority_mask.sum()
+                                pa_locs = df.loc[port_authority_mask, 'Crash Location'].str.upper()
+
+                                # Map based on known location patterns:
+                                # - GWB: "BRDGE", "I-95"
+                                # - Lincoln Tunnel: "TUNNEL", "495", "TUBE", "JFK BLVD", "CLIFTON TERRACE"
+                                is_gwb = pa_locs.str.contains('BRDGE|I-95', regex=True, na=False)
+                                is_lincoln = pa_locs.str.contains('TUNNEL|495|TUBE|JFK BLVD|CLIFTON TERRACE', regex=True, na=False)
+
+                                # Verify all PA crashes match known patterns
+                                unknown_mask = port_authority_mask & ~is_gwb & ~is_lincoln
+                                if unknown_mask.any():
+                                    unknown_locs = df.loc[unknown_mask, 'Crash Location'].tolist()
+                                    raise ValueError(f"Unknown PA crash location(s): {unknown_locs}")
+
+                                # Assign fake codes: cc=99, mc=01 for GWB, mc=02 for Lincoln
+                                df.loc[port_authority_mask, 'County Code'] = '99'
+                                df.loc[port_authority_mask, 'County Name'] = 'PORT AUTHORITY'
+                                df.loc[port_authority_mask & is_gwb, 'Municipality Code'] = '01'
+                                df.loc[port_authority_mask & is_gwb, 'Municipality Name'] = 'GWB'
+                                df.loc[port_authority_mask & is_lincoln, 'Municipality Code'] = '02'
+                                df.loc[port_authority_mask & is_lincoln, 'Municipality Name'] = 'LINCOLN TUNNEL'
+
+                                num_gwb = is_gwb.sum()
+                                num_lincoln = is_lincoln.sum()
+                                err(f"Assigned fake codes to {num_pa} Port Authority crashes: {num_gwb} GWB (cc=99, mc=01), {num_lincoln} Lincoln Tunnel (cc=99, mc=02)")
+
+                            # Geocode records with empty municipality names using lat/lon
+                            empty_mn_mask = df['Municipality Name'].str.strip() == ''
+                            if empty_mn_mask.any():
+                                from geopandas import GeoDataFrame, points_from_xy, sjoin
+                                from nj_crashes.muni_codes import load_munis_geojson
+
+                                empty_mn = df[empty_mn_mask].copy()
+                                err(f"Geocoding {len(empty_mn)} records with empty municipality names")
+
+                                # Create GeoDataFrame from lat/lon (WGS84 / EPSG:4326)
+                                # Note: Longitude is already negative in NJ, no need to negate
+                                empty_mn['geometry'] = points_from_xy(x=empty_mn['Longitude'], y=empty_mn['Latitude'])
+                                gdf = GeoDataFrame(empty_mn, geometry='geometry', crs='EPSG:4326')
+
+                                # Load NJGIN municipality boundaries and reproject to match
+                                muni_geojson = load_munis_geojson().reset_index()
+                                muni_geojson = muni_geojson.to_crs('EPSG:4326')
+
+                                # Spatial join to find municipality
+                                joined = sjoin(gdf[['geometry']], muni_geojson[['cc', 'mc', 'COUNTY', 'NAME', 'geometry']], how='left')
+
+                                # Update df with geocoded values
+                                num_fixed = 0
+                                for idx, row in joined.iterrows():
+                                    if pd.notna(row['cc']) and pd.notna(row['mc']):
+                                        df.loc[idx, 'County Code'] = str(int(row['cc'])).zfill(2)
+                                        df.loc[idx, 'County Name'] = row['COUNTY'].upper()
+                                        df.loc[idx, 'Municipality Code'] = str(int(row['mc'])).zfill(2)
+                                        df.loc[idx, 'Municipality Name'] = row['NAME'].upper()
+                                        num_fixed += 1
+
+                                if num_fixed > 0:
+                                    err(f"Fixed {num_fixed} records with empty municipality names via geocoding")
+                                if num_fixed < len(empty_mn):
+                                    err(f"Warning: {len(empty_mn) - num_fixed} records could not be geocoded (missing or invalid lat/lon)")
                 elif typ == 'Vehicles':
                     if year >= 2023:
                         new_fields = get_2023_vehicles_fix_fields(fields, year)
@@ -176,4 +246,4 @@ def pqt(regions, types, years, overwrite, dry_run):
                     raise ValueError(f"Unrecognized type {typ}")
 
                 err(f'Writing {pqt_path}')
-                df.to_parquet(pqt_path, index=None)
+                df.to_parquet(pqt_path, index=False)

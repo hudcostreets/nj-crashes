@@ -46,7 +46,20 @@ pk_cols = vehicles.pk_cols + ['on']
 
 
 def map_year_df(df):
-    df['age'] = df.age.replace('M$', '', regex=True).replace('', nan).astype('Int8')
+    import pandas as pd
+    from numpy import nan
+
+    # Clean and parse age
+    df['age'] = df.age.replace('M$', '', regex=True).replace('', nan)
+    df['age'] = pd.to_numeric(df['age'], errors='coerce')
+
+    # Fix 2023 regression: cap ages at 110
+    # 2023 uses coded values (117, 120, 122, 123) instead of leaving age blank
+    # Earlier years leave age blank when unknown, resulting in natural ~4% NaN rate
+    if 'year' in df.columns and (df['year'] == 2023).any():
+        df['age'] = df['age'].where(df['age'] <= 110, nan)
+
+    df['age'] = df['age'].astype('Int8')
     return df
 
 
