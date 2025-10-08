@@ -172,6 +172,43 @@ If schema changes are detected:
 1. Update `njdot/rawdata/fixes.py` with appropriate fix functions
 2. Apply fixes in `rawdata pqt` step via `get_fixes()` in `pqt.py`
 
+#### 2023 Data Quality Issues
+
+The 2023 NJDOT data had several data quality regressions not present in prior years (2001-2022):
+
+1. **Empty municipality names** (16 records):
+   - Records had valid county/municipality codes but blank municipality names
+   - **Fix**: Geocoded using lat/lon coordinates via spatial join with NJGIN municipality boundaries
+   - **Location**: `njdot/rawdata/pqt.py` (applied during parquet generation)
+
+2. **County name conflicts** (5 records):
+   - Records with correct county code but wrong county name (e.g., cc=3 Burlington with cn="Middlesex")
+   - **Fix**: Majority voting - use most common county name for each county code
+   - **Location**: `njdot/harmonize-muni-codes.ipynb` cell [6]
+
+3. **Municipality name typos** (2 records):
+   - cc=3, mc=24: "Mount Laurel Twp" (1 record) vs. "Mount Holly Twp" (382 records)
+   - **Fix**: Majority voting - use most common municipality name for each (cc, mc, year) tuple
+   - **Location**: `njdot/harmonize-muni-codes.ipynb` cell [8]
+
+4. **Type suffix variations**:
+   - Raw data contains both "Township"/"Twp" and "Borough"/"Boro" variations
+   - Previously caused noisy "conflicts" (10 in 2023: Deptford Township/Twp, Washington Township/Twp, etc.)
+   - **Fix**: Normalize "Township"→"Twp", "Borough"→"Boro" before conflict detection
+   - **Location**: `njdot/harmonize-muni-codes.ipynb` cell [2]
+
+5. **Decimal formatting in integer fields** (69,536 Accident records):
+   - "Distance To Cross Street" field has trailing decimals: `'50.0'`, `'0.00'`, `'25.0'`, etc.
+   - Pattern: Values 0-99 formatted with decimals (e.g., `'50.0'`, `'0.00'`); larger values sometimes have trailing `.` (e.g., `'100.'`, `'135.'`)
+   - 99.996% are whole numbers (69,533); only 3 have fractional parts (`0.5` twice, `2.7` once)
+   - This field had NO decimals in 2001-2022 data (always formatted as `'50'`, `'100'`, etc.)
+   - **Fix**: Targeted decimal-stripping for this specific field only
+     - Verifies fractional value histogram matches expected `{0.5: 2, 2.7: 1}` (warns if unexpected values found)
+     - Strips trailing decimals (`.d*`) and truncates the 3 fractional values to integers
+   - **Location**: `njdot/load.py:load_year_df()` (lines 99-130)
+
+**Architecture**: Structural data issues (empty names) are fixed during parquet generation in `pqt.py`. Name conflicts and typos are resolved via majority voting in the `harmonize-muni-codes.ipynb` notebook, which previously asserted zero conflicts but now handles them gracefully. Decimal formatting issues are handled during integer type conversion in `load.py`.
+
 ### 4. Generate Per-Year Parquet Files
 ```bash
 # Generate .pqt files for the new year

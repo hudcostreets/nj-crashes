@@ -667,5 +667,12 @@
       "22": "Washington Twp",
       "23": "White"
     }
+  },
+  "99": {
+    "cn": "Port Authority",
+    "mc2mn": {
+      "9901": "GWB",
+      "9902": "Lincoln Tunnel"
+    }
   }
 }

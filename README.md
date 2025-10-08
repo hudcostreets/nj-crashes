@@ -30,17 +30,59 @@ Fatal crash data updates daily (via [GitHub Action](https://github.com/neighbor-
 
 ---
 
+## Setup
+
+This project uses [uv](https://docs.astral.sh/uv/) for Python dependency management:
+
+```bash
+# Install dependencies
+uv sync
+
+# Run scripts
+uv run njsp refresh_data
+uv run njdot compute db
+
+# Or activate the virtual environment
+source .venv/bin/activate
+njsp refresh_data
+```
+
+## Data Management
+
+This repository tracks two distinct crash datasets with different update patterns:
+
+### NJSP (Daily Updates, Git-tracked)
+- **Source**: [NJ State Police fatal crash XMLs][NJSP data]
+- **Coverage**: Fatal crashes only, 2008-present
+- **Update Frequency**: Daily (via [GitHub Action](https://github.com/neighbor-ryan/nj-crashes/actions))
+- **Size**: Small (~1-2MB databases)
+- **Storage**: XMLs committed to git, databases regenerated locally
+- **Regenerate**:
+  ```bash
+  njsp refresh_data  # By default, current year and 2 preceding
+  njsp update_data   # Generate parquets from XMLs
+  njsp update_pqts   # Update SQLite databases
+  ```
+
+### NJDOT (Annual Updates, DVC-tracked)
+- **Source**: [NJDOT crash data][NJDOT data] (zip files)
+- **Coverage**: All crashes (fatal, injury, property damage), 2001-present
+- **Update Frequency**: Annual
+- **Size**: Large (2.4GB crashes.db, ~280MB parquets)
+- **Storage**: DVC-tracked, stored in S3
+- **Pipeline**: See [njdot/README.md](./njdot/README.md#new-year-pipeline)
+- **Pull databases**:
+  ```bash
+  dvc pull www/public/njdot/crashes.db.dvc
+  # Or regenerate (slow, requires geo-processing):
+  env -u PYTHONPATH njdot compute pqt -f
+  env -u PYTHONPATH njdot compute db -f
+  ```
+
 ## Analysis
 - [parse-njsp-xmls.ipynb](./parse-njsp-xmls.ipynb)
 - [nj-crime-stats.ipynb](./nj-crime-stats.ipynb)
 - [Hudson Crashes.ipynb](./Hudson%20Crashes.ipynb)
-
-Refresh data:
-```bash
-njsp refresh_data  # By default, current year and 2 preceding
-njsp update_data
-njsp update_plots
-```
 
 NJDOT crash data parsing / analysis in [njdot/](./njdot).
 

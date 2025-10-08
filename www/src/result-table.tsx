@@ -66,11 +66,11 @@ export function RowsTable(
                     pagination &&
                     <TableFooter>
                         <TableRow>
-                            <td colSpan={6}>{
+                            <TableCell colSpan={6}>{
                                 ('before' in pagination)
                                     ? <DatePagination {...pagination} />
                                     : <Pagination {...pagination} />
-                            }</td>
+                            }</TableCell>
                         </TableRow>
                     </TableFooter>
                 }

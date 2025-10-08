@@ -97,6 +97,16 @@ astype = {
 def map_year_df(df: pd.DataFrame, year: int) -> pd.DataFrame:
     df = df.drop(columns=['cn', 'mn']).rename(columns={ 'mc': 'mc_dot' })
     df.index.name = 'id'
+
+    # Fix 2023 regression: duplicate (year, cc, mc_dot, case) keys (5,745 records)
+    # Keep the last record (likely the most recent/corrected version)
+    pk_cols = ['year', 'cc', 'mc_dot', 'case']
+    dupe_mask = df.duplicated(pk_cols, keep='last')
+    if dupe_mask.any():
+        num_dupes = dupe_mask.sum()
+        err(f"crashes {year}: Dropping {num_dupes} duplicate records (keeping last)")
+        df = df[~dupe_mask]
+
     df = update_mc(df, 'dot', drop=False)
     df['pdn'] = df.pdn.apply(lambda pdn: pdn.title())
     df['olon'] = -df['olon']  # Longitudes all come in positive, but are actually supposed to be negative (NJ ⊂ [-76, -73])
