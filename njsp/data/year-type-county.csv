@@ -368,12 +368,12 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2025,Hunterdon,4,0,0,2,6
 2025,Mercer,8,3,1,6,18
 2025,Middlesex,19,6,0,12,37
-2025,Monmouth,12,3,0,1,15
+2025,Monmouth,12,3,1,1,16
 2025,Morris,10,3,4,2,16
 2025,Ocean,25,9,1,11,39
-2025,Passaic,8,4,1,8,20
+2025,Passaic,8,4,1,9,21
 2025,Salem,9,1,0,2,12
 2025,Somerset,4,4,0,0,8
 2025,Sussex,5,1,0,3,9
-2025,Union,9,4,2,8,21
+2025,Union,11,4,2,8,23
 2025,Warren,4,4,0,1,9
