@@ -114,9 +114,9 @@ def map_year_df(df: pd.DataFrame, year: int) -> pd.DataFrame:
     mg = load_munis_geojson()
     err(f"crashes {year}: merging olat/olon with muni geometries")
     ogdf = Crashes(df).gdf('o')
-    joined = sjoin(ogdf.df[['olat', 'olon', 'geometry']], mg).rename(columns={
-        'index_right0': 'occ',
-        'index_right1': 'omc',
+    joined = sjoin(ogdf.df[['olat', 'olon', 'geometry']], mg)[['cc', 'mc']].rename(columns={
+        'cc': 'occ',
+        'mc': 'omc',
     })
     with_omc = (
         sxs(
@@ -136,9 +136,9 @@ def map_year_df(df: pd.DataFrame, year: int) -> pd.DataFrame:
     ill = Crashes(with_omc).mp_lls(append=True)
     err(f"crashes {year}: merging ilat/ilon with muni geometries")
     igdf = Crashes(ill).gdf('i')
-    ij = sjoin(igdf.df[['geometry']], mg).rename(columns={
-        'index_right0': 'icc',
-        'index_right1': 'imc',
+    ij = sjoin(igdf.df[['geometry']], mg)[['cc', 'mc']].rename(columns={
+        'cc': 'icc',
+        'mc': 'imc',
     })
     dupe_mask = ij.index.duplicated(keep=False)
     dupe_idxs = ij.index[ dupe_mask]
