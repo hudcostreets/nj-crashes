@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Oct 09 10:00:03 EDT 2025</RUNDATE>
+  <RUNDATE>Fri Oct 10 10:00:04 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -200,12 +200,13 @@
     <MUNICIPALITY MCODE="1514" MNAME="Lakewood Twsp">
       <ACCIDENT ACCID="13660" DATE="12/20/2024" TIME="0612">
         <HIGHWAY>528</HIGHWAY>
-        <LOCATION>County 528</LOCATION>
+        <LOCATION>County 528 MP 30.44</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -953,9 +954,9 @@
   </COUNTY>
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1217" MNAME="Piscataway Twsp">
-      <ACCIDENT ACCID="13589" DATE="11/22/2024" TIME="1229">
-        <STREET>Centennial Ave</STREET>
-        <LOCATION>Centennial Ave</LOCATION>
+      <ACCIDENT ACCID="13589" DATE="11/22/2024" TIME="1228">
+        <STREET>Centennial Ave.</STREET>
+        <LOCATION>Centennial Ave.</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1008,8 +1009,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2001" MNAME="Berkeley Heights Tw">
       <ACCIDENT ACCID="13587" DATE="11/20/2024" TIME="1426">
-        <STREET>Park Ave</STREET>
-        <LOCATION>Park Ave</LOCATION>
+        <STREET>Park Ave.</STREET>
+        <LOCATION>Park Ave.</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -2858,12 +2859,13 @@
     <MUNICIPALITY MCODE="1518" MNAME="Manchester Twsp">
       <ACCIDENT ACCID="13443" DATE="09/18/2024" TIME="2241">
         <HIGHWAY>70</HIGHWAY>
-        <LOCATION>State Highway 70</LOCATION>
+        <LOCATION>State Highway 70 MP 47.38</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3300,8 +3302,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1330" MNAME="Aberdeen Twsp">
       <ACCIDENT ACCID="13462" DATE="09/04/2024" TIME="1924">
-        <STREET>Atlantic Ave.</STREET>
-        <LOCATION>Atlantic Ave.</LOCATION>
+        <STREET>Atlantic Ave</STREET>
+        <LOCATION>Atlantic Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
