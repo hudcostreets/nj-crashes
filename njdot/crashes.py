@@ -12,6 +12,7 @@ from nj_crashes.geo import is_nj_ll
 from nj_crashes.muni_codes import update_mc, load_munis_geojson
 from nj_crashes.sri.mp05 import get_mp05_map
 from njdot.load import load_tbl, INDEX_NAME, pk_renames
+from njdot.merge_dupes import merge_duplicates
 
 Year = Union[str, int]
 Years = Union[Year, list[Year]]
@@ -98,14 +99,25 @@ def map_year_df(df: pd.DataFrame, year: int) -> pd.DataFrame:
     df = df.drop(columns=['cn', 'mn']).rename(columns={ 'mc': 'mc_dot' })
     df.index.name = 'id'
 
-    # Fix 2023 regression: duplicate (year, cc, mc_dot, case) keys (5,745 records)
-    # Keep the last record (likely the most recent/corrected version)
-    pk_cols = ['year', 'cc', 'mc_dot', 'case']
-    dupe_mask = df.duplicated(pk_cols, keep='last')
+    # Fix 2023 regression: duplicate (cc, mc_dot, case) keys (5,745 records in 2023)
+    # For 2023: Use smart ucase/tcase merge strategy (69.5% success rate)
+    # For other years: Simple dedup (keep last) if any duplicates exist
+    pk_cols = ['cc', 'mc_dot', 'case']
+    dupe_mask = df.duplicated(pk_cols, keep=False)
     if dupe_mask.any():
         num_dupes = dupe_mask.sum()
-        err(f"crashes {year}: Dropping {num_dupes} duplicate records (keeping last)")
-        df = df[~dupe_mask]
+        if year == 2023:
+            # Use smart merge for 2023 (ucase/tcase strategy)
+            err(f"crashes {year}: Merging {num_dupes} duplicate records using ucase/tcase strategy")
+            # Note: columns have been renamed by this point
+            text_fields = ['pdn', 'road', 'cross_street']
+            # 'Direction From Cross Street' not in renames dict, so it keeps original name
+            fillable_fields = ['sri', 'mp', 'cross_street', 'Direction From Cross Street']
+            df = merge_duplicates(df, pk_cols, text_fields=text_fields, fillable_fields=fillable_fields)
+        else:
+            # Simple dedup for other years (shouldn't have duplicates, but handle gracefully)
+            err(f"crashes {year}: Dropping {num_dupes} duplicate records (keeping last)")
+            df = df[~df.duplicated(pk_cols, keep='last')]
 
     df = update_mc(df, 'dot', drop=False)
     df['pdn'] = df.pdn.apply(lambda pdn: pdn.title())
