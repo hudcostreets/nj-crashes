@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Oct 13 10:00:02 EDT 2025</RUNDATE>
+  <RUNDATE>Tue Oct 14 10:00:06 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -146,12 +146,13 @@
       </ACCIDENT>
       <ACCIDENT ACCID="13667" DATE="12/27/2024" TIME="0504">
         <HIGHWAY>70</HIGHWAY>
-        <LOCATION>State Highway 70</LOCATION>
+        <LOCATION>State Highway 70 MP 53.33</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -583,7 +584,7 @@
     <MUNICIPALITY MCODE="0119" MNAME="Pleasantville City">
       <ACCIDENT ACCID="13628" DATE="12/04/2024" TIME="1752">
         <HIGHWAY>322</HIGHWAY>
-        <LOCATION>State Highway 322 MP 59.4</LOCATION>
+        <LOCATION>State Highway 322 MP 59.45</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -915,12 +916,13 @@
     <MUNICIPALITY MCODE="1507" MNAME="Toms River">
       <ACCIDENT ACCID="13590" DATE="11/22/2024" TIME="2123">
         <HIGHWAY>549</HIGHWAY>
-        <LOCATION>County 549</LOCATION>
+        <LOCATION>County 549 MP 1.76</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>1</FATAL_B>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2339,8 +2341,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1222" MNAME="South Plainfield Bo">
       <ACCIDENT ACCID="13484" DATE="10/11/2024" TIME="1511">
-        <STREET>Oak Tree Ave.</STREET>
-        <LOCATION>Oak Tree Ave.</LOCATION>
+        <STREET>Oak Tree Ave</STREET>
+        <LOCATION>Oak Tree Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -8976,5 +8978,5 @@
   </COUNTY>
   <TOTACCIDENTS>647</TOTACCIDENTS>
   <TOTFATALITIES>684</TOTFATALITIES>
-  <TOTINJURIES>375</TOTINJURIES>
+  <TOTINJURIES>376</TOTINJURIES>
 </FAUQSTATS>

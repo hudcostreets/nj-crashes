@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Oct 13 10:00:01 EDT 2025</RUNDATE>
+  <RUNDATE>Tue Oct 14 10:00:01 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -79,7 +79,7 @@
     <MUNICIPALITY MCODE="0809" MNAME="Logan Twsp">
       <ACCIDENT ACCID="14204" DATE="10/11/2025" TIME="0112">
         <HIGHWAY>295</HIGHWAY>
-        <LOCATION>Interstate 295</LOCATION>
+        <LOCATION>Interstate 295 MP 9.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
