@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Oct 15 10:00:03 EDT 2025</RUNDATE>
+  <RUNDATE>Thu Oct 16 10:00:06 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -464,8 +464,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2012" MNAME="Plainfield City">
       <ACCIDENT ACCID="13640" DATE="12/07/2024" TIME="2053">
-        <STREET>E. 2nd St.</STREET>
-        <LOCATION>E. 2nd St.</LOCATION>
+        <STREET>E. 2nd St</STREET>
+        <LOCATION>E. 2nd St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -958,8 +958,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1217" MNAME="Piscataway Twsp">
       <ACCIDENT ACCID="13589" DATE="11/22/2024" TIME="1228">
-        <STREET>Centennial Ave.</STREET>
-        <LOCATION>Centennial Ave.</LOCATION>
+        <STREET>Centennial Ave</STREET>
+        <LOCATION>Centennial Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1012,8 +1012,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2001" MNAME="Berkeley Heights Tw">
       <ACCIDENT ACCID="13587" DATE="11/20/2024" TIME="1426">
-        <STREET>Park Ave.</STREET>
-        <LOCATION>Park Ave.</LOCATION>
+        <STREET>Park Ave</STREET>
+        <LOCATION>Park Ave</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -1262,7 +1262,7 @@
   </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1352" MNAME="Wall Twsp">
-      <ACCIDENT ACCID="13586" DATE="11/09/2024" TIME="1842">
+      <ACCIDENT ACCID="13586" DATE="11/09/2024" TIME="1840">
         <HIGHWAY>35</HIGHWAY>
         <LOCATION>State Highway 35 MP 19.13</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -1591,7 +1591,7 @@
     <MUNICIPALITY MCODE="2014" MNAME="Roselle Boro">
       <ACCIDENT ACCID="13544" DATE="10/31/2024" TIME="2340">
         <HIGHWAY>27</HIGHWAY>
-        <LOCATION>State Highway 27 MP 31.79</LOCATION>
+        <LOCATION>State Highway 27 MP 31.78</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -2087,7 +2087,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
-        <INJURIES>3</INJURIES>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3834,7 +3834,7 @@
     <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="13371" DATE="08/18/2024" TIME="0103">
         <HIGHWAY>559</HIGHWAY>
-        <LOCATION>County 559 MP 12.05</LOCATION>
+        <LOCATION>County 559 (Alternate) MP 12.05</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4646,6 +4646,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5574,7 +5575,7 @@
     <MUNICIPALITY MCODE="2012" MNAME="Plainfield City">
       <ACCIDENT ACCID="13217" DATE="06/01/2024" TIME="1923">
         <HIGHWAY>601</HIGHWAY>
-        <LOCATION>County 601 MP 2.45</LOCATION>
+        <LOCATION>County 601 MP 2.46</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -8979,5 +8980,5 @@
   </COUNTY>
   <TOTACCIDENTS>647</TOTACCIDENTS>
   <TOTFATALITIES>684</TOTFATALITIES>
-  <TOTINJURIES>377</TOTINJURIES>
+  <TOTINJURIES>374</TOTINJURIES>
 </FAUQSTATS>
