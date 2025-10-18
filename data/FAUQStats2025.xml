@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Oct 17 10:00:05 EDT 2025</RUNDATE>
+  <RUNDATE>Sat Oct 18 10:00:05 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -52,8 +52,8 @@
   <COUNTY CCODE="06" CNAME="Cumberland">
     <MUNICIPALITY MCODE="0601" MNAME="Bridgeton City">
       <ACCIDENT ACCID="14208" DATE="10/12/2025" TIME="1943">
-        <STREET>Bank Street &amp; Irving Avenue</STREET>
-        <LOCATION>Bank Street &amp; Irving Avenue</LOCATION>
+        <HIGHWAY>552</HIGHWAY>
+        <LOCATION>County 552</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -847,12 +847,13 @@
     <MUNICIPALITY MCODE="1705" MNAME="Pennsville Twsp">
       <ACCIDENT ACCID="14130" DATE="09/07/2025" TIME="2244">
         <HIGHWAY>49</HIGHWAY>
-        <LOCATION>State Highway 49</LOCATION>
+        <LOCATION>State Highway 49 MP 1.81</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5677,5 +5678,5 @@
   </COUNTY>
   <TOTACCIDENTS>430</TOTACCIDENTS>
   <TOTFATALITIES>456</TOTFATALITIES>
-  <TOTINJURIES>105</TOTINJURIES>
+  <TOTINJURIES>106</TOTINJURIES>
 </FAUQSTATS>
