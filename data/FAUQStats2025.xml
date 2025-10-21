@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Oct 20 10:00:01 EDT 2025</RUNDATE>
+  <RUNDATE>Tue Oct 21 10:00:05 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -469,14 +469,15 @@
   </COUNTY>
   <COUNTY CCODE="05" CNAME="Cape May">
     <MUNICIPALITY MCODE="0506" MNAME="Middle Twsp">
-      <ACCIDENT ACCID="14168" DATE="09/29/2025" TIME="2135">
+      <ACCIDENT ACCID="14168" DATE="09/29/2025" TIME="2051">
         <HIGHWAY>47</HIGHWAY>
-        <LOCATION>State Highway 47</LOCATION>
+        <LOCATION>State Highway 47 MP 4</LOCATION>
         <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
+        <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
-        <FATAL_B>1</FATAL_B>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
