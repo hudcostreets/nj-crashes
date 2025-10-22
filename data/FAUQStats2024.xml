@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Oct 21 10:00:06 EDT 2025</RUNDATE>
+  <RUNDATE>Wed Oct 22 10:00:06 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -189,7 +189,7 @@
     <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="13662" DATE="12/20/2024" TIME="2205">
         <HIGHWAY>524</HIGHWAY>
-        <LOCATION>County 524</LOCATION>
+        <LOCATION>County 524 MP .53</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -452,7 +452,7 @@
     <MUNICIPALITY MCODE="1112" MNAME="Robbinsville Twsp">
       <ACCIDENT ACCID="13634" DATE="12/08/2024" TIME="0053">
         <HIGHWAY>526</HIGHWAY>
-        <LOCATION>County 526</LOCATION>
+        <LOCATION>County 526 MP 9.66</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -569,7 +569,7 @@
   </COUNTY>
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0818" MNAME="Washington Twsp">
-      <ACCIDENT ACCID="13627" DATE="12/05/2024" TIME="1714">
+      <ACCIDENT ACCID="13627" DATE="12/05/2024" TIME="1713">
         <HIGHWAY>639</HIGHWAY>
         <LOCATION>County 639 MP 3.8</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -1390,7 +1390,7 @@
     <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="13555" DATE="11/07/2024" TIME="1601">
         <HIGHWAY>622</HIGHWAY>
-        <LOCATION>County 622</LOCATION>
+        <LOCATION>County 622 MP .08</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2095,8 +2095,8 @@
   <COUNTY CCODE="10" CNAME="Hunterdon">
     <MUNICIPALITY MCODE="1015" MNAME="Holland Twsp">
       <ACCIDENT ACCID="13498" DATE="10/18/2024" TIME="2229">
-        <STREET>Stamets Road</STREET>
-        <LOCATION>Stamets Road</LOCATION>
+        <STREET>Stamets Rd</STREET>
+        <LOCATION>Stamets Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2138,7 +2138,7 @@
     <MUNICIPALITY MCODE="1113" MNAME="West Windsor Twp">
       <ACCIDENT ACCID="13507" DATE="10/17/2024" TIME="1245">
         <HIGHWAY>571</HIGHWAY>
-        <LOCATION>County 571</LOCATION>
+        <LOCATION>County 571 MP 38.08</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3737,8 +3737,8 @@
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1113" MNAME="West Windsor Twp">
       <ACCIDENT ACCID="13381" DATE="08/20/2024" TIME="0349">
-        <STREET>Lanwin Blvd</STREET>
-        <LOCATION>Lanwin Blvd</LOCATION>
+        <STREET>Lanwin Blvd.</STREET>
+        <LOCATION>Lanwin Blvd.</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>

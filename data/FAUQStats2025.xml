@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Oct 21 10:00:05 EDT 2025</RUNDATE>
+  <RUNDATE>Wed Oct 22 10:00:04 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,19 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+    <MUNICIPALITY MCODE="0325" MNAME="Mount Laurel Twsp">
+      <ACCIDENT ACCID="14214" DATE="10/21/2025" TIME="0803">
+        <HIGHWAY>38</HIGHWAY>
+        <LOCATION>State Highway 38</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1328" MNAME="Marlboro Twsp">
@@ -353,8 +366,8 @@
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
       <ACCIDENT ACCID="14182" DATE="10/04/2025" TIME="0812">
-        <HIGHWAY>3</HIGHWAY>
-        <LOCATION>State Highway 3</LOCATION>
+        <HIGHWAY>21</HIGHWAY>
+        <LOCATION>State Highway 21</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4181,8 +4194,8 @@
         <STREET>Orange St</STREET>
         <LOCATION>Orange St</LOCATION>
         <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
@@ -5730,7 +5743,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>434</TOTACCIDENTS>
-  <TOTFATALITIES>463</TOTFATALITIES>
+  <TOTACCIDENTS>435</TOTACCIDENTS>
+  <TOTFATALITIES>464</TOTFATALITIES>
   <TOTINJURIES>106</TOTINJURIES>
 </FAUQSTATS>
