@@ -69,7 +69,7 @@ Note: Use `env -u PYTHONPATH` to avoid shadowing PyGithub package.
 
 ## Known Issues
 
-### Denormalized PK Inconsistency (UNRESOLVED)
+### Denormalized PK Inconsistency (RESOLVED)
 
 **Problem**: Crashes undergo geocoding that updates cc/mc values, but V/D/O/P retain original cc/mc from raw data.
 
@@ -81,22 +81,32 @@ Note: Use `env -u PYTHONPATH` to avoid shadowing PyGithub package.
 
 **Scale**: ~80,923 vehicles affected in 2023 alone (likely similar for D/O/P across all years with geocoding).
 
-**Attempted Fix** (incomplete):
-- Tried updating V/D/O/P cc/mc by merging on `(year, case)` only
-- FAILED: `(year, case)` is not unique (751k duplicates across 6.5M crashes)
+**Solution Implemented** (PK Mapping Table):
 
-**Proper Solution** (TODO):
-1. In `crashes.py`, before deduplication/geocoding, create PK mapping table:
-   ```
-   (year, cc_old, mc_old, case) → (year, cc_new, mc_new, case)
-   ```
-2. In `rawdata/pqt.py` or `crashes.py`, persist this mapping to `njdot/data/crash_pk_mappings.parquet`
-3. In V/D/O/P `map_df()`, load mapping and update denormalized cc/mc fields BEFORE joining to crashes
-4. This preserves referential integrity while allowing crash geocoding
+1. **`rawdata/pqt.py`**: Preserve original cc/mc as `cc0`/`mc0` before geocoding
+   - Added lines 107-108: Save original values immediately after loading
+   - Georeferencing happens after this (Port Authority, empty municipality fixes)
+
+2. **`crashes.py`**: Export PK mapping table
+   - Added `cc0`/`mc0` to renames (lines 44-45) and astype (lines 78-79)
+   - Modified `load()` to export `njdot/data/crash_pk_mappings.parquet` (lines 234-247)
+   - Mapping: `(year, cc0, mc0, case) → (cc, mc)` for all crashes
+
+3. **V/D/O/P `map_df()`**: Apply mapping before joining to crashes
+   - Load mapping table if it exists
+   - Merge on `(year, cc, mc, case)` = `(year, cc0, mc0, case)` from mapping
+   - Update denormalized cc/mc fields to match geocoded crash PKs
+   - Example: `vehicles.py:185-231`, `pedestrians.py:98-148`, `occupants.py:138-171`
+
+**Why This Works**:
+- Preserves full provenance: original cc/mc stored as `cc0`/`mc0` in crashes
+- Mapping table tracks ALL PK transformations (not just geocoded ones)
+- V/D/O/P can update their denormalized PKs using unique key `(year, cc0, mc0, case)`
+- Maintains referential integrity: all V/D/O/P records can join to crashes
 
 **Related Files**:
-- `njdot/rawdata/pqt.py:117-146` - Port Authority geocoding (00,00) → (99,01/02)
-- `njdot/rawdata/pqt.py:148-180` - Empty municipality name geocoding via lat/lon
-- `njdot/vehicles.py:185-224` - Current (broken) orphan handling
-- `njdot/pedestrians.py:98-140` - Current (broken) orphan handling
-- `njdot/occupants.py:138-208` - Current (broken) orphan handling
+- `njdot/rawdata/pqt.py:107-108,117-146,148-180` - Preserve cc0/mc0, Port Authority + geocoding
+- `njdot/crashes.py:44-45,78-79,234-247` - Export PK mapping table
+- `njdot/vehicles.py:185-231` - Apply mapping before joining
+- `njdot/pedestrians.py:98-148` - Apply mapping before joining
+- `njdot/occupants.py:138-171` - Apply mapping before joining

@@ -96,35 +96,43 @@ def map_year_df(df):
 
 
 def map_df(p, tpe):
-    # Fix ALL pedestrian/driver cc/mc by looking up parent crash (by year + case number)
-    # Crashes undergo geocoding that corrects cc/mc values, but pedestrians/drivers retain original codes
-    # This includes Port Authority (00,00) → (99,01/02) and other geocoding corrections
-    err(f"Fixing {tpe} cc/mc from parent crashes (geocoding)")
+    # Fix pedestrian/driver cc/mc using PK mapping table
+    # Crashes undergo geocoding (Port Authority, empty municipality fixes) that updates cc/mc,
+    # but pedestrians/drivers retain original cc/mc from raw data
+    # Mapping table: (year, cc0, mc0, case) → (cc, mc) tracks all PK transformations
+    from njdot.paths import DOT_DATA
+    import os
+    import pandas as pd
 
-    # Load crashes to look up correct cc/mc by (year, case)
-    c = crashes.load(cols=['year', 'case', 'cc', 'mc']).reset_index()
+    mapping_path = f'{DOT_DATA}/crash_pk_mappings.parquet'
+    if os.path.exists(mapping_path):
+        err(f"Fixing {tpe} cc/mc using PK mapping table")
+        mapping = pd.read_parquet(mapping_path)
 
-    # Merge by (year, case) only to get correct cc/mc
-    p_fixed = p[['year', 'case']].merge(
-        c[['year', 'case', 'cc', 'mc']],
-        on=['year', 'case'],
-        how='left',
-        suffixes=('_orig', '')
-    )
+        # Merge on (year, cc, mc, case) to get updated cc/mc
+        # Note: pedestrians/drivers have original cc/mc, which match mapping's cc0/mc0
+        p_with_mapping = p.merge(
+            mapping[['year', 'cc0', 'mc0', 'case', 'cc', 'mc']],
+            left_on=['year', 'cc', 'mc', 'case'],
+            right_on=['year', 'cc0', 'mc0', 'case'],
+            how='left',
+            suffixes=('_old', '')
+        )
 
-    # Update cc/mc in df
-    p['cc'] = p_fixed['cc'].values
-    p['mc'] = p_fixed['mc'].values
+        # Update cc/mc where mapping exists
+        # For rows without mapping, cc/mc will be NaN, so fill with original values
+        p['cc'] = p_with_mapping['cc'].fillna(p['cc']).astype('int8')
+        p['mc'] = p_with_mapping['mc'].fillna(p['mc']).astype('int8')
 
-    # Check how many couldn't be fixed (crash not found)
-    unfixed = p_fixed['cc'].isna() | p_fixed['mc'].isna()
-    if unfixed.any():
-        err(f"  Warning: {unfixed.sum()} {tpe} couldn't be fixed (crash not found by case number)")
+        num_updated = p_with_mapping['cc'].notna().sum()
+        err(f"  Updated {num_updated:,} {tpe} PKs from mapping table")
+    else:
+        err(f"Warning: PK mapping table not found at {mapping_path}, skipping cc/mc fix")
 
     err(f"Merging {tpe} with crashes")
     p = normalize(p, 'crash_id', crashes.load)
 
-    # Drop any remaining orphaned records (crash not found)
+    # Drop any remaining orphaned records (couldn't match to crash)
     orphans = p['crash_id'].isna()
     if orphans.any():
         num_orphans = orphans.sum()

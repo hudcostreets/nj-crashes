@@ -136,33 +136,37 @@ def map_year_df(df):
 
 
 def map_df(df, fix_missing_vid: bool = True, drop: bool = True):
-    # Fix corrupted PKs (cc=0 or mc=0) by looking up parent crash
-    # These are Port Authority crashes that got geocoded to cc=99 during rawdata processing,
-    # but occupants retained the original (00,00) codes
-    bad_pk = (df['cc'] == 0) | (df['mc'] == 0)
-    if bad_pk.any():
-        err(f"Fixing {bad_pk.sum()} occupants with corrupted PKs (cc=0 or mc=0)")
+    # Fix occupant cc/mc using PK mapping table
+    # Crashes undergo geocoding (Port Authority, empty municipality fixes) that updates cc/mc,
+    # but occupants retain original cc/mc from raw data
+    # Mapping table: (year, cc0, mc0, case) → (cc, mc) tracks all PK transformations
+    from njdot.paths import DOT_DATA
+    import os
 
-        # Load crashes to look up correct cc/mc by (year, case)
-        c = crashes.load(cols=['year', 'case', 'cc', 'mc']).reset_index()
+    mapping_path = f'{DOT_DATA}/crash_pk_mappings.parquet'
+    if os.path.exists(mapping_path):
+        err("Fixing occupant cc/mc using PK mapping table")
+        mapping = pd.read_parquet(mapping_path)
 
-        # For bad PK records, look up crash by (year, case) only
-        bad_o = df[bad_pk].copy()
-        lookup = bad_o[['year', 'case']].merge(
-            c[['year', 'case', 'cc', 'mc']],
-            on=['year', 'case'],
+        # Merge on (year, cc, mc, case) to get updated cc/mc
+        # Note: occupants have original cc/mc, which match mapping's cc0/mc0
+        df_with_mapping = df.merge(
+            mapping[['year', 'cc0', 'mc0', 'case', 'cc', 'mc']],
+            left_on=['year', 'cc', 'mc', 'case'],
+            right_on=['year', 'cc0', 'mc0', 'case'],
             how='left',
             suffixes=('_old', '')
         )
 
-        # Update cc/mc in original df
-        df.loc[bad_pk, 'cc'] = lookup['cc'].values
-        df.loc[bad_pk, 'mc'] = lookup['mc'].values
+        # Update cc/mc where mapping exists
+        # For rows without mapping, cc/mc will be NaN, so fill with original values
+        df['cc'] = df_with_mapping['cc'].fillna(df['cc']).astype('int8')
+        df['mc'] = df_with_mapping['mc'].fillna(df['mc']).astype('int8')
 
-        # Check if any couldn't be fixed
-        still_bad = (df.loc[bad_pk, 'cc'].isna()) | (df.loc[bad_pk, 'mc'].isna())
-        if still_bad.any():
-            err(f"  Warning: {still_bad.sum()} occupants couldn't be fixed (crash not found)")
+        num_updated = df_with_mapping['cc'].notna().sum()
+        err(f"  Updated {num_updated:,} occupant PKs from mapping table")
+    else:
+        err(f"Warning: PK mapping table not found at {mapping_path}, skipping cc/mc fix")
 
     err("Merging occupants with crashes...")
     try:

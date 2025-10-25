@@ -101,6 +101,12 @@ def pqt(regions, types, years, overwrite, dry_run):
                     )
                     df['Date'] = df.apply(build_dt, axis=1)
                     df = df.drop(columns=['Year', 'Crash Time', 'Crash Date', 'Crash Day Of Week'])
+
+                    # Preserve original cc/mc before any geocoding (for PK mapping table)
+                    # These will be used to update denormalized PKs in V/D/O/P tables
+                    df['County Code 0'] = df['County Code']
+                    df['Municipality Code 0'] = df['Municipality Code']
+
                     if v2017:
                         df = df.rename(columns={
                             'Police Dept Code': 'Police Department Code',
