@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Oct 24 10:00:06 EDT 2025</RUNDATE>
+  <RUNDATE>Sat Oct 25 10:00:03 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -452,12 +452,13 @@
     <MUNICIPALITY MCODE="1112" MNAME="Robbinsville Twsp">
       <ACCIDENT ACCID="13634" DATE="12/08/2024" TIME="0053">
         <HIGHWAY>526</HIGHWAY>
-        <LOCATION>County 526 MP 9.66</LOCATION>
+        <LOCATION>County 526 MP 7.41</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1408,6 +1409,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2250,9 +2252,9 @@
   </COUNTY>
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1111" MNAME="Trenton">
-      <ACCIDENT ACCID="13960" DATE="10/14/2024" TIME="0916">
+      <ACCIDENT ACCID="13960" DATE="10/14/2024" TIME="0036">
         <HIGHWAY>29</HIGHWAY>
-        <LOCATION>State Highway 29</LOCATION>
+        <LOCATION>State Highway 29 MP 3.63</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3714,12 +3716,13 @@
     <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="13376" DATE="08/21/2024" TIME="1610">
         <HIGHWAY>606</HIGHWAY>
-        <LOCATION>County 606 MP 2.69</LOCATION>
+        <LOCATION>County 606 MP 2.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4554,6 +4557,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5621,13 +5625,14 @@
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1111" MNAME="Trenton">
       <ACCIDENT ACCID="13254" DATE="06/01/2024" TIME="0422">
-        <STREET>S. Clinton Ave</STREET>
-        <LOCATION>S. Clinton Ave</LOCATION>
+        <STREET>South Clinton Avenue</STREET>
+        <LOCATION>South Clinton Avenue</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -8986,5 +8991,5 @@
   </COUNTY>
   <TOTACCIDENTS>647</TOTACCIDENTS>
   <TOTFATALITIES>684</TOTFATALITIES>
-  <TOTINJURIES>379</TOTINJURIES>
+  <TOTINJURIES>382</TOTINJURIES>
 </FAUQSTATS>
