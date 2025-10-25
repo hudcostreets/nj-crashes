@@ -183,11 +183,53 @@ def map_year_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def map_df(v: pd.DataFrame) -> pd.DataFrame:
+    # Fix vehicle cc/mc using PK mapping table
+    # Crashes undergo geocoding (Port Authority, empty municipality fixes) that updates cc/mc,
+    # but vehicles retain original cc/mc from raw data
+    # Mapping table: (year, cc0, mc0, case) → (cc, mc) tracks all PK transformations
+    from njdot.paths import DOT_DATA
+    import os
+
+    mapping_path = f'{DOT_DATA}/crash_pk_mappings.parquet'
+    if os.path.exists(mapping_path):
+        err("Fixing vehicle cc/mc using PK mapping table")
+        mapping = pd.read_parquet(mapping_path)
+
+        # Merge on (year, cc, mc, case) to get updated cc/mc
+        # Note: vehicles have original cc/mc, which match mapping's cc0/mc0
+        v_with_mapping = v.merge(
+            mapping[['year', 'cc0', 'mc0', 'case', 'cc', 'mc']],
+            left_on=['year', 'cc', 'mc', 'case'],
+            right_on=['year', 'cc0', 'mc0', 'case'],
+            how='left',
+            suffixes=('_old', '')
+        )
+
+        # Update cc/mc where mapping exists
+        # For rows without mapping, cc/mc will be NaN, so fill with original values
+        # Note: mc may be float64 (combined codes like 9901.0 for Port Authority)
+        v['cc'] = v_with_mapping['cc'].fillna(v['cc']).astype('int8')
+        # Convert mc to float to handle combined codes from crashes
+        v['mc'] = v_with_mapping['mc'].fillna(v['mc'].astype('float64'))
+
+        num_updated = v_with_mapping['cc'].notna().sum()
+        err(f"  Updated {num_updated:,} vehicle PKs from mapping table")
+    else:
+        err(f"Warning: PK mapping table not found at {mapping_path}, skipping cc/mc fix")
+
     err("Merging vehicles with crashes")
     left_on = pk_base
     right_on = [ 'mc_dot' if c == 'mc' else c for c in pk_base ]
     v = normalize(v, 'crash_id', crashes.load)
     v.index = v.index.astype('int32')
+
+    # Drop any remaining orphaned vehicles (couldn't match to crash)
+    orphans = v['crash_id'].isna()
+    if orphans.any():
+        num_orphans = orphans.sum()
+        err(f"Dropping {num_orphans} orphaned vehicles (couldn't match to crash)")
+        v = v[~orphans].copy()
+
     return v
 
 

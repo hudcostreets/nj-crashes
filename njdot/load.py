@@ -91,6 +91,12 @@ def normalize(
         df = df.drop(columns=drop_cols)
     dfm = sxs(m[id], df)
     dfm.index.name = INDEX_NAME
+
+    # Ensure ID column is Int32 (nullable for safety, though should be required)
+    # Using Int32 instead of int64/float64 saves space and displays cleanly
+    if id in dfm.columns:
+        dfm[id] = dfm[id].astype('Int32')
+
     return dfm
 
 
@@ -321,6 +327,9 @@ def load_tbl(
     # Filter to requested columns after map_df (which may create columns like crash_id)
     if cols:
         df = df[cols]
+
+    # Clean up temporary columns added during processing
+    df = df.drop(columns=['_orig_lineno'], errors='ignore')
 
     if write_pqt:
         df.to_parquet(pqt_path)

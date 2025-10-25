@@ -41,6 +41,8 @@ renames = {
     'Date': 'dt',
     **pk_renames,
     **name_renames,
+    'County Code 0': 'cc0',
+    'Municipality Code 0': 'mc0',
     'Police Department Code': 'pdc',
     'Police Department': 'pdn',
     'Police Station': 'station',
@@ -73,6 +75,8 @@ renames = {
 }
 astype = {
     'dt': '<M8[us]',
+    'cc0': 'Int8',  # Nullable - only populated when geocoding changes PK
+    'mc0': 'Int8',  # Nullable - only populated when geocoding changes PK
     'tk': 'int8',
     'ti': 'int8',
     'pk': 'int8',
@@ -211,8 +215,9 @@ def load(
         pqt_path: Optional[str] = None,
         n_jobs: int = 0,
         cols: Optional[list[str]] = None,
+        export_pk_mapping: bool = False,
 ) -> pd.DataFrame:
-    return load_tbl(
+    df = load_tbl(
         tbl='crashes',
         years=years,
         county=county,
@@ -225,6 +230,23 @@ def load(
         n_jobs=n_jobs,
         map_year_df=map_year_df,
     )
+
+    # Export PK mapping table for V/D/O/P to fix their denormalized cc/mc
+    if export_pk_mapping or write_pqt:
+        from njdot.paths import DOT_DATA
+        mapping_path = f'{DOT_DATA}/crash_pk_mappings.parquet'
+
+        # Extract mapping: (year, cc0, mc0, case) → (cc, mc)
+        # Only include rows where cc/mc changed (optimization)
+        mapping = df[['year', 'cc0', 'mc0', 'case', 'cc', 'mc']].copy()
+        changed = (mapping['cc0'] != mapping['cc']) | (mapping['mc0'] != mapping['mc'])
+        mapping_changed = mapping[changed]
+
+        err(f"Exporting PK mapping table: {len(mapping_changed):,} changed PKs (out of {len(mapping):,} total)")
+        mapping.to_parquet(mapping_path, index=False)
+        err(f"Wrote {mapping_path}")
+
+    return df
 
 
 def geocode_mp(r, sris):
