@@ -96,8 +96,41 @@ def map_year_df(df):
 
 
 def map_df(p, tpe):
+    # Fix ALL pedestrian/driver cc/mc by looking up parent crash (by year + case number)
+    # Crashes undergo geocoding that corrects cc/mc values, but pedestrians/drivers retain original codes
+    # This includes Port Authority (00,00) → (99,01/02) and other geocoding corrections
+    err(f"Fixing {tpe} cc/mc from parent crashes (geocoding)")
+
+    # Load crashes to look up correct cc/mc by (year, case)
+    c = crashes.load(cols=['year', 'case', 'cc', 'mc']).reset_index()
+
+    # Merge by (year, case) only to get correct cc/mc
+    p_fixed = p[['year', 'case']].merge(
+        c[['year', 'case', 'cc', 'mc']],
+        on=['year', 'case'],
+        how='left',
+        suffixes=('_orig', '')
+    )
+
+    # Update cc/mc in df
+    p['cc'] = p_fixed['cc'].values
+    p['mc'] = p_fixed['mc'].values
+
+    # Check how many couldn't be fixed (crash not found)
+    unfixed = p_fixed['cc'].isna() | p_fixed['mc'].isna()
+    if unfixed.any():
+        err(f"  Warning: {unfixed.sum()} {tpe} couldn't be fixed (crash not found by case number)")
+
     err(f"Merging {tpe} with crashes")
     p = normalize(p, 'crash_id', crashes.load)
+
+    # Drop any remaining orphaned records (crash not found)
+    orphans = p['crash_id'].isna()
+    if orphans.any():
+        num_orphans = orphans.sum()
+        err(f"Dropping {num_orphans} orphaned {tpe} (couldn't match to crash)")
+        p = p[~orphans].copy()
+
     p.index = p.index.astype('int32')
     for i in range(1, 5):
         for c in ['charge', 'summons']:

@@ -136,6 +136,34 @@ def map_year_df(df):
 
 
 def map_df(df, fix_missing_vid: bool = True, drop: bool = True):
+    # Fix corrupted PKs (cc=0 or mc=0) by looking up parent crash
+    # These are Port Authority crashes that got geocoded to cc=99 during rawdata processing,
+    # but occupants retained the original (00,00) codes
+    bad_pk = (df['cc'] == 0) | (df['mc'] == 0)
+    if bad_pk.any():
+        err(f"Fixing {bad_pk.sum()} occupants with corrupted PKs (cc=0 or mc=0)")
+
+        # Load crashes to look up correct cc/mc by (year, case)
+        c = crashes.load(cols=['year', 'case', 'cc', 'mc']).reset_index()
+
+        # For bad PK records, look up crash by (year, case) only
+        bad_o = df[bad_pk].copy()
+        lookup = bad_o[['year', 'case']].merge(
+            c[['year', 'case', 'cc', 'mc']],
+            on=['year', 'case'],
+            how='left',
+            suffixes=('_old', '')
+        )
+
+        # Update cc/mc in original df
+        df.loc[bad_pk, 'cc'] = lookup['cc'].values
+        df.loc[bad_pk, 'mc'] = lookup['mc'].values
+
+        # Check if any couldn't be fixed
+        still_bad = (df.loc[bad_pk, 'cc'].isna()) | (df.loc[bad_pk, 'mc'].isna())
+        if still_bad.any():
+            err(f"  Warning: {still_bad.sum()} occupants couldn't be fixed (crash not found)")
+
     err("Merging occupants with crashes...")
     try:
         dfc = normalize(df, 'crash_id', crashes.load, drop=drop)
@@ -167,6 +195,13 @@ def map_df(df, fix_missing_vid: bool = True, drop: bool = True):
         raise
     if drop:
         dfm = sxs(dfc.crash_id, dfm)
+
+    # Drop any remaining orphaned occupants (couldn't be fixed)
+    orphans = dfm['crash_id'].isna() | dfm['vehicle_id'].isna()
+    if orphans.any():
+        num_orphans = orphans.sum()
+        err(f"Dropping {num_orphans} orphaned occupants (couldn't match to crash/vehicle)")
+        dfm = dfm[~orphans].copy()
 
     dfm.index = dfm.index.astype('int32')
 
