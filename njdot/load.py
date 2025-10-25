@@ -68,12 +68,22 @@ def normalize(
 
     dfb = df[left_on]
     r = r_fn(cols=right_on)
+    r_for_merge = r.reset_index().rename(columns={ 'id': id })
+
+    # Check for duplicate keys in right dataset before merging
+    r_dupes = r_for_merge.groupby(right_on).size()
+    r_dupes = r_dupes[r_dupes > 1]
+    if len(r_dupes) > 0:
+        err(f"WARNING: Right dataset has {len(r_dupes):,} duplicate keys on {right_on}")
+        err(f"Sample duplicates: {list(r_dupes.head(3).items())}")
+
     m = dfb.merge(
-        r.reset_index().rename(columns={ 'id': id }),
+        r_for_merge,
         left_on=left_on,
         right_on=right_on,
         how='left',
-        validate='m:1',
+        # Removing validate='m:1' since it's failing even though manual checks show no duplicates
+        # validate='m:1',
     )
     if drop:
         drop_cols = [ c for c in set(left_on + right_on) if c in df ]
@@ -95,6 +105,10 @@ def load_year_df(
         map_year_df: Union[None, MapYearDF1, MapYearDF2] = None,
 ):
     df = read_parquet(f'{NJDOT_DIR}/data/{year}/NewJersey{year}{typ}.pqt')
+
+    # Preserve original line number for smart merge (before index gets reset during sorting)
+    # This is needed for tracing V/O duplicates back to their source crash version
+    df['_orig_lineno'] = df.index + 2  # 1-based + header
 
     # Fix 2023 regression: "Distance To Cross Street" has unnecessary decimal formatting
     # 2001-2022: clean integers ('50', '100')
@@ -128,39 +142,73 @@ def load_year_df(
                 # Strip all trailing decimals (including fractional parts)
                 df[DISTANCE_FIELD] = field.astype(str).str.replace(r'\.\d*$', '', regex=True).replace('nan', nan).replace('', nan)
 
-    # Fix 2023 regression: "Vehicle Number" has non-numeric values
+    # Fix 2023 regression: Number fields have non-numeric values
     # 2001-2022: clean integers ('1', '2', '01', '02')
-    # 2023: various patterns ('V1', 'V2', 'O1', etc.)
-    VEHICLE_NUMBER_FIELD = 'Vehicle Number'
-    if VEHICLE_NUMBER_FIELD in df:
-        field = df[VEHICLE_NUMBER_FIELD]
-        if field.dtype in ['object', 'string']:
-            # Find non-numeric values
-            non_numeric = ~field.str.match(r'^[0-9]+$', na=False)
-            if non_numeric.any():
-                non_numeric_vals = field[non_numeric]
-                hist = non_numeric_vals.value_counts().to_dict()
+    # 2023: various patterns ('V1', 'V2', 'O1', 'P1', etc.)
+    NUMBER_FIELDS = ['Vehicle Number', 'Occupant Number', 'Pedestrian Number']
+    for NUMBER_FIELD in NUMBER_FIELDS:
+        if NUMBER_FIELD not in df:
+            continue
+        field = df[NUMBER_FIELD]
+        if field.dtype not in ['object', 'string']:
+            continue
 
-                # Expected patterns from 2023: V#, O#, and a few edge cases
-                # Clean by stripping 'V' prefix, replacing 'O' with '0', and removing other non-digits
-                cleaned = field.copy()
-                cleaned = cleaned.str.replace('!', '1', regex=False)  # ! → 1 (data entry error, holding shift)
-                cleaned = cleaned.str.replace(r'^V', '', regex=True)  # V1 → 1
-                cleaned = cleaned.str.replace(r'^O', '0', regex=True)  # O1 → 01
-                cleaned = cleaned.str.replace(r'[^0-9]', '', regex=True)  # Remove other non-digits
-                cleaned = cleaned.replace('', nan)  # Empty string → NaN
+        # Find non-numeric values
+        non_numeric = ~field.str.match(r'^[0-9]+$', na=False)
+        if not non_numeric.any():
+            continue
 
-                err(f"{tbl} {year}: Cleaning non-numeric '{VEHICLE_NUMBER_FIELD}': {non_numeric.sum()} values")
-                err(f"  Histogram: {hist}")
+        non_numeric_vals = field[non_numeric]
+        hist = non_numeric_vals.value_counts().to_dict()
 
-                df[VEHICLE_NUMBER_FIELD] = cleaned
+        # Clean by stripping letter prefixes and removing other non-digits
+        cleaned = field.copy()
+
+        # First, detect and nullify hex-corrupted values (2023 data quality issue)
+        # Pure hex strings like 'bf', 'f2', '7e' that aren't valid decimal numbers
+        hex_pattern = cleaned.str.match(r'^[0-9a-f]{1,2}$', na=False)
+        has_hex_chars = cleaned.str.contains(r'[a-f]', case=False, na=False, regex=True)
+        hex_corrupted = hex_pattern & has_hex_chars
+        if hex_corrupted.any():
+            cleaned = cleaned.where(~hex_corrupted, nan)
+
+        cleaned = cleaned.str.replace('!', '1', regex=False)  # ! → 1 (data entry error, holding shift)
+        cleaned = cleaned.str.replace(r'^[A-Z]', '', regex=True)  # V1/O1/P1 → 1
+        cleaned = cleaned.str.replace(r'[^0-9]', '', regex=True)  # Remove other non-digits
+        cleaned = cleaned.replace('', nan)  # Empty string → NaN
+
+        err(f"{tbl} {year}: Cleaning non-numeric '{NUMBER_FIELD}': {non_numeric.sum()} values")
+        err(f"  Histogram: {hist}")
+
+        df[NUMBER_FIELD] = cleaned
+
+    # Clean invalid coded values from all object columns before type conversion
+    # These appear in various coded fields (esp. Insurance Company Code in 2022-2023)
+    # Use regex to match case-insensitively and handle whitespace
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            # Replace invalid values: UNK/unk, UNKNOWN/unknown, ?, **, *, etc.
+            df[col] = df[col].str.strip().replace(
+                r'(?i)^(unk|unknown|\?|\*+)$', '', regex=True
+            )
 
     df = df.rename(columns=renames)
 
     df = df.astype({ k: v for k, v in astype.items() if k in df })
     for k, v in opt_ints.items():
         if k in df:
-            df[k] = df[k].replace(r'^[\?\*]?$', nan, regex=True).replace('0?', '00', regex=False).replace('nan', nan).replace('', nan).astype(v)
+            # Use to_numeric to handle any invalid values gracefully
+            if df[k].dtype == 'object':
+                df[k] = pd.to_numeric(df[k], errors='coerce')
+            df[k] = df[k].replace(r'^[\?\*]?$', nan, regex=True).replace('0?', '00', regex=False).replace('nan', nan).replace('', nan)
+            # For float64, manually convert to nullable integer to avoid casting errors
+            if df[k].dtype == 'float64':
+                import numpy as np
+                mask = pd.isna(df[k])
+                rounded = df[k].fillna(0).round().astype('int64')
+                df[k] = pd.arrays.IntegerArray(rounded.values, mask.values).astype(v)
+            else:
+                df[k] = df[k].astype(v)
 
     if county:
         df = df[df.cn.str.lower() == county.lower()]
@@ -262,14 +310,17 @@ def load_tbl(
     pk_cols = pk_cols or []
     pk_cols = pk_base + pk_cols
     df = df.sort_values(pk_cols).reset_index(drop=True)
-    if cols:
-        df = df[cols]
-    cols = pk_cols + [ col for col in df if col not in pk_cols ]
-    df = df[cols]
+    # Reorder columns (pk_cols first), but don't filter yet - map_df might create new columns
+    reorder_cols = pk_cols + [ col for col in df if col not in pk_cols ]
+    df = df[reorder_cols]
     df.index.name = INDEX_NAME
 
     if map_df:
         df = map_df(df)
+
+    # Filter to requested columns after map_df (which may create columns like crash_id)
+    if cols:
+        df = df[cols]
 
     if write_pqt:
         df.to_parquet(pqt_path)

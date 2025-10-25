@@ -1,5 +1,5 @@
 outs:
-- md5: 97e4cfc9d09914e434727def75cccdc1
-  size: 306959274
+- md5: f192d852b5e1d912d76be4103c77b03b
+  size: 306757523
   hash: md5
   path: crashes.parquet

@@ -42,7 +42,7 @@ renames = {
 }
 
 astype = {
-    'pn': 'int8',
+    'pn': 'Int8',  # Made nullable to handle empty strings in 2023 data (will be filled)
     'condition': 'Int8',
     'traffic_controls': 'Int8',
     'cir1': 'Int8',
@@ -59,9 +59,39 @@ astype = {
 
 
 def map_year_df(df):
+    import pandas as pd
     df = df.drop(columns=['Multi Charge Flag'])
     if 'age' in df:
-        df['age'] = df.age.replace('M$', '', regex=True).replace('', nan).astype('Int8')
+        # Convert age string to numeric, handling NaN properly with nullable Int8
+        df['age'] = pd.to_numeric(df.age.replace('M$', '', regex=True).replace('', nan), errors='coerce')
+        df['age'] = df['age'].astype(pd.Int8Dtype())
+
+    # Fix 2023 data quality issues with pedestrian numbers (same as occupants):
+    # Drop full duplicates, then renumber all pedestrians [1, N] per crash
+    import os
+    crash_key = ['year', 'cc', 'mc', 'case']
+    pedestrian_key = crash_key + ['pn']
+
+    # Optionally write duplicate side-outputs for analysis
+    write_dupe_outputs = os.environ.get('NJDOT_WRITE_DUPE_OUTPUTS', '').lower() in ('1', 'true', 'yes')
+    if write_dupe_outputs and len(df) > 0:
+        year = df['year'].iloc[0]
+        from njdot.dupe_utils import analyze_and_write_dupes
+        # Analyze before renumbering to capture original duplicate patterns
+        analyze_and_write_dupes(df, pedestrian_key, 'pedestrians', year, write_outputs=True)
+
+    # Drop full duplicate records (all columns identical, keeps first occurrence)
+    before = len(df)
+    df = df.drop_duplicates(keep='first')
+    after = len(df)
+    if before != after:
+        from nj_crashes.utils.log import err
+        err(f"Dropped {before - after:,} full duplicate pedestrian records")
+
+    # Renumber all pedestrians [1, N] within each crash (vectorized for performance)
+    df['pn'] = df.groupby(crash_key).cumcount() + 1
+    df['pn'] = df['pn'].astype(pd.Int8Dtype())
+
     return df
 
 
