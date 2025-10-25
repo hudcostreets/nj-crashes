@@ -68,7 +68,9 @@ astype = {
 pk_cols = pk_base + ['vn']
 
 
-def map_towed_to_departure(r: pd.Series) -> int:
+def map_towed_to_departure(r: pd.Series) -> Optional[int]:
+    import pandas as pd
+    from numpy import nan
     towed = r.towed
     departure = r.departure
     if towed == 'T':
@@ -77,22 +79,106 @@ def map_towed_to_departure(r: pd.Series) -> int:
         return 2
     if towed == 'D':
         return 1
-    if towed == '?' or towed == '':
-        if departure == '':
+    if towed == '?' or towed == '' or pd.isna(towed):
+        if departure == '' or pd.isna(departure):
             return 0
         else:
-            return int(departure)
+            # Handle invalid values like 'UNK'
+            try:
+                return int(departure)
+            except (ValueError, TypeError):
+                return nan  # Return NaN for invalid values
     raise ValueError(f"Unrecognized `towed` value: {r['towed']}")
 
 
 def map_year_df(df: pd.DataFrame) -> pd.DataFrame:
+    import os
+    from numpy import nan
     # Columns beginning with capital letters are inherited from the original data source; the ones we care about are
     # listed in `renames` above.
     df = df[df.columns[~df.columns.str.match(r'^[A-Z]')]].copy()
+
+    # Clean invalid values ('UNK', '?', etc.) from coded fields before type conversion
+    # Replace with empty string which will become NaN during Int8/Int16 conversion
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            # Strip whitespace first, then replace invalid values
+            df[col] = df[col].astype(str).str.strip()
+            df[col] = df[col].replace([' UNK', 'UNK', '?', 'UNKNOWN', 'nan'], '')
+
     if 'departure' not in df:
         df['departure'] = ''
-    df['departure'] = df[['towed', 'departure']].apply(map_towed_to_departure, axis=1).astype('Int8')
+    # Convert towed/departure to departure code, using nullable Int8
+    df['departure'] = df[['towed', 'departure']].apply(map_towed_to_departure, axis=1).astype(pd.Int8Dtype())
     df = df.drop(columns='towed')
+
+    # Fix 2023 data quality issues: duplicate vehicle keys
+    # Note: vn is a foreign key referenced by occupants/drivers, so we can't renumber it
+    #
+    # Strategy (2023 only):
+    # - Use smart merge: keep vehicles from TCASE crashes (geocoded/updated version)
+    # - This works because vehicles inherit their "version" from their parent crash
+    # - Achieves ~75% intelligent merges vs arbitrary "keep first"
+    #
+    # For other years: simple deduplication (shouldn't have duplicates)
+    crash_key = ['year', 'cc', 'mc', 'case']
+    vehicle_key = crash_key + ['vn']
+
+    before = len(df)
+
+    # Check if we have duplicates
+    dupe_mask = df.duplicated(vehicle_key, keep=False)
+    if not dupe_mask.any():
+        return df
+
+    year = df['year'].iloc[0]
+
+    # Optionally write duplicate side-outputs for analysis
+    write_dupe_outputs = os.environ.get('NJDOT_WRITE_DUPE_OUTPUTS', '').lower() in ('1', 'true', 'yes')
+    if write_dupe_outputs:
+        from njdot.dupe_utils import analyze_and_write_dupes
+        # Need to use original column names for side-outputs
+        df_with_orig_cols = df.copy()
+        df_with_orig_cols['County Code'] = df_with_orig_cols['cc']
+        df_with_orig_cols['Municipality Code'] = df_with_orig_cols['mc']
+        df_with_orig_cols['Department Case Number'] = df_with_orig_cols['case']
+        df_with_orig_cols['Vehicle Number'] = df_with_orig_cols['vn']
+        pk_orig = ['County Code', 'Municipality Code', 'Department Case Number', 'Vehicle Number']
+        analyze_and_write_dupes(df_with_orig_cols, pk_orig, 'vehicles', year, write_outputs=True)
+
+    # Use smart merge for 2023 (keep vehicles from TCASE crashes)
+    if year == 2023:
+        from njdot.merge_vo_dupes import merge_vo_duplicates
+
+        # merge_vo_duplicates expects original column names + _orig_lineno
+        # Rename columns back to original names for merge
+        df = df.rename(columns={
+            'cc': 'County Code',
+            'mc': 'Municipality Code',
+            'case': 'Department Case Number',
+            'vn': 'Vehicle Number',
+        })
+        pk_orig = ['County Code', 'Municipality Code', 'Department Case Number', 'Vehicle Number']
+
+        df = merge_vo_duplicates(df, pk_orig, 'vehicles', year)
+
+        # Rename back to internal names
+        df = df.rename(columns={
+            'County Code': 'cc',
+            'Municipality Code': 'mc',
+            'Department Case Number': 'case',
+            'Vehicle Number': 'vn',
+        })
+        df = df.drop(columns=['_orig_lineno'], errors='ignore')
+    else:
+        # Simple deduplication for other years (shouldn't have duplicates)
+        df_deduped = df.drop_duplicates(keep='first')
+        df = df_deduped.drop_duplicates(subset=vehicle_key, keep='first')
+
+        num_dropped = before - len(df)
+        if num_dropped > 0:
+            err(f"Dropped {num_dropped:,} duplicate vehicle records (year {year})")
+
     return df
 
 
