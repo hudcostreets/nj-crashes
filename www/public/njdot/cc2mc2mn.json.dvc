@@ -1,0 +1,11 @@
+outs:
+- md5: 2c12563c5ea3a3fdd443fc14610822e8
+  size: 15584
+  hash: md5
+  path: cc2mc2mn.json
+meta:
+  computation:
+    cmd: njsp harmonize_muni_codes
+    deps:
+      njdot/data/crashes.parquet: 4d56ec989865608563225eb8f84cef74
+      www/public/Municipal_Boundaries_of_NJ.geojson: 54a252d859eea2207da0fb933661dca0

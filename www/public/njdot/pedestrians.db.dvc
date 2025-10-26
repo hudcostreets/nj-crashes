@@ -3,3 +3,8 @@ outs:
   size: 19726336
   hash: md5
   path: pedestrians.db
+meta:
+  computation:
+    cmd: njdot compute db -t pedestrians
+    deps:
+      njdot/data/pedestrians.parquet: 7f1dc043bbc22ed522115e4adbc911fd

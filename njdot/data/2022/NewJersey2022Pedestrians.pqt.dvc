@@ -3,3 +3,8 @@ outs:
   size: 169968
   hash: md5
   path: NewJersey2022Pedestrians.pqt
+meta:
+  computation:
+    cmd: rawdata pqt -r NJ -y 2022 -t pedestrians
+    deps:
+      njdot/data/2022/NewJersey2022Pedestrians.zip: fd19635eb130d0ceb20a825b3c8cdceb

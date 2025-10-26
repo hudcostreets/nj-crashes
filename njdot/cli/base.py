@@ -51,8 +51,6 @@ def compute_pqt(force_recompute, pqt_path0, n_jobs, dry_run, tbls: list[Tbl]):
         }[tbl]
         load_fn(**kwargs)
 
-        process.run('dvc', 'add', pqt_path)
-
 
 def write_db(
         tbl: Tbl,
@@ -90,7 +88,6 @@ def write_db(
             replace=replace,
             page_size=page_size,
         )
-        process.run('dvc', 'add', db_path)
 
     if not no_s3:
         s3_url = s3_url or f'{DOT_DATA_S3}/{tbl}.db'

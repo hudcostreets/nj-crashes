@@ -3,3 +3,8 @@ outs:
   size: 5874288
   hash: md5
   path: NewJersey2022Drivers.pqt
+meta:
+  computation:
+    cmd: rawdata pqt -r NJ -y 2022 -t drivers
+    deps:
+      njdot/data/2022/NewJersey2022Drivers.zip: b7ebe70b58aece6943e572b443c43c68

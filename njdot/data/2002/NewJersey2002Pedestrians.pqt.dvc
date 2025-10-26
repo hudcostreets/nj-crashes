@@ -3,3 +3,8 @@ outs:
   size: 253285
   hash: md5
   path: NewJersey2002Pedestrians.pqt
+meta:
+  computation:
+    cmd: rawdata pqt -r NJ -y 2002 -t pedestrians
+    deps:
+      njdot/data/2002/NewJersey2002Pedestrians.zip: 5244388e772befa7327577043705df15
