@@ -207,8 +207,10 @@ def map_df(v: pd.DataFrame) -> pd.DataFrame:
 
         # Update cc/mc where mapping exists
         # For rows without mapping, cc/mc will be NaN, so fill with original values
+        # Note: mc may be float64 (combined codes like 9901.0 for Port Authority)
         v['cc'] = v_with_mapping['cc'].fillna(v['cc']).astype('int8')
-        v['mc'] = v_with_mapping['mc'].fillna(v['mc']).astype('int8')
+        # Convert mc to float to handle combined codes from crashes
+        v['mc'] = v_with_mapping['mc'].fillna(v['mc'].astype('float64'))
 
         num_updated = v_with_mapping['cc'].notna().sum()
         err(f"  Updated {num_updated:,} vehicle PKs from mapping table")

@@ -75,8 +75,8 @@ renames = {
 }
 astype = {
     'dt': '<M8[us]',
-    'cc0': 'int8',
-    'mc0': 'int8',
+    'cc0': 'Int8',  # Nullable - only populated when geocoding changes PK
+    'mc0': 'Int8',  # Nullable - only populated when geocoding changes PK
     'tk': 'int8',
     'ti': 'int8',
     'pk': 'int8',

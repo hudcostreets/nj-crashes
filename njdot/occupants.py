@@ -160,8 +160,10 @@ def map_df(df, fix_missing_vid: bool = True, drop: bool = True):
 
         # Update cc/mc where mapping exists
         # For rows without mapping, cc/mc will be NaN, so fill with original values
+        # Note: mc may be float64 (combined codes like 9901.0 for Port Authority)
         df['cc'] = df_with_mapping['cc'].fillna(df['cc']).astype('int8')
-        df['mc'] = df_with_mapping['mc'].fillna(df['mc']).astype('int8')
+        # Convert mc to float to handle combined codes from crashes
+        df['mc'] = df_with_mapping['mc'].fillna(df['mc'].astype('float64'))
 
         num_updated = df_with_mapping['cc'].notna().sum()
         err(f"  Updated {num_updated:,} occupant PKs from mapping table")

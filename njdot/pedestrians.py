@@ -121,8 +121,10 @@ def map_df(p, tpe):
 
         # Update cc/mc where mapping exists
         # For rows without mapping, cc/mc will be NaN, so fill with original values
+        # Note: mc may be float64 (combined codes like 9901.0 for Port Authority)
         p['cc'] = p_with_mapping['cc'].fillna(p['cc']).astype('int8')
-        p['mc'] = p_with_mapping['mc'].fillna(p['mc']).astype('int8')
+        # Convert mc to float to handle combined codes from crashes
+        p['mc'] = p_with_mapping['mc'].fillna(p['mc'].astype('float64'))
 
         num_updated = p_with_mapping['cc'].notna().sum()
         err(f"  Updated {num_updated:,} {tpe} PKs from mapping table")
