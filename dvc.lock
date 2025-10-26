@@ -1,0 +1,177 @@
+schema: '2.0'
+stages:
+  raw_2023_accidents:
+    cmd: env -u PYTHONPATH rawdata pqt -r NJ -y 2023 -t accidents
+    deps:
+    - path: njdot/data/2023/NewJersey2023Accidents.zip
+      hash: md5
+      md5: af1756f11fb5caeab007d9b9683d77b9
+      size: 11753277
+    outs:
+    - path: njdot/data/2023/NewJersey2023Accidents.pqt
+      hash: md5
+      md5: 6e058a16f38835041df9d14485150f57
+      size: 12124133
+  raw_2023_pedestrians:
+    cmd: env -u PYTHONPATH rawdata pqt -r NJ -y 2023 -t pedestrians
+    deps:
+    - path: njdot/data/2023/NewJersey2023Pedestrians.zip
+      md5: e58912bcb504ed2cfa4fcd802482ffb8
+      size: 194929
+    outs:
+    - path: njdot/data/2023/NewJersey2023Pedestrians.pqt
+      md5: 99493547d6a62fc71d44a25b27eb5797
+      size: 193675
+  raw_2023_occupants:
+    cmd: env -u PYTHONPATH rawdata pqt -r NJ -y 2023 -t occupants
+    deps:
+    - path: njdot/data/2023/NewJersey2023Occupants.zip
+      md5: 26771b9f8c53b63718b05bb0fbaedc18
+      size: 4653603
+    outs:
+    - path: njdot/data/2023/NewJersey2023Occupants.pqt
+      md5: 55e2f9299f30d45d0435080bcc733af4
+      size: 5227171
+  raw_2023_drivers:
+    cmd: env -u PYTHONPATH rawdata pqt -r NJ -y 2023 -t drivers
+    deps:
+    - path: njdot/data/2023/NewJersey2023Drivers.zip
+      md5: f39338da005b353a500365812bc2fe6a
+      size: 7242286
+    outs:
+    - path: njdot/data/2023/NewJersey2023Drivers.pqt
+      md5: e9acda90befb8a2510927c28a021b5e3
+      size: 6219703
+  raw_2023_vehicles:
+    cmd: env -u PYTHONPATH rawdata pqt -r NJ -y 2023 -t vehicles
+    deps:
+    - path: njdot/data/2023/NewJersey2023Vehicles.zip
+      md5: 5524b0963e01b23753a03078f1a6b4a3
+      size: 12489021
+    outs:
+    - path: njdot/data/2023/NewJersey2023Vehicles.pqt
+      md5: 7a53ccda19a3948104838c666eb6bf9a
+      size: 10112996
+  combined_crashes:
+    cmd: env -u PYTHONPATH njdot compute pqt -t crashes
+    deps:
+    - path: njdot/data/2023/NewJersey2023Accidents.pqt
+      hash: md5
+      md5: 6e058a16f38835041df9d14485150f57
+      size: 12124133
+    outs:
+    - path: njdot/data/crash_pk_mappings.parquet
+      hash: md5
+      md5: ee26174bfdf221040550ce9776e2bcff
+      size: 36956766
+    - path: njdot/data/crashes.parquet
+      hash: md5
+      md5: 4d56ec989865608563225eb8f84cef74
+      size: 306762269
+  combined_pedestrians:
+    cmd: env -u PYTHONPATH njdot compute pqt -t pedestrians
+    deps:
+    - path: njdot/data/2023/NewJersey2023Pedestrians.pqt
+      md5: 99493547d6a62fc71d44a25b27eb5797
+      size: 193675
+    - path: njdot/data/crash_pk_mappings.parquet
+      md5: ee26174bfdf221040550ce9776e2bcff
+      size: 36956766
+    outs:
+    - path: njdot/data/pedestrians.parquet
+      md5: 7f1dc043bbc22ed522115e4adbc911fd
+      size: 4930266
+  combined_vehicles:
+    cmd: env -u PYTHONPATH njdot compute pqt -t vehicles
+    deps:
+    - path: njdot/data/2023/NewJersey2023Vehicles.pqt
+      hash: md5
+      md5: 7a53ccda19a3948104838c666eb6bf9a
+      size: 10112996
+    - path: njdot/data/crash_pk_mappings.parquet
+      hash: md5
+      md5: ee26174bfdf221040550ce9776e2bcff
+      size: 36956766
+    outs:
+    - path: njdot/data/vehicles.parquet
+      hash: md5
+      md5: f556fa6424ee67986f1b8f69b0ab7eab
+      size: 266054074
+  db_crashes:
+    cmd: env -u PYTHONPATH njdot compute db -t crashes
+    deps:
+    - path: njdot/data/crashes.parquet
+      hash: md5
+      md5: 4d56ec989865608563225eb8f84cef74
+      size: 306762269
+    outs:
+    - path: www/public/njdot/crashes.db
+      hash: md5
+      md5: 24b9017c21f885d01a5bf030e7b3f824
+      size: 2630090752
+  combined_drivers:
+    cmd: env -u PYTHONPATH njdot compute pqt -t drivers
+    deps:
+    - path: njdot/data/2023/NewJersey2023Drivers.pqt
+      md5: e9acda90befb8a2510927c28a021b5e3
+      size: 6219703
+    - path: njdot/data/crash_pk_mappings.parquet
+      md5: ee26174bfdf221040550ce9776e2bcff
+      size: 36956766
+    outs:
+    - path: njdot/data/drivers.parquet
+      md5: 3b608964e33376b1ea679784702d623e
+      size: 223465092
+  combined_occupants:
+    cmd: env -u PYTHONPATH njdot compute pqt -t occupants
+    deps:
+    - path: njdot/data/2023/NewJersey2023Occupants.pqt
+      md5: 55e2f9299f30d45d0435080bcc733af4
+      size: 5227171
+    - path: njdot/data/crash_pk_mappings.parquet
+      md5: ee26174bfdf221040550ce9776e2bcff
+      size: 36956766
+    outs:
+    - path: njdot/data/occupants.parquet
+      md5: a2879e533e566c4c1b8be11ee403d59e
+      size: 231809643
+  db_pedestrians:
+    cmd: env -u PYTHONPATH njdot compute db -t pedestrians
+    deps:
+    - path: njdot/data/pedestrians.parquet
+      md5: 7f1dc043bbc22ed522115e4adbc911fd
+      size: 4930266
+    outs:
+    - path: www/public/njdot/pedestrians.db
+      md5: ee20e67d99f94cffa6987b674bd72390
+      size: 19726336
+  db_occupants:
+    cmd: env -u PYTHONPATH njdot compute db -t occupants
+    deps:
+    - path: njdot/data/occupants.parquet
+      md5: a2879e533e566c4c1b8be11ee403d59e
+      size: 231809643
+    outs:
+    - path: www/public/njdot/occupants.db
+      md5: 652ab4b2b0c7a7ea5eb9657af2420961
+      size: 957284352
+  db_drivers:
+    cmd: env -u PYTHONPATH njdot compute db -t drivers
+    deps:
+    - path: njdot/data/drivers.parquet
+      md5: 3b608964e33376b1ea679784702d623e
+      size: 223465092
+    outs:
+    - path: www/public/njdot/drivers.db
+      md5: 1a7fdd70e76113e946f5061ebd50c0d9
+      size: 1131610112
+  db_vehicles:
+    cmd: env -u PYTHONPATH njdot compute db -t vehicles
+    deps:
+    - path: njdot/data/vehicles.parquet
+      md5: f556fa6424ee67986f1b8f69b0ab7eab
+      size: 266054074
+    outs:
+    - path: www/public/njdot/vehicles.db
+      md5: 534d8ea9c900a2ab2162107f1b8dbb82
+      size: 1174732800

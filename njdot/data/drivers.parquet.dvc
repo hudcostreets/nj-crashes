@@ -1,5 +1,0 @@
-outs:
-- md5: c31519c204b93d721e50d1e8f9d3c869
-  size: 224795429
-  hash: md5
-  path: drivers.parquet

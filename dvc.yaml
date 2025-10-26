@@ -1,0 +1,132 @@
+stages:
+  # Stage 1: Generate 2023 raw .pqt files from .zip files
+  # This stage reads zip files and produces parquet files with geocoding
+  raw_2023_accidents:
+    desc: Parse 2023 crash records from raw ZIP, apply geocoding fixes
+    cmd: env -u PYTHONPATH rawdata pqt -r NJ -y 2023 -t accidents
+    deps:
+      - njdot/data/2023/NewJersey2023Accidents.zip
+    outs:
+      - njdot/data/2023/NewJersey2023Accidents.pqt
+
+  raw_2023_drivers:
+    desc: Parse 2023 driver records from raw ZIP
+    cmd: env -u PYTHONPATH rawdata pqt -r NJ -y 2023 -t drivers
+    deps:
+      - njdot/data/2023/NewJersey2023Drivers.zip
+    outs:
+      - njdot/data/2023/NewJersey2023Drivers.pqt
+
+  raw_2023_vehicles:
+    desc: Parse 2023 vehicle records from raw ZIP
+    cmd: env -u PYTHONPATH rawdata pqt -r NJ -y 2023 -t vehicles
+    deps:
+      - njdot/data/2023/NewJersey2023Vehicles.zip
+    outs:
+      - njdot/data/2023/NewJersey2023Vehicles.pqt
+
+  raw_2023_occupants:
+    desc: Parse 2023 occupant records from raw ZIP
+    cmd: env -u PYTHONPATH rawdata pqt -r NJ -y 2023 -t occupants
+    deps:
+      - njdot/data/2023/NewJersey2023Occupants.zip
+    outs:
+      - njdot/data/2023/NewJersey2023Occupants.pqt
+
+  raw_2023_pedestrians:
+    desc: Parse 2023 pedestrian records from raw ZIP
+    cmd: env -u PYTHONPATH rawdata pqt -r NJ -y 2023 -t pedestrians
+    deps:
+      - njdot/data/2023/NewJersey2023Pedestrians.zip
+    outs:
+      - njdot/data/2023/NewJersey2023Pedestrians.pqt
+
+  # Stage 2: Combine all years into single parquet files
+  # Depends on all raw .pqt files (2001-2023)
+  combined_crashes:
+    desc: Combine 23 years of crash data (2001-2023), generate PK mapping table
+    cmd: env -u PYTHONPATH njdot compute pqt -t crashes
+    deps:
+      - njdot/data/2023/NewJersey2023Accidents.pqt
+      # Note: Also depends on 2001-2022 .pqt files, but listing just 2023 for simplicity
+    outs:
+      - njdot/data/crashes.parquet
+      - njdot/data/crash_pk_mappings.parquet
+
+  combined_drivers:
+    desc: Combine driver records across all years, apply PK mapping fixes
+    cmd: env -u PYTHONPATH njdot compute pqt -t drivers
+    deps:
+      - njdot/data/2023/NewJersey2023Drivers.pqt
+      - njdot/data/crash_pk_mappings.parquet
+    outs:
+      - njdot/data/drivers.parquet
+
+  combined_vehicles:
+    desc: Combine vehicle records across all years, apply PK mapping fixes
+    cmd: env -u PYTHONPATH njdot compute pqt -t vehicles
+    deps:
+      - njdot/data/2023/NewJersey2023Vehicles.pqt
+      - njdot/data/crash_pk_mappings.parquet
+    outs:
+      - njdot/data/vehicles.parquet
+
+  combined_occupants:
+    desc: Combine occupant records across all years, apply PK mapping fixes
+    cmd: env -u PYTHONPATH njdot compute pqt -t occupants
+    deps:
+      - njdot/data/2023/NewJersey2023Occupants.pqt
+      - njdot/data/crash_pk_mappings.parquet
+    outs:
+      - njdot/data/occupants.parquet
+
+  combined_pedestrians:
+    desc: Combine pedestrian records across all years, apply PK mapping fixes
+    cmd: env -u PYTHONPATH njdot compute pqt -t pedestrians
+    deps:
+      - njdot/data/2023/NewJersey2023Pedestrians.pqt
+      - njdot/data/crash_pk_mappings.parquet
+    outs:
+      - njdot/data/pedestrians.parquet
+
+  # Stage 3: Generate SQLite databases from parquet files
+  # These can all run in parallel
+  db_crashes:
+    desc: Convert crashes parquet → SQLite database (6.6M rows, 2.6GB)
+    cmd: env -u PYTHONPATH njdot compute db -t crashes
+    deps:
+      - njdot/data/crashes.parquet
+    outs:
+      - www/public/njdot/crashes.db
+
+  db_drivers:
+    desc: Convert drivers parquet → SQLite database (10.7M rows, 1.1GB)
+    cmd: env -u PYTHONPATH njdot compute db -t drivers
+    deps:
+      - njdot/data/drivers.parquet
+    outs:
+      - www/public/njdot/drivers.db
+
+  db_vehicles:
+    desc: Convert vehicles parquet → SQLite database (11.8M rows, 1.2GB)
+    cmd: env -u PYTHONPATH njdot compute db -t vehicles
+    deps:
+      - njdot/data/vehicles.parquet
+    outs:
+      - www/public/njdot/vehicles.db
+
+  db_occupants:
+    desc: Convert occupants parquet → SQLite database (13.1M rows, 957MB)
+    cmd: env -u PYTHONPATH njdot compute db -t occupants
+    deps:
+      - njdot/data/occupants.parquet
+    outs:
+      - www/public/njdot/occupants.db
+
+  db_pedestrians:
+    desc: Convert pedestrians parquet → SQLite database (130K rows, 20MB)
+    cmd: env -u PYTHONPATH njdot compute db -t pedestrians
+    deps:
+      - njdot/data/pedestrians.parquet
+    outs:
+      - www/public/njdot/pedestrians.db
