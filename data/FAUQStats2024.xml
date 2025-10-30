@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Oct 29 10:00:05 EDT 2025</RUNDATE>
+  <RUNDATE>Thu Oct 30 10:00:05 EDT 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1747,7 +1747,7 @@
     <MUNICIPALITY MCODE="1111" MNAME="Trenton">
       <ACCIDENT ACCID="13693" DATE="10/27/2024" TIME="1444">
         <HIGHWAY>33</HIGHWAY>
-        <LOCATION>State Highway 33</LOCATION>
+        <LOCATION>State Highway 33 MP .07</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
