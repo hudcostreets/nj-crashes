@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Oct 30 10:00:01 EDT 2025</RUNDATE>
+  <RUNDATE>Fri Oct 31 10:00:00 EDT 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -117,8 +117,8 @@
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
       <ACCIDENT ACCID="14227" DATE="10/23/2025" TIME="2215">
-        <STREET>31 Neptune Ave</STREET>
-        <LOCATION>31 Neptune Ave</LOCATION>
+        <STREET>Neptune Ave</STREET>
+        <LOCATION>Neptune Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
