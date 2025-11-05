@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Nov 04 10:00:01 EST 2025</RUNDATE>
+  <RUNDATE>Wed Nov 05 10:00:05 EST 2025</RUNDATE>
   <STATSYEAR>2024</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -7018,8 +7018,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1345" MNAME="Shrewsbury Boro">
       <ACCIDENT ACCID="13123" DATE="03/31/2024" TIME="1545">
-        <STREET>Samara Drive</STREET>
-        <LOCATION>Samara Drive</LOCATION>
+        <STREET>Samara Dr</STREET>
+        <LOCATION>Samara Dr</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
