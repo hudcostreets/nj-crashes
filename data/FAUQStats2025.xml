@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Nov 06 10:00:05 EST 2025</RUNDATE>
+  <RUNDATE>Fri Nov 07 10:00:03 EST 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,11 +49,50 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="17" CNAME="Salem">
+    <MUNICIPALITY MCODE="1706" MNAME="Mannington Twsp">
+      <ACCIDENT ACCID="14237" DATE="11/05/2025" TIME="2123">
+        <HIGHWAY>540</HIGHWAY>
+        <LOCATION>County 540</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
+      <ACCIDENT ACCID="14236" DATE="11/05/2025" TIME="1748">
+        <HIGHWAY>622</HIGHWAY>
+        <LOCATION>County 622</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1516" MNAME="Little Egg Harbor T">
       <ACCIDENT ACCID="14232" DATE="11/05/2025" TIME="0402">
-        <STREET>center st and oak ln</STREET>
-        <LOCATION>center st and oak ln</LOCATION>
+        <STREET>Center St</STREET>
+        <LOCATION>Center St</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
+    <MUNICIPALITY MCODE="1337" MNAME="Ocean Twsp">
+      <ACCIDENT ACCID="14234" DATE="11/04/2025" TIME="1736">
+        <HIGHWAY>35</HIGHWAY>
+        <LOCATION>State Highway 35</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -65,8 +104,8 @@
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0223" MNAME="Hackensack City">
       <ACCIDENT ACCID="14231" DATE="11/04/2025" TIME="1348">
-        <STREET>PoliflyRd</STREET>
-        <LOCATION>PoliflyRd</LOCATION>
+        <STREET>Polifly Rd</STREET>
+        <LOCATION>Polifly Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -75,7 +114,31 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2005" MNAME="Fanwood Boro">
+      <ACCIDENT ACCID="14235" DATE="11/04/2025" TIME="1001">
+        <STREET>Forest Rd</STREET>
+        <LOCATION>Forest Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0811" MNAME="Monroe Twsp">
+      <ACCIDENT ACCID="14238" DATE="11/02/2025" TIME="2100">
+        <STREET>1099 N. Black Horse Pike</STREET>
+        <LOCATION>1099 N. Black Horse Pike</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
     <MUNICIPALITY MCODE="0804" MNAME="Elk Twsp">
       <ACCIDENT ACCID="14228" DATE="11/01/2025" TIME="2205">
         <HIGHWAY>55</HIGHWAY>
@@ -3214,6 +3277,19 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="15" CNAME="Ocean">
+    <MUNICIPALITY MCODE="1529" MNAME="South Toms River Bo">
+      <ACCIDENT ACCID="14233" DATE="06/07/2025" TIME="0351">
+        <STREET>Colgate Dr</STREET>
+        <LOCATION>Colgate Dr</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
       <ACCIDENT ACCID="13941" DATE="06/05/2025" TIME="2044">
@@ -5935,7 +6011,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>449</TOTACCIDENTS>
-  <TOTFATALITIES>479</TOTFATALITIES>
+  <TOTACCIDENTS>455</TOTACCIDENTS>
+  <TOTFATALITIES>485</TOTFATALITIES>
   <TOTINJURIES>127</TOTINJURIES>
 </FAUQSTATS>
