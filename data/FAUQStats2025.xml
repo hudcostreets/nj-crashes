@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Dec 03 10:00:32 EST 2025</RUNDATE>
+  <RUNDATE>Thu Dec 04 10:00:34 EST 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -81,6 +81,19 @@
       <ACCIDENT ACCID="14292" DATE="11/30/2025" TIME="0113">
         <STREET>23rd Ave</STREET>
         <LOCATION>23rd Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+    <MUNICIPALITY MCODE="0111" MNAME="Galloway Twsp">
+      <ACCIDENT ACCID="14293" DATE="11/29/2025" TIME="1714">
+        <HIGHWAY>9</HIGHWAY>
+        <LOCATION>State Highway 9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -647,19 +660,6 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <COUNTY CCODE="20" CNAME="Union">
-    <MUNICIPALITY MCODE="2005" MNAME="Fanwood Boro">
-      <ACCIDENT ACCID="14235" DATE="11/04/2025" TIME="1001">
-        <STREET>Forest Rd</STREET>
-        <LOCATION>Forest Rd</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
   <COUNTY CCODE="17" CNAME="Salem">
     <MUNICIPALITY MCODE="1707" MNAME="Oldmans Twsp">
       <ACCIDENT ACCID="14250" DATE="11/04/2025" TIME="0117">
@@ -911,12 +911,13 @@
     <MUNICIPALITY MCODE="1713" MNAME="Carneys Point Twsp">
       <ACCIDENT ACCID="14213" DATE="10/19/2025" TIME="0042">
         <HIGHWAY>95</HIGHWAY>
-        <LOCATION>New Jersey Turnpike</LOCATION>
+        <LOCATION>New Jersey Turnpike MP 1.3</LOCATION>
         <FATALITIES>4</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>3</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1039,12 +1040,13 @@
     <MUNICIPALITY MCODE="0111" MNAME="Galloway Twsp">
       <ACCIDENT ACCID="14201" DATE="10/10/2025" TIME="1938">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9</LOCATION>
+        <LOCATION>State Highway 9 MP 47.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1076,14 +1078,15 @@
   </COUNTY>
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
-      <ACCIDENT ACCID="14197" DATE="10/08/2025" TIME="1940">
+      <ACCIDENT ACCID="14197" DATE="10/08/2025" TIME="1938">
         <HIGHWAY>322</HIGHWAY>
-        <LOCATION>State Highway 322</LOCATION>
+        <LOCATION>State Highway 322 MP 45.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1287,7 +1290,7 @@
     <MUNICIPALITY MCODE="1714" MNAME="Upper Pittsgrove Tw">
       <ACCIDENT ACCID="14194" DATE="09/30/2025" TIME="2111">
         <HIGHWAY>77</HIGHWAY>
-        <LOCATION>State Highway 77</LOCATION>
+        <LOCATION>State Highway 77 MP 10.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -1850,12 +1853,13 @@
     <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="14111" DATE="09/04/2025" TIME="1156">
         <HIGHWAY>563</HIGHWAY>
-        <LOCATION>County 563</LOCATION>
+        <LOCATION>County 563 MP 11.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4845,7 +4849,7 @@
   </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0319" MNAME="Mansfield Twsp">
-      <ACCIDENT ACCID="13854" DATE="04/15/2025" TIME="1549">
+      <ACCIDENT ACCID="13854" DATE="04/15/2025" TIME="1550">
         <HIGHWAY>95</HIGHWAY>
         <LOCATION>New Jersey Turnpike MP 49.2</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -5201,14 +5205,14 @@
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0330" MNAME="Pemberton Twsp">
       <ACCIDENT ACCID="13822" DATE="03/23/2025" TIME="2330">
-        <STREET>West Lake Shore Drive</STREET>
-        <LOCATION>West Lake Shore Drive</LOCATION>
+        <STREET>West Lakeshore Dr</STREET>
+        <LOCATION>West Lakeshore Dr</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-        <INJURIES>3</INJURIES>
+        <INJURIES>4</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5449,6 +5453,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5697,6 +5702,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6139,6 +6145,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6594,5 +6601,5 @@
   </COUNTY>
   <TOTACCIDENTS>499</TOTACCIDENTS>
   <TOTFATALITIES>531</TOTFATALITIES>
-  <TOTINJURIES>141</TOTINJURIES>
+  <TOTINJURIES>147</TOTINJURIES>
 </FAUQSTATS>
