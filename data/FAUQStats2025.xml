@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Dec 09 10:00:44 EST 2025</RUNDATE>
+  <RUNDATE>Wed Dec 10 10:00:42 EST 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2164,19 +2164,6 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <COUNTY CCODE="16" CNAME="Passaic">
-    <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
-      <ACCIDENT ACCID="14121" DATE="08/22/2025" TIME="1620">
-        <STREET>10th Ave</STREET>
-        <LOCATION>10th Ave</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0108" MNAME="Egg Harbor Twsp">
       <ACCIDENT ACCID="14091" DATE="08/21/2025" TIME="1958">
@@ -2244,6 +2231,19 @@
       <ACCIDENT ACCID="14110" DATE="08/16/2025" TIME="1403">
         <HIGHWAY>120</HIGHWAY>
         <LOCATION>State Highway 120</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="16" CNAME="Passaic">
+    <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
+      <ACCIDENT ACCID="14121" DATE="08/15/2025" TIME="2225">
+        <STREET>10th Ave</STREET>
+        <LOCATION>10th Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5594,12 +5594,13 @@
     <MUNICIPALITY MCODE="1337" MNAME="Ocean Twsp">
       <ACCIDENT ACCID="13913" DATE="03/04/2025" TIME="2118">
         <HIGHWAY>35</HIGHWAY>
-        <LOCATION>State Highway 35</LOCATION>
+        <LOCATION>State Highway 35 MP 24.9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6280,6 +6281,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
