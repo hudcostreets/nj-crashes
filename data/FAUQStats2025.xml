@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Dec 10 10:00:42 EST 2025</RUNDATE>
+  <RUNDATE>Thu Dec 11 10:00:44 EST 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,19 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="09" CNAME="Hudson">
+    <MUNICIPALITY MCODE="0908" MNAME="North Bergen Twsp">
+      <ACCIDENT ACCID="14303" DATE="12/09/2025" TIME="0627">
+        <STREET>Bergenline Avenue</STREET>
+        <LOCATION>Bergenline Avenue</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0338" MNAME="Westampton Twsp">
@@ -124,20 +137,6 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="07" CNAME="Essex">
-    <MUNICIPALITY MCODE="0709" MNAME="Irvington Town">
-      <ACCIDENT ACCID="14290" DATE="11/30/2025" TIME="2104">
-        <STREET>Lyons Ave</STREET>
-        <LOCATION>Lyons Ave</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4784,8 +4783,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="13867" DATE="04/20/2025" TIME="1304">
-        <STREET>Irvine Turner Blvd</STREET>
-        <LOCATION>Irvine Turner Blvd</LOCATION>
+        <STREET>West Runyon St</STREET>
+        <LOCATION>West Runyon St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6657,5 +6656,5 @@
   </COUNTY>
   <TOTACCIDENTS>503</TOTACCIDENTS>
   <TOTFATALITIES>536</TOTFATALITIES>
-  <TOTINJURIES>149</TOTINJURIES>
+  <TOTINJURIES>148</TOTINJURIES>
 </FAUQSTATS>
