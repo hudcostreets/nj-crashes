@@ -15,14 +15,14 @@ def update_years(*years):
         out_path = fauqstats_relpath(year)
         name = basename(out_path)
         res = requests.get(
-            f'https://nj.gov/njsp/info/fatalacc/{name}',
+            f'https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/{name}',
             allow_redirects=True,
             timeout=10,
             headers={
                 'Accept': 'text/xml',
                 'Cache-Control': 'no-cache',
                 'Pragma': 'no-cache',
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/',
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             },
         )
         if res.status_code != 200:
