@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Dec 11 10:00:44 EST 2025</RUNDATE>
+  <RUNDATE>Fri Dec 12 10:00:47 EST 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,11 +49,51 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="17" CNAME="Salem">
+    <MUNICIPALITY MCODE="1708" MNAME="Penns Grove Bor">
+      <ACCIDENT ACCID="14304" DATE="12/10/2025" TIME="1811">
+        <HIGHWAY>130</HIGHWAY>
+        <LOCATION>State Highway 130 MP 3.7</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="14" CNAME="Morris">
+    <MUNICIPALITY MCODE="1408" MNAME="Denville Twsp">
+      <ACCIDENT ACCID="14307" DATE="12/10/2025" TIME="1753">
+        <STREET>Pocono Rd</STREET>
+        <LOCATION>Pocono Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1201" MNAME="Carteret Boro">
+      <ACCIDENT ACCID="14305" DATE="12/09/2025" TIME="2209">
+        <HIGHWAY>643</HIGHWAY>
+        <LOCATION>County 643</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0908" MNAME="North Bergen Twsp">
       <ACCIDENT ACCID="14303" DATE="12/09/2025" TIME="0627">
-        <STREET>Bergenline Avenue</STREET>
-        <LOCATION>Bergenline Avenue</LOCATION>
+        <STREET>Bergenline Ave</STREET>
+        <LOCATION>Bergenline Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -84,6 +124,19 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="15" CNAME="Ocean">
+    <MUNICIPALITY MCODE="1505" MNAME="Berkeley Twsp">
+      <ACCIDENT ACCID="14301" DATE="12/08/2025" TIME="1708">
+        <HIGHWAY>530</HIGHWAY>
+        <LOCATION>County 530</LOCATION>
+        <FATALITIES>2</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -6654,7 +6707,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>503</TOTACCIDENTS>
-  <TOTFATALITIES>536</TOTFATALITIES>
+  <TOTACCIDENTS>507</TOTACCIDENTS>
+  <TOTFATALITIES>541</TOTFATALITIES>
   <TOTINJURIES>148</TOTINJURIES>
 </FAUQSTATS>
