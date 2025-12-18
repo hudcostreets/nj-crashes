@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Dec 16 10:00:52 EST 2025</RUNDATE>
+  <RUNDATE>Wed Dec 17 10:00:54 EST 2025</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -6558,12 +6558,13 @@
     <MUNICIPALITY MCODE="1506" MNAME="Brick Twsp">
       <ACCIDENT ACCID="13701" DATE="01/13/2025" TIME="1037">
         <HIGHWAY>88</HIGHWAY>
-        <LOCATION>State Highway 88</LOCATION>
+        <LOCATION>State Highway 88 MP 7.46</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1507" MNAME="Toms River">
