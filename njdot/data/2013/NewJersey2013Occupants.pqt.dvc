@@ -3,3 +3,8 @@ outs:
   size: 4986109
   hash: md5
   path: NewJersey2013Occupants.pqt
+meta:
+  computation:
+    cmd: rawdata pqt -r NJ -y 2013 -t occupants
+    deps:
+      njdot/data/2013/NewJersey2013Occupants.zip: bc9c3121a25d5c3b773a222ef84d58cf

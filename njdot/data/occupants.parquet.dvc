@@ -1,0 +1,33 @@
+outs:
+- md5: a2879e533e566c4c1b8be11ee403d59e
+  size: 231809643
+  hash: md5
+  path: occupants.parquet
+meta:
+  computation:
+    cmd: njdot compute pqt -t occupants
+    deps:
+      njdot/data/2001/NewJersey2001Occupants.pqt: 7b3ddc292f6dbb00abc424352e7f37d8
+      njdot/data/2002/NewJersey2002Occupants.pqt: 56779a3ad3bcfaec812f65ca438a7160
+      njdot/data/2003/NewJersey2003Occupants.pqt: 622494de6eb72f99aae0bd0125a998f0
+      njdot/data/2004/NewJersey2004Occupants.pqt: f1a96bf304b1dac3051043e5f667ac34
+      njdot/data/2005/NewJersey2005Occupants.pqt: 9ab5f294b8693f94b2af2ba6172cbfc6
+      njdot/data/2006/NewJersey2006Occupants.pqt: bedeba11810482b4934727ba61776080
+      njdot/data/2007/NewJersey2007Occupants.pqt: ddec2f5288b52d02cd1726bc0f038cc3
+      njdot/data/2008/NewJersey2008Occupants.pqt: 16bc69f4521637d7488fcc05a21e34b4
+      njdot/data/2009/NewJersey2009Occupants.pqt: 024bc45844e46b10f274c3b5bd3acdd7
+      njdot/data/2010/NewJersey2010Occupants.pqt: f2ccee7a479bd8e4a0d11a6611f800ab
+      njdot/data/2011/NewJersey2011Occupants.pqt: fa673230bb97794d99e33ec7d1ccafaf
+      njdot/data/2012/NewJersey2012Occupants.pqt: 2f3aa44a3528a032a1c31bb0fa027891
+      njdot/data/2013/NewJersey2013Occupants.pqt: acf04d56dbbd3680dfae40ab87e3e353
+      njdot/data/2014/NewJersey2014Occupants.pqt: 22c28e51ca6b9cc5bbf9f044f41633c1
+      njdot/data/2015/NewJersey2015Occupants.pqt: 63cd9dd070d1e759e7a7e887e6e52fd6
+      njdot/data/2016/NewJersey2016Occupants.pqt: 89aaa593eec1b3eb01dbc610412a33c3
+      njdot/data/2017/NewJersey2017Occupants.pqt: f19f504291126166609ec1685ef7afdb
+      njdot/data/2018/NewJersey2018Occupants.pqt: e869914a7658c73fc860c4fa833552ba
+      njdot/data/2019/NewJersey2019Occupants.pqt: 4f7c7ef84abab7ab921cbc740703fc8a
+      njdot/data/2020/NewJersey2020Occupants.pqt: 6dc9b32acaac800cb2791fa8f0f13314
+      njdot/data/2021/NewJersey2021Occupants.pqt: 7600a8264941c024a5adbd62374d389a
+      njdot/data/2022/NewJersey2022Occupants.pqt: cc54563f6f56745588b42d54be3f4adf
+      njdot/data/2023/NewJersey2023Occupants.pqt: 55e2f9299f30d45d0435080bcc733af4
+      njdot/data/crash_pk_mappings.parquet: ee26174bfdf221040550ce9776e2bcff

@@ -1,0 +1,33 @@
+outs:
+- md5: 7f1dc043bbc22ed522115e4adbc911fd
+  size: 4930266
+  hash: md5
+  path: pedestrians.parquet
+meta:
+  computation:
+    cmd: njdot compute pqt -t pedestrians
+    deps:
+      njdot/data/2001/NewJersey2001Pedestrians.pqt: 590e124897eb05b80869c3761254e60a
+      njdot/data/2002/NewJersey2002Pedestrians.pqt: 60830a8ba2c84ea9db7110ebacdbac18
+      njdot/data/2003/NewJersey2003Pedestrians.pqt: a15065834e2e3766cae69839dcb07d89
+      njdot/data/2004/NewJersey2004Pedestrians.pqt: a2fe2cc6b70665f898c3594ac4dbc322
+      njdot/data/2005/NewJersey2005Pedestrians.pqt: f0ec5cd4775f90cf96575d4288540ae9
+      njdot/data/2006/NewJersey2006Pedestrians.pqt: dfc5aadf6e78482d177f671a33f6a5d6
+      njdot/data/2007/NewJersey2007Pedestrians.pqt: 2d1afccc152bd8fce27d43740f5f39eb
+      njdot/data/2008/NewJersey2008Pedestrians.pqt: 2557cb5d966d2eb339c65a76c4eaebc1
+      njdot/data/2009/NewJersey2009Pedestrians.pqt: 1ee4cf0e01a1c72b00f6adef2a78d4ca
+      njdot/data/2010/NewJersey2010Pedestrians.pqt: b6a3b8fa5d7927b9acee7b804cfc0e49
+      njdot/data/2011/NewJersey2011Pedestrians.pqt: d5f20fd1c0eddcba4ae2468b050bbe94
+      njdot/data/2012/NewJersey2012Pedestrians.pqt: bb525a0d41ff0658d7012f845a4a276e
+      njdot/data/2013/NewJersey2013Pedestrians.pqt: 7f8bae3d6b6aff9604bdd554f58354ba
+      njdot/data/2014/NewJersey2014Pedestrians.pqt: ba82dd65bd0d3a20352d79ea15529a94
+      njdot/data/2015/NewJersey2015Pedestrians.pqt: 05ce04c99b06595529c00a49d26873e6
+      njdot/data/2016/NewJersey2016Pedestrians.pqt: 15c4cabf3e5950ad08009fde8dca09ef
+      njdot/data/2017/NewJersey2017Pedestrians.pqt: 42285a4be5af8935f8578f7c5fdb2f2e
+      njdot/data/2018/NewJersey2018Pedestrians.pqt: 90e215d9babb5e43a2a843d705a66cf1
+      njdot/data/2019/NewJersey2019Pedestrians.pqt: ccc2e0fe35f8fd1fa45ebf1cb5e141a5
+      njdot/data/2020/NewJersey2020Pedestrians.pqt: cc7a826189c5187ab7c05290b5dc9202
+      njdot/data/2021/NewJersey2021Pedestrians.pqt: 99883eaa7267ce508ef1bd7a54e3d98d
+      njdot/data/2022/NewJersey2022Pedestrians.pqt: 09909e6185c931f2104760fdd961d223
+      njdot/data/2023/NewJersey2023Pedestrians.pqt: 99493547d6a62fc71d44a25b27eb5797
+      njdot/data/crash_pk_mappings.parquet: ee26174bfdf221040550ce9776e2bcff

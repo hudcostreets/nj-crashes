@@ -1,0 +1,10 @@
+outs:
+- md5: e9acda90befb8a2510927c28a021b5e3
+  size: 6219703
+  hash: md5
+  path: NewJersey2023Drivers.pqt
+meta:
+  computation:
+    cmd: rawdata pqt -r NJ -y 2023 -t drivers
+    deps:
+      njdot/data/2023/NewJersey2023Drivers.zip: f39338da005b353a500365812bc2fe6a

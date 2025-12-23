@@ -1,0 +1,10 @@
+outs:
+- md5: 652ab4b2b0c7a7ea5eb9657af2420961
+  size: 957284352
+  hash: md5
+  path: occupants.db
+meta:
+  computation:
+    cmd: njdot compute db -t occupants
+    deps:
+      njdot/data/occupants.parquet: a2879e533e566c4c1b8be11ee403d59e

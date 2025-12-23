@@ -1,0 +1,10 @@
+outs:
+- md5: 255189f356e609eb0ffab1d74420a559
+  size: 4119
+  hash: md5
+  path: muni_codes.parquet
+meta:
+  computation:
+    cmd: njsp harmonize_muni_codes
+    deps:
+      www/public/Municipal_Boundaries_of_NJ.geojson: 54a252d859eea2207da0fb933661dca0

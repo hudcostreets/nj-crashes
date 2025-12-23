@@ -1,0 +1,33 @@
+outs:
+- md5: 3b608964e33376b1ea679784702d623e
+  size: 223465092
+  hash: md5
+  path: drivers.parquet
+meta:
+  computation:
+    cmd: njdot compute pqt -t drivers
+    deps:
+      njdot/data/2001/NewJersey2001Drivers.pqt: 51b77b197083c09214d992a9a592d8cb
+      njdot/data/2002/NewJersey2002Drivers.pqt: 66df85622415e01231727e976b844a04
+      njdot/data/2003/NewJersey2003Drivers.pqt: cd434aa1dfdfe91896d69d0b44db0f43
+      njdot/data/2004/NewJersey2004Drivers.pqt: 693c32c9ca8e7857779d42a07f591796
+      njdot/data/2005/NewJersey2005Drivers.pqt: 1a2c61ab3606201d3ab3513a8e577496
+      njdot/data/2006/NewJersey2006Drivers.pqt: b5b2f6f52b7a016fc9500798c80c2195
+      njdot/data/2007/NewJersey2007Drivers.pqt: 3f4870d8858540420bc2d55bb0b5ac00
+      njdot/data/2008/NewJersey2008Drivers.pqt: b6d8d9f25b3a433b1b14143ae86dc3fa
+      njdot/data/2009/NewJersey2009Drivers.pqt: 06dc66a2c80692ea64e772dea22b3669
+      njdot/data/2010/NewJersey2010Drivers.pqt: 08e2ed2d8f0d12d1707d1df525b99cf3
+      njdot/data/2011/NewJersey2011Drivers.pqt: f09812899a399cfd6f6dab23bde94d48
+      njdot/data/2012/NewJersey2012Drivers.pqt: 9132b4fc75027d6f138290b84176a78c
+      njdot/data/2013/NewJersey2013Drivers.pqt: de2316abf26fe58fb468600aa9285db3
+      njdot/data/2014/NewJersey2014Drivers.pqt: 5d02b10f0499e67a29f2906ca3fd67af
+      njdot/data/2015/NewJersey2015Drivers.pqt: cb99621d90d518d56b0f3d70ae312907
+      njdot/data/2016/NewJersey2016Drivers.pqt: 17ed386ef3c38e4360bdde5f0d550896
+      njdot/data/2017/NewJersey2017Drivers.pqt: 89185ef03ffd54b061789a1c481deb15
+      njdot/data/2018/NewJersey2018Drivers.pqt: 6f74dad03cafd070b1f0e1f7474f70f1
+      njdot/data/2019/NewJersey2019Drivers.pqt: 6802dcf1774d1bd880ed41a57815100a
+      njdot/data/2020/NewJersey2020Drivers.pqt: 6616bbd5d3fe5806c6cc3a227aef0b5c
+      njdot/data/2021/NewJersey2021Drivers.pqt: 714e9ca324e79a50b21dcf9bd7598c22
+      njdot/data/2022/NewJersey2022Drivers.pqt: 9ced99c39dab22fc154ea02741caa49e
+      njdot/data/2023/NewJersey2023Drivers.pqt: e9acda90befb8a2510927c28a021b5e3
+      njdot/data/crash_pk_mappings.parquet: ee26174bfdf221040550ce9776e2bcff

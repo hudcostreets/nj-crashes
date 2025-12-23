@@ -1,0 +1,10 @@
+outs:
+- md5: 99493547d6a62fc71d44a25b27eb5797
+  size: 193675
+  hash: md5
+  path: NewJersey2023Pedestrians.pqt
+meta:
+  computation:
+    cmd: rawdata pqt -r NJ -y 2023 -t pedestrians
+    deps:
+      njdot/data/2023/NewJersey2023Pedestrians.zip: e58912bcb504ed2cfa4fcd802482ffb8

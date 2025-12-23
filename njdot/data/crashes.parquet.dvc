@@ -1,0 +1,32 @@
+outs:
+- md5: 4d56ec989865608563225eb8f84cef74
+  size: 306762269
+  hash: md5
+  path: crashes.parquet
+meta:
+  computation:
+    cmd: njdot compute pqt -t crashes
+    deps:
+      njdot/data/2001/NewJersey2001Accidents.pqt: 9e5d8dc82b9a430856622577a8ed077a
+      njdot/data/2002/NewJersey2002Accidents.pqt: e8e4efc4f5f25e6507b42f792450bce6
+      njdot/data/2003/NewJersey2003Accidents.pqt: cd6660487ff0870f3b8bede69e2c46f1
+      njdot/data/2004/NewJersey2004Accidents.pqt: ab904cc8ad049d043eeacf23fbc02a42
+      njdot/data/2005/NewJersey2005Accidents.pqt: afb45664bc443ae20c575651c4477ed5
+      njdot/data/2006/NewJersey2006Accidents.pqt: 2adb305d8cac54da2dcf59fedb386f58
+      njdot/data/2007/NewJersey2007Accidents.pqt: b0bacdbadeb218dc2af7dbffd33e23eb
+      njdot/data/2008/NewJersey2008Accidents.pqt: 630f4754f36e6a16f1c3150764d81935
+      njdot/data/2009/NewJersey2009Accidents.pqt: 3b1404e8708781aca977983331357156
+      njdot/data/2010/NewJersey2010Accidents.pqt: 72801f67f70d54ca915996a62654fae1
+      njdot/data/2011/NewJersey2011Accidents.pqt: 4965f16af609c861cd6c966ed69d9440
+      njdot/data/2012/NewJersey2012Accidents.pqt: 0853f5b04d7a6c012eefc8ccd52ac1e4
+      njdot/data/2013/NewJersey2013Accidents.pqt: cfb5a0e907a2d26d6162809aabc03f7c
+      njdot/data/2014/NewJersey2014Accidents.pqt: d5bf6a37c95122f3ac9dc30741d4ef07
+      njdot/data/2015/NewJersey2015Accidents.pqt: d11b3b8a29ec5092d1a8b879ffd39f39
+      njdot/data/2016/NewJersey2016Accidents.pqt: 004cbffc990856b20ff596d5a3e03993
+      njdot/data/2017/NewJersey2017Accidents.pqt: 1d06599a64667dc3a3712470120944be
+      njdot/data/2018/NewJersey2018Accidents.pqt: cbde541eadc5f490db892751b0badc94
+      njdot/data/2019/NewJersey2019Accidents.pqt: 66c2b7b719c0321881fc8855397b44fd
+      njdot/data/2020/NewJersey2020Accidents.pqt: 22ac657917337ea7cf416c9434e8ccc7
+      njdot/data/2021/NewJersey2021Accidents.pqt: d9fade2a2cb1055c6b59314d5bb92475
+      njdot/data/2022/NewJersey2022Accidents.pqt: 4b47143695090892656b4bebc0c33334
+      njdot/data/2023/NewJersey2023Accidents.pqt: 6e058a16f38835041df9d14485150f57

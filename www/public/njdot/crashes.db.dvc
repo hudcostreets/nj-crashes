@@ -1,0 +1,10 @@
+outs:
+- md5: 24b9017c21f885d01a5bf030e7b3f824
+  size: 2630090752
+  hash: md5
+  path: crashes.db
+meta:
+  computation:
+    cmd: njdot compute db -t crashes
+    deps:
+      njdot/data/crashes.parquet: 4d56ec989865608563225eb8f84cef74

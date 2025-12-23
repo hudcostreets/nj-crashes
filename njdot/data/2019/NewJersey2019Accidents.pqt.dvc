@@ -3,3 +3,8 @@ outs:
   size: 11377832
   hash: md5
   path: NewJersey2019Accidents.pqt
+meta:
+  computation:
+    cmd: rawdata pqt -r NJ -y 2019 -t accidents
+    deps:
+      njdot/data/2019/NewJersey2019Accidents.zip: 3d1199a973f1564be6eeaa97ea67ef97

@@ -3,3 +3,8 @@ outs:
   size: 7351583
   hash: md5
   path: NewJersey2020Vehicles.pqt
+meta:
+  computation:
+    cmd: rawdata pqt -r NJ -y 2020 -t vehicles
+    deps:
+      njdot/data/2020/NewJersey2020Vehicles.zip: 80cbbe5534ab84124bc2db18060ca47a

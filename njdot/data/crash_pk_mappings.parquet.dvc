@@ -1,0 +1,10 @@
+outs:
+- md5: ee26174bfdf221040550ce9776e2bcff
+  size: 36956766
+  hash: md5
+  path: crash_pk_mappings.parquet
+meta:
+  computation:
+    cmd: njdot compute pqt -t crashes
+    deps:
+      njdot/data/2023/NewJersey2023Accidents.pqt: 6e058a16f38835041df9d14485150f57

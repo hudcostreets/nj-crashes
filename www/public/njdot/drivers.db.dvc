@@ -1,0 +1,10 @@
+outs:
+- md5: 1a7fdd70e76113e946f5061ebd50c0d9
+  size: 1131610112
+  hash: md5
+  path: drivers.db
+meta:
+  computation:
+    cmd: njdot compute db -t drivers
+    deps:
+      njdot/data/drivers.parquet: 3b608964e33376b1ea679784702d623e
