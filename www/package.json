@@ -29,6 +29,7 @@
         "@react-leaflet/core": "^2.1.0",
         "@vanilla-extract/css": "^1.14.0",
         "fp-ts": "^2.16.2",
+        "hyparquet": "github:runsascoded/hyparquet#6d0c51c",
         "leaflet": "^1.9.4",
         "leaflet-edgebuffer": "^1",
         "mapbox-gl": "^3.0.1",

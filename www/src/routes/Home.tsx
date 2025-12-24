@@ -9,7 +9,7 @@ import { EndYear } from "@/src/constants"
 import css from "@/src/home.module.scss"
 import { plotSpecs } from "@/src/plotSpecs"
 import { Plot } from "@/src/lib/plot"
-import { Fragment } from "react"
+import CrashPlot from "@/src/njdot/CrashPlot"
 
 export default function Home() {
     const basePath = getBasePath()
@@ -87,21 +87,15 @@ export default function Home() {
                     , including property-damage, injury, and fatal crashes, going back to 2001 (≈6MM records).
                 </p>
                 <p>
-                    Data is currently public through {EndYear}, showing all crash types rebounding from COVID lows,
-                    and a particular spike in fatalities. 2023 data is expected in Fall 2025.
+                    Data is currently public through {EndYear}. Use the controls below to explore
+                    crashes by severity, time period, and geography.
                 </p>
 
-                {/* NJDOT Plots */}
-                {plotSpecs.slice(menus[0].sections.length).map(spec => (
-                    <div key={spec.id} className={css["plot-container"]}>
-                        <Plot
-                            {...spec}
-                            basePath={basePath}
-                            margin={{ t: 10, b: 30 }}
-                        />
-                        <hr />
-                    </div>
-                ))}
+                {/* Interactive NJDOT Plot */}
+                <div id="crash-explorer" className={css["plot-container"]}>
+                    <h2><a href="#crash-explorer">Crash Explorer</a></h2>
+                    <CrashPlot />
+                </div>
 
                 <Footer />
             </main>
