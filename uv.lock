@@ -1775,6 +1775,20 @@ wheels = [
 ]
 
 [[package]]
+name = "juq-py"
+version = "0.5.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "nbformat" },
+    { name = "utz" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ce/28/3412bea37d869032f624bbb442e93b34eb8441efdfccb9e4f7aed9fca938/juq_py-0.5.2.tar.gz", hash = "sha256:345d24acfbf58ce6b57e732ce6b4691a53c770a313b75a57cdb3cd0bf580598a", size = 11570, upload-time = "2025-10-11T03:54:06.404Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8a/ff/bbb2f1ec55096e741c73098b779506ea5045cd7fca2c2a49347cbc20c1fa/juq_py-0.5.2-py3-none-any.whl", hash = "sha256:e6a29f6851c2bacb24b2f7da1d4549b4ce045e795f84c1dd59575e74738bfe93", size = 10726, upload-time = "2025-10-11T03:54:05.383Z" },
+]
+
+[[package]]
 name = "kombu"
 version = "5.5.4"
 source = { registry = "https://pypi.org/simple" }
@@ -2295,6 +2309,7 @@ dependencies = [
     { name = "humanize" },
     { name = "joblib" },
     { name = "jupyterlab" },
+    { name = "juq-py" },
     { name = "lxml" },
     { name = "numpy" },
     { name = "pandas" },
@@ -2339,6 +2354,7 @@ requires-dist = [
     { name = "humanize", specifier = ">=4.12" },
     { name = "joblib", specifier = ">=1.5" },
     { name = "jupyterlab", specifier = ">=4.4" },
+    { name = "juq-py", specifier = ">=0.5.2" },
     { name = "lxml", specifier = ">=5.3" },
     { name = "numpy", specifier = ">=2.2" },
     { name = "pandas", specifier = ">=2.2" },

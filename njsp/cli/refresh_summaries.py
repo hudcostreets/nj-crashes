@@ -1,29 +1,38 @@
 import click
 from datetime import datetime
+from juq.cli import write_nb
+from juq.papermill.run import papermill_run
 from utz import cd, err, process
 
-from nj_crashes.utils.nb import execute
 from njsp.cli.base import command
 from njsp.paths import ANNUAL_SUMMARIES, annual_ytc_relpath
 
 
-def refresh_annual_summaries(year, kernel=None):
+def run_nb(nb_path, **parameters):
+    """Run a notebook with parameters and write it back."""
+    parameter_strs = tuple(f'{k}={v}' for k, v in parameters.items())
+    nb, exc = papermill_run(nb_path, parameter_strs=parameter_strs)
+    write_nb(nb, nb_path)
+    if exc:
+        raise exc
+
+
+def refresh_annual_summaries(year):
     with cd(ANNUAL_SUMMARIES):
         nb_path = 'fetch-summaries.ipynb'
-        execute(nb_path, kernel=kernel, parameters=dict(force=True, years=f'{year}'))
+        run_nb(nb_path, force=True, years=f'{year}')
         pdf_path = annual_ytc_relpath(year)
         if process.check('git', 'diff', '--exit-code', '--', pdf_path):
             err(f"{pdf_path} unchanged, reverting {nb_path}")
             process.run('git', 'checkout', '--', nb_path,)
             return False
-        execute('NJSP summary PDFs.ipynb', kernel=kernel, parameters=dict(years=f'{year}'))
+        run_nb('NJSP summary PDFs.ipynb', years=f'{year}')
     return True
 
 
 @command
-@click.option('-k', '--kernel', default='python3')
 @click.argument('years', nargs=-1)
-def refresh_summaries(kernel, years):
+def refresh_summaries(years):
     """Update NJSP annual summary PDFs (fetch-summaries.ipynb)."""
     if not years:
         year = datetime.now().year
@@ -32,7 +41,7 @@ def refresh_summaries(kernel, years):
     refreshed_years = []
     for year in years:
         try:
-            if refresh_annual_summaries(year, kernel=kernel):
+            if refresh_annual_summaries(year):
                 refreshed_years.append(year)
         except Exception as e:
             err(f"Failed to refresh summaries for {year}: {e}")

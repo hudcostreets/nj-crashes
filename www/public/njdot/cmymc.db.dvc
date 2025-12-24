@@ -1,5 +1,13 @@
 outs:
-- md5: c6f275669b516a506590e6a80bc1295e
-  size: 57933824
+- md5: 491d9a356e4fd8c989cabefa48cfab7c
+  size: 59834368
   hash: md5
   path: cmymc.db
+meta:
+  computation:
+    cmd: juq papermill run -i njdot/cmym.ipynb
+    deps:
+      njdot/data/crashes.parquet: 4d56ec989865608563225eb8f84cef74
+      njdot/data/vehicles.parquet: f556fa6424ee67986f1b8f69b0ab7eab
+      njdot/data/occupants.parquet: a2879e533e566c4c1b8be11ee403d59e
+      njdot/data/pedestrians.parquet: 7f1dc043bbc22ed522115e4adbc911fd

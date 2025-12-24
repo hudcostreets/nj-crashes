@@ -1,13 +1,16 @@
 #!/usr/bin/env python
-import click
+from juq.cli import write_nb
+from juq.papermill.run import papermill_run
 
-from nj_crashes.utils.nb import execute
 from njsp.cli.base import command
 
 
 @command
-@click.option('-k', '--kernel', default='python3')
-def update_plots(kernel):
+def update_plots():
     """Regenerate plots based on latest NJSP data."""
-    execute('njsp/update-plots.ipynb', kernel=kernel, parameters=dict(show='png'))
+    nb_path = 'njsp/update-plots.ipynb'
+    nb, exc = papermill_run(nb_path, parameter_strs=('show=png',))
+    write_nb(nb, nb_path)
+    if exc:
+        raise exc
     return "Update NJSP plots"
