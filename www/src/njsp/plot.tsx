@@ -288,7 +288,7 @@ export function NjspPlot(
     //console.log("trace visibility:", data.map(d => d.visible))
     const newLayout: Partial<Layout> = useMemo(
         () => {
-            const { xaxis, yaxis, ...rest } = layout
+            const { xaxis, yaxis, title: _title, ...rest } = layout
             return {
                 ...rest,
                 xaxis: { ...xaxis, fixedrange: true },

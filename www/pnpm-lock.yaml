@@ -62,6 +62,9 @@ importers:
       fp-ts:
         specifier: ^2.16.2
         version: 2.16.2
+      hyparquet:
+        specifier: github:runsascoded/hyparquet#6d0c51c
+        version: https://codeload.github.com/runsascoded/hyparquet/tar.gz/6d0c51c
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
@@ -2137,6 +2140,10 @@ packages:
   hsluv@0.0.3:
     resolution: {integrity: sha512-08iL2VyCRbkQKBySkSh6m8zMUa3sADAxGVWs3Z1aPcUkTJeK0ETG4Fc27tEmQBGUAXZjIsXOZqBvacuVNSC/fQ==}
 
+  hyparquet@https://codeload.github.com/runsascoded/hyparquet/tar.gz/6d0c51c:
+    resolution: {tarball: https://codeload.github.com/runsascoded/hyparquet/tar.gz/6d0c51c}
+    version: 1.22.1
+
   iconv-lite@0.4.24:
     resolution: {integrity: sha512-v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==}
     engines: {node: '>=0.10.0'}
@@ -3744,8 +3751,8 @@ snapshots:
 
   '@jridgewell/source-map@0.3.5':
     dependencies:
-      '@jridgewell/gen-mapping': 0.3.3
-      '@jridgewell/trace-mapping': 0.3.21
+      '@jridgewell/gen-mapping': 0.3.13
+      '@jridgewell/trace-mapping': 0.3.31
     optional: true
 
   '@jridgewell/sourcemap-codec@1.4.15': {}
@@ -5236,6 +5243,8 @@ snapshots:
 
   hsluv@0.0.3: {}
 
+  hyparquet@https://codeload.github.com/runsascoded/hyparquet/tar.gz/6d0c51c: {}
+
   iconv-lite@0.4.24:
     dependencies:
       safer-buffer: 2.1.2
@@ -6101,7 +6110,7 @@ snapshots:
   terser@5.27.0:
     dependencies:
       '@jridgewell/source-map': 0.3.5
-      acorn: 8.11.3
+      acorn: 8.15.0
       commander: 2.20.3
       source-map-support: 0.5.21
     optional: true

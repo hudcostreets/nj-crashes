@@ -1,0 +1,359 @@
+import { useMemo, useState } from "react"
+import { Layout, PlotData } from "plotly.js"
+import PlotWrapper from "@/src/lib/plot-wrapper"
+import { useParquet } from "@/src/lib/useParquet"
+import {
+    YmsRow, YmccsRow,
+    Severity, Severities, SeverityLabels, SeverityColors,
+    Measure, MeasureLabels,
+    Counties,
+    toYM,
+} from "./data"
+import { Checklist } from "./Checklist"
+import { Radios } from "./Radios"
+import { CountyDropdown } from "./CountyDropdown"
+import css from "./controls.module.css"
+
+type StackBy = 'none' | 'severity' | 'county'
+
+type CrashPlotProps = {
+    /** Measure to plot on Y-axis */
+    measure?: Measure
+    /** Stack by dimension */
+    stackBy?: StackBy
+    /** Filter to specific severities */
+    severities?: Severity[]
+    /** Filter to specific county codes */
+    counties?: number[]
+    /** Time granularity */
+    timeGranularity?: 'year' | 'month'
+    /** Chart title */
+    title?: string
+    /** Chart height */
+    height?: number
+    /** Show controls drawer */
+    showControls?: boolean
+    /** Start with controls open */
+    controlsOpen?: boolean
+}
+
+const DEFAULT_HEIGHT = 450
+const ALL_COUNTIES = Object.keys(Counties).map(Number)
+
+export default function CrashPlot({
+    measure: initialMeasure = 'n',
+    stackBy: initialStackBy = 'severity',
+    severities: initialSeverities = [...Severities],
+    counties: initialCounties = ALL_COUNTIES,
+    timeGranularity: initialTimeGranularity = 'year',
+    title: initialTitle,
+    height = DEFAULT_HEIGHT,
+    showControls = true,
+    controlsOpen: initialControlsOpen = false,
+}: CrashPlotProps) {
+    // State for controls
+    const [measure, setMeasure] = useState<Measure>(initialMeasure)
+    const [stackBy, setStackBy] = useState<StackBy>(initialStackBy)
+    const [severities, setSeverities] = useState<Severity[]>(initialSeverities)
+    const [counties, setCounties] = useState<number[]>(initialCounties)
+    const [timeGranularity, setTimeGranularity] = useState<'year' | 'month'>(initialTimeGranularity)
+    const [stackPercent, setStackPercent] = useState(false)
+    const [show12moAvg, setShow12moAvg] = useState(false)
+    const [controlsOpen, setControlsOpen] = useState(initialControlsOpen)
+
+    // Use yms for state-level, ymccs for county breakdowns
+    const needsCountyData = stackBy === 'county' || counties.length < ALL_COUNTIES.length
+    const source = needsCountyData ? 'ymccs' : 'yms'
+
+    const url = `/data/njdot/${source}.parquet`
+    const { data, loading, error, timing } = useParquet<YmsRow | YmccsRow>(url)
+
+    // Helper to get numeric value from row (handles BigInt)
+    const getVal = (row: YmsRow | YmccsRow, key: Measure): number => {
+        const val = row[key]
+        return typeof val === 'bigint' ? Number(val) : val
+    }
+
+    const getYear = (row: YmsRow | YmccsRow): number => {
+        const val = row.y
+        return typeof val === 'bigint' ? Number(val) : val
+    }
+
+    const getMonth = (row: YmsRow | YmccsRow): number => {
+        const val = row.m
+        return typeof val === 'bigint' ? Number(val) : val
+    }
+
+    const getCc = (row: YmccsRow): number => {
+        const val = row.cc
+        return typeof val === 'bigint' ? Number(val) : val
+    }
+
+    // Build traces from data
+    const { traces, layout } = useMemo(() => {
+        if (!data) return { traces: [], layout: {} }
+
+        // Filter data by severity and county
+        let filtered = data.filter(row => severities.includes(row.s))
+        if (needsCountyData) {
+            filtered = filtered.filter(row => {
+                if (!('cc' in row)) return true
+                return counties.includes(getCc(row as YmccsRow))
+            })
+        }
+
+        const traces: Partial<PlotData>[] = []
+
+        // Helper to build a trace from grouped data
+        const buildTrace = (
+            grouped: Map<string, number>,
+            name: string,
+            color?: string,
+        ): Partial<PlotData> => {
+            const sorted = [...grouped.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+            return {
+                x: sorted.map(([k]) => timeGranularity === 'month' ? k : parseInt(k)),
+                y: sorted.map(([, v]) => v),
+                type: 'bar',
+                name,
+                marker: color ? { color } : undefined,
+            }
+        }
+
+        // Calculate totals per time period for percentage mode
+        const totalsPerPeriod = new Map<string, number>()
+        if (stackPercent && stackBy !== 'none') {
+            for (const row of filtered) {
+                const key = timeGranularity === 'month'
+                    ? toYM(getYear(row), getMonth(row))
+                    : String(getYear(row))
+                totalsPerPeriod.set(key, (totalsPerPeriod.get(key) || 0) + getVal(row, measure))
+            }
+        }
+
+        if (stackBy === 'none') {
+            // Single trace, aggregate across all
+            const grouped = new Map<string, number>()
+            for (const row of filtered) {
+                const key = timeGranularity === 'month'
+                    ? toYM(getYear(row), getMonth(row))
+                    : String(getYear(row))
+                grouped.set(key, (grouped.get(key) || 0) + getVal(row, measure))
+            }
+            traces.push(buildTrace(grouped, 'Total', '#636EFA'))
+        } else if (stackBy === 'severity') {
+            // Stack by severity (only show selected severities)
+            for (const sev of Severities) {
+                if (!severities.includes(sev)) continue
+                const sevData = filtered.filter(row => row.s === sev)
+                const grouped = new Map<string, number>()
+                for (const row of sevData) {
+                    const key = timeGranularity === 'month'
+                        ? toYM(getYear(row), getMonth(row))
+                        : String(getYear(row))
+                    grouped.set(key, (grouped.get(key) || 0) + getVal(row, measure))
+                }
+                if (stackPercent) {
+                    for (const [key, val] of grouped) {
+                        const total = totalsPerPeriod.get(key) || 1
+                        grouped.set(key, (val / total) * 100)
+                    }
+                }
+                traces.push(buildTrace(grouped, SeverityLabels[sev], SeverityColors[sev]))
+            }
+        } else if (stackBy === 'county') {
+            // Stack by county (selected counties, sorted by total)
+            const countyTotals = new Map<number, number>()
+            for (const row of filtered) {
+                if ('cc' in row) {
+                    const cc = getCc(row as YmccsRow)
+                    countyTotals.set(cc, (countyTotals.get(cc) || 0) + getVal(row, measure))
+                }
+            }
+            const sortedCounties = [...countyTotals.entries()]
+                .sort((a, b) => b[1] - a[1])
+                .map(([cc]) => cc)
+
+            for (const cc of sortedCounties) {
+                const ccData = filtered.filter(row => {
+                    if (!('cc' in row)) return false
+                    return getCc(row as YmccsRow) === cc
+                })
+                const grouped = new Map<string, number>()
+                for (const row of ccData) {
+                    const key = timeGranularity === 'month'
+                        ? toYM(getYear(row), getMonth(row))
+                        : String(getYear(row))
+                    grouped.set(key, (grouped.get(key) || 0) + getVal(row, measure))
+                }
+                if (stackPercent) {
+                    for (const [key, val] of grouped) {
+                        const total = totalsPerPeriod.get(key) || 1
+                        grouped.set(key, (val / total) * 100)
+                    }
+                }
+                traces.push(buildTrace(grouped, Counties[cc] || `County ${cc}`))
+            }
+        }
+
+        // Add 12-month moving average line for monthly view
+        if (show12moAvg && timeGranularity === 'month' && stackBy === 'none') {
+            const barTrace = traces[0]
+            if (barTrace && barTrace.x && barTrace.y) {
+                const x = barTrace.x as string[]
+                const y = barTrace.y as number[]
+                const avgY: (number | null)[] = []
+                for (let i = 0; i < y.length; i++) {
+                    if (i < 11) {
+                        avgY.push(null)
+                    } else {
+                        const window = y.slice(i - 11, i + 1)
+                        avgY.push(window.reduce((a, b) => a + b, 0) / 12)
+                    }
+                }
+                traces.push({
+                    x,
+                    y: avgY,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: '12-mo Avg',
+                    line: { color: '#333', width: 2 },
+                })
+            }
+        }
+
+        const chartTitle = initialTitle || `${MeasureLabels[measure]} by ${timeGranularity === 'month' ? 'Month' : 'Year'}`
+
+        const layout: Partial<Layout> = {
+            title: { text: chartTitle, font: { size: 16 } },
+            barmode: stackBy !== 'none' ? 'stack' : undefined,
+            barnorm: stackPercent && stackBy !== 'none' ? 'percent' : undefined,
+            height,
+            margin: { t: 40, b: 80, l: 60, r: 20 },
+            xaxis: {
+                title: { text: timeGranularity === 'month' ? 'Month' : 'Year', standoff: 20 },
+                showspikes: false,
+            },
+            yaxis: {
+                title: stackPercent && stackBy !== 'none' ? 'Percent' : MeasureLabels[measure],
+            },
+            legend: {
+                orientation: 'h',
+                y: -0.25,
+                x: 0.5,
+                xanchor: 'center',
+            },
+            hovermode: 'x unified',
+        }
+
+        return { traces, layout }
+    }, [data, measure, stackBy, severities, counties, timeGranularity, stackPercent, show12moAvg, height, initialTitle, needsCountyData])
+
+    if (loading) {
+        return <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            Loading crash data...
+        </div>
+    }
+
+    if (error) {
+        return <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'red' }}>
+            Error: {error}
+        </div>
+    }
+
+    return (
+        <div>
+            <PlotWrapper
+                data={traces as PlotData[]}
+                layout={layout}
+            />
+            {showControls && (
+                <details
+                    className={css.controls}
+                    open={controlsOpen}
+                    onToggle={(e) => setControlsOpen((e.target as HTMLDetailsElement).open)}
+                >
+                    <summary><span className={css.settingsGear}>⚙️</span></summary>
+                    <div className={css.controlsContent}>
+                        <Radios
+                            label="Measure"
+                            name="measure"
+                            options={[
+                                { label: 'Crashes', data: 'n' as Measure },
+                                { label: 'Fatalities', data: 'tk' as Measure },
+                                { label: 'Injuries', data: 'ti' as Measure },
+                                { label: 'Ped. Fatal', data: 'pk' as Measure },
+                                { label: 'Ped. Injury', data: 'pi' as Measure },
+                            ]}
+                            choice={measure}
+                            cb={setMeasure}
+                        />
+                        <Radios
+                            label="Stack By"
+                            name="stackBy"
+                            options={[
+                                { label: 'None', data: 'none' as StackBy },
+                                { label: 'Severity', data: 'severity' as StackBy },
+                                { label: 'County', data: 'county' as StackBy },
+                            ]}
+                            choice={stackBy}
+                            cb={setStackBy}
+                        />
+                        <Radios
+                            label="Time"
+                            name="time"
+                            options={[
+                                { label: 'By Year', data: 'year' as const },
+                                { label: 'By Month', data: 'month' as const },
+                            ]}
+                            choice={timeGranularity}
+                            cb={setTimeGranularity}
+                        />
+                        <Checklist
+                            label="Severity"
+                            data={Severities.map(s => ({
+                                name: s,
+                                label: SeverityLabels[s],
+                                data: s,
+                                checked: severities.includes(s),
+                                color: SeverityColors[s],
+                            }))}
+                            cb={setSeverities}
+                        />
+                        <CountyDropdown
+                            selected={counties}
+                            onChange={setCounties}
+                        />
+                        <div className={css.control}>
+                            <div className={css.controlHeader}>Options</div>
+                            <label className={css.nowrap}>
+                                <input
+                                    type="checkbox"
+                                    checked={stackPercent}
+                                    onChange={(e) => setStackPercent(e.target.checked)}
+                                    disabled={stackBy === 'none'}
+                                />
+                                Stack %
+                            </label>
+                            <label className={css.nowrap}>
+                                <input
+                                    type="checkbox"
+                                    checked={show12moAvg}
+                                    onChange={(e) => setShow12moAvg(e.target.checked)}
+                                    disabled={timeGranularity !== 'month' || stackBy !== 'none'}
+                                />
+                                12-mo Avg
+                            </label>
+                        </div>
+                    </div>
+                </details>
+            )}
+            {timing && (
+                <div className={css.plotInfo}>
+                    Loaded {data?.length.toLocaleString()} rows in {timing.totalMs.toFixed(0)}ms
+                    ({(timing.bytes / 1024).toFixed(1)} KB)
+                </div>
+            )}
+        </div>
+    )
+}

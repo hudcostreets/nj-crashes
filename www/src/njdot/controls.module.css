@@ -1,0 +1,105 @@
+.controls {
+    width: 100%;
+    margin-top: 0.5em;
+}
+.controls > summary {
+    margin-bottom: 0.3em;
+    cursor: pointer;
+    list-style: none;
+}
+.controls > summary::-webkit-details-marker {
+    display: none;
+}
+.settingsGear {
+    font-size: 1.5em;
+    vertical-align: middle;
+}
+.controlsContent {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1em;
+    padding: 0.5em 0;
+}
+.control {
+    min-width: 6em;
+}
+.control label {
+    display: block;
+    margin: 0;
+    font-size: 14px;
+    cursor: pointer;
+}
+.control .nowrap {
+    white-space: nowrap;
+}
+.control label > input {
+    margin-right: 0.3em;
+}
+.controlHeader {
+    font-weight: bold;
+    white-space: nowrap;
+    margin-bottom: 0.3em;
+}
+.subControl {
+    margin-bottom: 0.3em;
+}
+
+/* County dropdown filter */
+.countyDropdown {
+    position: relative;
+    display: inline-block;
+}
+.countyDropdown summary {
+    cursor: pointer;
+    padding: 0.3em 0.6em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 14px;
+    list-style: none;
+}
+.countyDropdown summary::-webkit-details-marker {
+    display: none;
+}
+.countyDropdown summary::after {
+    content: " ▼";
+    font-size: 0.7em;
+}
+.countyDropdown[open] summary::after {
+    content: " ▲";
+}
+.countyList {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 100;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    max-height: 300px;
+    overflow-y: auto;
+    min-width: 150px;
+    padding: 0.3em;
+}
+.countyList label {
+    display: block;
+    padding: 0.2em 0.4em;
+    cursor: pointer;
+}
+.countyList label:hover {
+    background: #f0f0f0;
+}
+.selectAll {
+    border-bottom: 1px solid #eee;
+    margin-bottom: 0.3em;
+    padding-bottom: 0.3em;
+    font-weight: bold;
+}
+
+/* Plot info line */
+.plotInfo {
+    font-size: 0.75rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
