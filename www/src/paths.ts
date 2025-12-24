@@ -1,3 +1,2 @@
-import { NJSP } from "@/server/paths";
-
+// Public paths for client-side data access
 export const ProjectedCsv = "/njsp/projected.csv"

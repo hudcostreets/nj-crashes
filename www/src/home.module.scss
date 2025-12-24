@@ -1,0 +1,58 @@
+.container {
+    padding: 0 0.5em;
+    margin: auto;
+    width: 100%;
+    max-width: 50em;
+    text-align: center;
+    a {
+        text-decoration: underline;
+    }
+    p {
+        margin: 0.5em 0;
+        line-height: 1.3;
+    }
+    ul {
+        //line-height: 1.3em;
+        li {
+            padding-bottom: 0.3em;
+        }
+    }
+}
+
+.index {
+    min-height: 100vh;
+    padding: 3rem 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.title {
+    font-size: 3em;
+    margin-top: 0.4em;
+    margin-bottom: 0.3em;
+}
+
+.plot-container {
+    width: 100%;
+}
+
+.map {
+    width: 100%;
+    aspect-ratio: 1/1;
+    min-height: 10em;
+}
+
+.bold {
+    font-weight: bold;
+}
+
+.ytdFooter {
+    margin: 0.4em 0;
+    p {
+        //margin: 0;
+        margin-top: 0.2em;
+    }
+}

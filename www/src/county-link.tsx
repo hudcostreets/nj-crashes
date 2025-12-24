@@ -1,5 +1,5 @@
-import { normalize } from "@/src/county";
-import Link from "next/link";
+import { normalize } from "@/src/county"
+import { Link } from "react-router-dom"
 
 export default function CountyLink({ cc, cc2mc2mn, }: {
     cc: number
@@ -9,5 +9,5 @@ export default function CountyLink({ cc, cc2mc2mn, }: {
         throw new Error('`cc2mc2mn` is required for `mc` col')
     }
     const { cn } = cc2mc2mn[cc]
-    return <Link href={`/c/${normalize(cn)}`}>{cn}</Link>
+    return <Link to={`/c/${normalize(cn)}`}>{cn}</Link>
 }

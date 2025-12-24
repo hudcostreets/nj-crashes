@@ -1,5 +1,5 @@
-import { getBasePath } from "@rdub/next-base/basePath";
-import { mapValues } from "@rdub/base/objs";
+import { getBasePath } from "@/src/lib/basePath"
+import { mapValues } from "@rdub/base/objs"
 
 export const NjspFatalAcc = "https://nj.gov/njsp/info/fatalacc/"
 export const NjdotRawData = "https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"
@@ -9,9 +9,10 @@ export type Local = {
 }
 
 export function getDbUrls<U extends Record<string, string>>({ local, name, urls, }: { local?: boolean, name: string, urls: U }): U {
-    const cwd = process.cwd()
-    const localPrefix = local ? `${cwd}/public/${name}` : `${getBasePath()}/${name}`
-    const prefix = process.env['S3_DBS'] ? `https://nj-crashes.s3.amazonaws.com/${name}/data` : localPrefix
+    const localPrefix = `${getBasePath()}/${name}`
+    // In Vite, we check for S3_DBS via import.meta.env
+    const useS3 = import.meta.env.VITE_S3_DBS
+    const prefix = useS3 ? `https://nj-crashes.s3.amazonaws.com/${name}/data` : localPrefix
     return mapValues(urls, (k, v) => `${prefix}/${v}`) as U
 }
 

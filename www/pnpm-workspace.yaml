@@ -1,0 +1,9 @@
+packages:
+  - "/Users/ryan/c/js/use-url-params"
+
+ignoredBuiltDependencies:
+  - '@fortawesome/fontawesome-common-types'
+  - '@fortawesome/fontawesome-svg-core'
+  - '@fortawesome/free-solid-svg-icons'
+  - es5-ext
+  - esbuild

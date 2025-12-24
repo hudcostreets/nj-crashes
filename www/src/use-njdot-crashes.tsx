@@ -14,7 +14,7 @@ import css from "./use-crashes.module.scss"
 import { CrashesOccupants, Occupant, useCrashOccupants } from "@/src/crash-occupants";
 import { CrashesPedestrians, Pedestrian, useCrashPedestrians } from "@/src/crash-pedestrians";
 import { CrashesVehicles, useCrashVehicles, Vehicle } from "@/src/crash-vehicles";
-import A from "@rdub/next-base/a";
+import A from "@/src/lib/a"
 import { Tooltip } from "@/src/tooltip"
 import moment from "moment-timezone";
 import CityLink from "@/src/city-link";

@@ -3,7 +3,7 @@ import { useMap, useMapEvents } from "react-leaflet";
 import * as cluster from "./cluster";
 import { Cluster } from "./cluster";
 import { o2a } from "@rdub/base/objs";
-import { Crash } from "@/pages/map/hudson";
+import { Crash } from "@/src/map/types";
 
 const { max } = Math
 
