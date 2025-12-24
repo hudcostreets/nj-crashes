@@ -5,7 +5,7 @@ outs:
   path: cmymc.db
 meta:
   computation:
-    cmd: juq papermill run -i njdot/cmym.ipynb
+    cmd: njsp update_cmymc
     deps:
       njdot/data/crashes.parquet: 4d56ec989865608563225eb8f84cef74
       njdot/data/vehicles.parquet: f556fa6424ee67986f1b8f69b0ab7eab

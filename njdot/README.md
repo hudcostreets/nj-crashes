@@ -121,7 +121,7 @@ njdot compute pqt -f
 njdot compute db -f
 ```
 
-[cmym.ipynb](cmym.ipynb): generate [cmymc.db](../www/public/njdot/cmymc.db.dvc) containing several {**c**ounty, **m**uni, **y**ear, **m**onth} aggregation tables.
+[cmymc.ipynb](cmymc.ipynb): generate [cmymc.db](../www/public/njdot/cmymc.db.dvc) containing several {**c**ounty, **m**uni, **y**ear, **m**onth} aggregation tables.
 
 ### Caveats / TODOs <a id="todos"></a>
 
