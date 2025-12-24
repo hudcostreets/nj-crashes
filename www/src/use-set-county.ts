@@ -1,14 +1,14 @@
-import { useRouter } from "next/router";
+import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
 import { normalize } from "@/src/county";
 
 export default function useSetCounty(prefix: string) {
-    const router = useRouter()
+    const navigate = useNavigate()
     const setCounty = useCallback(
         (county: string | null) => {
-            router.push(`${prefix}/${county ? normalize(county) : ""}`)
+            navigate(`${prefix}/${county ? normalize(county) : ""}`)
         },
-        [router]
+        [navigate, prefix]
     )
     return setCounty
 }

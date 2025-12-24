@@ -1,6 +1,6 @@
 import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import { useEffect, useState } from "react";
-import { basename } from "path";
+import { basename } from "@/src/lib/path";
 import { runQuery } from "@rdub/duckdb/duckdb";
 
 export type CsvData = {
@@ -80,7 +80,8 @@ export async function registerTableData({ db, tableData, stem }: {
     } else {
         const path = `${stem}.parquet`
         target = `parquet_scan('${path}')`
-        let ytcPqtArr = new Uint8Array(Buffer.from(tableData.base64, 'base64'))
+        const binaryString = atob(tableData.base64)
+        const ytcPqtArr = Uint8Array.from(binaryString, c => c.charCodeAt(0))
         await db.registerFileBuffer(path, ytcPqtArr)
     }
     return target

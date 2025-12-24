@@ -1,17 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { floatParam, llParam, parseHashParams, updateHashParams } from "@rdub/next-params/params";
-import { LL, Param, ParsedParam } from "@rdub/next-params/params";
-import css from "@/pages/map/map.module.scss";
-
-export type Params = {
-    ll: Param<LL>
-    z: Param<number>
-}
-
-export type ParsedParams = {
-    ll: ParsedParam<LL>
-    z: ParsedParam<number>
-}
+import { useState } from "react";
+import { useUrlParam, floatParam } from "@rdub/use-url-params";
+import css from "./map.module.scss";
+import { LL } from "@/src/map/types";
 
 export const defaults = {
     ll: { lat: 40.73, lng: -74.08 },
@@ -19,26 +9,18 @@ export const defaults = {
 }
 
 export function useMapState() {
-    const params: Params = useMemo(() => ({
-        ll: llParam({ init: defaults.ll, places: 4, }),
-        z: floatParam(defaults.zoom, false),
-    }), [])
-    const {
-        ll: [ center, setCenter ],
-        z: [ zoom, setZoom, ],
-    }: ParsedParams = parseHashParams({ params })
+    const [lat, setLat] = useUrlParam('lat', floatParam(defaults.ll.lat))
+    const [lng, setLng] = useUrlParam('lng', floatParam(defaults.ll.lng))
+    const [zoom, setZoom] = useUrlParam('z', floatParam(defaults.zoom))
 
-    useEffect(
-        () => {
-            updateHashParams(
-                params,
-                { ll: center, z: zoom },
-                { push: false, log: true },
-            )
-        },
-        [ params, center, zoom ]
-    )
-    const [ tolerance, setTolerance ] = useState(12)
+    const center: LL = { lat, lng }
+    const setCenter = (ll: LL) => {
+        setLat(ll.lat)
+        setLng(ll.lng)
+    }
+
+    const [tolerance, setTolerance] = useState(12)
+
     return {
         center,
         setCenter,

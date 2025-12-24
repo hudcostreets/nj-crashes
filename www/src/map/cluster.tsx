@@ -1,4 +1,4 @@
-import { Crash } from "@/pages/map/hudson";
+import { Crash } from "@/src/map/types";
 import { Dispatch, ReactNode, useEffect, useMemo, useRef } from "react";
 import singleton from "@rdub/base/singleton";
 import { LeafletEventHandlerFnMap } from "leaflet"

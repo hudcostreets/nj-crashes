@@ -1,8 +1,7 @@
-import React from "react";
-import { filterIdxs, PlotSpec } from "@rdub/next-plotly/plot";
-import A from "@rdub/next-base/a";
-import { NjspSource } from "@/src/icons";
-import css from "@/pages/index.module.scss"
+import React from "react"
+import { filterIdxs, PlotSpec } from "@/src/lib/plot"
+import A from "@/src/lib/a"
+import { NjspSource } from "@/src/icons"
 
 export const curYear = (new Date().getFullYear())
 export const prvYear = curYear - 1
@@ -31,7 +30,7 @@ export const YM_SC_PID_SPECS: PlotSpec[] =
                 }
                 return {
                     id, name, title, menuName, dropdownSection: section,
-                    style: region == 'County' && { height: 580 },
+                    style: region == 'County' ? { height: 580 } : undefined,
                 } as PlotSpec
             }))
         ))
@@ -47,7 +46,7 @@ export const plotSpecs: PlotSpec[] = [
     {
         id: "ytd", name: "ytd-deaths", menuName: "YTD", dropdownSection: "NJSP",
         filter: filterIdxs,
-        children: <NjspSource className={css.ytdFooter}>
+        children: <NjspSource>
             <p>Some data arrives weeks or months after the fact, so current year numbers are especially subject to change.</p>
         </NjspSource>
     },

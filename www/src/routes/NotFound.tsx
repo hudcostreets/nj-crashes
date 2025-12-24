@@ -1,12 +1,11 @@
-import {Head} from "@rdub/next-base/head";
-import css from "./index.module.scss";
-import React from "react";
-import {getBasePath} from "@rdub/next-base/basePath"
-import {Socials} from "@rdub/next-base/socials"
-import { domain, url } from "@/src/site";
+import { Head } from "@/src/lib/head"
+import { getBasePath } from "@/src/lib/basePath"
+import { Socials } from "@/src/lib/socials"
+import { domain, url } from "@/src/site"
 import { socials } from "@/src/socials"
+import css from "@/src/home.module.scss"
 
-const Home = () => {
+export default function NotFound() {
     const title = "Page Not Found"
     const basePath = getBasePath()
     return (
@@ -19,12 +18,10 @@ const Home = () => {
             />
             <main className={css.main}>
                 <h1 className={css.title}>{title}</h1>
-                <p>Maybe you wanted <a href={basePath}>{basePath}</a>?</p>
+                <p>Maybe you wanted <a href={basePath || "/"}>{basePath || "/"}</a>?</p>
                 <p>Or <a href={`https://${domain}`}>{domain}</a></p>
                 <Socials socials={socials} />
             </main>
         </div>
     )
 }
-
-export default Home

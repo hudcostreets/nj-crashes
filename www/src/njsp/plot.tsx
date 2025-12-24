@@ -8,9 +8,9 @@ import { HasCounty, table, typeCountsQuery } from "./projections";
 import { ProjectedCsv } from "@/src/paths";
 import { ytcQuery } from "@/src/njsp/ytc";
 import { repoWithOwner } from "@/src/github";
-import A from "@rdub/next-base/a";
-import { GitHub } from "@/src/socials";
-import { Plot, PlotSpec } from "@rdub/next-plotly/plot";
+import A from "@/src/lib/a"
+import { GitHub } from "@/src/socials"
+import { Plot, PlotSpec } from "@/src/lib/plot"
 import { fromEntries } from "@rdub/base/objs";
 import { normalize } from "../county";
 import { CountySelect } from "../county-select";
