@@ -1,5 +1,5 @@
 # NJ Traffic Crash Data
-Analysis of [NJ State Police fatal crash data][NJSP data] (2008-present) and [NJDOT crash data][NJDOT data] (2000-2021)
+Analysis of [NJ State Police fatal crash data][NJSP data] (2008-present) and [NJDOT crash data][NJDOT data] (2001-2023)
 
 - Plots: [neighbor-ryan.org/nj-crashes](https://neighbor-ryan.org/nj-crashes/)
 - Hudson County map: [neighbor-ryan.org/nj-crashes/hudson/map][hudco map]
