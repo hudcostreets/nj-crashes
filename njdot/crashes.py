@@ -127,6 +127,16 @@ def map_year_df(df: pd.DataFrame, year: int) -> pd.DataFrame:
     df['pdn'] = df.pdn.apply(lambda pdn: pdn.title())
     df['olon'] = -df['olon']  # Longitudes all come in positive, but are actually supposed to be negative (NJ ⊂ [-76, -73])
     df['severity'] = df['severity'].apply(lambda s: s.lower())
+    # Reclassify severity based on actual outcomes (fix data entry errors)
+    # If there are fatalities, it's a fatal crash; if injuries (but no fatalities), it's an injury crash
+    misclassified_fatal = (df['tk'] > 0) & (df['severity'] != 'f')
+    misclassified_injury = (df['ti'] > 0) & (df['tk'] == 0) & (df['severity'] == 'p')
+    if misclassified_fatal.any():
+        err(f"crashes {year}: Reclassifying {misclassified_fatal.sum()} crashes with fatalities to 'f' severity")
+        df.loc[misclassified_fatal, 'severity'] = 'f'
+    if misclassified_injury.any():
+        err(f"crashes {year}: Reclassifying {misclassified_injury.sum()} crashes with injuries to 'i' severity")
+        df.loc[misclassified_injury, 'severity'] = 'i'
     df['route'] = df['route'].replace('', nan).astype('Int16').replace(0, nan)
     df['ramp_route'] = df['ramp_route'].replace(r'^\?$', '', regex=True)
     for k in ['speed_limit', 'speed_limit_cross']:
