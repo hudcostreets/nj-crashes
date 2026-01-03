@@ -89,7 +89,8 @@ class Crashes:
             xml_abspath = relpath(join(ROOT_DIR, xml_path))
             if not exists(xml_abspath):
                 now = datetime.now()
-                if year > now.year:
+                if year >= now.year:
+                    # Current/future year's file may not exist yet
                     break
                 else:
                     raise RuntimeError(f"Couldn't find {xml_path}")
