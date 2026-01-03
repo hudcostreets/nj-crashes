@@ -3,6 +3,7 @@ import pandas as pd
 from dataclasses import dataclass
 from functools import cached_property
 from git import Repo, Commit
+from os.path import exists
 from typing import Tuple
 from utz import err, singleton
 
@@ -165,7 +166,35 @@ class Ytd:
 
     @cached_property
     def cur_ytd_fauqstats(self):
-        return FAUQStats.load(fauqstats_relpath(self.cur_year))
+        path = fauqstats_relpath(self.cur_year)
+        if not exists(path):
+            # Current year file not yet published (e.g., at the start of a new year)
+            err(f"FAUQStats file not found for {self.cur_year}, returning empty FAUQStats")
+            # Create empty DataFrame with expected schema
+            empty_crashes = pd.DataFrame({
+                'CCODE': pd.Series([], dtype='object'),
+                'CNAME': pd.Series([], dtype='object'),
+                'MCODE': pd.Series([], dtype='object'),
+                'MNAME': pd.Series([], dtype='object'),
+                'HIGHWAY': pd.Series([], dtype='object'),
+                'LOCATION': pd.Series([], dtype='object'),
+                'FATALITIES': pd.Series([], dtype='float64'),
+                'FATAL_D': pd.Series([], dtype='float64'),
+                'FATAL_P': pd.Series([], dtype='float64'),
+                'FATAL_T': pd.Series([], dtype='float64'),
+                'FATAL_B': pd.Series([], dtype='float64'),
+                'STREET': pd.Series([], dtype='object'),
+                'INJURIES': pd.Series([], dtype='float64'),
+                'dt': pd.Series([], dtype='datetime64[ns, US/Eastern]'),
+            })
+            empty_crashes.index.name = 'ACCID'
+            return FAUQStats(
+                year=self.cur_year,
+                rundate=str(self.rundate.cur),
+                crashes=empty_crashes,
+                totals=pd.DataFrame([dict(year=self.cur_year, accidents=0, injuries=0, fatalities=0)])
+            )
+        return FAUQStats.load(path)
 
     @cached_property
     def prv_end_crashes(self):
