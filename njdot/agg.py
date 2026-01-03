@@ -34,16 +34,20 @@ DIMS = {
     's': 'severity',
 }
 
+# Victim type × condition matrix columns
+VICTIM_TYPES = ['d', 'o', 'p', 'b', 'u']  # driver, passenger, pedestrian, bicyclist, unknown
+CONDITIONS = ['f', 's', 'm', 'p', 'n']     # fatal, serious, minor, possible, none
+VTC_COLS = [f'{vt}{c}' for vt in VICTIM_TYPES for c in CONDITIONS]
+
 # Measure columns (aggregations)
-MEASURES = ['n', 'tk', 'ti', 'pk', 'pi', 'tv']
+# Include victim type × condition matrix (25 columns) for frontend filtering/stacking
+MEASURES = ['n', 'tk', 'ti', 'pk', 'pi', 'tv'] + VTC_COLS
 
 
 def load_crashes(path: Path) -> pd.DataFrame:
     """Load crashes parquet and add month column."""
-    df = pd.read_parquet(
-        path,
-        columns=['year', 'cc', 'mc', 'dt', 'severity', 'tk', 'ti', 'pk', 'pi', 'tv'],
-    )
+    columns = ['year', 'cc', 'mc', 'dt', 'severity', 'tk', 'ti', 'pk', 'pi', 'tv'] + VTC_COLS
+    df = pd.read_parquet(path, columns=columns)
     df['month'] = pd.to_datetime(df['dt']).dt.month
     df['n'] = 1  # count column
     return df
