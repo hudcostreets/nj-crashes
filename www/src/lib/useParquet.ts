@@ -34,6 +34,12 @@ export function useParquet<T extends Record<string, unknown>>(
         let cancelled = false
         const startTime = performance.now()
 
+        // Reset state when URL changes
+        setData(null)
+        setLoading(true)
+        setError(null)
+        setTiming(null)
+
         async function load() {
             try {
                 // Fetch the parquet file

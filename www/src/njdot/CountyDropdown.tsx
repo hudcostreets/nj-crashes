@@ -42,7 +42,10 @@ export function CountyDropdown({
     return (
         <div className={css.control}>
             <div className={css.controlHeader}>Counties</div>
-            <details className={css.countyDropdown}>
+            <details
+                className={css.countyDropdown}
+                onToggle={(e) => e.stopPropagation()}
+            >
                 <summary>{summaryText}</summary>
                 <div className={css.countyList}>
                     <label className={css.selectAll}>

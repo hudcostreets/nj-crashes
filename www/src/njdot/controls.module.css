@@ -1,18 +1,22 @@
 .controls {
-    width: 100%;
     margin-top: 0.5em;
+    margin-left: 60px;  /* align with plot left edge */
 }
 .controls > summary {
-    margin-bottom: 0.3em;
     cursor: pointer;
     list-style: none;
+    display: inline-block;
 }
 .controls > summary::-webkit-details-marker {
     display: none;
 }
 .settingsGear {
-    font-size: 1.5em;
+    font-size: 1.2em;
     vertical-align: middle;
+    opacity: 0.6;
+}
+.settingsGear:hover {
+    opacity: 1;
 }
 .controlsContent {
     display: flex;
@@ -102,4 +106,5 @@
     font-size: 0.75rem;
     color: #666;
     margin-top: 0.25rem;
+    margin-left: 60px;  /* align with plot left edge */
 }

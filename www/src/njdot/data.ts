@@ -13,6 +13,52 @@ export const SeverityColors: Record<Severity, string> = {
     f: '#EF553B',  // red
 }
 
+// Victim types (who was involved)
+export type VictimType = 'd' | 'o' | 'p' | 'b' | 'u'
+export const VictimTypes: VictimType[] = ['d', 'o', 'p', 'b', 'u']
+export const VictimTypeLabels: Record<VictimType, string> = {
+    d: 'Driver',
+    o: 'Passenger',
+    p: 'Pedestrian',
+    b: 'Cyclist',
+    u: 'Unknown',
+}
+export const VictimTypeColors: Record<VictimType, string> = {
+    d: '#636EFA',  // blue
+    o: '#00CC96',  // green
+    p: '#AB63FA',  // purple
+    b: '#FFA15A',  // orange
+    u: '#7F7F7F',  // gray
+}
+
+// Physical conditions (injury severity)
+export type Condition = 'f' | 's' | 'm' | 'p' | 'n'
+export const Conditions: Condition[] = ['f', 's', 'm', 'p', 'n']
+export const ConditionLabels: Record<Condition, string> = {
+    f: 'Fatal',
+    s: 'Serious Injury',
+    m: 'Minor Injury',
+    p: 'Possible Injury',
+    n: 'No Apparent Injury',
+}
+export const ConditionColors: Record<Condition, string> = {
+    f: '#EF553B',  // red
+    s: '#FFA15A',  // orange
+    m: '#FECB52',  // yellow
+    p: '#00CC96',  // green
+    n: '#636EFA',  // blue
+}
+
+// Victim Type × Condition matrix column helper
+export const vtcCol = (vt: VictimType, c: Condition) => `${vt}${c}` as const
+export type VTCCol = `${VictimType}${Condition}`
+export const VTC_COLS: VTCCol[] = VictimTypes.flatMap(vt => Conditions.map(c => vtcCol(vt, c)))
+
+// Victim Type × Condition record type (25 columns)
+export type VTCMeasures = {
+    [K in VTCCol]: number
+}
+
 // Base measures for all aggregations
 export type CrashMeasures = {
     n: number      // crash count
@@ -21,7 +67,7 @@ export type CrashMeasures = {
     pk: number     // pedestrians killed
     pi: number     // pedestrians injured
     tv: number     // total vehicles
-}
+} & VTCMeasures
 
 // Aggregation row types (only keeping the ones we use)
 export type YmsRow = CrashMeasures & {
@@ -57,12 +103,14 @@ export const MeasureLabels: Record<Measure, string> = {
 export type TimeGranularity = 'year' | 'month'
 
 // Stacking options
-export type StackBy = 'none' | 'severity' | 'county'
-export const StackBys: StackBy[] = ['none', 'severity', 'county']
+export type StackBy = 'none' | 'severity' | 'county' | 'victim_type' | 'condition'
+export const StackBys: StackBy[] = ['none', 'severity', 'county', 'victim_type', 'condition']
 export const StackByLabels: Record<StackBy, string> = {
     none: 'None',
     severity: 'Severity',
     county: 'County',
+    victim_type: 'Victim Type',
+    condition: 'Condition',
 }
 
 // County codes and names (21 NJ counties)
