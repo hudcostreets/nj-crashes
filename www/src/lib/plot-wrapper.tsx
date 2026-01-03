@@ -45,7 +45,7 @@ export default function PlotWrapper<TraceName extends string = string>({
     const fallbackSrc = src ? `${basePath}/${src}` : undefined
 
     return (
-        <div className={`plot-wrapper ${className || ""}`}>
+        <div className={`plot-wrapper ${className || ""}`} style={{ minHeight: `${height}px` }}>
             {/* Fallback image while Plotly loads */}
             {!initialized && fallbackSrc && (
                 <div
@@ -102,6 +102,8 @@ export default function PlotWrapper<TraceName extends string = string>({
                     style={{
                         visibility: initialized ? undefined : "hidden",
                         width: "100%",
+                        height: `${height}px`,
+                        minHeight: `${height}px`,
                     }}
                     layout={layout}
                 />
