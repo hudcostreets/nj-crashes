@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Jan 01 10:01:12 EST 2026</RUNDATE>
+  <RUNDATE>Fri Jan 02 10:01:13 EST 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -53,7 +53,7 @@
     <MUNICIPALITY MCODE="0614" MNAME="Vineland City">
       <ACCIDENT ACCID="14348" DATE="12/31/2025" TIME="2118">
         <HIGHWAY>47</HIGHWAY>
-        <LOCATION>47</LOCATION>
+        <LOCATION>State Highway 47</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -179,7 +179,7 @@
     <MUNICIPALITY MCODE="0110" MNAME="Folsom Boro">
       <ACCIDENT ACCID="14336" DATE="12/24/2025" TIME="1721">
         <HIGHWAY>73</HIGHWAY>
-        <LOCATION>State Highway 73</LOCATION>
+        <LOCATION>State Highway 73 MP 3.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
