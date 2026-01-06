@@ -1,10 +1,14 @@
 import json
+import warnings
 from functools import cache, cached_property
 from os import environ as env
 from os import makedirs
 from os.path import join, exists
 from time import sleep
 from typing import Sequence
+
+# Suppress pydantic warning from atproto's generated models
+warnings.filterwarnings('ignore', category=UserWarning, module='pydantic._internal._generate_schema')
 
 import atproto
 from atproto_client.models.app.bsky.feed.defs import PostView
