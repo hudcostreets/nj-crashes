@@ -2,6 +2,7 @@ import click
 from datetime import datetime
 from juq.cli import write_nb
 from juq.papermill.run import papermill_run
+from requests.exceptions import HTTPError
 from utz import cd, err, process
 
 from njsp.cli.base import command
@@ -43,7 +44,8 @@ def refresh_summaries(years):
         try:
             if refresh_annual_summaries(year):
                 refreshed_years.append(year)
-        except Exception as e:
+        except (HTTPError, FileNotFoundError) as e:
+            # Expected failures: PDF not yet published (404) or file not found
             err(f"Failed to refresh summaries for {year}: {e}")
             err("Continuing (PDF summaries are optional for years 2020+)")
 
