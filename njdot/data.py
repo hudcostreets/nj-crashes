@@ -8,7 +8,7 @@ from typing import Optional
 from njdot.paths import DOT_DATA, DOT_DATA_S3
 from njdot.tbls import Type, TYPES
 
-START_YEAR, END_YEAR = 2001, 2024
+START_YEAR, END_YEAR = 2001, 2023
 YEARS: list[int] = list(range(START_YEAR, END_YEAR))
 
 COUNTIES = [
