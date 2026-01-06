@@ -1,6 +1,20 @@
 from typing import Optional
 
 import pandas as pd
+from dateutil.parser import parse
+from dateutil.tz import gettz
+
+
+# Timezone info for EST/EDT (used in NJSP RUNDATE strings)
+TZINFOS = {
+    'EST': gettz('America/New_York'),
+    'EDT': gettz('America/New_York'),
+}
+
+
+def parse_rundate(s: str):
+    """Parse a RUNDATE string like 'Mon Jan 05 10:01:14 EST 2026'."""
+    return parse(s, tzinfos=TZINFOS)
 
 
 RED = '\033[31m'

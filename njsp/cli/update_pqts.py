@@ -9,7 +9,6 @@ from os.path import exists
 import click
 import json
 
-from dateutil.parser import parse
 from glob import glob
 
 import pandas as pd
@@ -24,6 +23,7 @@ from nj_crashes.utils import s3, sql
 from nj_crashes.utils.log import Log, err
 from njsp.fauqstats import FAUQStats
 from njsp.paths import RUNDATE_PATH, CRASHES_PQT_S3, CRASHES_DB_S3
+from njsp.utils import parse_rundate
 from .base import command
 from ..paths import CRASHES_PQT
 
@@ -57,7 +57,7 @@ def get_crashes_df(
 
     last_fauqstats = fauqstatss[-1]
     last_year_rundate = last_fauqstats.rundate
-    last_year_run_dt = parse(last_year_rundate)
+    last_year_run_dt = parse_rundate(last_year_rundate)
     rundate = pd.to_datetime(last_year_run_dt)
 
     return crashes, totals, rundate

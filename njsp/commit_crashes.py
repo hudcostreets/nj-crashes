@@ -4,7 +4,6 @@ from datetime import datetime
 from io import BytesIO
 from subprocess import CalledProcessError
 
-from dateutil.parser import parse
 from git import Commit, Repo, Tree, Object, Blob
 from gitdb.exc import BadName
 from github import Github
@@ -17,6 +16,7 @@ from nj_crashes.utils.github import get_github_repo, load_pqt_github, REPO, Gith
 from nj_crashes.utils.log import none, Log
 from njsp.fauqstats import get_fauqstats, FAUQStats
 from njsp.paths import RUNDATE_RELPATH
+from njsp.utils import parse_rundate
 
 
 def load_pqt_blob(blob: Object) -> DataFrame:
@@ -322,7 +322,7 @@ class CommitCrashes:
 
     @cached_property
     def run_dt(self) -> Timestamp:
-        return to_datetime(parse(self.rundate))
+        return to_datetime(parse_rundate(self.rundate))
 
     @cached_property
     def run_date(self) -> datetime.date:

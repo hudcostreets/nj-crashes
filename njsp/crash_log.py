@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from typing import Literal
 
 import pandas as pd
-from dateutil.parser import parse
 from git import Repo, Commit
 from pandas import DataFrame, Series, to_datetime, Timestamp
 from utz import err
@@ -15,6 +14,7 @@ from nj_crashes.utils.log import Log
 from njsp.commit_crashes import get_repo, CommitCrashes, get_rundate, SHORT_SHA_LEN, DEFAULT_ROOT_SHA_PARENT
 from njsp.fauqstats import FAUQStats
 from njsp.paths import CRASHES_RELPATH
+from njsp.utils import parse_rundate
 
 Kind = Literal['add', 'update', 'del']
 
@@ -36,7 +36,7 @@ def get_commit_crash_updates(
     cur_tree = cur_commit.tree
     if cur_tree is not None and cur_fauqstats_blobs != prv_fauqstats_blobs:
         try:
-            ts = pd.to_datetime(parse(get_rundate(cur_tree)))
+            ts = pd.to_datetime(parse_rundate(get_rundate(cur_tree)))
             if ts.tz is None:
                 rundate = ts.tz_localize(TZ)
             else:
