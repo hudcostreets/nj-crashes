@@ -37,6 +37,7 @@ dependencies = [
     "SQLAlchemy>=2.0",
     "tabula-py>=2.10",
     "utz>=0.20",
+    "lazy-loader>=0.4",
 ]
 
 [project.optional-dependencies]
