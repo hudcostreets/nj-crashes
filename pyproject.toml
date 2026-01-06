@@ -24,7 +24,7 @@ dependencies = [
     "numpy>=2.2",
     "pandas>=2.2",
     "papermill>=2.6",
-    "plotly>=6.0",
+    "plotly>=6.1.1",  # kaleido 1.2+ requires >=6.1.1
     "pyarrow>=20.0",
     "PyGithub>=2.6",
     "pyogrio>=0.10",
@@ -36,8 +36,9 @@ dependencies = [
     "slack-sdk>=3.37.0",
     "SQLAlchemy>=2.0",
     "tabula-py>=2.10",
-    "utz>=0.20",
+    "utz>=0.21",
     "lazy-loader>=0.4",
+    "kaleido>=1.2.0",
 ]
 
 [project.optional-dependencies]
