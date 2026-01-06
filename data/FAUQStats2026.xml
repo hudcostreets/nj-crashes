@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This document provides minimal statistics about Fatal Crashes in
+ the state of New Jersey as recorded by the New Jersey State Police.
+ These statistics are unofficial and subject to change until the
+ associated case is completed by the NJSP Fatal Accident
+ Investigation Unit.-->
+<FAUQSTATS>
+  <RUNDATE>Mon Jan 05 10:01:14 EST 2026</RUNDATE>
+  <STATSYEAR>2026</STATSYEAR>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+  </COUNTY>
+  <COUNTY CCODE="03" CNAME="Burlington">
+  </COUNTY>
+  <COUNTY CCODE="04" CNAME="Camden">
+  </COUNTY>
+  <COUNTY CCODE="05" CNAME="Cape May">
+  </COUNTY>
+  <COUNTY CCODE="06" CNAME="Cumberland">
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+  </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+  </COUNTY>
+  <COUNTY CCODE="09" CNAME="Hudson">
+  </COUNTY>
+  <COUNTY CCODE="10" CNAME="Hunterdon">
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
+  </COUNTY>
+  <COUNTY CCODE="14" CNAME="Morris">
+  </COUNTY>
+  <COUNTY CCODE="15" CNAME="Ocean">
+  </COUNTY>
+  <COUNTY CCODE="16" CNAME="Passaic">
+  </COUNTY>
+  <COUNTY CCODE="17" CNAME="Salem">
+  </COUNTY>
+  <COUNTY CCODE="18" CNAME="Somerset">
+  </COUNTY>
+  <COUNTY CCODE="19" CNAME="Sussex">
+  </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+  </COUNTY>
+  <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="14" CNAME="Morris">
+    <MUNICIPALITY MCODE="1429" MNAME="Parsippany-Troy Hil">
+      <ACCIDENT ACCID="14358" DATE="01/04/2026" TIME="2150">
+        <STREET>us highway rt46</STREET>
+        <LOCATION>us highway rt46</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0250" MNAME="Ridgefield Park Tws">
+      <ACCIDENT ACCID="14356" DATE="01/03/2026" TIME="0257">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
+      <ACCIDENT ACCID="14354" DATE="01/03/2026" TIME="0125">
+        <HIGHWAY>9</HIGHWAY>
+        <LOCATION>State Highway 9</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0811" MNAME="Monroe Twsp">
+      <ACCIDENT ACCID="14353" DATE="01/02/2026" TIME="1353">
+        <HIGHWAY>555</HIGHWAY>
+        <LOCATION>County 555</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="19" CNAME="Sussex">
+    <MUNICIPALITY MCODE="1914" MNAME="Montague Twsp">
+      <ACCIDENT ACCID="14351" DATE="01/01/2026" TIME="1158">
+        <HIGHWAY>23</HIGHWAY>
+        <LOCATION>State Highway 23</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
+      <ACCIDENT ACCID="14350" DATE="01/01/2026" TIME="0336">
+        <HIGHWAY>444</HIGHWAY>
+        <LOCATION>Garden State Parkway</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <TOTACCIDENTS>6</TOTACCIDENTS>
+  <TOTFATALITIES>6</TOTFATALITIES>
+  <TOTINJURIES>0</TOTINJURIES>
+</FAUQSTATS>
