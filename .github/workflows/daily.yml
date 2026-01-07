@@ -87,7 +87,7 @@ jobs:
       - name: Refresh data
         id: refresh_data
         if: github.event.schedule || inputs.refresh_data
-        run: njsp -cc refresh_data
+        run: njsp -cc refresh_data --s3
       - name: Harmonize county/muni codes
         id: harmonize_muni_codes
         if: github.event.schedule || inputs.harmonize_muni_codes
@@ -130,7 +130,7 @@ jobs:
         run: njsp -cc update_plots
       - name: Post to Slack
         id: post_to_slack
-        if: (github.event.schedule || inputs.post_to_slack) && (steps.update_slack_sha.outputs.sha || !inputs.short_circuit)
+        if: (github.event.schedule || inputs.post_to_slack) && steps.update_slack_sha.outputs.sha
         run: njsp slack sync -r ${{ steps.update_slack_sha.outputs.sha }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

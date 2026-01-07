@@ -49,6 +49,8 @@ YTC_DB_URI = f'sqlite:///{YTC_DB}'
 S3_CRASH_LOG_PQT = f'{S3_NJSP_DATA}/crash-log.parquet'
 S3_CRASH_LOG_DB = f'{S3_NJSP_DATA}/crash-log.db'
 
+S3_XML_FETCH_LOG = f'{S3_NJSP_DATA}/xml-fetch-log.parquet'
+
 PROJECTED_TOTALS_PATH = join(PLOTS_DIR, 'projected_totals.json')
 
 PROJECTED_TOTALS_RELPATH = relpath(PROJECTED_TOTALS_PATH)
