@@ -25,7 +25,7 @@ dependencies = [
     "pandas>=2.2",
     "papermill>=2.6",
     "plotly>=6.1.1",  # kaleido 1.2+ requires >=6.1.1
-    "pyarrow>=20.0",
+    "pyarrow==21.0.0",
     "PyGithub>=2.6",
     "pyogrio>=0.10",
     "pyproj>=3.7",

@@ -2423,7 +2423,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.2" },
     { name = "papermill", specifier = ">=2.6" },
     { name = "plotly", specifier = ">=6.1.1" },
-    { name = "pyarrow", specifier = ">=20.0" },
+    { name = "pyarrow", specifier = "==21.0.0" },
     { name = "pygithub", specifier = ">=2.6" },
     { name = "pyogrio", specifier = ">=0.10" },
     { name = "pyproj", specifier = ">=3.7" },
