@@ -373,7 +373,12 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2025,Ocean,34,10,1,17,53
 2025,Passaic,11,5,1,11,26
 2025,Salem,13,5,0,3,18
-2025,Somerset,7,4,0,1,12
+2025,Somerset,8,4,0,1,13
 2025,Sussex,7,1,0,3,11
 2025,Union,10,6,2,10,26
 2025,Warren,4,4,0,2,10
+2026,Bergen,1,0,0,0,1
+2026,Gloucester,1,0,0,0,1
+2026,Middlesex,1,0,0,1,2
+2026,Morris,0,0,0,1,1
+2026,Sussex,1,0,0,0,1
