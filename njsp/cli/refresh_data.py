@@ -71,6 +71,8 @@ def update_years(*years, current_year: int = None, log_s3: bool = False):
     if log_s3 and fetch_records:
         new_df = pd.DataFrame(fetch_records)
         new_df['year'] = new_df['year'].astype(int)
+        for rec in fetch_records:
+            err(f"  {rec['year']}: mtime={rec['last_modified']}, rundate={rec['rundate']}")
         try:
             existing = pd.read_parquet(S3_XML_FETCH_LOG)
             existing['year'] = existing['year'].astype(int)
