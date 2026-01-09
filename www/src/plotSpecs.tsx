@@ -44,7 +44,7 @@ export const njspPlotSpec: PlotSpec = {
 export const plotSpecs: PlotSpec[] = [
     njspPlotSpec,
     {
-        id: "ytd", name: "ytd-deaths", menuName: "YTD", dropdownSection: "NJSP",
+        id: "ytd", name: "ytd-deaths", title: "YTD Deaths", menuName: "YTD", dropdownSection: "NJSP",
         filter: filterIdxs,
         children: <NjspSource>
             <p>Some data arrives weeks or months after the fact, so current year numbers are especially subject to change.</p>
@@ -58,7 +58,7 @@ export const plotSpecs: PlotSpec[] = [
             <p>Homicide data comes from <A href={"https://nj.gov/njsp/ucr/uniform-crime-reports.shtml"}>NJ State Police</A> and <A href={"https://www.disastercenter.com/crime/njcrimn.htm"}>Disaster Center</A>.</p>
         </>
     },
-    { id: "per-month", name: "fatalities_per_month", menuName: "Per Month", dropdownSection: "NJSP", },
-    { id: "by-month-bars", name: "fatalities_by_month_bars", menuName: "Grouped by Month", dropdownSection: "NJSP", },
+    { id: "per-month", name: "fatalities_per_month", title: "Fatalities per Month", menuName: "Per Month", dropdownSection: "NJSP", },
+    { id: "by-month-bars", name: "fatalities_by_month_bars", title: "Fatalities by Month", menuName: "Grouped by Month", dropdownSection: "NJSP", },
     ...YM_SC_PID_SPECS,
 ]
