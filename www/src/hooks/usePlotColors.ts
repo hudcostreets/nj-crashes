@@ -11,8 +11,8 @@ export type PlotColors = {
 function computePlotColors(): PlotColors {
   if (typeof document === 'undefined') {
     return {
-      plotBg: 'white',
-      paperBg: 'white',
+      plotBg: 'transparent',
+      paperBg: 'transparent',
       gridColor: '#ddd',
       textColor: '#333',
       legendBg: 'white',
@@ -20,8 +20,8 @@ function computePlotColors(): PlotColors {
   }
   const style = getComputedStyle(document.documentElement)
   return {
-    plotBg: style.getPropertyValue('--plot-bg').trim() || 'white',
-    paperBg: style.getPropertyValue('--bg-primary').trim() || 'white',
+    plotBg: 'transparent',
+    paperBg: 'transparent',
     gridColor: style.getPropertyValue('--plot-grid').trim() || '#ddd',
     textColor: style.getPropertyValue('--text-primary').trim() || '#333',
     legendBg: style.getPropertyValue('--bg-secondary').trim() || 'white',
