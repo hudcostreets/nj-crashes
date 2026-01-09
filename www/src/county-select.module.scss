@@ -4,4 +4,12 @@
   font-weight: bold;
   text-decoration: underline;
   border: 0;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+
+  option {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+  }
 }

@@ -63,12 +63,14 @@ export default function PlotWrapper<TraceName extends string = string>({
         const legendGroups = Array.from(legend.getElementsByClassName('groups'))
         const listeners: Array<[Element, Record<string, () => void>]> = []
 
-        // Build list of traces that appear in legend (showlegend !== false)
-        const visibleTraces = data.filter(trace => trace.showlegend !== false)
+        // Build a name lookup from trace names for validation
+        const traceNames = new Set(data.filter(trace => trace.showlegend !== false).map(t => t.name))
 
-        legendGroups.forEach((group, idx) => {
-            const traceName = visibleTraces[idx]?.name as TraceName
-            if (!traceName) return
+        legendGroups.forEach((group) => {
+            // Extract trace name from the legend item's text content
+            const textEl = group.querySelector('.legendtext')
+            const traceName = textEl?.textContent?.trim() as TraceName
+            if (!traceName || !traceNames.has(traceName)) return
 
             const groupListeners: Record<string, () => void> = {}
 

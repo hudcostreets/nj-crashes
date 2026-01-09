@@ -6,6 +6,7 @@ import { PlotParams } from "react-plotly.js"
 import { Datum, Layout, Legend, Margin, PlotData } from "plotly.js"
 import { fromEntries, o2a } from "@rdub/base/objs"
 import PlotWrapper from "./plot-wrapper"
+import { usePlotColors } from "@/src/hooks/usePlotColors"
 
 export const DEFAULT_HEIGHT = 400
 export const DEFAULT_MARGIN: Partial<Margin> = { t: 20, b: 40, l: 40, r: 20 }
@@ -176,6 +177,7 @@ export function Plot<TraceName extends string = string>({
     const [xRange, setXRange] = useState<null | [number, number]>(null)
     const [soloTrace, setSoloTrace] = useState<TraceName | null>(null)
     const [hoverTrace, setHoverTrace] = useState<TraceName | null>(null)
+    const plotColors = usePlotColors()
 
     name = name || id
 
@@ -203,27 +205,42 @@ export function Plot<TraceName extends string = string>({
         () => {
             if (!params) return null
             const { layout } = params
-            const { margin: plotMargin, xaxis, yaxis, title: _title, ...rest } = layout
+            const { margin: plotMargin, xaxis, yaxis, yaxis2, title: _title, legend, ...rest } = layout
             return {
                 margin: { ...DEFAULT_MARGIN, ...plotMargin, ...margin },
                 dragmode: filter ? "zoom" : false,
                 xaxis: {
                     ...(filter ? {} : { fixedrange: true }),
+                    tickfont: { color: plotColors.textColor },
                     ...(xaxis || {}),
                 },
                 yaxis: {
                     automargin: true,
-                    gridcolor: "#ccc",
+                    gridcolor: plotColors.gridColor,
                     autorange: true,
                     fixedrange: true,
+                    tickfont: { color: plotColors.textColor },
                     ...(yaxis || {}),
+                },
+                ...(yaxis2 ? {
+                    yaxis2: {
+                        gridcolor: plotColors.gridColor,
+                        tickfont: { color: plotColors.textColor },
+                        ...yaxis2,
+                    }
+                } : {}),
+                legend: {
+                    font: { color: plotColors.textColor },
+                    ...(legend || {}),
                 },
                 height,
                 autosize: true,
+                paper_bgcolor: plotColors.paperBg,
+                plot_bgcolor: plotColors.plotBg,
                 ...rest
             }
         },
-        [params, margin, height, xRange, filter]
+        [params, margin, height, xRange, filter, plotColors]
     )
 
     // Determine active trace: hover takes precedence over solo

@@ -56,9 +56,10 @@
 .countyDropdown summary {
     cursor: pointer;
     padding: 0.3em 0.6em;
-    border: 1px solid #ccc;
+    border: 1px solid var(--input-border);
     border-radius: 4px;
-    background: #fff;
+    background: var(--input-bg);
+    color: var(--text-primary);
     font-size: 14px;
     list-style: none;
 }
@@ -77,10 +78,10 @@
     top: 100%;
     left: 0;
     z-index: 100;
-    background: #fff;
-    border: 1px solid #ccc;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
     border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    box-shadow: 0 2px 8px var(--shadow);
     max-height: 300px;
     overflow-y: auto;
     min-width: 150px;
@@ -90,12 +91,13 @@
     display: block;
     padding: 0.2em 0.4em;
     cursor: pointer;
+    color: var(--text-primary);
 }
 .countyList label:hover {
-    background: #f0f0f0;
+    background: var(--bg-primary);
 }
 .selectAll {
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border-secondary);
     margin-bottom: 0.3em;
     padding-bottom: 0.3em;
     font-weight: bold;
@@ -104,7 +106,7 @@
 /* Plot info line */
 .plotInfo {
     font-size: 0.75rem;
-    color: #666;
+    color: var(--text-secondary);
     margin-top: 0.25rem;
     margin-left: 60px;  /* align with plot left edge */
 }
