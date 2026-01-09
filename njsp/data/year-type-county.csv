@@ -382,7 +382,7 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2026,Gloucester,1,0,0,0,1
 2026,Middlesex,1,0,0,1,2
 2026,Monmouth,0,1,0,0,1
-2026,Morris,0,0,0,1,1
+2026,Morris,0,0,0,2,2
 2026,Ocean,1,0,0,0,1
 2026,Passaic,1,1,0,0,1
 2026,Sussex,1,0,0,0,1
