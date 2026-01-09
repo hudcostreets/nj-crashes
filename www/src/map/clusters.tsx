@@ -41,8 +41,6 @@ export function Clusters({ crashes, }: Props) {
             const [ minZoom, maxZoom ] = [ 12, 18 ]
             const [ minSize, maxSize ] = [ 1, 2 ]
             const baseRadius = minSize + max(0, zoom - minZoom) * (maxSize - minSize) / (maxZoom - minZoom)
-            // const baseRadius = 1
-            console.log("baseRadius", baseRadius, "zoom", zoom,)
             return baseRadius
         },
         [ zoom ]
@@ -82,7 +80,6 @@ export function Clusters({ crashes, }: Props) {
     )
     const clustersElem = useMemo(
         () => {
-            console.log("clustersElem")
             const clusterProps: Omit<cluster.Props, 'cluster'> = {
                 baseRadius,
                 hoveredClusterKey,
