@@ -8,6 +8,10 @@
   --border-secondary: #dddddd;
   --shadow: rgba(0, 0, 0, 0.1);
   --link-color: #0066cc;
+  --plot-bg: #ffffff;
+  --plot-grid: #dddddd;
+  --input-bg: #ffffff;
+  --input-border: #cccccc;
 }
 
 /* Dark theme */
@@ -20,6 +24,10 @@
   --border-secondary: #555555;
   --shadow: rgba(0, 0, 0, 0.3);
   --link-color: #6db3f2;
+  --plot-bg: #2d2d2d;
+  --plot-grid: #505050;
+  --input-bg: #3d3d3d;
+  --input-border: #555555;
 }
 
 html,

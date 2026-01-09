@@ -10,6 +10,7 @@ import A from "@/src/lib/a"
 import { GitHub } from "@/src/socials"
 import { NjspSource } from "@/src/icons"
 import { repoWithOwner } from "@/src/github"
+import { usePlotColors } from "@/src/hooks/usePlotColors"
 import css from "./plot.module.scss"
 
 const estimationHref = `https://nbviewer.org/github/${repoWithOwner}/blob/main/njsp/update-projections.ipynb`
@@ -100,6 +101,7 @@ export type Props = {
 
 export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, height = 400 }: Props) {
     const db = useDb()
+    const plotColors = usePlotColors()
     const [county, setCounty] = useState<string | null>(initialCounty)
     const [soloType, setSoloType] = useState<Type | null>(null)
     const [hoverType, setHoverType] = useState<Type | null>(null)
@@ -280,27 +282,30 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                 xanchor: "center",
                 y: -0.05,
                 yanchor: "top",
+                font: { color: plotColors.textColor },
             },
             xaxis: {
                 fixedrange: true,
                 dtick: 1,
+                tickfont: { color: plotColors.textColor },
             },
             yaxis: {
                 fixedrange: true,
                 dtick: 50,
-                gridcolor: "#ccc",
+                gridcolor: plotColors.gridColor,
                 rangemode: "tozero",
+                tickfont: { color: plotColors.textColor },
             },
             margin: { t: 10, r: 10, b: 40, l: 40 },
             annotations,
             dragmode: false,
-            paper_bgcolor: "white",
-            plot_bgcolor: "white",
+            paper_bgcolor: plotColors.paperBg,
+            plot_bgcolor: plotColors.plotBg,
             height,
         }
 
         return { data: traces, annotations, layout, projectedRemainder }
-    }, [ytRows, projections, activeType, showProjected, height])
+    }, [ytRows, projections, activeType, showProjected, height, plotColors])
 
     // Compute year totals for summary text
     const yearTotals = useMemo(() => {

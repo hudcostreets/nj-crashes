@@ -17,6 +17,7 @@ import {
 import { Checklist } from "./Checklist"
 import { Radios } from "./Radios"
 import { CountyDropdown } from "./CountyDropdown"
+import { usePlotColors } from "@/src/hooks/usePlotColors"
 import css from "./controls.module.css"
 
 type CrashPlotProps = {
@@ -74,6 +75,7 @@ export default function CrashPlot({
     const [hoverTrace, setHoverTrace] = useState<string | null>(null)
     const activeTrace = hoverTrace ?? soloTrace
     const plotRef = useRef<HTMLDivElement>(null)
+    const plotColors = usePlotColors()
 
     // Reset solo trace when stacking mode changes (trace names change)
     useEffect(() => {
@@ -322,19 +324,26 @@ export default function CrashPlot({
             xaxis: {
                 showspikes: false,
                 dtick: timeGranularity === 'year' ? 1 : undefined,
+                tickfont: { color: plotColors.textColor },
             },
-            yaxis: {},
+            yaxis: {
+                gridcolor: plotColors.gridColor,
+                tickfont: { color: plotColors.textColor },
+            },
             legend: {
                 orientation: 'h',
                 y: -0.15,
                 x: 0.5,
                 xanchor: 'center',
+                font: { color: plotColors.textColor },
             },
             hovermode: 'x unified',
+            paper_bgcolor: plotColors.paperBg,
+            plot_bgcolor: plotColors.plotBg,
         }
 
         return { traces, layout }
-    }, [data, measure, stackBy, severities, counties, victimTypes, conditions, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace])
+    }, [data, measure, stackBy, severities, counties, victimTypes, conditions, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors])
 
     // Check if we're waiting for county data (need ymccs but have yms)
     const waitingForCountyData = needsCountyData && data && data.length > 0 && !('cc' in data[0])
