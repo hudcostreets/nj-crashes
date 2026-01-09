@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Layout, PlotData } from "plotly.js"
 import Plot from "react-plotly.js"
 import { useParquet } from "@/src/lib/useParquet"
@@ -72,6 +72,18 @@ export default function CrashPlot({
     const [show12moAvg, setShow12moAvg] = useSessionStorage('crashplot-show12moAvg', false)
     const [controlsOpen, setControlsOpen] = useSessionStorage('crashplot-controls-open', initialControlsOpen)
 
+    // Legend interaction state
+    const [soloTrace, setSoloTrace] = useState<string | null>(null)
+    const [hoverTrace, setHoverTrace] = useState<string | null>(null)
+    const activeTrace = hoverTrace ?? soloTrace
+    const plotRef = useRef<HTMLDivElement>(null)
+
+    // Reset solo trace when stacking mode changes (trace names change)
+    useEffect(() => {
+        setSoloTrace(null)
+        setHoverTrace(null)
+    }, [stackBy])
+
     // Use yms for state-level, ymccs for county breakdowns
     const needsCountyData = stackBy === 'county' || counties.length < ALL_COUNTIES.length
     const source = needsCountyData ? 'ymccs' : 'yms'
@@ -138,11 +150,14 @@ export default function CrashPlot({
             color?: string,
         ): Partial<PlotData> => {
             const sorted = [...grouped.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+            // Apply visibility based on active trace (solo/hover)
+            const visible = activeTrace === null || activeTrace === name ? true : 'legendonly'
             return {
                 x: sorted.map(([k]) => timeGranularity === 'month' ? k : parseInt(k)),
                 y: sorted.map(([, v]) => v),
                 type: 'bar',
                 name,
+                visible,
                 ...(color ? { marker: { color } } : {}),
             }
         }
@@ -324,10 +339,62 @@ export default function CrashPlot({
         }
 
         return { traces, layout }
-    }, [data, measure, stackBy, severities, counties, victimTypes, conditions, timeGranularity, stackPercent, show12moAvg, height, initialTitle, needsCountyData])
+    }, [data, measure, stackBy, severities, counties, victimTypes, conditions, timeGranularity, stackPercent, show12moAvg, height, initialTitle, needsCountyData, activeTrace])
 
     // Check if we're waiting for county data (need ymccs but have yms)
     const waitingForCountyData = needsCountyData && data && data.length > 0 && !('cc' in data[0])
+
+    // Legend click handler - toggle solo mode
+    const onLegendClick = useCallback((e: any) => {
+        const { curveNumber, data: plotData } = e
+        const name = plotData[curveNumber]?.name
+        if (!name) return true
+        if (soloTrace === name) {
+            setSoloTrace(null)
+            setHoverTrace(null)
+        } else {
+            setSoloTrace(name)
+        }
+        return false  // prevent default Plotly behavior
+    }, [soloTrace])
+
+    // Legend double-click handler - reset to show all
+    const onLegendDoubleClick = useCallback(() => {
+        setSoloTrace(null)
+        setHoverTrace(null)
+        return false  // prevent default Plotly behavior
+    }, [])
+
+    // Set up legend hover events via DOM
+    useEffect(() => {
+        if (!plotRef.current) return
+
+        const legend = plotRef.current.querySelector('.legend')
+        if (!legend) return
+
+        const groups = Array.from(legend.querySelectorAll('.groups'))
+        const listeners: Array<{ element: Element; type: string; handler: () => void }> = []
+
+        groups.forEach((group, idx) => {
+            const traceName = traces[idx]?.name
+            if (!traceName) return
+
+            const overHandler = () => setHoverTrace(traceName as string)
+            const outHandler = () => setHoverTrace(null)
+
+            group.addEventListener('mouseover', overHandler)
+            group.addEventListener('mouseout', outHandler)
+
+            listeners.push({ element: group, type: 'mouseover', handler: overHandler })
+            listeners.push({ element: group, type: 'mouseout', handler: outHandler })
+        })
+
+        return () => {
+            listeners.forEach(({ element, type, handler }) => {
+                element.removeEventListener(type, handler)
+            })
+        }
+    }, [traces])
 
     if (loading || waitingForCountyData) {
         return <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -346,18 +413,16 @@ export default function CrashPlot({
 
 
     return (
-        <div>
+        <div ref={plotRef}>
             <Plot
               data={traces as PlotData[]}
-              //data={[
-              //    { x: [1, 2, 3], y: [2, 6, 3], type: 'scatter', mode: 'lines+markers', marker: { color: 'red' }, },
-              //    { x: [1, 2, 3], y: [2, 5, 3], type: 'bar', },
-              //]}
               layout={layout}
               key={plotKey}
               config={{ displayModeBar: false, responsive: true }}
               style={{ width: '100%', height }}
               useResizeHandler
+              onLegendClick={onLegendClick}
+              onLegendDoubleClick={onLegendDoubleClick}
             />
             {showControls && (
                 <details
