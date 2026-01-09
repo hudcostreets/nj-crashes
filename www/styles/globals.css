@@ -50,6 +50,11 @@ a:hover {
   text-decoration: underline;
 }
 
+/* Plot titles use text color, not link color */
+h1 a, h2 a {
+  color: var(--text-primary);
+}
+
 * {
   box-sizing: border-box;
 }
