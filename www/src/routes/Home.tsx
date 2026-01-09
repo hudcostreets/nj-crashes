@@ -97,8 +97,7 @@ export default function Home() {
                 </p>
 
                 {/* Interactive NJDOT Plot */}
-                <div id="crash-explorer" className={css["plot-container"]}>
-                    <h2><a href="#crash-explorer">Crash Explorer</a></h2>
+                <div className={css["plot-container"]}>
                     <CrashPlot />
                 </div>
 

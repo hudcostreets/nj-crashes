@@ -34,8 +34,6 @@ type CrashPlotProps = {
     conditions?: Condition[]
     /** Time granularity */
     timeGranularity?: 'year' | 'month'
-    /** Chart title */
-    title?: string
     /** Chart height */
     height?: number
     /** Show controls drawer */
@@ -55,7 +53,6 @@ export default function CrashPlot({
     victimTypes: initialVictimTypes = [...VictimTypes],
     conditions: initialConditions = [...Conditions],
     timeGranularity: initialTimeGranularity = 'year',
-    title: initialTitle,
     height = DEFAULT_HEIGHT,
     showControls = true,
     controlsOpen: initialControlsOpen = false,
@@ -317,16 +314,14 @@ export default function CrashPlot({
             }
         }
 
-        const chartTitle = initialTitle || `${MeasureLabels[measure]} by ${timeGranularity === 'month' ? 'Month' : 'Year'}`
-
         const layout: Partial<Layout> = {
-            title: { text: chartTitle, font: { size: 16 } },
             barmode: stackBy !== 'none' ? 'stack' : undefined,
             barnorm: stackPercent && stackBy !== 'none' ? 'percent' : undefined,
             height,
-            margin: { t: 40, b: 60, l: 60, r: 20 },
+            margin: { t: 10, b: 60, l: 60, r: 20 },
             xaxis: {
                 showspikes: false,
+                dtick: timeGranularity === 'year' ? 1 : undefined,
             },
             yaxis: {},
             legend: {
@@ -339,7 +334,7 @@ export default function CrashPlot({
         }
 
         return { traces, layout }
-    }, [data, measure, stackBy, severities, counties, victimTypes, conditions, timeGranularity, stackPercent, show12moAvg, height, initialTitle, needsCountyData, activeTrace])
+    }, [data, measure, stackBy, severities, counties, victimTypes, conditions, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace])
 
     // Check if we're waiting for county data (need ymccs but have yms)
     const waitingForCountyData = needsCountyData && data && data.length > 0 && !('cc' in data[0])
