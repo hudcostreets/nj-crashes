@@ -10,6 +10,7 @@ import css from "@/src/home.module.scss"
 import { plotSpecs } from "@/src/plotSpecs"
 import { Plot } from "@/src/lib/plot"
 import CrashPlot from "@/src/njdot/CrashPlot"
+import { FatalitiesPerYearPlot } from "@/src/njsp/FatalitiesPerYearPlot"
 
 export default function Home() {
     const basePath = getBasePath()
@@ -68,11 +69,18 @@ export default function Home() {
                 {/* NJSP Plots */}
                 {plotSpecs.slice(0, menus[0].sections.length).map(spec => (
                     <div key={spec.id} className={css["plot-container"]}>
-                        <Plot
-                            {...spec}
-                            basePath={basePath}
-                            margin={{ t: 10, b: 30 }}
-                        />
+                        {spec.id === "per-year" ? (
+                            <>
+                                <h2 id={spec.id}><a href={`#${spec.id}`}>Car Crash Deaths</a></h2>
+                                <FatalitiesPerYearPlot />
+                            </>
+                        ) : (
+                            <Plot
+                                {...spec}
+                                basePath={basePath}
+                                margin={{ t: 10, b: 30 }}
+                            />
+                        )}
                         <hr />
                     </div>
                 ))}

@@ -119,3 +119,37 @@ export function useCsvTable<T>({ url, db, table, query, init, }: UseProps<T>): T
     }, [ registeredDb, query, ]);
     return data
 }
+
+// Hook for loading and querying SQLite databases via URL
+export function useSqliteDb({ db, url, table }: MaybeDb & Url & HasTable): string | null {
+    const [target, setTarget] = useState<string | null>(null)
+    useEffect(() => {
+        async function register() {
+            if (!db) return
+            try {
+                // Fetch the SQLite file
+                const response = await fetch(url)
+                const buffer = await response.arrayBuffer()
+                const fileName = `${table}.db`
+
+                // Register the file with DuckDB
+                await db.registerFileBuffer(fileName, new Uint8Array(buffer))
+
+                // Install and load SQLite scanner extension
+                await runQuery(db, "INSTALL sqlite_scanner")
+                await runQuery(db, "LOAD sqlite_scanner")
+
+                // Attach the SQLite database
+                await runQuery(db, `ATTACH '${fileName}' AS ${table}_db (TYPE sqlite)`)
+
+                // Return the table reference
+                setTarget(`${table}_db.${table}`)
+                console.log(`Registered SQLite table: ${table}_db.${table}`)
+            } catch (e) {
+                console.error(`Failed to load SQLite database ${url}:`, e)
+            }
+        }
+        register()
+    }, [db, url, table])
+    return target
+}
