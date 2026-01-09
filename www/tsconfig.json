@@ -24,6 +24,6 @@
     }
   },
   "include": ["src"],
-  "exclude": ["pages", "server", "node_modules", "src/dirs.ts"],
+  "exclude": ["server", "node_modules", "src/dirs.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
