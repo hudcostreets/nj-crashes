@@ -82,6 +82,8 @@ export type PlotSpec = {
 export type LegendHandlers<TraceName extends string = string> = {
     onLegendClick?: (name: TraceName) => boolean | void
     onLegendDoubleClick?: (name: TraceName) => boolean | void
+    onLegendMouseOver?: (name: TraceName) => boolean | void
+    onLegendMouseOut?: (name: TraceName) => boolean | void
 }
 
 export type OtherHandlers = {
@@ -124,13 +126,9 @@ export function buildPlot<
         }
     }
     if (opts.rmTitle) {
-        let { layout: { title: plotTitle, ...layout } } = params
-        if (typeof plotTitle === 'string') {
-            params = { ...params, layout } as Params
-        } else if (plotTitle) {
-            const { text, ...restTitle } = plotTitle as { text?: string; [key: string]: any }
-            params = { ...params, layout: { ...layout, title: restTitle } } as Params
-        }
+        // Completely remove title from layout to avoid ghost title artifacts
+        const { layout: { title: _plotTitle, ...layout } } = params
+        params = { ...params, layout } as Params
     }
     return { ...spec, title, params }
 }
@@ -162,8 +160,10 @@ export function Plot<TraceName extends string = string>({
     filter,
     children,
     params: providedParams,
-    onLegendClick,
-    onLegendDoubleClick,
+    onLegendClick: providedOnLegendClick,
+    onLegendDoubleClick: providedOnLegendDoubleClick,
+    onLegendMouseOver: providedOnLegendMouseOver,
+    onLegendMouseOut: providedOnLegendMouseOut,
     onRelayout,
 }: PlotSpec & {
     basePath?: string
@@ -174,6 +174,8 @@ export function Plot<TraceName extends string = string>({
     const [fetchedParams, setFetchedParams] = useState<PlotParams | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [xRange, setXRange] = useState<null | [number, number]>(null)
+    const [soloTrace, setSoloTrace] = useState<TraceName | null>(null)
+    const [hoverTrace, setHoverTrace] = useState<TraceName | null>(null)
 
     name = name || id
 
@@ -201,7 +203,7 @@ export function Plot<TraceName extends string = string>({
         () => {
             if (!params) return null
             const { layout } = params
-            const { margin: plotMargin, xaxis, yaxis, ...rest } = layout
+            const { margin: plotMargin, xaxis, yaxis, title: _title, ...rest } = layout
             return {
                 margin: { ...DEFAULT_MARGIN, ...plotMargin, ...margin },
                 dragmode: filter ? "zoom" : false,
@@ -224,12 +226,67 @@ export function Plot<TraceName extends string = string>({
         [params, margin, height, xRange, filter]
     )
 
-    // Compute filtered traces when params available
+    // Determine active trace: hover takes precedence over solo
+    const activeTrace = hoverTrace ?? soloTrace
+
+    // Compute filtered traces when params available, applying solo/hover visibility
     const filteredTraces: PlotData[] | null = useMemo(() => {
         if (!params) return null
-        const data = params.data as PlotData[]
-        return (filter && xRange) ? filter({ data, xRange }) : data
-    }, [params, xRange, filter])
+        let data = params.data as PlotData[]
+        if (filter && xRange) {
+            data = filter({ data, xRange })
+        }
+        // Apply solo/hover trace visibility
+        if (activeTrace !== null) {
+            data = data.map(trace => ({
+                ...trace,
+                visible: trace.name === activeTrace ? true : "legendonly"
+            }))
+        }
+        return data
+    }, [params, xRange, filter, activeTrace])
+
+    // Default legend click handler: solo trace on click
+    const onLegendClick = useMemo(() => {
+        if (providedOnLegendClick) return providedOnLegendClick
+        return (name: TraceName) => {
+            if (soloTrace === name) {
+                setSoloTrace(null)  // Un-solo if already solo'd
+                setHoverTrace(null)
+            } else {
+                setSoloTrace(name)  // Solo this trace
+            }
+            return false  // Prevent default Plotly behavior
+        }
+    }, [providedOnLegendClick, soloTrace])
+
+    // Default legend double-click handler: show all
+    const onLegendDoubleClick = useMemo(() => {
+        if (providedOnLegendDoubleClick) return providedOnLegendDoubleClick
+        return () => {
+            setSoloTrace(null)
+            setHoverTrace(null)
+            return false
+        }
+    }, [providedOnLegendDoubleClick])
+
+    // Default legend mouse over handler: preview solo
+    const onLegendMouseOver = useMemo(() => {
+        if (providedOnLegendMouseOver) return providedOnLegendMouseOver
+        return (name: TraceName) => {
+            setHoverTrace(name)
+            return true
+        }
+    }, [providedOnLegendMouseOver])
+
+    // Default legend mouse out handler: clear preview
+    const onLegendMouseOut = useMemo(() => {
+        if (providedOnLegendMouseOut) return providedOnLegendMouseOut
+        return () => {
+            setHoverTrace(null)
+            return true
+        }
+    }, [providedOnLegendMouseOut])
 
     if (src === undefined) {
         src = `plots/${name}.png`
@@ -273,6 +330,7 @@ export function Plot<TraceName extends string = string>({
             {heading ?? (title && <h2><a href={`#${id}`}>{title}</a></h2>)}
             {subtitle}
             <PlotWrapper
+                id={id}
                 data={filteredTraces}
                 layout={newLayout}
                 src={src}
@@ -287,6 +345,8 @@ export function Plot<TraceName extends string = string>({
                 }}
                 onLegendClick={onLegendClick as any}
                 onLegendDoubleClick={onLegendDoubleClick as any}
+                onLegendMouseOver={onLegendMouseOver as any}
+                onLegendMouseOut={onLegendMouseOut as any}
             />
             {children}
         </div>
