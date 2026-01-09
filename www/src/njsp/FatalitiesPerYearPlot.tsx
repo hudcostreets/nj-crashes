@@ -5,6 +5,14 @@ import { useRegisteredDb } from "@/src/tableData"
 import { ProjectedCsv, YtcCsv } from "@/src/paths"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { Annotation } from "./plot"
+import { CountySelect } from "@/src/county-select"
+import A from "@/src/lib/a"
+import { GitHub } from "@/src/socials"
+import { NjspSource } from "@/src/icons"
+import { repoWithOwner } from "@/src/github"
+import css from "./plot.module.scss"
+
+const estimationHref = `https://nbviewer.org/github/${repoWithOwner}/blob/main/njsp/update-projections.ipynb`
 
 export type Type = "Cyclists" | "Drivers" | "Pedestrians" | "Passengers"
 const Types: Type[] = ["Cyclists", "Drivers", "Pedestrians", "Passengers"]
@@ -42,6 +50,15 @@ type TypeCounts = {
 }
 
 const curYear = new Date().getFullYear()
+const prvYear = curYear - 1
+
+// Query for distinct counties
+const countiesQuery = `
+    SELECT DISTINCT county
+    FROM read_csv_auto('ytc')
+    WHERE county IS NOT NULL AND county != ''
+    ORDER BY county
+`
 
 const typeCountsQuery = (county: string | null) => `
     SELECT
@@ -77,18 +94,24 @@ const typesMap: Record<Type, keyof TypeCounts> = {
 
 export type Props = {
     id?: string
-    county?: string | null
+    initialCounty?: string | null
     height?: number
 }
 
-export function FatalitiesPerYearPlot({ id = "per-year", county = null, height = 400 }: Props) {
+export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, height = 400 }: Props) {
     const db = useDb()
+    const [county, setCounty] = useState<string | null>(initialCounty)
     const [soloType, setSoloType] = useState<Type | null>(null)
     const [hoverType, setHoverType] = useState<Type | null>(null)
     const [showProjected, setShowProjected] = useState(true)
 
     // Load ytc data from CSV
     const ytcDb = useRegisteredDb({ db, table: "ytc", url: YtcCsv })
+
+    // Query for list of counties
+    const countiesResult = useQuery<{ county: string }>({ db: ytcDb, query: countiesQuery, init: [] })
+    const counties = useMemo(() => countiesResult.map(r => r.county), [countiesResult])
+
     const ytcQueryStr = useMemo(() => ytcQueryFn(county), [county])
     const ytRows = useQuery<YtRow>({ db: ytcDb, query: ytcQueryStr, init: [] })
 
@@ -107,6 +130,23 @@ export function FatalitiesPerYearPlot({ id = "per-year", county = null, height =
         }
 
         const rows = ytRows.map(row => ({ ...row }))
+
+        // Add current year row if it doesn't exist (for projections)
+        const hasCurrentYear = rows.some(r => r.year === curYear)
+        if (!hasCurrentYear && projections) {
+            const projTotal = projections.driver + projections.pedestrian + projections.cyclist + projections.passenger
+            if (projTotal > 0) {
+                rows.push({
+                    year: curYear,
+                    driver: 0,
+                    pedestrian: 0,
+                    cyclist: 0,
+                    passenger: 0,
+                    total: 0,
+                })
+            }
+        }
+
         const lastRow = rows[rows.length - 1]
         const lastYear = lastRow?.year
 
@@ -198,6 +238,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", county = null, height =
                     }
                 }
                 const total = actual + projected
+                // Skip if nothing to show
+                if (total === 0) return
                 annotations.push({
                     x: row.year,
                     y: total,
@@ -214,7 +256,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", county = null, height =
                 const actual = curYearRow[col] || 0
                 const projected = projectedRemainder[col] || 0
                 const total = actual + projected
-                if (projected > 0) {
+                // Skip annotation if actual is 0 (projected bar text already shows total)
+                if (projected > 0 && actual > 0) {
                     annotations.push({
                         x: curYear,
                         y: total,
@@ -256,8 +299,29 @@ export function FatalitiesPerYearPlot({ id = "per-year", county = null, height =
             height,
         }
 
-        return { data: traces, annotations, layout }
+        return { data: traces, annotations, layout, projectedRemainder }
     }, [ytRows, projections, activeType, showProjected, height])
+
+    // Compute year totals for summary text
+    const yearTotals = useMemo(() => {
+        const totals: Record<number, { actual: number; projected: number }> = {}
+        for (const row of ytRows) {
+            totals[row.year] = { actual: row.total, projected: 0 }
+        }
+        // Calculate projected total from projections data
+        const projectedTotal = projections
+            ? projections.driver + projections.pedestrian + projections.cyclist + projections.passenger
+            : 0
+        // Add projected remainder to current year (or create entry if no actual data yet)
+        if (projectedTotal > 0) {
+            const curYearActual = totals[curYear]?.actual ?? 0
+            totals[curYear] = {
+                actual: curYearActual,
+                projected: Math.max(0, projectedTotal - curYearActual),
+            }
+        }
+        return totals
+    }, [ytRows, projections])
 
     // Legend click handler
     const onLegendClick = useCallback((name: string) => {
@@ -297,16 +361,54 @@ export function FatalitiesPerYearPlot({ id = "per-year", county = null, height =
         return <div style={{ height: `${height}px` }}>Loading...</div>
     }
 
+    // Summary text data
+    const curYearData = yearTotals[curYear]
+    const prvYearData = yearTotals[prvYear]
+    const curYearActual = curYearData?.actual ?? 0
+    const curYearProjectedTotal = curYearActual + (curYearData?.projected ?? 0)
+    const prvYearTotal = prvYearData?.actual ?? 0
+    const total2021 = yearTotals[2021]?.actual ?? 0
+    const total2022 = yearTotals[2022]?.actual ?? 0
+    const countyLabel = county ? `${county} County` : "NJ"
+
     return (
-        <PlotWrapper
-            id={id}
-            data={data}
-            layout={layout}
-            src="plots/fatalities_per_year_by_type.png"
-            onLegendClick={onLegendClick}
-            onLegendDoubleClick={onLegendDoubleClick}
-            onLegendMouseOver={onLegendMouseOver}
-            onLegendMouseOut={onLegendMouseOut}
-        />
+        <div>
+            <h2 id={id}>
+                <a href={`#${id}`}>Car Crash Deaths</a>:
+                <CountySelect county={county} setCounty={setCounty} Counties={counties} />
+            </h2>
+            <PlotWrapper
+                id={id}
+                data={data}
+                layout={layout}
+                src="plots/fatalities_per_year_by_type.png"
+                onLegendClick={onLegendClick}
+                onLegendDoubleClick={onLegendDoubleClick}
+                onLegendMouseOver={onLegendMouseOver}
+                onLegendMouseOut={onLegendMouseOut}
+            />
+            <div className={css.plotNotes}>
+                <p>Hover legend labels to preview; click to lock.</p>
+                <p>
+                    {curYearActual > 0 ? (
+                        <>
+                            {countyLabel} has {curYearActual} reported deaths in {curYear} so far
+                            {curYearProjectedTotal > curYearActual ? (
+                                <>, and <A href={estimationHref}>is on pace</A> for {curYearProjectedTotal}{curYearProjectedTotal > prvYearTotal ? `, exceeding ${prvYear}'s ${prvYearTotal}` : ""}</>
+                            ) : null}.
+                        </>
+                    ) : curYearProjectedTotal > 0 ? (
+                        <>
+                            {countyLabel} <A href={estimationHref}>is on pace</A> for {curYearProjectedTotal} deaths in {curYear}
+                            {curYearProjectedTotal > prvYearTotal ? `, exceeding ${prvYear}'s ${prvYearTotal}` : ""}.
+                        </>
+                    ) : null}
+                </p>
+                {county === null && total2021 > 0 && total2022 > 0 ? (
+                    <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
+                ) : null}
+                <NjspSource />
+            </div>
+        </div>
     )
 }

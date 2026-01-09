@@ -70,10 +70,7 @@ export default function Home() {
                 {plotSpecs.slice(0, menus[0].sections.length).map(spec => (
                     <div key={spec.id} className={css["plot-container"]}>
                         {spec.id === "per-year" ? (
-                            <>
-                                <h2 id={spec.id}><a href={`#${spec.id}`}>Car Crash Deaths</a></h2>
-                                <FatalitiesPerYearPlot />
-                            </>
+                            <FatalitiesPerYearPlot />
                         ) : (
                             <Plot
                                 {...spec}
