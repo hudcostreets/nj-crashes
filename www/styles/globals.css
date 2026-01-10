@@ -25,7 +25,7 @@
   --shadow: rgba(0, 0, 0, 0.3);
   --link-color: #6db3f2;
   --plot-bg: #2d2d2d;
-  --plot-grid: #505050;
+  --plot-grid: #666666;
   --input-bg: #3d3d3d;
   --input-border: #555555;
 }
@@ -62,4 +62,16 @@ h1 a, h2 a {
 /* Make Plotly legend items show pointer cursor on hover */
 .legendtoggle {
   cursor: pointer;
+}
+
+/* Style Plotly unified hover tooltip for dark mode */
+[data-theme="dark"] .hoverlayer .hovertext {
+  stroke: var(--border-primary) !important;
+}
+[data-theme="dark"] .hoverlayer .hovertext path {
+  fill: var(--bg-secondary) !important;
+  stroke: var(--border-primary) !important;
+}
+[data-theme="dark"] .hoverlayer .hovertext text {
+  fill: var(--text-primary) !important;
 }
