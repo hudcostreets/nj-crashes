@@ -18,20 +18,20 @@ const estimationHref = `https://nbviewer.org/github/${repoWithOwner}/blob/main/n
 export type Type = "Cyclists" | "Drivers" | "Pedestrians" | "Passengers"
 const Types: Type[] = ["Cyclists", "Drivers", "Pedestrians", "Passengers"]
 
-// Trace colors matching the original plot
+// Trace colors - lightened for dark mode visibility
 const COLORS: Record<Type, string> = {
-    Cyclists: "#320c56",
-    Drivers: "#781c6d",
-    Pedestrians: "#ba3853",
-    Passengers: "#ed6925",
+    Cyclists: "#7c5295",  // Lightened from #320c56
+    Drivers: "#a94c9a",   // Lightened from #781c6d
+    Pedestrians: "#d85a6a",
+    Passengers: "#f08030",
 }
 
 // Lighter variants for projected data
 const PROJECTED_COLORS: Record<Type, string> = {
-    Cyclists: "#7a5a9e",
-    Drivers: "#b868a8",
-    Pedestrians: "#d88898",
-    Passengers: "#f5b875",
+    Cyclists: "#a888c8",
+    Drivers: "#c890b8",
+    Pedestrians: "#e8a0a8",
+    Passengers: "#f5c080",
 }
 
 export type YtRow = {
@@ -248,6 +248,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                     text: projected > 0 ? `${total}*` : `${total}`,
                     showarrow: false,
                     yshift: 10,
+                    font: { color: plotColors.textColor },
                 })
             })
         } else if (activeType && showProjected && lastYear === curYear) {
@@ -266,6 +267,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                         text: `${total}*`,
                         showarrow: false,
                         yshift: 10,
+                        font: { color: plotColors.textColor },
                     })
                 }
             }
@@ -288,6 +290,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                 fixedrange: true,
                 dtick: 1,
                 tickfont: { color: plotColors.textColor },
+                gridcolor: plotColors.gridColor,
             },
             yaxis: {
                 fixedrange: true,
