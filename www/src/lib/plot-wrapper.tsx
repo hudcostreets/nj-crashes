@@ -60,8 +60,9 @@ export default function PlotWrapper<TraceName extends string = string>({
         const legend = graphDiv.getElementsByClassName('legend')[0]
         if (!legend) return
 
-        const legendGroups = Array.from(legend.getElementsByClassName('groups'))
+        const legendGroups = Array.from(legend.getElementsByClassName('traces'))
         const listeners: Array<[Element, Record<string, () => void>]> = []
+        let mouseoutTimeout: ReturnType<typeof setTimeout> | null = null
 
         // Build a name lookup from trace names for validation
         const traceNames = new Set(data.filter(trace => trace.showlegend !== false).map(t => t.name))
@@ -75,12 +76,25 @@ export default function PlotWrapper<TraceName extends string = string>({
             const groupListeners: Record<string, () => void> = {}
 
             if (onLegendMouseOver) {
-                const overListener = () => onLegendMouseOver(traceName)
+                const overListener = () => {
+                    // Cancel pending mouseout
+                    if (mouseoutTimeout) {
+                        clearTimeout(mouseoutTimeout)
+                        mouseoutTimeout = null
+                    }
+                    onLegendMouseOver(traceName)
+                }
                 group.addEventListener('mouseover', overListener)
                 groupListeners.mouseover = overListener
             }
             if (onLegendMouseOut) {
-                const outListener = () => onLegendMouseOut(traceName)
+                const outListener = () => {
+                    // Delay mouseout to allow moving between legend items
+                    mouseoutTimeout = setTimeout(() => {
+                        onLegendMouseOut(traceName)
+                        mouseoutTimeout = null
+                    }, 100)
+                }
                 group.addEventListener('mouseout', outListener)
                 groupListeners.mouseout = outListener
             }
@@ -90,6 +104,7 @@ export default function PlotWrapper<TraceName extends string = string>({
 
         // Cleanup
         return () => {
+            if (mouseoutTimeout) clearTimeout(mouseoutTimeout)
             listeners.forEach(([group, groupListeners]) => {
                 Object.entries(groupListeners).forEach(([event, handler]) => {
                     group.removeEventListener(event, handler)

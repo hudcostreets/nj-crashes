@@ -59,6 +59,9 @@ export const plotSpecs: PlotSpec[] = [
         </>
     },
     { id: "per-month", name: "fatalities_per_month", title: "Fatalities per Month", menuName: "Per Month", dropdownSection: "NJSP", },
-    { id: "by-month-bars", name: "fatalities_by_month_bars", title: "Fatalities by Month", menuName: "Grouped by Month", dropdownSection: "NJSP", },
+    {
+        id: "by-month-bars", name: "fatalities_by_month_bars", title: "Fatalities by Month", menuName: "Grouped by Month", dropdownSection: "NJSP",
+        height: 550,
+    },
     ...YM_SC_PID_SPECS,
 ]

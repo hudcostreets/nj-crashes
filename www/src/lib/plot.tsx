@@ -7,8 +7,10 @@ import { Datum, Layout, Legend, Margin, PlotData } from "plotly.js"
 import { fromEntries, o2a } from "@rdub/base/objs"
 import PlotWrapper from "./plot-wrapper"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
+import { useSessionStorage } from "./useSessionStorage"
+import { COLORSCALES, ColorScaleName, getColorAt } from "./colorscales"
 
-export const DEFAULT_HEIGHT = 400
+export const DEFAULT_HEIGHT = 450
 export const DEFAULT_MARGIN: Partial<Margin> = { t: 20, b: 40, l: 40, r: 20 }
 
 export type PlotsDict<Params extends PlotParams = PlotParams> = { [id: string]: Params }
@@ -78,6 +80,11 @@ export type PlotSpec = {
     src?: string
     filter?: Filter
     children?: ReactNode
+    // Optional legend interaction handlers (pass no-op to disable defaults)
+    onLegendClick?: (name: string) => boolean | void
+    onLegendDoubleClick?: (name: string) => boolean | void
+    onLegendMouseOver?: (name: string) => boolean | void
+    onLegendMouseOut?: (name: string) => boolean | void
 }
 
 export type LegendHandlers<TraceName extends string = string> = {
@@ -177,6 +184,10 @@ export function Plot<TraceName extends string = string>({
     const [xRange, setXRange] = useState<null | [number, number]>(null)
     const [soloTrace, setSoloTrace] = useState<TraceName | null>(null)
     const [hoverTrace, setHoverTrace] = useState<TraceName | null>(null)
+    // Per-plot settings (scoped by plot ID)
+    const [colorScaleName, setColorScaleName] = useSessionStorage<ColorScaleName>(`plot-${id}-colorscale`, 'inferno')
+    const [legendPosition, setLegendPosition] = useSessionStorage<'bottom' | 'right'>(`plot-${id}-legend-position`, 'bottom')
+    const [ytdOnly, setYtdOnly] = useSessionStorage<boolean>(`plot-${id}-ytd-only`, false)
     const plotColors = usePlotColors()
 
     name = name || id
@@ -200,51 +211,159 @@ export function Plot<TraceName extends string = string>({
     // Use provided params or fetched params
     const params = providedParams || fetchedParams
 
+    // Determine active trace: hover takes precedence over solo
+    const activeTrace = hoverTrace ?? soloTrace
+
+    // Check if active trace uses yaxis2
+    const activeTraceUsesY2 = useMemo(() => {
+        if (!activeTrace || !params) return null
+        const trace = (params.data as PlotData[]).find(t => t.name === activeTrace)
+        if (!trace) return null
+        return (trace as any).yaxis === 'y2'
+    }, [activeTrace, params])
+
+    // Check if this plot has year traces (for YTD mode / colorscale)
+    const hasYearTraces = useMemo(() => {
+        if (!params) return false
+        return (params.data as PlotData[]).some(t => /^20\d{2}$/.test(String(t.name)))
+    }, [params])
+
+    // Effective YTD mode: only enabled for plots with year traces
+    const effectiveYtdOnly = ytdOnly && hasYearTraces
+
     // Compute layout when params available
     const newLayout: Partial<Layout> | null = useMemo(
         () => {
             if (!params) return null
             const { layout } = params
-            const { margin: plotMargin, xaxis, yaxis, yaxis2, title: _title, legend, ...rest } = layout
+            // Extract bgcolor values and template from rest to override them with theme colors
+            const { margin: plotMargin, xaxis, yaxis, yaxis2, title: _title, legend, paper_bgcolor: _paperBg, plot_bgcolor: _plotBg, template: _template, ...rest } = layout
+            // Increase bottom margin when legend is at bottom to prevent shifting
+            const bottomMargin = legendPosition === 'bottom' ? 80 : DEFAULT_MARGIN.b
             return {
-                margin: { ...DEFAULT_MARGIN, ...plotMargin, ...margin },
+                ...rest,
+                margin: { ...DEFAULT_MARGIN, ...plotMargin, ...margin, b: bottomMargin },
                 dragmode: filter ? "zoom" : false,
                 xaxis: {
+                    ...(xaxis || {}),
                     ...(filter ? {} : { fixedrange: true }),
                     tickfont: { color: plotColors.textColor },
-                    ...(xaxis || {}),
+                    gridcolor: plotColors.gridColor,
+                    // Limit x-axis to YTD (current month/day) when enabled (only for year-trace plots)
+                    ...(effectiveYtdOnly ? {
+                        range: (() => {
+                            const now = new Date()
+                            const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24))
+                            return [0, dayOfYear]
+                        })(),
+                    } : {}),
                 },
                 yaxis: {
+                    ...(yaxis || {}),
                     automargin: true,
                     gridcolor: plotColors.gridColor,
                     autorange: true,
                     fixedrange: true,
                     tickfont: { color: plotColors.textColor },
-                    ...(yaxis || {}),
+                    title: yaxis?.title ? { text: typeof yaxis.title === 'string' ? yaxis.title : yaxis.title?.text, font: { color: plotColors.textColor } } : undefined,
+                    // Hide left y-axis if active trace uses y2
+                    ...(activeTraceUsesY2 === true ? { visible: false } : {}),
+                    // Force range recalculation when YTD mode changes (only for year-trace plots)
+                    ...(effectiveYtdOnly ? { range: undefined } : {}),
                 },
                 ...(yaxis2 ? {
                     yaxis2: {
+                        ...yaxis2,
                         gridcolor: plotColors.gridColor,
                         tickfont: { color: plotColors.textColor },
-                        ...yaxis2,
+                        title: yaxis2?.title ? { text: typeof yaxis2.title === 'string' ? yaxis2.title : yaxis2.title?.text, font: { color: plotColors.textColor } } : undefined,
+                        // Hide right y-axis if active trace uses y (not y2)
+                        ...(activeTraceUsesY2 === false ? { visible: false } : {}),
                     }
                 } : {}),
                 legend: {
-                    font: { color: plotColors.textColor },
                     ...(legend || {}),
+                    font: { color: plotColors.textColor },
+                    traceorder: 'normal',
+                    ...(legendPosition === 'right' ? {
+                        orientation: 'v',
+                        x: 1.02,
+                        xanchor: 'left',
+                        y: 1,
+                        yanchor: 'top',
+                    } : {
+                        orientation: 'h',
+                        x: 0.5,
+                        xanchor: 'center',
+                        y: -0.08,
+                        yanchor: 'top',
+                    }),
+                },
+                hovermode: 'x unified',
+                hoverlabel: {
+                    bgcolor: plotColors.legendBg,
+                    bordercolor: plotColors.gridColor,
+                    font: { color: plotColors.textColor },
                 },
                 height,
                 autosize: true,
                 paper_bgcolor: plotColors.paperBg,
                 plot_bgcolor: plotColors.plotBg,
-                ...rest
+                // Force axis recalculation when YTD mode changes
+                datarevision: effectiveYtdOnly ? 'ytd' : 'full',
             }
         },
-        [params, margin, height, xRange, filter, plotColors]
+        [params, margin, height, xRange, filter, plotColors, activeTraceUsesY2, legendPosition, effectiveYtdOnly]
     )
 
-    // Determine active trace: hover takes precedence over solo
-    const activeTrace = hoverTrace ?? soloTrace
+    // Get the selected colorscale
+    const colorScale = COLORSCALES[colorScaleName]
+
+    // Color adjustments for dark mode visibility
+    const adjustColorForDarkMode = (color: string | undefined, traceName?: string): string | undefined => {
+        if (!color) return color
+        const lower = color.toLowerCase()
+
+        // Year traces (2008-2026): Apply selected colorscale
+        const yearMatch = traceName?.match(/^20\d{2}$/)
+        if (yearMatch) {
+            const year = parseInt(yearMatch[0])
+            const minYear = 2008, maxYear = 2026
+            // t=0 for oldest year (dark), t=1 for newest (bright) - chronological order
+            const t = (year - minYear) / (maxYear - minYear)
+            return getColorAt(colorScale, t)
+        }
+
+        // Black-ish colors - use context-aware replacement
+        if (lower === '#000004' || lower === 'black' || lower === '#000' || lower === '#000000') {
+            // 12mo avg line -> white for max contrast
+            if (traceName?.toLowerCase().includes('avg') || traceName?.toLowerCase().includes('12mo')) {
+                return '#ffffff'
+            }
+            // Homicides -> saturated blue-purple
+            return '#8080d0'
+        }
+
+        // Check hex colors close to black
+        if (lower.startsWith('#')) {
+            const hex = lower.slice(1)
+            let r = 0, g = 0, b = 0
+            if (hex.length === 3) {
+                r = parseInt(hex[0] + hex[0], 16)
+                g = parseInt(hex[1] + hex[1], 16)
+                b = parseInt(hex[2] + hex[2], 16)
+            } else if (hex.length === 6) {
+                r = parseInt(hex.slice(0, 2), 16)
+                g = parseInt(hex.slice(2, 4), 16)
+                b = parseInt(hex.slice(4, 6), 16)
+            }
+            // If too dark, lighten it
+            if (r < 40 && g < 40 && b < 40) {
+                return '#a0a0a0'
+            }
+        }
+        return color
+    }
 
     // Compute filtered traces when params available, applying solo/hover visibility
     const filteredTraces: PlotData[] | null = useMemo(() => {
@@ -253,15 +372,141 @@ export function Plot<TraceName extends string = string>({
         if (filter && xRange) {
             data = filter({ data, xRange })
         }
-        // Apply solo/hover trace visibility
-        if (activeTrace !== null) {
-            data = data.map(trace => ({
-                ...trace,
-                visible: trace.name === activeTrace ? true : "legendonly"
-            }))
+
+        // Filter data to YTD range if enabled (only for plots with year traces)
+        if (effectiveYtdOnly) {
+            const now = new Date()
+            const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24))
+            data = data.map(trace => {
+                const x = trace.x
+                const y = trace.y
+                if (!x || !y || !Array.isArray(x) || !Array.isArray(y)) return trace
+                // Filter to only include points within YTD range
+                const filtered = (x as number[]).map((xVal, i) => ({ x: xVal, y: (y as number[])[i] }))
+                    .filter(pt => typeof pt.x === 'number' && pt.x <= dayOfYear)
+                return {
+                    ...trace,
+                    x: filtered.map(pt => pt.x),
+                    y: filtered.map(pt => pt.y),
+                }
+            })
         }
+
+        // Sort traces by name chronologically (year traces like "2008", "2009")
+        // This ensures bar charts show years left-to-right in ascending order
+        data = [...data].sort((a, b) => {
+            const aName = String(a.name || '')
+            const bName = String(b.name || '')
+            // If both are years, sort chronologically ascending
+            if (/^20\d{2}$/.test(aName) && /^20\d{2}$/.test(bName)) {
+                return parseInt(aName) - parseInt(bName)
+            }
+            return 0  // Keep original order for non-year traces
+        })
+        // Process traces: apply visibility and clean up marker/line settings for dark mode
+        const ACTIVE_LINE_WIDTH = 5
+        const INACTIVE_LINE_WIDTH = 1.5
+
+        // Fade color while preserving some hue (HSL transform)
+        const fadeColor = (hexColor: string): string => {
+            // Parse hex to RGB
+            const hex = hexColor.replace('#', '')
+            const r = parseInt(hex.slice(0, 2), 16) / 255
+            const g = parseInt(hex.slice(2, 4), 16) / 255
+            const b = parseInt(hex.slice(4, 6), 16) / 255
+
+            // RGB to HSL
+            const max = Math.max(r, g, b), min = Math.min(r, g, b)
+            let h = 0, s = 0, l = (max + min) / 2
+
+            if (max !== min) {
+                const d = max - min
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+                switch (max) {
+                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break
+                    case g: h = ((b - r) / d + 2) / 6; break
+                    case b: h = ((r - g) / d + 4) / 6; break
+                }
+            }
+
+            // Reduce saturation and lightness for faded effect
+            s = s * 0.3  // Keep 30% saturation
+            l = Math.max(0.25, l * 0.5)  // Darken but keep minimum lightness
+
+            // HSL to RGB
+            const hue2rgb = (p: number, q: number, t: number) => {
+                if (t < 0) t += 1
+                if (t > 1) t -= 1
+                if (t < 1/6) return p + (q - p) * 6 * t
+                if (t < 1/2) return q
+                if (t < 2/3) return p + (q - p) * (2/3 - t) * 6
+                return p
+            }
+
+            const q = l < 0.5 ? l * (1 + s) : l + s - l * s
+            const p = 2 * l - q
+            const nr = Math.round(hue2rgb(p, q, h + 1/3) * 255)
+            const ng = Math.round(hue2rgb(p, q, h) * 255)
+            const nb = Math.round(hue2rgb(p, q, h - 1/3) * 255)
+
+            return `rgb(${nr}, ${ng}, ${nb})`
+        }
+
+        // Check if this is a bar chart (reordering would change bar positions in grouped mode)
+        const hasBarTraces = data.some(t => t.type === 'bar')
+
+        // Assign legendrank before reordering to preserve legend order
+        data = data.map((trace, idx) => ({ ...trace, legendrank: idx }))
+
+        // Reorder for z-order (selected trace drawn on top) - skip for bar charts
+        if (activeTrace !== null && !hasBarTraces) {
+            const selectedIdx = data.findIndex(t => t.name === activeTrace)
+            if (selectedIdx !== -1) {
+                const [selected] = data.splice(selectedIdx, 1)
+                data.push(selected)
+            }
+        }
+
+        data = data.map(trace => {
+            const newTrace = { ...trace }
+            const isSelected = activeTrace !== null && trace.name === activeTrace
+            const isGreyedOut = activeTrace !== null && trace.name !== activeTrace
+
+            // Fix bar markers for dark mode
+            if (trace.type === 'bar' && trace.marker) {
+                const markerColor = typeof trace.marker.color === 'string' ? trace.marker.color : undefined
+                const adjustedColor = adjustColorForDarkMode(markerColor, trace.name as string)
+                newTrace.marker = {
+                    ...trace.marker,
+                    color: isGreyedOut && adjustedColor ? fadeColor(adjustedColor) : adjustedColor,
+                    // Remove bar outlines
+                    line: { color: 'transparent', width: 0 }
+                }
+            }
+            // Fix line colors for scatter/line traces
+            if ((trace.type === 'scatter' || trace.type === 'scattergl') && trace.line) {
+                const lineColor = typeof trace.line.color === 'string' ? trace.line.color : undefined
+                const adjustedColor = adjustColorForDarkMode(lineColor, trace.name as string)
+                let color = adjustedColor
+                let width = trace.line.width ?? 2
+                if (isSelected) {
+                    // For grayscale, use white for selected; otherwise keep original color
+                    color = colorScaleName === 'grayscale' ? '#ffffff' : adjustedColor
+                    width = ACTIVE_LINE_WIDTH
+                } else if (isGreyedOut && adjustedColor) {
+                    color = fadeColor(adjustedColor)
+                    width = INACTIVE_LINE_WIDTH
+                }
+                newTrace.line = {
+                    ...trace.line,
+                    color,
+                    width,
+                }
+            }
+            return newTrace
+        })
         return data
-    }, [params, xRange, filter, activeTrace])
+    }, [params, xRange, filter, activeTrace, plotColors, colorScale, colorScaleName, effectiveYtdOnly])
 
     // Default legend click handler: solo trace on click
     const onLegendClick = useMemo(() => {
@@ -287,7 +532,7 @@ export function Plot<TraceName extends string = string>({
         }
     }, [providedOnLegendDoubleClick])
 
-    // Default legend mouse over handler: preview solo
+    // Default legend hover handlers: preview trace on hover
     const onLegendMouseOver = useMemo(() => {
         if (providedOnLegendMouseOver) return providedOnLegendMouseOver
         return (name: TraceName) => {
@@ -296,7 +541,6 @@ export function Plot<TraceName extends string = string>({
         }
     }, [providedOnLegendMouseOver])
 
-    // Default legend mouse out handler: clear preview
     const onLegendMouseOut = useMemo(() => {
         if (providedOnLegendMouseOut) return providedOnLegendMouseOut
         return () => {
@@ -342,6 +586,16 @@ export function Plot<TraceName extends string = string>({
         )
     }
 
+    // Debug: log layout when YTD mode changes
+    if (id === 'ytd' && effectiveYtdOnly) {
+        console.log('YTD layout yaxis:', newLayout.yaxis)
+        console.log('YTD filteredTraces y ranges:', filteredTraces?.map(t => ({
+            name: t.name,
+            yLen: Array.isArray(t.y) ? t.y.length : 'not array',
+            yMax: Array.isArray(t.y) ? Math.max(...(t.y as number[]).filter(v => typeof v === 'number')) : 'N/A',
+        })))
+    }
+
     return (
         <div id={id} key={id} className="plot">
             {heading ?? (title && <h2><a href={`#${id}`}>{title}</a></h2>)}
@@ -365,6 +619,59 @@ export function Plot<TraceName extends string = string>({
                 onLegendMouseOver={onLegendMouseOver as any}
                 onLegendMouseOut={onLegendMouseOut as any}
             />
+            {hasYearTraces && (
+                <div style={{ marginTop: '0.5em', fontSize: '12px', display: 'flex', gap: '1em', flexWrap: 'wrap' }}>
+                    <div>
+                        <label style={{ marginRight: '0.5em' }}>Colors:</label>
+                        <select
+                            value={colorScaleName}
+                            onChange={e => setColorScaleName(e.target.value as ColorScaleName)}
+                            style={{
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                border: '1px solid var(--border-primary)',
+                                background: 'var(--bg-secondary)',
+                                color: 'var(--text-primary)',
+                                fontSize: '12px',
+                            }}
+                        >
+                            <option value="inferno">Inferno</option>
+                            <option value="viridis">Viridis</option>
+                            <option value="plasma">Plasma</option>
+                            <option value="grayscale">Grayscale</option>
+                            <option value="blueOrange">Blue → Orange</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style={{ marginRight: '0.5em' }}>Legend:</label>
+                        <select
+                            value={legendPosition}
+                            onChange={e => setLegendPosition(e.target.value as 'bottom' | 'right')}
+                            style={{
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                border: '1px solid var(--border-primary)',
+                                background: 'var(--bg-secondary)',
+                                color: 'var(--text-primary)',
+                                fontSize: '12px',
+                            }}
+                        >
+                            <option value="bottom">Bottom</option>
+                            <option value="right">Right</option>
+                        </select>
+                    </div>
+                    {id === 'ytd' && (
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.3em', cursor: 'pointer' }}>
+                            <input
+                                type="checkbox"
+                                checked={ytdOnly}
+                                onChange={e => setYtdOnly(e.target.checked)}
+                            />
+                            YTD only
+                        </label>
+                    )}
+                </div>
+            )}
             {children}
         </div>
     )
