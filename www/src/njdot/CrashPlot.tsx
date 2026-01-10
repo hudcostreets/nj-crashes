@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { EndYear } from "@/src/constants"
 import { Layout, PlotData } from "plotly.js"
 import Plot from "react-plotly.js"
 import { useParquet } from "@/src/lib/useParquet"
@@ -130,8 +131,8 @@ export default function CrashPlot({
     const { traces, layout } = useMemo(() => {
         if (!data || data.length === 0) return { traces: [], layout: {} }
 
-        // Filter data by severity and county
-        let filtered = data.filter(row => severities.includes(row.s))
+        // Filter data by severity, county, and valid years
+        let filtered = data.filter(row => severities.includes(row.s) && getYear(row) <= EndYear)
         // Only filter by county when NOT stacking by county (i.e., when filtering to specific counties)
         const filterByCounty = counties.length < ALL_COUNTIES.length && stackBy !== 'county'
         if (filterByCounty && data.length > 0 && 'cc' in data[0]) {
@@ -142,6 +143,12 @@ export default function CrashPlot({
 
         const traces: Partial<PlotData>[] = []
 
+        // Format number as "Xk" for thousands
+        const formatK = (n: number): string => {
+            if (n >= 1000) return `${Math.round(n / 1000)}k`
+            return String(Math.round(n))
+        }
+
         // Helper to build a trace from grouped data
         const buildTrace = (
             grouped: Map<string, number>,
@@ -151,12 +158,19 @@ export default function CrashPlot({
             const sorted = [...grouped.entries()].sort((a, b) => a[0].localeCompare(b[0]))
             // Apply visibility based on active trace (solo/hover)
             const visible = activeTrace === null || activeTrace === name ? true : 'legendonly'
+            const ys = sorted.map(([, v]) => v)
             return {
                 x: sorted.map(([k]) => timeGranularity === 'month' ? k : parseInt(k)),
-                y: sorted.map(([, v]) => v),
+                y: ys,
                 type: 'bar',
                 name,
                 visible,
+                // Only show inner-bar text when stacking (not for 'none' which has outer annotations)
+                text: timeGranularity === 'year' && stackBy !== 'none' ? ys.map(formatK) : undefined,
+                textposition: 'inside',
+                textangle: 0,
+                textfont: { size: 9 },
+                hovertemplate: `${name}: %{y:,}<extra></extra>`,
                 ...(color ? { marker: { color } } : {}),
             }
         }
@@ -290,28 +304,108 @@ export default function CrashPlot({
             }
         }
 
-        // Add 12-month moving average line for monthly view
-        if (show12moAvg && timeGranularity === 'month' && stackBy === 'none') {
-            const barTrace = traces[0]
-            if (barTrace && barTrace.x && barTrace.y) {
-                const x = barTrace.x as string[]
-                const y = barTrace.y as number[]
-                const avgY: (number | null)[] = []
-                for (let i = 0; i < y.length; i++) {
-                    if (i < 11) {
-                        avgY.push(null)
-                    } else {
-                        const window = y.slice(i - 11, i + 1)
-                        avgY.push(window.reduce((a, b) => a + b, 0) / 12)
+        // Add 12-month moving average lines for monthly view (when stack is none or severity)
+        if (show12moAvg && timeGranularity === 'month' && (stackBy === 'none' || stackBy === 'severity')) {
+            const firstTrace = traces[0]
+            if (firstTrace && firstTrace.x) {
+                const x = firstTrace.x as string[]
+
+                // Compute 12-mo avg helper
+                const compute12moAvg = (ys: number[]): (number | null)[] => {
+                    const avgY: (number | null)[] = []
+                    for (let i = 0; i < ys.length; i++) {
+                        if (i < 11) {
+                            avgY.push(null)
+                        } else {
+                            const window = ys.slice(i - 11, i + 1)
+                            avgY.push(window.reduce((a, b) => a + b, 0) / 12)
+                        }
                     }
+                    return avgY
                 }
-                traces.push({
+
+                // Lighten color for 12-mo avg line
+                const lightenColor = (hex: string): string => {
+                    // Convert hex to RGB, lighten, convert back
+                    const r = parseInt(hex.slice(1, 3), 16)
+                    const g = parseInt(hex.slice(3, 5), 16)
+                    const b = parseInt(hex.slice(5, 7), 16)
+                    // Lighten by blending with white
+                    const factor = 0.4
+                    const lr = Math.round(r + (255 - r) * factor)
+                    const lg = Math.round(g + (255 - g) * factor)
+                    const lb = Math.round(b + (255 - b) * factor)
+                    return `rgb(${lr}, ${lg}, ${lb})`
+                }
+
+                // Add 12-mo avg line for each bar trace
+                const barTraces = traces.filter(t => t.type === 'bar' && t.y)
+                for (const trace of barTraces) {
+                    const ys = trace.y as number[]
+                    const baseColor = trace.marker?.color as string || '#888'
+                    const lineColor = lightenColor(baseColor)
+                    traces.push({
+                        x,
+                        y: compute12moAvg(ys),
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: `${trace.name} (12-mo)`,
+                        legendgroup: trace.name,
+                        showlegend: false,
+                        line: { color: lineColor, width: 3.5 },
+                        visible: trace.visible,
+                        hovertemplate: `${trace.name} (12-mo): %{y:,.0f}<extra></extra>`,
+                    })
+                }
+
+                // Add total 12-mo avg line if multiple traces
+                if (barTraces.length > 1) {
+                    const totals: number[] = new Array(x.length).fill(0)
+                    for (const trace of barTraces) {
+                        const ys = trace.y as number[]
+                        for (let i = 0; i < ys.length; i++) {
+                            totals[i] += ys[i] || 0
+                        }
+                    }
+                    traces.push({
+                        x,
+                        y: compute12moAvg(totals),
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: 'Total (12-mo)',
+                        line: { color: '#ffffff', width: 2.5 },
+                        hovertemplate: 'Total (12-mo): %{y:,.0f}<extra></extra>',
+                    })
+                }
+            }
+        }
+
+        // Compute totals for annotations (only when few enough bars to label, not in percentage mode)
+        const annotations: Layout['annotations'] = []
+        // Count unique x values to determine if we should annotate
+        const uniqueXValues = new Set(traces.flatMap(t => t.x as (string | number)[] || []))
+        const shouldAnnotate = !stackPercent && activeTrace === null && uniqueXValues.size <= 30
+        if (shouldAnnotate) {
+            // Sum across all traces for each x value
+            const periodTotals = new Map<string | number, number>()
+            for (const trace of traces) {
+                if (!trace.x || !trace.y) continue
+                const xs = trace.x as (string | number)[]
+                const ys = trace.y as number[]
+                for (let i = 0; i < xs.length; i++) {
+                    const x = xs[i]
+                    const y = ys[i] || 0
+                    periodTotals.set(x, (periodTotals.get(x) || 0) + y)
+                }
+            }
+            for (const [x, total] of periodTotals) {
+                annotations.push({
                     x,
-                    y: avgY,
-                    type: 'scatter',
-                    mode: 'lines',
-                    name: '12-mo Avg',
-                    line: { color: '#333', width: 2 },
+                    y: total,
+                    text: total >= 1000 ? `${(total / 1000).toFixed(0)}k` : String(Math.round(total)),
+                    showarrow: false,
+                    yshift: 10,
+                    font: { color: plotColors.textColor, size: 10 },
                 })
             }
         }
@@ -320,16 +414,20 @@ export default function CrashPlot({
             barmode: stackBy !== 'none' ? 'stack' : undefined,
             barnorm: stackPercent && stackBy !== 'none' ? 'percent' : undefined,
             height,
-            margin: { t: 10, b: 60, l: 60, r: 20 },
+            margin: { t: 20, b: 60, l: 60, r: 20 },
             xaxis: {
                 showspikes: false,
                 dtick: timeGranularity === 'year' ? 1 : undefined,
                 tickfont: { color: plotColors.textColor },
+                gridcolor: plotColors.gridColor,
+                fixedrange: true,
             },
             yaxis: {
                 gridcolor: plotColors.gridColor,
                 tickfont: { color: plotColors.textColor },
+                fixedrange: true,
             },
+            dragmode: false,
             legend: {
                 orientation: 'h',
                 y: -0.15,
@@ -338,8 +436,14 @@ export default function CrashPlot({
                 font: { color: plotColors.textColor },
             },
             hovermode: 'x unified',
+            hoverlabel: {
+                bgcolor: plotColors.legendBg,
+                bordercolor: plotColors.gridColor,
+                font: { color: plotColors.textColor },
+            },
             paper_bgcolor: plotColors.paperBg,
             plot_bgcolor: plotColors.plotBg,
+            annotations,
         }
 
         return { traces, layout }
@@ -376,15 +480,34 @@ export default function CrashPlot({
         const legend = plotRef.current.querySelector('.legend')
         if (!legend) return
 
-        const groups = Array.from(legend.querySelectorAll('.groups'))
+        const groups = Array.from(legend.querySelectorAll('.traces'))
         const listeners: Array<{ element: Element; type: string; handler: () => void }> = []
+        let mouseoutTimeout: ReturnType<typeof setTimeout> | null = null
 
-        groups.forEach((group, idx) => {
-            const traceName = traces[idx]?.name
-            if (!traceName) return
+        // Build set of valid trace names
+        const traceNames = new Set(traces.map(t => t.name))
 
-            const overHandler = () => setHoverTrace(traceName as string)
-            const outHandler = () => setHoverTrace(null)
+        groups.forEach((group) => {
+            // Extract trace name from legend text, not index
+            const textEl = group.querySelector('.legendtext')
+            const traceName = textEl?.textContent?.trim()
+            if (!traceName || !traceNames.has(traceName)) return
+
+            const overHandler = () => {
+                // Cancel pending mouseout
+                if (mouseoutTimeout) {
+                    clearTimeout(mouseoutTimeout)
+                    mouseoutTimeout = null
+                }
+                setHoverTrace(traceName as string)
+            }
+            const outHandler = () => {
+                // Delay mouseout to allow moving between legend items
+                mouseoutTimeout = setTimeout(() => {
+                    setHoverTrace(null)
+                    mouseoutTimeout = null
+                }, 100)
+            }
 
             group.addEventListener('mouseover', overHandler)
             group.addEventListener('mouseout', outHandler)
@@ -394,6 +517,7 @@ export default function CrashPlot({
         })
 
         return () => {
+            if (mouseoutTimeout) clearTimeout(mouseoutTimeout)
             listeners.forEach(({ element, type, handler }) => {
                 element.removeEventListener(type, handler)
             })
@@ -525,7 +649,7 @@ export default function CrashPlot({
                                     type="checkbox"
                                     checked={show12moAvg}
                                     onChange={(e) => setShow12moAvg(e.target.checked)}
-                                    disabled={timeGranularity !== 'month' || stackBy !== 'none'}
+                                    disabled={timeGranularity !== 'month' || (stackBy !== 'none' && stackBy !== 'severity')}
                                 />
                                 12-mo Avg
                             </label>
