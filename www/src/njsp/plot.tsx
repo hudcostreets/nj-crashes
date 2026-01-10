@@ -319,8 +319,8 @@ export function NjspPlot(
                         : null
                 )
             }
-            onLegendClick={onLegendClick}
-            onLegendDoubleClick={onLegendDoubleClick}
+            onLegendClick={onLegendClick as any}
+            onLegendDoubleClick={onLegendDoubleClick as any}
         >
             <NjspChildren
                 rundate={rundate}
