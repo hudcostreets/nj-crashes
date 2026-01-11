@@ -29,10 +29,6 @@ on:
         type: boolean
         description: "Update crash log in AWS"
         default: true
-      update_plots:
-        type: boolean
-        description: "Update plots"
-        default: true
       post_to_slack:
         type: boolean
         description: "Post to Slack"
@@ -61,7 +57,7 @@ jobs:
           echo "inputs: ${{ toJson(inputs) }}"
       - name: Setup Python?
         id: needs_python
-        run: echo "y=${{ github.event.schedule || inputs.refresh_data || inputs.harmonize_muni_codes || inputs.update_pqts || inputs.update_slack_sha || inputs.update_plots || inputs.post_to_slack || '' }}" | tee -a $GITHUB_OUTPUT
+        run: echo "y=${{ github.event.schedule || inputs.refresh_data || inputs.harmonize_muni_codes || inputs.update_pqts || inputs.update_slack_sha || inputs.post_to_slack || '' }}" | tee -a $GITHUB_OUTPUT
       - uses: actions/checkout@v4
         if: steps.needs_python.outputs.y || inputs.build_www
         with:
@@ -105,15 +101,11 @@ jobs:
       - name: Update crash log
         if: inputs.update_crash_log || steps.refresh_data.outputs.sha
         run: njsp crash_log compute --s3 -v
-      - name: Compute plot_data.changed
-        id: plot_data
-        if: (github.event.schedule || inputs.update_plots) && (steps.update_slack_sha.outputs.sha || !inputs.short_circuit)
-        run: echo "changed=1" >> $GITHUB_OUTPUT
       - name: Refresh annual summaries
-        if: steps.plot_data.outputs.changed
+        if: github.event.schedule || steps.update_slack_sha.outputs.sha || !inputs.short_circuit
         run: njsp -cc refresh_summaries
       - name: "Fetch ≈1yr of history"
-        if: steps.plot_data.outputs.changed
+        if: github.event.schedule || steps.update_slack_sha.outputs.sha || !inputs.short_circuit
         run: |
           year=$(date +%Y)
           let prv_year=year-1
@@ -122,12 +114,9 @@ jobs:
           git fetch --shallow-since "$since" origin ${{ github.ref_name }}
           echo "Fetched $(git rev-list --count) revisions"
       - name: Update YTD / ROY projections
-        if: steps.plot_data.outputs.changed
+        id: update_projections
+        if: github.event.schedule || steps.update_slack_sha.outputs.sha || !inputs.short_circuit
         run: njsp -cc update_projections
-      - name: Update plot data
-        id: update_plots
-        if: steps.plot_data.outputs.changed
-        run: njsp -cc update_plots
       - name: Post to Slack
         id: post_to_slack
         if: (github.event.schedule || inputs.post_to_slack) && steps.update_slack_sha.outputs.sha
@@ -137,7 +126,7 @@ jobs:
           SLACK_CHANNEL_ID: ${{ inputs.slack_channel_id || secrets.SLACK_CHANNEL_ID }}
       - name: Decide whether to rebuild www
         id: build_www
-        if: (github.event.schedule || inputs.build_www) && (steps.update_plots.outputs.sha || !inputs.short_circuit)
+        if: (github.event.schedule || inputs.build_www) && (steps.update_projections.outputs.sha || !inputs.short_circuit)
         run: |
           echo "run=1" >> $GITHUB_OUTPUT
           echo "sha=$(git log -1 --format=%H)" >> $GITHUB_OUTPUT
