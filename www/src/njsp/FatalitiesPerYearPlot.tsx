@@ -107,7 +107,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
     const [hoverType, setHoverType] = useState<Type | null>(null)
     const [showProjected, setShowProjected] = useState(true)
     const containerRef = useRef<HTMLDivElement>(null)
-    const [containerWidth, setContainerWidth] = useState(0)
+    const [containerWidth, setContainerWidth] = useState(800)  // Default to reasonable width before ResizeObserver fires
 
     // Track container width for responsive annotation sizing
     useEffect(() => {
