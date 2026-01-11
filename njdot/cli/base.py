@@ -143,6 +143,60 @@ def compute_db(force_recompute, db_path, n_jobs, dry_run, pqt_dir, replace, page
             write_db(tbl, **kwargs)
 
 
+@compute.command('cm')
+@click.option('-f', '--force', is_flag=True, help="Force recompute even if output exists")
+@click.option('-n', '--dry-run', is_flag=True, help="Don't write output file")
+def compute_cm(force, dry_run):
+    """Compute county-month aggregations (cm.pqt) from crashes.parquet."""
+    from njdot.data import cc2cn
+    from njdot.paths import CM_PQT, CRASHES_PQT
+    from utz import to_dt
+
+    if exists(CM_PQT) and not force:
+        err(f"{CM_PQT} exists; use -f/--force to overwrite")
+        return
+
+    err(f"Loading {CRASHES_PQT}...")
+    df = pd.read_parquet(CRASHES_PQT, columns=['year', 'cc', 'dt', 'ti', 'tk', 'severity'])
+
+    # Filter out Port Authority (cc=99)
+    n_before = len(df)
+    df = df[df.cc != 99]
+    n_filtered = n_before - len(df)
+    if n_filtered:
+        err(f"Filtered {n_filtered} Port Authority crashes (cc=99)")
+
+    # Map county code to name
+    df['County'] = df.cc.map(cc2cn).str.upper()
+
+    # Compute aggregation columns
+    df['Total Injured'] = df.ti.fillna(0).astype(int)
+    df['Total Killed'] = df.tk.fillna(0).astype(int)
+    df['Property Damage'] = (df.severity == 'p').astype(int)
+    df['Year'] = df.dt.dt.year
+    df['Month'] = df.dt.dt.month
+
+    # Aggregate by county-month
+    keys = ['Total Injured', 'Property Damage', 'Total Killed']
+    cm = (
+        df
+        .groupby(['Year', 'Month', 'County'])
+        [keys]
+        .sum()
+        .reset_index()
+    )
+    cm['Date'] = cm.apply(lambda r: to_dt('%d-%02d' % (r.Year, r.Month)), axis=1)
+    cm = cm[['Date', 'County'] + keys]
+
+    err(f"Total rows: {len(cm)}")
+
+    if not dry_run:
+        err(f"Writing {CM_PQT}")
+        cm.to_parquet(CM_PQT)
+    else:
+        err(f"Dry run; would write {CM_PQT}")
+
+
 # Add rawdata subcommand at end to avoid import ordering issues
 try:
     from njdot.rawdata import rawdata
