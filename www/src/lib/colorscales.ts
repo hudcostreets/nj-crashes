@@ -62,13 +62,15 @@ export function getColors(scale: ColorScale, n: number, reverse = false): string
 
 // Inferno colorscale - adjusted for dark mode visibility
 // All colors should be clearly visible against dark background
+// Lightened start for better luminance balance across years
 export const INFERNO: ColorScale = {
     name: 'Inferno',
     stops: [
-        { pos: 0.0, color: '#9c179e' },  // Bright magenta start
-        { pos: 0.25, color: '#cc4778' },
-        { pos: 0.5, color: '#ed6925' },
-        { pos: 0.75, color: '#f9b621' },
+        { pos: 0.0, color: '#d070d0' },  // Lighter magenta for better visibility
+        { pos: 0.2, color: '#b84090' },
+        { pos: 0.4, color: '#cc4778' },
+        { pos: 0.6, color: '#ed6925' },
+        { pos: 0.8, color: '#f9b621' },
         { pos: 1.0, color: '#fcffa4' },
     ],
 }
