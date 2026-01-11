@@ -1,10 +1,9 @@
 import { loadPlot } from "@rdub/next-plotly/plot-load";
-import { njspPlotSpec, } from "@/src/plotSpecs";
 import { initDuckDb, runQuery } from "@rdub/duckdb/duckdb";
 import { registerTableData, TableData } from "@/src/tableData";
 import { loadTableData } from "@/server/tableData";
 import { Counties } from "@/server/county";
-import { AllTypes, getPlotData, PlotParams, Props, YtRow, } from "@/src/njsp/plot";
+import { AllTypes, getPlotData, njspPlotSpec, PlotParams, Props, YtRow, } from "@/src/njsp/plot";
 import { loadSync } from "@rdub/base/load";
 import { RUNDATE_RELPATH, YearTypeCountyCsv } from "../paths";
 import { getTypeProjections } from "./projections";

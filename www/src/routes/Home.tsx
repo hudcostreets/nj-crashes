@@ -7,32 +7,17 @@ import Footer from "@/src/footer"
 import A from "@/src/lib/a"
 import { EndYear } from "@/src/constants"
 import css from "@/src/home.module.scss"
-import { plotSpecs } from "@/src/plotSpecs"
-import { Plot } from "@/src/lib/plot"
 import CrashPlot from "@/src/njdot/CrashPlot"
 import { FatalitiesPerYearPlot } from "@/src/njsp/FatalitiesPerYearPlot"
+import { YtdDeathsPlot } from "@/src/njsp/YtdDeathsPlot"
+import { HomicidesComparisonPlot } from "@/src/njsp/HomicidesComparisonPlot"
+import { FatalitiesPerMonthPlot } from "@/src/njsp/FatalitiesPerMonthPlot"
+import { FatalitiesByMonthBarsPlot } from "@/src/njsp/FatalitiesByMonthBarsPlot"
+import { PlotContainer } from "@/src/components/PlotContainer"
 
 export default function Home() {
     const basePath = getBasePath()
     const title = "NJ Traffic Crash Data"
-
-    // Build menu structure from plot specs
-    const sections = plotSpecs.map(({ id, title, menuName, dropdownSection }) => ({
-        id,
-        name: menuName || title,
-        dropdownSection
-    }))
-
-    const menus = [
-        { id: "NJSP", name: "NJSP" },
-        { id: "state-years", name: "State x Years" },
-        { id: "county-years", name: "Counties x Years" },
-        { id: "state-months", name: "State x Months" },
-        { id: "county-months", name: "Counties x Months" },
-    ].map(s => ({
-        ...s,
-        sections: sections.filter(({ dropdownSection }) => s.name === dropdownSection)
-    }))
 
     return (
         <div className={css.container}>
@@ -46,12 +31,12 @@ export default function Home() {
             <main className={css.index}>
                 <h1 className={css.title}>{title}</h1>
                 <p>
-                    <A href="#per-year">The first {menus[0].sections.length} plots below</A> come from{" "}
+                    <A href="#per-year">The first 5 plots below</A> come from{" "}
                     <A title="NJ State Police fatal crash data" href={NjspFatalAcc}>NJ State Police fatal crash data</A>{" "}
                     (2008-present). It's generally current to the previous day.
                 </p>
                 <p>
-                    <A href="#njdot">Below that</A> are plots of{" "}
+                    <A href="#njdot">Below that</A> is an interactive plot of{" "}
                     <A title="NJ DOT raw crash data" href={NjdotRawData}>NJ DOT raw crash data</A>,{" "}
                     which includes 6MM property-damage, injury, and fatal crashes from 2001-{EndYear}.
                     It's a richer dataset, but less up to date.
@@ -67,28 +52,16 @@ export default function Home() {
                 </ul>
 
                 {/* NJSP Plots */}
-                {plotSpecs.slice(0, menus[0].sections.length).map(spec => (
-                    <div key={spec.id} className={css["plot-container"]}>
-                        {spec.id === "per-year" ? (
-                            <FatalitiesPerYearPlot />
-                        ) : (
-                            <Plot
-                                {...spec}
-                                basePath={basePath}
-                                margin={{ t: 10, b: 30 }}
-                            />
-                        )}
-                        <hr />
-                    </div>
-                ))}
+                <PlotContainer><FatalitiesPerYearPlot /></PlotContainer>
+                <PlotContainer><YtdDeathsPlot /></PlotContainer>
+                <PlotContainer><HomicidesComparisonPlot /></PlotContainer>
+                <PlotContainer><FatalitiesPerMonthPlot /></PlotContainer>
+                <PlotContainer><FatalitiesByMonthBarsPlot /></PlotContainer>
 
                 {/* NJDOT Section */}
                 <h1 id="njdot"><a href="#njdot">NJ DOT Crash Data</a></h1>
 
-                {/* Interactive NJDOT Plot */}
-                <div className={css["plot-container"]}>
-                    <CrashPlot />
-                </div>
+                <PlotContainer showHr={false}><CrashPlot /></PlotContainer>
                 <p>
                     NJ DOT{" "}
                     <A title="NJ DOT raw crash data" href={NjdotRawData}>

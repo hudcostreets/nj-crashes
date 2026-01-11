@@ -13,7 +13,7 @@ import { Cyclist, Driver, Passenger, Pedestrian, Person } from "@/src/icons";
 import { Tooltip } from "@/src/tooltip";
 import CityLink from "@/src/city-link";
 import CountyLink from "@/src/county-link";
-import { curYear } from "@/src/plotSpecs";
+import { curYear } from "@/src/constants";
 
 export type Props = Base & {
     cc: number | null
