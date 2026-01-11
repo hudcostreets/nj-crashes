@@ -11,7 +11,7 @@ import { useSessionStorage } from "./useSessionStorage"
 import { COLORSCALES, ColorScaleName, getColorAt } from "./colorscales"
 
 export const DEFAULT_HEIGHT = 450
-export const DEFAULT_MARGIN: Partial<Margin> = { t: 20, b: 40, l: 40, r: 20 }
+export const DEFAULT_MARGIN: Partial<Margin> = { t: 20, b: 40, l: 0, r: 0 }
 
 export type PlotsDict<Params extends PlotParams = PlotParams> = { [id: string]: Params }
 
@@ -186,7 +186,10 @@ export function Plot<TraceName extends string = string>({
     const [hoverTrace, setHoverTrace] = useState<TraceName | null>(null)
     // Per-plot settings (scoped by plot ID)
     const [colorScaleName, setColorScaleName] = useSessionStorage<ColorScaleName>(`plot-${id}-colorscale`, 'inferno')
-    const [legendPosition, setLegendPosition] = useSessionStorage<'bottom' | 'right'>(`plot-${id}-legend-position`, 'bottom')
+    // Plots with many year traces default to right legend
+    const rightLegendPlots = ['ytd', 'by-month-bars']
+    const defaultLegendPosition = rightLegendPlots.includes(id) ? 'right' : 'bottom'
+    const [legendPosition, setLegendPosition] = useSessionStorage<'bottom' | 'right'>(`plot-${id}-legend-position`, defaultLegendPosition)
     const [ytdOnly, setYtdOnly] = useSessionStorage<boolean>(`plot-${id}-ytd-only`, false)
     const plotColors = usePlotColors()
 
@@ -231,6 +234,9 @@ export function Plot<TraceName extends string = string>({
     // Effective YTD mode: only enabled for plots with year traces
     const effectiveYtdOnly = ytdOnly && hasYearTraces
 
+    // Get the selected colorscale (needed for annotation colors)
+    const colorScale = COLORSCALES[colorScaleName]
+
     // Compute layout when params available
     const newLayout: Partial<Layout> | null = useMemo(
         () => {
@@ -240,43 +246,123 @@ export function Plot<TraceName extends string = string>({
             const { margin: plotMargin, xaxis, yaxis, yaxis2, title: _title, legend, paper_bgcolor: _paperBg, plot_bgcolor: _plotBg, template: _template, ...rest } = layout
             // Increase bottom margin when legend is at bottom to prevent shifting
             const bottomMargin = legendPosition === 'bottom' ? 80 : DEFAULT_MARGIN.b
+            // YTD plot gets tighter margins; others use defaults with automargin
+            const isYtdPlot = id === 'ytd'
+            const leftMargin = isYtdPlot ? 35 : 0
+            const rightMargin = isYtdPlot ? 5 : 0
             return {
                 ...rest,
-                margin: { ...DEFAULT_MARGIN, ...plotMargin, ...margin, b: bottomMargin },
+                margin: { ...DEFAULT_MARGIN, ...plotMargin, ...margin, b: bottomMargin, r: rightMargin, l: leftMargin },
                 dragmode: filter ? "zoom" : false,
-                xaxis: {
-                    ...(xaxis || {}),
-                    ...(filter ? {} : { fixedrange: true }),
-                    tickfont: { color: plotColors.textColor },
-                    gridcolor: plotColors.gridColor,
-                    // Limit x-axis to YTD (current month/day) when enabled (only for year-trace plots)
-                    ...(effectiveYtdOnly ? {
-                        range: (() => {
-                            const now = new Date()
-                            const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24))
-                            return [0, dayOfYear]
-                        })(),
-                    } : {}),
-                },
-                yaxis: {
-                    ...(yaxis || {}),
-                    automargin: true,
-                    gridcolor: plotColors.gridColor,
-                    autorange: true,
-                    fixedrange: true,
-                    tickfont: { color: plotColors.textColor },
-                    title: yaxis?.title ? { text: typeof yaxis.title === 'string' ? yaxis.title : yaxis.title?.text, font: { color: plotColors.textColor } } : undefined,
-                    // Hide left y-axis if active trace uses y2
-                    ...(activeTraceUsesY2 === true ? { visible: false } : {}),
-                    // Force range recalculation when YTD mode changes (only for year-trace plots)
-                    ...(effectiveYtdOnly ? { range: undefined } : {}),
-                },
+                xaxis: (() => {
+                    // Check if x-axis has year values (for 'yy formatting)
+                    const tickvals = xaxis?.tickvals as number[] | undefined
+                    const isYearAxis = tickvals?.length && tickvals.every(v => typeof v === 'number' && v >= 2000 && v <= 2099)
+
+                    // Check if ticktext has month-day format like "Jan 1", "Feb 1" (show only month)
+                    const ticktext = xaxis?.ticktext as string[] | undefined
+                    const isMonthDayAxis = Array.isArray(ticktext) && ticktext.some(t => /^[A-Z][a-z]{2} \d+$/.test(String(t)))
+
+                    // Check if x-axis uses datetime values with annual tick interval (dtick: "M12")
+                    const isDatetimeYearAxis = xaxis?.dtick === 'M12'
+
+                    return {
+                        ...(xaxis || {}),
+                        ...(filter ? {} : { fixedrange: true }),
+                        tickfont: { color: plotColors.textColor },
+                        gridcolor: plotColors.gridColor,
+                        automargin: true,
+                        tickangle: -45,  // LL to UR slant
+                        // Format years as 'yy to save space
+                        ...(isYearAxis ? {
+                            ticktext: tickvals!.map(y => `'${String(y).slice(2)}`),
+                        } : {}),
+                        // Format datetime year ticks as 'yy, but show month in hover
+                        ...(isDatetimeYearAxis ? {
+                            tickformat: "'%y",
+                            hoverformat: "%b '%y",  // "Jan '24" in tooltip
+                        } : {}),
+                        // Format month-day ticks as just month abbreviation
+                        ...(isMonthDayAxis ? {
+                            ticktext: ticktext!.map(t => {
+                                // "Jan 1" -> "Jan"
+                                const match = String(t).match(/^([A-Z][a-z]{2}) \d+$/)
+                                return match ? match[1] : String(t)
+                            }),
+                        } : {}),
+                        // Limit x-axis to YTD (current month/day) when enabled (only for year-trace plots)
+                        ...(effectiveYtdOnly ? {
+                            range: (() => {
+                                const now = new Date()
+                                const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24))
+                                return [0, dayOfYear]
+                            })(),
+                        } : {}),
+                    }
+                })(),
+                yaxis: (() => {
+                    // For YTD mode, calculate appropriate y range from filtered data
+                    let yRangeOverride: { range: [number, number] } | {} = {}
+                    if (effectiveYtdOnly && params) {
+                        const now = new Date()
+                        const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24))
+
+                        // Helper to decode y values (handles both array and binary-encoded formats)
+                        const getYValues = (trace: PlotData): number[] => {
+                            const y = trace.y as unknown
+                            if (!y) return []
+                            if (Array.isArray(y)) {
+                                return (y as unknown[]).filter((v): v is number => typeof v === 'number')
+                            }
+                            // Handle Plotly's binary-encoded data format
+                            if (typeof y === 'object' && 'bdata' in y && 'dtype' in y) {
+                                const { bdata, dtype } = y as { bdata: string; dtype: string }
+                                const binary = atob(bdata)
+                                const values: number[] = []
+                                if (dtype === 'i2') {
+                                    // int16, little-endian
+                                    for (let i = 0; i < binary.length; i += 2) {
+                                        const val = binary.charCodeAt(i) | (binary.charCodeAt(i + 1) << 8)
+                                        values.push(val > 32767 ? val - 65536 : val)
+                                    }
+                                }
+                                return values
+                            }
+                            return []
+                        }
+
+                        // Find max y value within YTD range across all traces
+                        let maxY = 0
+                        for (const trace of params.data as PlotData[]) {
+                            const yValues = getYValues(trace)
+                            // Use index as day-of-year (0-indexed, so check i < dayOfYear)
+                            for (let i = 0; i < Math.min(dayOfYear, yValues.length); i++) {
+                                maxY = Math.max(maxY, yValues[i])
+                            }
+                        }
+                        // Add 10% padding, minimum of 10
+                        yRangeOverride = { range: [0, Math.max(10, Math.ceil(maxY * 1.1))] }
+                    }
+                    return {
+                        ...(yaxis || {}),
+                        automargin: !isYtdPlot,  // YTD uses explicit margins, others use automargin
+                        gridcolor: plotColors.gridColor,
+                        autorange: !effectiveYtdOnly,
+                        fixedrange: true,
+                        tickfont: { color: plotColors.textColor, ...(isYtdPlot ? { size: 11 } : {}) },
+                        title: yaxis?.title ? { text: typeof yaxis.title === 'string' ? yaxis.title : yaxis.title?.text, font: { color: plotColors.textColor }, standoff: 10 } : undefined,
+                        // Hide left y-axis if active trace uses y2
+                        ...(activeTraceUsesY2 === true ? { visible: false } : {}),
+                        ...yRangeOverride,
+                    }
+                })(),
                 ...(yaxis2 ? {
                     yaxis2: {
                         ...yaxis2,
+                        automargin: !isYtdPlot,  // YTD uses explicit margins, others use automargin
                         gridcolor: plotColors.gridColor,
-                        tickfont: { color: plotColors.textColor },
-                        title: yaxis2?.title ? { text: typeof yaxis2.title === 'string' ? yaxis2.title : yaxis2.title?.text, font: { color: plotColors.textColor } } : undefined,
+                        tickfont: { color: plotColors.textColor, ...(isYtdPlot ? { size: 11 } : {}) },
+                        title: yaxis2?.title ? { text: typeof yaxis2.title === 'string' ? yaxis2.title : yaxis2.title?.text, font: { color: plotColors.textColor }, standoff: 5 } : undefined,
                         // Hide right y-axis if active trace uses y (not y2)
                         ...(activeTraceUsesY2 === false ? { visible: false } : {}),
                     }
@@ -311,13 +397,93 @@ export function Plot<TraceName extends string = string>({
                 plot_bgcolor: plotColors.plotBg,
                 // Force axis recalculation when YTD mode changes
                 datarevision: effectiveYtdOnly ? 'ytd' : 'full',
+                // Add annotations when a trace is active - only for specific plots (by-month-bars)
+                ...(activeTrace && params && id === 'by-month-bars' ? (() => {
+                    const traces = params.data as PlotData[]
+                    const barTraces = traces.filter(t => t.type === 'bar')
+                    const numBars = barTraces.length
+
+                    // Find the active trace (match against original name or 'yy format)
+                    let traceIndex = -1
+                    let originalName = ''
+                    const trace = barTraces.find((t, idx) => {
+                        const tName = String(t.name || '')
+                        const displayName = /^20\d{2}$/.test(tName) ? `'${tName.slice(2)}` : tName
+                        if (tName === activeTrace || displayName === activeTrace) {
+                            traceIndex = idx
+                            originalName = tName
+                            return true
+                        }
+                        return false
+                    })
+                    if (!trace || traceIndex === -1) return {}
+
+                    // Get trace color from colorscale for year traces
+                    let traceColor: string
+                    const yearMatch = originalName.match(/^20\d{2}$/)
+                    if (yearMatch) {
+                        const year = parseInt(yearMatch[0])
+                        const minYear = 2008, maxYear = 2026
+                        const t = (year - minYear) / (maxYear - minYear)
+                        traceColor = getColorAt(colorScale, t)
+                    } else {
+                        traceColor = typeof trace.marker?.color === 'string' ? trace.marker.color : plotColors.textColor
+                    }
+
+                    // Helper to decode binary-encoded Plotly data
+                    const decodeData = (data: unknown): (string | number)[] => {
+                        if (Array.isArray(data)) return data as (string | number)[]
+                        if (typeof data === 'object' && data && 'bdata' in data && 'dtype' in data) {
+                            const { bdata, dtype } = data as { bdata: string; dtype: string }
+                            const binary = atob(bdata)
+                            const values: number[] = []
+                            if (dtype === 'i1') {
+                                for (let i = 0; i < binary.length; i++) {
+                                    values.push(binary.charCodeAt(i) > 127 ? binary.charCodeAt(i) - 256 : binary.charCodeAt(i))
+                                }
+                            } else if (dtype === 'i2') {
+                                for (let i = 0; i < binary.length; i += 2) {
+                                    const val = binary.charCodeAt(i) | (binary.charCodeAt(i + 1) << 8)
+                                    values.push(val > 32767 ? val - 65536 : val)
+                                }
+                            } else if (dtype === 'i4') {
+                                for (let i = 0; i < binary.length; i += 4) {
+                                    const val = binary.charCodeAt(i) | (binary.charCodeAt(i + 1) << 8) |
+                                                (binary.charCodeAt(i + 2) << 16) | (binary.charCodeAt(i + 3) << 24)
+                                    values.push(val)
+                                }
+                            }
+                            return values
+                        }
+                        return []
+                    }
+
+                    const xs = decodeData(trace.x)
+                    const ys = decodeData(trace.y)
+                    if (!xs.length || !ys.length) return {}
+
+                    // Calculate x offset to center annotation over the specific bar
+                    const groupWidth = 0.8
+                    const barWidth = groupWidth / numBars
+                    const groupStart = -groupWidth / 2
+                    const barCenter = groupStart + barWidth * traceIndex + barWidth / 2
+
+                    const annotations = xs.map((x, i) => ({
+                        x: (x as number) + barCenter,
+                        y: ys[i] as number,
+                        text: `<b>${Math.round((ys[i] as number) || 0)}</b>`,
+                        showarrow: false,
+                        yshift: 18,
+                        font: { color: traceColor, size: 14 },
+                        bgcolor: 'rgba(0, 0, 0, 0.6)',  // Dark background for contrast
+                        borderpad: 2,
+                    }))
+                    return { annotations }
+                })() : {}),
             }
         },
-        [params, margin, height, xRange, filter, plotColors, activeTraceUsesY2, legendPosition, effectiveYtdOnly]
+        [params, margin, height, xRange, filter, plotColors, activeTraceUsesY2, legendPosition, effectiveYtdOnly, activeTrace, id, colorScale]
     )
-
-    // Get the selected colorscale
-    const colorScale = COLORSCALES[colorScaleName]
 
     // Color adjustments for dark mode visibility
     const adjustColorForDarkMode = (color: string | undefined, traceName?: string): string | undefined => {
@@ -460,7 +626,12 @@ export function Plot<TraceName extends string = string>({
 
         // Reorder for z-order (selected trace drawn on top) - skip for bar charts
         if (activeTrace !== null && !hasBarTraces) {
-            const selectedIdx = data.findIndex(t => t.name === activeTrace)
+            // Match against both original name and 'yy format
+            const selectedIdx = data.findIndex(t => {
+                const name = String(t.name || '')
+                const displayName = /^20\d{2}$/.test(name) ? `'${name.slice(2)}` : name
+                return name === activeTrace || displayName === activeTrace
+            })
             if (selectedIdx !== -1) {
                 const [selected] = data.splice(selectedIdx, 1)
                 data.push(selected)
@@ -469,24 +640,43 @@ export function Plot<TraceName extends string = string>({
 
         data = data.map(trace => {
             const newTrace = { ...trace }
-            const isSelected = activeTrace !== null && trace.name === activeTrace
-            const isGreyedOut = activeTrace !== null && trace.name !== activeTrace
+            const originalName = String(trace.name || '')
+
+            // Format year trace names as 'yy for shorter legend labels
+            const displayName = /^20\d{2}$/.test(originalName) ? `'${originalName.slice(2)}` : originalName
+            newTrace.name = displayName
+
+            // Match activeTrace against both original and display names
+            const matchesActive = activeTrace !== null && (originalName === activeTrace || displayName === activeTrace)
+            const isSelected = matchesActive
+            const isGreyedOut = activeTrace !== null && !matchesActive
 
             // Fix bar markers for dark mode
             if (trace.type === 'bar' && trace.marker) {
                 const markerColor = typeof trace.marker.color === 'string' ? trace.marker.color : undefined
-                const adjustedColor = adjustColorForDarkMode(markerColor, trace.name as string)
+                const adjustedColor = adjustColorForDarkMode(markerColor, originalName)
                 newTrace.marker = {
                     ...trace.marker,
                     color: isGreyedOut && adjustedColor ? fadeColor(adjustedColor) : adjustedColor,
                     // Remove bar outlines
-                    line: { color: 'transparent', width: 0 }
+                    line: { color: 'transparent', width: 0 },
+                }
+                // For by-month-bars: control z-order so selected trace is on top
+                if (id === 'by-month-bars') {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const nt = newTrace as any
+                    if (isSelected) {
+                        nt.width = 0.25   // Wider bar for selected trace
+                        nt.zorder = 100   // Draw on top of other traces
+                    } else if (activeTrace !== null) {
+                        nt.zorder = 1     // Push non-selected traces behind
+                    }
                 }
             }
             // Fix line colors for scatter/line traces
             if ((trace.type === 'scatter' || trace.type === 'scattergl') && trace.line) {
                 const lineColor = typeof trace.line.color === 'string' ? trace.line.color : undefined
-                const adjustedColor = adjustColorForDarkMode(lineColor, trace.name as string)
+                const adjustedColor = adjustColorForDarkMode(lineColor, originalName)
                 let color = adjustedColor
                 let width = trace.line.width ?? 2
                 if (isSelected) {
@@ -506,7 +696,7 @@ export function Plot<TraceName extends string = string>({
             return newTrace
         })
         return data
-    }, [params, xRange, filter, activeTrace, plotColors, colorScale, colorScaleName, effectiveYtdOnly])
+    }, [params, xRange, filter, activeTrace, plotColors, colorScale, colorScaleName, effectiveYtdOnly, id])
 
     // Default legend click handler: solo trace on click
     const onLegendClick = useMemo(() => {
@@ -584,16 +774,6 @@ export function Plot<TraceName extends string = string>({
                 {children}
             </div>
         )
-    }
-
-    // Debug: log layout when YTD mode changes
-    if (id === 'ytd' && effectiveYtdOnly) {
-        console.log('YTD layout yaxis:', newLayout.yaxis)
-        console.log('YTD filteredTraces y ranges:', filteredTraces?.map(t => ({
-            name: t.name,
-            yLen: Array.isArray(t.y) ? t.y.length : 'not array',
-            yMax: Array.isArray(t.y) ? Math.max(...(t.y as number[]).filter(v => typeof v === 'number')) : 'N/A',
-        })))
     }
 
     return (

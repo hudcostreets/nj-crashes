@@ -1,9 +1,9 @@
 // Vite replacement for @rdub/next-plotly/plot-wrapper
 // Simplified version without next/image and next/dynamic
-import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react"
-import { PlotParams } from "react-plotly.js"
+import React, { lazy, Suspense, useEffect, useRef, useState } from "react"
 import { PlotData, Layout, Margin, PlotRelayoutEvent } from "plotly.js"
 import { getBasePath } from "./basePath"
+import { usePlotlyHoverDismiss } from "@/src/hooks/usePlotlyHoverDismiss"
 
 // Lazy load Plotly to avoid SSR issues
 const PlotlyComponent = lazy(() => import("react-plotly.js"))
@@ -47,6 +47,8 @@ export default function PlotWrapper<TraceName extends string = string>({
 }: PlotWrapperProps<TraceName>) {
     const [initialized, setInitialized] = useState<{ graphDiv: HTMLElement } | null>(null)
     const height = layout.height ?? DEFAULT_HEIGHT
+    const containerRef = useRef<HTMLDivElement>(null)
+    const setupHoverDismiss = usePlotlyHoverDismiss(containerRef)
 
     basePath = basePath || getBasePath() || ""
     const fallbackSrc = src ? `${basePath}/${src}` : undefined
@@ -113,8 +115,22 @@ export default function PlotWrapper<TraceName extends string = string>({
         }
     }, [initialized, data, onLegendMouseOver, onLegendMouseOut])
 
+
     return (
-        <div className={`plot-wrapper ${className || ""}`} style={{ minHeight: `${height}px` }}>
+        <div
+            ref={containerRef}
+            className={`plot-wrapper ${className || ""}`}
+            style={{
+                minHeight: `${height}px`,
+                // Prevent blue selection flash and context menu on mobile
+                WebkitTouchCallout: 'none',
+                WebkitUserSelect: 'none',
+                userSelect: 'none',
+                // @ts-ignore - WebkitTapHighlightColor is a valid CSS property for mobile Safari
+                WebkitTapHighlightColor: 'transparent',
+            }}
+            onContextMenu={e => e.preventDefault()}
+        >
             {/* Fallback image while Plotly loads */}
             {initialized === null && fallbackSrc && (
                 <div
@@ -139,12 +155,14 @@ export default function PlotWrapper<TraceName extends string = string>({
                 <PlotlyComponent
                     onInitialized={(figure, graphDiv) => {
                         setInitialized({ graphDiv })
+                        setupHoverDismiss()
                     }}
                     onUpdate={(figure, graphDiv) => {
                         // Re-setup if graphDiv changes
                         if (initialized?.graphDiv !== graphDiv) {
                             setInitialized({ graphDiv })
                         }
+                        setupHoverDismiss()
                     }}
                     onLegendClick={e => {
                         if (onLegendClick) {

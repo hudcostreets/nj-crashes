@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@rdub/duckdb/duckdb"
 import { useRegisteredDb } from "@/src/tableData"
@@ -106,6 +106,21 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
     const [soloType, setSoloType] = useState<Type | null>(null)
     const [hoverType, setHoverType] = useState<Type | null>(null)
     const [showProjected, setShowProjected] = useState(true)
+    const containerRef = useRef<HTMLDivElement>(null)
+    const [containerWidth, setContainerWidth] = useState(0)
+
+    // Track container width for responsive annotation sizing
+    useEffect(() => {
+        const container = containerRef.current
+        if (!container) return
+
+        const updateWidth = () => setContainerWidth(container.clientWidth)
+        updateWidth()
+
+        const observer = new ResizeObserver(updateWidth)
+        observer.observe(container)
+        return () => observer.disconnect()
+    }, [])
 
     // Load ytc data from CSV
     const ytcDb = useRegisteredDb({ db, table: "ytc", url: YtcCsv })
@@ -132,6 +147,12 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
         }
 
         const rows = ytRows.map(row => ({ ...row }))
+
+        // Calculate adaptive annotation font size based on available width per bar
+        const numBars = ytRows.length + (ytRows.some(r => r.year === curYear) ? 0 : 1)
+        const widthPerBar = containerWidth / numBars
+        // Scale font from 8px (cramped) to 12px (spacious)
+        const annotationFontSize = Math.max(8, Math.min(12, Math.floor(widthPerBar / 3)))
 
         // Add current year row if it doesn't exist (for projections)
         const hasCurrentYear = rows.some(r => r.year === curYear)
@@ -177,11 +198,12 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                 legendgroup: type,
                 x: rows.map(r => r.year),
                 y: rows.map(r => r[col]),
+                customdata: rows.map(r => r.driver + r.pedestrian + r.cyclist + r.passenger),
                 marker: { color: COLORS[type] },
                 texttemplate: "%{y:d}",
                 textposition: visibleTypes.size === 1 ? "auto" : "inside",
                 visible: visibleTypes.has(type) ? true : "legendonly",
-                hovertemplate: `${type}: %{y}<extra></extra>`,
+                hovertemplate: `${type}: %{y}<br><b>Total: %{customdata}</b><extra></extra>`,
             } as PlotData
         })
 
@@ -248,7 +270,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                     text: projected > 0 ? `${total}*` : `${total}`,
                     showarrow: false,
                     yshift: 10,
-                    font: { color: plotColors.textColor },
+                    font: { color: plotColors.textColor, size: annotationFontSize },
                 })
             })
         } else if (activeType && showProjected && lastYear === curYear) {
@@ -267,7 +289,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                         text: `${total}*`,
                         showarrow: false,
                         yshift: 10,
-                        font: { color: plotColors.textColor },
+                        font: { color: plotColors.textColor, size: annotationFontSize },
                     })
                 }
             }
@@ -276,21 +298,29 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
 
         const layout: Partial<Layout> = {
             barmode: "stack",
-            hovermode: "x",
             showlegend: true,
             legend: {
                 orientation: "h",
                 x: 0.5,
                 xanchor: "center",
-                y: -0.05,
+                y: -0.18,  // Below x-ticks
                 yanchor: "top",
                 font: { color: plotColors.textColor },
+                tracegroupgap: 0,  // Tighten gap between legend items
+                itemwidth: 30,  // Reduce width per item
             },
             xaxis: {
                 fixedrange: true,
                 dtick: 1,
                 tickfont: { color: plotColors.textColor },
                 gridcolor: plotColors.gridColor,
+                tickangle: -45,  // Slant from LL to UR
+                automargin: true,
+                // Limit range to actual data years (prevent auto-extension)
+                range: [rows[0].year - 0.5, rows[rows.length - 1].year + 0.5],
+                // Format years as 'yy
+                tickvals: rows.map(r => r.year),
+                ticktext: rows.map(r => `'${String(r.year).slice(2)}`),
             },
             yaxis: {
                 fixedrange: true,
@@ -298,17 +328,24 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                 gridcolor: plotColors.gridColor,
                 rangemode: "tozero",
                 tickfont: { color: plotColors.textColor },
+                automargin: true,
             },
-            margin: { t: 10, r: 10, b: 40, l: 40 },
+            margin: { t: 10, r: 0, b: 50, l: 0 },
             annotations,
             dragmode: false,
             paper_bgcolor: plotColors.paperBg,
             plot_bgcolor: plotColors.plotBg,
             height,
+            hovermode: "x unified",
+            hoverlabel: {
+                bgcolor: '#1a1a2e',  // Dark background for hover tooltip
+                bordercolor: plotColors.gridColor,
+                font: { color: '#ffffff' },  // White text
+            },
         }
 
         return { data: traces, annotations, layout, projectedRemainder }
-    }, [ytRows, projections, activeType, showProjected, height, plotColors])
+    }, [ytRows, projections, activeType, showProjected, height, plotColors, containerWidth])
 
     // Compute year totals for summary text
     const yearTotals = useMemo(() => {
@@ -380,7 +417,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
     const countyLabel = county ? `${county} County` : "NJ"
 
     return (
-        <div>
+        <div ref={containerRef}>
             <h2 id={id}>
                 <a href={`#${id}`}>Car Crash Deaths</a>:
                 <CountySelect county={county} setCounty={setCounty} Counties={counties} />

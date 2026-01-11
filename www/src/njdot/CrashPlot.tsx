@@ -421,6 +421,12 @@ export default function CrashPlot({
                 tickfont: { color: plotColors.textColor },
                 gridcolor: plotColors.gridColor,
                 fixedrange: true,
+                tickangle: -45,
+                // Format years as 'yy when in year granularity
+                ...(timeGranularity === 'year' && traces.length > 0 && traces[0].x ? {
+                    tickvals: traces[0].x as number[],
+                    ticktext: (traces[0].x as number[]).map(y => `'${String(y).slice(2)}`),
+                } : {}),
             },
             yaxis: {
                 gridcolor: plotColors.gridColor,

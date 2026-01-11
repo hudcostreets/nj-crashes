@@ -35,6 +35,22 @@
 
 .plot-container {
     width: 100%;
+    // On mobile, Plotly charts extend 8px into the 16px page padding on each side
+    // Title, descriptions, etc. stay within normal container bounds
+    @media (max-width: 600px) {
+        // PlotWrapper components (used by Plot component)
+        :global(.plot-wrapper) {
+            margin-left: -0.5em;
+            margin-right: -0.5em;
+            width: calc(100% + 1em);
+        }
+        // Direct Plotly usage (CrashPlot) - only when NOT inside .plot-wrapper
+        > div > :global(.js-plotly-plot) {
+            margin-left: -0.5em;
+            margin-right: -0.5em;
+            width: calc(100% + 1em);
+        }
+    }
 }
 
 .map {

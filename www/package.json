@@ -35,7 +35,7 @@
         "mapbox-gl": "^3.0.1",
         "maplibre-gl": "^3.6.2",
         "moment-timezone": "^0.5.45",
-        "plotly.js": "^2",
+        "plotly.js": "^3.3.1",
         "react": "^18",
         "react-dom": "^18",
         "react-helmet-async": "^2.0.4",
