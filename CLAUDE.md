@@ -40,6 +40,53 @@ Other types reference crashes via denormalized PK fields:
 - `njdot/crashes.py`: Main crashes data transformation pipeline
 - `njdot/README.md`: Comprehensive pipeline documentation, including 2023 data quality issues
 
+## DVX (Data Version Control)
+
+This project uses [DVX](https://github.com/runsascoded/dvx), a lightweight DVC wrapper that embeds computation metadata directly in `.dvc` files. Each `.dvc` file is self-contained with:
+- `outs`: The tracked file with its MD5 hash
+- `meta.computation.cmd`: Command to regenerate the file
+- `meta.computation.deps`: Dependencies with their MD5 hashes
+
+Example from `njdot/data/crashes.parquet.dvc`:
+```yaml
+outs:
+  - md5: cfb770bf...
+    path: crashes.parquet
+meta:
+  computation:
+    cmd: njdot compute pqt -t crashes
+    deps:
+      njdot/data/2001/NewJersey2001Accidents.pqt: 9e5d8dc8...
+      njdot/data/2002/NewJersey2002Accidents.pqt: e8e4efc4...
+      # ... all yearly files
+```
+
+### DVX Commands
+```bash
+# Check freshness (are outputs up-to-date with deps?)
+dvx status
+
+# Run all stale computations
+dvx run
+
+# Run specific target
+dvx run njdot/data/crashes.parquet.dvc
+
+# Add a file with computation metadata
+dvx add output.parquet --dep input.parquet --cmd "python process.py"
+
+# Push/pull data from S3
+dvx push
+dvx pull
+```
+
+### Key DVX-tracked Files
+- `njdot/data/crashes.parquet.dvc` - Combined crashes (depends on yearly Accidents.pqt)
+- `njdot/data/vehicles.parquet.dvc` - Combined vehicles
+- `njdot/data/drivers.parquet.dvc` - Combined drivers
+- `njdot/data/occupants.parquet.dvc` - Combined occupants
+- `njdot/data/pedestrians.parquet.dvc` - Combined pedestrians
+
 ## Useful Commands
 
 ```bash
