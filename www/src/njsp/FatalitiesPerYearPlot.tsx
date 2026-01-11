@@ -198,14 +198,27 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                 legendgroup: type,
                 x: rows.map(r => r.year),
                 y: rows.map(r => r[col]),
-                customdata: rows.map(r => r.driver + r.pedestrian + r.cyclist + r.passenger),
                 marker: { color: COLORS[type] },
                 texttemplate: "%{y:d}",
                 textposition: visibleTypes.size === 1 ? "auto" : "inside",
                 visible: visibleTypes.has(type) ? true : "legendonly",
-                hovertemplate: `${type}: %{y}<br><b>Total: %{customdata}</b><extra></extra>`,
+                hovertemplate: `%{y}<extra>${type}</extra>`,
             } as PlotData
         })
+
+        // Add invisible trace for total (shows once in unified hover)
+        if (visibleTypes.size === Types.length) {
+            traces.push({
+                type: "scatter",
+                mode: "markers",
+                name: "Total",
+                showlegend: false,
+                x: rows.map(r => r.year),
+                y: rows.map(r => r.driver + r.pedestrian + r.cyclist + r.passenger),
+                marker: { size: 0, opacity: 0 },
+                hovertemplate: `<b>%{y}</b><extra>Total</extra>`,
+            } as PlotData)
+        }
 
         // Add projected remainder traces (only for current year, stacked by type)
         let hasProjected = false
