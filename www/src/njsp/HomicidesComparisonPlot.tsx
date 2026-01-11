@@ -1,108 +1,216 @@
-import React, { useMemo } from "react"
+import React, { useCallback, useMemo, useState } from "react"
 import { Layout, PlotData } from "plotly.js"
+import { useDb, useQuery } from "@rdub/duckdb/duckdb"
+import { useRegisteredDb } from "@/src/tableData"
+import { CrashHomicideCsv } from "@/src/paths"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import A from "@/src/lib/a"
-import { usePlotState, getBaseLayout, fadeColor } from "./usePlotState"
+import { usePlotColors } from "@/src/hooks/usePlotColors"
 import css from "./plot.module.scss"
 
 const HEIGHT = 450
+
+// Original colors from the JSON spec
+const TRAFFIC_COLOR = '#e06080'  // Pinkish red
+const HOMICIDE_COLOR = '#60a0e0'  // Light blue
+const RATIO_COLOR = '#ffffff'  // White
 
 export type Props = {
     id?: string
 }
 
+type CrashHomicideRow = {
+    year: number
+    traffic_deaths: number
+    homicides: number
+    ratio: number
+}
+
+// Query to get crash-homicide data
+const crashHomicideQuery = `
+    SELECT year, traffic_deaths, homicides, ratio
+    FROM read_csv_auto('crash_homicide')
+    ORDER BY year
+`
+
+// Helper to fade colors
+function fadeColor(color: string | undefined): string {
+    if (!color) return 'rgba(128, 128, 128, 0.35)'
+    if (color.startsWith('#')) {
+        const r = parseInt(color.slice(1, 3), 16)
+        const g = parseInt(color.slice(3, 5), 16)
+        const b = parseInt(color.slice(5, 7), 16)
+        return `rgba(${r}, ${g}, ${b}, 0.35)`
+    }
+    return color
+}
+
 export function HomicidesComparisonPlot({ id = "vs-homicides" }: Props) {
-    const { params, activeTrace, plotColors, legendHandlers } = usePlotState("crash_homicide_cmp.json")
+    const db = useDb()
+    const plotColors = usePlotColors()
 
-    // Process data with styling
+    // Legend interaction state
+    const [soloTrace, setSoloTrace] = useState<string | null>(null)
+    const [hoverTrace, setHoverTrace] = useState<string | null>(null)
+
+    // Load crash-homicide data
+    const crashHomicideDb = useRegisteredDb({ db, table: "crash_homicide", url: CrashHomicideCsv })
+    const rows = useQuery<CrashHomicideRow>({ db: crashHomicideDb, query: crashHomicideQuery, init: [] })
+
+    // Determine active trace (hover takes precedence over solo)
+    const activeTrace = hoverTrace ?? soloTrace
+
+    // Build plot data
     const { data, layout } = useMemo(() => {
-        if (!params) return { data: [], layout: {} as Partial<Layout> }
+        if (!rows.length) {
+            return { data: [], layout: {} as Partial<Layout> }
+        }
 
-        const processedData = params.data.map(trace => {
-            const newTrace = { ...trace }
-            const name = String(trace.name || '')
-            const isActive = activeTrace === name
-            const isGreyed = activeTrace !== null && !isActive
+        const years = rows.map(r => r.year)
+        const trafficDeaths = rows.map(r => r.traffic_deaths)
+        const homicides = rows.map(r => r.homicides)
+        const ratios = rows.map(r => r.ratio)
 
-            // Style bar traces
-            if (trace.type === 'bar' && trace.marker) {
-                newTrace.marker = {
-                    ...trace.marker,
-                    color: isGreyed ? fadeColor(undefined) : trace.marker.color,
-                }
-            }
+        const trafficActive = activeTrace === 'Traffic deaths'
+        const homicidesActive = activeTrace === 'Homicides'
+        const ratioActive = activeTrace === 'Ratio'
+        const trafficGreyed = activeTrace !== null && !trafficActive
+        const homicidesGreyed = activeTrace !== null && !homicidesActive
+        const ratioGreyed = activeTrace !== null && !ratioActive
 
-            // Style line traces
-            if ((trace.type === 'scatter' || trace.type === 'scattergl') && trace.line) {
-                newTrace.line = {
-                    ...trace.line,
-                    color: isGreyed ? fadeColor(undefined) : trace.line.color,
-                    width: isActive ? 4 : (isGreyed ? 1 : (trace.line.width ?? 2)),
-                }
-            }
+        const traces: PlotData[] = [
+            // Traffic deaths bar
+            {
+                type: "bar",
+                name: "Traffic deaths",
+                x: years,
+                y: trafficDeaths,
+                marker: {
+                    color: trafficGreyed ? fadeColor(TRAFFIC_COLOR) : TRAFFIC_COLOR,
+                },
+                hovertemplate: `%{y} traffic deaths<extra></extra>`,
+            } as PlotData,
+            // Homicides bar
+            {
+                type: "bar",
+                name: "Homicides",
+                x: years,
+                y: homicides,
+                marker: {
+                    color: homicidesGreyed ? fadeColor(HOMICIDE_COLOR) : HOMICIDE_COLOR,
+                },
+                hovertemplate: `%{y} homicides<extra></extra>`,
+            } as PlotData,
+            // Ratio line (secondary y-axis)
+            {
+                type: "scatter",
+                mode: "lines",
+                name: "Ratio",
+                x: years,
+                y: ratios,
+                yaxis: "y2",
+                line: {
+                    color: ratioGreyed ? fadeColor(RATIO_COLOR) : RATIO_COLOR,
+                    width: ratioActive ? 8 : (ratioGreyed ? 3 : 5),
+                },
+                hovertemplate: `%{y:.2f}x<extra>Ratio</extra>`,
+            } as PlotData,
+        ]
 
-            return newTrace
-        })
-
-        // Exclude title, template from rest
-        const { xaxis, yaxis, yaxis2, legend, title, template, ...rest } = params.layout
-
-        // Check if x-axis has year values (for 'yy formatting)
-        const tickvals = xaxis?.tickvals as number[] | undefined
-        const isYearAxis = tickvals?.length && tickvals.every(v => typeof v === 'number' && v >= 2000 && v <= 2099)
-
-        const newLayout: Partial<Layout> = {
-            ...rest,
-            ...getBaseLayout(plotColors, HEIGHT),
+        const layout: Partial<Layout> = {
+            showlegend: true,
+            height: HEIGHT,
             margin: { t: 0, b: 40, l: 0, r: 0 },
+            paper_bgcolor: plotColors.paperBg,
+            plot_bgcolor: plotColors.plotBg,
+            hovermode: "x unified",
+            hoverlabel: {
+                bgcolor: '#1a1a2e',
+                bordercolor: plotColors.gridColor,
+                font: { color: '#ffffff' },
+            },
             xaxis: {
-                ...xaxis,
                 tickfont: { color: plotColors.textColor },
                 gridcolor: plotColors.gridColor,
                 automargin: true,
                 tickangle: -45,
-                // Format years as 'yy to save space
-                ...(isYearAxis ? {
-                    ticktext: tickvals!.map(y => `'${String(y).slice(2)}`),
-                } : {}),
+                fixedrange: true,
+                tickmode: 'array',
+                tickvals: years,
+                ticktext: years.map(y => `'${String(y).slice(2)}`),
+                domain: [0.0, 0.94],
             },
             yaxis: {
-                ...yaxis,
                 automargin: true,
                 tickfont: { color: plotColors.textColor },
                 gridcolor: plotColors.gridColor,
-                title: yaxis?.title ? {
-                    text: typeof yaxis.title === 'string' ? yaxis.title : yaxis.title?.text,
+                fixedrange: true,
+                rangemode: "tozero",
+                range: [0, 800],
+                dtick: 100,
+                title: {
+                    text: "Deaths",
                     font: { color: plotColors.textColor },
                     standoff: 10,
-                } : undefined,
-            },
-            ...(yaxis2 ? {
-                yaxis2: {
-                    ...yaxis2,
-                    automargin: true,
-                    tickfont: { color: plotColors.textColor },
-                    gridcolor: plotColors.gridColor,
-                    title: yaxis2?.title ? {
-                        text: typeof yaxis2.title === 'string' ? yaxis2.title : yaxis2.title?.text,
-                        font: { color: plotColors.textColor },
-                        standoff: 5,
-                    } : undefined,
                 },
-            } : {}),
-            legend: {
-                ...legend,
-                font: { color: plotColors.textColor },
-                orientation: 'h',
-                x: 0.5,
-                xanchor: 'center',
-                y: -0.08,
-                yanchor: 'top',
             },
+            yaxis2: {
+                automargin: true,
+                tickfont: { color: plotColors.textColor },
+                gridcolor: plotColors.gridColor,
+                fixedrange: true,
+                overlaying: "y",
+                side: "right",
+                range: [1, 2.6],
+                dtick: 0.2,
+                title: {
+                    text: "Ratio",
+                    font: { color: plotColors.textColor },
+                    standoff: 5,
+                },
+            },
+            legend: {
+                font: { color: plotColors.textColor },
+                orientation: 'h' as const,
+                x: 0.5,
+                xanchor: 'center' as const,
+                y: -0.08,
+                yanchor: 'top' as const,
+            },
+            dragmode: false,
         }
 
-        return { data: processedData, layout: newLayout }
-    }, [params, activeTrace, plotColors])
+        return { data: traces, layout }
+    }, [rows, activeTrace, plotColors])
+
+    // Legend click handler
+    const onLegendClick = useCallback((name: string) => {
+        if (soloTrace === name) {
+            setSoloTrace(null)
+            setHoverTrace(null)
+        } else {
+            setSoloTrace(name)
+        }
+        return false
+    }, [soloTrace])
+
+    // Legend double-click handler
+    const onLegendDoubleClick = useCallback(() => {
+        setSoloTrace(null)
+        setHoverTrace(null)
+        return false
+    }, [])
+
+    // Legend hover handlers
+    const onLegendMouseOver = useCallback((name: string) => {
+        setHoverTrace(name)
+        return true
+    }, [])
+
+    const onLegendMouseOut = useCallback(() => {
+        setHoverTrace(null)
+        return true
+    }, [])
 
     if (!data.length) {
         return <div style={{ height: HEIGHT }}>Loading...</div>
@@ -116,7 +224,10 @@ export function HomicidesComparisonPlot({ id = "vs-homicides" }: Props) {
                 data={data}
                 layout={layout}
                 src="plots/crash_homicide_cmp.png"
-                {...legendHandlers}
+                onLegendClick={onLegendClick}
+                onLegendDoubleClick={onLegendDoubleClick}
+                onLegendMouseOver={onLegendMouseOver}
+                onLegendMouseOut={onLegendMouseOut}
             />
             <div className={css.plotNotes}>
                 <p>Hover legend labels to preview; click to lock.</p>

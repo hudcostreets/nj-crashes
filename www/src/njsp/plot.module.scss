@@ -5,3 +5,47 @@
     margin: 0.5em 0;
   }
 }
+
+.controls {
+  margin-top: 0.5em;
+  text-align: left;
+
+  > summary {
+    cursor: pointer;
+    list-style: none;
+    display: inline-block;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+  }
+}
+
+.settingsGear {
+  font-size: 1.2em;
+  vertical-align: middle;
+  opacity: 0.6;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &::after {
+    content: " ▸";
+    font-size: 1.6em;
+    vertical-align: middle;
+  }
+}
+
+.controls[open] .settingsGear::after {
+  content: " ▾";
+}
+
+.controlsContent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1em;
+  padding: 0.5em 0;
+  font-size: 12px;
+  align-items: center;
+}

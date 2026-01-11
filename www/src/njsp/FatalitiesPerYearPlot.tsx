@@ -99,7 +99,7 @@ export type Props = {
     height?: number
 }
 
-export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, height = 400 }: Props) {
+export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, height = 500 }: Props) {
     const db = useDb()
     const plotColors = usePlotColors()
     const [county, setCounty] = useState<string | null>(initialCounty)
@@ -151,8 +151,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
         // Calculate adaptive annotation font size based on available width per bar
         const numBars = ytRows.length + (ytRows.some(r => r.year === curYear) ? 0 : 1)
         const widthPerBar = containerWidth / numBars
-        // Scale font from 8px (cramped) to 12px (spacious)
-        const annotationFontSize = Math.max(8, Math.min(12, Math.floor(widthPerBar / 3)))
+        // Scale font from 10px (cramped) to 15px (spacious)
+        const annotationFontSize = Math.max(10, Math.min(15, Math.floor(widthPerBar / 2.5)))
 
         // Add current year row if it doesn't exist (for projections)
         const hasCurrentYear = rows.some(r => r.year === curYear)
@@ -269,7 +269,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                     y: total,
                     text: projected > 0 ? `${total}*` : `${total}`,
                     showarrow: false,
-                    yshift: 10,
+                    yshift: 14,
                     font: { color: plotColors.textColor, size: annotationFontSize },
                 })
             })
@@ -288,7 +288,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                         y: total,
                         text: `${total}*`,
                         showarrow: false,
-                        yshift: 10,
+                        yshift: 14,
                         font: { color: plotColors.textColor, size: annotationFontSize },
                     })
                 }

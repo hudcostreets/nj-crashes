@@ -35,6 +35,11 @@
 
 .plot-container {
     width: 100%;
+    hr {
+        border: none;
+        border-top: 1px solid var(--border-primary, #444);
+        margin: 1.5em 0;
+    }
     // On mobile, Plotly charts extend 8px into the 16px page padding on each side
     // Title, descriptions, etc. stay within normal container bounds
     @media (max-width: 600px) {
