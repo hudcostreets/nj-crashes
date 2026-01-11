@@ -303,7 +303,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                 orientation: "h",
                 x: 0.5,
                 xanchor: "center",
-                y: -0.18,  // Below x-ticks
+                y: -0.12,  // Below x-ticks (tightened)
                 yanchor: "top",
                 font: { color: plotColors.textColor },
                 tracegroupgap: 0,  // Tighten gap between legend items

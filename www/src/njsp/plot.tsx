@@ -2,7 +2,7 @@ import { Annotations, Layout, PlotData } from "plotly.js";
 import * as Plotly from "react-plotly.js";
 import { TableData, useCsvTable, useTable } from "@/src/tableData";
 import { useDb, useQuery, } from "@rdub/duckdb/duckdb";
-import { curYear, Data, njspPlotSpec, prvYear, YearTotalsMap } from "@/src/plotSpecs";
+import { curYear, prvYear } from "@/src/constants";
 import React, { Dispatch, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { HasCounty, table, typeCountsQuery } from "./projections";
 import { ProjectedCsv } from "@/src/paths";
@@ -20,6 +20,20 @@ import css from "./plot.module.scss"
 
 export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
 export type Annotation = Partial<Annotations>
+
+export type Year = "2021" | "2022" | typeof prvYear | typeof curYear
+export type YearTotalsMap = { [k in Year]: { total: number, projected: number } }
+export type Data = {
+    rundate: string
+    yearTotalsMap: YearTotalsMap
+}
+
+export const njspPlotSpec: PlotSpec = {
+    id: "per-year",
+    name: "fatalities_per_year_by_type",
+    menuName: "Traffic Deaths / Year",
+    dropdownSection: "NJSP",
+}
 
 export type InitProps = {
     crashes: Crash[]
