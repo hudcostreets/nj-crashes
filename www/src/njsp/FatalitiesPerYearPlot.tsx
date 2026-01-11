@@ -241,7 +241,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                         texttemplate: "%{y:d}*",
                         textposition: "inside",
                         textangle: 0,  // Force upright text
-                        hovertemplate: `${type}<br>Rest of year*: %{y}<br><b>${curYear} total*: ${projTotal}</b><extra></extra>`,
+                        hovertemplate: `${curYear} est: ${projTotal} +%{y}<extra>${type}*</extra>`,
                         visible: visibleTypes.has(type) ? true : "legendonly",
                     } as PlotData)
                 }
