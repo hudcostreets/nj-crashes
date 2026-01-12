@@ -7,7 +7,6 @@ import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import {
     YmsRow, YmccsRow,
     Severity, Severities, SeverityLabels, SeverityColors,
-    Measure,
     Counties,
     StackBy,
     toYM,
@@ -20,8 +19,6 @@ import { ControlsGear } from "@/src/components/ControlsGear"
 import css from "./controls.module.css"
 
 type CrashPlotProps = {
-    /** Measure to plot on Y-axis */
-    measure?: Measure
     /** Stack by dimension */
     stackBy?: StackBy
     /** Filter to specific severities */
@@ -42,7 +39,6 @@ const DEFAULT_HEIGHT = 550
 const ALL_COUNTIES = Object.keys(Counties).map(Number)
 
 export default function CrashPlot({
-    measure: initialMeasure = 'n',
     stackBy: initialStackBy = 'severity',
     severities: initialSeverities = [...Severities],
     counties: initialCounties = ALL_COUNTIES,
@@ -51,8 +47,9 @@ export default function CrashPlot({
     showControls = true,
     controlsOpen: initialControlsOpen = false,
 }: CrashPlotProps) {
-    // State for controls - persisted in sessionStorage
-    const [measure, setMeasure] = useSessionStorage<Measure>('crashplot-measure', initialMeasure)
+    // Hard-coded to count crashes (not victims) for now
+    // TODO: Add proper victim counting as a separate feature
+    const measure = 'n' as const
     const [stackBy, setStackBy] = useSessionStorage<StackBy>('crashplot-stackBy', initialStackBy)
     const [severities, setSeverities] = useSessionStorage<Severity[]>('crashplot-severities', initialSeverities)
     const [counties, setCounties] = useSessionStorage<number[]>('crashplot-counties', initialCounties)
@@ -82,7 +79,7 @@ export default function CrashPlot({
     const { data, loading, error, timing } = useParquet<YmsRow | YmccsRow>(url)
 
     // Helper to get numeric value from row (handles BigInt)
-    const getVal = (row: YmsRow | YmccsRow, key: Measure): number => {
+    const getVal = (row: YmsRow | YmccsRow, key: 'n'): number => {
         const val = row[key]
         return typeof val === 'bigint' ? Number(val) : val
     }
@@ -131,15 +128,20 @@ export default function CrashPlot({
             grouped: Map<string, number>,
             name: string,
             color?: string,
+            originalGrouped?: Map<string, number>,  // Raw counts when in percent mode
         ): Partial<PlotData> => {
             const sorted = [...grouped.entries()].sort((a, b) => a[0].localeCompare(b[0]))
             // Apply visibility based on active trace (solo/hover)
             const visible = activeTrace === null || activeTrace === name ? true : 'legendonly'
             const ys = sorted.map(([, v]) => v)
-            // Format text labels: percentages or counts
+            // Format text labels: percentages (rounded) or counts
             const textLabels = isPercentMode
-                ? ys.map(v => `${v.toFixed(1)}%`)
+                ? ys.map(v => `${Math.round(v)}%`)
                 : ys.map(formatK)
+            // Get original counts for hover display when in percent mode
+            const originalCounts = originalGrouped
+                ? sorted.map(([k]) => originalGrouped.get(k) || 0)
+                : undefined
             return {
                 x: sorted.map(([k]) => timeGranularity === 'month' ? k : parseInt(k)),
                 y: ys,
@@ -151,8 +153,10 @@ export default function CrashPlot({
                 textposition: 'inside',
                 textangle: 0,
                 textfont: { size: 9 },
+                // Store original counts in customdata for hover display
+                ...(originalCounts ? { customdata: originalCounts } : {}),
                 hovertemplate: isPercentMode
-                    ? `${name}: %{y:.1f}%<extra></extra>`
+                    ? `${name}: %{y:.1f}% (%{customdata:,})<extra></extra>`
                     : `${name}: %{y:,}<extra></extra>`,
                 ...(color ? { marker: { color } } : {}),
             }
@@ -192,13 +196,15 @@ export default function CrashPlot({
                         : String(getYear(row))
                     grouped.set(key, (grouped.get(key) || 0) + getVal(row, measure))
                 }
+                // Save original counts for hover display before converting to percentages
+                const originalGrouped = stackPercent ? new Map(grouped) : undefined
                 if (stackPercent) {
                     for (const [key, val] of grouped) {
                         const total = totalsPerPeriod.get(key) || 1
                         grouped.set(key, (val / total) * 100)
                     }
                 }
-                traces.push(buildTrace(grouped, SeverityLabels[sev], SeverityColors[sev]))
+                traces.push(buildTrace(grouped, SeverityLabels[sev], SeverityColors[sev], originalGrouped))
             }
         } else if (stackBy === 'county') {
             // Stack by county (selected counties, sorted by total)
@@ -232,13 +238,15 @@ export default function CrashPlot({
                         : String(getYear(row))
                     grouped.set(key, (grouped.get(key) || 0) + getVal(row, measure))
                 }
+                // Save original counts for hover display before converting to percentages
+                const originalGrouped = stackPercent ? new Map(grouped) : undefined
                 if (stackPercent) {
                     for (const [key, val] of grouped) {
                         const total = totalsPerPeriod.get(key) || 1
                         grouped.set(key, (val / total) * 100)
                     }
                 }
-                traces.push(buildTrace(grouped, Counties[cc] || `County ${cc}`))
+                traces.push(buildTrace(grouped, Counties[cc] || `County ${cc}`, undefined, originalGrouped))
             }
         }
 
@@ -352,7 +360,7 @@ export default function CrashPlot({
             barmode: stackBy !== 'none' ? 'stack' : undefined,
             barnorm: stackPercent && stackBy !== 'none' ? 'percent' : undefined,
             height,
-            margin: { t: 20, b: 100, l: 60, r: 20 },
+            margin: { t: 20, b: 40, l: 60, r: 20 },
             xaxis: {
                 showspikes: false,
                 dtick: timeGranularity === 'year' ? 1 : undefined,
@@ -376,7 +384,7 @@ export default function CrashPlot({
             legend: {
                 orientation: 'h' as const,
                 traceorder: 'normal' as const,
-                y: -0.15,
+                y: -0.08,
                 x: 0.5,
                 xanchor: 'center' as const,
                 yanchor: 'top' as const,
@@ -394,7 +402,7 @@ export default function CrashPlot({
         }
 
         return { traces, layout }
-    }, [data, measure, stackBy, severities, counties, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors])
+    }, [data, stackBy, severities, counties, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors])
 
     // Check if we're waiting for county data (need ymccs but have yms)
     const waitingForCountyData = needsCountyData && data && data.length > 0 && !('cc' in data[0])
@@ -521,20 +529,7 @@ export default function CrashPlot({
             />
             )}
             {showControls && (
-                <ControlsGear open={controlsOpen} onToggle={setControlsOpen} contentClassName={css.controlsContent}>
-                    <Radios
-                        label="Measure"
-                        name="measure"
-                        options={[
-                            { label: 'Crashes', data: 'n' as Measure },
-                            { label: 'Fatalities', data: 'tk' as Measure },
-                            { label: 'Injuries', data: 'ti' as Measure },
-                            { label: 'Ped. Fatal', data: 'pk' as Measure },
-                            { label: 'Ped. Injury', data: 'pi' as Measure },
-                        ]}
-                        choice={measure}
-                        cb={setMeasure}
-                    />
+                <ControlsGear open={controlsOpen} onToggle={setControlsOpen} contentClassName={css.controlsContent} inlineWithLegend>
                     <Radios
                         label="Stack By"
                         name="stackBy"
