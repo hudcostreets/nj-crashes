@@ -51,14 +51,12 @@ export function CountyDropdown({
             if (detailsRef.current && !detailsRef.current.contains(e.target as Node)) {
                 setIsOpen(false)
                 detailsRef.current.open = false
-                // Stop propagation to prevent closing parent ControlsGear
-                e.stopPropagation()
             }
         }
 
-        // Use capture phase to handle before other handlers
-        document.addEventListener('click', handleClickOutside, true)
-        return () => document.removeEventListener('click', handleClickOutside, true)
+        // Use bubbling phase - just close dropdown, let click proceed normally
+        document.addEventListener('click', handleClickOutside)
+        return () => document.removeEventListener('click', handleClickOutside)
     }, [isOpen])
 
     return (

@@ -118,10 +118,9 @@ export default function CrashPlot({
 
         const traces: Partial<PlotData>[] = []
 
-        // Format number with adaptive precision
+        // Format number with adaptive precision (2 significant figures)
         const formatK = (n: number): string => {
-            if (n >= 100000) return `${Math.round(n / 1000)}k`
-            if (n >= 10000) return `${(n / 1000).toFixed(1)}k`
+            if (n >= 10000) return `${Math.round(n / 1000)}k`
             if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
             return String(Math.round(n))
         }

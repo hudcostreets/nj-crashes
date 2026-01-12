@@ -1,4 +1,4 @@
-import { ReactNode } from "react"
+import { ReactNode, useRef } from "react"
 import css from "./ControlsGear.module.scss"
 
 export type ControlsGearProps = {
@@ -10,11 +10,19 @@ export type ControlsGearProps = {
 }
 
 export function ControlsGear({ open, onToggle, children, contentClassName }: ControlsGearProps) {
+    const detailsRef = useRef<HTMLDetailsElement>(null)
+
     return (
         <details
+            ref={detailsRef}
             className={css.controls}
             open={open}
-            onToggle={e => onToggle((e.target as HTMLDetailsElement).open)}
+            onToggle={e => {
+                // Only handle toggle events from this element, not nested details
+                if (e.target === detailsRef.current) {
+                    onToggle((e.target as HTMLDetailsElement).open)
+                }
+            }}
         >
             <summary><span className={css.settingsGear}>⚙️</span></summary>
             <div className={contentClassName ?? css.controlsContent}>
