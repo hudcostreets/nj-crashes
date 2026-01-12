@@ -1,7 +1,7 @@
 import { getBasePath } from "@/src/lib/basePath"
 import { mapValues } from "@rdub/base/objs"
 
-export const NjspFatalAcc = "https://nj.gov/oag/njsp/info/fatalacc/"
+export const NjspFatalAcc = "https://njsp.njoag.gov/fatal-crash-statistics/"
 export const NjdotRawData = "https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm"
 
 export type Local = {
