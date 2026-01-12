@@ -51,11 +51,14 @@ export function CountyDropdown({
             if (detailsRef.current && !detailsRef.current.contains(e.target as Node)) {
                 setIsOpen(false)
                 detailsRef.current.open = false
+                // Stop propagation to prevent closing parent ControlsGear
+                e.stopPropagation()
             }
         }
 
-        document.addEventListener('click', handleClickOutside)
-        return () => document.removeEventListener('click', handleClickOutside)
+        // Use capture phase to handle before other handlers
+        document.addEventListener('click', handleClickOutside, true)
+        return () => document.removeEventListener('click', handleClickOutside, true)
     }, [isOpen])
 
     return (

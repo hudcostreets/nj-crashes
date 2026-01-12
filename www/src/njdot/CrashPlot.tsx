@@ -118,9 +118,11 @@ export default function CrashPlot({
 
         const traces: Partial<PlotData>[] = []
 
-        // Format number as "Xk" for thousands
+        // Format number with adaptive precision
         const formatK = (n: number): string => {
-            if (n >= 1000) return `${Math.round(n / 1000)}k`
+            if (n >= 100000) return `${Math.round(n / 1000)}k`
+            if (n >= 10000) return `${(n / 1000).toFixed(1)}k`
+            if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
             return String(Math.round(n))
         }
 
@@ -332,7 +334,7 @@ export default function CrashPlot({
                 annotations.push({
                     x,
                     y: total,
-                    text: total >= 1000 ? `${(total / 1000).toFixed(0)}k` : String(Math.round(total)),
+                    text: formatK(total),
                     showarrow: false,
                     yshift: 10,
                     font: { color: plotColors.textColor, size: 10 },
