@@ -22,23 +22,24 @@
 }
 
 .settingsGear {
-  font-size: 1.2em;
-  vertical-align: middle;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
+  font-size: 1.5em;
   opacity: 0.6;
 
   &:hover {
     opacity: 1;
   }
 
-  &::after {
-    content: " ▸";
-    font-size: 1.6em;
-    vertical-align: middle;
+  &::before {
+    content: "▸";
+    font-size: 0.7em;
   }
 }
 
-.controls[open] .settingsGear::after {
-  content: " ▾";
+.controls[open] .settingsGear::before {
+  content: "▾";
 }
 
 .controlsContent {
