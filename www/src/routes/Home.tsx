@@ -31,25 +31,13 @@ export default function Home() {
             <main className={css.index}>
                 <h1 className={css.title}>{title}</h1>
                 <p>
-                    <A href="#per-year">The first 5 plots below</A> come from{" "}
-                    <A title="NJ State Police fatal crash data" href={NjspFatalAcc}>NJ State Police fatal crash data</A>{" "}
-                    (2008-present). It's generally current to the previous day.
+                    Exposed and visualized data from two NJ sources:{" "}
+                    <A title="NJ State Police fatal crash data" href={NjspFatalAcc}>NJ State Police</A> (fatal crashes, 2008-present, updated daily) and{" "}
+                    <A title="NJ DOT raw crash data" href={NjdotRawData}>NJ DOT</A> (all crashes including property-damage and injury, 2001-{EndYear}).
                 </p>
                 <p>
-                    <A href="#njdot">Below that</A> is an interactive plot of{" "}
-                    <A title="NJ DOT raw crash data" href={NjdotRawData}>NJ DOT raw crash data</A>,{" "}
-                    which includes 6MM property-damage, injury, and fatal crashes from 2001-{EndYear}.
-                    It's a richer dataset, but less up to date.
+                    Code and cleaned data are <A href={GitHub.href}>on GitHub</A>.
                 </p>
-                <p>
-                    <span className={css.bold}>Work in progress</span> map of NJ DOT data: 5 years (2017-2021) of fatal
-                    and injury crashes in Hudson County:
-                </p>
-                <iframe src={`${basePath}/map/hudson`} className={css.map} title="Hudson County Crash Map" />
-                <ul style={{ listStyle: "none", padding: 0 }}>
-                    <li><A href="/map/hudson">Full screen map here</A></li>
-                    <li>Code and cleaned data are <A href={GitHub.href}>here on GitHub</A>.</li>
-                </ul>
 
                 {/* NJSP Plots */}
                 <PlotContainer><FatalitiesPerYearPlot /></PlotContainer>
@@ -65,13 +53,19 @@ export default function Home() {
                     <A title="NJ DOT raw crash data" href={NjdotRawData}>
                         publishes raw crash data
                     </A>
-                    , including property-damage, injury, and fatal crashes, going back to 2001 (≈6MM records).
-                </p>
-                <p>
-                    Data is currently public through {EndYear}. Use the controls below to explore
-                    crashes by severity, time period, and geography.
+                    {" "}including property-damage, injury, and fatal crashes, going back to 2001 (≈6MM records, currently through {EndYear}).
                 </p>
                 <PlotContainer showHr={false}><CrashPlot /></PlotContainer>
+
+                {/* Hudson County Map */}
+                <h1 id="map"><a href="#map">Hudson County Crash Map</a></h1>
+                <p>
+                    5 years (2017-2021) of fatal and injury crashes in Hudson County, plotted from NJ DOT data:
+                </p>
+                <iframe src={`${basePath}/map/hudson`} className={css.map} title="Hudson County Crash Map" />
+                <p style={{ textAlign: 'center' }}>
+                    <A href="/map/hudson">Full screen map</A>
+                </p>
 
                 <Footer />
             </main>
