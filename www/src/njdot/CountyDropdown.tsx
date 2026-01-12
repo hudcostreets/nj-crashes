@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react"
 import { Counties } from "./data"
 import css from "./controls.module.css"
 
@@ -13,6 +14,9 @@ export function CountyDropdown({
     selected: number[]
     onChange: (counties: number[]) => void
 }) {
+    const [isOpen, setIsOpen] = useState(false)
+    const detailsRef = useRef<HTMLDetailsElement>(null)
+
     const allSelected = selected.length === countyEntries.length
     const noneSelected = selected.length === 0
     const summaryText = allSelected
@@ -39,12 +43,29 @@ export function CountyDropdown({
         }
     }
 
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        if (!isOpen) return
+
+        const handleClickOutside = (e: MouseEvent) => {
+            if (detailsRef.current && !detailsRef.current.contains(e.target as Node)) {
+                setIsOpen(false)
+                detailsRef.current.open = false
+            }
+        }
+
+        document.addEventListener('click', handleClickOutside)
+        return () => document.removeEventListener('click', handleClickOutside)
+    }, [isOpen])
+
     return (
         <div className={css.control}>
             <div className={css.controlHeader}>Counties</div>
             <details
+                ref={detailsRef}
                 className={css.countyDropdown}
-                onToggle={(e) => e.stopPropagation()}
+                open={isOpen}
+                onToggle={(e) => setIsOpen((e.target as HTMLDetailsElement).open)}
             >
                 <summary>{summaryText}</summary>
                 <div className={css.countyList}>

@@ -59,9 +59,7 @@ export default function Home() {
                 <PlotContainer><FatalitiesByMonthBarsPlot /></PlotContainer>
 
                 {/* NJDOT Section */}
-                <h1 id="njdot"><a href="#njdot">NJ DOT Crash Data</a></h1>
-
-                <PlotContainer showHr={false}><CrashPlot /></PlotContainer>
+                <h1 id="njdot"><a href="#njdot">NJDOT Crash Data</a></h1>
                 <p>
                     NJ DOT{" "}
                     <A title="NJ DOT raw crash data" href={NjdotRawData}>
@@ -70,9 +68,10 @@ export default function Home() {
                     , including property-damage, injury, and fatal crashes, going back to 2001 (≈6MM records).
                 </p>
                 <p>
-                    Data is currently public through {EndYear}. Use the controls above to explore
+                    Data is currently public through {EndYear}. Use the controls below to explore
                     crashes by severity, time period, and geography.
                 </p>
+                <PlotContainer showHr={false}><CrashPlot /></PlotContainer>
 
                 <Footer />
             </main>
