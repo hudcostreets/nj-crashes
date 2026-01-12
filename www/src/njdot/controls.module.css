@@ -11,12 +11,21 @@
     display: none;
 }
 .settingsGear {
-    font-size: 1.2em;
-    vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15em;
+    font-size: 1.5em;
     opacity: 0.6;
 }
 .settingsGear:hover {
     opacity: 1;
+}
+.settingsGear::before {
+    content: "▸";
+    font-size: 0.7em;
+}
+.controls[open] .settingsGear::before {
+    content: "▾";
 }
 .controlsContent {
     display: flex;

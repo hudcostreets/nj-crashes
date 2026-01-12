@@ -19,6 +19,7 @@ import { Checklist } from "./Checklist"
 import { Radios } from "./Radios"
 import { CountyDropdown } from "./CountyDropdown"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
+import { ControlsGear } from "@/src/components/ControlsGear"
 import css from "./controls.module.css"
 
 type CrashPlotProps = {
@@ -44,7 +45,7 @@ type CrashPlotProps = {
     controlsOpen?: boolean
 }
 
-const DEFAULT_HEIGHT = 450
+const DEFAULT_HEIGHT = 550
 const ALL_COUNTIES = Object.keys(Counties).map(Number)
 
 export default function CrashPlot({
@@ -304,13 +305,13 @@ export default function CrashPlot({
             }
         }
 
-        // Add 12-month moving average lines for monthly view (when stack is none or severity)
+        // Add 12month moving average lines for monthly view (when stack is none or severity)
         if (show12moAvg && timeGranularity === 'month' && (stackBy === 'none' || stackBy === 'severity')) {
             const firstTrace = traces[0]
             if (firstTrace && firstTrace.x) {
                 const x = firstTrace.x as string[]
 
-                // Compute 12-mo avg helper
+                // Compute 12mo avg helper
                 const compute12moAvg = (ys: number[]): (number | null)[] => {
                     const avgY: (number | null)[] = []
                     for (let i = 0; i < ys.length; i++) {
@@ -324,7 +325,7 @@ export default function CrashPlot({
                     return avgY
                 }
 
-                // Lighten color for 12-mo avg line
+                // Lighten color for 12mo avg line
                 const lightenColor = (hex: string): string => {
                     // Convert hex to RGB, lighten, convert back
                     const r = parseInt(hex.slice(1, 3), 16)
@@ -338,7 +339,7 @@ export default function CrashPlot({
                     return `rgb(${lr}, ${lg}, ${lb})`
                 }
 
-                // Add 12-mo avg line for each bar trace
+                // Add 12mo avg line for each bar trace
                 const barTraces = traces.filter(t => t.type === 'bar' && t.y)
                 for (const trace of barTraces) {
                     const ys = trace.y as number[]
@@ -349,16 +350,16 @@ export default function CrashPlot({
                         y: compute12moAvg(ys),
                         type: 'scatter',
                         mode: 'lines',
-                        name: `${trace.name} (12-mo)`,
+                        name: `${trace.name} (12mo)`,
                         legendgroup: trace.name,
                         showlegend: false,
                         line: { color: lineColor, width: 3.5 },
                         visible: trace.visible,
-                        hovertemplate: `${trace.name} (12-mo): %{y:,.0f}<extra></extra>`,
+                        hovertemplate: `${trace.name} (12mo): %{y:,.0f}<extra></extra>`,
                     })
                 }
 
-                // Add total 12-mo avg line if multiple traces
+                // Add total 12mo avg line if multiple traces
                 if (barTraces.length > 1) {
                     const totals: number[] = new Array(x.length).fill(0)
                     for (const trace of barTraces) {
@@ -372,9 +373,9 @@ export default function CrashPlot({
                         y: compute12moAvg(totals),
                         type: 'scatter',
                         mode: 'lines',
-                        name: 'Total (12-mo)',
+                        name: 'Total (12mo)',
                         line: { color: '#ffffff', width: 2.5 },
-                        hovertemplate: 'Total (12-mo): %{y:,.0f}<extra></extra>',
+                        hovertemplate: 'Total (12mo): %{y:,.0f}<extra></extra>',
                     })
                 }
             }
@@ -414,7 +415,7 @@ export default function CrashPlot({
             barmode: stackBy !== 'none' ? 'stack' : undefined,
             barnorm: stackPercent && stackBy !== 'none' ? 'percent' : undefined,
             height,
-            margin: { t: 20, b: 60, l: 60, r: 20 },
+            margin: { t: 20, b: 100, l: 60, r: 20 },
             xaxis: {
                 showspikes: false,
                 dtick: timeGranularity === 'year' ? 1 : undefined,
@@ -434,11 +435,14 @@ export default function CrashPlot({
                 fixedrange: true,
             },
             dragmode: false,
+            showlegend: true,
             legend: {
-                orientation: 'h',
+                orientation: 'h' as const,
+                traceorder: 'normal' as const,
                 y: -0.15,
                 x: 0.5,
-                xanchor: 'center',
+                xanchor: 'center' as const,
+                yanchor: 'top' as const,
                 font: { color: plotColors.textColor },
             },
             hovermode: 'x unified',
@@ -559,109 +563,102 @@ export default function CrashPlot({
               onLegendDoubleClick={onLegendDoubleClick}
             />
             {showControls && (
-                <details
-                    className={css.controls}
-                    open={controlsOpen}
-                    onToggle={(e) => setControlsOpen((e.target as HTMLDetailsElement).open)}
-                >
-                    <summary><span className={css.settingsGear}>⚙️</span></summary>
-                    <div className={css.controlsContent}>
-                        <Radios
-                            label="Measure"
-                            name="measure"
-                            options={[
-                                { label: 'Crashes', data: 'n' as Measure },
-                                { label: 'Fatalities', data: 'tk' as Measure },
-                                { label: 'Injuries', data: 'ti' as Measure },
-                                { label: 'Ped. Fatal', data: 'pk' as Measure },
-                                { label: 'Ped. Injury', data: 'pi' as Measure },
-                            ]}
-                            choice={measure}
-                            cb={setMeasure}
-                        />
-                        <Radios
-                            label="Stack By"
-                            name="stackBy"
-                            options={[
-                                { label: 'None', data: 'none' as StackBy },
-                                { label: 'Severity', data: 'severity' as StackBy },
-                                { label: 'County', data: 'county' as StackBy },
-                                { label: 'Victim', data: 'victim_type' as StackBy },
-                                { label: 'Condition', data: 'condition' as StackBy },
-                            ]}
-                            choice={stackBy}
-                            cb={setStackBy}
-                        />
-                        <Radios
-                            label="Time"
-                            name="time"
-                            options={[
-                                { label: 'By Year', data: 'year' as const },
-                                { label: 'By Month', data: 'month' as const },
-                            ]}
-                            choice={timeGranularity}
-                            cb={setTimeGranularity}
-                        />
-                        <Checklist
-                            label="Severity"
-                            data={Severities.map(s => ({
-                                name: s,
-                                label: SeverityLabels[s],
-                                data: s,
-                                checked: severities.includes(s),
-                                color: SeverityColors[s],
-                            }))}
-                            cb={setSeverities}
-                        />
-                        <Checklist
-                            label="Victim Type"
-                            data={VictimTypes.map(vt => ({
-                                name: vt,
-                                label: VictimTypeLabels[vt],
-                                data: vt,
-                                checked: victimTypes.includes(vt),
-                                color: VictimTypeColors[vt],
-                            }))}
-                            cb={setVictimTypes}
-                        />
-                        <Checklist
-                            label="Condition"
-                            data={Conditions.map(c => ({
-                                name: c,
-                                label: ConditionLabels[c],
-                                data: c,
-                                checked: conditions.includes(c),
-                                color: ConditionColors[c],
-                            }))}
-                            cb={setConditions}
-                        />
-                        <CountyDropdown
-                            selected={counties}
-                            onChange={setCounties}
-                        />
-                        <div className={css.control}>
-                            <div className={css.controlHeader}>Options</div>
-                            <label className={css.nowrap}>
-                                <input
-                                    type="checkbox"
-                                    checked={stackPercent}
-                                    onChange={(e) => setStackPercent(e.target.checked)}
-                                    disabled={stackBy === 'none'}
-                                />
-                                Stack %
-                            </label>
-                            <label className={css.nowrap}>
-                                <input
-                                    type="checkbox"
-                                    checked={show12moAvg}
-                                    onChange={(e) => setShow12moAvg(e.target.checked)}
-                                    disabled={timeGranularity !== 'month' || (stackBy !== 'none' && stackBy !== 'severity')}
-                                />
-                                12-mo Avg
-                            </label>
-                        </div>
+                <ControlsGear open={controlsOpen} onToggle={setControlsOpen} contentClassName={css.controlsContent}>
+                    <Radios
+                        label="Measure"
+                        name="measure"
+                        options={[
+                            { label: 'Crashes', data: 'n' as Measure },
+                            { label: 'Fatalities', data: 'tk' as Measure },
+                            { label: 'Injuries', data: 'ti' as Measure },
+                            { label: 'Ped. Fatal', data: 'pk' as Measure },
+                            { label: 'Ped. Injury', data: 'pi' as Measure },
+                        ]}
+                        choice={measure}
+                        cb={setMeasure}
+                    />
+                    <Radios
+                        label="Stack By"
+                        name="stackBy"
+                        options={[
+                            { label: 'None', data: 'none' as StackBy },
+                            { label: 'Severity', data: 'severity' as StackBy },
+                            { label: 'County', data: 'county' as StackBy },
+                            { label: 'Victim', data: 'victim_type' as StackBy },
+                            { label: 'Condition', data: 'condition' as StackBy },
+                        ]}
+                        choice={stackBy}
+                        cb={setStackBy}
+                    />
+                    <Radios
+                        label="Time"
+                        name="time"
+                        options={[
+                            { label: 'By Year', data: 'year' as const },
+                            { label: 'By Month', data: 'month' as const },
+                        ]}
+                        choice={timeGranularity}
+                        cb={setTimeGranularity}
+                    />
+                    <Checklist
+                        label="Severity"
+                        data={Severities.map(s => ({
+                            name: s,
+                            label: SeverityLabels[s],
+                            data: s,
+                            checked: severities.includes(s),
+                            color: SeverityColors[s],
+                        }))}
+                        cb={setSeverities}
+                    />
+                    <Checklist
+                        label="Victim Type"
+                        data={VictimTypes.map(vt => ({
+                            name: vt,
+                            label: VictimTypeLabels[vt],
+                            data: vt,
+                            checked: victimTypes.includes(vt),
+                            color: VictimTypeColors[vt],
+                        }))}
+                        cb={setVictimTypes}
+                    />
+                    <Checklist
+                        label="Condition"
+                        data={Conditions.map(c => ({
+                            name: c,
+                            label: ConditionLabels[c],
+                            data: c,
+                            checked: conditions.includes(c),
+                            color: ConditionColors[c],
+                        }))}
+                        cb={setConditions}
+                    />
+                    <CountyDropdown
+                        selected={counties}
+                        onChange={setCounties}
+                    />
+                    <div className={css.control}>
+                        <div className={css.controlHeader}>Options</div>
+                        <label className={css.nowrap}>
+                            <input
+                                type="checkbox"
+                                checked={stackPercent}
+                                onChange={(e) => setStackPercent(e.target.checked)}
+                                disabled={stackBy === 'none'}
+                            />
+                            Stack %
+                        </label>
+                        <label className={css.nowrap}>
+                            <input
+                                type="checkbox"
+                                checked={show12moAvg}
+                                onChange={(e) => setShow12moAvg(e.target.checked)}
+                                disabled={timeGranularity !== 'month' || (stackBy !== 'none' && stackBy !== 'severity')}
+                            />
+                            12mo Avg
+                        </label>
                     </div>
-                </details>
+                </ControlsGear>
             )}
             {timing && (
                 <div className={css.plotInfo}>
