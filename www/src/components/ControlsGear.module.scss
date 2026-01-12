@@ -1,5 +1,29 @@
+// Wrapper for the entire controls section
+.controlsWrapper {
+  margin-top: 0.25em;  /* Default: minimal space below plot (for right-side legend) */
+  padding-left: 0.25em;
+  position: relative;
+  z-index: 10;  /* Above Plotly hover overlays */
+
+  // When plot has a horizontal bottom legend, add more space to clear it
+  &.bottomLegend {
+    margin-top: 0.5em;
+  }
+
+  // Pull gear up to align vertically with the bottom legend (for DOT plot)
+  &.inlineWithLegend {
+    margin-top: -2.5em;
+  }
+}
+
+// Header row: gear icon + any extra content (like info icon)
+.controlsHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
 .controls {
-  margin-top: 0.5em;
   text-align: left;
 
   > summary {
