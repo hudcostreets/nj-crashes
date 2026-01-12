@@ -17,13 +17,13 @@ import { PlotContainer } from "@/src/components/PlotContainer"
 
 export default function Home() {
     const basePath = getBasePath()
-    const title = "NJ Traffic Crash Data"
+    const title = "NJ Car Crash Data"
 
     return (
         <div className={css.container}>
             <Head
                 title={title}
-                description="Analysis & Visualization of traffic crash data published by NJ State Police and NJ DOT"
+                description="Analysis & Visualization of car crash data published by NJ State Police and NJ DOT"
                 url={url}
                 thumbnail={`${url}/plots/fatalities_per_year_by_type.png`}
             />

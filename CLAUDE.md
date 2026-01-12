@@ -4,7 +4,7 @@ This document contains important context for Claude Code when working on this pr
 
 ## Project Overview
 
-This repository analyzes NJ traffic crash data from two sources:
+This repository analyzes NJ car crash data from two sources:
 - **NJSP**: Fatal crashes (2008-present), small datasets, git-tracked, daily updates
 - **NJDOT**: All crashes (2001-2023), large datasets, DVC-tracked in S3, annual updates
 

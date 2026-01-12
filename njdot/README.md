@@ -1,5 +1,5 @@
-# NJDOT Traffic Crash Data
-Analysis of [NJDOT traffic crash data](https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm).
+# NJDOT Car Crash Data
+Analysis of [NJDOT car crash data](https://www.state.nj.us/transportation/refdata/accident/rawdata01-current.shtm).
 
 [**Plots**](#plots):
   - [Crashes per Month (Statewide)](#state-month)
