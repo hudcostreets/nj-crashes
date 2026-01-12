@@ -35,3 +35,45 @@
   vertical-align: middle;
   top: -0.08em;
 }
+
+// PlotInfo component styles
+.plotInfoIcon {
+  cursor: help;
+  opacity: 0.6;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.plotInfoTooltip {
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 350px;
+
+  a {
+    color: #6db3f2;
+    text-decoration: underline;
+
+    &:hover {
+      color: #9dd0ff;
+    }
+  }
+}
+
+.plotInfoSection {
+  &:not(:last-child) {
+    margin-bottom: 0.6em;
+    padding-bottom: 0.6em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  }
+}
+
+.plotInfoSourceItem {
+  margin-left: 0.5em;
+  margin-top: 0.2em;
+}
+
+.plotInfoNote {
+  opacity: 0.8;
+}
