@@ -11,7 +11,7 @@ export default function CrashRegion() {
         <div className="container">
             <Head
                 title={title}
-                description="NJDOT crash data"
+                description="NJ DOT crash data"
                 url={url}
             />
             <main>
