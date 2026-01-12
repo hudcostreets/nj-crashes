@@ -126,6 +126,7 @@ export default function CrashPlot({
         }
 
         // Helper to build a trace from grouped data
+        const isPercentMode = stackPercent && stackBy !== 'none'
         const buildTrace = (
             grouped: Map<string, number>,
             name: string,
@@ -135,6 +136,10 @@ export default function CrashPlot({
             // Apply visibility based on active trace (solo/hover)
             const visible = activeTrace === null || activeTrace === name ? true : 'legendonly'
             const ys = sorted.map(([, v]) => v)
+            // Format text labels: percentages or counts
+            const textLabels = isPercentMode
+                ? ys.map(v => `${v.toFixed(1)}%`)
+                : ys.map(formatK)
             return {
                 x: sorted.map(([k]) => timeGranularity === 'month' ? k : parseInt(k)),
                 y: ys,
@@ -142,11 +147,13 @@ export default function CrashPlot({
                 name,
                 visible,
                 // Only show inner-bar text when stacking (not for 'none' which has outer annotations)
-                text: timeGranularity === 'year' && stackBy !== 'none' ? ys.map(formatK) : undefined,
+                text: timeGranularity === 'year' && stackBy !== 'none' ? textLabels : undefined,
                 textposition: 'inside',
                 textangle: 0,
                 textfont: { size: 9 },
-                hovertemplate: `${name}: %{y:,}<extra></extra>`,
+                hovertemplate: isPercentMode
+                    ? `${name}: %{y:.1f}%<extra></extra>`
+                    : `${name}: %{y:,}<extra></extra>`,
                 ...(color ? { marker: { color } } : {}),
             }
         }
@@ -476,13 +483,33 @@ export default function CrashPlot({
         </div>
     }
 
+    // Check for empty selections - enumerate all empty facets
+    const emptyFacets: string[] = []
+    if (counties.length === 0) emptyFacets.push("counties")
+    if (severities.length === 0) emptyFacets.push("severity levels")
+    const emptySelection = emptyFacets.length > 0
+        ? `Select one or more ${emptyFacets.join(" and ")} to view data.`
+        : null
+
     // Key forces remount when data source changes (include data length to wait for load)
     const plotKey = `${source}-${data?.length || 0}`
 
-
     return (
         <div ref={plotRef}>
-            <Plot
+            {emptySelection ? (
+                <div style={{
+                    height,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: plotColors.textColor,
+                    fontSize: '1.1em',
+                    opacity: 0.7,
+                }}>
+                    {emptySelection}
+                </div>
+            ) : (
+                <Plot
               data={traces as PlotData[]}
               layout={layout}
               key={plotKey}
@@ -492,6 +519,7 @@ export default function CrashPlot({
               onLegendClick={onLegendClick}
               onLegendDoubleClick={onLegendDoubleClick}
             />
+            )}
             {showControls && (
                 <ControlsGear open={controlsOpen} onToggle={setControlsOpen} contentClassName={css.controlsContent}>
                     <Radios
