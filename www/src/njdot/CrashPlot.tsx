@@ -535,7 +535,8 @@ export default function CrashPlot({
                             label: SeverityLabels[s],
                             data: s,
                             checked: severities.includes(s),
-                            color: SeverityColors[s],
+                            // Only show color swatches when stacking by severity
+                            ...(stackBy === 'severity' && { color: SeverityColors[s] }),
                         }))}
                         cb={setSeverities}
                     />
