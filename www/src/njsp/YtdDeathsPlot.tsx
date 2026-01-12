@@ -8,6 +8,7 @@ import { NjspSource } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { COLORSCALES, ColorScaleName, getColorAt } from "@/src/lib/colorscales"
+import { ControlsGear } from "@/src/components/ControlsGear"
 import css from "./plot.module.scss"
 
 const HEIGHT = 450
@@ -349,75 +350,68 @@ export function YtdDeathsPlot({ id = "ytd" }: Props) {
                 onLegendMouseOver={onLegendMouseOver}
                 onLegendMouseOut={onLegendMouseOut}
             />
-            <details
-                className={css.controls}
-                open={controlsOpen}
-                onToggle={e => setControlsOpen((e.target as HTMLDetailsElement).open)}
-            >
-                <summary><span className={css.settingsGear}>⚙️</span></summary>
-                <div className={css.controlsContent}>
-                    <div>
-                        <label style={{ marginRight: '0.5em' }}>Colors:</label>
-                        <select
-                            value={colorScaleName}
-                            onChange={e => setColorScaleName(e.target.value as ColorScaleName)}
-                            style={{
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                                border: '1px solid var(--border-primary)',
-                                background: 'var(--bg-secondary)',
-                                color: 'var(--text-primary)',
-                                fontSize: '12px',
-                            }}
-                        >
-                            <option value="inferno">Inferno</option>
-                            <option value="viridis">Viridis</option>
-                            <option value="plasma">Plasma</option>
-                            <option value="grayscale">Grayscale</option>
-                            <option value="blueOrange">Blue -&gt; Orange</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style={{ marginRight: '0.5em' }}>Legend:</label>
-                        <select
-                            value={legendPosition}
-                            onChange={e => setLegendPosition(e.target.value as 'bottom' | 'right')}
-                            style={{
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                                border: '1px solid var(--border-primary)',
-                                background: 'var(--bg-secondary)',
-                                color: 'var(--text-primary)',
-                                fontSize: '12px',
-                            }}
-                        >
-                            <option value="bottom">Bottom</option>
-                            <option value="right">Right</option>
-                        </select>
-                    </div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.3em', cursor: 'pointer' }}>
-                        <input
-                            type="checkbox"
-                            checked={ytdOnly}
-                            onChange={e => setYtdOnly(e.target.checked)}
-                        />
-                        YTD only
-                    </label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3em' }}>
-                        <label>Opacity:</label>
-                        <input
-                            type="range"
-                            min="0.1"
-                            max="1"
-                            step="0.1"
-                            value={fadeOpacity}
-                            onChange={e => setFadeOpacity(parseFloat(e.target.value))}
-                            style={{ width: '60px', cursor: 'pointer' }}
-                        />
-                        <span style={{ minWidth: '2em' }}>{Math.round(fadeOpacity * 100)}%</span>
-                    </div>
+            <ControlsGear open={controlsOpen} onToggle={setControlsOpen}>
+                <div>
+                    <label style={{ marginRight: '0.5em' }}>Colors:</label>
+                    <select
+                        value={colorScaleName}
+                        onChange={e => setColorScaleName(e.target.value as ColorScaleName)}
+                        style={{
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            border: '1px solid var(--border-primary)',
+                            background: 'var(--bg-secondary)',
+                            color: 'var(--text-primary)',
+                            fontSize: '12px',
+                        }}
+                    >
+                        <option value="inferno">Inferno</option>
+                        <option value="viridis">Viridis</option>
+                        <option value="plasma">Plasma</option>
+                        <option value="grayscale">Grayscale</option>
+                        <option value="blueOrange">Blue -&gt; Orange</option>
+                    </select>
                 </div>
-            </details>
+                <div>
+                    <label style={{ marginRight: '0.5em' }}>Legend:</label>
+                    <select
+                        value={legendPosition}
+                        onChange={e => setLegendPosition(e.target.value as 'bottom' | 'right')}
+                        style={{
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            border: '1px solid var(--border-primary)',
+                            background: 'var(--bg-secondary)',
+                            color: 'var(--text-primary)',
+                            fontSize: '12px',
+                        }}
+                    >
+                        <option value="bottom">Bottom</option>
+                        <option value="right">Right</option>
+                    </select>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.3em', cursor: 'pointer' }}>
+                    <input
+                        type="checkbox"
+                        checked={ytdOnly}
+                        onChange={e => setYtdOnly(e.target.checked)}
+                    />
+                    YTD only
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3em' }}>
+                    <label>Opacity:</label>
+                    <input
+                        type="range"
+                        min="0.1"
+                        max="1"
+                        step="0.1"
+                        value={fadeOpacity}
+                        onChange={e => setFadeOpacity(parseFloat(e.target.value))}
+                        style={{ width: '60px', cursor: 'pointer' }}
+                    />
+                    <span style={{ minWidth: '2em' }}>{Math.round(fadeOpacity * 100)}%</span>
+                </div>
+            </ControlsGear>
             <div className={css.plotNotes}>
                 <p>Hover legend labels to preview; click to lock.</p>
                 <NjspSource>

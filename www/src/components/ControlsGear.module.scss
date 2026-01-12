@@ -1,11 +1,3 @@
-.plotNotes {
-  margin-top: 0.5em;
-
-  p {
-    margin: 0.5em 0;
-  }
-}
-
 .controls {
   margin-top: 0.5em;
   text-align: left;
@@ -34,7 +26,7 @@
 
   &::before {
     content: "▸";
-    font-size: 0.7em;
+    font-size: 1em;
   }
 }
 
