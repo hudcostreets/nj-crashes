@@ -42,7 +42,7 @@ export default function Home() {
                     It's a richer dataset, but less up to date.
                 </p>
                 <p>
-                    <span className={css.bold}>Work in progress</span> map of NJDOT data: 5 years (2017-2021) of fatal
+                    <span className={css.bold}>Work in progress</span> map of NJ DOT data: 5 years (2017-2021) of fatal
                     and injury crashes in Hudson County:
                 </p>
                 <iframe src={`${basePath}/map/hudson`} className={css.map} title="Hudson County Crash Map" />
@@ -58,8 +58,8 @@ export default function Home() {
                 <PlotContainer><FatalitiesPerMonthPlot /></PlotContainer>
                 <PlotContainer><FatalitiesByMonthBarsPlot /></PlotContainer>
 
-                {/* NJDOT Section */}
-                <h1 id="njdot"><a href="#njdot">NJDOT Crash Data</a></h1>
+                {/* NJ DOT Section */}
+                <h1 id="njdot"><a href="#njdot">NJ DOT Crash Data</a></h1>
                 <p>
                     NJ DOT{" "}
                     <A title="NJ DOT raw crash data" href={NjdotRawData}>
