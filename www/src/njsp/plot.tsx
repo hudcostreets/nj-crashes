@@ -14,7 +14,7 @@ import { Plot, PlotSpec } from "@/src/lib/plot"
 import { fromEntries } from "@rdub/base/objs";
 import { normalize } from "../county";
 import { CountySelect } from "../county-select";
-import { NjspSource } from "@/src/icons";
+import { PlotInfo } from "@/src/icons";
 import { Crash, Total } from "@/src/use-njsp-crashes";
 import css from "./plot.module.scss"
 
@@ -178,14 +178,19 @@ export function NjspChildren(
     const { total: curYearTotal, projected: curYearProjected } = curYearMap
     const curYearProjectedTotal = curYearTotal + curYearProjected
     const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
-    return <div className={css.plotNotes}>
-        <p>
+    return <>
+        <div className={css.plotToolbarCompact}>
+            <PlotInfo source="njsp">
+                {county === null && total2021 > 0 && total2022 > 0 ? (
+                    <p style={{ margin: 0 }}>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
+                ) : null}
+            </PlotInfo>
+        </div>
+        <p className={css.plotStats}>
             <A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, {county ? `${county} County` : "NJ"} has {curYearTotal} reported deaths in {curYear}, and <A href={estimationHref}>is on pace</A> for {curYearProjectedTotal}{curYearProjectedTotal > prvYearTotal ? `, exceeding ${prvYear}'s ${prvYearTotal}` : ""}.
             {includeMoreInfoLink ? <>{' '}<A href={`/c/${county ? normalize(county) : ""}`}>More {county ? `${county} County` : "state-wide"} data</A>.</> : null}
         </p>
-        {county === null ? <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p> : null}
-        <NjspSource />
-    </div>
+    </>
 }
 
 export function NjspPlot(
