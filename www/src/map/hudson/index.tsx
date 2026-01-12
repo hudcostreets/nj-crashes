@@ -7,12 +7,25 @@ import type { FeatureCollection } from "geojson"
 import { LL } from "@/src/map/types"
 import "leaflet/dist/leaflet.css"
 
+// Tile styles for light/dark modes (using Stadia Maps)
+const TILE_STYLES = {
+    dark: {
+        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    },
+    light: {
+        url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    },
+}
+
 export type Props = Omit<MapContainerProps, 'center'> & clusters.Props & {
     hudco: FeatureCollection
     center: LL
     setCenter?: (ll: LL) => void
     setZoom?: (z: number) => void
     onClick?: () => void
+    theme?: 'light' | 'dark'
 }
 
 function MapEvents({ setCenter, setZoom, onClick }: {
@@ -40,19 +53,23 @@ function MapEvents({ setCenter, setZoom, onClick }: {
     return null
 }
 
-export default function Map({ crashes, hudco, center, setCenter, setZoom, onClick, ...mapProps }: Props) {
+export default function Map({ crashes, hudco, center, setCenter, setZoom, onClick, theme = 'dark', ...mapProps }: Props) {
+    const tileStyle = TILE_STYLES[theme]
+    // Adjust county boundary color for visibility on different tile styles
+    const boundaryColor = theme === 'dark' ? 'yellow' : '#cc8800'
+
     return (
         <MapContainer
             center={[center.lat, center.lng]}
             {...mapProps}
         >
             <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution={tileStyle.attribution}
+                url={tileStyle.url}
             />
             <GeoJSON data={hudco} style={{
-                fillColor: "yellow",
-                color: "yellow",
+                fillColor: boundaryColor,
+                color: boundaryColor,
                 opacity: 0.5,
                 fillOpacity: 0,
             }} />

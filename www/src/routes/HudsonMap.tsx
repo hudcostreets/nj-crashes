@@ -1,9 +1,10 @@
 import { Head } from "@/src/lib/head"
 import { url } from "@/src/site"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { decode, Encoded } from "@/src/indexed-json"
 import { Crash } from "@/src/map/types"
 import { useMapState } from "@/src/map/hudson/state"
+import { useTheme } from "@/src/contexts/ThemeContext"
 import type { FeatureCollection } from "geojson"
 import css from "@/src/map/hudson/map.module.scss"
 
@@ -18,6 +19,7 @@ export default function HudsonMap() {
     const [error, setError] = useState<string | null>(null)
 
     const mapState = useMapState()
+    const { actualTheme } = useTheme()
 
     useEffect(() => {
         async function loadData() {
@@ -74,6 +76,7 @@ export default function HudsonMap() {
                         {...mapState}
                         crashes={crashes}
                         hudco={hudco}
+                        theme={actualTheme}
                     />
                 </Suspense>
             )}
@@ -81,7 +84,8 @@ export default function HudsonMap() {
                 position: "absolute",
                 bottom: "1em",
                 left: "1em",
-                background: "rgba(255,255,255,0.9)",
+                background: actualTheme === 'dark' ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.95)",
+                color: actualTheme === 'dark' ? "#e0e0e0" : "#333",
                 padding: "0.5em 1em",
                 borderRadius: "4px",
                 maxWidth: "300px",
@@ -91,7 +95,7 @@ export default function HudsonMap() {
                 <p>{numKsiCrashes.toLocaleString()} KSI crashes{crashes ? `, ${crashes.length.toLocaleString()} with approximate locations plotted` : ""}</p>
                 <p>Not pictured: {numPropCrashes.toLocaleString()} property damage crashes.</p>
                 <p>Total: {stats.tk.toLocaleString()} killed, {stats.ti.toLocaleString()} injured, {stats.tv.toLocaleString()} vehicles</p>
-                <p><a href="/">← Back to Home</a></p>
+                <p><a href="/" style={{ color: actualTheme === 'dark' ? "#6db3f2" : "#0066cc" }}>← Back to Home</a></p>
             </div>
         </div>
     )
