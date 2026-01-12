@@ -6,6 +6,32 @@
   }
 }
 
+// Info icon only (no gear) - tuck up under plot aligned with legend
+.plotToolbarCompact {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-top: -1.8em;  // Pull up to align with legend area
+  padding-left: 0.25em;
+
+  > svg {
+    opacity: 0.5;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+// Dynamic stats/caption text below the plot
+.plotStats {
+  margin-top: 1em !important;  // Override container p margin
+  font-size: 0.9em;
+  line-height: 1.6;
+  opacity: 0.9;
+  text-align: center;
+}
+
 .controls {
   margin-top: 0.5em;
   text-align: left;

@@ -1,6 +1,7 @@
 .controls {
-    margin-top: 0.5em;
+    margin-top: -2.5em;  /* Pull up to align with legend */
     text-align: left;
+    padding-left: 0.25em;
 }
 .controls > summary {
     cursor: pointer;
