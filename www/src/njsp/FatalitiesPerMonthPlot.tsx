@@ -67,10 +67,23 @@ export function FatalitiesPerMonthPlot({ id = "per-month" }: Props) {
             return { data: [], layout: {} as Partial<Layout> }
         }
 
-        const dates = monthlyRows.map(r => r.date)
-        const fatalities = monthlyRows.map(r => r.fatalities)
+        // Filter out incomplete current month
+        const now = new Date()
+        const currentYear = now.getFullYear()
+        const currentMonth = now.getMonth() + 1  // 1-indexed
+
+        const isMonthComplete = (year: number, month: number) => {
+            if (year < currentYear) return true
+            if (year === currentYear && month < currentMonth) return true
+            return false
+        }
+
+        const filteredRows = monthlyRows.filter(r => isMonthComplete(r.year, r.month))
+
+        const dates = filteredRows.map(r => r.date)
+        const fatalities = filteredRows.map(r => r.fatalities)
         // Only show 12-mo avg after 12 months of data (first 11 values are partial averages)
-        const avg12mo = monthlyRows.map((r, i) => i < 11 ? null : r.avg_12mo)
+        const avg12mo = filteredRows.map((r, i) => i < 11 ? null : r.avg_12mo)
 
         const fatalitiesActive = activeTrace === 'Fatalities'
         const avgActive = activeTrace === '12-mo avg'
