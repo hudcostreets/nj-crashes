@@ -22,16 +22,25 @@ export default function HudsonMap() {
     useEffect(() => {
         async function loadData() {
             try {
+                // Fetch both files
                 const [crashesRes, hudcoRes] = await Promise.all([
                     fetch("/plots/njdot/hudson-5yr-lls-if.json"),
                     fetch("/hudson.geojson"),
                 ])
 
-                if (!crashesRes.ok) throw new Error("Failed to load crash data")
-                if (!hudcoRes.ok) throw new Error("Failed to load county boundary")
+                // Check responses are OK
+                if (!crashesRes.ok) {
+                    throw new Error("Map data not available (run 'Hudson Crashes.ipynb' to generate)")
+                }
+                if (!hudcoRes.ok) {
+                    throw new Error("County boundary file not found")
+                }
 
-                const encodedCrashes: Encoded = await crashesRes.json()
-                const hudcoData: FeatureCollection = await hudcoRes.json()
+                // Parse JSON only after confirming responses are OK
+                const [encodedCrashes, hudcoData] = await Promise.all([
+                    crashesRes.json() as Promise<Encoded>,
+                    hudcoRes.json() as Promise<FeatureCollection>,
+                ])
 
                 const decodedCrashes = decode<Crash>(encodedCrashes)
                 setCrashes(decodedCrashes)
