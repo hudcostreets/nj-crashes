@@ -8,7 +8,7 @@ import { Annotation } from "./plot"
 import { CountySelect } from "@/src/county-select"
 import A from "@/src/lib/a"
 import { GitHub } from "@/src/socials"
-import { NjspSource } from "@/src/icons"
+import { PlotInfo } from "@/src/icons"
 import { repoWithOwner } from "@/src/github"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
 import css from "./plot.module.scss"
@@ -445,9 +445,15 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                 onLegendMouseOver={onLegendMouseOver}
                 onLegendMouseOut={onLegendMouseOut}
             />
-            <div className={css.plotNotes}>
-                <p>Hover legend labels to preview; click to lock.</p>
-                <p>
+            <div className={css.plotToolbarCompact}>
+                <PlotInfo source="njsp">
+                    {county === null && total2021 > 0 && total2022 > 0 ? (
+                        <p style={{ margin: 0 }}>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
+                    ) : null}
+                </PlotInfo>
+            </div>
+            {(curYearActual > 0 || curYearProjectedTotal > 0) && (
+                <p className={css.plotStats}>
                     {curYearActual > 0 ? (
                         <>
                             {countyLabel} has {curYearActual} reported deaths in {curYear} so far
@@ -462,11 +468,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                         </>
                     ) : null}
                 </p>
-                {county === null && total2021 > 0 && total2022 > 0 ? (
-                    <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
-                ) : null}
-                <NjspSource />
-            </div>
+            )}
         </div>
     )
 }

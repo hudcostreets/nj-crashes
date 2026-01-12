@@ -4,7 +4,7 @@ import { useDb, useQuery } from "@rdub/duckdb/duckdb"
 import { useRegisteredDb } from "@/src/tableData"
 import { YtdCsv } from "@/src/paths"
 import PlotWrapper from "@/src/lib/plot-wrapper"
-import { NjspSource } from "@/src/icons"
+import { PlotInfo } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { COLORSCALES, ColorScaleName, getColorAt } from "@/src/lib/colorscales"
@@ -350,7 +350,16 @@ export function YtdDeathsPlot({ id = "ytd" }: Props) {
                 onLegendMouseOver={onLegendMouseOver}
                 onLegendMouseOut={onLegendMouseOut}
             />
-            <ControlsGear open={controlsOpen} onToggle={setControlsOpen}>
+            <ControlsGear
+                open={controlsOpen}
+                onToggle={setControlsOpen}
+                extra={
+                    <PlotInfo source="njsp">
+                        <p style={{ margin: 0 }}>Some data arrives weeks or months after the fact, so current year numbers are especially subject to change.</p>
+                    </PlotInfo>
+                }
+                bottomLegend={legendPosition === 'bottom'}
+            >
                 <div>
                     <label style={{ marginRight: '0.5em' }}>Colors:</label>
                     <select
@@ -412,12 +421,6 @@ export function YtdDeathsPlot({ id = "ytd" }: Props) {
                     <span style={{ minWidth: '2em' }}>{Math.round(fadeOpacity * 100)}%</span>
                 </div>
             </ControlsGear>
-            <div className={css.plotNotes}>
-                <p>Hover legend labels to preview; click to lock.</p>
-                <NjspSource>
-                    <p>Some data arrives weeks or months after the fact, so current year numbers are especially subject to change.</p>
-                </NjspSource>
-            </div>
         </div>
     )
 }

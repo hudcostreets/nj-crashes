@@ -4,11 +4,18 @@ import { useDb, useQuery } from "@rdub/duckdb/duckdb"
 import { useRegisteredDb } from "@/src/tableData"
 import { CrashHomicideCsv } from "@/src/paths"
 import PlotWrapper from "@/src/lib/plot-wrapper"
-import A from "@/src/lib/a"
+import { PlotInfo, DataSource } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
 import css from "./plot.module.scss"
 
 const HEIGHT = 450
+
+// Data sources for this plot
+const SOURCES: DataSource[] = [
+    { label: "NJ State Police", href: "https://njsp.njoag.gov/fatal-crash-statistics/", note: "Traffic deaths (fatal crashes)" },
+    { label: "NJ State Police UCR", href: "https://nj.gov/oag/njsp/ucr/uniform-crime-reports.shtml", note: "Homicide data" },
+    { label: "Disaster Center", href: "https://www.disastercenter.com/crime/njcrimn.htm", note: "Historical homicide data" },
+]
 
 // Original colors from the JSON spec
 const TRAFFIC_COLOR = '#e06080'  // Pinkish red
@@ -229,12 +236,12 @@ export function HomicidesComparisonPlot({ id = "vs-homicides" }: Props) {
                 onLegendMouseOver={onLegendMouseOver}
                 onLegendMouseOut={onLegendMouseOut}
             />
-            <div className={css.plotNotes}>
-                <p>Hover legend labels to preview; click to lock.</p>
-                <p>Car crashes kill twice as many people as homicides, in NJ.</p>
-                <p>In 2022, crashes killed 2.4x as many people, the largest disparity on record.</p>
-                <p>Homicide data comes from <A href="https://nj.gov/njsp/ucr/uniform-crime-reports.shtml">NJ State Police</A> and <A href="https://www.disastercenter.com/crime/njcrimn.htm">Disaster Center</A>.</p>
+            <div className={css.plotToolbarCompact}>
+                <PlotInfo source={SOURCES} />
             </div>
+            <p className={css.plotStats}>
+                Car crashes kill twice as many people as homicides in NJ. In 2022, crashes killed 2.4x as many people, the largest disparity on record.
+            </p>
         </div>
     )
 }

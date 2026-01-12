@@ -4,7 +4,7 @@ import { useDb, useQuery } from "@rdub/duckdb/duckdb"
 import { useRegisteredDb } from "@/src/tableData"
 import { MonthlyCsv } from "@/src/paths"
 import PlotWrapper from "@/src/lib/plot-wrapper"
-import { NjspSource } from "@/src/icons"
+import { PlotInfo } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
 import css from "./plot.module.scss"
 
@@ -207,9 +207,8 @@ export function FatalitiesPerMonthPlot({ id = "per-month" }: Props) {
                 onLegendMouseOver={onLegendMouseOver}
                 onLegendMouseOut={onLegendMouseOut}
             />
-            <div className={css.plotNotes}>
-                <p>Hover legend labels to preview; click to lock.</p>
-                <NjspSource />
+            <div className={css.plotToolbarCompact}>
+                <PlotInfo source="njsp" />
             </div>
         </div>
     )

@@ -4,7 +4,7 @@ import { useDb, useQuery } from "@rdub/duckdb/duckdb"
 import { useRegisteredDb } from "@/src/tableData"
 import { MonthYearCsv } from "@/src/paths"
 import PlotWrapper from "@/src/lib/plot-wrapper"
-import { NjspSource } from "@/src/icons"
+import { PlotInfo } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { COLORSCALES, ColorScaleName, getColorAt } from "@/src/lib/colorscales"
@@ -249,7 +249,12 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars" }: Props) {
                 onLegendMouseOver={onLegendMouseOver}
                 onLegendMouseOut={onLegendMouseOut}
             />
-            <ControlsGear open={controlsOpen} onToggle={setControlsOpen}>
+            <ControlsGear
+                open={controlsOpen}
+                onToggle={setControlsOpen}
+                extra={<PlotInfo source="njsp" />}
+                bottomLegend={legendPosition === 'bottom'}
+            >
                 <div>
                     <label style={{ marginRight: '0.5em' }}>Colors:</label>
                     <select
@@ -290,10 +295,6 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars" }: Props) {
                     </select>
                 </div>
             </ControlsGear>
-            <div className={css.plotNotes}>
-                <p>Hover legend labels to preview; click to lock.</p>
-                <NjspSource />
-            </div>
         </div>
     )
 }
