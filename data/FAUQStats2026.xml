@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Jan 28 10:01:46 EST 2026</RUNDATE>
+  <RUNDATE>Thu Jan 29 10:01:46 EST 2026</RUNDATE>
   <STATSYEAR>2026</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -195,8 +195,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
       <ACCIDENT ACCID="14393" DATE="01/13/2026" TIME="1801">
-        <STREET>Evergreen Rd</STREET>
-        <LOCATION>Evergreen Rd</LOCATION>
+        <STREET>Oakwood Ave</STREET>
+        <LOCATION>Oakwood Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
