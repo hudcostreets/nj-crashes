@@ -377,8 +377,9 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2025,Sussex,7,1,0,3,11
 2025,Union,10,6,2,10,26
 2025,Warren,4,4,0,2,10
-2026,Atlantic,2,0,0,1,3
+2026,Atlantic,3,0,0,1,4
 2026,Bergen,2,0,0,0,2
+2026,Burlington,1,0,0,0,1
 2026,Camden,1,0,0,2,3
 2026,Essex,0,0,0,2,2
 2026,Gloucester,2,1,0,0,2
@@ -390,4 +391,4 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2026,Passaic,1,1,0,0,1
 2026,Salem,1,0,0,0,1
 2026,Sussex,1,0,0,0,1
-2026,Union,0,0,0,2,2
+2026,Union,0,0,0,3,3
