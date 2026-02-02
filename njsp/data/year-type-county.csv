@@ -381,7 +381,7 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2026,Bergen,2,0,0,0,2
 2026,Burlington,1,0,0,0,1
 2026,Camden,1,0,0,2,3
-2026,Essex,0,0,0,2,2
+2026,Essex,0,0,0,3,3
 2026,Gloucester,2,1,0,0,2
 2026,Hudson,0,0,0,1,1
 2026,Middlesex,1,0,0,3,4
@@ -389,6 +389,6 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2026,Morris,1,0,0,2,3
 2026,Ocean,3,0,0,1,4
 2026,Passaic,1,1,0,0,1
-2026,Salem,1,0,0,0,1
+2026,Salem,2,0,0,0,2
 2026,Sussex,1,0,0,0,1
 2026,Union,0,0,0,3,3
