@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Feb 02 10:01:51 EST 2026</RUNDATE>
+  <RUNDATE>Tue Feb 03 10:01:50 EST 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -5932,13 +5932,14 @@
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
       <ACCIDENT ACCID="13803" DATE="03/12/2025" TIME="1139">
-        <STREET>Getty Ave</STREET>
-        <LOCATION>Getty Ave</LOCATION>
+        <STREET>County Route 630</STREET>
+        <LOCATION>County Route 630</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>4</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6600,12 +6601,13 @@
     <MUNICIPALITY MCODE="0418" MNAME="Haddon Heights Boro">
       <ACCIDENT ACCID="13753" DATE="02/08/2025" TIME="1121">
         <HIGHWAY>30</HIGHWAY>
-        <LOCATION>State Highway 30</LOCATION>
+        <LOCATION>State Highway 30 MP 7.57</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7178,6 +7180,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0416" MNAME="Haddon Twsp">
@@ -7251,5 +7254,5 @@
   </COUNTY>
   <TOTACCIDENTS>544</TOTACCIDENTS>
   <TOTFATALITIES>578</TOTFATALITIES>
-  <TOTINJURIES>184</TOTINJURIES>
+  <TOTINJURIES>189</TOTINJURIES>
 </FAUQSTATS>
