@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Feb 03 10:01:50 EST 2026</RUNDATE>
+  <RUNDATE>Wed Feb 04 10:01:54 EST 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -6351,8 +6351,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2019" MNAME="Union Twsp">
       <ACCIDENT ACCID="13773" DATE="02/21/2025" TIME="1519">
-        <STREET>Spruce St</STREET>
-        <LOCATION>Spruce St</LOCATION>
+        <HIGHWAY>633</HIGHWAY>
+        <LOCATION>County 633 MP .02</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
