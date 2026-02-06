@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Feb 05 10:01:58 EST 2026</RUNDATE>
+  <RUNDATE>Fri Feb 06 10:01:55 EST 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -7118,7 +7118,7 @@
     <MUNICIPALITY MCODE="1201" MNAME="Carteret Boro">
       <ACCIDENT ACCID="13700" DATE="01/11/2025" TIME="2154">
         <HIGHWAY>602</HIGHWAY>
-        <LOCATION>County 602</LOCATION>
+        <LOCATION>County 602 MP 1.43</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
