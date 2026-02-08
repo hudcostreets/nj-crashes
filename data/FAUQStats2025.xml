@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Feb 07 10:01:58 EST 2026</RUNDATE>
+  <RUNDATE>Sun Feb 08 10:01:59 EST 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -5002,7 +5002,7 @@
     <MUNICIPALITY MCODE="1706" MNAME="Mannington Twsp">
       <ACCIDENT ACCID="13899" DATE="05/09/2025" TIME="0108">
         <HIGHWAY>613</HIGHWAY>
-        <LOCATION>County 613</LOCATION>
+        <LOCATION>County 613 MP 4.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5252,7 +5252,7 @@
     <MUNICIPALITY MCODE="1710" MNAME="Pittsgrove Twsp">
       <ACCIDENT ACCID="13877" DATE="04/27/2025" TIME="1313">
         <HIGHWAY>540</HIGHWAY>
-        <LOCATION>County 540</LOCATION>
+        <LOCATION>County 540 MP 25.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5359,8 +5359,8 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0411" MNAME="Collingswood Boro">
       <ACCIDENT ACCID="13866" DATE="04/19/2025" TIME="1606">
-        <STREET>Browning Rd</STREET>
-        <LOCATION>Browning Rd</LOCATION>
+        <HIGHWAY>629</HIGHWAY>
+        <LOCATION>County 629 MP .34</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
