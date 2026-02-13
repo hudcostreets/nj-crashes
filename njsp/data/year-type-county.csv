@@ -386,7 +386,7 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2026,Hudson,0,0,0,2,2
 2026,Middlesex,1,0,0,3,4
 2026,Monmouth,2,1,0,0,3
-2026,Morris,2,0,0,2,4
+2026,Morris,2,0,0,3,5
 2026,Ocean,4,0,0,1,5
 2026,Passaic,1,2,0,0,2
 2026,Salem,2,0,0,0,2
