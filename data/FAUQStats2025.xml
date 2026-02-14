@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Feb 13 10:02:04 EST 2026</RUNDATE>
+  <RUNDATE>Sat Feb 14 10:02:07 EST 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -931,14 +931,13 @@
   </COUNTY>
   <COUNTY CCODE="09" CNAME="Hudson">
     <MUNICIPALITY MCODE="0908" MNAME="North Bergen Twsp">
-      <ACCIDENT ACCID="14254" DATE="11/13/2025" TIME="1421">
-        <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+      <ACCIDENT ACCID="14254" DATE="11/13/2025" TIME="1426">
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
