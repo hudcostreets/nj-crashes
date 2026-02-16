@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Feb 15 10:02:08 EST 2026</RUNDATE>
+  <RUNDATE>Mon Feb 16 10:02:11 EST 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -5943,8 +5943,8 @@
   <COUNTY CCODE="16" CNAME="Passaic">
     <MUNICIPALITY MCODE="1602" MNAME="Clifton City">
       <ACCIDENT ACCID="13803" DATE="03/12/2025" TIME="1139">
-        <STREET>County Route 630</STREET>
-        <LOCATION>County Route 630</LOCATION>
+        <HIGHWAY>630</HIGHWAY>
+        <LOCATION>County 630 MP .55</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
