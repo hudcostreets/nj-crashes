@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Feb 16 10:02:11 EST 2026</RUNDATE>
+  <RUNDATE>Tue Feb 17 10:02:10 EST 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -6269,12 +6269,13 @@
     <MUNICIPALITY MCODE="0430" MNAME="Runnemede Boro">
       <ACCIDENT ACCID="13780" DATE="02/25/2025" TIME="1601">
         <HIGHWAY>42</HIGHWAY>
-        <LOCATION>State Highway 42</LOCATION>
+        <LOCATION>State Highway 42 MP 13.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
