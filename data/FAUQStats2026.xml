@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Feb 20 10:02:15 EST 2026</RUNDATE>
+  <RUNDATE>Sat Feb 21 10:02:12 EST 2026</RUNDATE>
   <STATSYEAR>2026</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -51,6 +51,15 @@
   </COUNTY>
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
+      <ACCIDENT ACCID="14424" DATE="02/19/2026" TIME="2358">
+        <HIGHWAY>1</HIGHWAY>
+        <LOCATION>State Highway 1</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
       <ACCIDENT ACCID="14422" DATE="02/18/2026" TIME="2236">
         <HIGHWAY>27</HIGHWAY>
         <LOCATION>State Highway 27 (Business)</LOCATION>
@@ -143,7 +152,7 @@
     <MUNICIPALITY MCODE="2111" MNAME="Hope Twsp">
       <ACCIDENT ACCID="14408" DATE="02/07/2026" TIME="1628">
         <HIGHWAY>519</HIGHWAY>
-        <LOCATION>County 519</LOCATION>
+        <LOCATION>County 519 MP 46</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -200,19 +209,6 @@
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="20" CNAME="Union">
-    <MUNICIPALITY MCODE="2001" MNAME="Berkeley Heights Tw">
-      <ACCIDENT ACCID="14402" DATE="02/04/2026" TIME="0636">
-        <HIGHWAY>78</HIGHWAY>
-        <LOCATION>Interstate 78</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
