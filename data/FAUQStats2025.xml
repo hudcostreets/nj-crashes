@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Feb 24 10:02:19 EST 2026</RUNDATE>
+  <RUNDATE>Wed Feb 25 10:02:20 EST 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -571,13 +571,14 @@
   <COUNTY CCODE="06" CNAME="Cumberland">
     <MUNICIPALITY MCODE="0610" MNAME="Millville City">
       <ACCIDENT ACCID="14296" DATE="12/05/2025" TIME="1740">
-        <STREET>Wheaton Ave</STREET>
-        <LOCATION>Wheaton Ave</LOCATION>
+        <HIGHWAY>555</HIGHWAY>
+        <LOCATION>County 555 MP 11.61</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1274,13 +1275,14 @@
   <COUNTY CCODE="06" CNAME="Cumberland">
     <MUNICIPALITY MCODE="0601" MNAME="Bridgeton City">
       <ACCIDENT ACCID="14282" DATE="11/02/2025" TIME="1755">
-        <STREET>Garfield Ave</STREET>
-        <LOCATION>Garfield Ave</LOCATION>
+        <HIGHWAY>763</HIGHWAY>
+        <LOCATION>County 763 MP .05</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5220,13 +5222,14 @@
   <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1518" MNAME="Manchester Twsp">
       <ACCIDENT ACCID="13884" DATE="04/28/2025" TIME="1410">
-        <STREET>Pasadena Rd</STREET>
-        <LOCATION>Pasadena Rd</LOCATION>
+        <HIGHWAY>18</HIGHWAY>
+        <LOCATION>County 18 MP 4.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5398,12 +5401,13 @@
     <MUNICIPALITY MCODE="1518" MNAME="Manchester Twsp">
       <ACCIDENT ACCID="13861" DATE="04/19/2025" TIME="1522">
         <HIGHWAY>37</HIGHWAY>
-        <LOCATION>State Highway 37</LOCATION>
+        <LOCATION>State Highway 37 MP .61</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7294,5 +7298,5 @@
   </COUNTY>
   <TOTACCIDENTS>545</TOTACCIDENTS>
   <TOTFATALITIES>579</TOTFATALITIES>
-  <TOTINJURIES>212</TOTINJURIES>
+  <TOTINJURIES>214</TOTINJURIES>
 </FAUQSTATS>
