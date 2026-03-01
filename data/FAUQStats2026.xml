@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Feb 28 10:02:22 EST 2026</RUNDATE>
+  <RUNDATE>Sun Mar 01 10:02:24 EST 2026</RUNDATE>
   <STATSYEAR>2026</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -53,7 +53,7 @@
     <MUNICIPALITY MCODE="0112" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="14433" DATE="02/28/2026" TIME="0037">
         <HIGHWAY>40</HIGHWAY>
-        <LOCATION>40</LOCATION>
+        <LOCATION>State Highway 40</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
