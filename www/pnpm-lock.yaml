@@ -50,9 +50,6 @@ importers:
       '@rdub/react-sql.js-httpvfs':
         specifier: 0.2.0
         version: 0.2.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@rdub/use-url-params':
-        specifier: workspace:*
-        version: link:../../../js/use-url-params
       '@react-leaflet/core':
         specifier: ^2.1.0
         version: 2.1.0(leaflet@1.9.4)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -116,6 +113,9 @@ importers:
       strftime:
         specifier: ^0.10.2
         version: 0.10.2
+      use-prms:
+        specifier: github:runsascoded/use-prms#36c2ddcaa1d23d8c4901b2769bac3ce69528691a
+        version: git+https://git@github.com:runsascoded/use-prms.git#36c2ddcaa1d23d8c4901b2769bac3ce69528691a(react@18.2.0)
       use-session-storage-state:
         specifier: ^18.2.0
         version: 18.2.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -163,7 +163,7 @@ importers:
         specifier: ^5.0.10
         version: 5.4.21(@types/node@20.3.0)(sass@1.69.7)(terser@5.27.0)
 
-  ../../../js/use-url-params:
+  ../../../js/use-prms:
     devDependencies:
       '@types/react':
         specifier: ^18.3.18
@@ -856,19 +856,11 @@ packages:
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
 
-  '@jridgewell/gen-mapping@0.3.3':
-    resolution: {integrity: sha512-HLhSWOLRi875zjjMG/r+Nv0oCW8umGb0BgEhyX3dDX3egwZtB8PqLnjz3yedt8R5StBrzcg4aBpnh8UA9D1BoQ==}
-    engines: {node: '>=6.0.0'}
-
   '@jridgewell/remapping@2.3.5':
     resolution: {integrity: sha512-LI9u/+laYG4Ds1TDKSJW2YPrIlcVYOwi2fUC6xB43lueCjgxV4lffOCZCtYFiH6TNOX+tQKXx97T4IKHbhyHEQ==}
 
   '@jridgewell/resolve-uri@3.1.1':
     resolution: {integrity: sha512-dSYZh7HhCDtCKm4QakX0xFpsRDqjjtZf/kjI/v3T3Nwt5r8/qz/M19F9ySyOqU94SXBmeG9ttTul+YnR4LOxFA==}
-    engines: {node: '>=6.0.0'}
-
-  '@jridgewell/set-array@1.1.2':
-    resolution: {integrity: sha512-xnkseuNADM0gt2bs+BvhO0p78Mk762YnZdsuzFV018NoG1Sj1SCQvpSqa7XUaTam5vAGasABV9qXASMKnFMwMw==}
     engines: {node: '>=6.0.0'}
 
   '@jridgewell/source-map@0.3.11':
@@ -879,9 +871,6 @@ packages:
 
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
-
-  '@jridgewell/trace-mapping@0.3.21':
-    resolution: {integrity: sha512-SRfKmRe1KvYnxjEMtxEr+J4HIeMX5YBg/qhRHpxEIGjhX1rshcHlnFUE9K0GazhVKWM7B+nARSkV8LuvJdJ5/g==}
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
@@ -1306,9 +1295,6 @@ packages:
 
   '@types/command-line-usage@5.0.2':
     resolution: {integrity: sha512-n7RlEEJ+4x4TS7ZQddTmNSxP+zziEG0TNsMfiRIxcIVXt71ENJ9ojeXmGO3wPoTdn7pJcU2xc3CJYMktNT6DPg==}
-
-  '@types/estree@1.0.5':
-    resolution: {integrity: sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==}
 
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
@@ -3162,6 +3148,12 @@ packages:
     peerDependencies:
       react: '>=16.8.0'
 
+  use-prms@git+https://git@github.com:runsascoded/use-prms.git#36c2ddcaa1d23d8c4901b2769bac3ce69528691a:
+    resolution: {commit: 36c2ddcaa1d23d8c4901b2769bac3ce69528691a, repo: git@github.com:runsascoded/use-prms.git, type: git}
+    version: 0.4.1-dist.cba8449
+    peerDependencies:
+      react: ^18.0.0
+
   use-session-storage-state@18.2.0:
     resolution: {integrity: sha512-FO+L8B73DA78SxbeWo80Q/Dt+EtK/BgkONwFK3pmbntMolNh9Mij43qBxKFWfVWl7OOpeYm/M984var2utSEJQ==}
     engines: {node: '>=12'}
@@ -3833,20 +3825,12 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.5.5
       '@jridgewell/trace-mapping': 0.3.31
 
-  '@jridgewell/gen-mapping@0.3.3':
-    dependencies:
-      '@jridgewell/set-array': 1.1.2
-      '@jridgewell/sourcemap-codec': 1.4.15
-      '@jridgewell/trace-mapping': 0.3.21
-
   '@jridgewell/remapping@2.3.5':
     dependencies:
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
 
   '@jridgewell/resolve-uri@3.1.1': {}
-
-  '@jridgewell/set-array@1.1.2': {}
 
   '@jridgewell/source-map@0.3.11':
     dependencies:
@@ -3857,11 +3841,6 @@ snapshots:
   '@jridgewell/sourcemap-codec@1.4.15': {}
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
-
-  '@jridgewell/trace-mapping@0.3.21':
-    dependencies:
-      '@jridgewell/resolve-uri': 3.1.1
-      '@jridgewell/sourcemap-codec': 1.4.15
 
   '@jridgewell/trace-mapping@0.3.31':
     dependencies:
@@ -4353,8 +4332,6 @@ snapshots:
   '@types/command-line-args@5.2.0': {}
 
   '@types/command-line-usage@5.0.2': {}
-
-  '@types/estree@1.0.5': {}
 
   '@types/estree@1.0.8': {}
 
@@ -5131,7 +5108,7 @@ snapshots:
 
   estree-walker@3.0.3:
     dependencies:
-      '@types/estree': 1.0.5
+      '@types/estree': 1.0.8
 
   esutils@2.0.3: {}
 
@@ -6269,7 +6246,7 @@ snapshots:
 
   sucrase@3.35.1:
     dependencies:
-      '@jridgewell/gen-mapping': 0.3.3
+      '@jridgewell/gen-mapping': 0.3.13
       commander: 4.1.1
       lines-and-columns: 1.2.4
       mz: 2.7.0
@@ -6470,6 +6447,10 @@ snapshots:
   use-deep-compare@1.2.1(react@18.2.0):
     dependencies:
       dequal: 2.0.3
+      react: 18.2.0
+
+  use-prms@git+https://git@github.com:runsascoded/use-prms.git#36c2ddcaa1d23d8c4901b2769bac3ce69528691a(react@18.2.0):
+    dependencies:
       react: 18.2.0
 
   use-session-storage-state@18.2.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0):

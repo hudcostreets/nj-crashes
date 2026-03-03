@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useUrlParam, floatParam } from "@rdub/use-url-params";
+import { useUrlState, floatParam } from "use-prms";
 import css from "./map.module.scss";
 import { LL } from "@/src/map/types";
 
@@ -9,9 +9,9 @@ export const defaults = {
 }
 
 export function useMapState() {
-    const [lat, setLat] = useUrlParam('lat', floatParam(defaults.ll.lat))
-    const [lng, setLng] = useUrlParam('lng', floatParam(defaults.ll.lng))
-    const [zoom, setZoom] = useUrlParam('z', floatParam(defaults.zoom))
+    const [lat, setLat] = useUrlState('lat', floatParam(defaults.ll.lat))
+    const [lng, setLng] = useUrlState('lng', floatParam(defaults.ll.lng))
+    const [zoom, setZoom] = useUrlState('z', floatParam(defaults.zoom))
 
     const center: LL = { lat, lng }
     const setCenter = (ll: LL) => {
