@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Mar 03 11:03:27 EST 2026</RUNDATE>
+  <RUNDATE>Fri Mar 06 10:02:34 EST 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -304,6 +304,19 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0714" MNAME="Newark City">
+      <ACCIDENT ACCID="14437" DATE="12/21/2025" TIME="1401">
+        <HIGHWAY>1</HIGHWAY>
+        <LOCATION>State Highway 1</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2639,8 +2652,8 @@
   <COUNTY CCODE="18" CNAME="Somerset">
     <MUNICIPALITY MCODE="1806" MNAME="Bridgewater Twsp">
       <ACCIDENT ACCID="14100" DATE="08/28/2025" TIME="1228">
-        <HIGHWAY>202</HIGHWAY>
-        <LOCATION>State Highway 202</LOCATION>
+        <STREET>720 U.S. 202</STREET>
+        <LOCATION>720 U.S. 202</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -4271,6 +4284,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5050,6 +5064,19 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="16" CNAME="Passaic">
+    <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
+      <ACCIDENT ACCID="14438" DATE="05/06/2025" TIME="1717">
+        <STREET>Memorial Dr/Market St</STREET>
+        <LOCATION>Memorial Dr/Market St</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="14" CNAME="Morris">
     <MUNICIPALITY MCODE="1427" MNAME="Mount Olive Twsp">
       <ACCIDENT ACCID="13894" DATE="05/06/2025" TIME="1605">
@@ -5157,7 +5184,7 @@
     <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
       <ACCIDENT ACCID="13889" DATE="04/30/2025" TIME="1926">
         <HIGHWAY>35</HIGHWAY>
-        <LOCATION>State Highway 35 MP 56.2</LOCATION>
+        <LOCATION>State Highway 35 MP 56.29</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5411,6 +5438,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5501,12 +5529,13 @@
     <MUNICIPALITY MCODE="1421" MNAME="Montville Twsp">
       <ACCIDENT ACCID="13956" DATE="04/15/2025" TIME="0705">
         <HIGHWAY>46</HIGHWAY>
-        <LOCATION>State Highway 46</LOCATION>
+        <LOCATION>State Highway 46 MP 52.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5592,12 +5621,13 @@
     <MUNICIPALITY MCODE="1432" MNAME="Randolph Twsp">
       <ACCIDENT ACCID="13845" DATE="04/10/2025" TIME="1516">
         <HIGHWAY>10</HIGHWAY>
-        <LOCATION>State Highway 10</LOCATION>
+        <LOCATION>State Highway 10 MP 5.65</LOCATION>
         <FATALITIES>4</FATALITIES>
         <FATAL_D>2</FATAL_D>
         <FATAL_P>2</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>4</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5995,6 +6025,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6064,6 +6095,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7287,7 +7319,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>544</TOTACCIDENTS>
-  <TOTFATALITIES>578</TOTFATALITIES>
-  <TOTINJURIES>217</TOTINJURIES>
+  <TOTACCIDENTS>546</TOTACCIDENTS>
+  <TOTFATALITIES>580</TOTFATALITIES>
+  <TOTINJURIES>222</TOTINJURIES>
 </FAUQSTATS>
