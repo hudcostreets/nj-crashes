@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat Mar 07 10:02:32 EST 2026</RUNDATE>
+  <RUNDATE>Sun Mar 08 10:02:32 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -3150,12 +3150,13 @@
     <MUNICIPALITY MCODE="2019" MNAME="Union Twsp">
       <ACCIDENT ACCID="14059" DATE="07/31/2025" TIME="1157">
         <HIGHWAY>78</HIGHWAY>
-        <LOCATION>Interstate 78</LOCATION>
+        <LOCATION>Interstate 78 MP 51.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3395,6 +3396,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
