@@ -14,7 +14,7 @@ const HEIGHT = 450
 // Data sources for this plot
 const SOURCES: DataSource[] = [
     { label: "NJ State Police", href: "https://njsp.njoag.gov/fatal-crash-statistics/", note: "Traffic deaths (fatal crashes)" },
-    { label: "NJ State Police UCR", href: "https://nj.gov/oag/njsp/ucr/uniform-crime-reports.shtml", note: "Homicide data" },
+    { label: "NJ State Police UCR", href: "https://njsp.njoag.gov/crime-reports/", note: "Homicide data" },
     { label: "Disaster Center", href: "https://www.disastercenter.com/crime/njcrimn.htm", note: "Historical homicide data" },
 ]
 
@@ -33,13 +33,14 @@ type CrashHomicideRow = {
     year: number
     traffic_deaths: number
     homicides: number
-    ratio: number
+    ratio: number | null
 }
 
-// Query to get crash-homicide data
-const crashHomicideQuery = `
+// Query to get crash-homicide data (filtered by county if set)
+const crashHomicideQueryFn = (county: string | null) => `
     SELECT year, traffic_deaths, homicides, ratio
     FROM read_csv_auto('crash_homicide')
+    WHERE county = '${county || ''}'
     ORDER BY year
 `
 
@@ -51,21 +52,31 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
 
     // Load crash-homicide data
     const crashHomicideDb = useRegisteredDb({ db, table: "crash_homicide", url: CrashHomicideCsv })
+    const crashHomicideQuery = useMemo(() => crashHomicideQueryFn(county ?? null), [county])
     const rows = useQuery<CrashHomicideRow>({ db: crashHomicideDb, query: crashHomicideQuery, init: [] })
 
     const TRACE_NAMES = useMemo(() => ['Traffic deaths', 'Homicides', 'Ratio'], [])
     const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(TRACE_NAMES, hoverTrace)
 
     // Build plot data
-    const { data, layout } = useMemo(() => {
+    const { data, layout, maxRatioRow, avgRatio } = useMemo(() => {
         if (!rows.length) {
-            return { data: [], layout: {} as Partial<Layout> }
+            return { data: [] as PlotData[], layout: {} as Partial<Layout>, maxRatioRow: null as CrashHomicideRow | null, avgRatio: 0 }
         }
 
         const years = rows.map(r => r.year)
         const trafficDeaths = rows.map(r => r.traffic_deaths)
         const homicides = rows.map(r => r.homicides)
-        const ratios = rows.map(r => r.ratio)
+        const ratios = rows.map(r => {
+            const v = Number(r.ratio)
+            return isFinite(v) ? v : 0
+        })
+
+        // Dynamic y-axis ranges
+        const maxDeaths = Math.max(...trafficDeaths, ...homicides)
+        const maxRatioVal = Math.max(...ratios.filter(r => isFinite(r)))
+        const deathsCeil = Math.ceil(maxDeaths / 50) * 50
+        const ratioCeil = Math.ceil(maxRatioVal * 5) / 5 + 0.2
 
         const trafficActive = activeTrace === 'Traffic deaths'
         const homicidesActive = activeTrace === 'Homicides'
@@ -81,6 +92,10 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 name: "Traffic deaths",
                 x: years,
                 y: trafficDeaths,
+                text: trafficDeaths.map(String),
+                textposition: 'inside',
+                textfont: { color: '#ffffff', size: 13 },
+                insidetextanchor: 'end',
                 marker: {
                     color: trafficGreyed ? fadeColor(TRAFFIC_COLOR) : TRAFFIC_COLOR,
                 },
@@ -92,6 +107,10 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 name: "Homicides",
                 x: years,
                 y: homicides,
+                text: homicides.map(String),
+                textposition: 'inside',
+                textfont: { color: '#ffffff', size: 13 },
+                insidetextanchor: 'end',
                 marker: {
                     color: homicidesGreyed ? fadeColor(HOMICIDE_COLOR) : HOMICIDE_COLOR,
                 },
@@ -142,8 +161,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 gridcolor: plotColors.gridColor,
                 fixedrange: true,
                 rangemode: "tozero",
-                range: [0, 800],
-                dtick: 100,
+                range: [0, deathsCeil],
                 title: {
                     text: "Deaths",
                     font: { color: plotColors.textColor },
@@ -157,8 +175,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 fixedrange: true,
                 overlaying: "y",
                 side: "right",
-                range: [1, 2.6],
-                dtick: 0.2,
+                range: [0, ratioCeil],
                 title: {
                     text: "Ratio",
                     font: { color: plotColors.textColor },
@@ -176,7 +193,16 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
             dragmode: false,
         }
 
-        return { data: traces, layout }
+        // Compute stats for caption
+        const validRatios = rows
+            .map(r => ({ ...r, ratio: Number(r.ratio) }))
+            .filter(r => isFinite(r.ratio))
+        const maxRatioRow = validRatios.length ? validRatios.reduce((a, b) => (b.ratio > a.ratio ? b : a), validRatios[0]) : null
+        const avgRatio = validRatios.length
+            ? validRatios.reduce((s, r) => s + r.ratio, 0) / validRatios.length
+            : 0
+
+        return { data: traces, layout, maxRatioRow, avgRatio }
     }, [rows, activeTrace, plotColors])
 
 
@@ -184,10 +210,11 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
         return <div style={{ height: HEIGHT }}>Loading...</div>
     }
 
+    const region = county ? `${county} County` : 'NJ'
+
     return (
         <div>
-            <h2 id={id}><a href={`#${id}`}>NJ Traffic Deaths vs. Homicides</a></h2>
-            {county && <p style={{ fontSize: '0.85em', opacity: 0.6, margin: '0 0 0.5em' }}>Statewide data — county-level comparison not yet available</p>}
+            <h2 id={id}><a href={`#${id}`}>Traffic Deaths vs. Homicides{county ? `: ${county} County` : ''}</a></h2>
             <PlotWrapper
                 id={id}
                 data={data}
@@ -201,9 +228,14 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
             <div className={css.plotToolbarCompact}>
                 <PlotInfo source={SOURCES} />
             </div>
-            <p className={css.plotStats}>
-                Car crashes kill twice as many people as homicides in NJ. In 2022, crashes killed 2.4x as many people, the largest disparity on record.
-            </p>
+            {maxRatioRow && (
+                <p className={css.plotStats}>
+                    {avgRatio >= 1
+                        ? <>Car crashes killed an average of {avgRatio.toFixed(1)}x as many people as homicides in {region}. In {maxRatioRow.year}, crashes killed {Number(maxRatioRow.ratio).toFixed(1)}x as many.</>
+                        : <>In {region}, {avgRatio < 1 ? 'homicides outnumbered' : 'crashes matched'} traffic deaths on average ({avgRatio.toFixed(2)}x ratio).</>
+                    }
+                </p>
+            )}
         </div>
     )
 }

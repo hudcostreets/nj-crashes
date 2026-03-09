@@ -104,24 +104,53 @@ def update_www_data(force):
     err(f"Generating {crash_homicide_path}...")
     try:
         from njdot.paths import CM_PQT
-        from nj_crashes.paths import HOMICIDES_PQT
+        from nj_crashes.paths import COUNTY_HOMICIDES_PQT, HOMICIDES_PQT
 
         # Load NJDOT county-month data for traffic deaths
         cm = pd.read_parquet(CM_PQT)
+
+        # --- Statewide ---
         traffic_deaths = cm.groupby(cm['Date'].dt.year)['Total Killed'].sum()
         traffic_deaths.index.name = 'year'
-
-        # Load homicides
         homicides = pd.read_parquet(HOMICIDES_PQT)['homicides']
-
-        # Combine
         cmp = pd.DataFrame({
             'traffic_deaths': traffic_deaths,
             'homicides': homicides,
         }).dropna(subset=['traffic_deaths']).astype(int)
         cmp['ratio'] = (cmp['traffic_deaths'] / cmp['homicides']).round(2)
-        cmp.to_csv(crash_homicide_path)
-        err(f"  Wrote {len(cmp)} rows")
+        cmp['county'] = ''
+        parts = [cmp.reset_index()]
+
+        # --- Per-county (NJSP crashes + UCR homicides: 2018+) ---
+        try:
+            county_hom = pd.read_parquet(COUNTY_HOMICIDES_PQT)
+            # Traffic deaths per county per year from NJSP crashes (already loaded)
+            county_td = crashes.groupby(['year', 'county'])['fatalities'].sum().reset_index()
+            county_td = county_td.rename(columns={'fatalities': 'traffic_deaths'})
+
+            for cn in sorted(CC2CN.values()):
+                td = county_td[county_td['county'] == cn].set_index('year')['traffic_deaths']
+                hom = county_hom[county_hom['county'] == cn].set_index('year')['murders']
+                county_cmp = pd.DataFrame({
+                    'traffic_deaths': td,
+                    'homicides': hom,
+                }).dropna().astype(int)
+                if county_cmp.empty:
+                    continue
+                # Avoid division by zero
+                county_cmp['ratio'] = county_cmp.apply(
+                    lambda r: round(r['traffic_deaths'] / r['homicides'], 2) if r['homicides'] > 0 else None,
+                    axis=1,
+                )
+                county_cmp['county'] = cn
+                parts.append(county_cmp.reset_index())
+        except Exception as e:
+            err(f"  Warning: Could not generate county-level crash-homicide data: {e}")
+
+        result = pd.concat(parts, ignore_index=True)
+        result = result[['county', 'year', 'traffic_deaths', 'homicides', 'ratio']]
+        result.to_csv(crash_homicide_path, index=False)
+        err(f"  Wrote {len(result)} rows")
     except Exception as e:
         err(f"  Warning: Could not generate crash-homicide data: {e}")
 
