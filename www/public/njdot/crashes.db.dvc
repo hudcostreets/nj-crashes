@@ -7,4 +7,4 @@ meta:
   computation:
     cmd: njdot compute db -t crashes
     deps:
-      njdot/data/crashes.parquet: 4d56ec989865608563225eb8f84cef74
+      njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
