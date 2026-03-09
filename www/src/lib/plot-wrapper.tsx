@@ -1,7 +1,6 @@
 import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react"
 import { PlotData, Layout, Margin, PlotRelayoutEvent } from "plotly.js"
-import { useLegendHover, LegendClickEvent } from "pltly"
-import { usePlotlyHoverDismiss } from "@/src/hooks/usePlotlyHoverDismiss"
+import { useLegendHover, usePlotlyHoverDismiss, LegendClickEvent } from "pltly"
 
 const PlotlyComponent = lazy(() => import("react-plotly.js"))
 

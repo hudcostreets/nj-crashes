@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { EndYear } from "@/src/constants"
 import { Layout, PlotData } from "plotly.js"
-import { useSoloTrace } from "pltly"
+import { useSoloTrace, lightenColor } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { useParquet } from "@/src/lib/useParquet"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
@@ -271,20 +271,6 @@ export default function CrashPlot({
                         }
                     }
                     return avgY
-                }
-
-                // Lighten color for 12mo avg line
-                const lightenColor = (hex: string): string => {
-                    // Convert hex to RGB, lighten, convert back
-                    const r = parseInt(hex.slice(1, 3), 16)
-                    const g = parseInt(hex.slice(3, 5), 16)
-                    const b = parseInt(hex.slice(5, 7), 16)
-                    // Lighten by blending with white
-                    const factor = 0.4
-                    const lr = Math.round(r + (255 - r) * factor)
-                    const lg = Math.round(g + (255 - g) * factor)
-                    const lb = Math.round(b + (255 - b) * factor)
-                    return `rgb(${lr}, ${lg}, ${lb})`
                 }
 
                 // Add 12mo avg line for each bar trace
