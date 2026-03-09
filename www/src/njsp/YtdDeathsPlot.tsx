@@ -28,10 +28,11 @@ type YtdRow = {
     cumulative: number
 }
 
-// Query to get YTD data
-const ytdQuery = `
+// Query to get YTD data (filtered by county if set)
+const ytdQueryFn = (county: string | null) => `
     SELECT year, day_of_year, date_label, fatalities, cumulative
     FROM read_csv_auto('ytd')
+    WHERE county = '${county || ''}'
     ORDER BY year, day_of_year
 `
 
@@ -74,7 +75,8 @@ export function YtdDeathsPlot({ id = "ytd", county }: Props) {
 
     // Load YTD data
     const ytdDb = useRegisteredDb({ db, table: "ytd", url: YtdCsv })
-    const ytdRows = useQuery<YtdRow>({ db: ytdDb, query: ytdQuery, init: [] })
+    const ytdQueryStr = useMemo(() => ytdQueryFn(county ?? null), [county])
+    const ytdRows = useQuery<YtdRow>({ db: ytdDb, query: ytdQueryStr, init: [] })
 
     // Compute trace names from data for solo hook
     const traceNames = useMemo(() => {
@@ -306,8 +308,7 @@ export function YtdDeathsPlot({ id = "ytd", county }: Props) {
 
     return (
         <div>
-            <h2 id={id}><a href={`#${id}`}>YTD Deaths</a></h2>
-            {county && <p style={{ fontSize: '0.85em', opacity: 0.6, margin: '0 0 0.5em' }}>Statewide data — county-level YTD not yet available</p>}
+            <h2 id={id}><a href={`#${id}`}>YTD Deaths{county ? `: ${county} County` : ''}</a></h2>
             <PlotWrapper
                 id={id}
                 data={data}

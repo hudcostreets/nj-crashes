@@ -28,10 +28,11 @@ type MonthYearRow = {
     fatalities: number
 }
 
-// Query to get month-year data
-const monthYearQuery = `
+// Query to get month-year data (filtered by county if set)
+const monthYearQueryFn = (county: string | null) => `
     SELECT year, month, fatalities
     FROM read_csv_auto('month_year')
+    WHERE county = '${county || ''}'
     ORDER BY year, month
 `
 
@@ -49,7 +50,8 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county }: Prop
 
     // Load month-year data
     const monthYearDb = useRegisteredDb({ db, table: "month_year", url: MonthYearCsv })
-    const monthYearRows = useQuery<MonthYearRow>({ db: monthYearDb, query: monthYearQuery, init: [] })
+    const monthYearQueryStr = useMemo(() => monthYearQueryFn(county ?? null), [county])
+    const monthYearRows = useQuery<MonthYearRow>({ db: monthYearDb, query: monthYearQueryStr, init: [] })
 
     // Compute trace names from data for solo hook
     const traceNames = useMemo(() => {
@@ -206,8 +208,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county }: Prop
 
     return (
         <div>
-            <h2 id={id}><a href={`#${id}`}>Fatalities by Month</a></h2>
-            {county && <p style={{ fontSize: '0.85em', opacity: 0.6, margin: '0 0 0.5em' }}>Statewide data — county-level month data not yet available</p>}
+            <h2 id={id}><a href={`#${id}`}>Fatalities by Month{county ? `: ${county} County` : ''}</a></h2>
             <PlotWrapper
                 id={id}
                 data={data}

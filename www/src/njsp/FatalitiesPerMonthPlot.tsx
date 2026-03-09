@@ -25,10 +25,11 @@ type MonthlyRow = {
     avg_12mo: number
 }
 
-// Query to get monthly data
-const monthlyQuery = `
+// Query to get monthly data (filtered by county if set)
+const monthlyQueryFn = (county: string | null) => `
     SELECT date, year, month, fatalities, avg_12mo
     FROM read_csv_auto('monthly')
+    WHERE county = '${county || ''}'
     ORDER BY date
 `
 
@@ -45,7 +46,8 @@ export function FatalitiesPerMonthPlot({ id = "per-month", county }: Props) {
 
     // Load monthly data
     const monthlyDb = useRegisteredDb({ db, table: "monthly", url: MonthlyCsv })
-    const monthlyRows = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQuery, init: [] })
+    const monthlyQueryStr = useMemo(() => monthlyQueryFn(county ?? null), [county])
+    const monthlyRows = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
 
     const TRACE_NAMES = useMemo(() => ['Fatalities', '12-mo avg'], [])
     const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(TRACE_NAMES, hoverTrace)
@@ -157,8 +159,7 @@ export function FatalitiesPerMonthPlot({ id = "per-month", county }: Props) {
 
     return (
         <div>
-            <h2 id={id}><a href={`#${id}`}>Fatalities per Month</a></h2>
-            {county && <p style={{ fontSize: '0.85em', opacity: 0.6, margin: '0 0 0.5em' }}>Statewide data — county-level monthly data not yet available</p>}
+            <h2 id={id}><a href={`#${id}`}>Fatalities per Month{county ? `: ${county} County` : ''}</a></h2>
             <PlotWrapper
                 id={id}
                 data={data}
