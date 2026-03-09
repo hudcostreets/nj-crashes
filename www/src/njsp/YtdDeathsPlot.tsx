@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo, useState } from "react"
+import React, { useMemo, useState } from "react"
 import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@rdub/duckdb/duckdb"
 import { useRegisteredDb } from "@/src/tableData"
 import { YtdCsv } from "@/src/paths"
+import { fadeColor, useSoloTrace } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
@@ -32,17 +33,6 @@ const ytdQuery = `
     ORDER BY year, day_of_year
 `
 
-// Helper to fade colors with configurable opacity
-function fadeColor(color: string, opacity: number): string {
-    if (color.startsWith('#')) {
-        const r = parseInt(color.slice(1, 3), 16)
-        const g = parseInt(color.slice(3, 5), 16)
-        const b = parseInt(color.slice(5, 7), 16)
-        return `rgba(${r}, ${g}, ${b}, ${opacity})`
-    }
-    return color
-}
-
 // Check if a year is a leap year
 function isLeapYear(year: number): boolean {
     return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0
@@ -71,15 +61,12 @@ export function YtdDeathsPlot({ id = "ytd" }: Props) {
     const db = useDb()
     const plotColors = usePlotColors()
 
-    // Legend interaction state
-    const [soloYear, setSoloYear] = useState<number | null>(null)
-    const [hoverYear, setHoverYear] = useState<number | null>(null)
+    const [hoverTrace, setHoverTrace] = useState<string | null>(null)
 
     // Per-plot settings (scoped by plot ID in session storage)
     const [colorScaleName, setColorScaleName] = useSessionStorage<ColorScaleName>(`plot-${id}-colorscale`, 'inferno')
     const [legendPosition, setLegendPosition] = useSessionStorage<'bottom' | 'right'>(`plot-${id}-legend-position`, 'right')
     const [ytdOnly, setYtdOnly] = useSessionStorage<boolean>(`plot-${id}-ytd-only`, false)
-    const [fadeOpacity, setFadeOpacity] = useSessionStorage<number>(`plot-${id}-fade-opacity`, 0.7)
     const [controlsOpen, setControlsOpen] = useSessionStorage<boolean>(`plot-${id}-controls-open`, false)
     const colorScale = COLORSCALES[colorScaleName]
 
@@ -87,8 +74,20 @@ export function YtdDeathsPlot({ id = "ytd" }: Props) {
     const ytdDb = useRegisteredDb({ db, table: "ytd", url: YtdCsv })
     const ytdRows = useQuery<YtdRow>({ db: ytdDb, query: ytdQuery, init: [] })
 
-    // Determine active year (hover takes precedence over solo)
-    const activeYear = hoverYear ?? soloYear
+    // Compute trace names from data for solo hook
+    const traceNames = useMemo(() => {
+        const years = [...new Set(ytdRows.map(r => r.year))].sort((a, b) => a - b)
+        return years.map(y => `'${String(y).slice(2)}`)
+    }, [ytdRows])
+
+    const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(traceNames, hoverTrace)
+
+    // Derive year from string trace name
+    const activeYear = useMemo(() => {
+        if (!activeTrace) return null
+        const match = activeTrace.match(/'(\d{2})/)
+        return match ? 2000 + parseInt(match[1]) : null
+    }, [activeTrace])
 
     // Build plot data
     const { data, layout } = useMemo(() => {
@@ -160,7 +159,7 @@ export function YtdDeathsPlot({ id = "ytd" }: Props) {
                 // Pre-format the "+N" suffix so it's correct for each day
                 customdata: filteredRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
                 line: {
-                    color: isGreyed ? fadeColor(color, fadeOpacity) : color,
+                    color: isGreyed ? fadeColor(color) : color,
                     width: isActive ? 5 : (isGreyed ? 1 : defaultWidth),
                 },
                 legendrank: idx,
@@ -296,42 +295,8 @@ export function YtdDeathsPlot({ id = "ytd" }: Props) {
         }
 
         return { data: traces, layout }
-    }, [ytdRows, activeYear, colorScale, plotColors, legendPosition, ytdOnly, fadeOpacity])
+    }, [ytdRows, activeYear, colorScale, plotColors, legendPosition, ytdOnly])
 
-    // Legend click handler
-    const onLegendClick = useCallback((name: string) => {
-        const yearMatch = name.match(/'(\d{2})/)
-        if (!yearMatch) return false
-        const year = 2000 + parseInt(yearMatch[1])
-        if (soloYear === year) {
-            setSoloYear(null)
-            setHoverYear(null)
-        } else {
-            setSoloYear(year)
-        }
-        return false
-    }, [soloYear])
-
-    // Legend double-click handler
-    const onLegendDoubleClick = useCallback(() => {
-        setSoloYear(null)
-        setHoverYear(null)
-        return false
-    }, [])
-
-    // Legend hover handlers
-    const onLegendMouseOver = useCallback((name: string) => {
-        const yearMatch = name.match(/'(\d{2})/)
-        if (yearMatch) {
-            setHoverYear(2000 + parseInt(yearMatch[1]))
-        }
-        return true
-    }, [])
-
-    const onLegendMouseOut = useCallback(() => {
-        setHoverYear(null)
-        return true
-    }, [])
 
     if (!data.length) {
         return <div style={{ height: HEIGHT }}>Loading...</div>
@@ -344,11 +309,11 @@ export function YtdDeathsPlot({ id = "ytd" }: Props) {
                 id={id}
                 data={data}
                 layout={layout}
-                src="plots/ytd-deaths.png"
+
                 onLegendClick={onLegendClick}
                 onLegendDoubleClick={onLegendDoubleClick}
-                onLegendMouseOver={onLegendMouseOver}
-                onLegendMouseOut={onLegendMouseOut}
+                onHoverTrace={setHoverTrace}
+                onResetSolo={resetSolo}
             />
             <ControlsGear
                 open={controlsOpen}
@@ -407,19 +372,6 @@ export function YtdDeathsPlot({ id = "ytd" }: Props) {
                     />
                     YTD only
                 </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3em' }}>
-                    <label>Opacity:</label>
-                    <input
-                        type="range"
-                        min="0.1"
-                        max="1"
-                        step="0.1"
-                        value={fadeOpacity}
-                        onChange={e => setFadeOpacity(parseFloat(e.target.value))}
-                        style={{ width: '60px', cursor: 'pointer' }}
-                    />
-                    <span style={{ minWidth: '2em' }}>{Math.round(fadeOpacity * 100)}%</span>
-                </div>
             </ControlsGear>
         </div>
     )

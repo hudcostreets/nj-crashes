@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useTheme } from 'pltly'
 
 export type PlotColors = {
   plotBg: string
@@ -8,44 +8,13 @@ export type PlotColors = {
   legendBg: string
 }
 
-function computePlotColors(): PlotColors {
-  if (typeof document === 'undefined') {
-    return {
-      plotBg: 'transparent',
-      paperBg: 'transparent',
-      gridColor: '#ddd',
-      textColor: '#333',
-      legendBg: 'white',
-    }
-  }
-  const style = getComputedStyle(document.documentElement)
+export function usePlotColors(): PlotColors {
+  const { theme } = useTheme()
   return {
     plotBg: 'transparent',
     paperBg: 'transparent',
-    gridColor: style.getPropertyValue('--plot-grid').trim() || '#ddd',
-    textColor: style.getPropertyValue('--text-primary').trim() || '#333',
-    legendBg: style.getPropertyValue('--bg-secondary').trim() || 'white',
+    gridColor: theme.grid,
+    textColor: theme.font,
+    legendBg: theme.annBg,
   }
-}
-
-export function usePlotColors(): PlotColors {
-  const [colors, setColors] = useState(computePlotColors)
-
-  useEffect(() => {
-    const updateColors = () => setColors(computePlotColors())
-
-    // Watch for theme changes
-    const observer = new MutationObserver(updateColors)
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme'],
-    })
-
-    // Also update on mount in case theme was set before observer
-    updateColors()
-
-    return () => observer.disconnect()
-  }, [])
-
-  return colors
 }

@@ -1,120 +1,58 @@
-// Vite replacement for @rdub/next-plotly/plot-wrapper
-// Simplified version without next/image and next/dynamic
-import React, { lazy, Suspense, useEffect, useRef, useState } from "react"
+import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react"
 import { PlotData, Layout, Margin, PlotRelayoutEvent } from "plotly.js"
-import { getBasePath } from "./basePath"
+import { useLegendHover, LegendClickEvent } from "pltly"
 import { usePlotlyHoverDismiss } from "@/src/hooks/usePlotlyHoverDismiss"
 
-// Lazy load Plotly to avoid SSR issues
 const PlotlyComponent = lazy(() => import("react-plotly.js"))
 
-export type LegendHandlers<TraceName extends string = string> = {
-    onLegendClick?: (name: TraceName) => boolean | void
-    onLegendDoubleClick?: (name: TraceName) => boolean | void
-    onLegendMouseOver?: (name: TraceName) => boolean | void
-    onLegendMouseOut?: (name: TraceName) => boolean | void
+export type LegendHandlers = {
+    onLegendClick?: (event: LegendClickEvent) => boolean | void
+    onLegendDoubleClick?: () => boolean | void
+    onHoverTrace?: (name: string | null) => void
+    onResetSolo?: () => void
 }
 
 export type OtherHandlers = {
     onRelayout?: (e: PlotRelayoutEvent) => void
 }
 
-export type Props<Trace extends string = string> = {
+export type Props = {
+    id?: string
     data: PlotData[]
     layout: Partial<Layout>
-    src?: string
-    basePath?: string
     className?: string
-} & LegendHandlers<Trace> & OtherHandlers
+} & LegendHandlers & OtherHandlers
 
 export const DEFAULT_MARGIN: Partial<Margin> = { t: 0, r: 15, b: 0, l: 0 }
 export const DEFAULT_HEIGHT = 450
 
-export type PlotWrapperProps<TraceName extends string = string> = Props<TraceName> & { id?: string }
-
-export default function PlotWrapper<TraceName extends string = string>({
+export default function PlotWrapper({
     id,
     data,
     layout,
-    src,
-    basePath,
     className,
     onLegendClick,
     onLegendDoubleClick,
-    onLegendMouseOver,
-    onLegendMouseOut,
+    onHoverTrace,
+    onResetSolo,
     onRelayout,
-}: PlotWrapperProps<TraceName>) {
-    const [initialized, setInitialized] = useState<{ graphDiv: HTMLElement } | null>(null)
+}: Props) {
+    const [initialized, setInitialized] = useState(false)
     const height = layout.height ?? DEFAULT_HEIGHT
     const containerRef = useRef<HTMLDivElement>(null)
     const setupHoverDismiss = usePlotlyHoverDismiss(containerRef)
 
-    basePath = basePath || getBasePath() || ""
-    const fallbackSrc = src ? `${basePath}/${src}` : undefined
+    // Legend hover via pltly
+    const traceNames = useMemo(
+        () => data.filter(t => t.showlegend !== false).map(t => String(t.name ?? '')).filter(Boolean),
+        [data],
+    )
+    const { hoverTrace, handlers: legendHoverHandlers } = useLegendHover(containerRef, traceNames)
 
-    // Set up legend hover events after Plotly initializes
+    // Forward hover state to consumer
     useEffect(() => {
-        if (!initialized) return
-        if (!onLegendMouseOver && !onLegendMouseOut) return
-
-        const { graphDiv } = initialized
-        const legend = graphDiv.getElementsByClassName('legend')[0]
-        if (!legend) return
-
-        const legendGroups = Array.from(legend.getElementsByClassName('traces'))
-        const listeners: Array<[Element, Record<string, () => void>]> = []
-        let mouseoutTimeout: ReturnType<typeof setTimeout> | null = null
-
-        // Build a name lookup from trace names for validation
-        const traceNames = new Set(data.filter(trace => trace.showlegend !== false).map(t => t.name))
-
-        legendGroups.forEach((group) => {
-            // Extract trace name from the legend item's text content
-            const textEl = group.querySelector('.legendtext')
-            const traceName = textEl?.textContent?.trim() as TraceName
-            if (!traceName || !traceNames.has(traceName)) return
-
-            const groupListeners: Record<string, () => void> = {}
-
-            if (onLegendMouseOver) {
-                const overListener = () => {
-                    // Cancel pending mouseout
-                    if (mouseoutTimeout) {
-                        clearTimeout(mouseoutTimeout)
-                        mouseoutTimeout = null
-                    }
-                    onLegendMouseOver(traceName)
-                }
-                group.addEventListener('mouseover', overListener)
-                groupListeners.mouseover = overListener
-            }
-            if (onLegendMouseOut) {
-                const outListener = () => {
-                    // Delay mouseout to allow moving between legend items
-                    mouseoutTimeout = setTimeout(() => {
-                        onLegendMouseOut(traceName)
-                        mouseoutTimeout = null
-                    }, 100)
-                }
-                group.addEventListener('mouseout', outListener)
-                groupListeners.mouseout = outListener
-            }
-
-            listeners.push([group, groupListeners])
-        })
-
-        // Cleanup
-        return () => {
-            if (mouseoutTimeout) clearTimeout(mouseoutTimeout)
-            listeners.forEach(([group, groupListeners]) => {
-                Object.entries(groupListeners).forEach(([event, handler]) => {
-                    group.removeEventListener(event, handler)
-                })
-            })
-        }
-    }, [initialized, data, onLegendMouseOver, onLegendMouseOut])
-
+        onHoverTrace?.(hoverTrace)
+    }, [hoverTrace])
 
     return (
         <div
@@ -122,7 +60,6 @@ export default function PlotWrapper<TraceName extends string = string>({
             className={`plot-wrapper ${className || ""}`}
             style={{
                 minHeight: `${height}px`,
-                // Prevent blue selection flash and context menu on mobile
                 WebkitTouchCallout: 'none',
                 WebkitUserSelect: 'none',
                 userSelect: 'none',
@@ -131,61 +68,36 @@ export default function PlotWrapper<TraceName extends string = string>({
             }}
             onContextMenu={e => e.preventDefault()}
         >
-            {/* Fallback image while Plotly loads */}
-            {initialized === null && fallbackSrc && (
-                <div
-                    className="plot-fallback"
-                    style={{ height: `${height}px`, maxHeight: `${height}px`, position: 'relative' }}
-                >
-                    <img
-                        src={fallbackSrc}
-                        alt="Plot loading..."
-                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                        loading="lazy"
-                    />
-                    <div className="spinner" style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                    }}>Loading...</div>
-                </div>
+            {!initialized && (
+                <div style={{
+                    height: `${height}px`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: 0.5,
+                }}>Loading...</div>
             )}
             <Suspense fallback={null}>
                 <PlotlyComponent
-                    onInitialized={(figure, graphDiv) => {
-                        setInitialized({ graphDiv })
+                    onInitialized={() => {
+                        setInitialized(true)
                         setupHoverDismiss()
+                        legendHoverHandlers.onInitialized()
                     }}
-                    onUpdate={(figure, graphDiv) => {
-                        // Re-setup if graphDiv changes
-                        if (initialized?.graphDiv !== graphDiv) {
-                            setInitialized({ graphDiv })
-                        }
+                    onUpdate={() => {
                         setupHoverDismiss()
+                        legendHoverHandlers.onUpdate()
                     }}
                     onLegendClick={e => {
                         if (onLegendClick) {
-                            const { curveNumber, data: plotData } = e
-                            const { name } = plotData[curveNumber]
-                            if (name === undefined) {
-                                console.error(`No data trace found at curve number ${curveNumber}:`, e)
-                                return true
-                            }
-                            const result = onLegendClick(name as TraceName)
+                            const result = onLegendClick(e as LegendClickEvent)
                             return result === undefined ? true : result
                         }
                         return true
                     }}
-                    onLegendDoubleClick={e => {
+                    onLegendDoubleClick={() => {
                         if (onLegendDoubleClick) {
-                            const { curveNumber, data: plotData } = e
-                            const { name } = plotData[curveNumber]
-                            if (name === undefined) {
-                                console.error(`No data trace found at curve number ${curveNumber}:`, e)
-                                return true
-                            }
-                            const result = onLegendDoubleClick(name as TraceName)
+                            const result = onLegendDoubleClick()
                             return result === undefined ? true : result
                         }
                         return true

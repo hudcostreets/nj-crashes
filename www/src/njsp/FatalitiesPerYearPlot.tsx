@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@rdub/duckdb/duckdb"
 import { useRegisteredDb } from "@/src/tableData"
 import { ProjectedCsv, YtcCsv } from "@/src/paths"
+import { useSoloTrace } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { Annotation } from "./plot"
 import { CountySelect } from "@/src/county-select"
@@ -103,8 +104,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
     const db = useDb()
     const plotColors = usePlotColors()
     const [county, setCounty] = useState<string | null>(initialCounty)
-    const [soloType, setSoloType] = useState<Type | null>(null)
-    const [hoverType, setHoverType] = useState<Type | null>(null)
+    const [hoverTrace, setHoverTrace] = useState<string | null>(null)
     const [showProjected, setShowProjected] = useState(true)
     const containerRef = useRef<HTMLDivElement>(null)
     const [containerWidth, setContainerWidth] = useState(800)  // Default to reasonable width before ResizeObserver fires
@@ -137,8 +137,16 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
     const projectionsQueryStr = useMemo(() => typeCountsQuery(county), [county])
     const [projections] = useQuery<TypeCounts>({ db: projectionsDb, query: projectionsQueryStr, init: [{ driver: 0, pedestrian: 0, cyclist: 0, passenger: 0 }] })
 
-    // Determine active type (hover takes precedence over solo)
-    const activeType = hoverType ?? soloType
+    // Solo trace management via pltly
+    const traceNames = useMemo(() => [...Types], [])
+    // Normalize hover trace (strip " (projected)" suffix)
+    const normalizedHover = useMemo(() => {
+        if (!hoverTrace) return null
+        const base = hoverTrace.replace(" (projected)", "") as Type
+        return Types.includes(base) ? base : null
+    }, [hoverTrace])
+    const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(traceNames, normalizedHover)
+    const activeType = activeTrace as Type | null
 
     // Build plot data
     const { data, annotations, layout } = useMemo(() => {
@@ -381,39 +389,6 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
         return totals
     }, [ytRows, projections])
 
-    // Legend click handler
-    const onLegendClick = useCallback((name: string) => {
-        const typeName = name.replace(" (projected)", "") as Type
-        if (!Types.includes(typeName)) return false
-        if (soloType === typeName) {
-            setSoloType(null)
-            setHoverType(null)
-        } else {
-            setSoloType(typeName)
-        }
-        return false
-    }, [soloType])
-
-    // Legend double-click handler
-    const onLegendDoubleClick = useCallback(() => {
-        setSoloType(null)
-        setHoverType(null)
-        return false
-    }, [])
-
-    // Legend hover handlers
-    const onLegendMouseOver = useCallback((name: string) => {
-        const typeName = name.replace(" (projected)", "") as Type
-        if (Types.includes(typeName)) {
-            setHoverType(typeName)
-        }
-        return true
-    }, [])
-
-    const onLegendMouseOut = useCallback(() => {
-        setHoverType(null)
-        return true
-    }, [])
 
     if (!data.length) {
         return <div style={{ height: `${height}px` }}>Loading...</div>
@@ -439,11 +414,11 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                 id={id}
                 data={data}
                 layout={layout}
-                src="plots/fatalities_per_year_by_type.png"
+
                 onLegendClick={onLegendClick}
                 onLegendDoubleClick={onLegendDoubleClick}
-                onLegendMouseOver={onLegendMouseOver}
-                onLegendMouseOut={onLegendMouseOut}
+                onHoverTrace={setHoverTrace}
+                onResetSolo={resetSolo}
             />
             <div className={css.plotToolbarCompact}>
                 <PlotInfo source="njsp">

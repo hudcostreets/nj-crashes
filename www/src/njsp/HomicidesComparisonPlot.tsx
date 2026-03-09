@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo, useState } from "react"
+import React, { useMemo, useState } from "react"
 import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@rdub/duckdb/duckdb"
 import { useRegisteredDb } from "@/src/tableData"
 import { CrashHomicideCsv } from "@/src/paths"
+import { fadeColor, useSoloTrace } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo, DataSource } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
@@ -40,32 +41,18 @@ const crashHomicideQuery = `
     ORDER BY year
 `
 
-// Helper to fade colors
-function fadeColor(color: string | undefined): string {
-    if (!color) return 'rgba(128, 128, 128, 0.35)'
-    if (color.startsWith('#')) {
-        const r = parseInt(color.slice(1, 3), 16)
-        const g = parseInt(color.slice(3, 5), 16)
-        const b = parseInt(color.slice(5, 7), 16)
-        return `rgba(${r}, ${g}, ${b}, 0.35)`
-    }
-    return color
-}
-
 export function HomicidesComparisonPlot({ id = "vs-homicides" }: Props) {
     const db = useDb()
     const plotColors = usePlotColors()
 
-    // Legend interaction state
-    const [soloTrace, setSoloTrace] = useState<string | null>(null)
     const [hoverTrace, setHoverTrace] = useState<string | null>(null)
 
     // Load crash-homicide data
     const crashHomicideDb = useRegisteredDb({ db, table: "crash_homicide", url: CrashHomicideCsv })
     const rows = useQuery<CrashHomicideRow>({ db: crashHomicideDb, query: crashHomicideQuery, init: [] })
 
-    // Determine active trace (hover takes precedence over solo)
-    const activeTrace = hoverTrace ?? soloTrace
+    const TRACE_NAMES = useMemo(() => ['Traffic deaths', 'Homicides', 'Ratio'], [])
+    const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(TRACE_NAMES, hoverTrace)
 
     // Build plot data
     const { data, layout } = useMemo(() => {
@@ -190,34 +177,6 @@ export function HomicidesComparisonPlot({ id = "vs-homicides" }: Props) {
         return { data: traces, layout }
     }, [rows, activeTrace, plotColors])
 
-    // Legend click handler
-    const onLegendClick = useCallback((name: string) => {
-        if (soloTrace === name) {
-            setSoloTrace(null)
-            setHoverTrace(null)
-        } else {
-            setSoloTrace(name)
-        }
-        return false
-    }, [soloTrace])
-
-    // Legend double-click handler
-    const onLegendDoubleClick = useCallback(() => {
-        setSoloTrace(null)
-        setHoverTrace(null)
-        return false
-    }, [])
-
-    // Legend hover handlers
-    const onLegendMouseOver = useCallback((name: string) => {
-        setHoverTrace(name)
-        return true
-    }, [])
-
-    const onLegendMouseOut = useCallback(() => {
-        setHoverTrace(null)
-        return true
-    }, [])
 
     if (!data.length) {
         return <div style={{ height: HEIGHT }}>Loading...</div>
@@ -230,11 +189,11 @@ export function HomicidesComparisonPlot({ id = "vs-homicides" }: Props) {
                 id={id}
                 data={data}
                 layout={layout}
-                src="plots/crash_homicide_cmp.png"
+
                 onLegendClick={onLegendClick}
                 onLegendDoubleClick={onLegendDoubleClick}
-                onLegendMouseOver={onLegendMouseOver}
-                onLegendMouseOut={onLegendMouseOut}
+                onHoverTrace={setHoverTrace}
+                onResetSolo={resetSolo}
             />
             <div className={css.plotToolbarCompact}>
                 <PlotInfo source={SOURCES} />

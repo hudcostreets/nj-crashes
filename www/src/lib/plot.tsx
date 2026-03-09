@@ -5,7 +5,8 @@ import React, { CSSProperties, ReactNode, useEffect, useMemo, useState } from "r
 import { PlotParams } from "react-plotly.js"
 import { Datum, Layout, Legend, Margin, PlotData } from "plotly.js"
 import { fromEntries, o2a } from "@rdub/base/objs"
-import PlotWrapper from "./plot-wrapper"
+import { fadeColor, useSoloTrace } from "pltly"
+import PlotWrapper, { LegendHandlers } from "./plot-wrapper"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { useSessionStorage } from "./useSessionStorage"
 import { COLORSCALES, ColorScaleName, getColorAt } from "./colorscales"
@@ -80,26 +81,13 @@ export type PlotSpec = {
     src?: string
     filter?: Filter
     children?: ReactNode
-    // Optional legend interaction handlers (pass no-op to disable defaults)
-    onLegendClick?: (name: string) => boolean | void
-    onLegendDoubleClick?: (name: string) => boolean | void
-    onLegendMouseOver?: (name: string) => boolean | void
-    onLegendMouseOut?: (name: string) => boolean | void
-}
-
-export type LegendHandlers<TraceName extends string = string> = {
-    onLegendClick?: (name: TraceName) => boolean | void
-    onLegendDoubleClick?: (name: TraceName) => boolean | void
-    onLegendMouseOver?: (name: TraceName) => boolean | void
-    onLegendMouseOut?: (name: TraceName) => boolean | void
-}
+} & LegendHandlers
 
 export type OtherHandlers = {
     onRelayout?: (e: any) => void
 }
 
 export type PlotType<
-    TraceName extends string = string,
     Params extends PlotParams = PlotParams
 > = PlotSpec & {
     params: Params
@@ -107,19 +95,16 @@ export type PlotType<
     heading?: ReactNode
     margin?: Partial<Margin>
     basePath?: string
-} & LegendHandlers<TraceName> & OtherHandlers
+} & LegendHandlers & OtherHandlers
 
 export type Opts = { rmTitle?: boolean }
 export const DefaultOpts: Opts = { rmTitle: true }
 
-export function buildPlot<
-    TraceName extends string = string,
-    Params extends PlotParams = PlotParams
->(
+export function buildPlot<Params extends PlotParams = PlotParams>(
     spec: PlotSpec,
     params: Params,
     opts: Opts = DefaultOpts,
-): PlotType<TraceName, Params> {
+): PlotType<Params> {
     const id = spec.id
     let title = spec.title
     if (!title) {
@@ -134,31 +119,27 @@ export function buildPlot<
         }
     }
     if (opts.rmTitle) {
-        // Completely remove title from layout to avoid ghost title artifacts
         const { layout: { title: _plotTitle, ...layout } } = params
         params = { ...params, layout } as Params
     }
     return { ...spec, title, params }
 }
 
-export function buildPlots<
-    TraceName extends string = string,
-    Params extends PlotParams = PlotParams
->(
+export function buildPlots<Params extends PlotParams = PlotParams>(
     specs: PlotSpec[],
     plots: { [id: string]: Params },
     opts: Opts = DefaultOpts,
-): PlotType<TraceName, Params>[] {
+): PlotType<Params>[] {
     const plotSpecDict: { [id: string]: PlotSpec } = fromEntries(specs.map(spec => [spec.id, spec]))
     return o2a(plots, (id, plot) => {
         const spec = plotSpecDict[id]
         if (!spec) return
-        return buildPlot<TraceName, Params>(spec, plot, opts)
-    }).filter((p): p is PlotType<TraceName, Params> => !!p)
+        return buildPlot<Params>(spec, plot, opts)
+    }).filter((p): p is PlotType<Params> => !!p)
 }
 
 // Plot that loads its own data from JSON, or uses provided params
-export function Plot<TraceName extends string = string>({
+export function Plot({
     id, name,
     title, subtitle,
     heading,
@@ -170,20 +151,18 @@ export function Plot<TraceName extends string = string>({
     params: providedParams,
     onLegendClick: providedOnLegendClick,
     onLegendDoubleClick: providedOnLegendDoubleClick,
-    onLegendMouseOver: providedOnLegendMouseOver,
-    onLegendMouseOut: providedOnLegendMouseOut,
+    onHoverTrace: providedOnHoverTrace,
     onRelayout,
 }: PlotSpec & {
     basePath?: string
     margin?: Partial<Margin>
     heading?: ReactNode
     params?: PlotParams
-} & LegendHandlers<TraceName> & OtherHandlers) {
+} & LegendHandlers & OtherHandlers) {
     const [fetchedParams, setFetchedParams] = useState<PlotParams | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [xRange, setXRange] = useState<null | [number, number]>(null)
-    const [soloTrace, setSoloTrace] = useState<TraceName | null>(null)
-    const [hoverTrace, setHoverTrace] = useState<TraceName | null>(null)
+    const [hoverTrace, setHoverTrace] = useState<string | null>(null)
     // Per-plot settings (scoped by plot ID)
     const [colorScaleName, setColorScaleName] = useSessionStorage<ColorScaleName>(`plot-${id}-colorscale`, 'inferno')
     // Plots with many year traces default to right legend
@@ -214,8 +193,17 @@ export function Plot<TraceName extends string = string>({
     // Use provided params or fetched params
     const params = providedParams || fetchedParams
 
-    // Determine active trace: hover takes precedence over solo
-    const activeTrace = hoverTrace ?? soloTrace
+    // Trace names for legend interaction hooks
+    const traceNames = useMemo(() => {
+        if (!params) return []
+        return (params.data as PlotData[])
+            .filter(t => t.showlegend !== false)
+            .map(t => String(t.name ?? ''))
+            .filter(Boolean)
+    }, [params])
+
+    // Solo trace management via pltly
+    const { activeTrace, onLegendClick: defaultOnLegendClick, onLegendDoubleClick: defaultOnLegendDoubleClick, resetSolo: defaultResetSolo } = useSoloTrace(traceNames, hoverTrace)
 
     // Check if active trace uses yaxis2
     const activeTraceUsesY2 = useMemo(() => {
@@ -573,51 +561,6 @@ export function Plot<TraceName extends string = string>({
         const ACTIVE_LINE_WIDTH = 5
         const INACTIVE_LINE_WIDTH = 1.5
 
-        // Fade color while preserving some hue (HSL transform)
-        const fadeColor = (hexColor: string): string => {
-            // Parse hex to RGB
-            const hex = hexColor.replace('#', '')
-            const r = parseInt(hex.slice(0, 2), 16) / 255
-            const g = parseInt(hex.slice(2, 4), 16) / 255
-            const b = parseInt(hex.slice(4, 6), 16) / 255
-
-            // RGB to HSL
-            const max = Math.max(r, g, b), min = Math.min(r, g, b)
-            let h = 0, s = 0, l = (max + min) / 2
-
-            if (max !== min) {
-                const d = max - min
-                s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-                switch (max) {
-                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break
-                    case g: h = ((b - r) / d + 2) / 6; break
-                    case b: h = ((r - g) / d + 4) / 6; break
-                }
-            }
-
-            // Reduce saturation and lightness for faded effect
-            s = s * 0.3  // Keep 30% saturation
-            l = Math.max(0.25, l * 0.5)  // Darken but keep minimum lightness
-
-            // HSL to RGB
-            const hue2rgb = (p: number, q: number, t: number) => {
-                if (t < 0) t += 1
-                if (t > 1) t -= 1
-                if (t < 1/6) return p + (q - p) * 6 * t
-                if (t < 1/2) return q
-                if (t < 2/3) return p + (q - p) * (2/3 - t) * 6
-                return p
-            }
-
-            const q = l < 0.5 ? l * (1 + s) : l + s - l * s
-            const p = 2 * l - q
-            const nr = Math.round(hue2rgb(p, q, h + 1/3) * 255)
-            const ng = Math.round(hue2rgb(p, q, h) * 255)
-            const nb = Math.round(hue2rgb(p, q, h - 1/3) * 255)
-
-            return `rgb(${nr}, ${ng}, ${nb})`
-        }
-
         // Check if this is a bar chart (reordering would change bar positions in grouped mode)
         const hasBarTraces = data.some(t => t.type === 'bar')
 
@@ -698,46 +641,14 @@ export function Plot<TraceName extends string = string>({
         return data
     }, [params, xRange, filter, activeTrace, plotColors, colorScale, colorScaleName, effectiveYtdOnly, id])
 
-    // Default legend click handler: solo trace on click
-    const onLegendClick = useMemo(() => {
-        if (providedOnLegendClick) return providedOnLegendClick
-        return (name: TraceName) => {
-            if (soloTrace === name) {
-                setSoloTrace(null)  // Un-solo if already solo'd
-                setHoverTrace(null)
-            } else {
-                setSoloTrace(name)  // Solo this trace
-            }
-            return false  // Prevent default Plotly behavior
-        }
-    }, [providedOnLegendClick, soloTrace])
+    const onLegendClick = providedOnLegendClick ?? defaultOnLegendClick
+    const onLegendDoubleClick = providedOnLegendDoubleClick ?? defaultOnLegendDoubleClick
 
-    // Default legend double-click handler: show all
-    const onLegendDoubleClick = useMemo(() => {
-        if (providedOnLegendDoubleClick) return providedOnLegendDoubleClick
-        return () => {
-            setSoloTrace(null)
-            setHoverTrace(null)
-            return false
-        }
-    }, [providedOnLegendDoubleClick])
-
-    // Default legend hover handlers: preview trace on hover
-    const onLegendMouseOver = useMemo(() => {
-        if (providedOnLegendMouseOver) return providedOnLegendMouseOver
-        return (name: TraceName) => {
-            setHoverTrace(name)
-            return true
-        }
-    }, [providedOnLegendMouseOver])
-
-    const onLegendMouseOut = useMemo(() => {
-        if (providedOnLegendMouseOut) return providedOnLegendMouseOut
-        return () => {
-            setHoverTrace(null)
-            return true
-        }
-    }, [providedOnLegendMouseOut])
+    // Default legend hover handler: preview trace on hover
+    const onHoverTrace = useMemo(() => {
+        if (providedOnHoverTrace) return providedOnHoverTrace
+        return (name: string | null) => setHoverTrace(name)
+    }, [providedOnHoverTrace])
 
     if (src === undefined) {
         src = `plots/${name}.png`
@@ -784,8 +695,6 @@ export function Plot<TraceName extends string = string>({
                 id={id}
                 data={filteredTraces}
                 layout={newLayout}
-                src={src}
-                basePath={basePath}
                 onRelayout={(e: any) => {
                     if (filter && e["xaxis.range[0]"] !== undefined) {
                         setXRange([e["xaxis.range[0]"], e["xaxis.range[1]"]])
@@ -794,10 +703,10 @@ export function Plot<TraceName extends string = string>({
                     }
                     onRelayout?.(e)
                 }}
-                onLegendClick={onLegendClick as any}
-                onLegendDoubleClick={onLegendDoubleClick as any}
-                onLegendMouseOver={onLegendMouseOver as any}
-                onLegendMouseOut={onLegendMouseOut as any}
+                onLegendClick={onLegendClick}
+                onLegendDoubleClick={onLegendDoubleClick}
+                onHoverTrace={onHoverTrace}
+                onResetSolo={defaultResetSolo}
             />
             {hasYearTraces && (
                 <div style={{ marginTop: '0.5em', fontSize: '12px', display: 'flex', gap: '1em', flexWrap: 'wrap' }}>
