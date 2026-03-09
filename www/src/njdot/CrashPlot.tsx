@@ -54,6 +54,8 @@ export default function CrashPlot({
     const [stackBy, setStackBy] = useSessionStorage<StackBy>('crashplot-stackBy', initialStackBy)
     const [severities, setSeverities] = useSessionStorage<Severity[]>('crashplot-severities', initialSeverities)
     const [counties, setCounties] = useSessionStorage<number[]>('crashplot-counties', initialCounties)
+    // Sync with external counties prop (geo filter)
+    useEffect(() => { setCounties(initialCounties) }, [initialCounties.join(',')])
     const [timeGranularity, setTimeGranularity] = useSessionStorage<'year' | 'month'>('crashplot-timeGranularity', initialTimeGranularity)
     const [stackPercent, setStackPercent] = useSessionStorage('crashplot-stackPercent', false)
     const [show12moAvg, setShow12moAvg] = useSessionStorage('crashplot-show12moAvg', false)

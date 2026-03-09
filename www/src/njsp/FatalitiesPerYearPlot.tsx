@@ -104,6 +104,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
     const db = useDb()
     const plotColors = usePlotColors()
     const [county, setCounty] = useState<string | null>(initialCounty)
+    // Sync with external county prop (geo filter)
+    useEffect(() => { setCounty(initialCounty) }, [initialCounty])
     const [hoverTrace, setHoverTrace] = useState<string | null>(null)
     const [showProjected, setShowProjected] = useState(true)
     const containerRef = useRef<HTMLDivElement>(null)

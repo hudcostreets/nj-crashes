@@ -16,6 +16,8 @@ const HEIGHT = 450
 
 export type Props = {
     id?: string
+    /** When set, shows a note that this plot is statewide (no county-level YTD data) */
+    county?: string | null
 }
 
 type YtdRow = {
@@ -57,7 +59,7 @@ function dayToRefDate(dayOfYear: number): string {
     return date.toISOString().split('T')[0]
 }
 
-export function YtdDeathsPlot({ id = "ytd" }: Props) {
+export function YtdDeathsPlot({ id = "ytd", county }: Props) {
     const db = useDb()
     const plotColors = usePlotColors()
 
@@ -305,6 +307,7 @@ export function YtdDeathsPlot({ id = "ytd" }: Props) {
     return (
         <div>
             <h2 id={id}><a href={`#${id}`}>YTD Deaths</a></h2>
+            {county && <p style={{ fontSize: '0.85em', opacity: 0.6, margin: '0 0 0.5em' }}>Statewide data — county-level YTD not yet available</p>}
             <PlotWrapper
                 id={id}
                 data={data}

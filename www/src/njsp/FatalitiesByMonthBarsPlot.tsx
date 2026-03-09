@@ -18,6 +18,8 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 
 export type Props = {
     id?: string
+    /** When set, shows a note that this plot is statewide (no county-level month-year data) */
+    county?: string | null
 }
 
 type MonthYearRow = {
@@ -33,7 +35,7 @@ const monthYearQuery = `
     ORDER BY year, month
 `
 
-export function FatalitiesByMonthBarsPlot({ id = "by-month-bars" }: Props) {
+export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county }: Props) {
     const db = useDb()
     const plotColors = usePlotColors()
 
@@ -205,6 +207,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars" }: Props) {
     return (
         <div>
             <h2 id={id}><a href={`#${id}`}>Fatalities by Month</a></h2>
+            {county && <p style={{ fontSize: '0.85em', opacity: 0.6, margin: '0 0 0.5em' }}>Statewide data — county-level month data not yet available</p>}
             <PlotWrapper
                 id={id}
                 data={data}

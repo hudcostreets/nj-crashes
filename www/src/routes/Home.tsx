@@ -14,58 +14,92 @@ import { HomicidesComparisonPlot } from "@/src/njsp/HomicidesComparisonPlot"
 import { FatalitiesPerMonthPlot } from "@/src/njsp/FatalitiesPerMonthPlot"
 import { FatalitiesByMonthBarsPlot } from "@/src/njsp/FatalitiesByMonthBarsPlot"
 import { PlotContainer } from "@/src/components/PlotContainer"
+import { Breadcrumbs } from "@/src/components/Breadcrumbs"
+import { useGeoFilter } from "@/src/GeoFilterContext"
+import { normalize } from "@/src/county"
+import { Counties } from "@/src/njdot/data"
 
 export default function Home() {
     const basePath = getBasePath()
-    const title = "NJ Car Crash Data"
+    const { cc, countyName, municipalityName } = useGeoFilter()
+
+    // Build title and description based on geo filter
+    const regionLabel = municipalityName
+        ? `${municipalityName}, ${countyName} County`
+        : countyName
+            ? `${countyName} County`
+            : null
+    const title = regionLabel ? `${regionLabel} — NJ Car Crash Data` : "NJ Car Crash Data"
+    const description = regionLabel
+        ? `Car crash data for ${regionLabel}, NJ`
+        : "Analysis & Visualization of car crash data published by NJ State Police and NJ DOT"
+    const pageUrl = countyName
+        ? municipalityName
+            ? `${url}/c/${normalize(countyName)}/${normalize(municipalityName)}`
+            : `${url}/c/${normalize(countyName)}`
+        : url
+
+    // Map county code to counties array for CrashPlot
+    const countyFilter = cc !== null ? [cc] : Object.keys(Counties).map(Number)
 
     return (
         <div className={css.container}>
             <Head
                 title={title}
-                description="Analysis & Visualization of car crash data published by NJ State Police and NJ DOT"
-                url={url}
+                description={description}
+                url={pageUrl}
                 thumbnail={`${url}/plots/fatalities_per_year_by_type.png`}
             />
 
             <main className={css.index}>
-                <h1 className={css.title}>{title}</h1>
-                <p>
-                    Exposed and visualized data from two NJ sources:{" "}
-                    <A title="NJ State Police fatal crash data" href={NjspFatalAcc}>NJ State Police</A> (fatal crashes, 2008-present, updated daily) and{" "}
-                    <A title="NJ DOT raw crash data" href={NjdotRawData}>NJ DOT</A> (all crashes including property-damage and injury, 2001-{EndYear}).
-                </p>
-                <p>
-                    Code and cleaned data are <A href={GitHub.href}>on GitHub</A>.
-                </p>
+                <Breadcrumbs />
+                <h1 className={css.title}>{regionLabel ? `${regionLabel} Crash Data` : "NJ Car Crash Data"}</h1>
+                {!regionLabel && (
+                    <p>
+                        Exposed and visualized data from two NJ sources:{" "}
+                        <A title="NJ State Police fatal crash data" href={NjspFatalAcc}>NJ State Police</A> (fatal crashes, 2008-present, updated daily) and{" "}
+                        <A title="NJ DOT raw crash data" href={NjdotRawData}>NJ DOT</A> (all crashes including property-damage and injury, 2001-{EndYear}).
+                    </p>
+                )}
+                {!regionLabel && (
+                    <p>
+                        Code and cleaned data are <A href={GitHub.href}>on GitHub</A>.
+                    </p>
+                )}
 
                 {/* NJSP Plots */}
-                <PlotContainer><FatalitiesPerYearPlot /></PlotContainer>
-                <PlotContainer><YtdDeathsPlot /></PlotContainer>
-                <PlotContainer><HomicidesComparisonPlot /></PlotContainer>
-                <PlotContainer><FatalitiesPerMonthPlot /></PlotContainer>
-                <PlotContainer><FatalitiesByMonthBarsPlot /></PlotContainer>
+                <PlotContainer><FatalitiesPerYearPlot initialCounty={countyName} /></PlotContainer>
+                <PlotContainer><YtdDeathsPlot county={countyName} /></PlotContainer>
+                <PlotContainer><HomicidesComparisonPlot county={countyName} /></PlotContainer>
+                <PlotContainer><FatalitiesPerMonthPlot county={countyName} /></PlotContainer>
+                <PlotContainer><FatalitiesByMonthBarsPlot county={countyName} /></PlotContainer>
 
                 {/* NJ DOT Section */}
-                <h1 id="njdot"><a href="#njdot">NJ DOT Crash Data</a></h1>
-                <p>
-                    NJ DOT{" "}
-                    <A title="NJ DOT raw crash data" href={NjdotRawData}>
-                        publishes raw crash data
-                    </A>
-                    {" "}including property-damage, injury, and fatal crashes, going back to 2001 (≈6MM records, currently through {EndYear}).
-                </p>
-                <PlotContainer showHr={false}><CrashPlot /></PlotContainer>
+                <h2 id="njdot"><a href="#njdot">NJ DOT Crash Data</a></h2>
+                {!regionLabel && (
+                    <p>
+                        NJ DOT{" "}
+                        <A title="NJ DOT raw crash data" href={NjdotRawData}>
+                            publishes raw crash data
+                        </A>
+                        {" "}including property-damage, injury, and fatal crashes, going back to 2001 (≈6MM records, currently through {EndYear}).
+                    </p>
+                )}
+                <PlotContainer showHr={false}><CrashPlot counties={countyFilter} /></PlotContainer>
 
-                {/* Hudson County Map */}
-                <h1 id="map"><a href="#map">Hudson County Crash Map</a></h1>
-                <p>
-                    5 years (2017-2021) of fatal and injury crashes in Hudson County, plotted from NJ DOT data:
-                </p>
-                <iframe src={`${basePath}/map/hudson`} className={css.map} title="Hudson County Crash Map" />
-                <p style={{ textAlign: 'center' }}>
-                    <A href="/map/hudson">Full screen map</A>
-                </p>
+                {/* Hudson County Map — only show when not filtered, or when filtered to Hudson */}
+                {(!countyName || countyName === "Hudson") && (
+                    <>
+                        <h2 id="map"><a href="#map">Hudson County Crash Map</a></h2>
+                        <p>
+                            5 years (2017-2021) of fatal and injury crashes in Hudson County, plotted from NJ DOT data:
+                        </p>
+                        <iframe src={`${basePath}/map/hudson`} className={css.map} title="Hudson County Crash Map" />
+                        <p style={{ textAlign: 'center' }}>
+                            <A href="/map/hudson">Full screen map</A>
+                        </p>
+                    </>
+                )}
 
                 <Footer />
             </main>

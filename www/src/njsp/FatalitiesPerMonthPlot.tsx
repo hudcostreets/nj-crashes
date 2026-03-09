@@ -13,6 +13,8 @@ const HEIGHT = 450
 
 export type Props = {
     id?: string
+    /** When set, shows a note that this plot is statewide (no county-level monthly data) */
+    county?: string | null
 }
 
 type MonthlyRow = {
@@ -35,7 +37,7 @@ const BAR_COLOR = '#ba3853'
 // Line color (white for visibility on dark background)
 const LINE_COLOR = '#ffffff'
 
-export function FatalitiesPerMonthPlot({ id = "per-month" }: Props) {
+export function FatalitiesPerMonthPlot({ id = "per-month", county }: Props) {
     const db = useDb()
     const plotColors = usePlotColors()
 
@@ -156,6 +158,7 @@ export function FatalitiesPerMonthPlot({ id = "per-month" }: Props) {
     return (
         <div>
             <h2 id={id}><a href={`#${id}`}>Fatalities per Month</a></h2>
+            {county && <p style={{ fontSize: '0.85em', opacity: 0.6, margin: '0 0 0.5em' }}>Statewide data — county-level monthly data not yet available</p>}
             <PlotWrapper
                 id={id}
                 data={data}

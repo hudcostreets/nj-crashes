@@ -25,6 +25,8 @@ const RATIO_COLOR = '#ffffff'  // White
 
 export type Props = {
     id?: string
+    /** When set, shows a note that this plot is statewide (no county-level data) */
+    county?: string | null
 }
 
 type CrashHomicideRow = {
@@ -41,7 +43,7 @@ const crashHomicideQuery = `
     ORDER BY year
 `
 
-export function HomicidesComparisonPlot({ id = "vs-homicides" }: Props) {
+export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) {
     const db = useDb()
     const plotColors = usePlotColors()
 
@@ -185,6 +187,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides" }: Props) {
     return (
         <div>
             <h2 id={id}><a href={`#${id}`}>NJ Traffic Deaths vs. Homicides</a></h2>
+            {county && <p style={{ fontSize: '0.85em', opacity: 0.6, margin: '0 0 0.5em' }}>Statewide data — county-level comparison not yet available</p>}
             <PlotWrapper
                 id={id}
                 data={data}
