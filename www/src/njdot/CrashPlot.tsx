@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { EndYear } from "@/src/constants"
 import { Layout, PlotData } from "plotly.js"
-import Plot from "react-plotly.js"
+import { useSoloTrace } from "pltly"
+import PlotWrapper from "@/src/lib/plot-wrapper"
 import { useParquet } from "@/src/lib/useParquet"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import {
@@ -58,18 +59,20 @@ export default function CrashPlot({
     const [show12moAvg, setShow12moAvg] = useSessionStorage('crashplot-show12moAvg', false)
     const [controlsOpen, setControlsOpen] = useSessionStorage('crashplot-controls-open', initialControlsOpen)
 
-    // Legend interaction state
-    const [soloTrace, setSoloTrace] = useState<string | null>(null)
     const [hoverTrace, setHoverTrace] = useState<string | null>(null)
-    const activeTrace = hoverTrace ?? soloTrace
-    const plotRef = useRef<HTMLDivElement>(null)
     const plotColors = usePlotColors()
 
+    // Trace names for solo hook (independent of trace data to avoid circular dep)
+    const traceNames = useMemo(() => {
+        if (stackBy === 'none') return ['Total']
+        if (stackBy === 'severity') return Severities.filter(s => severities.includes(s)).map(s => SeverityLabels[s])
+        if (stackBy === 'county') return counties.map(cc => Counties[cc] || `County ${cc}`)
+        return []
+    }, [stackBy, severities, counties])
+    const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(traceNames, hoverTrace)
+
     // Reset solo trace when stacking mode changes (trace names change)
-    useEffect(() => {
-        setSoloTrace(null)
-        setHoverTrace(null)
-    }, [stackBy])
+    useEffect(() => { resetSolo() }, [stackBy])
 
     // Use yms for state-level, ymccs for county breakdowns
     const needsCountyData = stackBy === 'county' || counties.length < ALL_COUNTIES.length
@@ -407,78 +410,6 @@ export default function CrashPlot({
     // Check if we're waiting for county data (need ymccs but have yms)
     const waitingForCountyData = needsCountyData && data && data.length > 0 && !('cc' in data[0])
 
-    // Legend click handler - toggle solo mode
-    const onLegendClick = useCallback((e: any) => {
-        const { curveNumber, data: plotData } = e
-        const name = plotData[curveNumber]?.name
-        if (!name) return true
-        if (soloTrace === name) {
-            setSoloTrace(null)
-            setHoverTrace(null)
-        } else {
-            setSoloTrace(name)
-        }
-        return false  // prevent default Plotly behavior
-    }, [soloTrace])
-
-    // Legend double-click handler - reset to show all
-    const onLegendDoubleClick = useCallback(() => {
-        setSoloTrace(null)
-        setHoverTrace(null)
-        return false  // prevent default Plotly behavior
-    }, [])
-
-    // Set up legend hover events via DOM
-    useEffect(() => {
-        if (!plotRef.current) return
-
-        const legend = plotRef.current.querySelector('.legend')
-        if (!legend) return
-
-        const groups = Array.from(legend.querySelectorAll('.traces'))
-        const listeners: Array<{ element: Element; type: string; handler: () => void }> = []
-        let mouseoutTimeout: ReturnType<typeof setTimeout> | null = null
-
-        // Build set of valid trace names
-        const traceNames = new Set(traces.map(t => t.name))
-
-        groups.forEach((group) => {
-            // Extract trace name from legend text, not index
-            const textEl = group.querySelector('.legendtext')
-            const traceName = textEl?.textContent?.trim()
-            if (!traceName || !traceNames.has(traceName)) return
-
-            const overHandler = () => {
-                // Cancel pending mouseout
-                if (mouseoutTimeout) {
-                    clearTimeout(mouseoutTimeout)
-                    mouseoutTimeout = null
-                }
-                setHoverTrace(traceName as string)
-            }
-            const outHandler = () => {
-                // Delay mouseout to allow moving between legend items
-                mouseoutTimeout = setTimeout(() => {
-                    setHoverTrace(null)
-                    mouseoutTimeout = null
-                }, 100)
-            }
-
-            group.addEventListener('mouseover', overHandler)
-            group.addEventListener('mouseout', outHandler)
-
-            listeners.push({ element: group, type: 'mouseover', handler: overHandler })
-            listeners.push({ element: group, type: 'mouseout', handler: outHandler })
-        })
-
-        return () => {
-            if (mouseoutTimeout) clearTimeout(mouseoutTimeout)
-            listeners.forEach(({ element, type, handler }) => {
-                element.removeEventListener(type, handler)
-            })
-        }
-    }, [traces])
-
     if (loading || waitingForCountyData) {
         return <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             Loading crash data...
@@ -503,7 +434,7 @@ export default function CrashPlot({
     const plotKey = `${source}-${data?.length || 0}`
 
     return (
-        <div ref={plotRef}>
+        <div>
             {emptySelection ? (
                 <div style={{
                     height,
@@ -517,16 +448,15 @@ export default function CrashPlot({
                     {emptySelection}
                 </div>
             ) : (
-                <Plot
-              data={traces as PlotData[]}
-              layout={layout}
-              key={plotKey}
-              config={{ displayModeBar: false, responsive: true }}
-              style={{ width: '100%', height }}
-              useResizeHandler
-              onLegendClick={onLegendClick}
-              onLegendDoubleClick={onLegendDoubleClick}
-            />
+                <PlotWrapper
+                    key={plotKey}
+                    data={traces as PlotData[]}
+                    layout={layout}
+                    onLegendClick={onLegendClick}
+                    onLegendDoubleClick={onLegendDoubleClick}
+                    onHoverTrace={setHoverTrace}
+                    onResetSolo={resetSolo}
+                />
             )}
             {showControls && (
                 <ControlsGear open={controlsOpen} onToggle={setControlsOpen} contentClassName={css.controlsContent} inlineWithLegend>
