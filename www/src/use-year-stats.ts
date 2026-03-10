@@ -4,7 +4,6 @@ import { useSqlQuery } from "@/src/sql";
 import { Either, map } from "fp-ts/Either";
 import { Row } from "@/src/result-table";
 import { o2a } from "@rdub/base/objs";
-import { EndYear } from "@/src/constants";
 
 export type Stats = {
     num_crashes: number
@@ -52,7 +51,7 @@ export function yearStatsRows({ ysds }: { ysds: YearStatsDicts, }): Row[] {
         (y, { k, fc, si, sic, mi, mic, pi, pic, nic }) => {
             return {
                 key: y,
-                "Year": y === 'totals' ? `2001–${EndYear}` : y,
+                "Year": y === 'totals' ? 'Total' : y,
                 "Total crashes": (fc + sic + mic + pic + nic).toLocaleString(),
                 "Deaths": k.toLocaleString(),
                 "Serious Injuries": si.toLocaleString(),

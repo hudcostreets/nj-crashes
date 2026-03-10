@@ -18,6 +18,9 @@ import { Breadcrumbs } from "@/src/components/Breadcrumbs"
 import { useGeoFilter } from "@/src/GeoFilterContext"
 import { normalize } from "@/src/county"
 import { Counties } from "@/src/njdot/data"
+import { YearStatsSection } from "@/src/tables/YearStatsSection"
+import { NjspCrashesSection } from "@/src/tables/NjspCrashesSection"
+import { NjdotCrashesSection } from "@/src/tables/NjdotCrashesSection"
 
 export default function Home() {
     const basePath = getBasePath()
@@ -69,6 +72,12 @@ export default function Home() {
 
                 {/* NJSP Plots */}
                 <PlotContainer><FatalitiesPerYearPlot initialCounty={countyName} /></PlotContainer>
+
+                {/* NJSP Fatal Crashes Table */}
+                <h2 id="njsp-crashes"><a href="#njsp-crashes">Recent Fatal Crashes (NJSP)</a></h2>
+                <p>Fatal crashes, 2008–present.</p>
+                <NjspCrashesSection />
+
                 <PlotContainer><YtdDeathsPlot county={countyName} /></PlotContainer>
                 <PlotContainer><HomicidesComparisonPlot county={countyName} /></PlotContainer>
                 <PlotContainer><FatalitiesPerMonthPlot county={countyName} /></PlotContainer>
@@ -86,6 +95,16 @@ export default function Home() {
                     </p>
                 )}
                 <PlotContainer showHr={false}><CrashPlot counties={countyFilter} /></PlotContainer>
+
+                {/* Annual Statistics Table (NJ DOT) */}
+                <h2 id="stats"><a href="#stats">Annual Statistics (NJ DOT)</a></h2>
+                <p>All reported crashes, 2001–{EndYear}.</p>
+                <YearStatsSection />
+
+                {/* NJDOT Crash Details Table */}
+                <h2 id="njdot-crashes"><a href="#njdot-crashes">Crash Details (NJ DOT)</a></h2>
+                <p>Injury and fatal crashes, 2001–{EndYear}.</p>
+                <NjdotCrashesSection />
 
                 {/* Hudson County Map — only show when not filtered, or when filtered to Hudson */}
                 {(!countyName || countyName === "Hudson") && (

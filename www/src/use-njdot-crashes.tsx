@@ -78,12 +78,12 @@ const CarDamageMap = [
     { title: 'Vehicle undamaged', fill: 'green' },
     { title: 'Vehicle sustained minor damage', fill: 'orange' },
     { title: 'Vehicle sustained moderate damage', fill: red },
-    { title: 'Vehicle disabled', fill: 'black' },
+    { title: 'Vehicle disabled', fill: 'currentColor' },
 ]
 
 export const ConditionMap = [
     { txt: "condition unknown", fill: unknown, },
-    { txt: "deceased", fill: 'black', },
+    { txt: "deceased", fill: 'currentColor', },
     { txt: "serious injury", fill: red, },
     { txt: "moderate injury", fill: "orange", },
     { txt: "possible injury", fill: "#8B8000", },

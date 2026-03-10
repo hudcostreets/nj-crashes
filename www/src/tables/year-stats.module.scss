@@ -1,0 +1,67 @@
+.wrapper {
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+
+    th, td {
+        padding: 0.4em 0.8em;
+        border-bottom: 1px solid var(--border-primary);
+    }
+
+    thead th {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-weight: bold;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    tbody tr {
+        cursor: pointer;
+        transition: background 0.1s;
+
+        &:hover {
+            background: var(--bg-secondary);
+        }
+    }
+}
+
+.selected {
+    background: color-mix(in srgb, var(--link-color) 15%, transparent) !important;
+    border-left: 3px solid var(--link-color);
+
+    &:hover {
+        background: color-mix(in srgb, var(--link-color) 22%, transparent) !important;
+    }
+}
+
+.yearCol {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.numCol {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.noselect {
+    user-select: none;
+}
+
+.totalRow {
+    font-weight: bold;
+
+    td {
+        background: var(--bg-secondary);
+        border-top: 2px solid var(--border-primary);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+}

@@ -41,6 +41,8 @@ export type Crash = {
 
 export const ColLabels = {
     id: "ID",
+    date: "Date",
+    time: "Time",
     dt: "Date/Time",
     cc: "County",
     mc: "Municipality",
@@ -120,9 +122,18 @@ export function getNjspCrashRows({ rows, cols, cc2mc2mn, }: {
             [ 'key', id ],
             ...cols.map(col => {
                 let txt: ReactNode = ''
-                if (col == 'dt') {
+                if (col == 'date') {
                     const date = new Date(row.dt)
-                    const fmt = date.getFullYear() == curYear ? '%a %b %-d %-I:%M%p' : `%-m/%-d/%y, %-I:%M%p`
+                    const fmt = date.getFullYear() == curYear ? '%a %b %-d' : `%-m/%-d/%y`
+                    txt = <Tooltip title={`NJSP ACCID: ${id}`}>
+                        <span>{strftime(fmt, date)}</span>
+                    </Tooltip>
+                } else if (col == 'time') {
+                    const date = new Date(row.dt)
+                    txt = strftime('%-I:%M%p', date)
+                } else if (col == 'dt') {
+                    const date = new Date(row.dt)
+                    const fmt = date.getFullYear() == curYear ? '%a %b %-d %-I:%M%p' : `%-m/%-d/%y %-I:%M%p`
                     txt = <Tooltip title={`NJSP ACCID: ${id}`}>
                         <span>{strftime(fmt, date)}</span>
                     </Tooltip>
@@ -145,7 +156,7 @@ export function useNjspCrashRows({ cc2mc2mn, ...props }: Props & { cc2mc2mn: CC2
     const crashesResult = useNjspCrashes({ ...props })
     const ccCol: Col[] = props.cc ? [] : ['cc']
     const mcCol: Col[] = props.mc ? [] : ['mc']
-    const cols: Col[] = [ 'dt', ...ccCol, ...mcCol, 'casualties', 'location', ]  // 'street', 'highway', ]
+    const cols: Col[] = [ 'date', 'time', ...ccCol, ...mcCol, 'casualties', 'location', ]
     const crashRows = useMemo(
         () => {
             // console.log("useNjspCrashRows effect")

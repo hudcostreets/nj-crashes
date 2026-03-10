@@ -42,7 +42,7 @@ export function RowsTable(
                             key =>
                                 key !== 'key' &&
                                 <Tooltip title={colTitles?.[key]} key={key} arrow>
-                                    <TableCell align="right" className={css.noselect}>{key}</TableCell>
+                                    <TableCell align="right" className={css.noselect} data-col={key}>{key}</TableCell>
                                 </Tooltip>
                         )
                     }</TableRow>
@@ -56,7 +56,7 @@ export function RowsTable(
                                 sx={{'&:last-child td, &:last-child th': {border: 0}}}
                             >{
                                 o2a(row, (col, val) =>
-                                    col !== 'key' && <TableCell key={col} align="right">{val}</TableCell>
+                                    col !== 'key' && <TableCell key={col} align="right" data-col={col}>{val}</TableCell>
                                 )
                             }</TableRow>
                         )

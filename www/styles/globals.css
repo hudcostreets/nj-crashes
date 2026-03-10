@@ -75,3 +75,15 @@ h1 a, h2 a {
 [data-theme="dark"] .hoverlayer .hovertext text {
   fill: var(--text-primary) !important;
 }
+
+/* MUI table theming */
+.MuiPaper-root {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* MUI tooltip theming */
+[data-theme="dark"] .MuiTooltip-tooltip {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
