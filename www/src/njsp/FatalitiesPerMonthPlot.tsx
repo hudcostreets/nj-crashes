@@ -35,8 +35,6 @@ const monthlyQueryFn = (county: string | null) => `
 
 // Bar color
 const BAR_COLOR = '#ba3853'
-// Line color (white for visibility on dark background)
-const LINE_COLOR = '#ffffff'
 
 export function FatalitiesPerMonthPlot({ id = "per-month", county }: Props) {
     const db = useDb()
@@ -102,7 +100,7 @@ export function FatalitiesPerMonthPlot({ id = "per-month", county }: Props) {
                 x: dates,
                 y: avg12mo,
                 line: {
-                    color: avgGreyed ? fadeColor(LINE_COLOR) : LINE_COLOR,
+                    color: avgGreyed ? fadeColor(plotColors.textColor) : plotColors.textColor,
                     width: avgActive ? 6 : (avgGreyed ? 2 : 4),
                 },
                 hovertemplate: `%{y:.1f}<extra>12-mo avg</extra>`,

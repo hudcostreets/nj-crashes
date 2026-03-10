@@ -14,7 +14,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window === 'undefined') return 'system'
     const stored = localStorage.getItem('nj-crashes-theme')
-    return (stored as Theme) || 'system'
+    return (stored as Theme) || 'dark'
   })
 
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(() => {
@@ -32,6 +32,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     mediaQuery.addEventListener('change', handleChange)
     return () => mediaQuery.removeEventListener('change', handleChange)
+  }, [])
+
+  // Sync theme across documents (e.g. parent ↔ iframe) via storage events
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'nj-crashes-theme' && e.newValue) {
+        setTheme(e.newValue as Theme)
+      }
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
   }, [])
 
   useEffect(() => {

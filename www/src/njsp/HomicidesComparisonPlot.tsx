@@ -21,7 +21,6 @@ const SOURCES: DataSource[] = [
 // Original colors from the JSON spec
 const TRAFFIC_COLOR = '#e06080'  // Pinkish red
 const HOMICIDE_COLOR = '#60a0e0'  // Light blue
-const RATIO_COLOR = '#ffffff'  // White
 
 export type Props = {
     id?: string
@@ -125,7 +124,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 y: ratios,
                 yaxis: "y2",
                 line: {
-                    color: ratioGreyed ? fadeColor(RATIO_COLOR) : RATIO_COLOR,
+                    color: ratioGreyed ? fadeColor(plotColors.textColor) : plotColors.textColor,
                     width: ratioActive ? 8 : (ratioGreyed ? 3 : 5),
                 },
                 hovertemplate: `%{y:.2f}x<extra>Ratio</extra>`,
