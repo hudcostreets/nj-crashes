@@ -46,11 +46,24 @@ MEASURES = ['n', 'tk', 'ti', 'pk', 'pi', 'tv'] + VTC_COLS
 
 def load_crashes(path: Path) -> pd.DataFrame:
     """Load crashes parquet and add month column."""
-    columns = ['year', 'cc', 'mc', 'dt', 'severity', 'tk', 'ti', 'pk', 'pi', 'tv'] + VTC_COLS
-    df = pd.read_parquet(path, columns=columns)
+    import pyarrow.parquet as pq
+    schema_cols = set(pq.read_schema(path).names)
+    base_cols = ['year', 'cc', 'mc', 'dt', 'severity', 'tk', 'ti', 'pk', 'pi', 'tv']
+    vtc_present = [c for c in VTC_COLS if c in schema_cols]
+    if vtc_present:
+        print(f"  VTC columns found: {len(vtc_present)}/{len(VTC_COLS)}")
+    else:
+        print(f"  No VTC columns in {path.name}, using basic measures only")
+    df = pd.read_parquet(path, columns=base_cols + vtc_present)
     df['month'] = pd.to_datetime(df['dt']).dt.month
     df['n'] = 1  # count column
+    for c in VTC_COLS:
+        if c not in df.columns:
+            df[c] = 0
     return df
+
+
+BASE_MEASURES = ['n', 'tk', 'ti', 'pk', 'pi', 'tv']
 
 
 def aggregate(df: pd.DataFrame, dims: list[str]) -> pd.DataFrame:
@@ -60,6 +73,24 @@ def aggregate(df: pd.DataFrame, dims: list[str]) -> pd.DataFrame:
     # Rename columns to short names
     rename = {v: k for k, v in DIMS.items() if v in group_cols}
     agg_df = agg_df.rename(columns=rename)
+    # Drop VTC columns that are all zero (not present in source data)
+    for c in VTC_COLS:
+        if c in agg_df.columns and (agg_df[c] == 0).all():
+            agg_df = agg_df.drop(columns=[c])
+    # Downcast numeric columns for smaller parquet files
+    for c in agg_df.columns:
+        if c in ('s',):
+            continue
+        if agg_df[c].dtype in ('int64', 'float64'):
+            col_max = agg_df[c].max()
+            if agg_df[c].dtype == 'float64' and (agg_df[c] == agg_df[c].astype(int)).all():
+                agg_df[c] = agg_df[c].astype('int64')
+            if col_max <= 127:
+                agg_df[c] = agg_df[c].astype('int8')
+            elif col_max <= 32767:
+                agg_df[c] = agg_df[c].astype('int16')
+            elif col_max <= 2147483647:
+                agg_df[c] = agg_df[c].astype('int32')
     return agg_df
 
 
@@ -68,7 +99,7 @@ def write_parquet(df: pd.DataFrame, path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(path, index=False, compression='snappy')
     size_kb = path.stat().st_size / 1024
-    print(f"  {path.name}: {len(df):,} rows, {size_kb:.1f} KB")
+    print(f"  {path.name}: {len(df):,} rows, {size_kb:.1f} KB, {len(df.columns)} cols")
 
 
 def parse_dims(agg_name: str) -> list[str]:
@@ -107,7 +138,7 @@ AGG_CONFIGS = {
 @click.command()
 @click.option('-i', '--input', 'input_path', default='njdot/data/crashes.parquet', help='Input crashes parquet')
 @click.option('-o', '--output-dir', default='www/public/data/njdot', help='Output directory')
-@click.option('-a', '--aggs', default='ys,yms,yccs,ymccs', help='Comma-separated list of aggregations to generate')
+@click.option('-a', '--aggs', default='ys,yms,yccs,ymccs,ymccmc,ymccmcs', help='Comma-separated list of aggregations to generate')
 def main(input_path: str, output_dir: str, aggs: str):
     """Generate aggregated parquet files for NJDOT crash data."""
     input_path = Path(input_path)
@@ -127,7 +158,17 @@ def main(input_path: str, output_dir: str, aggs: str):
         dims = AGG_CONFIGS[agg_name]
         try:
             agg_df = aggregate(df, dims)
-            write_parquet(agg_df, output_dir / f"{agg_name}.parquet")
+            # Split municipality-level files by county for faster loading
+            if 'mc' in dims:
+                county_dir = output_dir / agg_name
+                county_dir.mkdir(parents=True, exist_ok=True)
+                for cc_val in sorted(agg_df['cc'].unique()):
+                    cc_df = agg_df[agg_df['cc'] == cc_val].drop(columns=['cc'])
+                    write_parquet(cc_df, county_dir / f"{cc_val}.parquet")
+                total_kb = sum(f.stat().st_size for f in county_dir.glob('*.parquet')) / 1024
+                print(f"  {agg_name}/: {len(agg_df):,} rows total, {total_kb:.1f} KB across {len(agg_df['cc'].unique())} counties")
+            else:
+                write_parquet(agg_df, output_dir / f"{agg_name}.parquet")
         except KeyError as e:
             print(f"  {agg_name}: error {e}")
 
