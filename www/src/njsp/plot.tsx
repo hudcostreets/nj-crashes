@@ -1,7 +1,7 @@
 import { Annotations, Layout, PlotData } from "plotly.js";
 import * as Plotly from "react-plotly.js";
 import { TableData, useCsvTable, useTable } from "@/src/tableData";
-import { useDb, useQuery, } from "@rdub/duckdb/duckdb";
+import { useDb, useQuery } from "@/src/lib/DuckDbContext";
 import { curYear, prvYear } from "@/src/constants";
 import React, { Dispatch, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { HasCounty, table, typeCountsQuery } from "./projections";

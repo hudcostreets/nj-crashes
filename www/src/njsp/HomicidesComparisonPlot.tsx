@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react"
 import { Layout, PlotData } from "plotly.js"
-import { useDb, useQuery } from "@rdub/duckdb/duckdb"
+import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { CrashHomicideCsv } from "@/src/paths"
 import { fadeColor, useSoloTrace } from "pltly"
@@ -40,7 +40,7 @@ type CrashHomicideRow = {
 const crashHomicideQueryFn = (county: string | null) => `
     SELECT year, traffic_deaths, homicides, ratio
     FROM read_csv_auto('crash_homicide')
-    WHERE county = '${county || ''}'
+    WHERE ${county ? `county = '${county}'` : `county IS NULL`}
     ORDER BY year
 `
 

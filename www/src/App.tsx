@@ -7,6 +7,7 @@ import HudsonMap from './routes/HudsonMap'
 import HudsonDiffs from './routes/HudsonDiffs'
 import { ThemeToggle } from './components/ThemeToggle'
 import { GeoFilterProvider } from './GeoFilterContext'
+import { DuckDbProvider } from './lib/DuckDbContext'
 
 function GeoHome() {
     return <GeoFilterProvider><Home /></GeoFilterProvider>
@@ -14,7 +15,7 @@ function GeoHome() {
 
 export default function App() {
     return (
-        <>
+        <DuckDbProvider>
             <Routes>
                 <Route path="/" element={<GeoHome />} />
                 <Route path="/c" element={<GeoHome />} />
@@ -29,6 +30,6 @@ export default function App() {
                 <Route path="*" element={<NotFound />} />
             </Routes>
             <ThemeToggle />
-        </>
+        </DuckDbProvider>
     )
 }

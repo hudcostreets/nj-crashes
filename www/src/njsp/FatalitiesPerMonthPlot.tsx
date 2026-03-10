@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react"
 import { Layout, PlotData } from "plotly.js"
-import { useDb, useQuery } from "@rdub/duckdb/duckdb"
+import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { MonthlyCsv } from "@/src/paths"
 import { fadeColor, useSoloTrace } from "pltly"
@@ -29,7 +29,7 @@ type MonthlyRow = {
 const monthlyQueryFn = (county: string | null) => `
     SELECT date, year, month, fatalities, avg_12mo
     FROM read_csv_auto('monthly')
-    WHERE county = '${county || ''}'
+    WHERE ${county ? `county = '${county}'` : `county IS NULL`}
     ORDER BY date
 `
 

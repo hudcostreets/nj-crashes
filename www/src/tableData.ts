@@ -1,7 +1,7 @@
 import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import { useEffect, useState } from "react";
 import { basename } from "@/src/lib/path";
-import { runQuery } from "@rdub/duckdb/duckdb";
+import { runQuery } from "@/src/lib/DuckDbContext";
 
 export type CsvData = {
     kind: 'csv'

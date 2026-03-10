@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react"
 import { Layout, PlotData } from "plotly.js"
-import { useDb, useQuery } from "@rdub/duckdb/duckdb"
+import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { ProjectedCsv, YtcCsv } from "@/src/paths"
 import { useSoloTrace } from "pltly"
