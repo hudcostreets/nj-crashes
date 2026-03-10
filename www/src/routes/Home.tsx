@@ -42,6 +42,13 @@ export default function Home() {
             : `${url}/c/${normalize(countyName)}`
         : url
 
+    // Geo suffix for section headings: " — Municipality (County)" or " — County"
+    const geoSuffix = municipalityName
+        ? <>{' '}<span className={css.geoSuffix}>— {municipalityName} ({countyName} County)</span></>
+        : countyName
+            ? <>{' '}<span className={css.geoSuffix}>— {countyName} County</span></>
+            : null
+
     // Map county code to counties array for CrashPlot
     const countyFilter = cc !== null ? [Number(cc)] : Object.keys(Counties).map(Number)
 
@@ -75,7 +82,7 @@ export default function Home() {
                 <PlotContainer><FatalitiesPerYearPlot initialCounty={countyName} /></PlotContainer>
 
                 {/* NJSP Fatal Crashes Table */}
-                <h2 id="njsp-crashes"><a href="#njsp-crashes">Recent Fatal Crashes (NJSP)</a></h2>
+                <h2 id="njsp-crashes"><a href="#njsp-crashes">Recent Fatal Crashes (NJSP)</a>{geoSuffix}</h2>
                 <p>Fatal crashes, 2008–present.</p>
                 <NjspCrashesSection />
 
@@ -85,7 +92,7 @@ export default function Home() {
                 <PlotContainer><FatalitiesByMonthBarsPlot county={countyName} /></PlotContainer>
 
                 {/* NJ DOT Section */}
-                <h2 id="njdot"><a href="#njdot">NJ DOT Crash Data</a></h2>
+                <h2 id="njdot"><a href="#njdot">NJ DOT Crash Data</a>{geoSuffix}</h2>
                 {!regionLabel && (
                     <p>
                         NJ DOT{" "}
@@ -98,12 +105,12 @@ export default function Home() {
                 <PlotContainer showHr={false}><CrashPlot counties={countyFilter} mc={mc} /></PlotContainer>
 
                 {/* Annual Statistics Table (NJ DOT) */}
-                <h2 id="stats"><a href="#stats">Annual Statistics (NJ DOT)</a></h2>
+                <h2 id="stats"><a href="#stats">Annual Statistics (NJ DOT)</a>{geoSuffix}</h2>
                 <p>All reported crashes, 2001–{EndYear}.</p>
                 <YearStatsSection />
 
                 {/* NJDOT Crash Details Table */}
-                <h2 id="njdot-crashes"><a href="#njdot-crashes">Crash Details (NJ DOT)</a></h2>
+                <h2 id="njdot-crashes"><a href="#njdot-crashes">Crash Details (NJ DOT)</a>{geoSuffix}</h2>
                 <p>Injury and fatal crashes, 2001–{EndYear}.</p>
                 <NjdotCrashesSection />
 
