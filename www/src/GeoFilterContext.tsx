@@ -54,7 +54,8 @@ export function GeoFilterProvider({ children }: { children: React.ReactNode }) {
         const mn = denormalize(citySlug)
         const { mc2mn } = cc2mc2mn[cc]
         const mn2mc = mapEntries(mc2mn, (mc, name) => [name, mc])
-        const mc = mn2mc[mn] ?? null
+        const mcRaw = mn2mc[mn] ?? null
+        const mc = mcRaw !== null ? Number(mcRaw) : null
         return { cc, mc, countyName: cn, municipalityName: mc !== null ? mn : null }
     }, [cc2mc2mn, countySlug, citySlug, cn2cc])
 

@@ -63,7 +63,9 @@ export function useParquet<T extends Record<string, unknown>>(
                     rowFormat: 'object',  // Return rows as {col: value} objects
                     onComplete: (data: unknown) => {
                         if (Array.isArray(data)) {
-                            rows.push(...(data as T[]))
+                            for (const row of data as T[]) {
+                                rows.push(row)
+                            }
                         }
                     },
                 })

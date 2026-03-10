@@ -24,7 +24,7 @@ import { NjdotCrashesSection } from "@/src/tables/NjdotCrashesSection"
 
 export default function Home() {
     const basePath = getBasePath()
-    const { cc, countyName, municipalityName } = useGeoFilter()
+    const { cc, mc, countyName, municipalityName } = useGeoFilter()
 
     // Build title and description based on geo filter
     const regionLabel = municipalityName
@@ -70,7 +70,8 @@ export default function Home() {
                     </p>
                 )}
 
-                {/* NJSP Plots */}
+                {/* NJSP Plots — municipality-level data not available, show county level with note */}
+                {municipalityName && <p style={{ fontStyle: 'italic', opacity: 0.7 }}>NJSP fatal crash data is available at the county level. Plots below show {countyName} County.</p>}
                 <PlotContainer><FatalitiesPerYearPlot initialCounty={countyName} /></PlotContainer>
 
                 {/* NJSP Fatal Crashes Table */}
@@ -94,7 +95,7 @@ export default function Home() {
                         {" "}including property-damage, injury, and fatal crashes, going back to 2001 (≈6MM records, currently through {EndYear}).
                     </p>
                 )}
-                <PlotContainer showHr={false}><CrashPlot counties={countyFilter} /></PlotContainer>
+                <PlotContainer showHr={false}><CrashPlot counties={countyFilter} mc={mc} /></PlotContainer>
 
                 {/* Annual Statistics Table (NJ DOT) */}
                 <h2 id="stats"><a href="#stats">Annual Statistics (NJ DOT)</a></h2>

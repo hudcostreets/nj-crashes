@@ -6,7 +6,7 @@ import PlotWrapper from "@/src/lib/plot-wrapper"
 import { useParquet } from "@/src/lib/useParquet"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import {
-    YmsRow, YmccsRow,
+    YmsRow, YmccsRow, YmccmcRow,
     Severity, Severities, SeverityLabels, SeverityColorsLight, SeverityColorsDark,
     Counties,
     StackBy,
@@ -27,6 +27,8 @@ type CrashPlotProps = {
     severities?: Severity[]
     /** Filter to specific county codes */
     counties?: number[]
+    /** Filter to specific municipality code (within county) */
+    mc?: number | null
     /** Time granularity */
     timeGranularity?: 'year' | 'month'
     /** Chart height */
@@ -44,6 +46,7 @@ export default function CrashPlot({
     stackBy: initialStackBy = 'severity',
     severities: initialSeverities = [...Severities],
     counties: initialCounties = ALL_COUNTIES,
+    mc = null,
     timeGranularity: initialTimeGranularity = 'year',
     height = DEFAULT_HEIGHT,
     showControls = true,
@@ -67,58 +70,75 @@ export default function CrashPlot({
     const SeverityColors = isDark ? SeverityColorsDark : SeverityColorsLight
     const plotColors = usePlotColors()
 
+    // Municipality-level data (ymccmc) has no severity column
+    const hasMuniFilter = mc !== null
+    const effectiveStackBy = hasMuniFilter ? 'none' : stackBy
+
     // Trace names for solo hook (independent of trace data to avoid circular dep)
     const traceNames = useMemo(() => {
-        if (stackBy === 'none') return ['Total']
-        if (stackBy === 'severity') return Severities.filter(s => severities.includes(s)).map(s => SeverityLabels[s])
-        if (stackBy === 'county') return counties.map(cc => Counties[cc] || `County ${cc}`)
+        if (effectiveStackBy === 'none') return ['Total']
+        if (effectiveStackBy === 'severity') return Severities.filter(s => severities.includes(s)).map(s => SeverityLabels[s])
+        if (effectiveStackBy === 'county') return counties.map(cc => Counties[cc] || `County ${cc}`)
         return []
-    }, [stackBy, severities, counties])
+    }, [effectiveStackBy, severities, counties])
     const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(traceNames, hoverTrace)
 
     // Reset solo trace when stacking mode changes (trace names change)
     useEffect(() => { resetSolo() }, [stackBy])
 
-    // Use yms for state-level, ymccs for county breakdowns
-    const needsCountyData = stackBy === 'county' || counties.length < ALL_COUNTIES.length
-    const source = needsCountyData ? 'ymccs' : 'yms'
+    // Municipality-level: use ymccmc (no severity column)
+    // County-level: use ymccs when filtering/stacking by county
+    // State-level: use yms
+    const needsCountyData = !hasMuniFilter && (stackBy === 'county' || counties.length < ALL_COUNTIES.length)
+    const source = hasMuniFilter ? 'ymccmc' : needsCountyData ? 'ymccs' : 'yms'
 
+    type AnyRow = YmsRow | YmccsRow | YmccmcRow
     const url = `/data/njdot/${source}.parquet`
-    const { data, loading, error, timing } = useParquet<YmsRow | YmccsRow>(url)
+    const { data, loading, error, timing } = useParquet<AnyRow>(url)
 
-    // Helper to get numeric value from row (handles BigInt)
-    const getVal = (row: YmsRow | YmccsRow, key: 'n'): number => {
+    // Helpers to get numeric values from rows (handles BigInt from parquet)
+    const getVal = (row: AnyRow, key: 'n'): number => {
         const val = row[key]
         return typeof val === 'bigint' ? Number(val) : val
     }
-
-    const getYear = (row: YmsRow | YmccsRow): number => {
+    const getYear = (row: AnyRow): number => {
         const val = row.y
         return typeof val === 'bigint' ? Number(val) : val
     }
-
-    const getMonth = (row: YmsRow | YmccsRow): number => {
+    const getMonth = (row: AnyRow): number => {
         const val = row.m
         return typeof val === 'bigint' ? Number(val) : val
     }
-
-    const getCc = (row: YmccsRow): number => {
+    const getCc = (row: YmccsRow | YmccmcRow): number => {
         const val = row.cc
         return typeof val === 'bigint' ? Number(val) : val
+    }
+    const getMc = (row: YmccmcRow): number => {
+        const val = row.mc
+        return typeof val === 'bigint' ? Number(val) : Math.round(val)
     }
 
     // Build traces from data
     const { traces, layout } = useMemo(() => {
         if (!data || data.length === 0) return { traces: [], layout: {} }
 
-        // Filter data by severity, county, and valid years
-        let filtered = data.filter(row => severities.includes(row.s) && getYear(row) <= EndYear)
-        // Only filter by county when NOT stacking by county (i.e., when filtering to specific counties)
-        const filterByCounty = counties.length < ALL_COUNTIES.length && stackBy !== 'county'
-        if (filterByCounty && data.length > 0 && 'cc' in data[0]) {
-            filtered = filtered.filter(row => {
-                return counties.includes(getCc(row as YmccsRow))
+        // Filter data by valid years, severity (when available), county, and municipality
+        let filtered: typeof data
+        if (hasMuniFilter) {
+            // ymccmc data: filter by cc + mc, no severity column
+            filtered = data.filter(row => {
+                if (getYear(row) > EndYear) return false
+                if (!('cc' in row)) return false
+                const r = row as YmccmcRow
+                return getCc(r) === counties[0] && getMc(r) === mc
             })
+        } else {
+            filtered = data.filter(row => 's' in row && severities.includes((row as YmsRow).s) && getYear(row) <= EndYear)
+            // Only filter by county when NOT stacking by county
+            const filterByCounty = counties.length < ALL_COUNTIES.length && effectiveStackBy !== 'county'
+            if (filterByCounty && data.length > 0 && 'cc' in data[0]) {
+                filtered = filtered.filter(row => counties.includes(getCc(row as YmccsRow)))
+            }
         }
 
         const traces: Partial<PlotData>[] = []
@@ -131,7 +151,7 @@ export default function CrashPlot({
         }
 
         // Helper to build a trace from grouped data
-        const isPercentMode = stackPercent && stackBy !== 'none'
+        const isPercentMode = stackPercent && effectiveStackBy !== 'none'
         const buildTrace = (
             grouped: Map<string, number>,
             name: string,
@@ -160,7 +180,7 @@ export default function CrashPlot({
                 name,
                 visible,
                 // Only show inner-bar text when stacking (not for 'none' which has outer annotations)
-                text: timeGranularity === 'year' && stackBy !== 'none' ? textLabels : undefined,
+                text: timeGranularity === 'year' && effectiveStackBy !== 'none' ? textLabels : undefined,
                 textposition: 'inside',
                 textangle: 0,
                 textfont: { size: 9 },
@@ -175,7 +195,7 @@ export default function CrashPlot({
 
         // Calculate totals per time period for percentage mode
         const totalsPerPeriod = new Map<string, number>()
-        if (stackPercent && stackBy !== 'none') {
+        if (stackPercent && effectiveStackBy !== 'none') {
             for (const row of filtered) {
                 const key = timeGranularity === 'month'
                     ? toYM(getYear(row), getMonth(row))
@@ -185,7 +205,7 @@ export default function CrashPlot({
             }
         }
 
-        if (stackBy === 'none') {
+        if (effectiveStackBy === 'none') {
             // Single trace, aggregate across all
             const grouped = new Map<string, number>()
             for (const row of filtered) {
@@ -195,11 +215,13 @@ export default function CrashPlot({
                 grouped.set(key, (grouped.get(key) || 0) + getVal(row, measure))
             }
             traces.push(buildTrace(grouped, 'Total', '#636EFA'))
-        } else if (stackBy === 'severity') {
+        } else if (effectiveStackBy === 'severity') {
             // Stack by severity (only show selected severities)
+            // effectiveStackBy === 'severity' implies !hasMuniFilter, so rows have `s`
+            const sevFiltered = filtered as (YmsRow | YmccsRow)[]
             for (const sev of Severities) {
                 if (!severities.includes(sev)) continue
-                const sevData = filtered.filter(row => row.s === sev)
+                const sevData = sevFiltered.filter(row => row.s === sev)
                 const grouped = new Map<string, number>()
                 for (const row of sevData) {
                     const key = timeGranularity === 'month'
@@ -217,7 +239,7 @@ export default function CrashPlot({
                 }
                 traces.push(buildTrace(grouped, SeverityLabels[sev], SeverityColors[sev], originalGrouped))
             }
-        } else if (stackBy === 'county') {
+        } else if (effectiveStackBy === 'county') {
             // Stack by county (selected counties, sorted by total)
             // ymccs data always has cc column
             const countyTotals = new Map<number, number>()
@@ -262,7 +284,7 @@ export default function CrashPlot({
         }
 
         // Add 12month moving average lines for monthly view (when stack is none or severity)
-        if (show12moAvg && timeGranularity === 'month' && (stackBy === 'none' || stackBy === 'severity')) {
+        if (show12moAvg && timeGranularity === 'month' && (effectiveStackBy === 'none' || effectiveStackBy === 'severity')) {
             const firstTrace = traces[0]
             if (firstTrace && firstTrace.x) {
                 const x = firstTrace.x as string[]
@@ -356,8 +378,8 @@ export default function CrashPlot({
         }
 
         const layout: Partial<Layout> = {
-            barmode: stackBy !== 'none' ? 'stack' : undefined,
-            barnorm: stackPercent && stackBy !== 'none' ? 'percent' : undefined,
+            barmode: effectiveStackBy !== 'none' ? 'stack' : undefined,
+            barnorm: stackPercent && effectiveStackBy !== 'none' ? 'percent' : undefined,
             height,
             margin: { t: 20, b: 40, l: 60, r: 20 },
             xaxis: {
@@ -401,7 +423,7 @@ export default function CrashPlot({
         }
 
         return { traces, layout }
-    }, [data, stackBy, severities, counties, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, hoverTrace, plotColors, isDark])
+    }, [data, effectiveStackBy, severities, counties, mc, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, hoverTrace, plotColors, isDark])
 
     // Check if we're waiting for county data (need ymccs but have yms)
     const waitingForCountyData = needsCountyData && data && data.length > 0 && !('cc' in data[0])
