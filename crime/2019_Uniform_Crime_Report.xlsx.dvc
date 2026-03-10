@@ -1,0 +1,15 @@
+deps:
+- path: https://www.nj.gov/njsp/ucr/pdf/2019_Uniform_Crime_Report.xlsx
+  checksum: '"31f01-5ee3a6ff"'
+  size: 204545
+  mtime: '2020-06-12T16:02:07+00:00'
+  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+outs:
+- md5: c491bd5d89c242b7efa42d36a2c1cc97
+  size: 204545
+  hash: md5
+  path: 2019_Uniform_Crime_Report.xlsx
+meta:
+  git_tracked: true
+  import:
+    fetched: '2026-03-09'
