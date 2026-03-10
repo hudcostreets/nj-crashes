@@ -13,12 +13,16 @@
   // Pull gear up to align vertically with the bottom legend (for DOT plot)
   &.inlineWithLegend {
     margin-top: -2.5em;
+    pointer-events: none;
+    > * {
+      pointer-events: auto;
+    }
   }
 }
 
 // Header row: gear icon + any extra content (like info icon)
 .controlsHeader {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5em;
 }

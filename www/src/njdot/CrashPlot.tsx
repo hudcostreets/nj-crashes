@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react"
 import { EndYear } from "@/src/constants"
 import { Layout, PlotData } from "plotly.js"
-import { useSoloTrace, lightenColor } from "pltly"
+import { useSoloTrace, lightenColor, fadeColor, useTheme } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { useParquet } from "@/src/lib/useParquet"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import {
     YmsRow, YmccsRow,
-    Severity, Severities, SeverityLabels, SeverityColors,
+    Severity, Severities, SeverityLabels, SeverityColorsLight, SeverityColorsDark,
     Counties,
     StackBy,
     toYM,
@@ -16,6 +16,7 @@ import { Checklist } from "./Checklist"
 import { Radios } from "./Radios"
 import { CountyDropdown } from "./CountyDropdown"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
+import { Tooltip } from "@/src/tooltip"
 import { ControlsGear } from "@/src/components/ControlsGear"
 import css from "./controls.module.css"
 
@@ -62,6 +63,8 @@ export default function CrashPlot({
     const [controlsOpen, setControlsOpen] = useSessionStorage('crashplot-controls-open', initialControlsOpen)
 
     const [hoverTrace, setHoverTrace] = useState<string | null>(null)
+    const { isDark } = useTheme()
+    const SeverityColors = isDark ? SeverityColorsDark : SeverityColorsLight
     const plotColors = usePlotColors()
 
     // Trace names for solo hook (independent of trace data to avoid circular dep)
@@ -136,8 +139,11 @@ export default function CrashPlot({
             originalGrouped?: Map<string, number>,  // Raw counts when in percent mode
         ): Partial<PlotData> => {
             const sorted = [...grouped.entries()].sort((a, b) => a[0].localeCompare(b[0]))
-            // Apply visibility based on active trace (solo/hover)
-            const visible = activeTrace === null || activeTrace === name ? true : 'legendonly'
+            // Solo: hide non-active traces; Hover: fade non-hovered traces
+            const isActive = activeTrace === null || activeTrace === name
+            const isGreyed = isActive && hoverTrace !== null && hoverTrace !== name
+            const visible = isActive ? true : 'legendonly'
+            const displayColor = color && isGreyed ? fadeColor(color) : color
             const ys = sorted.map(([, v]) => v)
             // Format text labels: percentages (rounded) or counts
             const textLabels = isPercentMode
@@ -163,7 +169,7 @@ export default function CrashPlot({
                 hovertemplate: isPercentMode
                     ? `${name}: %{y:.1f}% (%{customdata:,})<extra></extra>`
                     : `${name}: %{y:,}<extra></extra>`,
-                ...(color ? { marker: { color } } : {}),
+                ...(displayColor ? { marker: { color: displayColor } } : {}),
             }
         }
 
@@ -310,7 +316,9 @@ export default function CrashPlot({
                         type: 'scatter',
                         mode: 'lines',
                         name: 'Total (12mo)',
-                        line: { color: '#ffffff', width: 2.5 },
+                        showlegend: false,
+                        visible: activeTrace === null ? true : 'legendonly',
+                        line: { color: plotColors.textColor, width: 2.5 },
                         hovertemplate: 'Total (12mo): %{y:,.0f}<extra></extra>',
                     })
                 }
@@ -393,7 +401,7 @@ export default function CrashPlot({
         }
 
         return { traces, layout }
-    }, [data, stackBy, severities, counties, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors])
+    }, [data, stackBy, severities, counties, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, hoverTrace, plotColors, isDark])
 
     // Check if we're waiting for county data (need ymccs but have yms)
     const waitingForCountyData = needsCountyData && data && data.length > 0 && !('cc' in data[0])
@@ -496,15 +504,17 @@ export default function CrashPlot({
                             />
                             Stack %
                         </label>
-                        <label className={css.nowrap}>
-                            <input
-                                type="checkbox"
-                                checked={show12moAvg}
-                                onChange={(e) => setShow12moAvg(e.target.checked)}
-                                disabled={timeGranularity !== 'month' || (stackBy !== 'none' && stackBy !== 'severity')}
-                            />
-                            12mo Avg
-                        </label>
+                        <Tooltip title={timeGranularity !== 'month' ? "Only available in monthly view" : stackBy === 'county' ? "Not available when stacking by county" : undefined}>
+                            <label className={css.nowrap}>
+                                <input
+                                    type="checkbox"
+                                    checked={show12moAvg}
+                                    onChange={(e) => setShow12moAvg(e.target.checked)}
+                                    disabled={timeGranularity !== 'month' || (stackBy !== 'none' && stackBy !== 'severity')}
+                                />
+                                12mo avg
+                            </label>
+                        </Tooltip>
                     </div>
                 </ControlsGear>
             )}

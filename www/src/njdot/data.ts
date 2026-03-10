@@ -7,9 +7,14 @@ export const SeverityLabels: Record<Severity, string> = {
     i: 'Injury',
     p: 'Prop. Damage',
 }
-export const SeverityColors: Record<Severity, string> = {
-    p: '#636EFA',  // blue
-    i: '#FFA15A',  // orange
+export const SeverityColorsLight: Record<Severity, string> = {
+    p: '#E0C830',  // gold
+    i: '#F09030',  // orange
+    f: '#EF553B',  // red
+}
+export const SeverityColorsDark: Record<Severity, string> = {
+    p: '#D4C870',  // light gold
+    i: '#FFA500',  // orange
     f: '#EF553B',  // red
 }
 
