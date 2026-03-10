@@ -1,0 +1,15 @@
+deps:
+- path: https://njsp.njoag.gov/wp/wp-content/uploads/UCR/UCR%20reports/NEW/2002_crime_report.pdf
+  checksum: '"31af57-63bdddb09a5a6"'
+  size: 3256151
+  mtime: '2025-08-08T17:25:08+00:00'
+  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+outs:
+- md5: 87ccd5c919285cb338387d59ef0fbcac
+  size: 3256151
+  hash: md5
+  path: 2002_crime_report.pdf
+meta:
+  git_tracked: true
+  import:
+    fetched: '2026-03-09'
