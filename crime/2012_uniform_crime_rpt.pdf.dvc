@@ -1,0 +1,15 @@
+deps:
+- path: https://njsp.njoag.gov/wp/wp-content/uploads/UCR/UCR%20reports/2010's/2012_uniform_crime_rpt.pdf
+  checksum: '"4036f0-63bdddb17e993"'
+  size: 4208368
+  mtime: '2025-08-08T17:25:09+00:00'
+  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+outs:
+- md5: 4c73bb39e9ec35773d84195ac7f4e76e
+  size: 4208368
+  hash: md5
+  path: 2012_uniform_crime_rpt.pdf
+meta:
+  git_tracked: true
+  import:
+    fetched: '2026-03-09'
