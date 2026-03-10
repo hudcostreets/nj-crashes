@@ -47,7 +47,8 @@ export function GeoFilterProvider({ children }: { children: React.ReactNode }) {
     const { cc, mc, countyName, municipalityName } = useMemo(() => {
         if (!cc2mc2mn || !countySlug) return { cc: null, mc: null, countyName: null, municipalityName: null }
         const cn = denormalize(countySlug)
-        const cc = cn2cc[cn] ?? null
+        const ccRaw = cn2cc[cn] ?? null
+        const cc = ccRaw !== null ? Number(ccRaw) : null
         if (cc === null) return { cc: null, mc: null, countyName: null, municipalityName: null }
         if (!citySlug) return { cc, mc: null, countyName: cn, municipalityName: null }
         const mn = denormalize(citySlug)

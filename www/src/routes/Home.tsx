@@ -40,7 +40,7 @@ export default function Home() {
         : url
 
     // Map county code to counties array for CrashPlot
-    const countyFilter = cc !== null ? [cc] : Object.keys(Counties).map(Number)
+    const countyFilter = cc !== null ? [Number(cc)] : Object.keys(Counties).map(Number)
 
     return (
         <div className={css.container}>
