@@ -1,0 +1,15 @@
+deps:
+- path: https://www.nj.gov/njsp/ucr/pdf/current/20190815_crimetrend_2018.xlsx
+  checksum: '"31df8-5d555785"'
+  size: 204280
+  mtime: '2019-08-15T13:00:53+00:00'
+  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+outs:
+- md5: b89cebf6b81b6b47714cb9af0212f23a
+  size: 204280
+  hash: md5
+  path: 2018_Uniform_Crime_Report.xlsx
+meta:
+  git_tracked: true
+  import:
+    fetched: '2026-03-09'
