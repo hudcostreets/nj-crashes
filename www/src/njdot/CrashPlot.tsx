@@ -6,7 +6,7 @@ import PlotWrapper from "@/src/lib/plot-wrapper"
 import { useParquet } from "@/src/lib/useParquet"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import {
-    YmsRow, YmccsRow, YmccmcRow,
+    YmsRow, YmccsRow, YmccmcsRow,
     Severity, Severities, SeverityLabels, SeverityColorsLight, SeverityColorsDark,
     Counties,
     StackBy,
@@ -70,9 +70,9 @@ export default function CrashPlot({
     const SeverityColors = isDark ? SeverityColorsDark : SeverityColorsLight
     const plotColors = usePlotColors()
 
-    // Municipality-level data (ymccmc) has no severity column
     const hasMuniFilter = mc !== null
-    const effectiveStackBy = hasMuniFilter ? 'none' : stackBy
+    // Municipality filter: disable county stacking (only one county), but severity works
+    const effectiveStackBy = hasMuniFilter && stackBy === 'county' ? 'none' : stackBy
 
     // Trace names for solo hook (independent of trace data to avoid circular dep)
     const traceNames = useMemo(() => {
@@ -86,14 +86,17 @@ export default function CrashPlot({
     // Reset solo trace when stacking mode changes (trace names change)
     useEffect(() => { resetSolo() }, [stackBy])
 
-    // Municipality-level: use ymccmc (no severity column)
+    // Municipality-level: use ymccmcs (has severity)
     // County-level: use ymccs when filtering/stacking by county
     // State-level: use yms
     const needsCountyData = !hasMuniFilter && (stackBy === 'county' || counties.length < ALL_COUNTIES.length)
-    const source = hasMuniFilter ? 'ymccmc' : needsCountyData ? 'ymccs' : 'yms'
+    const source = hasMuniFilter ? 'ymccmcs' : needsCountyData ? 'ymccs' : 'yms'
 
-    type AnyRow = YmsRow | YmccsRow | YmccmcRow
-    const url = `/data/njdot/${source}.parquet`
+    type AnyRow = YmsRow | YmccsRow | YmccmcsRow
+    // Municipality-level: load per-county split file (e.g. ymccmcs/9.parquet for Hudson)
+    const url = hasMuniFilter
+        ? `/data/njdot/ymccmcs/${counties[0]}.parquet`
+        : `/data/njdot/${source}.parquet`
     const { data, loading, error, timing } = useParquet<AnyRow>(url)
 
     // Helpers to get numeric values from rows (handles BigInt from parquet)
@@ -109,11 +112,11 @@ export default function CrashPlot({
         const val = row.m
         return typeof val === 'bigint' ? Number(val) : val
     }
-    const getCc = (row: YmccsRow | YmccmcRow): number => {
+    const getCc = (row: YmccsRow | YmccmcsRow): number => {
         const val = row.cc
         return typeof val === 'bigint' ? Number(val) : val
     }
-    const getMc = (row: YmccmcRow): number => {
+    const getMc = (row: YmccmcsRow): number => {
         const val = row.mc
         return typeof val === 'bigint' ? Number(val) : Math.round(val)
     }
@@ -122,15 +125,14 @@ export default function CrashPlot({
     const { traces, layout } = useMemo(() => {
         if (!data || data.length === 0) return { traces: [], layout: {} }
 
-        // Filter data by valid years, severity (when available), county, and municipality
+        // Filter data by valid years, severity, county, and municipality
         let filtered: typeof data
         if (hasMuniFilter) {
-            // ymccmc data: filter by cc + mc, no severity column
+            // Per-county ymccmcs data: already filtered to one county, just filter mc + severity
             filtered = data.filter(row => {
                 if (getYear(row) > EndYear) return false
-                if (!('cc' in row)) return false
-                const r = row as YmccmcRow
-                return getCc(r) === counties[0] && getMc(r) === mc
+                const r = row as YmccmcsRow
+                return getMc(r) === mc && severities.includes(r.s)
             })
         } else {
             filtered = data.filter(row => 's' in row && severities.includes((row as YmsRow).s) && getYear(row) <= EndYear)
@@ -217,8 +219,7 @@ export default function CrashPlot({
             traces.push(buildTrace(grouped, 'Total', '#636EFA'))
         } else if (effectiveStackBy === 'severity') {
             // Stack by severity (only show selected severities)
-            // effectiveStackBy === 'severity' implies !hasMuniFilter, so rows have `s`
-            const sevFiltered = filtered as (YmsRow | YmccsRow)[]
+            const sevFiltered = filtered as (YmsRow | YmccsRow | YmccmcsRow)[]
             for (const sev of Severities) {
                 if (!severities.includes(sev)) continue
                 const sevData = sevFiltered.filter(row => row.s === sev)

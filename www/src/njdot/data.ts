@@ -92,6 +92,10 @@ export type YmccmcRow = CrashMeasures & {
     mc: number     // municipality code
 }
 
+export type YmccmcsRow = YmccmcRow & {
+    s: Severity    // severity
+}
+
 // Measure options for Y-axis
 export type Measure = 'n' | 'tk' | 'ti' | 'pk' | 'pi' | 'tv'
 export const Measures: Measure[] = ['n', 'tk', 'ti', 'pk', 'pi', 'tv']
