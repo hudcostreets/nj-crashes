@@ -1,14 +1,12 @@
 import { ReactNode, useMemo } from "react";
-import * as sql from "@rdub/react-sql.js-httpvfs/query";
-import { Result } from "@rdub/react-sql.js-httpvfs/query";
-import { useSqlQuery, useSqlQueryEager } from "@/src/sql";
+import { Result } from "@/src/api";
+import { useApi, useApiEager, apiUrl } from "@/src/api";
 import { Crash } from "@/src/crash";
 import { Row } from "@/src/result-table";
 import { map } from "fp-ts/Either";
-import { CC2MC2MN, County } from "@/src/county";
+import { CC2MC2MN } from "@/src/county";
 import strftime from "strftime";
 import { fromEntries } from "@rdub/base/objs";
-import { Urls } from "@/src/urls";
 import { Car, Cyclist, Driver, Passenger, Pedestrian as Ped } from "@/src/icons";
 import css from "./use-crashes.module.scss"
 import { CrashesOccupants, Occupant, useCrashOccupants } from "@/src/crash-occupants";
@@ -20,11 +18,7 @@ import moment from "moment-timezone";
 import CityLink from "@/src/city-link";
 import CountyLink from "@/src/county-link";
 
-export type Base = Omit<sql.Base, 'url'> & {
-    urls: Urls
-}
-
-export type Props = Base & {
+export type Props = {
     cc: number | null
     cn?: string
     mc: number | null
@@ -32,40 +26,26 @@ export type Props = Base & {
     perPage: number
 }
 
-function njdotWhereClause(cc: number | null, mc: number | null, before: string) {
-    const severitiesFilter = "severity='i' or severity='f'"
-    const severitiesClause = `(${severitiesFilter}) and `
-    const regionClause = cc ? `cc=${cc}${mc ? ` and mc=${mc}` : ""} and ` : ""
+export function useNjdotCrashes({ cc, mc, before, perPage }: Props): Result<Crash> | null {
     const m = moment.tz(before, "America/New_York").add(1, 'day')
-    const mStr = m.format('YYYY-MM-DD')
-    const dtClause = `dt<='${mStr}'`
-    return `${severitiesClause}${regionClause}${dtClause}`
-}
-
-export function useNjdotCrashes({ cc, mc, before, perPage, timerId = "njdot-crashes", urls, ...base }: Props): Result<Crash> | null {
-    const query = useMemo(
-        () => {
-            const where = njdotWhereClause(cc, mc, before)
-            return `
-                select * from crashes
-                where ${where}
-                order by dt desc
-                limit ${perPage}
-            `
-        },
-        [ before, perPage, cc, mc, ]
+    const beforeStr = m.format('YYYY-MM-DD')
+    const url = useMemo(
+        () => apiUrl("/njdot/crashes", { cc, mc, before: beforeStr, limit: perPage }),
+        [cc, mc, beforeStr, perPage],
     )
-    return useSqlQuery<Crash>({ ...base, url: urls.dot.crashes, timerId, query })
+    return useApi<Crash>(url)
 }
 
 export type Total = { total: number }
 
-export function useNjdotCrashesTotal({ cc, mc, before, urls, ...base }: Omit<Props, 'perPage'> & { totals: Total[] }): Result<Total> {
-    const query = useMemo(() => {
-        const where = njdotWhereClause(cc, mc, before)
-        return `select count(*) as total from crashes where ${where}`
-    }, [cc, mc, before])
-    return useSqlQueryEager<Total>({ ...base, url: urls.dot.crashes, timerId: "njdot-crashes-total", query, init: [{ total: 0 }] })
+export function useNjdotCrashesTotal({ cc, mc, before }: Omit<Props, 'perPage'>): Result<Total> {
+    const m = moment.tz(before, "America/New_York").add(1, 'day')
+    const beforeStr = m.format('YYYY-MM-DD')
+    const url = useMemo(
+        () => apiUrl("/njdot/crashes/count", { cc, mc, before: beforeStr }),
+        [cc, mc, beforeStr],
+    )
+    return useApiEager<Total>(url, [{ total: 0 }])
 }
 
 export const ColLabels = {
@@ -118,6 +98,7 @@ export function CrashIcons(
     const arrs = [ [], deaths, seriousInjuries, moderateInjuries, possibleInjuries, ]
     occupants?.forEach(({ pos, condition, eject, age, sex, inj_loc, inj_type, }, idx) => {
         condition = condition ?? 0
+        if (condition < 0 || condition >= ConditionMap.length) return
         let ejectedStr: string = ""
         switch (eject) {
             case 2: ejectedStr = "partially ejected"; break
@@ -136,6 +117,7 @@ export function CrashIcons(
     })
     pedestrians?.forEach(({ condition, age, sex, inj_loc, inj_type, cyclist, }, idx) => {
         condition = condition ?? 0
+        if (condition < 0 || condition >= ConditionMap.length) return
         const [ type, Component, ] =
             cyclist
                 ? [ 'Cyclist', Cyclist, ]
@@ -245,11 +227,11 @@ export function getNjdotCrashRows({ rows, cols, cc2mc2mn, crashOccupants, crashP
     })
 }
 
-export function useNjdotCrashRows({ cc2mc2mn, ...props }: Props & { cc2mc2mn: CC2MC2MN}) {
-    const crashesResult = useNjdotCrashes({ ...props })
-    const crashOccupants = useCrashOccupants({ crashesResult, ...props })
-    const crashPedestrians = useCrashPedestrians({ crashesResult, ...props })
-    const crashVehicles = useCrashVehicles({ crashesResult, ...props })
+export function useNjdotCrashRows({ cc2mc2mn, ...props }: Props & { cc2mc2mn: CC2MC2MN }) {
+    const crashesResult = useNjdotCrashes(props)
+    const crashOccupants = useCrashOccupants({ crashesResult })
+    const crashPedestrians = useCrashPedestrians({ crashesResult })
+    const crashVehicles = useCrashVehicles({ crashesResult })
     const ccCol: Col[] = props.cc ? [] : ['cc']
     const mcCol: Col[] = props.mc ? [] : ['mc']
     const cols: Col[] = [ 'dt', ...ccCol, ...mcCol, 'casualties', 'road', 'cross_street', 'mp', ]

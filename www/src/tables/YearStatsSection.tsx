@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useGeoFilter } from "@/src/GeoFilterContext"
-import { getBasePath } from "@/src/lib/basePath"
 import { useYearStats, ColTitles, YearStatsDicts, YearStatsDict } from "@/src/use-year-stats"
 import { Tooltip } from "@/src/tooltip"
 import { fold } from "fp-ts/Either"
@@ -169,8 +168,7 @@ function YearStatsTable({ ysds }: { ysds: YearStatsDicts }) {
 
 export function YearStatsSection() {
     const { cc, mc } = useGeoFilter()
-    const url = `${getBasePath()}/njdot/cmymc.db`
-    const result = useYearStats({ cc, mc, url })
+    const result = useYearStats({ cc, mc })
     if (!result) return <p>Loading annual statistics...</p>
     return fold(
         (err: Error) => <div><p>Error loading statistics: {err.message}</p></div>,

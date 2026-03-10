@@ -345,4 +345,5 @@ CRASH_IDXS = [
     ('cc', 'mc', 'severity', 'dt'),
     ('severity', 'ilat', 'ilon'),
     ('severity', 'icc', 'dt'),
+    ('dt', 'severity'),  # enables ORDER BY dt DESC with severity filter, avoids TEMP B-TREE
 ]

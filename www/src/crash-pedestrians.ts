@@ -1,8 +1,8 @@
-import { Result, useSqlQueryCallback } from "@rdub/react-sql.js-httpvfs/query";
-import { Crash } from "@/src/crash";
-import { useEffect, useState } from "react";
-import { fold, map } from "fp-ts/Either";
-import { Base } from "@/src/use-njdot-crashes";
+import { Result } from "@/src/api"
+import { apiUrl, useApi } from "@/src/api"
+import { Crash } from "@/src/crash"
+import { useMemo } from "react"
+import { fold } from "fp-ts/Either"
 
 export type Pedestrian = {
     crash_id: number
@@ -17,47 +17,34 @@ export type Pedestrian = {
 
 export type CrashesPedestrians = { [crash_id: number]: Pedestrian[] }
 
-export function useCrashPedestrians({ crashesResult, urls, ...props }: { crashesResult: Result<Crash> | null } & Base): CrashesPedestrians | null {
-    const [ crashPedestrians, setCrashPedestrians ] = useState<CrashesPedestrians | null>(null)
-    const fetchPedestrians = useSqlQueryCallback<Pedestrian>({ url: urls.dot.pedestrians, timerId: "pedestrians", ...props })
-    useEffect(
-        () => {
-            if (!crashesResult) return
-            console.log("pedestrian effect")
-            map(
-                (crashes: Crash[]) => {
-                    const crashIds = crashes.map(({ id }) => id)
-                    const query = `
-                        select crash_id, condition, age, sex, inj_loc, inj_type, cyclist
-                        from pedestrians
-                        where crash_id in (${crashIds.join(', ')}) and condition >= 1 and condition < 5
-                        order by crash_id, condition, cyclist
-                    `
-                    console.log("Fetching pedestrians")
-                    fetchPedestrians(query)?.then(pedestriansResult => {
-                        fold(
-                            err => {
-                                console.error("error fetching pedestrians:", err)
-                                return null
-                            },
-                            (pedestrians: Pedestrian[]) => {
-                                console.log("crashPedestrians:", pedestrians)
-                                const crashPedestrians = {} as CrashesPedestrians
-                                for (const pedestrian of pedestrians) {
-                                    const { crash_id } = pedestrian
-                                    if (!crashPedestrians[crash_id]) {
-                                        crashPedestrians[crash_id] = []
-                                    }
-                                    crashPedestrians[crash_id].push(pedestrian)
-                                }
-                                setCrashPedestrians(crashPedestrians )
-                            }
-                        )(pedestriansResult)
-                    })
-                }
-            )(crashesResult)
-        },
-        [ crashesResult, fetchPedestrians ]
+export function useCrashPedestrians({ crashesResult }: { crashesResult: Result<Crash> | null }): CrashesPedestrians | null {
+    const crashIds = useMemo(() => {
+        if (!crashesResult) return null
+        return fold(
+            () => null as number[] | null,
+            (crashes: Crash[]) => crashes.map(({ id }) => id),
+        )(crashesResult)
+    }, [crashesResult])
+
+    const url = useMemo(
+        () => crashIds?.length ? apiUrl("/njdot/pedestrians", { crash_ids: crashIds.join(",") }) : null,
+        [crashIds],
     )
-    return crashPedestrians
+    const result = useApi<Pedestrian>(url)
+
+    return useMemo(() => {
+        if (!result) return null
+        return fold(
+            () => null as CrashesPedestrians | null,
+            (pedestrians: Pedestrian[]) => {
+                const grouped: CrashesPedestrians = {}
+                for (const ped of pedestrians) {
+                    const { crash_id } = ped
+                    if (!grouped[crash_id]) grouped[crash_id] = []
+                    grouped[crash_id].push(ped)
+                }
+                return grouped
+            },
+        )(result)
+    }, [result])
 }

@@ -1,6 +1,5 @@
-import { Base } from "@rdub/react-sql.js-httpvfs/query";
 import { useMemo } from "react";
-import { useSqlQuery } from "@/src/sql";
+import { useApi, apiUrl } from "@/src/api";
 import { Either, map } from "fp-ts/Either";
 import { Row } from "@/src/result-table";
 import { o2a } from "@rdub/base/objs";
@@ -63,7 +62,7 @@ export function yearStatsRows({ ysds }: { ysds: YearStatsDicts, }): Row[] {
     return rows
 }
 
-export type Props = Base & {
+export type Props = {
     cc: number | null
     mc: number | null
 }
@@ -93,22 +92,11 @@ export function toYearStatsDicts(years: YearStats[]): YearStatsDicts {
     return ysds
 }
 
-export function useYearStats({ cc, mc, timerId = 'year-stats', ...base }: Props): Either<Error, YearStatsDicts> | null {
-    const query = useMemo(
-        () => {
-            const where = cc ? `where cc=${cc}${mc ? ` and mc=${mc}` : ""}` : ""
-            const table = (cc ? "c" : "") + (mc ? "m" : "") + "yc"
-            return `
-                select y, condition,
-                drivers + passengers + pedestrians + cyclists as total,
-                num_crashes as num_crashes
-                from ${table}
-                ${where}
-                order by y desc, condition asc
-            `
-        },
-        [ cc, mc ]
+export function useYearStats({ cc, mc }: Props): Either<Error, YearStatsDicts> | null {
+    const url = useMemo(
+        () => apiUrl("/njdot/year-stats", { cc, mc }),
+        [cc, mc],
     )
-    const yearStatsResult = useSqlQuery<YearStats>({ query, timerId, ...base })
+    const yearStatsResult = useApi<YearStats>(url)
     return yearStatsResult ? map(toYearStatsDicts)(yearStatsResult) : null
 }

@@ -25,5 +25,11 @@ export default defineConfig({
     port: 4006,
     host: true,
     allowedHosts,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8787',
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
   },
 })
