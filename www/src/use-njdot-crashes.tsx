@@ -1,7 +1,7 @@
 import { ReactNode, useMemo } from "react";
 import * as sql from "@rdub/react-sql.js-httpvfs/query";
 import { Result } from "@rdub/react-sql.js-httpvfs/query";
-import { useSqlQuery } from "@/src/sql";
+import { useSqlQuery, useSqlQueryEager } from "@/src/sql";
 import { Crash } from "@/src/crash";
 import { Row } from "@/src/result-table";
 import { map } from "fp-ts/Either";
@@ -32,29 +32,40 @@ export type Props = Base & {
     perPage: number
 }
 
+function njdotWhereClause(cc: number | null, mc: number | null, before: string) {
+    const severitiesFilter = "severity='i' or severity='f'"
+    const severitiesClause = `(${severitiesFilter}) and `
+    const regionClause = cc ? `cc=${cc}${mc ? ` and mc=${mc}` : ""} and ` : ""
+    const m = moment.tz(before, "America/New_York").add(1, 'day')
+    const mStr = m.format('YYYY-MM-DD')
+    const dtClause = `dt<='${mStr}'`
+    return `${severitiesClause}${regionClause}${dtClause}`
+}
+
 export function useNjdotCrashes({ cc, mc, before, perPage, timerId = "njdot-crashes", urls, ...base }: Props): Result<Crash> | null {
-    const severities = [ 'i', 'f' ]
     const query = useMemo(
         () => {
-            const severitiesFilter = severities.map(s => `severity='${s}'`).join(' or ')
-            const severitiesClause = severitiesFilter ? `(${severitiesFilter}) and ` : ""
-
-            const regionClause = cc ? `cc=${cc}${mc ? ` and mc=${mc}` : ""} and ` : ""
-
-            const m = moment.tz(before, "America/New_York").add(1, 'day')
-            const mStr = m.format('YYYY-MM-DD')
-            const dtClause = `dt<='${mStr}'`
-
+            const where = njdotWhereClause(cc, mc, before)
             return `
                 select * from crashes
-                where ${severitiesClause}${regionClause}${dtClause}
+                where ${where}
                 order by dt desc
                 limit ${perPage}
             `
         },
-        [ before, perPage, severities, cc, mc, ]
+        [ before, perPage, cc, mc, ]
     )
     return useSqlQuery<Crash>({ ...base, url: urls.dot.crashes, timerId, query })
+}
+
+export type Total = { total: number }
+
+export function useNjdotCrashesTotal({ cc, mc, before, urls, ...base }: Omit<Props, 'perPage'> & { totals: Total[] }): Result<Total> {
+    const query = useMemo(() => {
+        const where = njdotWhereClause(cc, mc, before)
+        return `select count(*) as total from crashes where ${where}`
+    }, [cc, mc, before])
+    return useSqlQueryEager<Total>({ ...base, url: urls.dot.crashes, timerId: "njdot-crashes-total", query, init: [{ total: 0 }] })
 }
 
 export const ColLabels = {
