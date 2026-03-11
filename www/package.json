@@ -24,7 +24,6 @@
     "@mui/material": "^5.15.10",
     "@rdub/base": "0.3.0",
     "@rdub/duckdb": "0.0.2",
-    "@rdub/react-sql.js-httpvfs": "0.2.0",
     "@react-leaflet/core": "^2.1.0",
     "@vanilla-extract/css": "^1.14.0",
     "fp-ts": "^2.16.2",
@@ -35,7 +34,7 @@
     "maplibre-gl": "^3.6.2",
     "moment-timezone": "^0.5.45",
     "plotly.js": "^3.3.1",
-    "pltly": "https://gitlab.com/runsascoded/js/pltly/-/archive/c923a595cb3a907cbf8f506665429edb6bca124e/pltly-c923a595cb3a907cbf8f506665429edb6bca124e.tar.gz",
+    "pltly": "https://gitlab.com/runsascoded/js/pltly/-/archive/b334ba080110e89c67f71e751557edd7185634b2/pltly-b334ba080110e89c67f71e751557edd7185634b2.tar.gz",
     "react": "^18",
     "react-dom": "^18",
     "react-helmet-async": "^2.0.4",
@@ -45,11 +44,9 @@
     "react-plotly.js": "^2",
     "react-router-dom": "^6.21.0",
     "sass": "^1",
-    "sql.js-httpvfs": "^0.8.12",
     "strftime": "^0.10.2",
     "use-prms": "github:runsascoded/use-prms#36c2ddcaa1d23d8c4901b2769bac3ce69528691a",
-    "use-session-storage-state": "^18.2.0",
-    "web-worker": "^1.3.0"
+    "use-session-storage-state": "^18.2.0"
   },
   "devDependencies": {
     "@types/geojson": "^7946",

@@ -47,9 +47,6 @@ importers:
       '@rdub/duckdb':
         specifier: 0.0.2
         version: 0.0.2(@duckdb/duckdb-wasm@1.28.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@rdub/react-sql.js-httpvfs':
-        specifier: 0.2.0
-        version: 0.2.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@react-leaflet/core':
         specifier: ^2.1.0
         version: 2.1.0(leaflet@1.9.4)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -81,8 +78,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1(mapbox-gl@3.1.2)
       pltly:
-        specifier: https://gitlab.com/runsascoded/js/pltly/-/archive/c923a595cb3a907cbf8f506665429edb6bca124e/pltly-c923a595cb3a907cbf8f506665429edb6bca124e.tar.gz
-        version: https://gitlab.com/runsascoded/js/pltly/-/archive/c923a595cb3a907cbf8f506665429edb6bca124e/pltly-c923a595cb3a907cbf8f506665429edb6bca124e.tar.gz(plotly.js@3.3.1(mapbox-gl@3.1.2))(react-plotly.js@2.6.0(plotly.js@3.3.1(mapbox-gl@3.1.2))(react@18.2.0))(react@18.2.0)
+        specifier: https://gitlab.com/runsascoded/js/pltly/-/archive/b334ba080110e89c67f71e751557edd7185634b2/pltly-b334ba080110e89c67f71e751557edd7185634b2.tar.gz
+        version: https://gitlab.com/runsascoded/js/pltly/-/archive/b334ba080110e89c67f71e751557edd7185634b2/pltly-b334ba080110e89c67f71e751557edd7185634b2.tar.gz(plotly.js@3.3.1(mapbox-gl@3.1.2))(react-plotly.js@2.6.0(plotly.js@3.3.1(mapbox-gl@3.1.2))(react@18.2.0))(react@18.2.0)
       react:
         specifier: ^18
         version: 18.2.0
@@ -110,9 +107,6 @@ importers:
       sass:
         specifier: ^1
         version: 1.69.7
-      sql.js-httpvfs:
-        specifier: ^0.8.12
-        version: 0.8.12
       strftime:
         specifier: ^0.10.2
         version: 0.10.2
@@ -122,9 +116,6 @@ importers:
       use-session-storage-state:
         specifier: ^18.2.0
         version: 18.2.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      web-worker:
-        specifier: ^1.3.0
-        version: 1.3.0
     devDependencies:
       '@types/geojson':
         specifier: ^7946
@@ -962,12 +953,6 @@ packages:
       react: ^18
       react-dom: ^18
 
-  '@rdub/react-sql.js-httpvfs@0.2.0':
-    resolution: {integrity: sha512-UxKEJdGCRPMUEa8wWqnRSVhkd70Sb6RAbmydYOlh8xSBILyiGfuap5VDp6mrWEWqcYdK6aihvISpTX+3fL8fiA==}
-    peerDependencies:
-      react: ^18
-      react-dom: ^18
-
   '@react-leaflet/core@2.1.0':
     resolution: {integrity: sha512-Qk7Pfu8BSarKGqILj4x7bCSZ1pjuAPZ+qmRwH5S7mDS91VSbVVsJSrW4qA+GPrro8t69gFYVMWb1Zc4yFmPiVg==}
     peerDependencies:
@@ -1418,9 +1403,6 @@ packages:
   color-space@2.3.2:
     resolution: {integrity: sha512-BcKnbOEsOarCwyoLstcoEztwT0IJxqqQkNwDuA3a65sICvvHL2yoeV13psoDFh5IuiOMnIOKdQDwB4Mk3BypiA==}
 
-  comlink@4.4.1:
-    resolution: {integrity: sha512-+1dlx0aY5Jo1vHy/tSsIGpSkN4tS9rZSW8FIhG0JH/crs9wwweswIo/POr451r7bZww3hFbPAKnTpimzL/mm4Q==}
-
   command-line-args@5.2.1:
     resolution: {integrity: sha512-H4UfQhZyakIjC74I9d34fGYDwk3XpSr17QhEd0Q3I9Xq1CETHo4Hcuo87WyWHpAF1aSLjLRf5lD9ZGX2qStUvg==}
     engines: {node: '>=4.0.0'}
@@ -1601,10 +1583,6 @@ packages:
 
   defined@1.0.1:
     resolution: {integrity: sha512-hsBd2qSVCRE+5PmNdHt1uzyrFu5d3RwmFDKzyNZMFq/EwDNJF7Ee5+D5oEKF0hU6LhtoUF1macFvOe4AskQC1Q==}
-
-  dequal@2.0.3:
-    resolution: {integrity: sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==}
-    engines: {node: '>=6'}
 
   detect-kerning@2.1.2:
     resolution: {integrity: sha512-I3JIbrnKPAntNLl1I6TpSQQdQ4AutYzv/sKMFKbepawV/hlH0GmYKhUoOEMd4xqaUHT+Bm0f4127lh5qs1m1tw==}
@@ -2310,9 +2288,9 @@ packages:
     resolution: {integrity: sha512-SrGSZ02HvCWQIYsbQX4sgjgGo7k4T+Oz8a+RQwE5Caz+yu1vputBM1UThmiOPY51B5HzO9ajym8Rl4pmLj+i9Q==}
     engines: {node: '>=18.0.0'}
 
-  pltly@https://gitlab.com/runsascoded/js/pltly/-/archive/c923a595cb3a907cbf8f506665429edb6bca124e/pltly-c923a595cb3a907cbf8f506665429edb6bca124e.tar.gz:
-    resolution: {tarball: https://gitlab.com/runsascoded/js/pltly/-/archive/c923a595cb3a907cbf8f506665429edb6bca124e/pltly-c923a595cb3a907cbf8f506665429edb6bca124e.tar.gz}
-    version: 0.1.0-dist.f6e90f0
+  pltly@https://gitlab.com/runsascoded/js/pltly/-/archive/b334ba080110e89c67f71e751557edd7185634b2/pltly-b334ba080110e89c67f71e751557edd7185634b2.tar.gz:
+    resolution: {tarball: https://gitlab.com/runsascoded/js/pltly/-/archive/b334ba080110e89c67f71e751557edd7185634b2/pltly-b334ba080110e89c67f71e751557edd7185634b2.tar.gz}
+    version: 0.1.0-dist.b7c598f
     peerDependencies:
       plotly.js: '>=2'
       react: '>=17'
@@ -2573,9 +2551,6 @@ packages:
     resolution: {integrity: sha512-NzNVhJDYpwceVVii8/Hu6DKfD2G+NrQHlS/V/qgv763EYudVwEcMQNxd2lh+0VrUByXN/oJkl5grOhYWvQUYiw==}
     engines: {node: '>=0.10.0'}
 
-  sql.js-httpvfs@0.8.12:
-    resolution: {integrity: sha512-lcEBc2q0psFRfdCx8Di22oUIkkv5MUIaVO/fGCj/Jjx6YQDKVylQEcjd7NSSbmINHTRwVkm/vWP8uuevT7Rkkw==}
-
   stack-trace@0.0.9:
     resolution: {integrity: sha512-vjUc6sfgtgY0dxCdnc40mK6Oftjo9+2K8H/NG81TMhgL392FtiPA9tn9RLyTxXmTLPJPjF3VyzFp6bsWFLisMQ==}
 
@@ -2736,11 +2711,6 @@ packages:
 
   update-diff@1.1.0:
     resolution: {integrity: sha512-rCiBPiHxZwT4+sBhEbChzpO5hYHjm91kScWgdHf4Qeafs6Ba7MBl+d9GlGv72bcTZQO0sLmtQS1pHSWoCLtN/A==}
-
-  use-deep-compare@1.2.1:
-    resolution: {integrity: sha512-JTnOZAr0fq1ix6CQ4XANoWIh03xAiMFlP/lVAYDdAOZwur6nqBSdATn1/Q9PLIGIW+C7xmFZBCcaA4KLDcQJtg==}
-    peerDependencies:
-      react: '>=16.8.0'
 
   use-prms@git+https://git@github.com:runsascoded/use-prms.git#36c2ddcaa1d23d8c4901b2769bac3ce69528691a:
     resolution: {commit: 36c2ddcaa1d23d8c4901b2769bac3ce69528691a, repo: git@github.com:runsascoded/use-prms.git, type: git}
@@ -3672,16 +3642,6 @@ snapshots:
       react-dom: 18.2.0(react@18.2.0)
       web-worker: 1.3.0
 
-  '@rdub/react-sql.js-httpvfs@0.2.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
-    dependencies:
-      '@rdub/base': 0.3.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      comlink: 4.4.1
-      fp-ts: 2.16.2
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-      sql.js-httpvfs: 0.8.12
-      use-deep-compare: 1.2.1(react@18.2.0)
-
   '@react-leaflet/core@2.1.0(leaflet@1.9.4)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
       leaflet: 1.9.4
@@ -4182,8 +4142,6 @@ snapshots:
 
   color-space@2.3.2: {}
 
-  comlink@4.4.1: {}
-
   command-line-args@5.2.1:
     dependencies:
       array-back: 3.1.0
@@ -4339,8 +4297,6 @@ snapshots:
   deepmerge@4.3.1: {}
 
   defined@1.0.1: {}
-
-  dequal@2.0.3: {}
 
   detect-kerning@2.1.2: {}
 
@@ -5201,7 +5157,7 @@ snapshots:
       - mapbox-gl
       - supports-color
 
-  pltly@https://gitlab.com/runsascoded/js/pltly/-/archive/c923a595cb3a907cbf8f506665429edb6bca124e/pltly-c923a595cb3a907cbf8f506665429edb6bca124e.tar.gz(plotly.js@3.3.1(mapbox-gl@3.1.2))(react-plotly.js@2.6.0(plotly.js@3.3.1(mapbox-gl@3.1.2))(react@18.2.0))(react@18.2.0):
+  pltly@https://gitlab.com/runsascoded/js/pltly/-/archive/b334ba080110e89c67f71e751557edd7185634b2/pltly-b334ba080110e89c67f71e751557edd7185634b2.tar.gz(plotly.js@3.3.1(mapbox-gl@3.1.2))(react-plotly.js@2.6.0(plotly.js@3.3.1(mapbox-gl@3.1.2))(react@18.2.0))(react@18.2.0):
     dependencies:
       plotly.js: 3.3.1(mapbox-gl@3.1.2)
       react: 18.2.0
@@ -5521,10 +5477,6 @@ snapshots:
     dependencies:
       extend-shallow: 3.0.2
 
-  sql.js-httpvfs@0.8.12:
-    dependencies:
-      comlink: 4.4.1
-
   stack-trace@0.0.9: {}
 
   static-eval@2.1.1:
@@ -5687,11 +5639,6 @@ snapshots:
       picocolors: 1.1.1
 
   update-diff@1.1.0: {}
-
-  use-deep-compare@1.2.1(react@18.2.0):
-    dependencies:
-      dequal: 2.0.3
-      react: 18.2.0
 
   use-prms@git+https://git@github.com:runsascoded/use-prms.git#36c2ddcaa1d23d8c4901b2769bac3ce69528691a(react@18.2.0):
     dependencies:
