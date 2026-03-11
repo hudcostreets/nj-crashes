@@ -1,31 +1,27 @@
 #!/usr/bin/env bash
-# Import local SQLite databases into D1 (local or remote).
+# Import local SQLite databases into D1 via staging databases.
 #
-# Large databases are dumped to SQL and split into chunks to avoid
-# wrangler's ~128MB memory limit. Small databases (<50MB) are imported
-# directly.
+# For remote imports (production), this creates fresh staging D1 databases,
+# imports data, verifies row counts, updates wrangler.toml bindings, and
+# deploys the worker — so the swap is atomic from readers' perspective.
+#
+# For local imports (wrangler dev), it imports directly (no staging needed).
 #
 # Usage:
-#   bash scripts/d1-import.sh [--local] [db_name ...]
-#   bash scripts/d1-import.sh --local crashes vehicles
-#   bash scripts/d1-import.sh              # remote, all databases
+#   bash scripts/d1-import.sh --local [db_name ...]
+#   bash scripts/d1-import.sh [db_name ...]        # remote, staging workflow
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-LOCAL_FLAG=""
+MODE="remote"
 if [[ "${1:-}" == "--local" ]]; then
-    LOCAL_FLAG="--local"
+    MODE="local"
     shift
-    echo "Importing into LOCAL D1 databases"
-else
-    echo "Importing into REMOTE D1 databases"
 fi
 
 WWW="../www/public"
 CHUNK_DIR="tmp/chunks"
-# Max statements per chunk; ~200K is safe for wrangler's memory limit
 CHUNK_SIZE=200000
-# Databases under this size (bytes) skip chunking
 SMALL_THRESHOLD=$((50 * 1024 * 1024))  # 50MB
 
 declare -A DB_MAP=(
@@ -37,11 +33,25 @@ declare -A DB_MAP=(
     [njsp-crashes]="$WWW/njsp/crashes.db"
 )
 
+# Binding names in wrangler.toml, keyed by db_name
+declare -A BINDING_MAP=(
+    [crashes]="CRASHES_DB"
+    [vehicles]="VEHICLES_DB"
+    [occupants]="OCCUPANTS_DB"
+    [pedestrians]="PEDESTRIANS_DB"
+    [cmymc]="CMYMC_DB"
+    [njsp-crashes]="NJSP_CRASHES_DB"
+)
+
 requested=("$@")
 
 wrangler_exec() {
     local db_name="$1" file="$2"
-    npx wrangler d1 execute "$db_name" $LOCAL_FLAG --file="$file"
+    if [[ "$MODE" == "local" ]]; then
+        npx wrangler d1 execute "$db_name" --local --file="$file"
+    else
+        npx wrangler d1 execute "$db_name" --remote --file="$file"
+    fi
 }
 
 drop_tables() {
@@ -59,63 +69,124 @@ drop_tables() {
     rm -f "$drop_file"
 }
 
-import_small() {
+import_data() {
     local db_name="$1" local_path="$2"
-    echo "  Direct import (small database)..."
+    local file_size
+    file_size=$(stat -f%z "$local_path" 2>/dev/null || stat -c%s "$local_path")
+
+    # Schema first (handles multi-line CREATE statements)
     local schema_file="$CHUNK_DIR/${db_name}_schema.sql"
     sqlite3 "$local_path" .schema > "$schema_file"
+    echo "  Importing schema..."
     wrangler_exec "$db_name" "$schema_file"
     rm -f "$schema_file"
+
+    # Dump INSERT statements
     local inserts_file="$CHUNK_DIR/${db_name}_inserts.sql"
-    sqlite3 "$local_path" .dump | grep '^INSERT ' > "$inserts_file"
-    wrangler_exec "$db_name" "$inserts_file"
-    rm -f "$inserts_file"
-}
-
-import_chunked() {
-    local db_name="$1" local_path="$2"
-
-    # Import schema separately (multi-line CREATE statements)
-    local schema_file="$CHUNK_DIR/${db_name}_schema.sql"
-    sqlite3 "$local_path" .schema > "$schema_file"
-    local schema_lines
-    schema_lines=$(wc -l < "$schema_file")
-    if [[ $schema_lines -gt 0 ]]; then
-        echo "  Importing schema ($schema_lines lines)..."
-        wrangler_exec "$db_name" "$schema_file"
-    fi
-    rm -f "$schema_file"
-
-    # Dump INSERT statements only
     echo "  Dumping INSERT statements..."
-    local inserts_file="$CHUNK_DIR/${db_name}_inserts.sql"
-    sqlite3 "$local_path" .dump \
-        | grep '^INSERT ' \
-        > "$inserts_file"
+    sqlite3 "$local_path" .dump | grep '^INSERT ' > "$inserts_file"
 
     local insert_lines
     insert_lines=$(wc -l < "$inserts_file")
-    local num_chunks=$(( (insert_lines + CHUNK_SIZE - 1) / CHUNK_SIZE ))
-    echo "  $insert_lines INSERT statements → $num_chunks chunks"
 
-    split -l "$CHUNK_SIZE" "$inserts_file" "$CHUNK_DIR/${db_name}_chunk_"
-    rm -f "$inserts_file"
+    if [[ $file_size -lt $SMALL_THRESHOLD ]]; then
+        echo "  Importing $insert_lines statements..."
+        wrangler_exec "$db_name" "$inserts_file"
+        rm -f "$inserts_file"
+    else
+        local num_chunks=$(( (insert_lines + CHUNK_SIZE - 1) / CHUNK_SIZE ))
+        echo "  $insert_lines INSERT statements → $num_chunks chunks"
+        split -l "$CHUNK_SIZE" "$inserts_file" "$CHUNK_DIR/${db_name}_chunk_"
+        rm -f "$inserts_file"
 
-    local i=0
-    for chunk_file in "$CHUNK_DIR/${db_name}_chunk_"*; do
-        i=$((i + 1))
-        local chunk_lines
-        chunk_lines=$(wc -l < "$chunk_file")
-        echo "  Chunk $i/$num_chunks ($chunk_lines statements)..."
-        wrangler_exec "$db_name" "$chunk_file"
-        rm -f "$chunk_file"
+        local i=0
+        for chunk_file in "$CHUNK_DIR/${db_name}_chunk_"*; do
+            i=$((i + 1))
+            local chunk_lines
+            chunk_lines=$(wc -l < "$chunk_file")
+            echo "  Chunk $i/$num_chunks ($chunk_lines statements)..."
+            wrangler_exec "$db_name" "$chunk_file"
+            rm -f "$chunk_file"
+        done
+    fi
+}
+
+# Get row count from a local .db file for a given table
+local_row_count() {
+    local db_path="$1" table="$2"
+    sqlite3 "$db_path" "SELECT count(*) FROM \"$table\";"
+}
+
+# Get row count from a D1 database for a given table
+d1_row_count() {
+    local db_name="$1" table="$2"
+    local flag="--remote"
+    if [[ "$MODE" == "local" ]]; then flag="--local"; fi
+    npx wrangler d1 execute "$db_name" $flag \
+        --command="SELECT count(*) as n FROM \"$table\";" --json 2>/dev/null \
+        | python3 -c "import json,sys; print(json.load(sys.stdin)[0]['results'][0]['n'])"
+}
+
+verify_import() {
+    local db_name="$1" local_path="$2"
+    echo "  Verifying row counts..."
+    local tables
+    tables=$(sqlite3 "$local_path" ".tables")
+    local ok=true
+    for t in $tables; do
+        local expected actual
+        expected=$(local_row_count "$local_path" "$t")
+        actual=$(d1_row_count "$db_name" "$t")
+        if [[ "$expected" != "$actual" ]]; then
+            echo "  MISMATCH $t: expected $expected, got $actual"
+            ok=false
+        else
+            echo "  $t: $actual rows ✓"
+        fi
     done
+    if ! $ok; then
+        echo "  VERIFICATION FAILED"
+        return 1
+    fi
+}
+
+# Create a staging D1 database, returns the new database_id
+create_staging_db() {
+    local db_name="$1"
+    local staging_name="${db_name}-staging-$(date +%Y%m%d-%H%M%S)"
+    echo "  Creating staging database: $staging_name"
+    local output
+    output=$(npx wrangler d1 create "$staging_name" 2>&1)
+    local new_id
+    new_id=$(echo "$output" | grep -oP '(?<=database_id = ")[^"]+' || echo "$output" | grep -oP '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')
+    if [[ -z "$new_id" ]]; then
+        echo "  ERROR: Could not extract database_id from wrangler output:"
+        echo "$output"
+        return 1
+    fi
+    echo "  Staging database_id: $new_id"
+    echo "$new_id"
+}
+
+# Update wrangler.toml: replace database_id for a given database_name
+update_wrangler_toml() {
+    local db_name="$1" new_id="$2"
+    local old_id
+    old_id=$(grep -A2 "database_name = \"$db_name\"" wrangler.toml | grep database_id | grep -oP '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')
+    if [[ -z "$old_id" ]]; then
+        echo "  ERROR: Could not find database_id for $db_name in wrangler.toml"
+        return 1
+    fi
+    sed -i.bak "s/$old_id/$new_id/" wrangler.toml
+    rm -f wrangler.toml.bak
+    echo "  Updated wrangler.toml: $db_name → $new_id (was $old_id)"
 }
 
 mkdir -p "$CHUNK_DIR"
 
+# Collect databases to import
+declare -a import_dbs=()
 for db_name in "${!DB_MAP[@]}"; do
-    # Skip if specific databases were requested and this isn't one of them
     if [[ ${#requested[@]} -gt 0 ]]; then
         skip=true
         for r in "${requested[@]}"; do
@@ -123,25 +194,96 @@ for db_name in "${!DB_MAP[@]}"; do
         done
         if $skip; then continue; fi
     fi
-
     local_path="${DB_MAP[$db_name]}"
     if [[ ! -f "$local_path" ]]; then
         echo "SKIP $db_name: $local_path not found"
         continue
     fi
-
-    file_size=$(stat -f%z "$local_path" 2>/dev/null || stat -c%s "$local_path")
-    size_human=$(du -h "$local_path" | cut -f1)
-    echo "Importing $db_name ($size_human) from $local_path..."
-
-    drop_tables "$db_name" "$local_path"
-    if [[ $file_size -lt $SMALL_THRESHOLD ]]; then
-        import_small "$db_name" "$local_path"
-    else
-        import_chunked "$db_name" "$local_path"
-    fi
-    echo "  Done: $db_name"
-    echo
+    import_dbs+=("$db_name")
 done
+
+if [[ ${#import_dbs[@]} -eq 0 ]]; then
+    echo "No databases to import."
+    exit 0
+fi
+
+if [[ "$MODE" == "local" ]]; then
+    echo "Importing into LOCAL D1 databases"
+    echo
+    for db_name in "${import_dbs[@]}"; do
+        local_path="${DB_MAP[$db_name]}"
+        size_human=$(du -h "$local_path" | cut -f1)
+        echo "Importing $db_name ($size_human)..."
+        drop_tables "$db_name" "$local_path"
+        import_data "$db_name" "$local_path"
+        echo "  Done: $db_name"
+        echo
+    done
+else
+    echo "Importing into REMOTE D1 databases (staging workflow)"
+    echo
+
+    # Track staging database names/IDs for the deploy step
+    declare -A staging_ids=()
+    declare -A staging_names=()
+
+    for db_name in "${import_dbs[@]}"; do
+        local_path="${DB_MAP[$db_name]}"
+        size_human=$(du -h "$local_path" | cut -f1)
+        echo "=== $db_name ($size_human) ==="
+
+        # Create staging database
+        staging_name="${db_name}-staging-$(date +%Y%m%d-%H%M%S)"
+        echo "  Creating staging database: $staging_name"
+        output=$(npx wrangler d1 create "$staging_name" 2>&1)
+        new_id=$(echo "$output" | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | tail -1)
+        if [[ -z "$new_id" ]]; then
+            echo "  ERROR: Could not extract database_id:"
+            echo "$output"
+            exit 1
+        fi
+        echo "  Staging database_id: $new_id"
+        staging_ids[$db_name]="$new_id"
+        staging_names[$db_name]="$staging_name"
+
+        # Temporarily add staging db to wrangler.toml so wrangler can find it
+        # We use the staging name for import, then swap to production name
+        cat >> wrangler.toml <<TOML
+
+[[d1_databases]]
+binding = "STAGING_${BINDING_MAP[$db_name]}"
+database_name = "$staging_name"
+database_id = "$new_id"
+TOML
+
+        # Import into staging
+        import_data "$staging_name" "$local_path"
+
+        # Verify
+        verify_import "$staging_name" "$local_path"
+        echo "  Done importing: $db_name"
+        echo
+    done
+
+    # All imports verified — now swap bindings atomically (single deploy)
+    echo "=== Swapping bindings ==="
+
+    # Remove staging entries and update production database_ids
+    # Start fresh from git version of wrangler.toml
+    git checkout wrangler.toml
+
+    for db_name in "${import_dbs[@]}"; do
+        new_id="${staging_ids[$db_name]}"
+        update_wrangler_toml "$db_name" "$new_id"
+    done
+
+    echo
+    echo "Deploying worker with new bindings..."
+    npx wrangler deploy
+    echo
+    echo "Deploy complete. Old databases can be deleted manually:"
+    echo "  npx wrangler d1 list"
+    echo "  npx wrangler d1 delete <old-database-name>"
+fi
 
 echo "All imports complete."
