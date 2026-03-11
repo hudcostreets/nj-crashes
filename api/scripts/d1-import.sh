@@ -84,7 +84,8 @@ import_data() {
     # Dump INSERT statements
     local inserts_file="$CHUNK_DIR/${db_name}_inserts.sql"
     echo "  Dumping INSERT statements..."
-    sqlite3 "$local_path" .dump | grep '^INSERT ' > "$inserts_file"
+    SCRIPT_DIR="$(dirname "$0")"
+    sqlite3 "$local_path" .dump | python3 "$SCRIPT_DIR/dump-compat.py" | grep '^INSERT ' > "$inserts_file"
 
     local insert_lines
     insert_lines=$(wc -l < "$inserts_file")
@@ -158,7 +159,7 @@ create_staging_db() {
     local output
     output=$(npx wrangler d1 create "$staging_name" 2>&1)
     local new_id
-    new_id=$(echo "$output" | grep -oP '(?<=database_id = ")[^"]+' || echo "$output" | grep -oP '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')
+    new_id=$(echo "$output" | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | tail -1)
     if [[ -z "$new_id" ]]; then
         echo "  ERROR: Could not extract database_id from wrangler output:"
         echo "$output"
@@ -172,7 +173,7 @@ create_staging_db() {
 update_wrangler_toml() {
     local db_name="$1" new_id="$2"
     local old_id
-    old_id=$(grep -A2 "database_name = \"$db_name\"" wrangler.toml | grep database_id | grep -oP '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')
+    old_id=$(grep -A2 "database_name = \"$db_name\"" wrangler.toml | grep database_id | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')
     if [[ -z "$old_id" ]]; then
         echo "  ERROR: Could not find database_id for $db_name in wrangler.toml"
         return 1
@@ -223,6 +224,9 @@ else
     echo "Importing into REMOTE D1 databases (staging workflow)"
     echo
 
+    # Save wrangler.toml before appending staging entries
+    cp wrangler.toml "$CHUNK_DIR/wrangler.toml.pre-staging"
+
     # Track staging database names/IDs for the deploy step
     declare -A staging_ids=()
     declare -A staging_names=()
@@ -268,10 +272,8 @@ TOML
     # All imports verified — now swap bindings atomically (single deploy)
     echo "=== Swapping bindings ==="
 
-    # Remove staging entries and update production database_ids
-    # Start fresh from git version of wrangler.toml
-    git checkout wrangler.toml
-
+    # Restore wrangler.toml from pre-staging backup, then update IDs
+    cp "$CHUNK_DIR/wrangler.toml.pre-staging" wrangler.toml
     for db_name in "${import_dbs[@]}"; do
         new_id="${staging_ids[$db_name]}"
         update_wrangler_toml "$db_name" "$new_id"
