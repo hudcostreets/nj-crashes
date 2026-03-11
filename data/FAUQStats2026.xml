@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Mar 10 10:02:36 EDT 2026</RUNDATE>
+  <RUNDATE>Wed Mar 11 10:02:35 EDT 2026</RUNDATE>
   <STATSYEAR>2026</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,58 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="08" CNAME="Gloucester">
+    <MUNICIPALITY MCODE="0804" MNAME="Elk Twsp">
+      <ACCIDENT ACCID="14452" DATE="03/10/2026" TIME="1045">
+        <STREET>Hardingville Rd</STREET>
+        <LOCATION>Hardingville Rd</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="02" CNAME="Bergen">
+    <MUNICIPALITY MCODE="0223" MNAME="Hackensack City">
+      <ACCIDENT ACCID="14453" DATE="03/10/2026" TIME="0827">
+        <STREET>W. Pleasantview Ave</STREET>
+        <LOCATION>W. Pleasantview Ave</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1102" MNAME="Ewing Twsp">
+      <ACCIDENT ACCID="14454" DATE="03/10/2026" TIME="0725">
+        <HIGHWAY>29</HIGHWAY>
+        <LOCATION>State Highway 29 MP 7.56</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="12" CNAME="Middlesex">
+    <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
+      <ACCIDENT ACCID="14451" DATE="03/09/2026" TIME="0957">
+        <HIGHWAY>95</HIGHWAY>
+        <LOCATION>New Jersey Turnpike</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
@@ -1009,7 +1061,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>74</TOTACCIDENTS>
-  <TOTFATALITIES>80</TOTFATALITIES>
+  <TOTACCIDENTS>78</TOTACCIDENTS>
+  <TOTFATALITIES>84</TOTFATALITIES>
   <TOTINJURIES>3</TOTINJURIES>
 </FAUQSTATS>
