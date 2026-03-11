@@ -112,6 +112,23 @@ import_data() {
     fi
 }
 
+write_metadata() {
+    local db_name="$1" local_path="$2"
+    local md5
+    md5=$(md5sum "$local_path" 2>/dev/null | cut -d' ' -f1 || md5 -q "$local_path")
+    local ts
+    ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    local meta_file="$CHUNK_DIR/${db_name}_metadata.sql"
+    cat > "$meta_file" <<SQL
+CREATE TABLE IF NOT EXISTS _metadata (source_md5 TEXT, imported_at TEXT, source_path TEXT);
+DELETE FROM _metadata;
+INSERT INTO _metadata VALUES ('$md5', '$ts', '$local_path');
+SQL
+    echo "  Writing _metadata (md5=$md5)..."
+    wrangler_exec "$db_name" "$meta_file"
+    rm -f "$meta_file"
+}
+
 # Get row count from a local .db file for a given table
 local_row_count() {
     local db_path="$1" table="$2"
@@ -217,6 +234,7 @@ if [[ "$MODE" == "local" ]]; then
         echo "Importing $db_name ($size_human)..."
         drop_tables "$db_name" "$local_path"
         import_data "$db_name" "$local_path"
+        write_metadata "$db_name" "$local_path"
         echo "  Done: $db_name"
         echo
     done
@@ -262,6 +280,7 @@ TOML
 
         # Import into staging
         import_data "$staging_name" "$local_path"
+        write_metadata "$staging_name" "$local_path"
 
         # Verify
         verify_import "$staging_name" "$local_path"

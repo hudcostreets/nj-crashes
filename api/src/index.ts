@@ -192,6 +192,28 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 		return Response.json(result.results, { headers: corsHeaders(env) })
 	}
 
+	// Status: report source MD5 and import timestamp for each database
+	if (path === "/status") {
+		const dbs: Record<string, D1Database> = {
+			crashes: env.CRASHES_DB,
+			vehicles: env.VEHICLES_DB,
+			occupants: env.OCCUPANTS_DB,
+			pedestrians: env.PEDESTRIANS_DB,
+			cmymc: env.CMYMC_DB,
+			"njsp-crashes": env.NJSP_CRASHES_DB,
+		}
+		const status: Record<string, unknown> = {}
+		for (const [name, db] of Object.entries(dbs)) {
+			try {
+				const r = await db.prepare("SELECT * FROM _metadata LIMIT 1").first()
+				status[name] = r ?? { error: "no _metadata table" }
+			} catch {
+				status[name] = { error: "no _metadata table" }
+			}
+		}
+		return Response.json(status, { headers: corsHeaders(env) })
+	}
+
 	return Response.json({ error: "Not found" }, { status: 404, headers: corsHeaders(env) })
 }
 
