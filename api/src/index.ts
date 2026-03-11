@@ -8,6 +8,7 @@
  *   GET /njdot/occupants?crash_ids=1,2,3
  *   GET /njdot/pedestrians?crash_ids=1,2,3
  *   GET /njdot/year-stats?cc=&mc=
+ *   GET /njdot/victim-severity?cc=&mc=
  *   GET /njsp/crashes?cc=&mc=&page=&limit=
  *   GET /njsp/crashes/count?cc=&mc=
  */
@@ -165,6 +166,27 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 		}
 		const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : ""
 		const sql = `SELECT y, condition, drivers + passengers + pedestrians + cyclists as total, num_crashes FROM ${table} ${where} ORDER BY y DESC, condition ASC`
+		const result = await env.CMYMC_DB.prepare(sql).bind(...params).all()
+		return Response.json(result.results, { headers: corsHeaders(env) })
+	}
+
+	// NJDOT victim-severity breakdown from cmymc.db
+	if (path === "/njdot/victim-severity") {
+		const cc = intParam(url, "cc")
+		const mc = intParam(url, "mc")
+		const table = (cc ? "c" : "") + (mc ? "m" : "") + "yc"
+		const conditions: string[] = []
+		const params: unknown[] = []
+		if (cc !== null) {
+			params.push(cc)
+			conditions.push(`cc = ?${params.length}`)
+			if (mc !== null) {
+				params.push(mc)
+				conditions.push(`mc = ?${params.length}`)
+			}
+		}
+		const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : ""
+		const sql = `SELECT y, condition, drivers, passengers, pedestrians, cyclists, num_crashes FROM ${table} ${where} ORDER BY y ASC, condition ASC`
 		const result = await env.CMYMC_DB.prepare(sql).bind(...params).all()
 		return Response.json(result.results, { headers: corsHeaders(env) })
 	}

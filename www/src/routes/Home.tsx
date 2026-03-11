@@ -8,6 +8,7 @@ import A from "@/src/lib/a"
 import { EndYear } from "@/src/constants"
 import css from "@/src/home.module.scss"
 import CrashPlot from "@/src/njdot/CrashPlot"
+import { VictimSeverityPlot } from "@/src/njdot/VictimSeverityPlot"
 import { FatalitiesPerYearPlot } from "@/src/njsp/FatalitiesPerYearPlot"
 import { YtdDeathsPlot } from "@/src/njsp/YtdDeathsPlot"
 import { HomicidesComparisonPlot } from "@/src/njsp/HomicidesComparisonPlot"
@@ -106,6 +107,7 @@ export default function Home() {
                     </p>
                 )}
                 <PlotContainer showHr={false}><CrashPlot counties={countyFilter} mc={mc} /></PlotContainer>
+                <PlotContainer showHr={false}><VictimSeverityPlot /></PlotContainer>
 
                 {/* Annual Statistics Table (NJ DOT) */}
                 <h2 id="stats"><a href="#stats">Annual Statistics (NJ DOT)</a>{geoSuffix}</h2>
