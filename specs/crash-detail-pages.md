@@ -41,24 +41,11 @@ Two ID systems exist:
 
 ## Data Access
 
-### Option A: DuckDB-WASM queries
-- Query `crashes.db`, `vehicles.db`, etc. on the client
-- Flexible, no new data files needed
-- But: multiple large DB downloads for a single crash page
+**Use the existing D1 API** (`api/src/index.ts`). All 6 databases (crashes, vehicles, occupants, pedestrians, cmymc, njsp-crashes) are already deployed to Cloudflare D1 and served via the Worker at `https://crashes-api.ryan-0dc.workers.dev`.
 
-### Option B: Pre-computed JSON per crash
-- Too many files (6.6M+ crashes × 5 entity types)
-- Not feasible
-
-### Option C: API endpoint
-- Lightweight server or serverless function queries a hosted DB
-- Best for individual crash lookups
-- Could use Cloudflare Workers + D1 or similar
-
-### Recommendation
-- Start with DuckDB-WASM (already have the infrastructure from `/duckdb` page stub)
-- The DBs are already served; just need targeted queries
-- Cache aggressively since crash data is immutable
+New endpoint needed:
+- `GET /njdot/crash?year=&cc=&mc=&case=` — returns crash + joined vehicles/occupants/pedestrians
+- Or separate fetches using existing `/njdot/vehicles?crash_ids=` etc. endpoints (already exist)
 
 ## Linking
 
@@ -73,8 +60,9 @@ Two ID systems exist:
 - Future: search by case number, location, date range
 
 ## Implementation Order
-1. Set up DuckDB-WASM query infrastructure (may already be partially done in `/duckdb` stub)
-2. Build crash detail page with basic crash info
-3. Add vehicle/driver/occupant/pedestrian sections
-4. Wire up map marker click → detail page links
-5. Add NJSP cross-reference for fatal crashes
+1. Add `/njdot/crash` API endpoint (or use existing endpoints)
+2. Add route + page component for `/crash/:year/:cc/:mc/:case`
+3. Build crash detail page with basic crash info
+4. Add vehicle/occupant/pedestrian sections (data already available via API)
+5. Wire up table row links → detail page
+6. Add NJSP cross-reference for fatal crashes
