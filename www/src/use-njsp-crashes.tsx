@@ -2,13 +2,14 @@ import { Result, useApi, useApiEager, apiUrl } from "@/src/api";
 import { ReactNode, useMemo } from "react";
 import { CC2MC2MN } from "@/src/county";
 import { map } from "fp-ts/Either";
-import { ConditionMap, } from "./use-njdot-crashes";
+
 import { Row } from "@/src/result-table";
 import { fromEntries } from "@rdub/base/objs";
 import { range } from "@rdub/base/arr";
 import strftime from "strftime";
 import css from "@/src/use-crashes.module.scss";
 import { Cyclist, Driver, Passenger, Pedestrian, Person } from "@/src/icons";
+import { fadeColor } from "pltly";
 import { Tooltip } from "@/src/tooltip";
 import CityLink from "@/src/city-link";
 import CountyLink from "@/src/county-link";
@@ -71,18 +72,25 @@ export function useNjspCrashes({ cc, mc, page, perPage }: Props): Result<Crash> 
     return useApiEager<Crash>(url, [])
 }
 
+// Match colors from FatalitiesPerYearPlot (the plot directly above this table)
+const driverColor = '#a94c9a'
+const passengerColor = '#f08030'
+const pedestrianColor = '#d85a6a'
+const cyclistColor = '#7c5295'
+const unknownColor = '#7F7F7F'
+const injuryFadedUnknown = fadeColor(unknownColor)
+
 export function CrashIcons({ tk, dk, ok, pk, bk, ti, }: Crash) {
-    const injuryFill = ConditionMap[0].fill
     const uk = tk - dk - ok - pk - bk
     return (
         <div className={css.icons}>
             <span className={css.typeIcons}>
-                {range(dk).map(idx => <Driver key={idx} title={"Driver killed"} />)}
-                {range(ok).map(idx => <Passenger key={idx} title={"Passenger killed"} />)}
-                {range(pk).map(idx => <Pedestrian key={idx} title={"Pedestrian killed"} />)}
-                {range(bk).map(idx => <Cyclist key={idx} title={"Cyclist killed"} />)}
-                {range(uk).map(idx => <Person key={idx} title={"Person killed"} />)}
-                {range(ti).map(idx => <Person key={idx} title={"Person injured"} style={{ fill: injuryFill }} />)}
+                {range(dk).map(idx => <Driver key={`dk${idx}`} title={"Driver killed"} style={{ fill: driverColor }} />)}
+                {range(ok).map(idx => <Passenger key={`ok${idx}`} title={"Passenger killed"} style={{ fill: passengerColor }} />)}
+                {range(pk).map(idx => <Pedestrian key={`pk${idx}`} title={"Pedestrian killed"} style={{ fill: pedestrianColor }} />)}
+                {range(bk).map(idx => <Cyclist key={`bk${idx}`} title={"Cyclist killed"} style={{ fill: cyclistColor }} />)}
+                {range(uk).map(idx => <Person key={`uk${idx}`} title={"Person killed"} style={{ fill: unknownColor }} />)}
+                {range(ti).map(idx => <Person key={`ti${idx}`} title={"Person injured"} style={{ fill: injuryFadedUnknown }} />)}
             </span>
         </div>
     )
