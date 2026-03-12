@@ -72,6 +72,8 @@ function dayToRefDate(dayOfYear: number): string {
     return date.toISOString().split('T')[0]
 }
 
+type ViewMode = 'ytd' | 'full-faded' | 'full'
+
 export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, regionLabel }: Props) {
     const db = useDb()
     const plotColors = usePlotColors()
@@ -81,7 +83,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     // Per-plot settings (scoped by plot ID in session storage)
     const [colorScaleName, setColorScaleName] = useSessionStorage<ColorScaleName>(`plot-${id}-colorscale`, 'inferno')
     const [legendPosition, setLegendPosition] = useSessionStorage<'bottom' | 'right'>(`plot-${id}-legend-position`, 'right')
-    const [ytdOnly, setYtdOnly] = useSessionStorage<boolean>(`plot-${id}-ytd-only`, false)
+    const [viewMode, setViewMode] = useSessionStorage<ViewMode>(`plot-${id}-view-mode`, 'full-faded')
     const [controlsOpen, setControlsOpen] = useSessionStorage<boolean>(`plot-${id}-controls-open`, false)
     const colorScale = COLORSCALES[colorScaleName]
 
@@ -138,8 +140,12 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
         // Reference date for current day (for x-axis range)
         const currentRefDate = toRefDate(currentYear, dayOfYear)
 
+        const isYtd = viewMode === 'ytd'
+
         // Build traces - use reference dates as x values for consistent alignment
-        const traces: PlotData[] = years.map((year, idx) => {
+        const traces: PlotData[] = []
+        for (let idx = 0; idx < years.length; idx++) {
+            const year = years[idx]
             const rows = yearData.get(year)!
             const t = (year - minYear) / (maxYear - minYear)
             const color = getColorAt(colorScale, t)
@@ -149,11 +155,13 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
             const isCurrentYear = year === currentYear
 
             // Forward-fill data so every day has a point (for correct hover)
-            const maxDay = Math.max(...rows.map(r => r.day_of_year))
+            // For current year: extend to today; for past years: extend to end of their data
+            const dataMaxDay = Math.max(...rows.map(r => r.day_of_year))
+            const fillToDay = isCurrentYear ? Math.max(dataMaxDay, dayOfYear) : dataMaxDay
             const dayMap = new Map(rows.map(r => [r.day_of_year, r]))
             const filledRows: { day: number; cumulative: number; fatalities: number }[] = []
             let lastCumulative = 0
-            for (let d = 1; d <= maxDay; d++) {
+            for (let d = 1; d <= fillToDay; d++) {
                 const row = dayMap.get(d)
                 if (row) {
                     lastCumulative = row.cumulative
@@ -163,35 +171,93 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                 }
             }
 
-            // Filter to YTD range if enabled
-            let filteredRows = filledRows
-            if (ytdOnly) {
-                filteredRows = filledRows.filter(r => r.day <= dayOfYear)
-            }
-
             // Current year gets thicker line by default
             const defaultWidth = isCurrentYear ? 4 : 2
 
-            return {
-                type: "scatter",
-                mode: "lines",
-                name: `'${String(year).slice(2)}`,
-                x: filteredRows.map(r => toRefDate(year, r.day)),
-                y: filteredRows.map(r => r.cumulative),
-                // Pre-format the "+N" suffix so it's correct for each day
-                customdata: filteredRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
-                line: {
-                    color: isGreyed ? fadeColor(color) : color,
-                    width: isActive ? 5 : (isGreyed ? 1 : defaultWidth),
-                },
-                legendrank: idx,
-                hovertemplate: `%{y}%{customdata}<extra>'${String(year).slice(2)}</extra>`,
-            } as PlotData
-        })
+            if (isYtd) {
+                // YTD mode: clip all traces to today
+                const clipped = filledRows.filter(r => r.day <= dayOfYear)
+                traces.push({
+                    type: "scatter",
+                    mode: "lines",
+                    name: `'${String(year).slice(2)}`,
+                    x: clipped.map(r => toRefDate(year, r.day)),
+                    y: clipped.map(r => r.cumulative),
+                    customdata: clipped.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
+                    line: {
+                        color: isGreyed ? fadeColor(color) : color,
+                        width: isActive ? 5 : (isGreyed ? 1 : defaultWidth),
+                    },
+                    legendrank: idx,
+                    hovertemplate: `%{y}%{customdata}<extra>'${String(year).slice(2)}</extra>`,
+                } as PlotData)
+            } else if (viewMode === 'full-faded' && !isCurrentYear && filledRows.length > 0) {
+                // Full-faded mode for past years: solid up to today, faded after
+                const solidRows = filledRows.filter(r => r.day <= dayOfYear)
+                const futureRows = filledRows.filter(r => r.day >= dayOfYear)
+
+                // Solid portion (up to today)
+                if (solidRows.length > 0) {
+                    traces.push({
+                        type: "scatter",
+                        mode: "lines",
+                        name: `'${String(year).slice(2)}`,
+                        x: solidRows.map(r => toRefDate(year, r.day)),
+                        y: solidRows.map(r => r.cumulative),
+                        customdata: solidRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
+                        line: {
+                            color: isGreyed ? fadeColor(color) : color,
+                            width: isActive ? 5 : (isGreyed ? 1 : defaultWidth),
+                        },
+                        legendrank: idx,
+                        legendgroup: `'${String(year).slice(2)}`,
+                        hovertemplate: `%{y}%{customdata}<extra>'${String(year).slice(2)}</extra>`,
+                    } as PlotData)
+                }
+
+                // Faded future portion (from today onward)
+                if (futureRows.length > 0) {
+                    const fadedColor = fadeColor(color)
+                    traces.push({
+                        type: "scatter",
+                        mode: "lines",
+                        name: `'${String(year).slice(2)}`,
+                        x: futureRows.map(r => toRefDate(year, r.day)),
+                        y: futureRows.map(r => r.cumulative),
+                        customdata: futureRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
+                        line: {
+                            color: isGreyed ? fadeColor(fadedColor) : fadedColor,
+                            width: isActive ? 5 : (isGreyed ? 1 : Math.max(1, defaultWidth - 1)),
+                            dash: 'dot',
+                        },
+                        legendrank: idx,
+                        legendgroup: `'${String(year).slice(2)}`,
+                        showlegend: false,
+                        hovertemplate: `%{y}%{customdata}<extra>'${String(year).slice(2)}</extra>`,
+                    } as PlotData)
+                }
+            } else {
+                // Full mode (no fading) or current year in full-faded mode
+                traces.push({
+                    type: "scatter",
+                    mode: "lines",
+                    name: `'${String(year).slice(2)}`,
+                    x: filledRows.map(r => toRefDate(year, r.day)),
+                    y: filledRows.map(r => r.cumulative),
+                    customdata: filledRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
+                    line: {
+                        color: isGreyed ? fadeColor(color) : color,
+                        width: isActive ? 5 : (isGreyed ? 1 : defaultWidth),
+                    },
+                    legendrank: idx,
+                    hovertemplate: `%{y}%{customdata}<extra>'${String(year).slice(2)}</extra>`,
+                } as PlotData)
+            }
+        }
 
         // Calculate y range for YTD mode
         let yRangeOverride: { range: [number, number] } | {} = {}
-        if (ytdOnly) {
+        if (isYtd) {
             let maxY = 0
             for (const [, rows] of yearData) {
                 for (const row of rows) {
@@ -217,7 +283,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
         // Choose tick granularity based on data range
         let tickDays: number[]
 
-        if (ytdOnly) {
+        if (isYtd) {
             // Choose tick interval based on how many days are shown
             let tickInterval: number
             if (dayOfYear <= 14) {
@@ -258,9 +324,23 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
             const day = date.getDate()
             // In non-YTD mode (full year), just show month name
             // In YTD mode, show "Month Day" for non-1st days
-            if (!ytdOnly || day === 1) return month
+            if (!isYtd || day === 1) return month
             return `${month} ${day}`
         })
+
+        // Add a vertical line at "today" in full-faded mode
+        const shapes: Layout['shapes'] = []
+        if (viewMode === 'full-faded' || viewMode === 'full') {
+            shapes.push({
+                type: 'line',
+                x0: currentRefDate,
+                x1: currentRefDate,
+                y0: 0,
+                y1: 1,
+                yref: 'paper',
+                line: { color: plotColors.textColor, width: 1, dash: 'dot' },
+            })
+        }
 
         const layout: Partial<Layout> = {
             showlegend: true,
@@ -285,15 +365,15 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                 ticktext: ticktext,
                 fixedrange: true,
                 hoverformat: '%b %e',  // "Mar  1" or "May 14" format for hover header
-                ...(ytdOnly ? { range: ['1999-12-31', currentRefDate] } : {}),
+                ...(isYtd ? { range: ['1999-12-31', currentRefDate] } : {}),
             },
             yaxis: {
                 automargin: false,
                 tickfont: { color: plotColors.textColor, size: 11 },
                 gridcolor: plotColors.gridColor,
                 fixedrange: true,
-                rangemode: ytdOnly ? undefined : "tozero",
-                autorange: !ytdOnly,
+                rangemode: isYtd ? undefined : "tozero",
+                autorange: !isYtd,
                 ...yRangeOverride,
             },
             legend: {
@@ -313,15 +393,25 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     yanchor: 'top' as const,
                 }),
             },
+            shapes,
             dragmode: false,
         }
 
         return { data: traces, layout }
-    }, [ytdRows, activeYear, colorScale, plotColors, legendPosition, ytdOnly])
+    }, [ytdRows, activeYear, colorScale, plotColors, legendPosition, viewMode])
 
 
     if (!data.length) {
         return <div style={{ height: HEIGHT }}>Loading...</div>
+    }
+
+    const selectStyle = {
+        padding: '2px 6px',
+        borderRadius: '4px',
+        border: '1px solid var(--border-primary)',
+        background: 'var(--bg-secondary)',
+        color: 'var(--text-primary)',
+        fontSize: '12px',
     }
 
     return (
@@ -340,11 +430,20 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
             <ControlsGear
                 open={controlsOpen}
                 onToggle={setControlsOpen}
-                extra={
+                extra={<>
                     <PlotInfo source="njsp">
                         <p style={{ margin: 0 }}>Some data arrives weeks or months after the fact, so current year numbers are especially subject to change.</p>
                     </PlotInfo>
-                }
+                    <div className={css.buttonBar}>
+                        {([['ytd', 'YTD'], ['full-faded', 'Faded'], ['full', 'Full']] as const).map(([mode, label]) => (
+                            <button
+                                key={mode}
+                                className={viewMode === mode ? css.active : ''}
+                                onClick={() => setViewMode(mode)}
+                            >{label}</button>
+                        ))}
+                    </div>
+                </>}
                 bottomLegend={legendPosition === 'bottom'}
             >
                 <div>
@@ -352,14 +451,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     <select
                         value={colorScaleName}
                         onChange={e => setColorScaleName(e.target.value as ColorScaleName)}
-                        style={{
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            border: '1px solid var(--border-primary)',
-                            background: 'var(--bg-secondary)',
-                            color: 'var(--text-primary)',
-                            fontSize: '12px',
-                        }}
+                        style={selectStyle}
                     >
                         <option value="inferno">Inferno</option>
                         <option value="viridis">Viridis</option>
@@ -373,27 +465,12 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     <select
                         value={legendPosition}
                         onChange={e => setLegendPosition(e.target.value as 'bottom' | 'right')}
-                        style={{
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            border: '1px solid var(--border-primary)',
-                            background: 'var(--bg-secondary)',
-                            color: 'var(--text-primary)',
-                            fontSize: '12px',
-                        }}
+                        style={selectStyle}
                     >
                         <option value="bottom">Bottom</option>
                         <option value="right">Right</option>
                     </select>
                 </div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.3em', cursor: 'pointer' }}>
-                    <input
-                        type="checkbox"
-                        checked={ytdOnly}
-                        onChange={e => setYtdOnly(e.target.checked)}
-                    />
-                    YTD only
-                </label>
             </ControlsGear>
         </div>
     )

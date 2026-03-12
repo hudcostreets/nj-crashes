@@ -76,3 +76,37 @@
   font-size: 12px;
   align-items: center;
 }
+
+// Button bar (segmented control) for view mode, etc.
+.buttonBar {
+  display: inline-flex;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border-primary);
+  font-size: 12px;
+
+  button {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: none;
+    border-right: 1px solid var(--border-primary);
+    padding: 3px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+
+    &:last-child {
+      border-right: none;
+    }
+
+    &:hover:not(.active) {
+      background: var(--bg-primary);
+    }
+
+    &.active {
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      font-weight: 600;
+    }
+  }
+}
