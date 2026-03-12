@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Generate CSV data files for frontend plots."""
+import json
 from os.path import join
 
 import click
@@ -16,6 +17,28 @@ CC2CN = {
     16: 'Passaic', 17: 'Salem', 18: 'Somerset', 19: 'Sussex', 20: 'Union', 21: 'Warren',
 }
 
+CC2MC2MN_PATH = join('www', 'public', 'njdot', 'cc2mc2mn.json')
+CN2CC = {v: k for k, v in CC2CN.items()}
+
+
+def load_cc2mc2mn():
+    """Load municipality name mapping: { cc: { mc: muni_name } }."""
+    with open(CC2MC2MN_PATH) as f:
+        raw = json.load(f)
+    # raw structure: { cc_str: { cn: "County Name", mc2mn: { mc_str: "Muni Name" } } }
+    result = {}
+    for cc_str, info in raw.items():
+        mc2mn = info.get('mc2mn', {})
+        result[int(cc_str)] = {int(mc): name for mc, name in mc2mn.items()}
+    return result
+
+
+def muni_label(cc, mc, cc2mc2mn):
+    """Return 'MuniName (CountyName)' for a given cc/mc pair."""
+    cn = CC2CN.get(cc, f'County {cc}')
+    mn = cc2mc2mn.get(cc, {}).get(mc, f'Muni {mc}')
+    return cn, mn
+
 
 @command
 @click.option('-f', '--force', is_flag=True, help="Force regeneration even if files exist")
@@ -24,6 +47,9 @@ def update_www_data(force):
     err(f"Loading {CRASHES_PQT}...")
     crashes = pd.read_parquet(CRASHES_PQT)
 
+    # Load municipality names
+    cc2mc2mn = load_cc2mc2mn()
+
     # Add derived columns
     crashes['year'] = crashes['dt'].dt.year
     crashes['month'] = crashes['dt'].dt.month
@@ -31,11 +57,18 @@ def update_www_data(force):
     crashes['fatalities'] = crashes['tk'].fillna(0).astype(int)
     crashes['county'] = crashes['cc'].map(CC2CN).fillna('')
 
-    # 1. YTD data: cumulative deaths by day of year for each year (+ county)
+    # Build list of (cc, mc) pairs present in data
+    muni_pairs = (
+        crashes[['cc', 'mc']].drop_duplicates()
+        .sort_values(['cc', 'mc'])
+        .values.tolist()
+    )
+
+    # 1. YTD data: cumulative deaths by day of year for each year
     ytd_path = join(WWW_NJSP, 'ytd.csv')
     err(f"Generating {ytd_path}...")
 
-    def compute_ytd(df, county=''):
+    def compute_ytd(df, county='', cc='', mc=''):
         ytd = (
             df
             .groupby(['year', 'day_of_year'])['fatalities']
@@ -45,20 +78,28 @@ def update_www_data(force):
         ytd['cumulative'] = ytd.groupby('year')['fatalities'].cumsum()
         ytd['date_label'] = pd.to_datetime(ytd['day_of_year'], format='%j').dt.strftime('%b %d')
         ytd['county'] = county
-        return ytd[['county', 'year', 'day_of_year', 'date_label', 'fatalities', 'cumulative']]
+        ytd['cc'] = cc
+        ytd['mc'] = mc
+        return ytd[['county', 'cc', 'mc', 'year', 'day_of_year', 'date_label', 'fatalities', 'cumulative']]
 
     ytd_parts = [compute_ytd(crashes)]
     for cn in sorted(CC2CN.values()):
-        ytd_parts.append(compute_ytd(crashes[crashes['county'] == cn], cn))
+        ytd_parts.append(compute_ytd(crashes[crashes['county'] == cn], cn, cc=CN2CC[cn]))
+    for cc_val, mc_val in muni_pairs:
+        cn = CC2CN.get(cc_val, '')
+        mn = cc2mc2mn.get(cc_val, {}).get(mc_val, f'Muni {mc_val}')
+        muni_data = crashes[(crashes['cc'] == cc_val) & (crashes['mc'] == mc_val)]
+        if muni_data['fatalities'].sum() > 0:
+            ytd_parts.append(compute_ytd(muni_data, cn, cc_val, mc_val))
     ytd = pd.concat(ytd_parts, ignore_index=True)
     ytd.to_csv(ytd_path, index=False)
     err(f"  Wrote {len(ytd)} rows")
 
-    # 2. Monthly timeseries: deaths per month with 12-mo rolling average (+ county)
+    # 2. Monthly timeseries: deaths per month with 12-mo rolling average
     monthly_path = join(WWW_NJSP, 'monthly.csv')
     err(f"Generating {monthly_path}...")
 
-    def compute_monthly(df, county=''):
+    def compute_monthly(df, county='', cc='', mc=''):
         monthly = (
             df
             .groupby(['year', 'month'])['fatalities']
@@ -69,20 +110,27 @@ def update_www_data(force):
         monthly = monthly.sort_values('date')
         monthly['avg_12mo'] = monthly['fatalities'].rolling(window=12, min_periods=1).mean().round(1)
         monthly['county'] = county
-        return monthly[['county', 'date', 'year', 'month', 'fatalities', 'avg_12mo']]
+        monthly['cc'] = cc
+        monthly['mc'] = mc
+        return monthly[['county', 'cc', 'mc', 'date', 'year', 'month', 'fatalities', 'avg_12mo']]
 
     monthly_parts = [compute_monthly(crashes)]
     for cn in sorted(CC2CN.values()):
-        monthly_parts.append(compute_monthly(crashes[crashes['county'] == cn], cn))
+        monthly_parts.append(compute_monthly(crashes[crashes['county'] == cn], cn, cc=CN2CC[cn]))
+    for cc_val, mc_val in muni_pairs:
+        cn = CC2CN.get(cc_val, '')
+        muni_data = crashes[(crashes['cc'] == cc_val) & (crashes['mc'] == mc_val)]
+        if muni_data['fatalities'].sum() > 0:
+            monthly_parts.append(compute_monthly(muni_data, cn, cc_val, mc_val))
     monthly = pd.concat(monthly_parts, ignore_index=True)
     monthly.to_csv(monthly_path, index=False)
     err(f"  Wrote {len(monthly)} rows")
 
-    # 3. Month-year data: deaths by year and month (+ county)
+    # 3. Month-year data: deaths by year and month
     month_year_path = join(WWW_NJSP, 'month-year.csv')
     err(f"Generating {month_year_path}...")
 
-    def compute_month_year(df, county=''):
+    def compute_month_year(df, county='', cc='', mc=''):
         my = (
             df
             .groupby(['year', 'month'])['fatalities']
@@ -90,11 +138,18 @@ def update_www_data(force):
             .reset_index()
         )
         my['county'] = county
-        return my[['county', 'year', 'month', 'fatalities']]
+        my['cc'] = cc
+        my['mc'] = mc
+        return my[['county', 'cc', 'mc', 'year', 'month', 'fatalities']]
 
     my_parts = [compute_month_year(crashes)]
     for cn in sorted(CC2CN.values()):
-        my_parts.append(compute_month_year(crashes[crashes['county'] == cn], cn))
+        my_parts.append(compute_month_year(crashes[crashes['county'] == cn], cn, cc=CN2CC[cn]))
+    for cc_val, mc_val in muni_pairs:
+        cn = CC2CN.get(cc_val, '')
+        muni_data = crashes[(crashes['cc'] == cc_val) & (crashes['mc'] == mc_val)]
+        if muni_data['fatalities'].sum() > 0:
+            my_parts.append(compute_month_year(muni_data, cn, cc_val, mc_val))
     month_year = pd.concat(my_parts, ignore_index=True)
     month_year.to_csv(month_year_path, index=False)
     err(f"  Wrote {len(month_year)} rows")
