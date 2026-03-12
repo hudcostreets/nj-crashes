@@ -24,8 +24,9 @@ const HOMICIDE_COLOR = '#60a0e0'  // Light blue
 
 export type Props = {
     id?: string
-    /** When set, shows a note that this plot is statewide (no county-level data) */
     county?: string | null
+    cc?: number | null
+    mc?: number | null
 }
 
 type CrashHomicideRow = {
@@ -44,6 +45,7 @@ const crashHomicideQueryFn = (county: string | null) => `
 `
 
 export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) {
+    // Note: crash-homicide data only exists at statewide and county level (no muni breakdowns)
     const db = useDb()
     const plotColors = usePlotColors()
 

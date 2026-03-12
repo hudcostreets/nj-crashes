@@ -8,7 +8,7 @@ import A from "@/src/lib/a"
 import { EndYear } from "@/src/constants"
 import css from "@/src/home.module.scss"
 import CrashPlot from "@/src/njdot/CrashPlot"
-import { VictimSeverityPlot } from "@/src/njdot/VictimSeverityPlot"
+// import { VictimSeverityPlot } from "@/src/njdot/VictimSeverityPlot"
 import { FatalitiesPerYearPlot } from "@/src/njsp/FatalitiesPerYearPlot"
 import { YtdDeathsPlot } from "@/src/njsp/YtdDeathsPlot"
 import { HomicidesComparisonPlot } from "@/src/njsp/HomicidesComparisonPlot"
@@ -79,8 +79,6 @@ export default function Home() {
                     </p>
                 )}
 
-                {/* NJSP Plots — municipality-level data not available, show county level with note */}
-                {municipalityName && <p style={{ fontStyle: 'italic', opacity: 0.7 }}>NJSP fatal crash data is available at the county level. Plots below show {countyName} County.</p>}
                 <PlotContainer><FatalitiesPerYearPlot initialCounty={countyName} /></PlotContainer>
 
                 {/* NJSP Fatal Crashes Table */}
@@ -90,10 +88,10 @@ export default function Home() {
                     <NjspCrashesSection />
                 </LazySection>
 
-                <PlotContainer><YtdDeathsPlot county={countyName} /></PlotContainer>
-                <PlotContainer><HomicidesComparisonPlot county={countyName} /></PlotContainer>
-                <PlotContainer><FatalitiesPerMonthPlot county={countyName} /></PlotContainer>
-                <PlotContainer><FatalitiesByMonthBarsPlot county={countyName} /></PlotContainer>
+                <PlotContainer><YtdDeathsPlot county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
+                {!municipalityName && <PlotContainer><HomicidesComparisonPlot county={countyName} /></PlotContainer>}
+                {!municipalityName && <PlotContainer><FatalitiesPerMonthPlot county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>}
+                <PlotContainer><FatalitiesByMonthBarsPlot county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
 
                 {/* NJ DOT Section */}
                 <h2 id="njdot"><a href="#njdot">NJ DOT Crash Data</a>{geoSuffix}</h2>
@@ -107,7 +105,6 @@ export default function Home() {
                     </p>
                 )}
                 <PlotContainer showHr={false}><CrashPlot counties={countyFilter} mc={mc} /></PlotContainer>
-                <PlotContainer showHr={false}><VictimSeverityPlot /></PlotContainer>
 
                 {/* Annual Statistics Table (NJ DOT) */}
                 <h2 id="stats"><a href="#stats">Annual Statistics (NJ DOT)</a>{geoSuffix}</h2>

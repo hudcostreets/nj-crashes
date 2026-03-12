@@ -79,8 +79,7 @@ export function VictimSeverityPlot() {
                         const yBase = row.condition
                         const jitter = (vtIdx - 1.5) * 0.2
                         ys.push(yBase + jitter)
-                        // Log-scale area: prevents large counts from dominating
-                        sizes.push(Math.log2(count + 1))
+                        sizes.push(count)
                         texts.push(`${vt.label}: ${count.toLocaleString()}<br>${CONDITIONS.find(c => c.code === row.condition)?.label}<br>${row.y}`)
                     }
 

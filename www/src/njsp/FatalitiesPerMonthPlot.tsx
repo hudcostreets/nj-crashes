@@ -13,8 +13,10 @@ const HEIGHT = 450
 
 export type Props = {
     id?: string
-    /** When set, shows a note that this plot is statewide (no county-level monthly data) */
     county?: string | null
+    cc?: number | null
+    mc?: number | null
+    regionLabel?: string | null
 }
 
 type MonthlyRow = {
@@ -25,18 +27,28 @@ type MonthlyRow = {
     avg_12mo: number
 }
 
-// Query to get monthly data (filtered by county if set)
-const monthlyQueryFn = (county: string | null) => `
+// Query to get monthly data (filtered by geo level)
+const monthlyQueryFn = (county: string | null, cc: number | null, mc: number | null) => {
+    let where: string
+    if (cc !== null && mc !== null) {
+        where = `cc = ${cc} AND mc = ${mc}`
+    } else if (county) {
+        where = `county = '${county}' AND mc IS NULL`
+    } else {
+        where = `county IS NULL AND cc IS NULL`
+    }
+    return `
     SELECT date, year, month, fatalities, avg_12mo
     FROM read_csv_auto('monthly')
-    WHERE ${county ? `county = '${county}'` : `county IS NULL`}
+    WHERE ${where}
     ORDER BY date
 `
+}
 
 // Bar color
 const BAR_COLOR = '#ba3853'
 
-export function FatalitiesPerMonthPlot({ id = "per-month", county }: Props) {
+export function FatalitiesPerMonthPlot({ id = "per-month", county, cc = null, mc = null, regionLabel }: Props) {
     const db = useDb()
     const plotColors = usePlotColors()
 
@@ -44,7 +56,7 @@ export function FatalitiesPerMonthPlot({ id = "per-month", county }: Props) {
 
     // Load monthly data
     const monthlyDb = useRegisteredDb({ db, table: "monthly", url: MonthlyCsv })
-    const monthlyQueryStr = useMemo(() => monthlyQueryFn(county ?? null), [county])
+    const monthlyQueryStr = useMemo(() => monthlyQueryFn(county ?? null, cc ?? null, mc ?? null), [county, cc, mc])
     const monthlyRows = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
 
     const TRACE_NAMES = useMemo(() => ['Fatalities', '12-mo avg'], [])
@@ -157,7 +169,7 @@ export function FatalitiesPerMonthPlot({ id = "per-month", county }: Props) {
 
     return (
         <div>
-            <h2 id={id}><a href={`#${id}`}>Fatalities per Month{county ? `: ${county} County` : ''}</a></h2>
+            <h2 id={id}><a href={`#${id}`}>Fatalities per Month{regionLabel ? `: ${regionLabel}` : county ? `: ${county} County` : ''}</a></h2>
             <PlotWrapper
                 id={id}
                 data={data}

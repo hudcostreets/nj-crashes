@@ -18,8 +18,10 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 
 export type Props = {
     id?: string
-    /** When set, shows a note that this plot is statewide (no county-level month-year data) */
     county?: string | null
+    cc?: number | null
+    mc?: number | null
+    regionLabel?: string | null
 }
 
 type MonthYearRow = {
@@ -28,15 +30,25 @@ type MonthYearRow = {
     fatalities: number
 }
 
-// Query to get month-year data (filtered by county if set)
-const monthYearQueryFn = (county: string | null) => `
+// Query to get month-year data (filtered by geo level)
+const monthYearQueryFn = (county: string | null, cc: number | null, mc: number | null) => {
+    let where: string
+    if (cc !== null && mc !== null) {
+        where = `cc = ${cc} AND mc = ${mc}`
+    } else if (county) {
+        where = `county = '${county}' AND mc IS NULL`
+    } else {
+        where = `county IS NULL AND cc IS NULL`
+    }
+    return `
     SELECT year, month, fatalities
     FROM read_csv_auto('month_year')
-    WHERE ${county ? `county = '${county}'` : `county IS NULL`}
+    WHERE ${where}
     ORDER BY year, month
 `
+}
 
-export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county }: Props) {
+export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = null, mc = null, regionLabel }: Props) {
     const db = useDb()
     const plotColors = usePlotColors()
 
@@ -50,7 +62,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county }: Prop
 
     // Load month-year data
     const monthYearDb = useRegisteredDb({ db, table: "month_year", url: MonthYearCsv })
-    const monthYearQueryStr = useMemo(() => monthYearQueryFn(county ?? null), [county])
+    const monthYearQueryStr = useMemo(() => monthYearQueryFn(county ?? null, cc ?? null, mc ?? null), [county, cc, mc])
     const monthYearRows = useQuery<MonthYearRow>({ db: monthYearDb, query: monthYearQueryStr, init: [] })
 
     // Compute trace names from data for solo hook
@@ -208,7 +220,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county }: Prop
 
     return (
         <div>
-            <h2 id={id}><a href={`#${id}`}>Fatalities by Month{county ? `: ${county} County` : ''}</a></h2>
+            <h2 id={id}><a href={`#${id}`}>Fatalities by Month{regionLabel ? `: ${regionLabel}` : county ? `: ${county} County` : ''}</a></h2>
             <PlotWrapper
                 id={id}
                 data={data}

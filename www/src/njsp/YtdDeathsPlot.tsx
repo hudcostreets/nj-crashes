@@ -16,8 +16,10 @@ const HEIGHT = 450
 
 export type Props = {
     id?: string
-    /** When set, shows a note that this plot is statewide (no county-level YTD data) */
     county?: string | null
+    cc?: number | null
+    mc?: number | null
+    regionLabel?: string | null
 }
 
 type YtdRow = {
@@ -28,13 +30,23 @@ type YtdRow = {
     cumulative: number
 }
 
-// Query to get YTD data (filtered by county if set)
-const ytdQueryFn = (county: string | null) => `
+// Query to get YTD data (filtered by geo level)
+const ytdQueryFn = (county: string | null, cc: number | null, mc: number | null) => {
+    let where: string
+    if (cc !== null && mc !== null) {
+        where = `cc = ${cc} AND mc = ${mc}`
+    } else if (county) {
+        where = `county = '${county}' AND mc IS NULL`
+    } else {
+        where = `county IS NULL AND cc IS NULL`
+    }
+    return `
     SELECT year, day_of_year, date_label, fatalities, cumulative
     FROM read_csv_auto('ytd')
-    WHERE ${county ? `county = '${county}'` : `county IS NULL`}
+    WHERE ${where}
     ORDER BY year, day_of_year
 `
+}
 
 // Check if a year is a leap year
 function isLeapYear(year: number): boolean {
@@ -60,7 +72,7 @@ function dayToRefDate(dayOfYear: number): string {
     return date.toISOString().split('T')[0]
 }
 
-export function YtdDeathsPlot({ id = "ytd", county }: Props) {
+export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, regionLabel }: Props) {
     const db = useDb()
     const plotColors = usePlotColors()
 
@@ -75,7 +87,7 @@ export function YtdDeathsPlot({ id = "ytd", county }: Props) {
 
     // Load YTD data
     const ytdDb = useRegisteredDb({ db, table: "ytd", url: YtdCsv })
-    const ytdQueryStr = useMemo(() => ytdQueryFn(county ?? null), [county])
+    const ytdQueryStr = useMemo(() => ytdQueryFn(county ?? null, cc ?? null, mc ?? null), [county, cc, mc])
     const ytdRows = useQuery<YtdRow>({ db: ytdDb, query: ytdQueryStr, init: [] })
 
     // Compute trace names from data for solo hook
@@ -106,6 +118,12 @@ export function YtdDeathsPlot({ id = "ytd", county }: Props) {
                 yearData.set(row.year, [])
             }
             yearData.get(row.year)!.push(row)
+        }
+
+        // Ensure current year always has a trace (even with 0 deaths)
+        const currentYearNow = new Date().getFullYear()
+        if (!yearData.has(currentYearNow)) {
+            yearData.set(currentYearNow, [{ year: currentYearNow, day_of_year: 1, date_label: 'Jan 01', fatalities: 0, cumulative: 0 }])
         }
 
         // Sort years ascending
@@ -308,7 +326,7 @@ export function YtdDeathsPlot({ id = "ytd", county }: Props) {
 
     return (
         <div>
-            <h2 id={id}><a href={`#${id}`}>YTD Deaths{county ? `: ${county} County` : ''}</a></h2>
+            <h2 id={id}><a href={`#${id}`}>YTD Deaths{regionLabel ? `: ${regionLabel}` : county ? `: ${county} County` : ''}</a></h2>
             <PlotWrapper
                 id={id}
                 data={data}
