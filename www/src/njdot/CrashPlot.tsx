@@ -16,6 +16,7 @@ import {
 import { Checklist } from "./Checklist"
 import { Radios } from "./Radios"
 import { CountyDropdown } from "./CountyDropdown"
+import { MunicipalityDropdown } from "./MunicipalityDropdown"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { Tooltip } from "@/src/tooltip"
 import { ControlsGear } from "@/src/components/ControlsGear"
@@ -74,6 +75,17 @@ export default function CrashPlot({
     const { cc2mc2mn } = useGeoFilter()
     const hasMuniFilter = mc !== null
     const isSingleCounty = counties.length === 1
+
+    // Municipality multi-select for county-level pages
+    const mc2mn = isSingleCounty && cc2mc2mn?.[counties[0]]?.mc2mn || null
+    const allMunis = useMemo(() => mc2mn ? Object.keys(mc2mn).map(Number) : [], [mc2mn])
+    const [selectedMunis, setSelectedMunis] = useSessionStorage<number[]>('crashplot-selectedMunis', [])
+    // Sync: reset to all munis when county changes or mc2mn loads
+    useEffect(() => {
+        if (allMunis.length > 0 && (selectedMunis.length === 0 || !allMunis.includes(selectedMunis[0]))) {
+            setSelectedMunis(allMunis)
+        }
+    }, [allMunis.join(',')])
     // Municipality filter: disable county/muni stacking; single-county: disable county stacking
     const effectiveStackBy = hasMuniFilter && (stackBy === 'county' || stackBy === 'municipality') ? 'none'
         : !isSingleCounty && stackBy === 'municipality' ? 'none'
@@ -96,7 +108,9 @@ export default function CrashPlot({
     // Municipality-level or muni stacking: use ymccmcs (per-county, has mc + severity)
     // County-level: use ymccs when filtering/stacking by county
     // State-level: use yms
-    const needsMuniData = hasMuniFilter || (isSingleCounty && effectiveStackBy === 'municipality')
+    // Use muni-level data when: muni page, muni stacking, or county page with muni picker active
+    const hasMuniPicker = !hasMuniFilter && isSingleCounty
+    const needsMuniData = hasMuniFilter || (isSingleCounty && (effectiveStackBy === 'municipality' || (hasMuniPicker && selectedMunis.length < allMunis.length)))
     const needsCountyData = !needsMuniData && (stackBy === 'county' || counties.length < ALL_COUNTIES.length)
     const source = needsMuniData ? 'ymccmcs' : needsCountyData ? 'ymccs' : 'yms'
 
@@ -143,10 +157,11 @@ export default function CrashPlot({
                 return getMc(r) === mc && severities.includes(r.s)
             })
         } else if (effectiveStackBy === 'municipality') {
-            // Muni stacking at county level: ymccmcs data, filter severity only (all munis)
+            // Muni stacking at county level: ymccmcs data, filter severity + selected munis
             filtered = data.filter(row => {
                 if (getYear(row) > EndYear) return false
-                return 's' in row && severities.includes((row as YmccmcsRow).s)
+                if (!('s' in row) || !severities.includes((row as YmccmcsRow).s)) return false
+                return selectedMunis.length === 0 || selectedMunis.includes(getMc(row as YmccmcsRow))
             })
         } else {
             filtered = data.filter(row => 's' in row && severities.includes((row as YmsRow).s) && getYear(row) <= EndYear)
@@ -154,6 +169,10 @@ export default function CrashPlot({
             const filterByCounty = counties.length < ALL_COUNTIES.length && effectiveStackBy !== 'county'
             if (filterByCounty && data.length > 0 && 'cc' in data[0]) {
                 filtered = filtered.filter(row => counties.includes(getCc(row as YmccsRow)))
+            }
+            // Filter by selected munis when on county page with muni picker and ymccmcs data
+            if (hasMuniPicker && needsMuniData && selectedMunis.length > 0 && data.length > 0 && 'mc' in data[0]) {
+                filtered = filtered.filter(row => selectedMunis.includes(getMc(row as YmccmcsRow)))
             }
         }
 
@@ -469,7 +488,7 @@ export default function CrashPlot({
         }
 
         return { traces, layout }
-    }, [data, effectiveStackBy, severities, counties, mc, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, hoverTrace, plotColors, isDark, cc2mc2mn])
+    }, [data, effectiveStackBy, severities, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, hoverTrace, plotColors, isDark, cc2mc2mn])
 
     // Check if we're waiting for county data (need ymccs but have yms)
     const waitingForCountyData = needsCountyData && data && data.length > 0 && !('cc' in data[0])
@@ -489,6 +508,7 @@ export default function CrashPlot({
     // Check for empty selections - enumerate all empty facets
     const emptyFacets: string[] = []
     if (counties.length === 0) emptyFacets.push("counties")
+    if (hasMuniPicker && selectedMunis.length === 0) emptyFacets.push("municipalities")
     if (severities.length === 0) emptyFacets.push("severity levels")
     const emptySelection = emptyFacets.length > 0
         ? `Select one or more ${emptyFacets.join(" and ")} to view data.`
@@ -558,10 +578,17 @@ export default function CrashPlot({
                         }))}
                         cb={setSeverities}
                     />
-                    {!hasMuniFilter && (
+                    {!hasMuniFilter && !isSingleCounty && (
                         <CountyDropdown
                             selected={counties}
                             onChange={setCounties}
+                        />
+                    )}
+                    {!hasMuniFilter && isSingleCounty && mc2mn && (
+                        <MunicipalityDropdown
+                            mc2mn={mc2mn}
+                            selected={selectedMunis}
+                            onChange={setSelectedMunis}
                         />
                     )}
                     <div className={css.control}>
