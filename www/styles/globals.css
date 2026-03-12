@@ -12,6 +12,8 @@
   --plot-grid: #dddddd;
   --input-bg: #ffffff;
   --input-border: #cccccc;
+  --bg-error: #ffdddd;
+  --text-error: #cc0000;
 }
 
 /* Dark theme */
@@ -28,6 +30,8 @@
   --plot-grid: #666666;
   --input-bg: #3d3d3d;
   --input-border: #555555;
+  --bg-error: #3d1a1a;
+  --text-error: #ff6666;
 }
 
 html,

@@ -7,7 +7,13 @@
 }
 
 .sqlError {
-  background-color: #ffdddd;
+  background-color: var(--bg-error);
+  color: var(--text-error);
+  padding: 0.5em 1em;
+  border-radius: 4px;
+  pre {
+    color: var(--text-secondary);
+  }
 }
 
 .tableHead {
