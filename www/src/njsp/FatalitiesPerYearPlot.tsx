@@ -407,8 +407,11 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
     return (
         <div ref={containerRef}>
             <h2 id={id}>
-                <a href={`#${id}`}>Car Crash Deaths</a>:
-                <CountySelect county={county} setCounty={setCounty} Counties={counties} />
+                <a href={`#${id}`}>Car Crash Deaths</a>:{' '}
+                {initialCounty
+                    ? <span>{initialCounty} County</span>
+                    : <CountySelect county={county} setCounty={setCounty} Counties={counties} />
+                }
             </h2>
             <PlotWrapper
                 id={id}
