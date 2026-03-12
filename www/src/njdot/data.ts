@@ -112,12 +112,13 @@ export const MeasureLabels: Record<Measure, string> = {
 export type TimeGranularity = 'year' | 'month'
 
 // Stacking options
-export type StackBy = 'none' | 'severity' | 'county' | 'victim_type' | 'condition'
-export const StackBys: StackBy[] = ['none', 'severity', 'county', 'victim_type', 'condition']
+export type StackBy = 'none' | 'severity' | 'county' | 'municipality' | 'victim_type' | 'condition'
+export const StackBys: StackBy[] = ['none', 'severity', 'county', 'municipality', 'victim_type', 'condition']
 export const StackByLabels: Record<StackBy, string> = {
     none: 'None',
     severity: 'Severity',
     county: 'County',
+    municipality: 'Municipality',
     victim_type: 'Victim Type',
     condition: 'Condition',
 }
