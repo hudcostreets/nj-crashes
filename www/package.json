@@ -60,6 +60,7 @@
     "@types/strftime": "^0.9.8",
     "@vanilla-extract/vite-plugin": "^4.0.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "buffer": "^6.0.3",
     "typescript": "^5",
     "vite": "^5.0.10"
   }

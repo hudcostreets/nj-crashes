@@ -17,6 +17,10 @@ export default defineConfig({
     },
   },
 
+  optimizeDeps: {
+    include: ['buffer'],
+  },
+
   build: {
     outDir: 'dist',
   },
@@ -27,7 +31,7 @@ export default defineConfig({
     allowedHosts,
     proxy: {
       '/api': {
-        target: 'http://localhost:8787',
+        target: 'http://localhost:51894',
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
