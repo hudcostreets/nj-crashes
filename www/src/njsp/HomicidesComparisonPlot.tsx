@@ -94,51 +94,30 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
         const homicidesGreyed = activeTrace !== null && !homicidesActive
         const ratioGreyed = activeTrace !== null && !ratioActive
 
+        // Helper to build bar trace with active/greyed states
+        const barTrace = (
+            name: string, ys: number[], color: string,
+            isActive: boolean, isGreyed: boolean, hoverLabel: string,
+        ): PlotData => ({
+            type: "bar",
+            name,
+            x: years,
+            y: ys,
+            marker: { color: isGreyed ? fadeColor(color) : color },
+            hovertemplate: `%{y} ${hoverLabel}<extra></extra>`,
+            text: isActive ? ys.map(v => `<b>${v}</b>`) : undefined,
+            textposition: isActive ? 'outside' : undefined,
+            textfont: isActive ? { color: '#ffffff', size: 15 } : undefined,
+            textangle: 0,
+            cliponaxis: false,
+            constraintext: 'none',
+            width: isActive ? 0.6 : undefined,
+            zorder: isActive ? 100 : (isGreyed ? 1 : undefined),
+        } as any as PlotData)
+
         const traces: PlotData[] = [
-            // Traffic deaths bar
-            {
-                type: "bar",
-                name: "Traffic deaths",
-                x: years,
-                y: trafficDeaths,
-                marker: {
-                    color: trafficGreyed ? fadeColor(TRAFFIC_COLOR) : TRAFFIC_COLOR,
-                },
-                hovertemplate: `%{y} traffic deaths<extra></extra>`,
-                ...(trafficActive ? {
-                    text: trafficDeaths.map(v => `<b>${v}</b>`),
-                    textposition: 'outside' as const,
-                    textfont: { color: '#ffffff', size: 14 },
-                    textangle: 0,
-                    cliponaxis: false,
-                    width: 0.35,
-                    zorder: 100,
-                } : activeTrace !== null ? {
-                    zorder: 1,
-                } : {}),
-            } as PlotData,
-            // Homicides bar
-            {
-                type: "bar",
-                name: "Homicides",
-                x: years,
-                y: homicides,
-                marker: {
-                    color: homicidesGreyed ? fadeColor(HOMICIDE_COLOR) : HOMICIDE_COLOR,
-                },
-                hovertemplate: `%{y} homicides<extra></extra>`,
-                ...(homicidesActive ? {
-                    text: homicides.map(v => `<b>${v}</b>`),
-                    textposition: 'outside' as const,
-                    textfont: { color: '#ffffff', size: 14 },
-                    textangle: 0,
-                    cliponaxis: false,
-                    width: 0.35,
-                    zorder: 100,
-                } : activeTrace !== null ? {
-                    zorder: 1,
-                } : {}),
-            } as PlotData,
+            barTrace('Traffic deaths', trafficDeaths, TRAFFIC_COLOR, trafficActive, trafficGreyed, 'traffic deaths'),
+            barTrace('Homicides', homicides, HOMICIDE_COLOR, homicidesActive, homicidesGreyed, 'homicides'),
             // Ratio line (secondary y-axis)
             {
                 type: "scatter",
