@@ -101,14 +101,21 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 name: "Traffic deaths",
                 x: years,
                 y: trafficDeaths,
-                text: trafficDeaths.map(String),
-                textposition: 'inside',
-                textfont: { color: '#ffffff', size: 13 },
-                insidetextanchor: 'end',
                 marker: {
                     color: trafficGreyed ? fadeColor(TRAFFIC_COLOR) : TRAFFIC_COLOR,
                 },
                 hovertemplate: `%{y} traffic deaths<extra></extra>`,
+                ...(trafficActive ? {
+                    text: trafficDeaths.map(v => `<b>${v}</b>`),
+                    textposition: 'outside' as const,
+                    textfont: { color: '#ffffff', size: 14 },
+                    textangle: 0,
+                    cliponaxis: false,
+                    width: 0.35,
+                    zorder: 100,
+                } : activeTrace !== null ? {
+                    zorder: 1,
+                } : {}),
             } as PlotData,
             // Homicides bar
             {
@@ -116,14 +123,21 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 name: "Homicides",
                 x: years,
                 y: homicides,
-                text: homicides.map(String),
-                textposition: 'inside',
-                textfont: { color: '#ffffff', size: 13 },
-                insidetextanchor: 'end',
                 marker: {
                     color: homicidesGreyed ? fadeColor(HOMICIDE_COLOR) : HOMICIDE_COLOR,
                 },
                 hovertemplate: `%{y} homicides<extra></extra>`,
+                ...(homicidesActive ? {
+                    text: homicides.map(v => `<b>${v}</b>`),
+                    textposition: 'outside' as const,
+                    textfont: { color: '#ffffff', size: 14 },
+                    textangle: 0,
+                    cliponaxis: false,
+                    width: 0.35,
+                    zorder: 100,
+                } : activeTrace !== null ? {
+                    zorder: 1,
+                } : {}),
             } as PlotData,
             // Ratio line (secondary y-axis)
             {
