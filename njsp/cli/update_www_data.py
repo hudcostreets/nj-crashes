@@ -10,6 +10,9 @@ from utz import err
 from njsp.cli.base import command
 from njsp.paths import CRASHES_PQT, WWW_NJSP
 
+# Monthly type backfill from annual report PDFs (pre-2020, statewide only)
+MONTHLY_TYPES_BACKFILL = join('www', 'njsp', 'data', 'annual-reports', 'monthly_types_from_pdfs.csv')
+
 CC2CN = {
     1: 'Atlantic', 2: 'Bergen', 3: 'Burlington', 4: 'Camden', 5: 'Cape May',
     6: 'Cumberland', 7: 'Essex', 8: 'Gloucester', 9: 'Hudson', 10: 'Hunterdon',
@@ -55,6 +58,10 @@ def update_www_data(force):
     crashes['month'] = crashes['dt'].dt.month
     crashes['day_of_year'] = crashes['dt'].dt.dayofyear
     crashes['fatalities'] = crashes['tk'].fillna(0).astype(int)
+    crashes['driver'] = crashes['dk'].fillna(0).astype(int)
+    crashes['passenger'] = crashes['ok'].fillna(0).astype(int)
+    crashes['pedestrian'] = crashes['pk'].fillna(0).astype(int)
+    crashes['cyclist'] = crashes['bk'].fillna(0).astype(int)
     crashes['county'] = crashes['cc'].map(CC2CN).fillna('')
 
     # Build list of (cc, mc) pairs present in data
@@ -100,10 +107,11 @@ def update_www_data(force):
     err(f"Generating {monthly_path}...")
 
     def compute_monthly(df, county='', cc='', mc=''):
+        agg_cols = {'fatalities': 'sum', 'driver': 'sum', 'passenger': 'sum', 'pedestrian': 'sum', 'cyclist': 'sum'}
         monthly = (
             df
-            .groupby(['year', 'month'])['fatalities']
-            .sum()
+            .groupby(['year', 'month'])
+            .agg(agg_cols)
             .reset_index()
         )
         monthly['date'] = pd.to_datetime(monthly['year'].astype(str) + '-' + monthly['month'].astype(str).str.zfill(2) + '-01')
@@ -112,7 +120,7 @@ def update_www_data(force):
         monthly['county'] = county
         monthly['cc'] = cc
         monthly['mc'] = mc
-        return monthly[['county', 'cc', 'mc', 'date', 'year', 'month', 'fatalities', 'avg_12mo']]
+        return monthly[['county', 'cc', 'mc', 'date', 'year', 'month', 'fatalities', 'driver', 'passenger', 'pedestrian', 'cyclist', 'avg_12mo']]
 
     monthly_parts = [compute_monthly(crashes)]
     for cn in sorted(CC2CN.values()):
@@ -123,6 +131,25 @@ def update_www_data(force):
         if muni_data['fatalities'].sum() > 0:
             monthly_parts.append(compute_monthly(muni_data, cn, cc_val, mc_val))
     monthly = pd.concat(monthly_parts, ignore_index=True)
+
+    # Backfill pre-2020 statewide monthly type data from annual report PDFs
+    try:
+        backfill = pd.read_csv(MONTHLY_TYPES_BACKFILL)
+        err(f"  Backfilling {len(backfill)} statewide monthly type rows from annual report PDFs...")
+        statewide_mask = (monthly['county'] == '') & (monthly['cc'] == '') & (monthly['mc'] == '')
+        for _, row in backfill.iterrows():
+            match = statewide_mask & (monthly['year'] == row['year']) & (monthly['month'] == row['month'])
+            if match.any():
+                idx = monthly.index[match][0]
+                # Only backfill if current values are 0 (don't overwrite parquet-derived data)
+                if monthly.loc[idx, 'driver'] == 0:
+                    monthly.loc[idx, 'driver'] = row['driver']
+                    monthly.loc[idx, 'passenger'] = row['passenger']
+                    monthly.loc[idx, 'pedestrian'] = row['pedestrian']
+                    monthly.loc[idx, 'cyclist'] = row['cyclist']
+    except FileNotFoundError:
+        err(f"  Warning: {MONTHLY_TYPES_BACKFILL} not found, skipping backfill")
+
     monthly.to_csv(monthly_path, index=False)
     err(f"  Wrote {len(monthly)} rows")
 
