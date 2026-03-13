@@ -262,10 +262,12 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             })
 
             // Stacked bars by victim type
+            // Fade bars when 12-mo avg is highlighted
+            const barsGreyed = avgActive
             const traces: PlotData[] = Types.map(type => {
                 const col = typesMap[type]
                 const isVisible = visibleTypes.has(type)
-                const isGreyed = activeType !== null && !isVisible
+                const isGreyed = barsGreyed || (activeType !== null && !isVisible)
                 return {
                     type: "bar",
                     name: type,
@@ -280,15 +282,15 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                         return typed
                     }),
                     marker: {
-                        color: isGreyed ? fadeColor(COLORS[type]) : COLORS[type],
+                        color: isGreyed ? fadeColor(COLORS[type], { opacity: 0.3 }) : COLORS[type],
                         line: { color: 'transparent', width: 0 },
                     },
-                    visible: isVisible || activeType === null ? true : "legendonly",
+                    visible: isVisible || activeType === null || avgActive ? true : "legendonly",
                     hovertemplate: `%{y}<extra>${type}</extra>`,
                 } as PlotData
             })
 
-            // 12-mo avg line — tinted toward solo'd type color when active
+            // 12-mo avg line — tinted toward solo'd type color, or emphasized when hovered
             const avgColor = soloType
                 ? lightenColor(COLORS[soloType], 0.5)
                 : plotColors.textColor
@@ -300,7 +302,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 y: avgValues,
                 line: {
                     color: avgColor,
-                    width: 4,
+                    width: avgActive ? 6 : 4,
                 },
                 hovertemplate: `%{y:.1f}<extra>12-mo avg</extra>`,
             } as PlotData)
