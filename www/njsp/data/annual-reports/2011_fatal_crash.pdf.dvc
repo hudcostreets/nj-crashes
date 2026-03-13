@@ -1,0 +1,14 @@
+md5: 56582c67af29fd5ba8e6dce22209ad2f
+frozen: true
+deps:
+- checksum: '"486efb-63bdddcedb627"'
+  size: 4747003
+  mtime: '2025-08-08T17:25:40+00:00'
+  hash: md5
+  path: 
+    https://njsp.njoag.gov/wp/wp-content/uploads/fatal_crash_reports/2011_fatal_crash.pdf
+outs:
+- md5: e9498ee1d28900120e9890286c2499bc
+  size: 4747003
+  hash: md5
+  path: 2011_fatal_crash.pdf
