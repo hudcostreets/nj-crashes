@@ -459,8 +459,10 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                         const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
                         return `${months[d.getMonth()]} ${d.getDate()}`
                     })() : ''
+                    // Filter out traces that don't have data at this x (e.g. current year for future dates)
+                    const exact = groups.filter(({ point }) => point.x === x)
                     // Sort by trace index (preserves chronological year order)
-                    const sorted = [...groups].sort((a, b) => a.point.traceIndex - b.point.traceIndex)
+                    const sorted = [...exact].sort((a, b) => a.point.traceIndex - b.point.traceIndex)
                     return (
                         <div style={{
                             position: 'absolute',
@@ -479,10 +481,8 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                         }}>
                             {dateLabel && <div style={{ fontWeight: 'bold', marginBottom: 2, borderBottom: '1px solid var(--pltly-hover-border, #555)', paddingBottom: 2 }}>{dateLabel}</div>}
                             {sorted.map(({ key, point }) => {
-                                // Fade entries where the trace doesn't have data at this exact x (e.g. non-leap years on Feb 29)
-                                const exactMatch = point.x === x
                                 return (
-                                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4em', opacity: exactMatch ? 1 : 0.35 }}>
+                                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4em' }}>
                                         <span style={{
                                             display: 'inline-block',
                                             width: 14,

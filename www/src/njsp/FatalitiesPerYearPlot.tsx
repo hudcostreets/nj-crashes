@@ -395,9 +395,9 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                             pattern: {
                                 shape: '/',
                                 size: 6,
-                                solidity: 0.3,
-                                fgcolor: COLORS[type],
-                                fgopacity: 0.4,
+                                solidity: 0.5,
+                                fgcolor: PROJECTED_COLORS[type],
+                                fgopacity: 0.6,
                             },
                         } as any,
                         texttemplate: "%{y:d}*",

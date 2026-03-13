@@ -227,7 +227,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 onHoverTrace={setHoverTrace}
                 onResetSolo={resetSolo}
             />
-            <div className={css.plotToolbarCompact}>
+            <div className={css.plotToolbarCompact} style={{ justifyContent: 'center' }}>
                 <PlotInfo source={SOURCES} />
             </div>
             {maxRatioRow && (
