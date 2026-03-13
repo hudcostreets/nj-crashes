@@ -85,6 +85,8 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     const [legendPosition, setLegendPosition] = useSessionStorage<'bottom' | 'right'>(`plot-${id}-legend-position`, 'right')
     const [viewMode, setViewMode] = useSessionStorage<ViewMode>(`plot-${id}-view-mode`, 'full-faded')
     const [controlsOpen, setControlsOpen] = useSessionStorage<boolean>(`plot-${id}-controls-open`, false)
+    const [fadeOpacity, setFadeOpacity] = useSessionStorage<number>(`plot-${id}-fade-opacity`, 0.15)
+    const [futureDash, setFutureDash] = useSessionStorage<string>(`plot-${id}-future-dash`, 'dot')
     const colorScale = COLORSCALES[colorScaleName]
 
     // Load YTD data
@@ -220,7 +222,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
 
                 // Faded future portion (dotted)
                 if (futureRows.length > 0) {
-                    const fadedColor = fadeColor(color)
+                    const futureColor = fadeColor(color, { opacity: fadeOpacity })
                     traces.push({
                         type: "scatter",
                         mode: "lines",
@@ -229,9 +231,9 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                         y: futureRows.map(r => r.cumulative),
                         customdata: futureRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
                         line: {
-                            color: isGreyed ? fadeColor(fadedColor) : fadedColor,
+                            color: isGreyed ? fadeColor(futureColor) : futureColor,
                             width: Math.max(1, baseWidth - 1),
-                            dash: 'dot',
+                            dash: futureDash,
                         },
                         legendrank: idx,
                         legendgroup: yearLabel,
@@ -414,7 +416,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
         }
 
         return { data: traces, layout }
-    }, [ytdRows, activeYear, colorScale, plotColors, legendPosition, viewMode])
+    }, [ytdRows, activeYear, colorScale, plotColors, legendPosition, viewMode, fadeOpacity, futureDash])
 
 
     const isFadedMode = viewMode === 'full-faded'
@@ -539,6 +541,29 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     >
                         <option value="bottom">Bottom</option>
                         <option value="right">Right</option>
+                    </select>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
+                    <label>Future:</label>
+                    <input
+                        type="range"
+                        min={0.05}
+                        max={0.5}
+                        step={0.05}
+                        value={fadeOpacity}
+                        onChange={e => setFadeOpacity(parseFloat(e.target.value))}
+                        style={{ width: 80 }}
+                    />
+                    <span style={{ fontSize: 11, minWidth: '2em' }}>{Math.round(fadeOpacity * 100)}%</span>
+                    <select
+                        value={futureDash}
+                        onChange={e => setFutureDash(e.target.value)}
+                        style={selectStyle}
+                    >
+                        <option value="dot">Dot</option>
+                        <option value="dash">Dash</option>
+                        <option value="dashdot">Dash-dot</option>
+                        <option value="solid">Solid</option>
                     </select>
                 </div>
             </ControlsGear>
