@@ -7,9 +7,12 @@ import { fadeColor, useSoloTrace } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo, DataSource } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
+import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import css from "./plot.module.scss"
 
 const HEIGHT = 450
+
+type CrashSource = 'njsp' | 'njdot'
 
 // Data sources for this plot
 const SOURCES: DataSource[] = [
@@ -36,11 +39,12 @@ type CrashHomicideRow = {
     ratio: number | null
 }
 
-// Query to get crash-homicide data (filtered by county if set)
-const crashHomicideQueryFn = (county: string | null) => `
+// Query to get crash-homicide data (filtered by county and source)
+const crashHomicideQueryFn = (county: string | null, source: CrashSource) => `
     SELECT year, traffic_deaths, homicides, ratio
     FROM read_csv_auto('crash_homicide')
-    WHERE ${county ? `county = '${county}'` : `county IS NULL`}
+    WHERE source = '${source}'
+      AND ${county ? `county = '${county}'` : `county IS NULL OR county = ''`}
     ORDER BY year
 `
 
@@ -50,10 +54,14 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
     const plotColors = usePlotColors()
 
     const [hoverTrace, setHoverTrace] = useState<string | null>(null)
+    // Only show source toggle for statewide (county data is NJSP-only)
+    const [crashSource, setCrashSource] = useSessionStorage<CrashSource>('homicides-crash-source', 'njsp')
+    // Force NJSP for county views
+    const effectiveSource = county ? 'njsp' as CrashSource : crashSource
 
     // Load crash-homicide data
     const crashHomicideDb = useRegisteredDb({ db, table: "crash_homicide", url: CrashHomicideCsv })
-    const crashHomicideQuery = useMemo(() => crashHomicideQueryFn(county ?? null), [county])
+    const crashHomicideQuery = useMemo(() => crashHomicideQueryFn(county ?? null, effectiveSource), [county, effectiveSource])
     const rows = useQuery<CrashHomicideRow>({ db: crashHomicideDb, query: crashHomicideQuery, init: [] })
 
     const TRACE_NAMES = useMemo(() => ['Traffic deaths', 'Homicides', 'Ratio'], [])
@@ -212,11 +220,14 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
     }
 
     const region = county ? `${county} County` : 'NJ'
+    const minYear = rows.length ? rows[0].year : 2008
+    const maxYear = rows.length ? rows[rows.length - 1].year : 2024
+    const sourceLabel = effectiveSource === 'njsp' ? 'NJSP' : 'NJ DOT'
 
     return (
         <div>
             <h2 id={id}><a href={`#${id}`}>Traffic Deaths vs. Homicides</a></h2>
-            <div className={css.subtitle}>Fatal crashes, 2008–present{county ? ` · ${county} County` : ''}</div>
+            <div className={css.subtitle}>{sourceLabel} fatal crashes, {minYear}–{maxYear}{county ? ` · ${county} County` : ''}</div>
             <PlotWrapper
                 id={id}
                 data={data}
@@ -229,6 +240,17 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
             />
             <div className={css.plotToolbarCompact} style={{ justifyContent: 'center' }}>
                 <PlotInfo source={SOURCES} />
+                {!county && (
+                    <div className={css.buttonBar}>
+                        {([['njsp', 'NJSP (2008–)'], ['njdot', 'DOT (2001–)']] as const).map(([src, label]) => (
+                            <button
+                                key={src}
+                                className={crashSource === src ? css.active : ''}
+                                onClick={() => setCrashSource(src)}
+                            >{label}</button>
+                        ))}
+                    </div>
+                )}
             </div>
             {maxRatioRow && (
                 <p className={css.plotStats}>
