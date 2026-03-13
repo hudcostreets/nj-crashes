@@ -86,7 +86,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     const [viewMode, setViewMode] = useSessionStorage<ViewMode>(`plot-${id}-view-mode`, 'full-faded')
     const [controlsOpen, setControlsOpen] = useSessionStorage<boolean>(`plot-${id}-controls-open`, false)
     const [fadeOpacity, setFadeOpacity] = useSessionStorage<number>(`plot-${id}-fade-opacity`, 0.5)
-    const [greyOpacity, setGreyOpacity] = useSessionStorage<number>(`plot-${id}-grey-opacity`, 0.2)
+    const [greyOpacity, setGreyOpacity] = useSessionStorage<number>(`plot-${id}-grey-opacity`, 0.4)
     const [futureDash, setFutureDash] = useSessionStorage<string>(`plot-${id}-future-dash`, 'dot')
     // Effective opacity: Full mode forces 1.0, Faded uses stored value
     const effectiveFadeOpacity = viewMode === 'full' ? 1.0 : fadeOpacity
@@ -580,7 +580,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     <input
                         type="range"
                         min={0.05}
-                        max={0.5}
+                        max={1.0}
                         step={0.05}
                         value={greyOpacity}
                         onChange={e => setGreyOpacity(parseFloat(e.target.value))}
