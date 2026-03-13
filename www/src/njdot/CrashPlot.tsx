@@ -519,29 +519,31 @@ export default function CrashPlot({
 
     return (
         <div>
-            {emptySelection ? (
-                <div style={{
-                    height,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: plotColors.textColor,
-                    fontSize: '1.1em',
-                    opacity: 0.7,
-                }}>
-                    {emptySelection}
-                </div>
-            ) : (
-                <PlotWrapper
-                    key={plotKey}
-                    data={traces as PlotData[]}
-                    layout={layout}
-                    onLegendClick={onLegendClick}
-                    onLegendDoubleClick={onLegendDoubleClick}
-                    onHoverTrace={setHoverTrace}
-                    onResetSolo={resetSolo}
-                />
-            )}
+            <div style={{ minHeight: height }}>
+                {emptySelection ? (
+                    <div style={{
+                        height,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: plotColors.textColor,
+                        fontSize: '1.1em',
+                        opacity: 0.7,
+                    }}>
+                        {emptySelection}
+                    </div>
+                ) : (
+                    <PlotWrapper
+                        key={plotKey}
+                        data={traces as PlotData[]}
+                        layout={layout}
+                        onLegendClick={onLegendClick}
+                        onLegendDoubleClick={onLegendDoubleClick}
+                        onHoverTrace={setHoverTrace}
+                        onResetSolo={resetSolo}
+                    />
+                )}
+            </div>
             {showControls && (
                 <ControlsGear open={controlsOpen} onToggle={setControlsOpen} contentClassName={css.controlsContent} inlineWithLegend>
                     <Radios
