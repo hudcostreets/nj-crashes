@@ -34,7 +34,7 @@
     "maplibre-gl": "^3.6.2",
     "moment-timezone": "^0.5.45",
     "plotly.js": "^3.3.1",
-    "pltly": "https://gitlab.com/runsascoded/js/pltly/-/archive/b334ba080110e89c67f71e751557edd7185634b2/pltly-b334ba080110e89c67f71e751557edd7185634b2.tar.gz",
+    "pltly": "https://gitlab.com/runsascoded/js/pltly/-/archive/8cafa05dec034d2315a0458dab129f121b441789/pltly-8cafa05dec034d2315a0458dab129f121b441789.tar.gz",
     "react": "^18",
     "react-dom": "^18",
     "react-helmet-async": "^2.0.4",
