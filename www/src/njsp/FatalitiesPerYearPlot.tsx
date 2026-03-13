@@ -3,7 +3,7 @@ import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { MonthlyCsv, ProjectedCsv, YtcCsv } from "@/src/paths"
-import { fadeColor, useSoloTrace } from "pltly"
+import { fadeColor, lightenColor, useSoloTrace } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { Annotation } from "./plot"
 import { CountySelect } from "@/src/county-select"
@@ -288,7 +288,10 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 } as PlotData
             })
 
-            // 12-mo avg line
+            // 12-mo avg line — tinted toward solo'd type color when active
+            const avgColor = soloType
+                ? lightenColor(COLORS[soloType], 0.5)
+                : plotColors.textColor
             traces.push({
                 type: "scatter",
                 mode: "lines",
@@ -296,7 +299,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 x: dates,
                 y: avgValues,
                 line: {
-                    color: plotColors.textColor,
+                    color: avgColor,
                     width: 4,
                 },
                 hovertemplate: `%{y:.1f}<extra>12-mo avg</extra>`,
