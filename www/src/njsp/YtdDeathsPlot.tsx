@@ -86,6 +86,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     const [viewMode, setViewMode] = useSessionStorage<ViewMode>(`plot-${id}-view-mode`, 'full-faded')
     const [controlsOpen, setControlsOpen] = useSessionStorage<boolean>(`plot-${id}-controls-open`, false)
     const [fadeOpacity, setFadeOpacity] = useSessionStorage<number>(`plot-${id}-fade-opacity`, 0.5)
+    const [greyOpacity, setGreyOpacity] = useSessionStorage<number>(`plot-${id}-grey-opacity`, 0.2)
     const [futureDash, setFutureDash] = useSessionStorage<string>(`plot-${id}-future-dash`, 'dot')
     // Effective opacity: Full mode forces 1.0, Faded uses stored value
     const effectiveFadeOpacity = viewMode === 'full' ? 1.0 : fadeOpacity
@@ -190,7 +191,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     y: clipped.map(r => r.cumulative),
                     customdata: clipped.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
                     line: {
-                        color: isGreyed ? fadeColor(color, { opacity: 0.2 }) : color,
+                        color: isGreyed ? fadeColor(color, { opacity: greyOpacity }) : color,
                         width: isActive ? 5 : (isGreyed ? 1 : defaultWidth),
                     },
                     legendrank: idx,
@@ -213,7 +214,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                         y: solidRows.map(r => r.cumulative),
                         customdata: solidRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
                         line: {
-                            color: isGreyed ? fadeColor(color, { opacity: 0.2 }) : color,
+                            color: isGreyed ? fadeColor(color, { opacity: greyOpacity }) : color,
                             width: baseWidth,
                         },
                         legendrank: idx,
@@ -233,7 +234,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                         y: futureRows.map(r => r.cumulative),
                         customdata: futureRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
                         line: {
-                            color: isGreyed ? fadeColor(color, { opacity: 0.1 }) : futureColor,
+                            color: isGreyed ? fadeColor(color, { opacity: greyOpacity }) : futureColor,
                             width: Math.max(1, baseWidth - 1),
                             dash: effectiveFadeOpacity >= 1.0 ? 'solid' : futureDash,
                         },
@@ -255,7 +256,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     y: filledRows.map(r => r.cumulative),
                     customdata: filledRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
                     line: {
-                        color: isGreyed ? fadeColor(color, { opacity: 0.2 }) : color,
+                        color: isGreyed ? fadeColor(color, { opacity: greyOpacity }) : color,
                         width: isActive ? 5 : (isGreyed ? 1 : defaultWidth),
                     },
                     legendrank: idx,
@@ -418,7 +419,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
         }
 
         return { data: traces, layout }
-    }, [ytdRows, activeYear, colorScale, plotColors, legendPosition, viewMode, effectiveFadeOpacity, futureDash])
+    }, [ytdRows, activeYear, colorScale, plotColors, legendPosition, viewMode, effectiveFadeOpacity, greyOpacity, futureDash])
 
 
     const isFadedMode = viewMode === 'full-faded' || viewMode === 'full'
@@ -544,6 +545,19 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                         <option value="bottom">Bottom</option>
                         <option value="right">Right</option>
                     </select>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
+                    <label>Dim:</label>
+                    <input
+                        type="range"
+                        min={0.05}
+                        max={0.5}
+                        step={0.05}
+                        value={greyOpacity}
+                        onChange={e => setGreyOpacity(parseFloat(e.target.value))}
+                        style={{ width: 60 }}
+                    />
+                    <span style={{ fontSize: 11, minWidth: '2.5em' }}>{Math.round(greyOpacity * 100)}%</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
                     <label>Future:</label>
