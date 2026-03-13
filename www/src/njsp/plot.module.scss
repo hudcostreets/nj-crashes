@@ -1,3 +1,10 @@
+.subtitle {
+  text-align: center;
+  color: var(--text-secondary);
+  margin-top: -0.3em;
+  margin-bottom: 0.5em;
+}
+
 .plotNotes {
   margin-top: 0.5em;
 
@@ -11,8 +18,10 @@
   display: flex;
   align-items: center;
   gap: 0.5em;
-  margin-top: -1.8em;  // Pull up to align with legend area
+  margin-top: 0.3em;
   padding-left: 0.25em;
+  position: relative;
+  z-index: 1;  // Sit above Plotly's .svg-container
 
   > svg {
     opacity: 0.5;
@@ -109,4 +118,60 @@
       font-weight: 600;
     }
   }
+}
+
+// Custom icon legend (replaces Plotly's native legend)
+.iconLegend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8em;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.iconLegendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  user-select: none;
+
+  &:hover {
+    opacity: 1 !important;
+  }
+
+  &.greyed {
+    opacity: 0.3;
+  }
+
+  &.solo {
+    opacity: 1;
+  }
+
+  svg {
+    width: 1.4em;
+    height: 1.4em;
+    position: relative;
+    top: 0;
+  }
+}
+
+.iconLegendLabel {
+  white-space: nowrap;
+}
+
+.iconLegendLine {
+  display: inline-block;
+  width: 18px;
+  height: 3px;
+  background: var(--text-primary);
+  border-radius: 1px;
+}
+
+.iconLegendSwatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
 }

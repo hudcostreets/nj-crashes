@@ -2,16 +2,17 @@ import React, { useEffect, useMemo, useRef, useState } from "react"
 import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
-import { ProjectedCsv, YtcCsv } from "@/src/paths"
-import { useSoloTrace } from "pltly"
+import { MonthlyCsv, ProjectedCsv, YtcCsv } from "@/src/paths"
+import { fadeColor, useSoloTrace } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { Annotation } from "./plot"
 import { CountySelect } from "@/src/county-select"
 import A from "@/src/lib/a"
 import { GitHub } from "@/src/socials"
-import { PlotInfo } from "@/src/icons"
+import { PlotInfo, Cyclist, Driver, Pedestrian, Passenger } from "@/src/icons"
 import { repoWithOwner } from "@/src/github"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
+import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import css from "./plot.module.scss"
 
 const estimationHref = `https://nbviewer.org/github/${repoWithOwner}/blob/main/njsp/update-projections.ipynb`
@@ -25,6 +26,14 @@ const COLORS: Record<Type, string> = {
     Drivers: "#a94c9a",   // Lightened from #781c6d
     Pedestrians: "#d85a6a",
     Passengers: "#f08030",
+}
+
+// Icon components for each type (used in custom legend)
+const TYPE_ICONS: Record<Type, React.FC<{ style?: React.CSSProperties }>> = {
+    Cyclists: Cyclist,
+    Drivers: Driver,
+    Pedestrians: Pedestrian,
+    Passengers: Passenger,
 }
 
 // Lighter variants for projected data
@@ -94,6 +103,30 @@ const typesMap: Record<Type, keyof TypeCounts> = {
     Passengers: "passenger",
 }
 
+type MonthlyRow = {
+    date: string
+    year: number
+    month: number
+    fatalities: number
+    driver: number
+    passenger: number
+    pedestrian: number
+    cyclist: number
+    avg_12mo: number
+}
+
+const monthlyQueryFn = (county: string | null) => {
+    const where = county ? `WHERE county = '${county}' AND mc IS NULL` : `WHERE county IS NULL AND cc IS NULL`
+    return `
+    SELECT date, year, month, fatalities, driver, passenger, pedestrian, cyclist, avg_12mo
+    FROM read_csv_auto('monthly')
+    ${where}
+    ORDER BY date
+`
+}
+
+type TimeGranularity = 'year' | 'month'
+
 export type Props = {
     id?: string
     initialCounty?: string | null
@@ -108,6 +141,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
     useEffect(() => { setCounty(initialCounty) }, [initialCounty])
     const [hoverTrace, setHoverTrace] = useState<string | null>(null)
     const [showProjected, setShowProjected] = useState(true)
+    const [timeGranularity, setTimeGranularity] = useSessionStorage<TimeGranularity>('njsp-deaths-timeGranularity', 'year')
     const containerRef = useRef<HTMLDivElement>(null)
     const [containerWidth, setContainerWidth] = useState(800)  // Default to reasonable width before ResizeObserver fires
 
@@ -139,8 +173,15 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
     const projectionsQueryStr = useMemo(() => typeCountsQuery(county), [county])
     const [projections] = useQuery<TypeCounts>({ db: projectionsDb, query: projectionsQueryStr, init: [{ driver: 0, pedestrian: 0, cyclist: 0, passenger: 0 }] })
 
+    // Load monthly data for month granularity
+    const monthlyDb = useRegisteredDb({ db, table: "monthly", url: MonthlyCsv })
+    const monthlyQueryStr = useMemo(() => monthlyQueryFn(county), [county])
+    const monthlyRows = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
+
+    const isMonthly = timeGranularity === 'month'
+
     // Solo trace management via pltly
-    const traceNames = useMemo(() => [...Types], [])
+    const traceNames = useMemo(() => isMonthly ? [...Types, '12-mo avg'] : [...Types], [isMonthly])
     // Normalize hover trace (strip " (projected)" suffix)
     const normalizedHover = useMemo(() => {
         if (!hoverTrace) return null
@@ -152,6 +193,108 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
 
     // Build plot data
     const { data, annotations, layout } = useMemo(() => {
+        // Monthly mode — stacked bars by victim type + 12-mo avg line
+        if (isMonthly) {
+            if (!monthlyRows.length) {
+                return { data: [], annotations: [], layout: {} as Partial<Layout> }
+            }
+
+            const now = new Date()
+            const currentYear = now.getFullYear()
+            const currentMonth = now.getMonth() + 1
+            const filteredRows = monthlyRows.filter(r =>
+                r.year < currentYear || (r.year === currentYear && r.month < currentMonth)
+            )
+
+            const dates = filteredRows.map(r => r.date)
+            const avg12mo = filteredRows.map((r, i) => i < 11 ? null : r.avg_12mo)
+
+            // Determine which types are visible (solo trace support)
+            const visibleTypes = activeType && Types.includes(activeType)
+                ? new Set([activeType])
+                : new Set(Types)
+            const avgActive = activeType === '12-mo avg' as any
+            const avgGreyed = activeType !== null && !avgActive
+
+            // Stacked bars by victim type
+            const traces: PlotData[] = Types.map(type => {
+                const col = typesMap[type]
+                const isVisible = visibleTypes.has(type)
+                const isGreyed = activeType !== null && !isVisible
+                return {
+                    type: "bar",
+                    name: type,
+                    legendgroup: type,
+                    x: dates,
+                    y: filteredRows.map(r => {
+                        const typed = r[col] as number
+                        // Pre-2020 data has no type breakdown; show full total on Drivers bar
+                        if (typed === 0 && r.driver === 0 && r.passenger === 0 && r.pedestrian === 0 && r.cyclist === 0) {
+                            return type === 'Drivers' ? r.fatalities : 0
+                        }
+                        return typed
+                    }),
+                    marker: {
+                        color: isGreyed ? fadeColor(COLORS[type]) : COLORS[type],
+                        line: { color: 'transparent', width: 0 },
+                    },
+                    visible: isVisible || activeType === null ? true : "legendonly",
+                    hovertemplate: `%{y}<extra>${type}</extra>`,
+                } as PlotData
+            })
+
+            // 12-mo avg line
+            traces.push({
+                type: "scatter",
+                mode: "lines",
+                name: "12-mo avg",
+                x: dates,
+                y: avg12mo,
+                line: {
+                    color: avgGreyed ? fadeColor(plotColors.textColor) : plotColors.textColor,
+                    width: avgActive ? 6 : (avgGreyed ? 2 : 4),
+                },
+                hovertemplate: `%{y:.1f}<extra>12-mo avg</extra>`,
+            } as PlotData)
+
+            const layout: Partial<Layout> = {
+                barmode: "stack",
+                showlegend: false,
+                height,
+                margin: { t: 10, b: 30, l: 40, r: 0 },
+                paper_bgcolor: plotColors.paperBg,
+                plot_bgcolor: plotColors.plotBg,
+                hovermode: "x unified",
+                hoverlabel: {
+                    bgcolor: '#1a1a2e',
+                    bordercolor: plotColors.gridColor,
+                    font: { color: '#ffffff' },
+                },
+                xaxis: {
+                    tickfont: { color: plotColors.textColor },
+                    gridcolor: plotColors.gridColor,
+                    automargin: true,
+                    tickangle: -45,
+                    tick0: "2008-01-01",
+                    dtick: "M12",
+                    tickformat: "'%y",
+                    hoverformat: "%b '%y",
+                    fixedrange: true,
+                },
+                yaxis: {
+                    automargin: true,
+                    tickfont: { color: plotColors.textColor },
+                    gridcolor: plotColors.gridColor,
+                    fixedrange: true,
+                    rangemode: "tozero",
+                },
+                dragmode: false,
+            }
+
+            return { data: traces, annotations: [], layout }
+        }
+
+        // Yearly mode
         if (!ytRows.length) {
             return { data: [], annotations: [], layout: {} as Partial<Layout> }
         }
@@ -247,7 +390,16 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                         showlegend: false,  // Don't show separate legend entry
                         x: [curYear],  // Only current year
                         y: [remainder],
-                        marker: { color: PROJECTED_COLORS[type] },
+                        marker: {
+                            color: PROJECTED_COLORS[type],
+                            pattern: {
+                                shape: '/',
+                                size: 6,
+                                solidity: 0.3,
+                                fgcolor: COLORS[type],
+                                fgopacity: 0.4,
+                            },
+                        } as any,
                         texttemplate: "%{y:d}*",
                         textposition: "inside",
                         textangle: 0,  // Force upright text
@@ -266,7 +418,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                 x: [null],
                 y: [null],
                 marker: { color: "#ccc" },
-                showlegend: true,
+                showlegend: false,
             } as PlotData)
         }
 
@@ -321,17 +473,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
 
         const layout: Partial<Layout> = {
             barmode: "stack",
-            showlegend: true,
-            legend: {
-                orientation: "h",
-                x: 0.5,
-                xanchor: "center",
-                y: -0.12,  // Below x-ticks (tightened)
-                yanchor: "top",
-                font: { color: plotColors.textColor },
-                tracegroupgap: 0,  // Tighten gap between legend items
-                itemwidth: 30,  // Reduce width per item
-            },
+            showlegend: false,
             xaxis: {
                 fixedrange: true,
                 dtick: 1,
@@ -351,7 +493,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                 rangemode: "tozero",
                 tickfont: { color: plotColors.textColor },
             },
-            margin: { t: 10, r: 0, b: 50, l: 40 },
+            margin: { t: 10, r: 0, b: 30, l: 40 },
             annotations,
             dragmode: false,
             paper_bgcolor: plotColors.paperBg,
@@ -366,7 +508,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
         }
 
         return { data: traces, annotations, layout, projectedRemainder }
-    }, [ytRows, projections, activeType, showProjected, height, plotColors, containerWidth])
+    }, [ytRows, projections, activeType, showProjected, height, plotColors, containerWidth, isMonthly, monthlyRows])
 
     // Compute year totals for summary text
     const yearTotals = useMemo(() => {
@@ -407,12 +549,10 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
     return (
         <div ref={containerRef}>
             <h2 id={id}>
-                <a href={`#${id}`}>Car Crash Deaths</a>:{' '}
-                {initialCounty
-                    ? <span>{initialCounty} County</span>
-                    : <CountySelect county={county} setCounty={setCounty} Counties={counties} />
-                }
+                <a href={`#${id}`}>Car Crash Deaths</a>
+                {!initialCounty && <>:{' '}<CountySelect county={county} setCounty={setCounty} Counties={counties} /></>}
             </h2>
+            <div className={css.subtitle}>Fatal crashes, 2008–present{initialCounty ? ` · ${initialCounty} County` : ''}</div>
             <PlotWrapper
                 id={id}
                 data={data}
@@ -425,12 +565,73 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
             />
             <div className={css.plotToolbarCompact}>
                 <PlotInfo source="njsp">
-                    {county === null && total2021 > 0 && total2022 > 0 ? (
+                    {!isMonthly && county === null && total2021 > 0 && total2022 > 0 ? (
                         <p style={{ margin: 0 }}>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
                     ) : null}
                 </PlotInfo>
+                <div className={css.buttonBar}>
+                    {([['year', 'By Year'], ['month', 'By Month']] as const).map(([mode, label]) => (
+                        <button
+                            key={mode}
+                            className={timeGranularity === mode ? css.active : ''}
+                            onClick={() => setTimeGranularity(mode)}
+                        >{label}</button>
+                    ))}
+                </div>
+                <div className={css.iconLegend}>
+                    {Types.map(type => {
+                        const IconComponent = TYPE_ICONS[type]
+                        const isSolo = activeType === type
+                        const isGreyed = activeType !== null && !isSolo
+                        return (
+                            <span
+                                key={type}
+                                className={`${css.iconLegendItem} ${isSolo ? css.solo : ''} ${isGreyed ? css.greyed : ''}`}
+                                onClick={() => {
+                                    const event = { data: traceNames.map(n => ({ name: n })), curveNumber: traceNames.indexOf(type) }
+                                    onLegendClick(event)
+                                }}
+                                onDoubleClick={() => onLegendDoubleClick()}
+                                onMouseEnter={() => setHoverTrace(type)}
+                                onMouseLeave={() => setHoverTrace(null)}
+                            >
+                                <IconComponent style={{ fill: COLORS[type] }} />
+                                <span className={css.iconLegendLabel}>{type}</span>
+                            </span>
+                        )
+                    })}
+                    {isMonthly && (
+                        <span
+                            className={`${css.iconLegendItem} ${activeType === '12-mo avg' as any ? css.solo : ''} ${activeType !== null && activeType !== '12-mo avg' as any ? css.greyed : ''}`}
+                            onClick={() => {
+                                const event = { data: traceNames.map(n => ({ name: n })), curveNumber: traceNames.indexOf('12-mo avg') }
+                                onLegendClick(event)
+                            }}
+                            onDoubleClick={() => onLegendDoubleClick()}
+                            onMouseEnter={() => setHoverTrace('12-mo avg')}
+                            onMouseLeave={() => setHoverTrace(null)}
+                        >
+                            <span className={css.iconLegendLine} />
+                            <span className={css.iconLegendLabel}>12-mo avg</span>
+                        </span>
+                    )}
+                    {!isMonthly && showProjected && (
+                        <span className={css.iconLegendItem} style={{ opacity: 0.7 }}>
+                            <span className={css.iconLegendSwatch} style={{
+                                background: `repeating-linear-gradient(
+                                    -45deg,
+                                    #c890b8,
+                                    #c890b8 2px,
+                                    #e8a0a8 2px,
+                                    #e8a0a8 4px
+                                )`,
+                            }} />
+                            <span className={css.iconLegendLabel}>* projected</span>
+                        </span>
+                    )}
+                </div>
             </div>
-            {(curYearActual > 0 || curYearProjectedTotal > 0) && (
+            {!isMonthly && (curYearActual > 0 || curYearProjectedTotal > 0) && (
                 <p className={css.plotStats}>
                     {curYearActual > 0 ? (
                         <>
