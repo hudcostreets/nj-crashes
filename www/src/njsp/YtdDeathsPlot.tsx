@@ -547,7 +547,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     </select>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
-                    <label>Future:</label>
+                    <label title="Opacity of rest-of-year (future) traces">Future:</label>
                     <input
                         type="range"
                         min={0.05}
@@ -557,16 +557,17 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                         onChange={e => {
                             const v = parseFloat(e.target.value)
                             setFadeOpacity(v)
-                            // Dragging slider switches to Faded mode (unless at 100%)
                             if (v < 1.0 && viewMode === 'full') setViewMode('full-faded')
                         }}
                         disabled={viewMode === 'ytd'}
+                        title="Opacity of rest-of-year (future) traces"
                         style={{ width: 80 }}
                     />
                     <span style={{ fontSize: 11, minWidth: '2.5em' }}>{Math.round((viewMode === 'full' ? 1.0 : fadeOpacity) * 100)}%</span>
                     <select
                         value={futureDash}
                         onChange={e => setFutureDash(e.target.value)}
+                        title="Line style for rest-of-year (future) traces"
                         style={selectStyle}
                     >
                         <option value="dot">Dot</option>
@@ -576,11 +577,12 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     </select>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
-                    <label>Dim:</label>
+                    <label title="Opacity of non-highlighted traces when hovering/soloing">Dim:</label>
                     <input
                         type="range"
                         min={0.05}
                         max={1.0}
+                        title="Opacity of non-highlighted traces when hovering/soloing"
                         step={0.05}
                         value={greyOpacity}
                         onChange={e => setGreyOpacity(parseFloat(e.target.value))}
