@@ -2,10 +2,10 @@ import React, { useMemo, useState } from "react"
 import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
-import { MonthYearCsv } from "@/src/paths"
+import { MonthlyCsv } from "@/src/paths"
 import { fadeColor, useSoloTrace } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
-import { PlotInfo } from "@/src/icons"
+import { Cyclist, Driver, Pedestrian, Passenger, PlotInfo } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { COLORSCALES, ColorScaleName, getColorAt } from "@/src/lib/colorscales"
@@ -16,6 +16,12 @@ const HEIGHT = 550
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
+type VictimType = 'driver' | 'passenger' | 'pedestrian' | 'cyclist'
+const VICTIM_TYPES: VictimType[] = ['driver', 'passenger', 'pedestrian', 'cyclist']
+const VICTIM_LABELS: Record<VictimType, string> = { driver: 'Drivers', passenger: 'Passengers', pedestrian: 'Pedestrians', cyclist: 'Cyclists' }
+const VICTIM_COLORS: Record<VictimType, string> = { driver: '#a94c9a', passenger: '#f08030', pedestrian: '#d85a6a', cyclist: '#7c5295' }
+const VICTIM_ICONS: Record<VictimType, React.FC<{ style?: React.CSSProperties }>> = { driver: Driver, passenger: Passenger, pedestrian: Pedestrian, cyclist: Cyclist }
+
 export type Props = {
     id?: string
     county?: string | null
@@ -24,14 +30,18 @@ export type Props = {
     regionLabel?: string | null
 }
 
-type MonthYearRow = {
+type MonthlyRow = {
     year: number
     month: number
     fatalities: number
+    driver: number
+    passenger: number
+    pedestrian: number
+    cyclist: number
 }
 
-// Query to get month-year data (filtered by geo level)
-const monthYearQueryFn = (county: string | null, cc: number | null, mc: number | null) => {
+// Query to get monthly data (filtered by geo level)
+const monthlyQueryFn = (county: string | null, cc: number | null, mc: number | null) => {
     let where: string
     if (cc !== null && mc !== null) {
         where = `cc = ${cc} AND mc = ${mc}`
@@ -41,8 +51,8 @@ const monthYearQueryFn = (county: string | null, cc: number | null, mc: number |
         where = `county IS NULL AND cc IS NULL`
     }
     return `
-    SELECT year, month, fatalities
-    FROM read_csv_auto('month_year')
+    SELECT year, month, fatalities, driver, passenger, pedestrian, cyclist
+    FROM read_csv_auto('monthly')
     WHERE ${where}
     ORDER BY year, month
 `
@@ -58,18 +68,19 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
     const [colorScaleName, setColorScaleName] = useSessionStorage<ColorScaleName>(`plot-${id}-colorscale`, 'inferno')
     const [legendPosition, setLegendPosition] = useSessionStorage<'bottom' | 'right'>(`plot-${id}-legend-position`, 'right')
     const [controlsOpen, setControlsOpen] = useSessionStorage<boolean>(`plot-${id}-controls-open`, false)
+    const [selectedTypes, setSelectedTypes] = useSessionStorage<VictimType[]>(`plot-${id}-victim-types`, [...VICTIM_TYPES])
     const colorScale = COLORSCALES[colorScaleName]
 
-    // Load month-year data
-    const monthYearDb = useRegisteredDb({ db, table: "month_year", url: MonthYearCsv })
-    const monthYearQueryStr = useMemo(() => monthYearQueryFn(county ?? null, cc ?? null, mc ?? null), [county, cc, mc])
-    const monthYearRows = useQuery<MonthYearRow>({ db: monthYearDb, query: monthYearQueryStr, init: [] })
+    // Load monthly data
+    const monthlyDb = useRegisteredDb({ db, table: "monthly", url: MonthlyCsv })
+    const monthlyQueryStr = useMemo(() => monthlyQueryFn(county ?? null, cc ?? null, mc ?? null), [county, cc, mc])
+    const monthlyRows = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
 
     // Compute trace names from data for solo hook
     const traceNames = useMemo(() => {
-        const years = [...new Set(monthYearRows.map(r => r.year))].sort((a, b) => a - b)
+        const years = [...new Set(monthlyRows.map(r => r.year))].sort((a, b) => a - b)
         return years.map(y => `'${String(y).slice(2)}`)
-    }, [monthYearRows])
+    }, [monthlyRows])
 
     const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(traceNames, hoverTrace)
 
@@ -80,9 +91,29 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
         return match ? 2000 + parseInt(match[1]) : null
     }, [activeTrace])
 
+    const allSelected = selectedTypes.length === VICTIM_TYPES.length
+
+    const toggleType = (type: VictimType) => {
+        if (selectedTypes.includes(type)) {
+            // Don't allow deselecting all
+            if (selectedTypes.length === 1) return
+            setSelectedTypes(selectedTypes.filter(t => t !== type))
+        } else {
+            setSelectedTypes([...selectedTypes, type])
+        }
+    }
+
+    const soloType = (type: VictimType) => {
+        if (selectedTypes.length === 1 && selectedTypes[0] === type) {
+            setSelectedTypes([...VICTIM_TYPES])
+        } else {
+            setSelectedTypes([type])
+        }
+    }
+
     // Build plot data
     const { data, layout } = useMemo(() => {
-        if (!monthYearRows.length) {
+        if (!monthlyRows.length) {
             return { data: [], layout: {} as Partial<Layout> }
         }
 
@@ -98,13 +129,13 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
         }
 
         // Group data by year, only including complete months
-        const yearData = new Map<number, Map<number, number>>()
-        for (const row of monthYearRows) {
+        const yearData = new Map<number, Map<number, MonthlyRow>>()
+        for (const row of monthlyRows) {
             if (!isMonthComplete(row.year, row.month)) continue
             if (!yearData.has(row.year)) {
                 yearData.set(row.year, new Map())
             }
-            yearData.get(row.year)!.set(row.month, row.fatalities)
+            yearData.get(row.year)!.set(row.month, row)
         }
 
         // Sort years ascending
@@ -116,6 +147,12 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
         const minYear = Math.min(...years)
         const maxYear = Math.max(...years) + 1
 
+        // Compute bar values: sum of selected victim types (or total fatalities if all selected)
+        const getValue = (row: MonthlyRow): number => {
+            if (allSelected) return row.fatalities
+            return selectedTypes.reduce((sum, t) => sum + row[t], 0)
+        }
+
         // Build traces (one bar trace per year)
         const traces: PlotData[] = years.map((year, idx) => {
             const monthData = yearData.get(year)!
@@ -126,7 +163,10 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
             const isGreyed = activeYear !== null && !isActive
 
             // Get values for each month
-            const values = MONTH_NAMES.map((_, i) => monthData.get(i + 1) ?? 0)
+            const values = MONTH_NAMES.map((_, i) => {
+                const row = monthData.get(i + 1)
+                return row ? getValue(row) : 0
+            })
 
             const trace: any = {
                 type: "bar",
@@ -211,7 +251,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
         }
 
         return { data: traces, layout }
-    }, [monthYearRows, activeYear, colorScale, plotColors, legendPosition])
+    }, [monthlyRows, activeYear, colorScale, plotColors, legendPosition, selectedTypes, allSelected])
 
 
     if (!data.length) {
@@ -232,6 +272,27 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
                 onHoverTrace={setHoverTrace}
                 onResetSolo={resetSolo}
             />
+            <div className={css.plotToolbarCompact}>
+                <div className={css.iconLegend}>
+                    {VICTIM_TYPES.map(type => {
+                        const Icon = VICTIM_ICONS[type]
+                        const isSelected = selectedTypes.includes(type)
+                        const isSolo = selectedTypes.length === 1 && selectedTypes[0] === type
+                        return (
+                            <span
+                                key={type}
+                                className={`${css.iconLegendItem} ${!isSelected ? css.greyed : ''} ${isSolo ? css.solo : ''}`}
+                                onClick={() => toggleType(type)}
+                                onDoubleClick={() => soloType(type)}
+                                title={isSolo ? 'Show all' : isSelected ? `Hide ${VICTIM_LABELS[type]}` : `Show ${VICTIM_LABELS[type]}`}
+                            >
+                                <Icon style={{ fill: VICTIM_COLORS[type] }} />
+                                <span className={css.iconLegendLabel}>{VICTIM_LABELS[type]}</span>
+                            </span>
+                        )
+                    })}
+                </div>
+            </div>
             <ControlsGear
                 open={controlsOpen}
                 onToggle={setControlsOpen}
