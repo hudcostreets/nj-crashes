@@ -3,7 +3,7 @@ import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { YtdCsv } from "@/src/paths"
-import { fadeColor, useSoloTrace } from "pltly"
+import { fadeColor, useSoloTrace, useCustomHover } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
@@ -141,6 +141,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
         const currentRefDate = toRefDate(currentYear, dayOfYear)
 
         const isYtd = viewMode === 'ytd'
+        const isFaded = viewMode === 'full-faded'
 
         // Build traces - use reference dates as x values for consistent alignment
         const traces: PlotData[] = []
@@ -192,56 +193,60 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     hovertemplate: `%{y}%{customdata}<extra>'${String(year).slice(2)}</extra>`,
                 } as PlotData)
             } else if (viewMode === 'full-faded' && !isCurrentYear && filledRows.length > 0) {
-                // Full-faded mode for past years: solid up to today, faded after
+                // Full-faded mode: solid + faded traces, custom hover deduplicates by legendgroup
                 const solidRows = filledRows.filter(r => r.day <= dayOfYear)
                 const futureRows = filledRows.filter(r => r.day >= dayOfYear)
+                const yearLabel = `'${String(year).slice(2)}`
+                const baseWidth = isActive ? 5 : (isGreyed ? 1 : defaultWidth)
 
                 // Solid portion (up to today)
                 if (solidRows.length > 0) {
                     traces.push({
                         type: "scatter",
                         mode: "lines",
-                        name: `'${String(year).slice(2)}`,
+                        name: yearLabel,
                         x: solidRows.map(r => toRefDate(year, r.day)),
                         y: solidRows.map(r => r.cumulative),
                         customdata: solidRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
                         line: {
                             color: isGreyed ? fadeColor(color) : color,
-                            width: isActive ? 5 : (isGreyed ? 1 : defaultWidth),
+                            width: baseWidth,
                         },
                         legendrank: idx,
-                        legendgroup: `'${String(year).slice(2)}`,
-                        hovertemplate: `%{y}%{customdata}<extra>'${String(year).slice(2)}</extra>`,
+                        legendgroup: yearLabel,
+                        hoverinfo: 'none',
                     } as PlotData)
                 }
 
-                // Faded future portion (from today onward)
+                // Faded future portion (dotted)
                 if (futureRows.length > 0) {
                     const fadedColor = fadeColor(color)
                     traces.push({
                         type: "scatter",
                         mode: "lines",
-                        name: `'${String(year).slice(2)}`,
+                        name: yearLabel,
                         x: futureRows.map(r => toRefDate(year, r.day)),
                         y: futureRows.map(r => r.cumulative),
                         customdata: futureRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
                         line: {
                             color: isGreyed ? fadeColor(fadedColor) : fadedColor,
-                            width: isActive ? 5 : (isGreyed ? 1 : Math.max(1, defaultWidth - 1)),
+                            width: Math.max(1, baseWidth - 1),
                             dash: 'dot',
                         },
                         legendrank: idx,
-                        legendgroup: `'${String(year).slice(2)}`,
+                        legendgroup: yearLabel,
                         showlegend: false,
-                        hovertemplate: `%{y}%{customdata}<extra>'${String(year).slice(2)}</extra>`,
+                        hoverinfo: 'none',
                     } as PlotData)
                 }
             } else {
                 // Full mode (no fading) or current year in full-faded mode
+                const yearLabel = `'${String(year).slice(2)}`
+                const useCustom = viewMode === 'full-faded'
                 traces.push({
                     type: "scatter",
                     mode: "lines",
-                    name: `'${String(year).slice(2)}`,
+                    name: yearLabel,
                     x: filledRows.map(r => toRefDate(year, r.day)),
                     y: filledRows.map(r => r.cumulative),
                     customdata: filledRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
@@ -250,7 +255,11 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                         width: isActive ? 5 : (isGreyed ? 1 : defaultWidth),
                     },
                     legendrank: idx,
-                    hovertemplate: `%{y}%{customdata}<extra>'${String(year).slice(2)}</extra>`,
+                    legendgroup: useCustom ? yearLabel : undefined,
+                    ...(useCustom
+                        ? { hoverinfo: 'none' as const }
+                        : { hovertemplate: `%{y}%{customdata}<extra>${yearLabel}</extra>` }
+                    ),
                 } as PlotData)
             }
         }
@@ -348,7 +357,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
             margin: { t: 0, b: bottomMargin, l: 35, r: 5 },
             paper_bgcolor: plotColors.paperBg,
             plot_bgcolor: plotColors.plotBg,
-            hovermode: "x unified",
+            hovermode: isFaded ? "x" : "x unified",
             hoverdistance: -1,  // Always snap to nearest point (no gaps)
             hoverlabel: {
                 bgcolor: '#1a1a2e',
@@ -365,6 +374,13 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                 ticktext: ticktext,
                 fixedrange: true,
                 hoverformat: '%b %e',  // "Mar  1" or "May 14" format for hover header
+                ...(isFaded ? {
+                    showspikes: true,
+                    spikemode: 'toaxis+across' as const,
+                    spikethickness: 1,
+                    spikedash: 'dot' as const,
+                    spikecolor: plotColors.gridColor,
+                } : {}),
                 ...(isYtd ? { range: ['1999-12-31', currentRefDate] } : {}),
             },
             yaxis: {
@@ -401,6 +417,12 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     }, [ytdRows, activeYear, colorScale, plotColors, legendPosition, viewMode])
 
 
+    const isFadedMode = viewMode === 'full-faded'
+    const customHover = useCustomHover({
+        data: data as any,
+        groupKey: (trace: any) => trace.legendgroup ?? trace.name ?? '',
+    })
+
     if (!data.length) {
         return <div style={{ height: HEIGHT }}>Loading...</div>
     }
@@ -416,17 +438,65 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
 
     return (
         <div>
-            <h2 id={id}><a href={`#${id}`}>YTD Deaths{regionLabel ? `: ${regionLabel}` : county ? `: ${county} County` : ''}</a></h2>
-            <PlotWrapper
-                id={id}
-                data={data}
-                layout={layout}
+            <h2 id={id}><a href={`#${id}`}>YTD Deaths</a></h2>
+            <div className={css.subtitle}>Fatal crashes, 2008–present{regionLabel ? ` · ${regionLabel}` : county ? ` · ${county} County` : ''}</div>
+            <div style={{ position: 'relative' }}>
+                <PlotWrapper
+                    id={id}
+                    data={data}
+                    layout={layout}
 
-                onLegendClick={onLegendClick}
-                onLegendDoubleClick={onLegendDoubleClick}
-                onHoverTrace={setHoverTrace}
-                onResetSolo={resetSolo}
-            />
+                    onLegendClick={onLegendClick}
+                    onLegendDoubleClick={onLegendDoubleClick}
+                    onHoverTrace={setHoverTrace}
+                    onResetSolo={resetSolo}
+                    {...(isFadedMode ? { onHover: customHover.handleHover, onUnhover: customHover.handleUnhover } : {})}
+                />
+                {isFadedMode && customHover.isActive && customHover.position && customHover.x != null && (() => {
+                    const { groups, x, position } = customHover
+                    const dateLabel = typeof x === 'string' ? (() => {
+                        const d = new Date(x + 'T00:00:00')
+                        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+                        return `${months[d.getMonth()]} ${d.getDate()}`
+                    })() : ''
+                    // Sort by trace index (preserves chronological year order)
+                    const sorted = [...groups].sort((a, b) => a.point.traceIndex - b.point.traceIndex)
+                    return (
+                        <div style={{
+                            position: 'absolute',
+                            left: position.x + 10,
+                            top: HEIGHT / 2,
+                            transform: 'translateY(-50%)',
+                            background: 'var(--pltly-hover-bg, rgba(26, 26, 46, 0.95))',
+                            border: '1px solid var(--pltly-hover-border, #555)',
+                            borderRadius: 4,
+                            padding: '6px 10px',
+                            fontSize: 12,
+                            color: 'var(--pltly-hover-color, #eee)',
+                            pointerEvents: 'none',
+                            whiteSpace: 'nowrap',
+                            zIndex: 1000,
+                        }}>
+                            {dateLabel && <div style={{ fontWeight: 'bold', marginBottom: 2, borderBottom: '1px solid var(--pltly-hover-border, #555)', paddingBottom: 2 }}>{dateLabel}</div>}
+                            {sorted.map(({ key, point }) => {
+                                // Fade entries where the trace doesn't have data at this exact x (e.g. non-leap years on Feb 29)
+                                const exactMatch = point.x === x
+                                return (
+                                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4em', opacity: exactMatch ? 1 : 0.35 }}>
+                                        <span style={{
+                                            display: 'inline-block',
+                                            width: 14,
+                                            height: 3,
+                                            background: (point.trace as any).line?.color ?? '#888',
+                                        }} />
+                                        <span>{key} : {point.y}{point.customdata ? String(point.customdata) : ''}</span>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )
+                })()}
+            </div>
             <ControlsGear
                 open={controlsOpen}
                 onToggle={setControlsOpen}

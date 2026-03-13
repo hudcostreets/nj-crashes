@@ -13,6 +13,8 @@ export type LegendHandlers = {
 
 export type OtherHandlers = {
     onRelayout?: (e: PlotRelayoutEvent) => void
+    onHover?: (event: any) => void
+    onUnhover?: (event: any) => void
 }
 
 export type Props = {
@@ -35,6 +37,8 @@ export default function PlotWrapper({
     onHoverTrace,
     onResetSolo,
     onRelayout,
+    onHover,
+    onUnhover,
 }: Props) {
     const [initialized, setInitialized] = useState(false)
     const height = layout.height ?? DEFAULT_HEIGHT
@@ -102,6 +106,8 @@ export default function PlotWrapper({
                         return true
                     }}
                     onRelayout={e => onRelayout?.(e)}
+                    onHover={onHover}
+                    onUnhover={onUnhover}
                     className="plotly"
                     data={data}
                     config={{ displayModeBar: false, scrollZoom: false, responsive: true }}
