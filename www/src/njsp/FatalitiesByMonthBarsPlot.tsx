@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
@@ -6,7 +6,6 @@ import { MonthlyCsv } from "@/src/paths"
 import { fadeColor, useSoloTrace } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo } from "@/src/icons"
-import { Checklist } from "@/src/njdot/Checklist"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { COLORSCALES, ColorScaleName, getColorAt } from "@/src/lib/colorscales"
@@ -20,6 +19,85 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 type VictimType = 'driver' | 'passenger' | 'pedestrian' | 'cyclist'
 const VICTIM_TYPES: VictimType[] = ['driver', 'passenger', 'pedestrian', 'cyclist']
 const VICTIM_LABELS: Record<VictimType, string> = { driver: 'Drivers', passenger: 'Passengers', pedestrian: 'Pedestrians', cyclist: 'Cyclists' }
+
+function VictimTypeDropdown({ selected, onChange }: { selected: VictimType[], onChange: (types: VictimType[]) => void }) {
+    const [isOpen, setIsOpen] = useState(false)
+    const detailsRef = useRef<HTMLDetailsElement>(null)
+    const suppressToggle = useRef(false)
+
+    const allSelected = selected.length === VICTIM_TYPES.length
+    const summaryText = allSelected
+        ? "All Types"
+        : selected.length === 1
+            ? VICTIM_LABELS[selected[0]]
+            : `${selected.length} Types`
+
+    const stableOnChange = useCallback((types: VictimType[]) => {
+        if (types.length === 0) return
+        suppressToggle.current = true
+        onChange(types)
+        requestAnimationFrame(() => {
+            if (detailsRef.current) detailsRef.current.open = true
+            suppressToggle.current = false
+        })
+    }, [onChange])
+
+    const toggleAll = () => stableOnChange(allSelected ? [VICTIM_TYPES[0]] : [...VICTIM_TYPES])
+    const toggleType = (t: VictimType) => {
+        if (selected.includes(t)) {
+            if (selected.length > 1) stableOnChange(selected.filter(s => s !== t))
+        } else {
+            stableOnChange([...selected, t])
+        }
+    }
+    const soloType = (t: VictimType) => {
+        stableOnChange(selected.length === 1 && selected[0] === t ? [...VICTIM_TYPES] : [t])
+    }
+
+    useEffect(() => {
+        if (!isOpen) return
+        const handleClickOutside = (e: MouseEvent) => {
+            if (detailsRef.current && !detailsRef.current.contains(e.target as Node)) {
+                setIsOpen(false)
+                detailsRef.current.open = false
+            }
+        }
+        document.addEventListener('click', handleClickOutside)
+        return () => document.removeEventListener('click', handleClickOutside)
+    }, [isOpen])
+
+    return (
+        <details
+            ref={detailsRef}
+            className={css.victimTypeDropdown}
+            open={isOpen}
+            onToggle={e => {
+                if (suppressToggle.current) { e.preventDefault(); return }
+                setIsOpen((e.target as HTMLDetailsElement).open)
+            }}
+        >
+            <summary>{summaryText}</summary>
+            <div className={css.victimTypeList}>
+                <label className={css.selectAll}>
+                    <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+                    {allSelected ? "Deselect All" : "Select All"}
+                </label>
+                {VICTIM_TYPES.map(t => (
+                    <label key={t}>
+                        <input type="checkbox" checked={selected.includes(t)} onChange={() => toggleType(t)} />
+                        <span
+                            onClick={e => { e.preventDefault(); soloType(t) }}
+                            title={selected.length === 1 && selected[0] === t ? "Show all" : `Only ${VICTIM_LABELS[t]}`}
+                            style={{ cursor: 'pointer' }}
+                        >
+                            {VICTIM_LABELS[t]}
+                        </span>
+                    </label>
+                ))}
+            </div>
+        </details>
+    )
+}
 
 export type Props = {
     id?: string
@@ -256,19 +334,12 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
             <ControlsGear
                 open={controlsOpen}
                 onToggle={setControlsOpen}
-                extra={<PlotInfo source="njsp" />}
+                extra={<>
+                    <PlotInfo source="njsp" />
+                    <VictimTypeDropdown selected={selectedTypes} onChange={setSelectedTypes} />
+                </>}
                 bottomLegend={legendPosition === 'bottom'}
             >
-                <Checklist
-                    label="Victim Type"
-                    data={VICTIM_TYPES.map(t => ({
-                        name: t,
-                        label: VICTIM_LABELS[t],
-                        data: t,
-                        checked: selectedTypes.includes(t),
-                    }))}
-                    cb={types => { if (types.length > 0) setSelectedTypes(types) }}
-                />
                 <div>
                     <label style={{ marginRight: '0.5em' }}>Colors:</label>
                     <select
