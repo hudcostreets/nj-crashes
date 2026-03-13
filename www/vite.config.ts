@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin'
+import { pdsPlugin } from 'pnpm-dep-source/vite'
 import path from 'path'
 
 const allowedHosts = process.env.VITE_ALLOWED_HOSTS?.split(',') ?? []
@@ -9,6 +10,7 @@ export default defineConfig({
   plugins: [
     react(),
     vanillaExtractPlugin(),
+    pdsPlugin({ extra: ['plotly.js-dist-min'] }),
   ],
 
   resolve: {
@@ -17,9 +19,6 @@ export default defineConfig({
     },
   },
 
-  optimizeDeps: {
-    include: ['buffer'],
-  },
 
   build: {
     outDir: 'dist',
@@ -35,5 +34,5 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
-  },
+  }
 })
