@@ -220,7 +220,8 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
 
     return (
         <div>
-            <h2 id={id}><a href={`#${id}`}>Fatalities by Month{regionLabel ? `: ${regionLabel}` : county ? `: ${county} County` : ''}</a></h2>
+            <h2 id={id}><a href={`#${id}`}>Fatalities by Month</a></h2>
+            <div className={css.subtitle}>Fatal crashes, 2008–present{regionLabel ? ` · ${regionLabel}` : county ? ` · ${county} County` : ''}</div>
             <PlotWrapper
                 id={id}
                 data={data}
