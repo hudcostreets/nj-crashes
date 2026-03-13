@@ -134,7 +134,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 y: ratios,
                 yaxis: "y2",
                 line: {
-                    color: ratioGreyed ? fadeColor(plotColors.textColor) : plotColors.textColor,
+                    color: ratioGreyed ? fadeColor(plotColors.textColor, { opacity: 0.25 }) : plotColors.textColor,
                     width: ratioActive ? 8 : (ratioGreyed ? 3 : 5),
                 },
                 hovertemplate: `%{y:.2f}x<extra>Ratio</extra>`,
