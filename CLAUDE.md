@@ -35,10 +35,27 @@ Other types reference crashes via denormalized PK fields:
 
 ## Key Files
 
+### Data pipeline
 - `njdot/rawdata/pqt.py`: Parse raw .txt files to .pqt, apply structural fixes (geocoding, Port Authority drops)
 - `njdot/harmonize-muni-codes.ipynb`: Reconcile municipality codes/names across NJDOT/NJSP/NJGIN via majority voting
 - `njdot/crashes.py`: Main crashes data transformation pipeline
 - `njdot/README.md`: Comprehensive pipeline documentation, including 2023 data quality issues
+- `njsp/cli/update_www_data.py`: Generate frontend CSV data files from NJSP crash records
+
+### Frontend (`www/`)
+- `www/src/njsp/FatalitiesPerYearPlot.tsx`: "Car Crash Deaths" — stacked bar by type (By Year) or monthly bars + 12-mo avg (By Month). Supports statewide, county, and municipality levels.
+- `www/src/njsp/FatalitiesByMonthBarsPlot.tsx`: "Fatalities by Month" — bars per year grouped by month, with victim-type multi-select dropdown.
+- `www/src/njsp/YtdDeathsPlot.tsx`: "YTD Deaths" — year-to-date cumulative lines. Three view modes: YTD, Faded (configurable future opacity/dash), Full. Settings gear has Future opacity, dash style, and Dim (greyed trace) sliders.
+- `www/src/njsp/HomicidesComparisonPlot.tsx`: "Traffic Deaths vs. Homicides" — dual-source (NJSP/NJDOT) grouped bars + ratio line on secondary y-axis.
+- `www/src/njdot/CrashPlot.tsx`: "NJ DOT Crash Data" — parquet-powered stacked bars with severity/county/municipality stacking, severity filters, time granularity toggle.
+- `www/src/routes/Home.tsx`: Main page, passes geo filter (`cc`/`mc`/`countyName`) to all plots.
+- `www/src/icons.tsx`: SVG casualty icons (Driver, Passenger, Pedestrian, Cyclist) used in crash table and plot legends.
+
+### Frontend data files (`www/public/njsp/`)
+- `monthly.csv`: Per-month fatality counts with type breakdown. Has statewide (`county=''`), county (`mc IS NULL`), and municipality rows. Pre-2020 type breakdown only exists at statewide level.
+- `year-type-county.csv`: Per-year, per-county fatality counts by type. County-level only (no municipality).
+- `ytd.csv`: Year-to-date cumulative fatality data per day-of-year.
+- `crash-homicide.csv`: Traffic deaths vs homicides comparison. Has NJSP (2008–) and NJDOT (2001–) sources, statewide and county levels.
 
 ## DVX (Data Version Control)
 
