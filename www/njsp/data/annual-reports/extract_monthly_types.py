@@ -6,6 +6,7 @@ between digits (→ X0Y), and single-digit numbers get a leading '0'. The Totals
 is always correct, so we use it for validation after applying the correction.
 """
 import csv
+import re
 import sys
 from glob import glob
 from pathlib import Path
@@ -36,7 +37,10 @@ def fix_corrupted_number(raw: str) -> int:
 def extract_victim_table(pdf_path: str) -> list[dict]:
     """Extract the monthly victim classification table from a single PDF."""
     fname = Path(pdf_path).name
-    year = int(fname.split('_')[0])
+    m = re.search(r'(\d{4})', fname)
+    if not m:
+        raise ValueError(f"Cannot extract year from filename: {fname}")
+    year = int(m.group(1))
 
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
@@ -119,7 +123,7 @@ def extract_victim_table(pdf_path: str) -> list[dict]:
 
 
 def main():
-    pdfs = sorted(glob(str(REPORT_DIR / '*_fatal_crash*.pdf')))
+    pdfs = sorted(glob(str(REPORT_DIR / '*.pdf')))
     all_rows = []
     for pdf_path in pdfs:
         print(f"Processing {Path(pdf_path).name}...", file=sys.stderr)
