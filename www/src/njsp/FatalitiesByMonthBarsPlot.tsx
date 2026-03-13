@@ -1,11 +1,12 @@
-import React, { useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { MonthlyCsv } from "@/src/paths"
 import { fadeColor, useSoloTrace } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
-import { Cyclist, Driver, Pedestrian, Passenger, PlotInfo } from "@/src/icons"
+import { PlotInfo } from "@/src/icons"
+import { Checklist } from "@/src/njdot/Checklist"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { COLORSCALES, ColorScaleName, getColorAt } from "@/src/lib/colorscales"
@@ -19,8 +20,6 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 type VictimType = 'driver' | 'passenger' | 'pedestrian' | 'cyclist'
 const VICTIM_TYPES: VictimType[] = ['driver', 'passenger', 'pedestrian', 'cyclist']
 const VICTIM_LABELS: Record<VictimType, string> = { driver: 'Drivers', passenger: 'Passengers', pedestrian: 'Pedestrians', cyclist: 'Cyclists' }
-const VICTIM_COLORS: Record<VictimType, string> = { driver: '#a94c9a', passenger: '#f08030', pedestrian: '#d85a6a', cyclist: '#7c5295' }
-const VICTIM_ICONS: Record<VictimType, React.FC<{ style?: React.CSSProperties }>> = { driver: Driver, passenger: Passenger, pedestrian: Pedestrian, cyclist: Cyclist }
 
 export type Props = {
     id?: string
@@ -92,24 +91,6 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
     }, [activeTrace])
 
     const allSelected = selectedTypes.length === VICTIM_TYPES.length
-
-    const toggleType = (type: VictimType) => {
-        if (selectedTypes.includes(type)) {
-            // Don't allow deselecting all
-            if (selectedTypes.length === 1) return
-            setSelectedTypes(selectedTypes.filter(t => t !== type))
-        } else {
-            setSelectedTypes([...selectedTypes, type])
-        }
-    }
-
-    const soloType = (type: VictimType) => {
-        if (selectedTypes.length === 1 && selectedTypes[0] === type) {
-            setSelectedTypes([...VICTIM_TYPES])
-        } else {
-            setSelectedTypes([type])
-        }
-    }
 
     // Build plot data
     const { data, layout } = useMemo(() => {
@@ -272,33 +253,22 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
                 onHoverTrace={setHoverTrace}
                 onResetSolo={resetSolo}
             />
-            <div className={css.plotToolbarCompact}>
-                <div className={css.iconLegend}>
-                    {VICTIM_TYPES.map(type => {
-                        const Icon = VICTIM_ICONS[type]
-                        const isSelected = selectedTypes.includes(type)
-                        const isSolo = selectedTypes.length === 1 && selectedTypes[0] === type
-                        return (
-                            <span
-                                key={type}
-                                className={`${css.iconLegendItem} ${!isSelected ? css.greyed : ''} ${isSolo ? css.solo : ''}`}
-                                onClick={() => toggleType(type)}
-                                onDoubleClick={() => soloType(type)}
-                                title={isSolo ? 'Show all' : isSelected ? `Hide ${VICTIM_LABELS[type]}` : `Show ${VICTIM_LABELS[type]}`}
-                            >
-                                <Icon style={{ fill: VICTIM_COLORS[type] }} />
-                                <span className={css.iconLegendLabel}>{VICTIM_LABELS[type]}</span>
-                            </span>
-                        )
-                    })}
-                </div>
-            </div>
             <ControlsGear
                 open={controlsOpen}
                 onToggle={setControlsOpen}
                 extra={<PlotInfo source="njsp" />}
                 bottomLegend={legendPosition === 'bottom'}
             >
+                <Checklist
+                    label="Victim Type"
+                    data={VICTIM_TYPES.map(t => ({
+                        name: t,
+                        label: VICTIM_LABELS[t],
+                        data: t,
+                        checked: selectedTypes.includes(t),
+                    }))}
+                    cb={types => { if (types.length > 0) setSelectedTypes(types) }}
+                />
                 <div>
                     <label style={{ marginRight: '0.5em' }}>Colors:</label>
                     <select
