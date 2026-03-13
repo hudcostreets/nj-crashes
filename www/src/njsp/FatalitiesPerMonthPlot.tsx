@@ -171,7 +171,7 @@ export function FatalitiesPerMonthPlot({ id = "per-month", county, cc = null, mc
     return (
         <div>
             <h2 id={id}><a href={`#${id}`}>Fatalities per Month</a></h2>
-            <div className={css.subtitle}>Fatal crashes, 2008–present{regionLabel ? ` · ${regionLabel}` : county ? ` · ${county} County` : ''}</div>
+            <div className={css.subtitle}>Fatalities, 2008–present{regionLabel ? ` · ${regionLabel}` : county ? ` · ${county} County` : ''}</div>
             <PlotWrapper
                 id={id}
                 data={data}

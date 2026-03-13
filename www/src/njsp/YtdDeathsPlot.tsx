@@ -441,7 +441,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     return (
         <div>
             <h2 id={id}><a href={`#${id}`}>YTD Deaths</a></h2>
-            <div className={css.subtitle}>Fatal crashes, 2008–present{regionLabel ? ` · ${regionLabel}` : county ? ` · ${county} County` : ''}</div>
+            <div className={css.subtitle}>Fatalities, 2008–present{regionLabel ? ` · ${regionLabel}` : county ? ` · ${county} County` : ''}</div>
             <div style={{ position: 'relative' }}>
                 <PlotWrapper
                     id={id}

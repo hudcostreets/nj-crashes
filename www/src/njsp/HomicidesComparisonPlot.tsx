@@ -227,7 +227,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
     return (
         <div>
             <h2 id={id}><a href={`#${id}`}>Traffic Deaths vs. Homicides</a></h2>
-            <div className={css.subtitle}>{sourceLabel} fatal crashes, {minYear}–{maxYear}{county ? ` · ${county} County` : ''}</div>
+            <div className={css.subtitle}>{sourceLabel} fatalities, {minYear}–{maxYear}{county ? ` · ${county} County` : ''}</div>
             <PlotWrapper
                 id={id}
                 data={data}

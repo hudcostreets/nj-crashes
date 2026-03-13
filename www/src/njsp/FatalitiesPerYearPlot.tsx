@@ -589,7 +589,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     const prvYearTotal = prvYearData?.actual ?? 0
     const total2021 = yearTotals[2021]?.actual ?? 0
     const total2022 = yearTotals[2022]?.actual ?? 0
-    const countyLabel = county ? `${county} County` : "NJ"
+    const countyLabel = regionLabel ?? (county ? `${county} County` : "NJ")
 
     return (
         <div ref={containerRef}>
@@ -676,7 +676,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                     )}
                 </div>
             </div>
-            {!isMonthly && (curYearActual > 0 || curYearProjectedTotal > 0) && (
+            {!isMonthly && !hasMuniFilter && (curYearActual > 0 || curYearProjectedTotal > 0) && (
                 <p className={css.plotStats}>
                     {curYearActual > 0 ? (
                         <>
