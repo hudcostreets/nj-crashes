@@ -112,6 +112,20 @@
     padding-bottom: 0.3em;
     font-weight: bold;
 }
+.muniRow {
+    display: flex !important;
+    align-items: center;
+    gap: 0;
+}
+.muniName {
+    cursor: pointer;
+    flex: 1;
+    border-radius: 3px;
+    padding: 0 0.2em;
+}
+.muniName:hover {
+    background: var(--border-primary);
+}
 
 /* Plot info line */
 .plotInfo {

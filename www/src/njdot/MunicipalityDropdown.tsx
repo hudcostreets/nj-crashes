@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import css from "./controls.module.css"
 
 type MuniEntry = { code: number; name: string }
@@ -14,6 +14,8 @@ export function MunicipalityDropdown({
 }) {
     const [isOpen, setIsOpen] = useState(false)
     const detailsRef = useRef<HTMLDetailsElement>(null)
+    // Guard against onToggle firing during parent re-renders
+    const suppressToggle = useRef(false)
 
     const muniEntries: MuniEntry[] = useMemo(
         () => Object.entries(mc2mn).map(([code, name]) => ({
@@ -33,19 +35,37 @@ export function MunicipalityDropdown({
                 ? mc2mn[selected[0]] || `Muni ${selected[0]}`
                 : `${selected.length} Municipalities`
 
+    // Wrap onChange to suppress onToggle during re-render
+    const stableOnChange = useCallback((munis: number[]) => {
+        suppressToggle.current = true
+        onChange(munis)
+        // Re-force open after React re-renders
+        requestAnimationFrame(() => {
+            if (detailsRef.current) {
+                detailsRef.current.open = true
+            }
+            suppressToggle.current = false
+        })
+    }, [onChange])
+
     const toggleAll = () => {
-        if (allSelected) {
-            onChange([])
-        } else {
-            onChange(muniEntries.map(m => m.code))
-        }
+        stableOnChange(allSelected ? [] : muniEntries.map(m => m.code))
     }
 
     const toggleMuni = (code: number) => {
         if (selected.includes(code)) {
-            onChange(selected.filter(c => c !== code))
+            stableOnChange(selected.filter(c => c !== code))
         } else {
-            onChange([...selected, code])
+            stableOnChange([...selected, code])
+        }
+    }
+
+    const soloMuni = (code: number) => {
+        if (selected.length === 1 && selected[0] === code) {
+            // Already solo'd — restore all
+            stableOnChange(muniEntries.map(m => m.code))
+        } else {
+            stableOnChange([code])
         }
     }
 
@@ -69,7 +89,14 @@ export function MunicipalityDropdown({
                 ref={detailsRef}
                 className={css.countyDropdown}
                 open={isOpen}
-                onToggle={(e) => setIsOpen((e.target as HTMLDetailsElement).open)}
+                onToggle={(e) => {
+                    if (suppressToggle.current) {
+                        // Force back open — this was a re-render artifact
+                        e.preventDefault()
+                        return
+                    }
+                    setIsOpen((e.target as HTMLDetailsElement).open)
+                }}
             >
                 <summary>{summaryText}</summary>
                 <div className={css.countyList}>
@@ -82,13 +109,22 @@ export function MunicipalityDropdown({
                         {allSelected ? "Deselect All" : "Select All"}
                     </label>
                     {muniEntries.map(({ code, name }) => (
-                        <label key={code}>
+                        <label key={code} className={css.muniRow}>
                             <input
                                 type="checkbox"
                                 checked={selected.includes(code)}
                                 onChange={() => toggleMuni(code)}
                             />
-                            {name}
+                            <span
+                                className={css.muniName}
+                                onClick={(e) => {
+                                    e.preventDefault()
+                                    soloMuni(code)
+                                }}
+                                title={selected.length === 1 && selected[0] === code ? "Show all" : `Solo ${name}`}
+                            >
+                                {name}
+                            </span>
                         </label>
                     ))}
                 </div>
