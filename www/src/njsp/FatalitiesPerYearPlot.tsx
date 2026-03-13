@@ -439,13 +439,14 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                         x: [curYear],  // Only current year
                         y: [remainder],
                         marker: {
-                            color: PROJECTED_COLORS[type],
+                            color: COLORS[type],
+                            opacity: 0.4,
                             pattern: {
                                 shape: '/',
                                 size: 6,
                                 solidity: 0.5,
                                 fgcolor: PROJECTED_COLORS[type],
-                                fgopacity: 0.6,
+                                fgopacity: 1,
                             },
                         } as any,
                         texttemplate: "%{y:d}*",
