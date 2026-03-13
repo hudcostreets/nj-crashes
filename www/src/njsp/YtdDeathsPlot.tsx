@@ -234,7 +234,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                         y: futureRows.map(r => r.cumulative),
                         customdata: futureRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
                         line: {
-                            color: isGreyed ? fadeColor(color, { opacity: greyOpacity }) : futureColor,
+                            color: isGreyed ? fadeColor(color, { opacity: greyOpacity * effectiveFadeOpacity }) : futureColor,
                             width: Math.max(1, baseWidth - 1),
                             dash: effectiveFadeOpacity >= 1.0 ? 'solid' : futureDash,
                         },
@@ -547,19 +547,6 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     </select>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
-                    <label>Dim:</label>
-                    <input
-                        type="range"
-                        min={0.05}
-                        max={0.5}
-                        step={0.05}
-                        value={greyOpacity}
-                        onChange={e => setGreyOpacity(parseFloat(e.target.value))}
-                        style={{ width: 60 }}
-                    />
-                    <span style={{ fontSize: 11, minWidth: '2.5em' }}>{Math.round(greyOpacity * 100)}%</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
                     <label>Future:</label>
                     <input
                         type="range"
@@ -587,6 +574,19 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                         <option value="dashdot">Dash-dot</option>
                         <option value="solid">Solid</option>
                     </select>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
+                    <label>Dim:</label>
+                    <input
+                        type="range"
+                        min={0.05}
+                        max={0.5}
+                        step={0.05}
+                        value={greyOpacity}
+                        onChange={e => setGreyOpacity(parseFloat(e.target.value))}
+                        style={{ width: 60 }}
+                    />
+                    <span style={{ fontSize: 11, minWidth: '2.5em' }}>{Math.round(greyOpacity * 100)}%</span>
                 </div>
             </ControlsGear>
         </div>
