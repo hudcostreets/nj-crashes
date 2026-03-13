@@ -73,7 +73,7 @@ export default function Home() {
                     </p>
                 )}
 
-                <PlotContainer><FatalitiesPerYearPlot initialCounty={countyName} /></PlotContainer>
+                <PlotContainer><FatalitiesPerYearPlot initialCounty={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
 
                 {/* NJSP Fatal Crashes Table */}
                 <h2 id="njsp-crashes"><a href="#njsp-crashes">Recent Fatal Crashes (NJSP)</a></h2>

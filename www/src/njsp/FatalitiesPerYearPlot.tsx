@@ -115,8 +115,15 @@ type MonthlyRow = {
     avg_12mo: number
 }
 
-const monthlyQueryFn = (county: string | null) => {
-    const where = county ? `WHERE county = '${county}' AND mc IS NULL` : `WHERE county IS NULL AND cc IS NULL`
+const monthlyQueryFn = (county: string | null, cc: number | null, mc: number | null) => {
+    let where: string
+    if (cc !== null && mc !== null) {
+        where = `WHERE cc = ${cc} AND mc = ${mc}`
+    } else if (county) {
+        where = `WHERE county = '${county}' AND mc IS NULL`
+    } else {
+        where = `WHERE county IS NULL AND cc IS NULL`
+    }
     return `
     SELECT date, year, month, fatalities, driver, passenger, pedestrian, cyclist, avg_12mo
     FROM read_csv_auto('monthly')
@@ -125,20 +132,40 @@ const monthlyQueryFn = (county: string | null) => {
 `
 }
 
+// Query yearly data from monthly CSV (for muni-level, where ytc doesn't have data)
+const yearlyFromMonthlyQueryFn = (cc: number, mc: number) => `
+    SELECT
+        year,
+        CAST(SUM(driver) as INT) as driver,
+        CAST(SUM(pedestrian) as INT) as pedestrian,
+        CAST(SUM(cyclist) as INT) as cyclist,
+        CAST(SUM(passenger) as INT) as passenger,
+        CAST(SUM(fatalities) as INT) as total
+    FROM read_csv_auto('monthly')
+    WHERE cc = ${cc} AND mc = ${mc}
+    GROUP BY year
+    ORDER BY year
+`
+
 type TimeGranularity = 'year' | 'month'
 
 export type Props = {
     id?: string
     initialCounty?: string | null
+    cc?: number | null
+    mc?: number | null
+    regionLabel?: string | null
     height?: number
 }
 
-export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, height = 500 }: Props) {
+export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, cc: propCc = null, mc: propMc = null, regionLabel, height = 500 }: Props) {
     const db = useDb()
     const plotColors = usePlotColors()
     const [county, setCounty] = useState<string | null>(initialCounty)
     // Sync with external county prop (geo filter)
     useEffect(() => { setCounty(initialCounty) }, [initialCounty])
+    // Municipality-level: use cc/mc from props (no county dropdown when muni-level)
+    const hasMuniFilter = propCc !== null && propMc !== null
     const [hoverTrace, setHoverTrace] = useState<string | null>(null)
     const [showProjected, setShowProjected] = useState(true)
     const [timeGranularity, setTimeGranularity] = useSessionStorage<TimeGranularity>('njsp-deaths-timeGranularity', 'year')
@@ -158,24 +185,29 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
         return () => observer.disconnect()
     }, [])
 
-    // Load ytc data from CSV
+    // Load data sources
     const ytcDb = useRegisteredDb({ db, table: "ytc", url: YtcCsv })
+    const monthlyDb = useRegisteredDb({ db, table: "monthly", url: MonthlyCsv })
+    const projectionsDb = useRegisteredDb({ db, table: "projected", url: ProjectedCsv })
 
     // Query for list of counties
     const countiesResult = useQuery<{ county: string }>({ db: ytcDb, query: countiesQuery, init: [] })
     const counties = useMemo(() => countiesResult.map(r => r.county), [countiesResult])
 
+    // Yearly data: muni-level aggregates from monthly; otherwise from ytc
     const ytcQueryStr = useMemo(() => ytcQueryFn(county), [county])
-    const ytRows = useQuery<YtRow>({ db: ytcDb, query: ytcQueryStr, init: [] })
+    const ytcRows = useQuery<YtRow>({ db: ytcDb, query: ytcQueryStr, init: [] })
+    const muniYearlyQueryStr = useMemo(
+        () => hasMuniFilter ? yearlyFromMonthlyQueryFn(propCc!, propMc!) : null,
+        [hasMuniFilter, propCc, propMc],
+    )
+    const muniYtRows = useQuery<YtRow>({ db: monthlyDb, query: muniYearlyQueryStr, init: [] })
+    const ytRows = hasMuniFilter ? muniYtRows : ytcRows
 
-    // Load projections from CSV
-    const projectionsDb = useRegisteredDb({ db, table: "projected", url: ProjectedCsv })
+    // Projections (county-level only, not available at muni level)
     const projectionsQueryStr = useMemo(() => typeCountsQuery(county), [county])
     const [projections] = useQuery<TypeCounts>({ db: projectionsDb, query: projectionsQueryStr, init: [{ driver: 0, pedestrian: 0, cyclist: 0, passenger: 0 }] })
-
-    // Load monthly data for month granularity
-    const monthlyDb = useRegisteredDb({ db, table: "monthly", url: MonthlyCsv })
-    const monthlyQueryStr = useMemo(() => monthlyQueryFn(county), [county])
+    const monthlyQueryStr = useMemo(() => monthlyQueryFn(county, propCc ?? null, propMc ?? null), [county, propCc, propMc])
     const monthlyRows = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
 
     const isMonthly = timeGranularity === 'month'
@@ -207,7 +239,6 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
             )
 
             const dates = filteredRows.map(r => r.date)
-            const avg12mo = filteredRows.map((r, i) => i < 11 ? null : r.avg_12mo)
 
             // Determine which types are visible (solo trace support)
             const visibleTypes = activeType && Types.includes(activeType)
@@ -215,6 +246,20 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                 : new Set(Types)
             const avgActive = activeType === '12-mo avg' as any
             const avgGreyed = activeType !== null && !avgActive
+
+            // Compute 12-mo avg: use precomputed avg_12mo for all types,
+            // or compute from the solo'd type's values
+            const soloType = activeType && Types.includes(activeType) ? activeType : null
+            const avgValues: (number | null)[] = filteredRows.map((r, i) => {
+                if (i < 11) return null
+                if (!soloType) return r.avg_12mo
+                const col = typesMap[soloType]
+                let sum = 0
+                for (let j = i - 11; j <= i; j++) {
+                    sum += filteredRows[j][col] as number
+                }
+                return sum / 12
+            })
 
             // Stacked bars by victim type
             const traces: PlotData[] = Types.map(type => {
@@ -249,7 +294,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
                 mode: "lines",
                 name: "12-mo avg",
                 x: dates,
-                y: avg12mo,
+                y: avgValues,
                 line: {
                     color: avgGreyed ? fadeColor(plotColors.textColor) : plotColors.textColor,
                     width: avgActive ? 6 : (avgGreyed ? 2 : 4),
@@ -550,9 +595,9 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, h
         <div ref={containerRef}>
             <h2 id={id}>
                 <a href={`#${id}`}>Car Crash Deaths</a>
-                {!initialCounty && <>:{' '}<CountySelect county={county} setCounty={setCounty} Counties={counties} /></>}
+                {!initialCounty && !hasMuniFilter && <>:{' '}<CountySelect county={county} setCounty={setCounty} Counties={counties} /></>}
             </h2>
-            <div className={css.subtitle}>Fatal crashes, 2008–present{initialCounty ? ` · ${initialCounty} County` : ''}</div>
+            <div className={css.subtitle}>Fatalities, 2008–present{regionLabel ? ` · ${regionLabel}` : initialCounty ? ` · ${initialCounty} County` : ''}</div>
             <PlotWrapper
                 id={id}
                 data={data}
