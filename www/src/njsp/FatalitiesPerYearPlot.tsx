@@ -296,7 +296,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 x: dates,
                 y: avgValues,
                 line: {
-                    color: avgGreyed ? fadeColor(plotColors.textColor) : plotColors.textColor,
+                    color: avgGreyed ? fadeColor(plotColors.textColor, { opacity: 0.25 }) : plotColors.textColor,
                     width: avgActive ? 6 : (avgGreyed ? 2 : 4),
                 },
                 hovertemplate: `%{y:.1f}<extra>12-mo avg</extra>`,
