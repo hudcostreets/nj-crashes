@@ -85,8 +85,10 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     const [legendPosition, setLegendPosition] = useSessionStorage<'bottom' | 'right'>(`plot-${id}-legend-position`, 'right')
     const [viewMode, setViewMode] = useSessionStorage<ViewMode>(`plot-${id}-view-mode`, 'full-faded')
     const [controlsOpen, setControlsOpen] = useSessionStorage<boolean>(`plot-${id}-controls-open`, false)
-    const [fadeOpacity, setFadeOpacity] = useSessionStorage<number>(`plot-${id}-fade-opacity`, 0.15)
+    const [fadeOpacity, setFadeOpacity] = useSessionStorage<number>(`plot-${id}-fade-opacity`, 0.5)
     const [futureDash, setFutureDash] = useSessionStorage<string>(`plot-${id}-future-dash`, 'dot')
+    // Effective opacity: Full mode forces 1.0, Faded uses stored value
+    const effectiveFadeOpacity = viewMode === 'full' ? 1.0 : fadeOpacity
     const colorScale = COLORSCALES[colorScaleName]
 
     // Load YTD data
@@ -143,7 +145,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
         const currentRefDate = toRefDate(currentYear, dayOfYear)
 
         const isYtd = viewMode === 'ytd'
-        const isFaded = viewMode === 'full-faded'
+        const isFaded = viewMode === 'full-faded' || viewMode === 'full'
 
         // Build traces - use reference dates as x values for consistent alignment
         const traces: PlotData[] = []
@@ -188,14 +190,14 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     y: clipped.map(r => r.cumulative),
                     customdata: clipped.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
                     line: {
-                        color: isGreyed ? fadeColor(color) : color,
+                        color: isGreyed ? fadeColor(color, { opacity: 0.2 }) : color,
                         width: isActive ? 5 : (isGreyed ? 1 : defaultWidth),
                     },
                     legendrank: idx,
                     hovertemplate: `%{y}%{customdata}<extra>'${String(year).slice(2)}</extra>`,
                 } as PlotData)
-            } else if (viewMode === 'full-faded' && !isCurrentYear && filledRows.length > 0) {
-                // Full-faded mode: solid + faded traces, custom hover deduplicates by legendgroup
+            } else if (isFaded && !isCurrentYear && filledRows.length > 0) {
+                // Faded/Full mode: solid + faded future traces
                 const solidRows = filledRows.filter(r => r.day <= dayOfYear)
                 const futureRows = filledRows.filter(r => r.day >= dayOfYear)
                 const yearLabel = `'${String(year).slice(2)}`
@@ -211,7 +213,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                         y: solidRows.map(r => r.cumulative),
                         customdata: solidRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
                         line: {
-                            color: isGreyed ? fadeColor(color) : color,
+                            color: isGreyed ? fadeColor(color, { opacity: 0.2 }) : color,
                             width: baseWidth,
                         },
                         legendrank: idx,
@@ -220,9 +222,9 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     } as PlotData)
                 }
 
-                // Faded future portion (dotted)
+                // Future portion (faded by effectiveFadeOpacity)
                 if (futureRows.length > 0) {
-                    const futureColor = fadeColor(color, { opacity: fadeOpacity })
+                    const futureColor = fadeColor(color, { opacity: effectiveFadeOpacity })
                     traces.push({
                         type: "scatter",
                         mode: "lines",
@@ -231,9 +233,9 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                         y: futureRows.map(r => r.cumulative),
                         customdata: futureRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
                         line: {
-                            color: isGreyed ? fadeColor(futureColor) : futureColor,
+                            color: isGreyed ? fadeColor(color, { opacity: 0.1 }) : futureColor,
                             width: Math.max(1, baseWidth - 1),
-                            dash: futureDash,
+                            dash: effectiveFadeOpacity >= 1.0 ? 'solid' : futureDash,
                         },
                         legendrank: idx,
                         legendgroup: yearLabel,
@@ -242,9 +244,9 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     } as PlotData)
                 }
             } else {
-                // Full mode (no fading) or current year in full-faded mode
+                // Current year in faded mode, or YTD mode fallthrough
                 const yearLabel = `'${String(year).slice(2)}`
-                const useCustom = viewMode === 'full-faded'
+                const useCustom = isFaded
                 traces.push({
                     type: "scatter",
                     mode: "lines",
@@ -253,7 +255,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     y: filledRows.map(r => r.cumulative),
                     customdata: filledRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
                     line: {
-                        color: isGreyed ? fadeColor(color) : color,
+                        color: isGreyed ? fadeColor(color, { opacity: 0.2 }) : color,
                         width: isActive ? 5 : (isGreyed ? 1 : defaultWidth),
                     },
                     legendrank: idx,
@@ -416,10 +418,10 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
         }
 
         return { data: traces, layout }
-    }, [ytdRows, activeYear, colorScale, plotColors, legendPosition, viewMode, fadeOpacity, futureDash])
+    }, [ytdRows, activeYear, colorScale, plotColors, legendPosition, viewMode, effectiveFadeOpacity, futureDash])
 
 
-    const isFadedMode = viewMode === 'full-faded'
+    const isFadedMode = viewMode === 'full-faded' || viewMode === 'full'
     const customHover = useCustomHover({
         data: data as any,
         groupKey: (trace: any) => trace.legendgroup ?? trace.name ?? '',
@@ -548,13 +550,19 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     <input
                         type="range"
                         min={0.05}
-                        max={0.5}
+                        max={1.0}
                         step={0.05}
-                        value={fadeOpacity}
-                        onChange={e => setFadeOpacity(parseFloat(e.target.value))}
+                        value={viewMode === 'full' ? 1.0 : fadeOpacity}
+                        onChange={e => {
+                            const v = parseFloat(e.target.value)
+                            setFadeOpacity(v)
+                            // Dragging slider switches to Faded mode (unless at 100%)
+                            if (v < 1.0 && viewMode === 'full') setViewMode('full-faded')
+                        }}
+                        disabled={viewMode === 'ytd'}
                         style={{ width: 80 }}
                     />
-                    <span style={{ fontSize: 11, minWidth: '2em' }}>{Math.round(fadeOpacity * 100)}%</span>
+                    <span style={{ fontSize: 11, minWidth: '2.5em' }}>{Math.round((viewMode === 'full' ? 1.0 : fadeOpacity) * 100)}%</span>
                     <select
                         value={futureDash}
                         onChange={e => setFutureDash(e.target.value)}
