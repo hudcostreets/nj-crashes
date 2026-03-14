@@ -258,13 +258,13 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                     <select
                         value={avgYears}
                         onChange={e => setAvgYears(parseInt(e.target.value))}
-                        style={{ background: 'transparent', color: 'inherit', border: 'none', borderBottom: '1px dashed currentColor', fontSize: 'inherit', fontFamily: 'inherit', cursor: 'pointer', padding: 0 }}
+                        style={{ background: 'transparent', color: 'inherit', border: 'none', borderBottom: '1px dotted currentColor', fontSize: 'inherit', fontFamily: 'inherit', cursor: 'pointer', padding: 0, width: `${String(avgYears).length + 0.5}ch`, appearance: 'none', WebkitAppearance: 'none', textAlign: 'center' }}
                     >
                         {[3, 5, 10, 15].filter(n => n <= rows.length).map(n => (
-                            <option key={n} value={n}>{n} years</option>
+                            <option key={n} value={n}>{n}</option>
                         ))}
-                        <option value={rows.length}>all ({rows.length} years)</option>
                     </select>
+                    {' '}years
                     {avgRatio >= 1
                         ? <>, car crashes killed an average of {avgRatio.toFixed(1)}x as many people as homicides in {region}. In {highlightRow.year}, crashes killed {highlightRow.ratio.toFixed(1)}x as many.</>
                         : <>, homicides outnumbered traffic deaths by {Math.round((1 / avgRatio - 1) * 100)}% on average in {region}. In {highlightRow.year}, the ratio was {highlightRow.ratio.toFixed(2)}x.</>
