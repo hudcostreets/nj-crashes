@@ -13,6 +13,7 @@ from njsp.paths import CRASHES_PQT, WWW_NJSP
 # Monthly type backfill from annual report PDFs (pre-2020)
 MONTHLY_TYPES_BACKFILL = join('www', 'njsp', 'data', 'annual-reports', 'monthly_types_from_pdfs.csv')
 COUNTY_MONTHLY_TYPES_BACKFILL = join('www', 'njsp', 'data', 'annual-reports', 'county_monthly_types_from_pdfs.csv')
+MUNI_MONTHLY_TYPES_BACKFILL = join('www', 'njsp', 'data', 'annual-reports', 'muni_monthly_types_from_pdfs.csv')
 
 CC2CN = {
     1: 'Atlantic', 2: 'Bergen', 3: 'Burlington', 4: 'Camden', 5: 'Cape May',
@@ -167,6 +168,23 @@ def update_www_data(force):
                     monthly.loc[idx, 'cyclist'] = row['cyclist']
     except FileNotFoundError:
         err(f"  Warning: {COUNTY_MONTHLY_TYPES_BACKFILL} not found, skipping county backfill")
+
+    # Backfill municipality-level monthly type data from annual report PDFs
+    try:
+        muni_backfill = pd.read_csv(MUNI_MONTHLY_TYPES_BACKFILL)
+        err(f"  Backfilling {len(muni_backfill)} muni monthly type rows from annual report PDFs...")
+        for _, row in muni_backfill.iterrows():
+            muni_mask = (monthly['cc'] == row['cc']) & (monthly['mc'] == row['mc'])
+            match = muni_mask & (monthly['year'] == row['year']) & (monthly['month'] == row['month'])
+            if match.any():
+                idx = monthly.index[match][0]
+                if monthly.loc[idx, 'driver'] == 0:
+                    monthly.loc[idx, 'driver'] = row['driver']
+                    monthly.loc[idx, 'passenger'] = row['passenger']
+                    monthly.loc[idx, 'pedestrian'] = row['pedestrian']
+                    monthly.loc[idx, 'cyclist'] = row['cyclist']
+    except FileNotFoundError:
+        err(f"  Warning: {MUNI_MONTHLY_TYPES_BACKFILL} not found, skipping muni backfill")
 
     monthly.to_csv(monthly_path, index=False)
     err(f"  Wrote {len(monthly)} rows")

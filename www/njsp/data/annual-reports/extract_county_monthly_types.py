@@ -7,9 +7,10 @@
 
 Parses the "Fatal Crashes by County, Municipality, Date, Time and Location" section.
 Each crash row has a "Persons Killed" field like "1 DRIVER", "1 PEDESTRIAN, 1 PASSENGER".
-Aggregates to county+month+type for backfilling monthly.csv.
+Aggregates to county+month+type (and optionally county+muni+month+type) for backfilling monthly.csv.
 """
 import csv
+import json
 import re
 import sys
 from collections import defaultdict
@@ -189,12 +190,137 @@ def aggregate_county_monthly(crashes: list[dict]) -> list[dict]:
     return rows
 
 
+# --- Municipality name matching ---
+
+# PDF suffix variations -> canonical suffix
+_SUFFIX_NORM = {
+    'TWSP': 'Twp', 'TWP': 'Twp', 'TOWNSHIP': 'Twp', 'TWS': 'Twp', 'TW': 'Twp',
+    'BORO': 'Boro', 'BOROUGH': 'Boro', 'BOR': 'Boro', 'BO': 'Boro',
+    'CITY': 'City', 'CIT': 'City',
+    'TOWN': 'Town', 'TO': 'Town',
+    'VILLAGE': 'Village', 'VILLAG': 'Village',
+}
+
+# Sorted longest-first so we match "TWSP" before "TWS" before "TW"
+_SUFFIX_KEYS = sorted(_SUFFIX_NORM.keys(), key=len, reverse=True)
+
+
+def _normalize_pdf_muni(raw: str) -> tuple[str, str]:
+    """Normalize a PDF municipality name. Returns (full_normalized, stem)."""
+    # Strip (cid:*) artifacts
+    n = re.sub(r'\(cid:\d+\)', '', raw).strip().title()
+    # Fix concatenated names (e.g. "Elizabethcity" -> "Elizabeth City")
+    for suf in ['City', 'Twsp', 'Twp', 'Boro', 'Town']:
+        if n.endswith(suf) and len(n) > len(suf) and n[-len(suf) - 1] != ' ':
+            n = n[:-len(suf)] + ' ' + suf
+            break
+    # Normalize suffix
+    for pdf_suf in _SUFFIX_KEYS:
+        ps = pdf_suf.title()
+        if n.endswith(f' {ps}'):
+            stem = n[:-(len(ps) + 1)]
+            canon = _SUFFIX_NORM[pdf_suf]
+            return f'{stem} {canon}', stem
+    # Handle truncated names (ending mid-word) — just return as stem
+    return n, n
+
+
+def _load_muni_lookup() -> dict[str, dict[str, int]]:
+    """Load cc2mc2mn.json and build per-county lookup: normalized_name -> mc."""
+    cc2mc2mn_path = REPORT_DIR.parent.parent / 'njdot' / 'cc2mc2mn.json'
+    if not cc2mc2mn_path.exists():
+        cc2mc2mn_path = Path('www/public/njdot/cc2mc2mn.json')
+    with open(cc2mc2mn_path) as f:
+        cc2mc2mn = json.load(f)
+
+    # county_name_upper -> { normalized_muni_name: mc, stem: mc }
+    lookup: dict[str, dict[str, int]] = {}
+    cn2cc: dict[str, int] = {}
+    for cc_str, info in cc2mc2mn.items():
+        cn = info.get('cn', '')
+        if not cn:
+            continue
+        cn2cc[cn.upper()] = int(cc_str)
+        mc2mn = info.get('mc2mn', {})
+        name2mc: dict[str, int] = {}
+        for mc_str, mn in mc2mn.items():
+            mc = int(mc_str)
+            name2mc[mn] = mc
+            # Also index by stem (strip suffix)
+            for suf in ['Twp', 'Boro', 'City', 'Town', 'Village']:
+                if mn.endswith(f' {suf}'):
+                    name2mc[mn[:-(len(suf) + 1)]] = mc
+                    break
+            else:
+                name2mc[mn] = mc
+        lookup[cn.upper()] = name2mc
+    return lookup
+
+
+def resolve_muni_codes(crashes: list[dict]) -> list[dict]:
+    """Add cc/mc fields to crash records by matching municipality names."""
+    lookup = _load_muni_lookup()
+
+    # Load CN2CC
+    cc2mc2mn_path = REPORT_DIR.parent.parent / 'njdot' / 'cc2mc2mn.json'
+    if not cc2mc2mn_path.exists():
+        cc2mc2mn_path = Path('www/public/njdot/cc2mc2mn.json')
+    with open(cc2mc2mn_path) as f:
+        cc2mc2mn = json.load(f)
+    cn2cc = {info['cn'].upper(): int(cc_str) for cc_str, info in cc2mc2mn.items() if info.get('cn')}
+
+    matched = unmatched = 0
+    for c in crashes:
+        county_upper = c['county'].upper()
+        cc = cn2cc.get(county_upper)
+        if not cc:
+            c['cc'] = None
+            c['mc'] = None
+            unmatched += 1
+            continue
+
+        name2mc = lookup.get(county_upper, {})
+        norm, stem = _normalize_pdf_muni(c['municipality'])
+        mc = name2mc.get(norm) or name2mc.get(stem)
+        c['cc'] = cc
+        c['mc'] = mc
+        if mc:
+            matched += 1
+        else:
+            unmatched += 1
+
+    err(f"  Muni matching: {matched} matched, {unmatched} unmatched ({unmatched*100/(matched+unmatched):.1f}%)")
+    return crashes
+
+
+def aggregate_muni_monthly(crashes: list[dict]) -> list[dict]:
+    """Aggregate per-crash records to county+muni+month type totals (only matched munis)."""
+    key_to_counts = defaultdict(lambda: {'driver': 0, 'passenger': 0, 'cyclist': 0, 'pedestrian': 0, 'fatalities': 0})
+    for c in crashes:
+        if not c.get('mc'):
+            continue
+        key = (c['year'], c['county'], c['cc'], c['mc'], c['month'])
+        agg = key_to_counts[key]
+        for t in ['driver', 'passenger', 'cyclist', 'pedestrian']:
+            agg[t] += c[t]
+        agg['fatalities'] += c['driver'] + c['passenger'] + c['cyclist'] + c['pedestrian']
+
+    rows = []
+    for (year, county, cc, mc, month), counts in sorted(key_to_counts.items()):
+        rows.append({
+            'year': year, 'county': county, 'cc': cc, 'mc': mc, 'month': month,
+            **counts,
+        })
+    return rows
+
+
 @click.command()
 @click.option('-o', '--output', default=None, help='Output CSV path (default: stdout)')
 @click.option('-r', '--raw', is_flag=True, help='Output raw per-crash records instead of aggregated')
+@click.option('-m', '--muni', is_flag=True, help='Aggregate at municipality level (includes cc/mc)')
 @click.option('-v', '--verbose', is_flag=True, help='Print progress to stderr')
 @click.option('-y', '--year', 'years', multiple=True, type=int, help='Only process specific year(s)')
-def main(output, raw, verbose, years):
+def main(output, raw, muni, verbose, years):
     """Extract county-level monthly victim type data from NJSP annual report PDFs."""
     pdfs = sorted(glob(str(REPORT_DIR / '*_fatal_crash*.pdf')))
     if not pdfs:
@@ -221,9 +347,15 @@ def main(output, raw, verbose, years):
             total = sum(c['driver'] + c['passenger'] + c['cyclist'] + c['pedestrian'] for c in crashes)
             err(f"  {yr}: {len(crashes)} crashes, {total} typed fatalities")
 
+    if muni or raw:
+        resolve_muni_codes(all_crashes)
+
     if raw:
-        fieldnames = ['year', 'county', 'month', 'municipality', 'date', 'persons_killed', 'driver', 'passenger', 'cyclist', 'pedestrian']
+        fieldnames = ['year', 'county', 'cc', 'mc', 'month', 'municipality', 'date', 'persons_killed', 'driver', 'passenger', 'cyclist', 'pedestrian']
         rows = all_crashes
+    elif muni:
+        fieldnames = ['year', 'county', 'cc', 'mc', 'month', 'driver', 'passenger', 'cyclist', 'pedestrian', 'fatalities']
+        rows = aggregate_muni_monthly(all_crashes)
     else:
         fieldnames = ['year', 'county', 'month', 'driver', 'passenger', 'cyclist', 'pedestrian', 'fatalities']
         rows = aggregate_county_monthly(all_crashes)
