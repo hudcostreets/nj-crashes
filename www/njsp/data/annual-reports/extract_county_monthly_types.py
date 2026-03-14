@@ -96,8 +96,8 @@ def extract_crashes_from_pdf(pdf_path: str) -> list[dict]:
                 if upper_line.count('.') > 10:
                     continue
 
-                # Check for county header (e.g. "ATLANTIC COUNTY" or "BERGEN COUNTY")
-                county_match = re.match(r'^([A-Z\s]+?)\s+COUNTY\s*$', upper_line)
+                # Check for county header (e.g. "ATLANTIC COUNTY", "PASSAICCOUNTY")
+                county_match = re.match(r'^([A-Z\s]+?)\s*COUNTY\s*$', upper_line)
                 if county_match:
                     cname = county_match.group(1).strip()
                     if cname in COUNTIES:
@@ -210,11 +210,8 @@ def main(output, raw, verbose, years):
         yr = int(m.group(1))
         if years and yr not in years:
             continue
-        # Skip 2020+ (NJSP feed has type data from 2020)
-        if yr >= 2020:
-            if verbose:
-                err(f"Skipping {fname} (>= 2020, feed has type data)")
-            continue
+        # Note: 2020+ also available from NJSP feed, but we extract for validation
+
 
         if verbose:
             err(f"Processing {fname}...")
