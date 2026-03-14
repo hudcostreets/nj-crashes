@@ -168,6 +168,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     const hasMuniFilter = propCc !== null && propMc !== null
     const [hoverTrace, setHoverTrace] = useState<string | null>(null)
     const [showProjected, setShowProjected] = useState(true)
+    const [projLighten, setProjLighten] = useSessionStorage<number>('njsp-deaths-projLighten', 0.85)
+    const [projSolidity, setProjSolidity] = useSessionStorage<number>('njsp-deaths-projSolidity', 0.35)
     const [timeGranularity, setTimeGranularity] = useSessionStorage<TimeGranularity>('njsp-deaths-timeGranularity', 'year')
     const containerRef = useRef<HTMLDivElement>(null)
     const [containerWidth, setContainerWidth] = useState(800)  // Default to reasonable width before ResizeObserver fires
@@ -445,10 +447,10 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                             pattern: {
                                 shape: '/',
                                 size: 6,
-                                solidity: 0.4,
+                                solidity: projSolidity,
                                 fgcolor: COLORS[type],
                                 fgopacity: 1,
-                                bgcolor: lightenColor(COLORS[type], 0.6),
+                                bgcolor: lightenColor(COLORS[type], projLighten),
                             },
                         } as any,
                         texttemplate: "%{y:d}*",
@@ -559,7 +561,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
         }
 
         return { data: traces, annotations, layout, projectedRemainder }
-    }, [ytRows, projections, activeType, showProjected, height, plotColors, containerWidth, isMonthly, monthlyRows])
+    }, [ytRows, projections, activeType, showProjected, projLighten, projSolidity, height, plotColors, containerWidth, isMonthly, monthlyRows])
 
     // Compute year totals for summary text
     const yearTotals = useMemo(() => {
@@ -671,18 +673,32 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                         )
                     })()}
                     {!isMonthly && showProjected && (
-                        <span className={css.iconLegendItem} style={{ opacity: 0.7 }}>
-                            <span className={css.iconLegendSwatch} style={{
-                                background: `repeating-linear-gradient(
-                                    -45deg,
-                                    #c890b8,
-                                    #c890b8 2px,
-                                    #e8a0a8 2px,
-                                    #e8a0a8 4px
-                                )`,
-                            }} />
-                            <span className={css.iconLegendLabel}>* projected</span>
-                        </span>
+                        <details style={{ display: 'inline', position: 'relative', cursor: 'pointer' }}>
+                            <summary className={css.iconLegendItem} style={{ opacity: 0.7, listStyle: 'none', display: 'inline-flex' }}>
+                                <span className={css.iconLegendSwatch} style={{
+                                    background: `repeating-linear-gradient(
+                                        -45deg,
+                                        ${COLORS.Drivers},
+                                        ${COLORS.Drivers} ${Math.round(projSolidity * 4)}px,
+                                        ${lightenColor(COLORS.Drivers, projLighten)} ${Math.round(projSolidity * 4)}px,
+                                        ${lightenColor(COLORS.Drivers, projLighten)} 4px
+                                    )`,
+                                }} />
+                                <span className={css.iconLegendLabel}>* projected</span>
+                            </summary>
+                            <div style={{ position: 'absolute', bottom: '100%', right: 0, zIndex: 100, background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 4, padding: '0.4em 0.6em', fontSize: 11, whiteSpace: 'nowrap' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4em', marginBottom: '0.3em' }}>
+                                    <label>Stripe:</label>
+                                    <input type="range" min={0.1} max={0.8} step={0.05} value={projSolidity} onChange={e => setProjSolidity(parseFloat(e.target.value))} style={{ width: 60 }} />
+                                    <span>{Math.round(projSolidity * 100)}%</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4em' }}>
+                                    <label>Lighten:</label>
+                                    <input type="range" min={0.3} max={0.95} step={0.05} value={projLighten} onChange={e => setProjLighten(parseFloat(e.target.value))} style={{ width: 60 }} />
+                                    <span>{Math.round(projLighten * 100)}%</span>
+                                </div>
+                            </div>
+                        </details>
                     )}
                 </div>
             </div>
