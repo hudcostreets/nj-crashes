@@ -651,21 +651,25 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                             </span>
                         )
                     })}
-                    {isMonthly && (
-                        <span
-                            className={`${css.iconLegendItem} ${activeType === '12-mo avg' as any ? css.solo : ''} ${activeType !== null && activeType !== '12-mo avg' as any ? css.greyed : ''}`}
-                            onClick={() => {
-                                const event = { data: traceNames.map(n => ({ name: n })), curveNumber: traceNames.indexOf('12-mo avg') }
-                                onLegendClick(event)
-                            }}
-                            onDoubleClick={() => onLegendDoubleClick()}
-                            onMouseEnter={() => setHoverTrace('12-mo avg')}
-                            onMouseLeave={() => setHoverTrace(null)}
-                        >
-                            <span className={css.iconLegendLine} />
-                            <span className={css.iconLegendLabel}>12-mo avg</span>
-                        </span>
-                    )}
+                    {isMonthly && (() => {
+                        const soloType = activeType && Types.includes(activeType) ? activeType : null
+                        const avgLiColor = soloType ? lightenColor(COLORS[soloType], 0.5) : undefined
+                        return (
+                            <span
+                                className={`${css.iconLegendItem} ${activeType === '12-mo avg' as any ? css.solo : ''}`}
+                                onClick={() => {
+                                    const event = { data: traceNames.map(n => ({ name: n })), curveNumber: traceNames.indexOf('12-mo avg') }
+                                    onLegendClick(event)
+                                }}
+                                onDoubleClick={() => onLegendDoubleClick()}
+                                onMouseEnter={() => setHoverTrace('12-mo avg')}
+                                onMouseLeave={() => setHoverTrace(null)}
+                            >
+                                <span className={css.iconLegendLine} style={avgLiColor ? { background: avgLiColor } : undefined} />
+                                <span className={css.iconLegendLabel} style={avgLiColor ? { color: avgLiColor } : undefined}>12-mo avg</span>
+                            </span>
+                        )
+                    })()}
                     {!isMonthly && showProjected && (
                         <span className={css.iconLegendItem} style={{ opacity: 0.7 }}>
                             <span className={css.iconLegendSwatch} style={{
