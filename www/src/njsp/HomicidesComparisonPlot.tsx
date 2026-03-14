@@ -266,14 +266,16 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                     </select>
                     {' '}years
                     {(() => {
-                        const fmtRatio = (r: number) => {
-                            if (r >= 1.8) return `${r.toFixed(1)}x as many people as`
-                            if (r >= 1) return `${Math.round((r - 1) * 100)}% more people than`
-                            return `${Math.round((1 - r) * 100)}% fewer people than`
+                        const fmtRatio = (r: number): [string, string] => {
+                            if (r >= 1.8) return [`${r.toFixed(1)}x as many`, 'people as']
+                            if (r >= 1) return [`${Math.round((r - 1) * 100)}% more`, 'people than']
+                            return [`${Math.round((1 - r) * 100)}% fewer`, 'people than']
                         }
+                        const [avgBold, avgRest] = fmtRatio(avgRatio)
+                        const [hlBold, hlRest] = fmtRatio(highlightRow.ratio)
                         return <>
-                            , car crashes killed {fmtRatio(avgRatio)} homicides in {region}.
-                            {' '}In {highlightRow.year}, crashes killed {fmtRatio(highlightRow.ratio)} homicides.
+                            , car crashes killed <b>{avgBold}</b> {avgRest} homicides in {region}.
+                            <br />In {highlightRow.year}, crashes killed <b>{hlBold}</b> {hlRest} homicides.
                         </>
                     })()}
                 </p>
