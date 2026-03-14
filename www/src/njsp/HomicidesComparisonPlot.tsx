@@ -17,7 +17,7 @@ type CrashSource = 'njsp' | 'njdot'
 
 // Data sources for this plot
 const SOURCES: DataSource[] = [
-    { label: "NJ State Police", href: "https://njsp.njoag.gov/fatal-crash-statistics/", note: "Traffic deaths (fatal crashes)" },
+    { label: "NJ State Police", href: "https://njsp.njoag.gov/fatal-crash-statistics/", note: "Car crash deaths" },
     { label: "NJ State Police UCR", href: "https://njsp.njoag.gov/crime-reports/", note: "Homicide data" },
     { label: "Disaster Center", href: "https://www.disastercenter.com/crime/njcrimn.htm", note: "Historical homicide data" },
 ]
@@ -66,7 +66,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
     const crashHomicideQuery = useMemo(() => crashHomicideQueryFn(county ?? null, effectiveSource), [county, effectiveSource])
     const rows = useQuery<CrashHomicideRow>({ db: crashHomicideDb, query: crashHomicideQuery, init: [] })
 
-    const TRACE_NAMES = useMemo(() => ['Traffic deaths', 'Homicides', 'Ratio'], [])
+    const TRACE_NAMES = useMemo(() => ['Car crash deaths', 'Homicides', 'Ratio'], [])
     const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(TRACE_NAMES, hoverTrace)
 
     // Pre-compute value arrays for dual-axis alignment hook (must be unconditional)
@@ -87,7 +87,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
             const v = Number(r.ratio)
             return isFinite(v) ? v : 0
         })
-        const trafficActive = activeTrace === 'Traffic deaths'
+        const trafficActive = activeTrace === 'Car crash deaths'
         const homicidesActive = activeTrace === 'Homicides'
         const ratioActive = activeTrace === 'Ratio'
         const trafficGreyed = activeTrace !== null && !trafficActive
@@ -116,7 +116,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
         } as any as PlotData)
 
         const traces: PlotData[] = [
-            barTrace('Traffic deaths', trafficDeaths, TRAFFIC_COLOR, trafficActive, trafficGreyed, 'traffic deaths'),
+            barTrace('Car crash deaths', trafficDeaths, TRAFFIC_COLOR, trafficActive, trafficGreyed, 'car crash deaths'),
             barTrace('Homicides', homicides, HOMICIDE_COLOR, homicidesActive, homicidesGreyed, 'homicides'),
             // Ratio line (secondary y-axis)
             {
@@ -226,7 +226,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
 
     return (
         <div>
-            <h2 id={id}><a href={`#${id}`}>Traffic Deaths vs. Homicides</a></h2>
+            <h2 id={id}><a href={`#${id}`}>Car Crash Deaths vs. Homicides</a></h2>
             <div className={css.subtitle}>{sourceLabel} fatalities, {minYear}–{maxYear}{county ? ` · ${county} County` : ''}</div>
             <PlotWrapper
                 id={id}
