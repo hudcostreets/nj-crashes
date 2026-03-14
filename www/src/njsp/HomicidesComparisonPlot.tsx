@@ -4,6 +4,7 @@ import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { CrashHomicideCsv } from "@/src/paths"
 import { fadeColor, useSoloTrace } from "pltly"
+import { useAlignedDualAxes } from "pltly/react"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo, DataSource } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
@@ -67,6 +68,11 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
     const TRACE_NAMES = useMemo(() => ['Traffic deaths', 'Homicides', 'Ratio'], [])
     const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(TRACE_NAMES, hoverTrace)
 
+    // Pre-compute value arrays for dual-axis alignment hook (must be unconditional)
+    const deathValues = useMemo(() => rows.flatMap(r => [r.traffic_deaths, r.homicides]), [rows])
+    const ratioValues = useMemo(() => rows.map(r => Number(r.ratio)).filter(isFinite), [rows])
+    const axisAlignment = useAlignedDualAxes({ values1: deathValues, values2: ratioValues })
+
     // Build plot data
     const { data, layout, maxRatioRow, avgRatio } = useMemo(() => {
         if (!rows.length) {
@@ -80,13 +86,6 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
             const v = Number(r.ratio)
             return isFinite(v) ? v : 0
         })
-
-        // Dynamic y-axis ranges
-        const maxDeaths = Math.max(...trafficDeaths, ...homicides)
-        const maxRatioVal = Math.max(...ratios.filter(r => isFinite(r)))
-        const deathsCeil = Math.ceil(maxDeaths / 50) * 50
-        const ratioCeil = Math.ceil(maxRatioVal * 5) / 5 + 0.2
-
         const trafficActive = activeTrace === 'Traffic deaths'
         const homicidesActive = activeTrace === 'Homicides'
         const ratioActive = activeTrace === 'Ratio'
@@ -163,7 +162,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 gridcolor: plotColors.gridColor,
                 fixedrange: true,
                 rangemode: "tozero",
-                range: [0, deathsCeil],
+                ...axisAlignment?.yaxis,
                 title: {
                     text: "Deaths",
                     font: { color: plotColors.textColor },
@@ -177,7 +176,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 fixedrange: true,
                 overlaying: "y",
                 side: "right",
-                range: [0, ratioCeil],
+                ...axisAlignment?.yaxis2,
                 title: {
                     text: "Ratio",
                     font: { color: plotColors.textColor },
@@ -205,7 +204,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
             : 0
 
         return { data: traces, layout, maxRatioRow, avgRatio }
-    }, [rows, activeTrace, plotColors])
+    }, [rows, activeTrace, plotColors, axisAlignment])
 
 
     if (!data.length) {
