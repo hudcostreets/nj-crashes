@@ -55,6 +55,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
     const plotColors = usePlotColors()
 
     const [hoverTrace, setHoverTrace] = useState<string | null>(null)
+    const [avgYears, setAvgYears] = useSessionStorage<number>('homicides-avg-years', 5)
     // Only show source toggle for statewide (county data is NJSP-only)
     const [crashSource, setCrashSource] = useSessionStorage<CrashSource>('homicides-crash-source', 'njsp')
     // Force NJSP for county views
@@ -194,27 +195,24 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
             dragmode: false,
         }
 
-        // Compute stats for caption
+        // Compute stats for caption (using configurable window)
         const validRatios = rows
             .map(r => ({ ...r, ratio: Number(r.ratio) }))
             .filter(r => isFinite(r.ratio))
-        const avgRatio = validRatios.length
-            ? validRatios.reduce((s, r) => s + r.ratio, 0) / validRatios.length
+        const recentN = validRatios.slice(-avgYears)
+        const avgRatio = recentN.length
+            ? recentN.reduce((s, r) => s + r.ratio, 0) / recentN.length
             : 0
 
-        // Pick a notable year to highlight:
-        // Prefer most recent year, or highest ratio in last 5 years
-        const latestYear = validRatios.length ? validRatios[validRatios.length - 1] : null
-        const recent5 = validRatios.slice(-5)
-        const recent5Max = recent5.length ? recent5.reduce((a, b) => b.ratio > a.ratio ? b : a) : null
-        // Use the 5-year max if it's notably higher than the most recent year (>20% higher)
-        // Otherwise just use the most recent year
-        const highlightRow = (recent5Max && latestYear && recent5Max.ratio > latestYear.ratio * 1.2)
-            ? recent5Max
+        // Pick a notable year: highest in the window, or most recent if close
+        const latestYear = recentN.length ? recentN[recentN.length - 1] : null
+        const recentMax = recentN.length ? recentN.reduce((a, b) => b.ratio > a.ratio ? b : a) : null
+        const highlightRow = (recentMax && latestYear && recentMax.ratio > latestYear.ratio * 1.2)
+            ? recentMax
             : latestYear
 
         return { data: traces, layout, highlightRow, avgRatio }
-    }, [rows, activeTrace, plotColors, axisAlignment])
+    }, [rows, activeTrace, plotColors, axisAlignment, avgYears])
 
 
     if (!data.length) {
@@ -256,9 +254,20 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
             </div>
             {highlightRow && (
                 <p className={css.plotStats}>
+                    Over the last{' '}
+                    <select
+                        value={avgYears}
+                        onChange={e => setAvgYears(parseInt(e.target.value))}
+                        style={{ background: 'transparent', color: 'inherit', border: 'none', borderBottom: '1px dashed currentColor', fontSize: 'inherit', fontFamily: 'inherit', cursor: 'pointer', padding: 0 }}
+                    >
+                        {[3, 5, 10, 15].filter(n => n <= rows.length).map(n => (
+                            <option key={n} value={n}>{n} years</option>
+                        ))}
+                        <option value={rows.length}>all ({rows.length} years)</option>
+                    </select>
                     {avgRatio >= 1
-                        ? <>Car crashes killed an average of {avgRatio.toFixed(1)}x as many people as homicides in {region}. In {highlightRow.year}, crashes killed {highlightRow.ratio.toFixed(1)}x as many.</>
-                        : <>In {region}, {avgRatio < 1 ? 'homicides outnumbered' : 'crashes matched'} traffic deaths on average ({avgRatio.toFixed(2)}x ratio).</>
+                        ? <>, car crashes killed an average of {avgRatio.toFixed(1)}x as many people as homicides in {region}. In {highlightRow.year}, crashes killed {highlightRow.ratio.toFixed(1)}x as many.</>
+                        : <>, homicides outnumbered traffic deaths by {Math.round((1 / avgRatio - 1) * 100)}% on average in {region}. In {highlightRow.year}, the ratio was {highlightRow.ratio.toFixed(2)}x.</>
                     }
                 </p>
             )}
