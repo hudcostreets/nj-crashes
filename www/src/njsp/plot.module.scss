@@ -124,7 +124,6 @@
 .iconLegend {
   display: inline-flex;
   align-items: center;
-  gap: 0.8em;
   font-size: 13px;
   color: var(--text-secondary);
 }
@@ -133,6 +132,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25em;
+  padding: 0 0.4em;
   cursor: pointer;
   transition: opacity 0.15s;
   user-select: none;
