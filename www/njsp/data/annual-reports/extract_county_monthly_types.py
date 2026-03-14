@@ -205,15 +205,48 @@ _SUFFIX_NORM = {
 _SUFFIX_KEYS = sorted(_SUFFIX_NORM.keys(), key=len, reverse=True)
 
 
+# Manual fixes for names that can't be resolved by normalization alone
+_MUNI_FIXES = {
+    # Spelling variations
+    ('BURLINGTON', 'EASTHAMPTON TWSP'): 'Eastampton Twp',
+    ('BURLINGTON', 'EASTHAMPTON TWSP(cid:3)'): 'Eastampton Twp',
+    # Cross-county (crash investigated by different troop than location county)
+    ('UNION', 'PILESGROVE TWSP'): None,  # Salem county, skip
+    ('UNION', 'PENNSVILLE TWSP'): None,  # Salem county, skip
+    ('UNION', 'CARNEYS POINT TWSP'): None,  # Salem county, skip
+    ('MONMOUTH', 'CLIFTON CITY'): None,  # Passaic county, skip
+    ('MONMOUTH', 'PATERSON CITY'): None,  # Passaic county, skip
+    ('MONMOUTH', 'PASSAIC CITY'): None,  # Passaic county, skip
+    ('MONMOUTH', 'WAYNE TWSP'): None,  # Passaic county, skip
+    ('MONMOUTH', 'RINGWOOD BORO'): None,  # Passaic county, skip
+    # Ho-Ho-Kus hyphenation
+    ('BERGEN', 'HOHOKUS BORO'): 'Ho-Ho-Kus Boro',
+    # Ambiguous "Washington" (multiple NJ munis named Washington)
+    ('MERCER', 'WASHINGTON TWP'): 'Washington Twp',
+    ('WARREN', 'WASHINGTONBORO'): 'Washington Boro',
+    # Truncated
+    ('OCEAN', 'POINT PLEASANT BEAC'): 'Point Pleasant Beach Boro',
+    # Spelling error in PDF
+    ('MORRIS', 'EAST HONOVER TWSP'): 'East Hanover Twp',
+    # Cross-county
+    ('MONMOUTH', 'WEST MILFORD TWSP'): None,  # Passaic county, skip
+    # Concatenated multi-word names
+    ('UNION', 'ROSELLEPARKBORO'): 'Roselle Park Boro',
+}
+
+
 def _normalize_pdf_muni(raw: str) -> tuple[str, str]:
     """Normalize a PDF municipality name. Returns (full_normalized, stem)."""
     # Strip (cid:*) artifacts
     n = re.sub(r'\(cid:\d+\)', '', raw).strip().title()
-    # Fix concatenated names (e.g. "Elizabethcity" -> "Elizabeth City")
-    for suf in ['City', 'Twsp', 'Twp', 'Boro', 'Town']:
+    # Fix concatenated names: try splitting before known suffixes
+    # Handle multi-word stems like "West Milford" by trying all suffix positions
+    for suf in ['City', 'Twsp', 'Twp', 'Boro', 'Bor', 'Town', 'Village']:
         if n.endswith(suf) and len(n) > len(suf) and n[-len(suf) - 1] != ' ':
             n = n[:-len(suf)] + ' ' + suf
             break
+    # Also handle "Tomsriver" -> "Toms River" style (no suffix, just concatenated words)
+    # This is handled by prefix matching below
     # Normalize suffix
     for pdf_suf in _SUFFIX_KEYS:
         ps = pdf_suf.title()
@@ -223,6 +256,37 @@ def _normalize_pdf_muni(raw: str) -> tuple[str, str]:
             return f'{stem} {canon}', stem
     # Handle truncated names (ending mid-word) — just return as stem
     return n, n
+
+
+def _prefix_match(name: str, name2mc: dict[str, int], min_chars: int = 5) -> int | None:
+    """Match a (possibly truncated) name against known munis by longest prefix."""
+    n = name.lower().rstrip()
+    # Strip spaces for concatenated-name matching (e.g. "westmilford" matches "west milford")
+    n_nospace = n.replace(' ', '').replace('-', '')
+    candidates = []
+    for known, mc in name2mc.items():
+        k = known.lower()
+        k_nospace = k.replace(' ', '').replace('-', '')
+        # Exact prefix match
+        if k.startswith(n) and len(n) >= min_chars:
+            candidates.append((mc, known))
+        elif n.startswith(k) and len(k) >= min_chars:
+            candidates.append((mc, known))
+        # Space-stripped prefix match (handles concatenated names)
+        elif k_nospace.startswith(n_nospace) and len(n_nospace) >= min_chars:
+            candidates.append((mc, known))
+        elif n_nospace.startswith(k_nospace) and len(k_nospace) >= min_chars:
+            candidates.append((mc, known))
+    if len(candidates) == 1:
+        return candidates[0][0]
+    # If multiple candidates, try to disambiguate by length (prefer closest match)
+    if len(candidates) > 1:
+        # Sort by how close the lengths are
+        candidates.sort(key=lambda x: abs(len(x[1]) - len(name)))
+        # If the best is much closer than the second, use it
+        if len(candidates[0][1]) - len(name) < len(candidates[1][1]) - len(name):
+            return candidates[0][0]
+    return None
 
 
 def _load_muni_lookup() -> dict[str, dict[str, int]]:
@@ -280,8 +344,23 @@ def resolve_muni_codes(crashes: list[dict]) -> list[dict]:
             continue
 
         name2mc = lookup.get(county_upper, {})
-        norm, stem = _normalize_pdf_muni(c['municipality'])
-        mc = name2mc.get(norm) or name2mc.get(stem)
+
+        # Check manual fixes first
+        raw_muni = re.sub(r'\(cid:\d+\)', '', c['municipality']).strip().upper()
+        fix_key = (county_upper, raw_muni)
+        if fix_key in _MUNI_FIXES:
+            fix_val = _MUNI_FIXES[fix_key]
+            if fix_val is None:
+                # Cross-county crash — skip (can't assign to a muni in this county)
+                c['cc'] = cc
+                c['mc'] = None
+                unmatched += 1
+                continue
+            mc = name2mc.get(fix_val) or name2mc.get(fix_val.split()[0])
+        else:
+            norm, stem = _normalize_pdf_muni(c['municipality'])
+            mc = name2mc.get(norm) or name2mc.get(stem) or _prefix_match(stem, name2mc)
+
         c['cc'] = cc
         c['mc'] = mc
         if mc:
