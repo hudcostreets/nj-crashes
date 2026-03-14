@@ -258,17 +258,24 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                     <select
                         value={avgYears}
                         onChange={e => setAvgYears(parseInt(e.target.value))}
-                        style={{ background: 'transparent', color: 'inherit', border: 'none', borderBottom: '1px dotted currentColor', fontSize: 'inherit', fontFamily: 'inherit', cursor: 'pointer', padding: 0, width: `${String(avgYears).length + 0.5}ch`, appearance: 'none', WebkitAppearance: 'none', textAlign: 'center' }}
+                        style={{ background: 'transparent', color: 'inherit', border: 'none', borderBottom: '1px dotted currentColor', fontSize: '1.1em', fontWeight: 'bold', fontFamily: 'inherit', cursor: 'pointer', padding: 0, width: `${String(avgYears).length + 0.5}ch`, appearance: 'none', WebkitAppearance: 'none', textAlign: 'center' }}
                     >
                         {[3, 5, 10, 15].filter(n => n <= rows.length).map(n => (
                             <option key={n} value={n}>{n}</option>
                         ))}
                     </select>
                     {' '}years
-                    {avgRatio >= 1
-                        ? <>, car crashes killed an average of {avgRatio.toFixed(1)}x as many people as homicides in {region}. In {highlightRow.year}, crashes killed {highlightRow.ratio.toFixed(1)}x as many.</>
-                        : <>, homicides outnumbered traffic deaths by {Math.round((1 / avgRatio - 1) * 100)}% on average in {region}. In {highlightRow.year}, the ratio was {highlightRow.ratio.toFixed(2)}x.</>
-                    }
+                    {(() => {
+                        const fmtRatio = (r: number) => {
+                            if (r >= 1.8) return `${r.toFixed(1)}x as many people as`
+                            if (r >= 1) return `${Math.round((r - 1) * 100)}% more people than`
+                            return `${Math.round((1 - r) * 100)}% fewer people than`
+                        }
+                        return <>
+                            , car crashes killed {fmtRatio(avgRatio)} homicides in {region}.
+                            {' '}In {highlightRow.year}, crashes killed {fmtRatio(highlightRow.ratio)} homicides.
+                        </>
+                    })()}
                 </p>
             )}
         </div>
