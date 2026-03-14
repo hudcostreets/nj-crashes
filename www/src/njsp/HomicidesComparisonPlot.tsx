@@ -74,9 +74,9 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
     const axisAlignment = useAlignedDualAxes({ values1: deathValues, values2: ratioValues })
 
     // Build plot data
-    const { data, layout, maxRatioRow, avgRatio } = useMemo(() => {
+    const { data, layout, highlightRow, avgRatio } = useMemo(() => {
         if (!rows.length) {
-            return { data: [] as PlotData[], layout: {} as Partial<Layout>, maxRatioRow: null as CrashHomicideRow | null, avgRatio: 0 }
+            return { data: [] as PlotData[], layout: {} as Partial<Layout>, highlightRow: null as (CrashHomicideRow & { ratio: number }) | null, avgRatio: 0 }
         }
 
         const years = rows.map(r => r.year)
@@ -198,12 +198,22 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
         const validRatios = rows
             .map(r => ({ ...r, ratio: Number(r.ratio) }))
             .filter(r => isFinite(r.ratio))
-        const maxRatioRow = validRatios.length ? validRatios.reduce((a, b) => (b.ratio > a.ratio ? b : a), validRatios[0]) : null
         const avgRatio = validRatios.length
             ? validRatios.reduce((s, r) => s + r.ratio, 0) / validRatios.length
             : 0
 
-        return { data: traces, layout, maxRatioRow, avgRatio }
+        // Pick a notable year to highlight:
+        // Prefer most recent year, or highest ratio in last 5 years
+        const latestYear = validRatios.length ? validRatios[validRatios.length - 1] : null
+        const recent5 = validRatios.slice(-5)
+        const recent5Max = recent5.length ? recent5.reduce((a, b) => b.ratio > a.ratio ? b : a) : null
+        // Use the 5-year max if it's notably higher than the most recent year (>20% higher)
+        // Otherwise just use the most recent year
+        const highlightRow = (recent5Max && latestYear && recent5Max.ratio > latestYear.ratio * 1.2)
+            ? recent5Max
+            : latestYear
+
+        return { data: traces, layout, highlightRow, avgRatio }
     }, [rows, activeTrace, plotColors, axisAlignment])
 
 
@@ -244,10 +254,10 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                     </div>
                 )}
             </div>
-            {maxRatioRow && (
+            {highlightRow && (
                 <p className={css.plotStats}>
                     {avgRatio >= 1
-                        ? <>Car crashes killed an average of {avgRatio.toFixed(1)}x as many people as homicides in {region}. In {maxRatioRow.year}, crashes killed {Number(maxRatioRow.ratio).toFixed(1)}x as many.</>
+                        ? <>Car crashes killed an average of {avgRatio.toFixed(1)}x as many people as homicides in {region}. In {highlightRow.year}, crashes killed {highlightRow.ratio.toFixed(1)}x as many.</>
                         : <>In {region}, {avgRatio < 1 ? 'homicides outnumbered' : 'crashes matched'} traffic deaths on average ({avgRatio.toFixed(2)}x ratio).</>
                     }
                 </p>
