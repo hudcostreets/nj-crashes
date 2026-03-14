@@ -221,10 +221,15 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
             const isActive = activeYear === year
             const isGreyed = activeYear !== null && !isActive
 
-            // Get values for each month
+            // Get values for each month (null for future months of current year → hidden from hover)
+            const isCurrentYear = year === currentYear
             const values = MONTH_NAMES.map((_, i) => {
-                const row = monthData.get(i + 1)
-                return row ? getValue(row) : 0
+                const month = i + 1
+                const row = monthData.get(month)
+                if (row) return getValue(row)
+                // Future month of current year: null (omit from hover/bars)
+                if (isCurrentYear && month >= currentMonth) return null
+                return 0
             })
 
             const trace: any = {
@@ -239,7 +244,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
                 legendrank: idx,
                 hovertemplate: `%{y}<extra>'${String(year).slice(2)}</extra>`,
                 // Show text labels on bars when this year is active
-                text: isActive ? values.map(v => v > 0 ? `<b>${v}</b>` : '') : undefined,
+                text: isActive ? values.map(v => v && v > 0 ? `<b>${v}</b>` : '') : undefined,
                 textposition: isActive ? 'outside' : undefined,
                 textfont: isActive ? { color: '#ffffff', size: 14 } : undefined,
                 // Add vertical offset for text above bars
