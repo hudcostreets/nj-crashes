@@ -1,0 +1,27 @@
+{
+  "dependencies": {
+    "use-prms": {
+      "localPath": "../../../js/use-prms",
+      "github": "runsascoded/use-prms",
+      "npm": "use-prms",
+      "distBranch": "dist"
+    },
+    "pltly": {
+      "localPath": "../../../js/pltly",
+      "gitlab": "runsascoded/js/pltly",
+      "distBranch": "dist"
+    },
+    "pnpm-dep-source": {
+      "localPath": "../../../js/pds",
+      "github": "runsascoded/pnpm-dep-source",
+      "npm": "pnpm-dep-source",
+      "distBranch": "dist"
+    },
+    "plotly.js": {
+      "localPath": "../../../plotly.js",
+      "github": "runsascoded/plotly.js",
+      "npm": "plotly.js",
+      "distBranch": "dist"
+    }
+  }
+}

@@ -1,5 +1,4 @@
-import { Annotations, Layout, PlotData } from "plotly.js";
-import * as Plotly from "react-plotly.js";
+import { Annotations, Config, Data as PlotlyData, Layout, PlotData } from "plotly.js";
 import { TableData, useCsvTable, useTable } from "@/src/tableData";
 import { useDb, useQuery } from "@/src/lib/DuckDbContext";
 import { curYear, prvYear } from "@/src/constants";
@@ -18,7 +17,7 @@ import { PlotInfo } from "@/src/icons";
 import { Crash, Total } from "@/src/use-njsp-crashes";
 import css from "./plot.module.scss"
 
-export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
+export type PlotParams = { data: PlotData[], layout: Partial<Layout>, config?: Partial<Config>, [key: string]: unknown }
 export type Annotation = Partial<Annotations>
 
 export type Year = "2021" | "2022" | typeof prvYear | typeof curYear

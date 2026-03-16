@@ -3,7 +3,9 @@
 
 import { getBasePath } from "./basePath"
 import { CC2MC2MN } from "@/src/county"
-import { PlotParams } from "react-plotly.js"
+import type { Data, Layout, Config } from "plotly.js"
+import type { CSSProperties } from "react"
+type PlotParams = { data: Data[], layout: Partial<Layout>, config?: Partial<Config>, style?: CSSProperties, [key: string]: unknown }
 import { PlotSpec, PlotsDict } from "@/src/lib/plot"
 
 const cache: Record<string, any> = {}

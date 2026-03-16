@@ -1,8 +1,7 @@
-import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef } from "react"
 import { PlotData, Layout, Margin, PlotRelayoutEvent } from "plotly.js"
-import { useLegendHover, usePlotlyHoverDismiss, LegendClickEvent } from "pltly"
-
-const PlotlyComponent = lazy(() => import("react-plotly.js"))
+import { Plot } from "pltly/react"
+import { LegendClickEvent, useLegendHover } from "pltly"
 
 export type LegendHandlers = {
     onLegendClick?: (event: LegendClickEvent) => boolean | void
@@ -40,86 +39,48 @@ export default function PlotWrapper({
     onHover,
     onUnhover,
 }: Props) {
-    const [initialized, setInitialized] = useState(false)
     const height = layout.height ?? DEFAULT_HEIGHT
     const containerRef = useRef<HTMLDivElement>(null)
-    const setupHoverDismiss = usePlotlyHoverDismiss(containerRef)
 
-    // Legend hover via pltly
+    // Legend hover detection (forwarded to consumer, no auto-fading)
     const traceNames = useMemo(
         () => data.filter(t => t.showlegend !== false).map(t => String(t.name ?? '')).filter(Boolean),
         [data],
     )
     const { hoverTrace, handlers: legendHoverHandlers } = useLegendHover(containerRef, traceNames)
 
-    // Forward hover state to consumer
     useEffect(() => {
         onHoverTrace?.(hoverTrace)
     }, [hoverTrace])
 
     return (
-        <div
-            ref={containerRef}
-            className={`plot-wrapper ${className || ""}`}
-            style={{
-                minHeight: `${height}px`,
-                WebkitTouchCallout: 'none',
-                WebkitUserSelect: 'none',
-                userSelect: 'none',
-                // @ts-ignore - WebkitTapHighlightColor is a valid CSS property for mobile Safari
-                WebkitTapHighlightColor: 'transparent',
-            }}
-            onContextMenu={e => e.preventDefault()}
-        >
-            {!initialized && (
-                <div style={{
+        <div ref={containerRef}>
+            <Plot
+                data={data}
+                layout={layout}
+                config={{ displayModeBar: false, scrollZoom: false, responsive: true }}
+                style={{
+                    width: "100%",
                     height: `${height}px`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: 0.5,
-                }}>Loading...</div>
-            )}
-            <Suspense fallback={null}>
-                <PlotlyComponent
-                    onInitialized={() => {
-                        setInitialized(true)
-                        setupHoverDismiss()
-                        legendHoverHandlers.onInitialized()
-                    }}
-                    onUpdate={() => {
-                        setupHoverDismiss()
-                        legendHoverHandlers.onUpdate()
-                    }}
-                    onLegendClick={e => {
-                        if (onLegendClick) {
-                            const result = onLegendClick(e as LegendClickEvent)
-                            return result === undefined ? true : result
-                        }
-                        return true
-                    }}
-                    onLegendDoubleClick={() => {
-                        if (onLegendDoubleClick) {
-                            const result = onLegendDoubleClick()
-                            return result === undefined ? true : result
-                        }
-                        return true
-                    }}
-                    onRelayout={e => onRelayout?.(e)}
-                    onHover={onHover}
-                    onUnhover={onUnhover}
-                    className="plotly"
-                    data={data}
-                    config={{ displayModeBar: false, scrollZoom: false, responsive: true }}
-                    style={{
-                        visibility: initialized ? undefined : "hidden",
-                        width: "100%",
+                    minHeight: `${height}px`,
+                }}
+                onLegendClick={onLegendClick as ((data: unknown) => boolean) | undefined}
+                onLegendDoubleClick={onLegendDoubleClick as (() => boolean) | undefined}
+                onRelayout={onRelayout}
+                onInitialized={legendHoverHandlers.onInitialized}
+                onUpdate={legendHoverHandlers.onUpdate}
+                disableLegendHover
+                disableSoloTrace
+                fallback={
+                    <div style={{
                         height: `${height}px`,
-                        minHeight: `${height}px`,
-                    }}
-                    layout={layout}
-                />
-            </Suspense>
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: 0.5,
+                    }}>Loading...</div>
+                }
+            />
         </div>
     )
 }
