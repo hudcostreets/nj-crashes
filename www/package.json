@@ -35,7 +35,7 @@
     "moment-timezone": "^0.5.45",
     "plotly.js": "https://github.com/runsascoded/plotly.js#bef8f3d7db5c2b56223b0e4bd83a9e06bea71f65",
     "plotly.js-dist-min": "^3.4.0",
-    "pltly": "https://gitlab.com/runsascoded/js/pltly/-/archive/0b6ac99f3270fad707d054e6f6ff0e7eb8887281/pltly-0b6ac99f3270fad707d054e6f6ff0e7eb8887281.tar.gz",
+    "pltly": "https://gitlab.com/runsascoded/js/pltly/-/archive/c943b8d182dd51d446b84ef623d55724a59aed34/pltly-c943b8d182dd51d446b84ef623d55724a59aed34.tar.gz",
     "react": "^18",
     "react-dom": "^18",
     "react-helmet-async": "^2.0.4",
@@ -60,7 +60,7 @@
     "@vanilla-extract/vite-plugin": "^4.0.0",
     "@vitejs/plugin-react": "^4.2.1",
     "buffer": "^6.0.3",
-    "pnpm-dep-source": "https://github.com/runsascoded/pnpm-dep-source#71e7fe346c45ffeab88d720e449a16b7873238b5",
+    "pnpm-dep-source": "https://github.com/runsascoded/pnpm-dep-source#3b079581473bf9e1654cfb2cd944e01d259ffdb8",
     "typescript": "^5",
     "vite": "^5.0.10"
   }
