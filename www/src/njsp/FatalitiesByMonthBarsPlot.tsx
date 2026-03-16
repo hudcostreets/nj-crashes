@@ -3,7 +3,6 @@ import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { MonthlyCsv } from "@/src/paths"
-import { fadeColor, useSoloTrace } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
@@ -139,7 +138,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
     const db = useDb()
     const plotColors = usePlotColors()
 
-    const [hoverTrace, setHoverTrace] = useState<string | null>(null)
+    const [activeTrace, setActiveTrace] = useState<string | null>(null)
 
     // Per-plot settings (scoped by plot ID in session storage)
     const [colorScaleName, setColorScaleName] = useSessionStorage<ColorScaleName>(`plot-${id}-colorscale`, 'inferno')
@@ -153,15 +152,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
     const monthlyQueryStr = useMemo(() => monthlyQueryFn(county ?? null, cc ?? null, mc ?? null), [county, cc, mc])
     const monthlyRows = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
 
-    // Compute trace names from data for solo hook
-    const traceNames = useMemo(() => {
-        const years = [...new Set(monthlyRows.map(r => r.year))].sort((a, b) => a - b)
-        return years.map(y => `'${String(y).slice(2)}`)
-    }, [monthlyRows])
-
-    const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(traceNames, hoverTrace)
-
-    // Derive year from string trace name
+    // Derive year from active trace name
     const activeYear = useMemo(() => {
         if (!activeTrace) return null
         const match = activeTrace.match(/'(\d{2})/)
@@ -219,7 +210,6 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
             const color = getColorAt(colorScale, t)
 
             const isActive = activeYear === year
-            const isGreyed = activeYear !== null && !isActive
 
             // Get values for each month (null for future months of current year → hidden from hover)
             const isCurrentYear = year === currentYear
@@ -227,38 +217,30 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
                 const month = i + 1
                 const row = monthData.get(month)
                 if (row) return getValue(row)
-                // Future month of current year: null (omit from hover/bars)
                 if (isCurrentYear && month >= currentMonth) return null
                 return 0
             })
 
+            // pltly handles fade; we add extras for the active trace
             const trace: any = {
                 type: "bar",
                 name: `'${String(year).slice(2)}`,
                 x: MONTH_NAMES,
                 y: values,
                 marker: {
-                    color: isGreyed ? fadeColor(color) : color,
+                    color,
                     line: { color: 'transparent', width: 0 },
                 },
                 legendrank: idx,
                 hovertemplate: `%{y}<extra>'${String(year).slice(2)}</extra>`,
-                // Show text labels on bars when this year is active
                 text: isActive ? values.map(v => v && v > 0 ? `<b>${v}</b>` : '') : undefined,
                 textposition: isActive ? 'outside' : undefined,
                 textfont: isActive ? { color: '#ffffff', size: 14 } : undefined,
-                // Add vertical offset for text above bars
                 textangle: 0,
                 constraintext: 'none',
                 cliponaxis: false,
-            }
-
-            // Make selected trace wider and on top
-            if (isActive) {
-                trace.width = 0.25
-                trace.zorder = 100
-            } else if (activeYear !== null) {
-                trace.zorder = 1
+                width: isActive ? 0.25 : undefined,
+                zorder: isActive ? 100 : undefined,
             }
 
             return trace as PlotData
@@ -330,11 +312,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
                 id={id}
                 data={data}
                 layout={layout}
-
-                onLegendClick={onLegendClick}
-                onLegendDoubleClick={onLegendDoubleClick}
-                onHoverTrace={setHoverTrace}
-                onResetSolo={resetSolo}
+                onActiveTrace={setActiveTrace}
             />
             <ControlsGear
                 open={controlsOpen}
