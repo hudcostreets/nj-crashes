@@ -1,9 +1,8 @@
-import React, { useMemo, useState } from "react"
+import React, { useMemo } from "react"
 import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { CrashHomicideCsv } from "@/src/paths"
-import { fadeColor, useSoloTrace } from "pltly"
 import { useAlignedDualAxes } from "pltly/react"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo, DataSource } from "@/src/icons"
@@ -65,11 +64,6 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
     const crashHomicideQuery = useMemo(() => crashHomicideQueryFn(county ?? null, effectiveSource), [county, effectiveSource])
     const rows = useQuery<CrashHomicideRow>({ db: crashHomicideDb, query: crashHomicideQuery, init: [] })
 
-    const [hoverTrace, setHoverTrace] = useState<string | null>(null)
-
-    const TRACE_NAMES = useMemo(() => ['Car crash deaths', 'Homicides', 'Ratio'], [])
-    const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(TRACE_NAMES, hoverTrace)
-
     // Pre-compute value arrays for dual-axis alignment hook (must be unconditional)
     const deathValues = useMemo(() => rows.flatMap(r => [r.traffic_deaths, r.homicides]), [rows])
     const ratioValues = useMemo(() => rows.map(r => Number(r.ratio)).filter(isFinite), [rows])
@@ -88,32 +82,23 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
             const v = Number(r.ratio)
             return isFinite(v) ? v : 0
         })
-        const isActive = (name: string) => activeTrace === name
-        const isGreyed = (name: string) => activeTrace !== null && !isActive(name)
-
-        // Helper to build bar trace with active/greyed states
-        const barTrace = (
-            name: string, ys: number[], color: string, hoverLabel: string,
-        ): PlotData => ({
-            type: "bar",
-            name,
-            x: years,
-            y: ys,
-            marker: { color: isGreyed(name) ? fadeColor(color) : color },
-            hovertemplate: `%{y} ${hoverLabel}<extra></extra>`,
-            text: isActive(name) ? ys.map(String) : undefined,
-            textposition: isActive(name) ? 'outside' : undefined,
-            textfont: isActive(name) ? { color: '#ffffff', size: 11 } : undefined,
-            textangle: 0,
-            cliponaxis: false,
-            constraintext: 'none',
-            width: isActive(name) ? 0.6 : undefined,
-            zorder: isActive(name) ? 100 : (isGreyed(name) ? 1 : undefined),
-        } as any as PlotData)
-
         const traces: PlotData[] = [
-            barTrace('Car crash deaths', trafficDeaths, TRAFFIC_COLOR, 'car crash deaths'),
-            barTrace('Homicides', homicides, HOMICIDE_COLOR, 'homicides'),
+            {
+                type: "bar",
+                name: "Car crash deaths",
+                x: years,
+                y: trafficDeaths,
+                marker: { color: TRAFFIC_COLOR },
+                hovertemplate: `%{y} car crash deaths<extra></extra>`,
+            } as PlotData,
+            {
+                type: "bar",
+                name: "Homicides",
+                x: years,
+                y: homicides,
+                marker: { color: HOMICIDE_COLOR },
+                hovertemplate: `%{y} homicides<extra></extra>`,
+            } as PlotData,
             // Ratio line (secondary y-axis)
             {
                 type: "scatter",
@@ -123,8 +108,8 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 y: ratios,
                 yaxis: "y2",
                 line: {
-                    color: isGreyed('Ratio') ? fadeColor(plotColors.textColor, { opacity: 0.25 }) : plotColors.textColor,
-                    width: isActive('Ratio') ? 8 : (isGreyed('Ratio') ? 3 : 5),
+                    color: plotColors.textColor,
+                    width: 5,
                 },
                 hovertemplate: `%{y:.2f}x<extra>Ratio</extra>`,
             } as PlotData,
@@ -208,7 +193,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
             : latestYear
 
         return { data: traces, layout, highlightRow, avgRatio }
-    }, [rows, activeTrace, plotColors, axisAlignment, avgYears])
+    }, [rows, plotColors, axisAlignment, avgYears])
 
 
     if (!data.length) {
@@ -228,11 +213,8 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 id={id}
                 data={data}
                 layout={layout}
-
-                onLegendClick={onLegendClick}
-                onLegendDoubleClick={onLegendDoubleClick}
-                onHoverTrace={setHoverTrace}
-                onResetSolo={resetSolo}
+                disableLegendHover={false}
+                disableSoloTrace={false}
             />
             <div className={css.plotToolbarCompact} style={{ justifyContent: 'center' }}>
                 <PlotInfo source={SOURCES} />
