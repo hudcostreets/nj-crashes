@@ -85,9 +85,9 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     const [legendPosition, setLegendPosition] = useSessionStorage<'bottom' | 'right'>(`plot-${id}-legend-position`, 'right')
     const [viewMode, setViewMode] = useSessionStorage<ViewMode>(`plot-${id}-view-mode`, 'full-faded')
     const [controlsOpen, setControlsOpen] = useSessionStorage<boolean>(`plot-${id}-controls-open`, false)
-    const [fadeOpacity, setFadeOpacity] = useSessionStorage<number>(`plot-${id}-fade-opacity`, 0.5)
+    const [fadeOpacity, setFadeOpacity] = useSessionStorage<number>(`plot-${id}-fade-opacity`, 0.65)
     const [greyOpacity, setGreyOpacity] = useSessionStorage<number>(`plot-${id}-grey-opacity`, 0.4)
-    const [futureDash, setFutureDash] = useSessionStorage<string>(`plot-${id}-future-dash`, 'dot')
+    const [futureDash, setFutureDash] = useSessionStorage<string>(`plot-${id}-future-dash`, 'solid')
     // Effective opacity: Full mode forces 1.0, Faded uses stored value
     const effectiveFadeOpacity = viewMode === 'full' ? 1.0 : fadeOpacity
     const colorScale = COLORSCALES[colorScaleName]

@@ -54,7 +54,6 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
     const db = useDb()
     const plotColors = usePlotColors()
 
-    const [hoverTrace, setHoverTrace] = useState<string | null>(null)
     const [avgYears, setAvgYears] = useSessionStorage<number>('homicides-avg-years', 5)
     // Only show source toggle for statewide (county data is NJSP-only)
     const [crashSource, setCrashSource] = useSessionStorage<CrashSource>('homicides-crash-source', 'njsp')
@@ -65,6 +64,8 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
     const crashHomicideDb = useRegisteredDb({ db, table: "crash_homicide", url: CrashHomicideCsv })
     const crashHomicideQuery = useMemo(() => crashHomicideQueryFn(county ?? null, effectiveSource), [county, effectiveSource])
     const rows = useQuery<CrashHomicideRow>({ db: crashHomicideDb, query: crashHomicideQuery, init: [] })
+
+    const [hoverTrace, setHoverTrace] = useState<string | null>(null)
 
     const TRACE_NAMES = useMemo(() => ['Car crash deaths', 'Homicides', 'Ratio'], [])
     const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(TRACE_NAMES, hoverTrace)
@@ -87,37 +88,32 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
             const v = Number(r.ratio)
             return isFinite(v) ? v : 0
         })
-        const trafficActive = activeTrace === 'Car crash deaths'
-        const homicidesActive = activeTrace === 'Homicides'
-        const ratioActive = activeTrace === 'Ratio'
-        const trafficGreyed = activeTrace !== null && !trafficActive
-        const homicidesGreyed = activeTrace !== null && !homicidesActive
-        const ratioGreyed = activeTrace !== null && !ratioActive
+        const isActive = (name: string) => activeTrace === name
+        const isGreyed = (name: string) => activeTrace !== null && !isActive(name)
 
         // Helper to build bar trace with active/greyed states
         const barTrace = (
-            name: string, ys: number[], color: string,
-            isActive: boolean, isGreyed: boolean, hoverLabel: string,
+            name: string, ys: number[], color: string, hoverLabel: string,
         ): PlotData => ({
             type: "bar",
             name,
             x: years,
             y: ys,
-            marker: { color: isGreyed ? fadeColor(color) : color },
+            marker: { color: isGreyed(name) ? fadeColor(color) : color },
             hovertemplate: `%{y} ${hoverLabel}<extra></extra>`,
-            text: isActive ? ys.map(String) : undefined,
-            textposition: isActive ? 'outside' : undefined,
-            textfont: isActive ? { color: '#ffffff', size: 11 } : undefined,
+            text: isActive(name) ? ys.map(String) : undefined,
+            textposition: isActive(name) ? 'outside' : undefined,
+            textfont: isActive(name) ? { color: '#ffffff', size: 11 } : undefined,
             textangle: 0,
             cliponaxis: false,
             constraintext: 'none',
-            width: isActive ? 0.6 : undefined,
-            zorder: isActive ? 100 : (isGreyed ? 1 : undefined),
+            width: isActive(name) ? 0.6 : undefined,
+            zorder: isActive(name) ? 100 : (isGreyed(name) ? 1 : undefined),
         } as any as PlotData)
 
         const traces: PlotData[] = [
-            barTrace('Car crash deaths', trafficDeaths, TRAFFIC_COLOR, trafficActive, trafficGreyed, 'car crash deaths'),
-            barTrace('Homicides', homicides, HOMICIDE_COLOR, homicidesActive, homicidesGreyed, 'homicides'),
+            barTrace('Car crash deaths', trafficDeaths, TRAFFIC_COLOR, 'car crash deaths'),
+            barTrace('Homicides', homicides, HOMICIDE_COLOR, 'homicides'),
             // Ratio line (secondary y-axis)
             {
                 type: "scatter",
@@ -127,8 +123,8 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 y: ratios,
                 yaxis: "y2",
                 line: {
-                    color: ratioGreyed ? fadeColor(plotColors.textColor, { opacity: 0.25 }) : plotColors.textColor,
-                    width: ratioActive ? 8 : (ratioGreyed ? 3 : 5),
+                    color: isGreyed('Ratio') ? fadeColor(plotColors.textColor, { opacity: 0.25 }) : plotColors.textColor,
+                    width: isActive('Ratio') ? 8 : (isGreyed('Ratio') ? 3 : 5),
                 },
                 hovertemplate: `%{y:.2f}x<extra>Ratio</extra>`,
             } as PlotData,
@@ -242,13 +238,14 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 <PlotInfo source={SOURCES} />
                 {!county && (
                     <div className={css.buttonBar}>
-                        {([['njsp', 'NJSP (2008–)'], ['njdot', 'DOT (2001–)']] as const).map(([src, label]) => (
-                            <button
-                                key={src}
-                                className={crashSource === src ? css.active : ''}
-                                onClick={() => setCrashSource(src)}
-                            >{label}</button>
-                        ))}
+                        <button
+                            className={crashSource === 'njsp' ? css.active : ''}
+                            onClick={() => setCrashSource('njsp')}
+                        >NJSP ('08–'24)</button>
+                        <button
+                            className={crashSource === 'njdot' ? css.active : ''}
+                            onClick={() => setCrashSource('njdot')}
+                        >DOT ('01–'23)</button>
                     </div>
                 )}
             </div>

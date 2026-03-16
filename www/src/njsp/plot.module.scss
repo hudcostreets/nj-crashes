@@ -126,6 +126,8 @@
   align-items: center;
   font-size: 13px;
   color: var(--text-secondary);
+  padding: 0.2em 0.5em;
+  cursor: default;
 }
 
 .iconLegendItem {
@@ -150,8 +152,8 @@
   }
 
   svg {
-    width: 1.4em;
-    height: 1.4em;
+    width: 1.8em;
+    height: 1.8em;
     position: relative;
     top: 0;
   }

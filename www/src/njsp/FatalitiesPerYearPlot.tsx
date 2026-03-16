@@ -132,8 +132,17 @@ const monthlyQueryFn = (county: string | null, cc: number | null, mc: number | n
 `
 }
 
-// Query yearly data from monthly CSV (for muni-level, where ytc doesn't have data)
-const yearlyFromMonthlyQueryFn = (cc: number, mc: number) => `
+// Query yearly data from monthly CSV (works for statewide, county, and muni)
+const yearlyFromMonthlyQueryForGeo = (county: string | null, cc: number | null, mc: number | null) => {
+    let where: string
+    if (cc !== null && mc !== null) {
+        where = `WHERE cc = ${cc} AND mc = ${mc}`
+    } else if (county) {
+        where = `WHERE county = '${county}' AND mc IS NULL`
+    } else {
+        where = `WHERE county IS NULL AND cc IS NULL`
+    }
+    return `
     SELECT
         year,
         CAST(SUM(driver) as INT) as driver,
@@ -142,10 +151,11 @@ const yearlyFromMonthlyQueryFn = (cc: number, mc: number) => `
         CAST(SUM(passenger) as INT) as passenger,
         CAST(SUM(fatalities) as INT) as total
     FROM read_csv_auto('monthly')
-    WHERE cc = ${cc} AND mc = ${mc}
+    ${where}
     GROUP BY year
     ORDER BY year
 `
+}
 
 type TimeGranularity = 'year' | 'month'
 
@@ -168,8 +178,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     const hasMuniFilter = propCc !== null && propMc !== null
     const [hoverTrace, setHoverTrace] = useState<string | null>(null)
     const [showProjected, setShowProjected] = useState(true)
-    const [projLighten, setProjLighten] = useSessionStorage<number>('njsp-deaths-projLighten', 0.85)
-    const [projSolidity, setProjSolidity] = useSessionStorage<number>('njsp-deaths-projSolidity', 0.35)
+    const [projSolidity, setProjSolidity] = useSessionStorage<number>('njsp-deaths-projSolidity', 0.75)
+    const [projFgOpacity, setProjFgOpacity] = useSessionStorage<number>('njsp-deaths-projFgOpacity', 1.0)
     const [timeGranularity, setTimeGranularity] = useSessionStorage<TimeGranularity>('njsp-deaths-timeGranularity', 'year')
     const containerRef = useRef<HTMLDivElement>(null)
     const [containerWidth, setContainerWidth] = useState(800)  // Default to reasonable width before ResizeObserver fires
@@ -196,15 +206,17 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     const countiesResult = useQuery<{ county: string }>({ db: ytcDb, query: countiesQuery, init: [] })
     const counties = useMemo(() => countiesResult.map(r => r.county), [countiesResult])
 
-    // Yearly data: muni-level aggregates from monthly; otherwise from ytc
+    // Yearly data: always aggregate from monthly CSV (always up to date)
+    // ytc is only used for the county list in the dropdown
     const ytcQueryStr = useMemo(() => ytcQueryFn(county), [county])
     const ytcRows = useQuery<YtRow>({ db: ytcDb, query: ytcQueryStr, init: [] })
-    const muniYearlyQueryStr = useMemo(
-        () => hasMuniFilter ? yearlyFromMonthlyQueryFn(propCc!, propMc!) : null,
-        [hasMuniFilter, propCc, propMc],
+    const yearlyQueryStr = useMemo(
+        () => yearlyFromMonthlyQueryForGeo(county, propCc ?? null, propMc ?? null),
+        [county, propCc, propMc],
     )
-    const muniYtRows = useQuery<YtRow>({ db: monthlyDb, query: muniYearlyQueryStr, init: [] })
-    const ytRows = hasMuniFilter ? muniYtRows : ytcRows
+    const yearlyFromMonthly = useQuery<YtRow>({ db: monthlyDb, query: yearlyQueryStr, init: [] })
+    // Use monthly-aggregated data if available, fall back to ytc
+    const ytRows = yearlyFromMonthly.length > 0 ? yearlyFromMonthly : ytcRows
 
     // Projections (county-level only, not available at muni level)
     const projectionsQueryStr = useMemo(() => typeCountsQuery(county), [county])
@@ -214,16 +226,37 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
 
     const isMonthly = timeGranularity === 'month'
 
-    // Solo trace management via pltly
+    // Pin/hover trace management
     const traceNames = useMemo(() => isMonthly ? [...Types, '12-mo avg'] : [...Types], [isMonthly])
+    const [pinnedTrace, setPinnedTrace] = useState<string | null>(null)
     // Normalize hover trace (strip " (projected)" suffix)
     const normalizedHover = useMemo(() => {
         if (!hoverTrace) return null
         const base = hoverTrace.replace(" (projected)", "") as Type
         return Types.includes(base) ? base : null
     }, [hoverTrace])
-    const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(traceNames, normalizedHover)
-    const activeType = activeTrace as Type | null
+    // When pinned, plot shows pinned trace (ignore hover). When not pinned, plot shows hovered trace.
+    const effectiveHover = pinnedTrace ? null : normalizedHover
+    const { activeTrace, onLegendClick: _onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(traceNames, effectiveHover)
+    // Active type = pinned trace takes priority, then useSoloTrace's active
+    const activeType = (pinnedTrace ?? activeTrace) as Type | null
+    // Highlight current year when hovering "* Projected"
+    const highlightProjected = hoverTrace === '* Projected' && !pinnedTrace
+
+    const handleLegendItemClick = (name: string) => {
+        if (pinnedTrace === name) {
+            // Unpin
+            setPinnedTrace(null)
+            resetSolo()
+        } else {
+            // Pin this trace
+            setPinnedTrace(name)
+        }
+    }
+    const handleUnpin = () => {
+        setPinnedTrace(null)
+        resetSolo()
+    }
 
     // Build plot data
     const { data, annotations, layout } = useMemo(() => {
@@ -397,14 +430,22 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
         // Build traces: actual data for each type
         const traces: PlotData[] = Types.map(type => {
             const col = typesMap[type]
+            // When hovering "Projected", fade all non-current-year bars
+            const colors = highlightProjected
+                ? rows.map(r => r.year === curYear ? COLORS[type] : fadeColor(COLORS[type], { opacity: 0.3 }))
+                : COLORS[type]
+            const textColors = highlightProjected
+                ? rows.map(r => r.year === curYear ? '#ffffff' : 'rgba(255,255,255,0.15)')
+                : '#ffffff'
             return {
                 type: "bar",
                 name: type,
                 legendgroup: type,
                 x: rows.map(r => r.year),
                 y: rows.map(r => r[col]),
-                marker: { color: COLORS[type] },
+                marker: { color: colors },
                 texttemplate: "%{y:d}",
+                textfont: { color: textColors },
                 textposition: visibleTypes.size === 1 ? "auto" : "inside",
                 visible: visibleTypes.has(type) ? true : "legendonly",
                 hovertemplate: `%{y}<extra>${type}</extra>`,
@@ -443,20 +484,20 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                         x: [curYear],  // Only current year
                         y: [remainder],
                         marker: {
-                            color: COLORS[type],
+                            color: 'transparent',
                             pattern: {
                                 shape: '/',
                                 size: 6,
                                 solidity: projSolidity,
-                                fgcolor: COLORS[type],
+                                fgcolor: fadeColor(COLORS[type], { opacity: projFgOpacity }),
                                 fgopacity: 1,
-                                bgcolor: lightenColor(COLORS[type], projLighten),
                             },
                         } as any,
                         texttemplate: "%{y:d}*",
                         textposition: "inside",
+                        textfont: { color: '#ffffff' },
                         textangle: 0,  // Force upright text
-                        hovertemplate: `${curYear} est: ${projTotal} +%{y}<extra>${type}*</extra>`,
+                        hovertemplate: `${curYear} est: ${projTotal} (+%{y})<extra>${type}*</extra>`,
                         visible: visibleTypes.has(type) ? true : "legendonly",
                     } as PlotData)
                 }
@@ -492,13 +533,14 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 const total = actual + projected
                 // Skip if nothing to show
                 if (total === 0) return
+                const isFaded = highlightProjected && row.year !== curYear
                 annotations.push({
                     x: row.year,
                     y: total,
                     text: projected > 0 ? `${total}*` : `${total}`,
                     showarrow: false,
                     yshift: 14,
-                    font: { color: plotColors.textColor, size: annotationFontSize },
+                    font: { color: isFaded ? 'rgba(255,255,255,0.15)' : plotColors.textColor, size: annotationFontSize },
                 })
             })
         } else if (activeType && showProjected && lastYear === curYear) {
@@ -561,7 +603,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
         }
 
         return { data: traces, annotations, layout, projectedRemainder }
-    }, [ytRows, projections, activeType, showProjected, projLighten, projSolidity, height, plotColors, containerWidth, isMonthly, monthlyRows])
+    }, [ytRows, projections, activeType, highlightProjected, showProjected, projSolidity, projFgOpacity, height, plotColors, containerWidth, isMonthly, monthlyRows])
 
     // Compute year totals for summary text
     const yearTotals = useMemo(() => {
@@ -611,10 +653,10 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 data={data}
                 layout={layout}
 
-                onLegendClick={onLegendClick}
+                onLegendClick={_onLegendClick}
                 onLegendDoubleClick={onLegendDoubleClick}
                 onHoverTrace={setHoverTrace}
-                onResetSolo={resetSolo}
+                onResetSolo={handleUnpin}
             />
             <div className={css.plotToolbarCompact}>
                 <PlotInfo source="njsp">
@@ -631,20 +673,18 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                         >{label}</button>
                     ))}
                 </div>
-                <div className={css.iconLegend}>
+                <div className={css.iconLegend} onClick={e => { if (e.target === e.currentTarget) handleUnpin() }}>
                     {Types.map(type => {
                         const IconComponent = TYPE_ICONS[type]
+                        const isPinned = pinnedTrace === type
                         const isSolo = activeType === type
                         const isGreyed = activeType !== null && !isSolo
                         return (
                             <span
                                 key={type}
                                 className={`${css.iconLegendItem} ${isSolo ? css.solo : ''} ${isGreyed ? css.greyed : ''}`}
-                                onClick={() => {
-                                    const event = { data: traceNames.map(n => ({ name: n })), curveNumber: traceNames.indexOf(type) }
-                                    onLegendClick(event)
-                                }}
-                                onDoubleClick={() => onLegendDoubleClick()}
+                                style={isPinned ? { fontWeight: 'bold' } : undefined}
+                                onClick={() => handleLegendItemClick(type)}
                                 onMouseEnter={() => setHoverTrace(type)}
                                 onMouseLeave={() => setHoverTrace(null)}
                             >
@@ -659,11 +699,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                         return (
                             <span
                                 className={`${css.iconLegendItem} ${activeType === '12-mo avg' as any ? css.solo : ''}`}
-                                onClick={() => {
-                                    const event = { data: traceNames.map(n => ({ name: n })), curveNumber: traceNames.indexOf('12-mo avg') }
-                                    onLegendClick(event)
-                                }}
-                                onDoubleClick={() => onLegendDoubleClick()}
+                                style={pinnedTrace === '12-mo avg' ? { fontWeight: 'bold' } : undefined}
+                                onClick={() => handleLegendItemClick('12-mo avg')}
                                 onMouseEnter={() => setHoverTrace('12-mo avg')}
                                 onMouseLeave={() => setHoverTrace(null)}
                             >
@@ -674,29 +711,34 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                     })()}
                     {!isMonthly && showProjected && (
                         <details style={{ display: 'inline', position: 'relative', cursor: 'pointer' }}>
-                            <summary className={css.iconLegendItem} style={{ opacity: 0.7, listStyle: 'none', display: 'inline-flex' }}>
+                            <summary
+                                className={css.iconLegendItem}
+                                style={{ opacity: 0.7, listStyle: 'none', display: 'inline-flex' }}
+                                onMouseEnter={() => setHoverTrace('* Projected')}
+                                onMouseLeave={() => setHoverTrace(null)}
+                            >
                                 <span className={css.iconLegendSwatch} style={{
                                     background: `repeating-linear-gradient(
                                         -45deg,
-                                        ${COLORS.Drivers},
-                                        ${COLORS.Drivers} ${Math.round(projSolidity * 4)}px,
-                                        ${lightenColor(COLORS.Drivers, projLighten)} ${Math.round(projSolidity * 4)}px,
-                                        ${lightenColor(COLORS.Drivers, projLighten)} 4px
+                                        rgba(200,200,200,${projFgOpacity}),
+                                        rgba(200,200,200,${projFgOpacity}) ${Math.round(projSolidity * 4)}px,
+                                        transparent ${Math.round(projSolidity * 4)}px,
+                                        transparent 4px
                                     )`,
                                 }} />
-                                <span className={css.iconLegendLabel}>* projected</span>
+                                <span className={css.iconLegendLabel}>* Projected</span>
                             </summary>
                             <div style={{ position: 'absolute', bottom: '100%', right: 0, zIndex: 100, background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 4, padding: '0.4em 0.6em', fontSize: 11, whiteSpace: 'nowrap' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4em', marginBottom: '0.3em' }}>
-                                    <label>Stripe:</label>
-                                    <input type="range" min={0.1} max={0.8} step={0.05} value={projSolidity} onChange={e => setProjSolidity(parseFloat(e.target.value))} style={{ width: 60 }} />
-                                    <span>{Math.round(projSolidity * 100)}%</span>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4em' }}>
-                                    <label>Lighten:</label>
-                                    <input type="range" min={0.3} max={0.95} step={0.05} value={projLighten} onChange={e => setProjLighten(parseFloat(e.target.value))} style={{ width: 60 }} />
-                                    <span>{Math.round(projLighten * 100)}%</span>
-                                </div>
+                                {([
+                                    ['Stripe', projSolidity, setProjSolidity, 0.1, 1.0],
+                                    ['Alpha', projFgOpacity, setProjFgOpacity, 0.05, 1.0],
+                                ] as const).map(([label, value, setter, min, max]) => (
+                                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.4em', marginBottom: '0.2em' }}>
+                                        <label style={{ minWidth: '3em' }}>{label}:</label>
+                                        <input type="range" min={min} max={max} step={0.05} value={value} onChange={e => setter(parseFloat(e.target.value))} style={{ width: 60 }} />
+                                        <span style={{ minWidth: '2.5em' }}>{Math.round(value * 100)}%</span>
+                                    </div>
+                                ))}
                             </div>
                         </details>
                     )}

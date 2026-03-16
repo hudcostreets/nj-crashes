@@ -56,9 +56,9 @@
   }
 
   &:global(.compact) :global(.MuiTableCell-root) {
-    padding-top: 0.1em;
-    padding-bottom: 0.1em;
-    line-height: 1.3;
+    padding-top: 0.3em;
+    padding-bottom: 0.3em;
+    line-height: 1.5;
   }
 
   :global(.MuiTableCell-root)[data-col="Date"] {
