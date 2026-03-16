@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { EndYear } from "@/src/constants"
 import { Layout, PlotData } from "plotly.js"
-import { useSoloTrace, lightenColor, fadeColor, useTheme } from "pltly"
+import { lightenColor, useTheme } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { useParquet } from "@/src/lib/useParquet"
 import { useGeoFilter } from "@/src/GeoFilterContext"
@@ -67,7 +67,7 @@ export default function CrashPlot({
     const [show12moAvg, setShow12moAvg] = useSessionStorage('crashplot-show12moAvg', false)
     const [controlsOpen, setControlsOpen] = useSessionStorage('crashplot-controls-open', initialControlsOpen)
 
-    const [hoverTrace, setHoverTrace] = useState<string | null>(null)
+    const [activeTrace, setActiveTrace] = useState<string | null>(null)
     const { isDark } = useTheme()
     const SeverityColors = isDark ? SeverityColorsDark : SeverityColorsLight
     const plotColors = usePlotColors()
@@ -91,19 +91,8 @@ export default function CrashPlot({
         : !isSingleCounty && stackBy === 'municipality' ? 'none'
         : stackBy
 
-    // Trace names for solo hook (independent of trace data to avoid circular dep)
-    // For municipality stacking, names are derived from data (set after load)
-    const traceNames = useMemo(() => {
-        if (effectiveStackBy === 'none') return ['Total']
-        if (effectiveStackBy === 'severity') return Severities.filter(s => severities.includes(s)).map(s => SeverityLabels[s])
-        if (effectiveStackBy === 'county') return counties.map(cc => Counties[cc] || `County ${cc}`)
-        // municipality trace names will be populated from data
-        return []
-    }, [effectiveStackBy, severities, counties])
-    const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(traceNames, hoverTrace)
-
-    // Reset solo trace when stacking mode changes (trace names change)
-    useEffect(() => { resetSolo() }, [stackBy])
+    // Reset active trace when stacking mode changes
+    useEffect(() => { setActiveTrace(null) }, [stackBy])
 
     // Municipality-level or muni stacking: use ymccmcs (per-county, has mc + severity)
     // County-level: use ymccs when filtering/stacking by county
@@ -194,11 +183,6 @@ export default function CrashPlot({
             originalGrouped?: Map<string, number>,  // Raw counts when in percent mode
         ): Partial<PlotData> => {
             const sorted = [...grouped.entries()].sort((a, b) => a[0].localeCompare(b[0]))
-            // Solo: hide non-active traces; Hover: fade non-hovered traces
-            const isActive = activeTrace === null || activeTrace === name
-            const isGreyed = isActive && hoverTrace !== null && hoverTrace !== name
-            const visible = isActive ? true : 'legendonly'
-            const displayColor = color && isGreyed ? fadeColor(color) : color
             const ys = sorted.map(([, v]) => v)
             // Format text labels: percentages (rounded) or counts
             const textLabels = isPercentMode
@@ -213,7 +197,6 @@ export default function CrashPlot({
                 y: ys,
                 type: 'bar',
                 name,
-                visible,
                 // Only show inner-bar text when stacking (not for 'none' which has outer annotations)
                 text: timeGranularity === 'year' && effectiveStackBy !== 'none' ? textLabels : undefined,
                 textposition: 'inside',
@@ -224,7 +207,7 @@ export default function CrashPlot({
                 hovertemplate: isPercentMode
                     ? `${name}: %{y:.1f}% (%{customdata:,})<extra></extra>`
                     : `${name}: %{y:,}<extra></extra>`,
-                ...(displayColor ? { marker: { color: displayColor } } : {}),
+                ...(color ? { marker: { color } } : {}),
             }
         }
 
@@ -383,7 +366,6 @@ export default function CrashPlot({
                         legendgroup: trace.name,
                         showlegend: false,
                         line: { color: lineColor, width: 3.5 },
-                        visible: trace.visible,
                         hovertemplate: `${trace.name} (12mo): %{y:,.0f}<extra></extra>`,
                     })
                 }
@@ -404,7 +386,6 @@ export default function CrashPlot({
                         mode: 'lines',
                         name: 'Total (12mo)',
                         showlegend: false,
-                        visible: activeTrace === null ? true : 'legendonly',
                         line: { color: plotColors.textColor, width: 2.5 },
                         hovertemplate: 'Total (12mo): %{y:,.0f}<extra></extra>',
                     })
@@ -488,7 +469,7 @@ export default function CrashPlot({
         }
 
         return { traces, layout }
-    }, [data, effectiveStackBy, severities, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, hoverTrace, plotColors, isDark, cc2mc2mn])
+    }, [data, effectiveStackBy, severities, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors, isDark, cc2mc2mn])
 
     // Check if we're waiting for county data (need ymccs but have yms)
     const waitingForCountyData = needsCountyData && data && data.length > 0 && !('cc' in data[0])
@@ -537,10 +518,7 @@ export default function CrashPlot({
                         key={plotKey}
                         data={traces as PlotData[]}
                         layout={layout}
-                        onLegendClick={onLegendClick}
-                        onLegendDoubleClick={onLegendDoubleClick}
-                        onHoverTrace={setHoverTrace}
-                        onResetSolo={resetSolo}
+                        onActiveTrace={setActiveTrace}
                     />
                 )}
             </div>
