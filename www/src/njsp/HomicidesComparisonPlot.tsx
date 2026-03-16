@@ -127,6 +127,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                     width: isActive('Ratio') ? 8 : (isGreyed('Ratio') ? 3 : 5),
                 },
                 hovertemplate: `%{y:.2f}x<extra>Ratio</extra>`,
+                zorder: isActive('Ratio') ? 100 : (isGreyed('Ratio') ? 1 : undefined),
             } as PlotData,
         ]
 
