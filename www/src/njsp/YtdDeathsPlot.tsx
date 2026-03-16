@@ -3,7 +3,7 @@ import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { YtdCsv } from "@/src/paths"
-import { fadeColor, useSoloTrace, useCustomHover } from "pltly"
+import { fadeColor, useCustomHover } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
@@ -78,7 +78,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     const db = useDb()
     const plotColors = usePlotColors()
 
-    const [hoverTrace, setHoverTrace] = useState<string | null>(null)
+    const [activeTrace, setActiveTrace] = useState<string | null>(null)
 
     // Per-plot settings (scoped by plot ID in session storage)
     const [colorScaleName, setColorScaleName] = useSessionStorage<ColorScaleName>(`plot-${id}-colorscale`, 'inferno')
@@ -96,14 +96,6 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     const ytdDb = useRegisteredDb({ db, table: "ytd", url: YtdCsv })
     const ytdQueryStr = useMemo(() => ytdQueryFn(county ?? null, cc ?? null, mc ?? null), [county, cc, mc])
     const ytdRows = useQuery<YtdRow>({ db: ytdDb, query: ytdQueryStr, init: [] })
-
-    // Compute trace names from data for solo hook
-    const traceNames = useMemo(() => {
-        const years = [...new Set(ytdRows.map(r => r.year))].sort((a, b) => a - b)
-        return years.map(y => `'${String(y).slice(2)}`)
-    }, [ytdRows])
-
-    const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(traceNames, hoverTrace)
 
     // Derive year from string trace name
     const activeYear = useMemo(() => {
@@ -451,10 +443,8 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     data={data}
                     layout={layout}
 
-                    onLegendClick={onLegendClick}
-                    onLegendDoubleClick={onLegendDoubleClick}
-                    onHoverTrace={setHoverTrace}
-                    onResetSolo={resetSolo}
+                    onActiveTrace={setActiveTrace}
+                    disableFade
                     {...(isFadedMode ? { onHover: customHover.handleHover, onUnhover: customHover.handleUnhover } : {})}
                 />
                 {isFadedMode && customHover.isActive && customHover.position && customHover.x != null && (() => {
