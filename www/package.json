@@ -35,7 +35,7 @@
     "moment-timezone": "^0.5.45",
     "plotly.js": "https://github.com/runsascoded/plotly.js#bef8f3d7db5c2b56223b0e4bd83a9e06bea71f65",
     "plotly.js-dist-min": "^3.4.0",
-    "pltly": "https://gitlab.com/runsascoded/js/pltly/-/archive/c943b8d182dd51d446b84ef623d55724a59aed34/pltly-c943b8d182dd51d446b84ef623d55724a59aed34.tar.gz",
+    "pltly": "https://gitlab.com/runsascoded/js/pltly/-/archive/fc5e2365e56dad11d388c1dc2d5e2a68dd1b6b20/pltly-fc5e2365e56dad11d388c1dc2d5e2a68dd1b6b20.tar.gz",
     "react": "^18",
     "react-dom": "^18",
     "react-helmet-async": "^2.0.4",

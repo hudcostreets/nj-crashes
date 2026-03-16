@@ -3,7 +3,6 @@ import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { CrashHomicideCsv } from "@/src/paths"
-import { fadeColor, useSoloTrace } from "pltly"
 import { useAlignedDualAxes } from "pltly/react"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo, DataSource } from "@/src/icons"
@@ -65,10 +64,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
     const crashHomicideQuery = useMemo(() => crashHomicideQueryFn(county ?? null, effectiveSource), [county, effectiveSource])
     const rows = useQuery<CrashHomicideRow>({ db: crashHomicideDb, query: crashHomicideQuery, init: [] })
 
-    const [hoverTrace, setHoverTrace] = useState<string | null>(null)
-
-    const TRACE_NAMES = useMemo(() => ['Car crash deaths', 'Homicides', 'Ratio'], [])
-    const { activeTrace, onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(TRACE_NAMES, hoverTrace)
+    const [activeTrace, setActiveTrace] = useState<string | null>(null)
 
     // Pre-compute value arrays for dual-axis alignment hook (must be unconditional)
     const deathValues = useMemo(() => rows.flatMap(r => [r.traffic_deaths, r.homicides]), [rows])
@@ -89,9 +85,8 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
             return isFinite(v) ? v : 0
         })
         const isActive = (name: string) => activeTrace === name
-        const isGreyed = (name: string) => activeTrace !== null && !isActive(name)
 
-        // Helper to build bar trace with active/greyed states
+        // Traces: pltly handles fade, we add extras (width, text, zorder) for active trace
         const barTrace = (
             name: string, ys: number[], color: string, hoverLabel: string,
         ): PlotData => ({
@@ -99,7 +94,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
             name,
             x: years,
             y: ys,
-            marker: { color: isGreyed(name) ? fadeColor(color) : color },
+            marker: { color },
             hovertemplate: `%{y} ${hoverLabel}<extra></extra>`,
             text: isActive(name) ? ys.map(String) : undefined,
             textposition: isActive(name) ? 'outside' : undefined,
@@ -108,7 +103,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
             cliponaxis: false,
             constraintext: 'none',
             width: isActive(name) ? 0.6 : undefined,
-            zorder: isActive(name) ? 100 : (isGreyed(name) ? 1 : undefined),
+            zorder: isActive(name) ? 100 : undefined,
         } as any as PlotData)
 
         const traces: PlotData[] = [
@@ -123,11 +118,11 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 y: ratios,
                 yaxis: "y2",
                 line: {
-                    color: isGreyed('Ratio') ? fadeColor(plotColors.textColor, { opacity: 0.25 }) : plotColors.textColor,
-                    width: isActive('Ratio') ? 8 : (isGreyed('Ratio') ? 3 : 5),
+                    color: plotColors.textColor,
+                    width: isActive('Ratio') ? 8 : 5,
                 },
                 hovertemplate: `%{y:.2f}x<extra>Ratio</extra>`,
-                zorder: isActive('Ratio') ? 100 : (isGreyed('Ratio') ? 1 : undefined),
+                zorder: isActive('Ratio') ? 100 : undefined,
             } as any as PlotData,
         ]
 
@@ -229,11 +224,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 id={id}
                 data={data}
                 layout={layout}
-
-                onLegendClick={onLegendClick}
-                onLegendDoubleClick={onLegendDoubleClick}
-                onHoverTrace={setHoverTrace}
-                onResetSolo={resetSolo}
+                onActiveTrace={setActiveTrace}
             />
             <div className={css.plotToolbarCompact} style={{ justifyContent: 'center' }}>
                 <PlotInfo source={SOURCES} />

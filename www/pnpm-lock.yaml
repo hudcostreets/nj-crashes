@@ -81,8 +81,8 @@ importers:
         specifier: ^3.4.0
         version: 3.4.0
       pltly:
-        specifier: https://gitlab.com/runsascoded/js/pltly/-/archive/c943b8d182dd51d446b84ef623d55724a59aed34/pltly-c943b8d182dd51d446b84ef623d55724a59aed34.tar.gz
-        version: https://gitlab.com/runsascoded/js/pltly/-/archive/c943b8d182dd51d446b84ef623d55724a59aed34/pltly-c943b8d182dd51d446b84ef623d55724a59aed34.tar.gz(plotly.js@https://codeload.github.com/runsascoded/plotly.js/tar.gz/bef8f3d7db5c2b56223b0e4bd83a9e06bea71f65(mapbox-gl@3.1.2))(react-plotly.js@2.6.0(plotly.js@https://codeload.github.com/runsascoded/plotly.js/tar.gz/bef8f3d7db5c2b56223b0e4bd83a9e06bea71f65(mapbox-gl@3.1.2))(react@18.2.0))(react@18.2.0)
+        specifier: https://gitlab.com/runsascoded/js/pltly/-/archive/fc5e2365e56dad11d388c1dc2d5e2a68dd1b6b20/pltly-fc5e2365e56dad11d388c1dc2d5e2a68dd1b6b20.tar.gz
+        version: https://gitlab.com/runsascoded/js/pltly/-/archive/fc5e2365e56dad11d388c1dc2d5e2a68dd1b6b20/pltly-fc5e2365e56dad11d388c1dc2d5e2a68dd1b6b20.tar.gz(plotly.js@https://codeload.github.com/runsascoded/plotly.js/tar.gz/bef8f3d7db5c2b56223b0e4bd83a9e06bea71f65(mapbox-gl@3.1.2))(react-plotly.js@2.6.0(plotly.js@https://codeload.github.com/runsascoded/plotly.js/tar.gz/bef8f3d7db5c2b56223b0e4bd83a9e06bea71f65(mapbox-gl@3.1.2))(react@18.2.0))(react@18.2.0)
       react:
         specifier: ^18
         version: 18.2.0
@@ -2328,9 +2328,9 @@ packages:
     version: 3.3.1-dist.a7936e9b6
     engines: {node: '>=18.0.0'}
 
-  pltly@https://gitlab.com/runsascoded/js/pltly/-/archive/c943b8d182dd51d446b84ef623d55724a59aed34/pltly-c943b8d182dd51d446b84ef623d55724a59aed34.tar.gz:
-    resolution: {tarball: https://gitlab.com/runsascoded/js/pltly/-/archive/c943b8d182dd51d446b84ef623d55724a59aed34/pltly-c943b8d182dd51d446b84ef623d55724a59aed34.tar.gz}
-    version: 0.1.0-dist.9846230
+  pltly@https://gitlab.com/runsascoded/js/pltly/-/archive/fc5e2365e56dad11d388c1dc2d5e2a68dd1b6b20/pltly-fc5e2365e56dad11d388c1dc2d5e2a68dd1b6b20.tar.gz:
+    resolution: {tarball: https://gitlab.com/runsascoded/js/pltly/-/archive/fc5e2365e56dad11d388c1dc2d5e2a68dd1b6b20/pltly-fc5e2365e56dad11d388c1dc2d5e2a68dd1b6b20.tar.gz}
+    version: 0.1.0-dist.daf8a2e
     peerDependencies:
       plotly.js: '>=2'
       react: '>=17'
@@ -5240,7 +5240,7 @@ snapshots:
       - mapbox-gl
       - supports-color
 
-  pltly@https://gitlab.com/runsascoded/js/pltly/-/archive/c943b8d182dd51d446b84ef623d55724a59aed34/pltly-c943b8d182dd51d446b84ef623d55724a59aed34.tar.gz(plotly.js@https://codeload.github.com/runsascoded/plotly.js/tar.gz/bef8f3d7db5c2b56223b0e4bd83a9e06bea71f65(mapbox-gl@3.1.2))(react-plotly.js@2.6.0(plotly.js@https://codeload.github.com/runsascoded/plotly.js/tar.gz/bef8f3d7db5c2b56223b0e4bd83a9e06bea71f65(mapbox-gl@3.1.2))(react@18.2.0))(react@18.2.0):
+  pltly@https://gitlab.com/runsascoded/js/pltly/-/archive/fc5e2365e56dad11d388c1dc2d5e2a68dd1b6b20/pltly-fc5e2365e56dad11d388c1dc2d5e2a68dd1b6b20.tar.gz(plotly.js@https://codeload.github.com/runsascoded/plotly.js/tar.gz/bef8f3d7db5c2b56223b0e4bd83a9e06bea71f65(mapbox-gl@3.1.2))(react-plotly.js@2.6.0(plotly.js@https://codeload.github.com/runsascoded/plotly.js/tar.gz/bef8f3d7db5c2b56223b0e4bd83a9e06bea71f65(mapbox-gl@3.1.2))(react@18.2.0))(react@18.2.0):
     dependencies:
       plotly.js: https://codeload.github.com/runsascoded/plotly.js/tar.gz/bef8f3d7db5c2b56223b0e4bd83a9e06bea71f65(mapbox-gl@3.1.2)
       react: 18.2.0
