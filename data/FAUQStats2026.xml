@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Mar 17 10:02:43 EDT 2026</RUNDATE>
+  <RUNDATE>Wed Mar 18 10:02:46 EDT 2026</RUNDATE>
   <STATSYEAR>2026</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,20 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="11" CNAME="Mercer">
+    <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
+      <ACCIDENT ACCID="14461" DATE="03/17/2026" TIME="2240">
+        <HIGHWAY>29</HIGHWAY>
+        <LOCATION>State Highway 29 MP .8</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0325" MNAME="Mount Laurel Twsp">
@@ -691,19 +705,6 @@
       <ACCIDENT ACCID="14391" DATE="01/22/2026" TIME="1956">
         <HIGHWAY>1</HIGHWAY>
         <LOCATION>State Highway 1</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="07" CNAME="Essex">
-    <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="14456" DATE="01/21/2026" TIME="2349">
-        <STREET>11th St</STREET>
-        <LOCATION>11th St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
