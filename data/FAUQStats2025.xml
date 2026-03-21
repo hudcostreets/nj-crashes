@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Mar 20 10:00:06 EDT 2026</RUNDATE>
+  <RUNDATE>Sat Mar 21 10:00:07 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -66,7 +66,7 @@
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="14370" DATE="12/30/2025" TIME="1711">
         <HIGHWAY>603</HIGHWAY>
-        <LOCATION>County 603</LOCATION>
+        <LOCATION>County 603 MP 2.84</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2349,7 +2349,7 @@
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="14116" DATE="09/08/2025" TIME="1829">
         <HIGHWAY>603</HIGHWAY>
-        <LOCATION>County 603</LOCATION>
+        <LOCATION>County 603 MP 2.68</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
