@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Mar 26 10:00:02 EDT 2026</RUNDATE>
+  <RUNDATE>Fri Mar 27 10:00:02 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -6353,8 +6353,8 @@
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
       <ACCIDENT ACCID="13804" DATE="03/01/2025" TIME="2237">
-        <STREET>Broad St</STREET>
-        <LOCATION>Broad St</LOCATION>
+        <STREET>Mayor Kenneth A. Gibson Blvd</STREET>
+        <LOCATION>Mayor Kenneth A. Gibson Blvd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
