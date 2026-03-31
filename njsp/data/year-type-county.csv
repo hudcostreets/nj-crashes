@@ -380,10 +380,10 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2026,Atlantic,4,0,1,2,7
 2026,Bergen,4,0,0,1,5
 2026,Burlington,6,2,0,0,6
-2026,Camden,2,1,0,2,4
+2026,Camden,2,1,0,3,5
 2026,Cumberland,1,0,0,1,2
 2026,Essex,3,0,0,7,10
-2026,Gloucester,4,2,0,1,6
+2026,Gloucester,4,2,1,1,7
 2026,Hudson,1,0,0,4,5
 2026,Hunterdon,1,0,0,0,1
 2026,Mercer,3,0,0,3,5
