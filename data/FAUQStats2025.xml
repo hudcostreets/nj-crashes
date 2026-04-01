@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Mar 31 10:00:02 EDT 2026</RUNDATE>
+  <RUNDATE>Wed Apr 01 10:00:03 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -586,7 +586,7 @@
     <MUNICIPALITY MCODE="0414" MNAME="Gloucester City">
       <ACCIDENT ACCID="14294" DATE="12/06/2025" TIME="1929">
         <HIGHWAY>76</HIGHWAY>
-        <LOCATION>Interstate 76</LOCATION>
+        <LOCATION>Interstate 76 MP 27.15</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -692,7 +692,7 @@
     <MUNICIPALITY MCODE="0506" MNAME="Middle Twsp">
       <ACCIDENT ACCID="14285" DATE="11/27/2025" TIME="0019">
         <HIGHWAY>444</HIGHWAY>
-        <LOCATION>Garden State Parkway</LOCATION>
+        <LOCATION>Garden State Parkway MP 11.1</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -1821,14 +1821,15 @@
   </COUNTY>
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0408" MNAME="Camden City">
-      <ACCIDENT ACCID="14184" DATE="10/05/2025" TIME="0101">
+      <ACCIDENT ACCID="14184" DATE="10/05/2025" TIME="0035">
         <HIGHWAY>676</HIGHWAY>
-        <LOCATION>Interstate 676</LOCATION>
+        <LOCATION>Interstate 676 MP .4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2652,6 +2653,7 @@
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2991,12 +2993,13 @@
     <MUNICIPALITY MCODE="0325" MNAME="Mount Laurel Twsp">
       <ACCIDENT ACCID="14076" DATE="08/10/2025" TIME="0250">
         <HIGHWAY>95</HIGHWAY>
-        <LOCATION>New Jersey Turnpike</LOCATION>
+        <LOCATION>New Jersey Turnpike MP 39.1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3738,12 +3741,13 @@
     <MUNICIPALITY MCODE="1709" MNAME="Pilesgrove Twsp">
       <ACCIDENT ACCID="14012" DATE="07/10/2025" TIME="1310">
         <HIGHWAY>40</HIGHWAY>
-        <LOCATION>State Highway 40</LOCATION>
+        <LOCATION>State Highway 40 MP 13.85</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4362,7 +4366,7 @@
     <MUNICIPALITY MCODE="1107" MNAME="Lawrence Twsp">
       <ACCIDENT ACCID="13957" DATE="06/13/2025" TIME="0647">
         <HIGHWAY>546</HIGHWAY>
-        <LOCATION>County 546</LOCATION>
+        <LOCATION>County 546 MP 9.28</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4874,12 +4878,13 @@
     <MUNICIPALITY MCODE="0334" MNAME="Southampton Twsp">
       <ACCIDENT ACCID="13921" DATE="05/22/2025" TIME="1156">
         <HIGHWAY>70</HIGHWAY>
-        <LOCATION>State Highway 70</LOCATION>
+        <LOCATION>State Highway 70 MP 17.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5638,6 +5643,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6357,6 +6363,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
       <ACCIDENT ACCID="13804" DATE="03/01/2025" TIME="2237">
         <STREET>Mayor Kenneth A. Gibson Blvd</STREET>
@@ -6366,6 +6373,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6468,7 +6476,7 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="13774" DATE="02/21/2025" TIME="2101">
+      <ACCIDENT ACCID="13774" DATE="02/21/2025" TIME="2100">
         <HIGHWAY>1</HIGHWAY>
         <LOCATION>State Highway 1 (Truck (Rt. 1 and 9 Only)) MP .5</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -6476,6 +6484,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7389,5 +7398,5 @@
   </COUNTY>
   <TOTACCIDENTS>549</TOTACCIDENTS>
   <TOTFATALITIES>584</TOTFATALITIES>
-  <TOTINJURIES>244</TOTINJURIES>
+  <TOTINJURIES>247</TOTINJURIES>
 </FAUQSTATS>
