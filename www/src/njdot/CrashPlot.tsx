@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
+import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import { EndYear } from "@/src/constants"
 import { Layout, PlotData } from "plotly.js"
 import { lightenColor, useTheme } from "pltly"
@@ -68,6 +69,7 @@ export default function CrashPlot({
     const [controlsOpen, setControlsOpen] = useSessionStorage('crashplot-controls-open', initialControlsOpen)
 
     const [activeTrace, setActiveTrace] = useState<string | null>(null)
+    useResetSolo(useCallback(() => setActiveTrace(null), []))
     const { isDark } = useTheme()
     const SeverityColors = isDark ? SeverityColorsDark : SeverityColorsLight
     const plotColors = usePlotColors()
@@ -468,6 +470,14 @@ export default function CrashPlot({
             annotations,
         }
 
+        // Solo mode: when a trace is active (hovered/pinned), hide all others
+        if (activeTrace) {
+            for (const trace of traces) {
+                const isActive = trace.name === activeTrace || trace.legendgroup === activeTrace
+                trace.visible = isActive ? true : 'legendonly'
+            }
+        }
+
         return { traces, layout }
     }, [data, effectiveStackBy, severities, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors, isDark, cc2mc2mn])
 
@@ -519,6 +529,7 @@ export default function CrashPlot({
                         data={traces as PlotData[]}
                         layout={layout}
                         onActiveTrace={setActiveTrace}
+                        disableFade
                     />
                 )}
             </div>

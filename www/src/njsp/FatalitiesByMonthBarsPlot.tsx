@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
@@ -139,6 +140,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
     const plotColors = usePlotColors()
 
     const [activeTrace, setActiveTrace] = useState<string | null>(null)
+    useResetSolo(useCallback(() => setActiveTrace(null), []))
 
     // Per-plot settings (scoped by plot ID in session storage)
     const [colorScaleName, setColorScaleName] = useSessionStorage<ColorScaleName>(`plot-${id}-colorscale`, 'inferno')

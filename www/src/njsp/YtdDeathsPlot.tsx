@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react"
+import React, { useCallback, useMemo, useState } from "react"
+import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
@@ -79,6 +80,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     const plotColors = usePlotColors()
 
     const [activeTrace, setActiveTrace] = useState<string | null>(null)
+    useResetSolo(useCallback(() => setActiveTrace(null), []))
 
     // Per-plot settings (scoped by plot ID in session storage)
     const [colorScaleName, setColorScaleName] = useSessionStorage<ColorScaleName>(`plot-${id}-colorscale`, 'inferno')
@@ -476,12 +478,13 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                         }}>
                             {dateLabel && <div style={{ fontWeight: 'bold', marginBottom: 2, borderBottom: '1px solid var(--pltly-hover-border, #555)', paddingBottom: 2 }}>{dateLabel}</div>}
                             {sorted.map(({ key, point }) => {
+                                const isPinned = key === activeTrace
                                 return (
-                                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4em' }}>
+                                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4em', fontWeight: isPinned ? 'bold' : undefined }}>
                                         <span style={{
                                             display: 'inline-block',
                                             width: 14,
-                                            height: 3,
+                                            height: isPinned ? 4 : 3,
                                             background: (point.trace as any).line?.color ?? '#888',
                                         }} />
                                         <span>{key} : {point.y}{point.customdata ? String(point.customdata) : ''}</span>

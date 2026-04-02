@@ -24,8 +24,11 @@ export type Props = {
     data: PlotData[]
     layout: Partial<Layout>
     className?: string
-    /** Disable pltly's built-in fade (for plots that apply their own custom fade) */
+    /** Disable pltly's built-in fade (for plots that apply their own custom fade).
+     *  Legend hover detection and solo/pin still work when callbacks are provided. */
     disableFade?: boolean
+    /** Disable pltly's solo/pin on legend click (but still allow hover detection) */
+    disableSolo?: boolean
 } & LegendHandlers & OtherHandlers
 
 export const DEFAULT_MARGIN: Partial<Margin> = { t: 0, r: 15, b: 0, l: 0 }
@@ -45,6 +48,7 @@ export default function PlotWrapper({
     onHover,
     onUnhover,
     disableFade,
+    disableSolo,
 }: Props) {
     const height = layout.height ?? DEFAULT_HEIGHT
 
@@ -63,8 +67,11 @@ export default function PlotWrapper({
             onRelayout={onRelayout as any}
             onActiveTraceChange={onActiveTrace}
             onHoverTraceChange={onHoverTrace}
+            onHover={onHover}
+            onUnhover={onUnhover}
+            onResetSolo={onResetSolo}
             disableLegendHover={disableFade}
-            disableSoloTrace={disableFade}
+            disableSoloTrace={disableSolo}
             fallback={
                 <div style={{
                     height: `${height}px`,

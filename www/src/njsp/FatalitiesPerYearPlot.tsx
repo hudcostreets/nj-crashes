@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
@@ -253,10 +254,11 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             setPinnedTrace(name)
         }
     }
-    const handleUnpin = () => {
+    const handleUnpin = useCallback(() => {
         setPinnedTrace(null)
         resetSolo()
-    }
+    }, [resetSolo])
+    useResetSolo(handleUnpin)
 
     // Build plot data
     const { data, annotations, layout } = useMemo(() => {

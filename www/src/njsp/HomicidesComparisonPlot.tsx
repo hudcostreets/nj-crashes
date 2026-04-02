@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react"
+import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
@@ -65,6 +66,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
     const rows = useQuery<CrashHomicideRow>({ db: crashHomicideDb, query: crashHomicideQuery, init: [] })
 
     const [activeTrace, setActiveTrace] = useState<string | null>(null)
+    useResetSolo(() => setActiveTrace(null))
 
     // Pre-compute value arrays for dual-axis alignment hook (must be unconditional)
     const deathValues = useMemo(() => rows.flatMap(r => [r.traffic_deaths, r.homicides]), [rows])
@@ -154,7 +156,8 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 tickfont: { color: plotColors.textColor },
                 gridcolor: plotColors.gridColor,
                 fixedrange: true,
-                rangemode: "tozero",
+                // Add 10% headroom above max bar value so outside text labels aren't cropped
+                range: [0, Math.max(...trafficDeaths, ...homicides) * 1.1],
                 ...axisAlignment?.yaxis,
                 title: {
                     text: "Deaths",

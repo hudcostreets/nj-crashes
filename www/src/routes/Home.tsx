@@ -22,6 +22,8 @@ import { YearStatsSection } from "@/src/tables/YearStatsSection"
 import { NjspCrashesSection } from "@/src/tables/NjspCrashesSection"
 import { NjdotCrashesSection } from "@/src/tables/NjdotCrashesSection"
 import { LazySection } from "@/src/components/LazySection"
+import { PlotInfo } from "@/src/icons"
+import { ResetSoloProvider, useResetAllSolo } from "@/src/lib/ResetSoloContext"
 
 export default function Home() {
     const basePath = getBasePath()
@@ -49,6 +51,43 @@ export default function Home() {
     const countyFilter = cc !== null ? [Number(cc)] : Object.keys(Counties).map(Number)
 
     return (
+        <ResetSoloProvider>
+        <HomeInner
+            title={title}
+            description={description}
+            pageUrl={pageUrl}
+            regionLabel={regionLabel}
+            geo={geo}
+            countyName={countyName}
+            municipalityName={municipalityName}
+            cc={cc}
+            mc={mc}
+            countyFilter={countyFilter}
+            basePath={basePath}
+        />
+        </ResetSoloProvider>
+    )
+}
+
+function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, municipalityName, cc, mc, countyFilter, basePath }: {
+    title: string, description: string, pageUrl: string, regionLabel: string | null, geo: string,
+    countyName: string | undefined, municipalityName: string | undefined,
+    cc: number | null, mc: number | null, countyFilter: number[], basePath: string,
+}) {
+    const resetAll = useResetAllSolo()
+
+    const handleMainClick = (e: React.MouseEvent) => {
+        const target = e.target as Element
+        // Don't reset if clicking interactive elements
+        if (target.closest('.legend .traces')) return
+        if (target.closest('.trace')) return
+        if (target.closest('button, a, select, input, label')) return
+        if (target.closest('[class*="iconLegend"]')) return
+        if (target.closest('[class*="controlsContent"]')) return
+        resetAll()
+    }
+
+    return (
         <div className={css.container}>
             <Head
                 title={title}
@@ -57,12 +96,12 @@ export default function Home() {
                 thumbnail={`${url}/plots/fatalities_per_year_by_type.png`}
             />
 
-            <main className={css.index}>
+            <main className={css.index} onClick={handleMainClick}>
                 <Breadcrumbs />
                 <h1 className={css.title}>{regionLabel ? `${regionLabel} Crash Data` : "NJ Car Crash Data"}</h1>
                 {!regionLabel && (
                     <p>
-                        Exposed and visualized data from two NJ sources:{" "}
+                        Data analysis and visualization from two NJ sources:{" "}
                         <A title="NJ State Police fatal crash data" href={NjspFatalAcc}>NJ State Police</A> (fatal crashes, 2008-present, updated daily) and{" "}
                         <A title="NJ DOT raw crash data" href={NjdotRawData}>NJ DOT</A> (all crashes including property-damage and injury, 2001-{EndYear}).
                     </p>
@@ -76,8 +115,8 @@ export default function Home() {
                 <PlotContainer><FatalitiesPerYearPlot initialCounty={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
 
                 {/* NJSP Fatal Crashes Table */}
-                <h2 id="njsp-crashes"><a href="#njsp-crashes">Recent Fatal Crashes (NJSP)</a></h2>
-                <div className={css.subtitle}>Fatal crashes, 2008–present{geo}</div>
+                <h2 id="njsp-crashes"><a href="#njsp-crashes">Recent Fatal Crashes</a></h2>
+                <div className={css.subtitle}>Fatal crashes, 2008–present{geo} <PlotInfo source="njsp" showLegendHint={false} /></div>
                 <LazySection placeholder={<p>Loading crash data...</p>}>
                     <NjspCrashesSection />
                 </LazySection>
