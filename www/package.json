@@ -8,7 +8,10 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist node_modules/.vite",
-    "tc": "tsc"
+    "tc": "tsc",
+    "test": "playwright test --reporter=list",
+    "test:headed": "playwright test --headed --reporter=list",
+    "test:grep": "playwright test --reporter=list -g"
   },
   "dependencies": {
     "@deck.gl/layers": "^8.9.34",
@@ -33,9 +36,9 @@
     "mapbox-gl": "^3.0.1",
     "maplibre-gl": "^3.6.2",
     "moment-timezone": "^0.5.45",
-    "plotly.js": "https://github.com/runsascoded/plotly.js#bef8f3d7db5c2b56223b0e4bd83a9e06bea71f65",
+    "plotly.js": "https://github.com/runsascoded/plotly.js#e78fb569ce0dcb3d39d9d0f9162e1502bcbfd98c",
     "plotly.js-dist-min": "^3.4.0",
-    "pltly": "https://gitlab.com/runsascoded/js/pltly/-/archive/fc5e2365e56dad11d388c1dc2d5e2a68dd1b6b20/pltly-fc5e2365e56dad11d388c1dc2d5e2a68dd1b6b20.tar.gz",
+    "pltly": "https://gitlab.com/runsascoded/js/pltly/-/archive/1fb4da652846e308f07ec6df48656ed29e09b3a4/pltly-1fb4da652846e308f07ec6df48656ed29e09b3a4.tar.gz",
     "react": "^18",
     "react-dom": "^18",
     "react-helmet-async": "^2.0.4",
@@ -49,6 +52,7 @@
     "use-session-storage-state": "^18.2.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/geojson": "^7946",
     "@types/leaflet": "^1",
     "@types/mapbox-gl": "^2.7.19",
@@ -60,7 +64,7 @@
     "@vanilla-extract/vite-plugin": "^4.0.0",
     "@vitejs/plugin-react": "^4.2.1",
     "buffer": "^6.0.3",
-    "pnpm-dep-source": "https://github.com/runsascoded/pnpm-dep-source#3b079581473bf9e1654cfb2cd944e01d259ffdb8",
+    "pnpm-dep-source": "https://github.com/runsascoded/pnpm-dep-source#79efb3d9955c3398ab008cd8a125a6c82cf4f84f",
     "typescript": "^5",
     "vite": "^5.0.10"
   }
