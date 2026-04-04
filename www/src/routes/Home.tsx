@@ -71,7 +71,7 @@ export default function Home() {
 
 function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, municipalityName, cc, mc, countyFilter, basePath }: {
     title: string, description: string, pageUrl: string, regionLabel: string | null, geo: string,
-    countyName: string | undefined, municipalityName: string | undefined,
+    countyName: string | null, municipalityName: string | null,
     cc: number | null, mc: number | null, countyFilter: number[], basePath: string,
 }) {
     const resetAll = useResetAllSolo()

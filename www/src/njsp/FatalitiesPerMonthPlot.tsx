@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react"
-import { Layout, PlotData } from "plotly.js"
+import type { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { MonthlyCsv } from "@/src/paths"

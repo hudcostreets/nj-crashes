@@ -2,7 +2,7 @@
 // Simplified version that loads plot data client-side
 
 import React, { CSSProperties, ReactNode, useEffect, useMemo, useState } from "react"
-import { Data, Datum, Layout, Legend, Margin, PlotData, Config } from "plotly.js"
+import type { Data, Datum, Layout, Legend, Margin, PlotData, Config } from "plotly.js"
 type PlotParams = { data: Data[], layout: Partial<Layout>, config?: Partial<Config> }
 import { fromEntries, o2a } from "@rdub/base/objs"
 import { fadeColor, useSoloTrace } from "pltly"

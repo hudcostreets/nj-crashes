@@ -1,4 +1,4 @@
-import { Annotations, Config, Data as PlotlyData, Layout, PlotData } from "plotly.js";
+import type { Annotations, Config, Data as PlotlyData, Layout, PlotData } from "plotly.js";
 import { TableData, useCsvTable, useTable } from "@/src/tableData";
 import { useDb, useQuery } from "@/src/lib/DuckDbContext";
 import { curYear, prvYear } from "@/src/constants";

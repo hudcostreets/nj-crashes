@@ -1,4 +1,4 @@
-declare module 'plotly.js/dist/plotly.min.js' {
+declare module 'plotly.js/basic' {
     import Plotly from 'plotly.js'
-    export = Plotly
+    export default Plotly
 }

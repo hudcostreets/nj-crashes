@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import { EndYear } from "@/src/constants"
-import { Layout, PlotData } from "plotly.js"
+import type { Layout, PlotData } from "plotly.js"
 import { lightenColor, useTheme } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { useParquet } from "@/src/lib/useParquet"

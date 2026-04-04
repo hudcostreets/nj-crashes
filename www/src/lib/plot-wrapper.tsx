@@ -1,5 +1,5 @@
 import React from "react"
-import { PlotData, Layout, Margin, PlotRelayoutEvent } from "plotly.js"
+import type { PlotData, Layout, Margin, PlotRelayoutEvent } from "plotly.js"
 import { Plot } from "pltly/react"
 import { LegendClickEvent } from "pltly"
 

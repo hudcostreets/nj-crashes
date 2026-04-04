@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { Layout, PlotData } from "plotly.js"
+import type { Layout, PlotData } from "plotly.js"
 import { useSoloTrace, fadeColor, useTheme } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { useGeoFilter } from "@/src/GeoFilterContext"

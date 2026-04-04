@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
-import { Layout, PlotData } from "plotly.js"
+import type { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { MonthlyCsv, ProjectedCsv, YtcCsv } from "@/src/paths"

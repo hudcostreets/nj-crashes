@@ -10,7 +10,7 @@ export default defineConfig({
   plugins: [
     react(),
     vanillaExtractPlugin(),
-    pdsPlugin({ extra: ['plotly.js-dist-min'] }),
+    pdsPlugin(),
   ],
 
   resolve: {
@@ -18,7 +18,6 @@ export default defineConfig({
       '@': path.resolve(__dirname, '.'),
     },
   },
-
 
   build: {
     outDir: 'dist',
@@ -34,5 +33,5 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
-  },
+  }
 })
