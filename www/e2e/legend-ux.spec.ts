@@ -72,18 +72,20 @@ test.describe('Legend hover (no pin)', () => {
 
     // Hover the first legend item
     await firstItem.hover()
-    await page.waitForTimeout(200)
 
-    // First LI text should be bold
+    // First LI text should be bold (may take a moment after dual-axis relayout)
     const firstText = legendTexts(plot).first()
-    expect(isBold(await fontWeight(firstText))).toBe(true)
+    await expect(async () => {
+      expect(isBold(await fontWeight(firstText))).toBe(true)
+    }).toPass({ timeout: 2000 })
 
     // Move mouse away from legend
     await page.mouse.move(0, 0)
-    await page.waitForTimeout(200)
 
     // Bold should be cleared
-    expect(isBold(await fontWeight(firstText))).toBe(false)
+    await expect(async () => {
+      expect(isBold(await fontWeight(firstText))).toBe(false)
+    }).toPass({ timeout: 2000 })
   })
 })
 
@@ -101,38 +103,42 @@ test.describe('Legend pin', () => {
 
     // Click first LI to pin
     await firstItem.click()
-    await page.waitForTimeout(200)
 
-    // First LI should be bold (pinned)
-    expect(isBold(await fontWeight(firstText))).toBe(true)
+    // First LI should be bold (pinned) — may take a moment after dual-axis relayout
+    await expect(async () => {
+      expect(isBold(await fontWeight(firstText))).toBe(true)
+    }).toPass({ timeout: 2000 })
 
     // Move mouse away — bold should persist (it's pinned, not just hovered)
     await page.mouse.move(0, 0)
-    await page.waitForTimeout(200)
+    await page.waitForTimeout(300)
     expect(isBold(await fontWeight(firstText))).toBe(true)
 
     // Hover second LI — second should become bold (preview), first stays bold (pinned)
     await secondItem.hover()
-    await page.waitForTimeout(200)
-    expect(isBold(await fontWeight(firstText))).toBe(true)
-    expect(isBold(await fontWeight(secondText))).toBe(true)
+    await expect(async () => {
+      expect(isBold(await fontWeight(firstText))).toBe(true)
+      expect(isBold(await fontWeight(secondText))).toBe(true)
+    }).toPass({ timeout: 2000 })
 
     // Click second LI — pin should switch to second
     await secondItem.click()
-    await page.waitForTimeout(200)
-    expect(isBold(await fontWeight(secondText))).toBe(true)
+    await expect(async () => {
+      expect(isBold(await fontWeight(secondText))).toBe(true)
+    }).toPass({ timeout: 2000 })
     // First should no longer be bold (unless hovered)
     await page.mouse.move(0, 0)
-    await page.waitForTimeout(200)
-    expect(isBold(await fontWeight(firstText))).toBe(false)
-    expect(isBold(await fontWeight(secondText))).toBe(true)
+    await expect(async () => {
+      expect(isBold(await fontWeight(firstText))).toBe(false)
+      expect(isBold(await fontWeight(secondText))).toBe(true)
+    }).toPass({ timeout: 2000 })
 
     // Click second LI again — unpin, all back to normal
     await secondItem.click()
-    await page.waitForTimeout(200)
     await page.mouse.move(0, 0)
-    await page.waitForTimeout(200)
-    expect(isBold(await fontWeight(secondText))).toBe(false)
+    await expect(async () => {
+      expect(isBold(await fontWeight(secondText))).toBe(false)
+    }).toPass({ timeout: 2000 })
   })
 
   test('pin does not change plot on hover of other LIs', async ({ page }) => {
@@ -172,8 +178,9 @@ test.describe('Legend pin', () => {
 
     // Pin first LI
     await items.first().click()
-    await page.waitForTimeout(300)
-    expect(isBold(await fontWeight(texts.first()))).toBe(true)
+    await expect(async () => {
+      expect(isBold(await fontWeight(texts.first()))).toBe(true)
+    }).toPass({ timeout: 2000 })
 
     // Move away to confirm pin persists
     const plotBox = await plot.boundingBox()
@@ -183,23 +190,23 @@ test.describe('Legend pin', () => {
 
     // Click same LI again to unpin
     await items.first().click()
-    await page.waitForTimeout(300)
 
     // Move away to clear hover
     await page.mouse.move(plotBox!.x - 50, plotBox!.y - 50)
-    await page.waitForTimeout(500)
 
     // No bold LIs (no pin, no hover)
-    const count = await texts.count()
-    const boldNames: string[] = []
-    for (let i = 0; i < count; i++) {
-      const fw = await fontWeight(texts.nth(i))
-      if (isBold(fw)) {
-        const name = await texts.nth(i).textContent()
-        boldNames.push(`${name} (fw=${fw})`)
+    await expect(async () => {
+      const count = await texts.count()
+      const boldNames: string[] = []
+      for (let i = 0; i < count; i++) {
+        const fw = await fontWeight(texts.nth(i))
+        if (isBold(fw)) {
+          const name = await texts.nth(i).textContent()
+          boldNames.push(`${name} (fw=${fw})`)
+        }
       }
-    }
-    expect(boldNames).toEqual([])
+      expect(boldNames).toEqual([])
+    }).toPass({ timeout: 2000 })
   })
 
   test('click on plot background unpins', async ({ page }) => {
@@ -211,30 +218,30 @@ test.describe('Legend pin', () => {
 
     // Pin first LI
     await items.first().click()
-    await page.waitForTimeout(300)
-    expect(isBold(await fontWeight(texts.first()))).toBe(true)
+    await expect(async () => {
+      expect(isBold(await fontWeight(texts.first()))).toBe(true)
+    }).toPass({ timeout: 2000 })
 
     // Click on empty plot area (above traces, below title)
     const plotBox = await plot.boundingBox()
-    // Click near top-right corner where there are no traces or legend items
     await page.mouse.click(plotBox!.x + plotBox!.width - 20, plotBox!.y + 20)
-    await page.waitForTimeout(300)
 
     // Move mouse away to clear any hover
     await page.mouse.move(plotBox!.x - 50, plotBox!.y - 50)
-    await page.waitForTimeout(500)
 
     // No bold LIs
-    const count = await texts.count()
-    const boldNames: string[] = []
-    for (let i = 0; i < count; i++) {
-      const fw = await fontWeight(texts.nth(i))
-      if (isBold(fw)) {
-        const name = await texts.nth(i).textContent()
-        boldNames.push(`${name} (fw=${fw})`)
+    await expect(async () => {
+      const count = await texts.count()
+      const boldNames: string[] = []
+      for (let i = 0; i < count; i++) {
+        const fw = await fontWeight(texts.nth(i))
+        if (isBold(fw)) {
+          const name = await texts.nth(i).textContent()
+          boldNames.push(`${name} (fw=${fw})`)
+        }
       }
-    }
-    expect(boldNames).toEqual([])
+      expect(boldNames).toEqual([])
+    }).toPass({ timeout: 2000 })
   })
 })
 
