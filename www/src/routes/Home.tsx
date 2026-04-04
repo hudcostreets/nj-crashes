@@ -153,20 +153,6 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                     <NjdotCrashesSection />
                 </LazySection>
 
-                {/* Hudson County Map — only show when not filtered, or when filtered to Hudson */}
-                {(!countyName || countyName === "Hudson") && (
-                    <>
-                        <h2 id="map"><a href="#map">Hudson County Crash Map</a></h2>
-                        <p>
-                            5 years (2017-2021) of fatal and injury crashes in Hudson County, plotted from NJ DOT data:
-                        </p>
-                        <iframe src={`${basePath}/map/hudson`} className={css.map} title="Hudson County Crash Map" />
-                        <p style={{ textAlign: 'center' }}>
-                            <A href="/map/hudson">Full screen map</A>
-                        </p>
-                    </>
-                )}
-
                 <Footer />
             </main>
         </div>
