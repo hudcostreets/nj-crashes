@@ -4,7 +4,7 @@ import type { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { MonthlyCsv, ProjectedCsv, YtcCsv } from "@/src/paths"
-import { fadeColor, lightenColor, useSoloTrace } from "pltly"
+import { fadeColor, lightenColor } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { Annotation } from "./plot"
 import { CountySelect } from "@/src/county-select"
@@ -177,7 +177,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     useEffect(() => { setCounty(initialCounty) }, [initialCounty])
     // Municipality-level: use cc/mc from props (no county dropdown when muni-level)
     const hasMuniFilter = propCc !== null && propMc !== null
-    const [hoverTrace, setHoverTrace] = useState<string | null>(null)
+    // hoverTrace from pltly (unused — no native Plotly legend on this plot)
     const [showProjected, setShowProjected] = useState(true)
     const [projSolidity, setProjSolidity] = useSessionStorage<number>('njsp-deaths-projSolidity', 0.75)
     const [projFgOpacity, setProjFgOpacity] = useSessionStorage<number>('njsp-deaths-projFgOpacity', 1.0)
@@ -227,37 +227,22 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
 
     const isMonthly = timeGranularity === 'month'
 
-    // Pin/hover trace management
-    const traceNames = useMemo(() => isMonthly ? [...Types, '12-mo avg'] : [...Types], [isMonthly])
-    const [pinnedTrace, setPinnedTrace] = useState<string | null>(null)
-    // Normalize hover trace (strip " (projected)" suffix)
-    const normalizedHover = useMemo(() => {
-        if (!hoverTrace) return null
-        const base = hoverTrace.replace(" (projected)", "") as Type
-        return Types.includes(base) ? base : null
-    }, [hoverTrace])
-    // When pinned, plot shows pinned trace (ignore hover). When not pinned, plot shows hovered trace.
-    const effectiveHover = pinnedTrace ? null : normalizedHover
-    const { activeTrace, onLegendClick: _onLegendClick, onLegendDoubleClick, resetSolo } = useSoloTrace(traceNames, effectiveHover)
-    // Active type = pinned trace takes priority, then useSoloTrace's active
-    const activeType = (pinnedTrace ?? activeTrace) as Type | null
-    // Highlight current year when hovering "* Projected"
-    const highlightProjected = hoverTrace === '* Projected' && !pinnedTrace
+    // Single state for hover/pin — no parallel systems
+    const [hoverType, setHoverType] = useState<string | null>(null)
+    const [pinnedType, setPinnedType] = useState<string | null>(null)
 
-    const handleLegendItemClick = (name: string) => {
-        if (pinnedTrace === name) {
-            // Unpin
-            setPinnedTrace(null)
-            resetSolo()
-        } else {
-            // Pin this trace
-            setPinnedTrace(name)
-        }
-    }
+    // Active type for solo: only actual Types, not special items like "* Projected" or "12-mo avg"
+    const rawActive = pinnedType ?? hoverType
+    const activeType = (rawActive && Types.includes(rawActive as Type) ? rawActive : null) as Type | null
+    // "* Projected" is a special hover mode (fade non-current-year bars)
+    const highlightProjected = hoverType === '* Projected' && !pinnedType
+
+    const handleLegendItemClick = useCallback((name: string) => {
+        setPinnedType(prev => prev === name ? null : name)
+    }, [])
     const handleUnpin = useCallback(() => {
-        setPinnedTrace(null)
-        resetSolo()
-    }, [resetSolo])
+        setPinnedType(null)
+    }, [])
     useResetSolo(handleUnpin)
 
     // Build plot data
@@ -322,7 +307,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                         color: isGreyed ? fadeColor(COLORS[type], { opacity: 0.3 }) : COLORS[type],
                         line: { color: 'transparent', width: 0 },
                     },
-                    visible: isVisible || activeType === null || avgActive ? true : "legendonly",
+                    visible: isVisible || activeType === null || avgActive ? true : 'legendonly',
                     hovertemplate: `%{y}<extra>${type}</extra>`,
                 } as PlotData
             })
@@ -424,15 +409,14 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             }
         }
 
-        // Determine which types are visible
-        const visibleTypes = activeType
-            ? new Set([activeType])
-            : new Set(Types)
-
         // Build traces: actual data for each type
+        // Use visible:'legendonly' for solo (removes from stack) — key={activeType} on
+        // PlotWrapper forces remount to work around d3 v7 data join bug
         const traces: PlotData[] = Types.map(type => {
             const col = typesMap[type]
-            // When hovering "Projected", fade all non-current-year bars
+            const isActive = !activeType || activeType === type
+            const isSolo = activeType === type
+            // When hovering "Projected", fade all non-current-year bars via per-bar colors
             const colors = highlightProjected
                 ? rows.map(r => r.year === curYear ? COLORS[type] : fadeColor(COLORS[type], { opacity: 0.3 }))
                 : COLORS[type]
@@ -448,14 +432,14 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 marker: { color: colors },
                 texttemplate: "%{y:d}",
                 textfont: { color: textColors },
-                textposition: visibleTypes.size === 1 ? "auto" : "inside",
-                visible: visibleTypes.has(type) ? true : "legendonly",
+                textposition: isSolo ? "auto" : "inside",
+                visible: isActive ? true : 'legendonly',
                 hovertemplate: `%{y}<extra>${type}</extra>`,
             } as PlotData
         })
 
         // Add invisible trace for total (shows once in unified hover)
-        if (visibleTypes.size === Types.length) {
+        if (!activeType) {
             traces.push({
                 type: "scatter",
                 mode: "markers",
@@ -500,7 +484,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                         textfont: { color: '#ffffff' },
                         textangle: 0,  // Force upright text
                         hovertemplate: `${curYear} est: ${projTotal} (+%{y})<extra>${type}*</extra>`,
-                        visible: visibleTypes.has(type) ? true : "legendonly",
+                        visible: (!activeType || activeType === type) ? true : 'legendonly',
                     } as PlotData)
                 }
             }
@@ -520,7 +504,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
 
         // Build annotations (totals above bars)
         const annotations: Annotation[] = []
-        if (visibleTypes.size === Types.length) {
+        if (!activeType) {
             // Show all year totals when all types visible
             rows.forEach(row => {
                 const actual = row.driver + row.pedestrian + row.cyclist + row.passenger
@@ -651,13 +635,12 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             </h2>
             <div className={css.subtitle}>Fatalities, 2008–present{regionLabel ? ` · ${regionLabel}` : initialCounty ? ` · ${initialCounty} County` : ''}</div>
             <PlotWrapper
+                key={`${timeGranularity}-${activeType ?? 'all'}-${highlightProjected}`}
                 id={id}
                 data={data}
                 layout={layout}
+                disableFade
 
-                onLegendClick={_onLegendClick}
-                onLegendDoubleClick={onLegendDoubleClick}
-                onHoverTrace={setHoverTrace}
                 onResetSolo={handleUnpin}
             />
             <div className={css.plotToolbarCompact}>
@@ -678,7 +661,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 <div className={css.iconLegend} onClick={e => { if (e.target === e.currentTarget) handleUnpin() }}>
                     {Types.map(type => {
                         const IconComponent = TYPE_ICONS[type]
-                        const isPinned = pinnedTrace === type
+                        const isPinned = pinnedType === type
                         const isSolo = activeType === type
                         const isGreyed = activeType !== null && !isSolo
                         return (
@@ -686,9 +669,9 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                                 key={type}
                                 className={`${css.iconLegendItem} ${isSolo ? css.solo : ''} ${isGreyed ? css.greyed : ''}`}
                                 style={isPinned ? { fontWeight: 'bold' } : undefined}
+                                onMouseEnter={() => setHoverType(type)}
+                                onMouseLeave={() => setHoverType(null)}
                                 onClick={() => handleLegendItemClick(type)}
-                                onMouseEnter={() => setHoverTrace(type)}
-                                onMouseLeave={() => setHoverTrace(null)}
                             >
                                 <IconComponent style={{ fill: COLORS[type] }} />
                                 <span className={css.iconLegendLabel}>{type}</span>
@@ -701,10 +684,9 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                         return (
                             <span
                                 className={`${css.iconLegendItem} ${activeType === '12-mo avg' as any ? css.solo : ''}`}
-                                style={pinnedTrace === '12-mo avg' ? { fontWeight: 'bold' } : undefined}
-                                onClick={() => handleLegendItemClick('12-mo avg')}
-                                onMouseEnter={() => setHoverTrace('12-mo avg')}
-                                onMouseLeave={() => setHoverTrace(null)}
+                                style={pinnedType === '12-mo avg' ? { fontWeight: 'bold' } : undefined}
+                                onMouseEnter={() => setHoverType('12-mo avg')}
+                                onMouseLeave={() => setHoverType(null)}
                             >
                                 <span className={css.iconLegendLine} style={avgLiColor ? { background: avgLiColor } : undefined} />
                                 <span className={css.iconLegendLabel} style={avgLiColor ? { color: avgLiColor } : undefined}>12-mo avg</span>
@@ -716,8 +698,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                             <summary
                                 className={css.iconLegendItem}
                                 style={{ opacity: 0.7, listStyle: 'none', display: 'inline-flex' }}
-                                onMouseEnter={() => setHoverTrace('* Projected')}
-                                onMouseLeave={() => setHoverTrace(null)}
+                                onMouseEnter={() => setHoverType('* Projected')}
+                                onMouseLeave={() => setHoverType(null)}
                             >
                                 <span className={css.iconLegendSwatch} style={{
                                     background: `repeating-linear-gradient(
