@@ -189,7 +189,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 itemwidth: 15,
                 textgap: 8,
                 itemgap: 24,
-            } as any,
+            },
             dragmode: false,
         }
 

@@ -63,8 +63,7 @@ test.describe('Plot rendering', () => {
 })
 
 test.describe('Legend hover (no pin)', () => {
-  // TODO: pltly bold not applied after dual-axis relayout on hover (works on click/pin)
-  test.fixme('Homicides plot: hover LI highlights trace, unhover resets', async ({ page }) => {
+  test('Homicides plot: hover LI highlights trace, unhover resets', async ({ page }) => {
     await page.goto('/#vs-homicides')
     await waitForPlots(page)
     const plot = page.locator('.js-plotly-plot').nth(2) // Homicides is 3rd plot

@@ -16,7 +16,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
-      'plotly.js/basic': path.resolve(__dirname, 'node_modules/plotly.js/lib/index-basic.js'),
     },
   },
 
@@ -28,9 +27,6 @@ export default defineConfig({
     port: 4006,
     host: true,
     allowedHosts,
-    fs: {
-      allow: ['..', '../../..'],
-    },
     proxy: {
       '/api': {
         target: 'http://localhost:51894',
