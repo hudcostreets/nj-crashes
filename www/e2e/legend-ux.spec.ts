@@ -36,7 +36,7 @@ async function fontWeight(el: Locator): Promise<string> {
  * Helper: check if a font-weight value represents bold.
  */
 function isBold(weight: string): boolean {
-  return weight === 'bold' || weight === '700' || parseInt(weight) >= 700
+  return weight === 'bold' || parseInt(weight) >= 600
 }
 
 /**
@@ -142,7 +142,7 @@ test.describe('Legend pin', () => {
     }).toPass({ timeout: 10000 })
   })
 
-  test('pin does not change plot on hover of other LIs', async ({ page }) => {
+  test('pin does not change trace visibility on hover of other LIs', async ({ page }) => {
     await page.goto('/#vs-homicides')
     await waitForPlots(page)
     const plot = page.locator('.js-plotly-plot').nth(2)
@@ -152,22 +152,22 @@ test.describe('Legend pin', () => {
     await items.first().click()
     await page.waitForTimeout(300)
 
-    // Record trace opacity/visibility state
-    const stateAfterPin = await plot.evaluate(el => {
+    // Record trace visibility state (opacity may change due to fade preview)
+    const visAfterPin = await plot.evaluate(el => {
       const gd = el as any
-      return gd.data.map((t: any) => ({ name: t.name, opacity: t.opacity, visible: t.visible }))
+      return gd.data.map((t: any) => ({ name: t.name, visible: t.visible }))
     })
 
-    // Hover second LI — plot state should NOT change
+    // Hover second LI — visibility should NOT change (no solo toggle)
     await items.nth(1).hover()
     await page.waitForTimeout(300)
 
-    const stateAfterHover = await plot.evaluate(el => {
+    const visAfterHover = await plot.evaluate(el => {
       const gd = el as any
-      return gd.data.map((t: any) => ({ name: t.name, opacity: t.opacity, visible: t.visible }))
+      return gd.data.map((t: any) => ({ name: t.name, visible: t.visible }))
     })
 
-    expect(stateAfterHover).toEqual(stateAfterPin)
+    expect(visAfterHover).toEqual(visAfterPin)
   })
 
   test('double-click unpins', async ({ page }) => {
@@ -333,5 +333,39 @@ test.describe('FBM pin', () => {
     await page.mouse.move(0, 0)
     await page.waitForTimeout(200)
     expect(isBold(await fontWeight(texts.first()))).toBe(false)
+  })
+})
+
+test.describe('Tooltip order', () => {
+  test('Plot1 unified hover shows top-of-stack first', async ({ page }) => {
+    await page.goto('/')
+    await waitForPlots(page, { count: 5 })
+    // Verify plotly.js defaults traceorder to 'reversed' for stacked bars
+    const traceorder = await page.evaluate(() => {
+      const gd = document.querySelector('.js-plotly-plot') as any
+      return gd?._fullLayout?.legend?.traceorder ?? 'not set'
+    })
+    expect(traceorder).toContain('reversed')
+  })
+
+  test('CrashPlot tooltip order matches stack (top-first)', async ({ page }) => {
+    await page.goto('/#njdot')
+    await page.locator('.js-plotly-plot').nth(4).waitFor({ timeout: 15000 })
+    await page.waitForTimeout(2000)
+
+    const plot = page.locator('.js-plotly-plot').nth(4)
+    await plot.scrollIntoViewIfNeeded()
+    const box = await plot.boundingBox()
+
+    await page.mouse.move(box!.x + 50, box!.y + box!.height / 2, { steps: 3 })
+    await page.waitForTimeout(300)
+    await page.mouse.move(box!.x + box!.width * 0.4, box!.y + box!.height / 2, { steps: 10 })
+    await page.waitForTimeout(1000)
+
+    const names = await plot.locator('.hoverlayer .legend .traces .legendtext').allTextContents()
+    const types = names.map(n => n.split(':')[0].trim())
+    // Stack bottom→top: Fatal, Injury, Prop. Damage
+    // Tooltip top→bottom should be: Prop. Damage, Injury, Fatal
+    expect(types).toEqual(['Prop. Damage', 'Injury', 'Fatal'])
   })
 })

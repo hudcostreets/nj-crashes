@@ -29,6 +29,8 @@ export type Props = {
     disableFade?: boolean
     /** Disable pltly's solo/pin on legend click (but still allow hover detection) */
     disableSolo?: boolean
+    /** Fade the non-associated Y-axis on dual-axis plots when a trace is highlighted */
+    fadeInactiveAxis?: boolean
 } & LegendHandlers & OtherHandlers
 
 export const DEFAULT_MARGIN: Partial<Margin> = { t: 0, r: 15, b: 0, l: 0 }
@@ -49,6 +51,7 @@ export default function PlotWrapper({
     onUnhover,
     disableFade,
     disableSolo,
+    fadeInactiveAxis,
 }: Props) {
     const height = layout.height ?? DEFAULT_HEIGHT
 
@@ -72,6 +75,7 @@ export default function PlotWrapper({
             onResetSolo={onResetSolo}
             disableLegendHover={disableFade}
             disableSoloTrace={disableSolo}
+            fadeInactiveAxis={fadeInactiveAxis}
             fallback={
                 <div style={{
                     height: `${height}px`,

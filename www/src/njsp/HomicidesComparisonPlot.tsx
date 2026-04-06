@@ -121,7 +121,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 yaxis: "y2",
                 line: {
                     color: plotColors.textColor,
-                    width: isActive('Ratio') ? 8 : 5,
+                    width: 5,
                 },
                 hovertemplate: `%{y:.2f}x<extra>Ratio</extra>`,
                 zorder: isActive('Ratio') ? 100 : undefined,
@@ -186,7 +186,10 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 xanchor: 'center' as const,
                 y: -0.08,
                 yanchor: 'top' as const,
-            },
+                itemwidth: 15,
+                textgap: 8,
+                itemgap: 24,
+            } as any,
             dragmode: false,
         }
 
@@ -229,6 +232,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
                 data={data}
                 layout={layout}
                 onActiveTrace={setActiveTrace}
+                fadeInactiveAxis
             />
             <div className={css.plotToolbarCompact} style={{ justifyContent: 'center' }}>
                 <PlotInfo source={SOURCES} />

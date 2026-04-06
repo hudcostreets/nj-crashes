@@ -452,7 +452,7 @@ export default function CrashPlot({
             showlegend: true,
             legend: {
                 orientation: 'h' as const,
-                traceorder: 'normal' as const,
+                traceorder: 'reversed' as const,
                 y: -0.08,
                 x: 0.5,
                 xanchor: 'center' as const,
