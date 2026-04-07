@@ -7,13 +7,11 @@ import { MonthlyCsv, ProjectedCsv, YtcCsv } from "@/src/paths"
 import { fadeColor, lightenColor } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { Annotation } from "./plot"
-import { CountySelect } from "@/src/county-select"
 import A from "@/src/lib/a"
 import { GitHub } from "@/src/socials"
 import { PlotInfo, Cyclist, Driver, Pedestrian, Passenger } from "@/src/icons"
 import { repoWithOwner } from "@/src/github"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
-import { useGeoFilter } from "@/src/GeoFilterContext"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import css from "./plot.module.scss"
 
@@ -64,14 +62,6 @@ type TypeCounts = {
 
 const curYear = new Date().getFullYear()
 const prvYear = curYear - 1
-
-// Query for distinct counties
-const countiesQuery = `
-    SELECT DISTINCT county
-    FROM read_csv_auto('ytc')
-    WHERE county IS NOT NULL AND county != ''
-    ORDER BY county
-`
 
 const typeCountsQuery = (county: string | null) => `
     SELECT
@@ -173,12 +163,7 @@ export type Props = {
 export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, cc: propCc = null, mc: propMc = null, regionLabel, height = 500 }: Props) {
     const db = useDb()
     const plotColors = usePlotColors()
-    const { setCounty: navigateCounty } = useGeoFilter()
-    const [county, setCountyLocal] = useState<string | null>(initialCounty)
-    // Sync with external county prop (geo filter)
-    useEffect(() => { setCountyLocal(initialCounty) }, [initialCounty])
-    // County change navigates to county page
-    const setCounty = (name: string | null) => { setCountyLocal(name); navigateCounty(name) }
+    const county = initialCounty
     // Municipality-level: use cc/mc from props (no county dropdown when muni-level)
     const hasMuniFilter = propCc !== null && propMc !== null
     // hoverTrace from pltly (unused — no native Plotly legend on this plot)
@@ -206,10 +191,6 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     const ytcDb = useRegisteredDb({ db, table: "ytc", url: YtcCsv })
     const monthlyDb = useRegisteredDb({ db, table: "monthly", url: MonthlyCsv })
     const projectionsDb = useRegisteredDb({ db, table: "projected", url: ProjectedCsv })
-
-    // Query for list of counties
-    const countiesResult = useQuery<{ county: string }>({ db: ytcDb, query: countiesQuery, init: [] })
-    const counties = useMemo(() => countiesResult.map(r => r.county), [countiesResult])
 
     // Yearly data: always aggregate from monthly CSV (always up to date)
     // ytc is only used for the county list in the dropdown
@@ -636,7 +617,6 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
         <div ref={containerRef}>
             <h2 id={id}>
                 <a href={`#${id}`}>Car Crash Deaths</a>
-                {!initialCounty && !hasMuniFilter && <>:{' '}<CountySelect county={county} setCounty={setCounty} Counties={counties} /></>}
             </h2>
             <div className={css.subtitle}>Fatalities, 2008–present{regionLabel ? ` · ${regionLabel}` : initialCounty ? ` · ${initialCounty} County` : ''}</div>
             <PlotWrapper

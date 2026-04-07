@@ -1,0 +1,53 @@
+.geoNav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    padding: 0.4em 0;
+    margin-bottom: 0.5em;
+    border-bottom: 1px solid var(--grid-color, #333);
+    flex-wrap: wrap;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+    font-size: 0.95em;
+
+    a {
+        color: var(--link-color, #6ea8fe);
+        text-decoration: none;
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+.current {
+    font-weight: 600;
+}
+
+.sep {
+    opacity: 0.4;
+}
+
+.selectors {
+    display: flex;
+    gap: 0.5em;
+    align-items: center;
+}
+
+.geoSelect {
+    background: var(--plot-bg, #1a1a2e);
+    color: var(--text-color, #e0e0e0);
+    border: 1px solid var(--grid-color, #333);
+    border-radius: 4px;
+    padding: 0.3em 0.5em;
+    font-size: 0.85em;
+    cursor: pointer;
+
+    &:focus {
+        outline: 1px solid var(--link-color, #6ea8fe);
+    }
+}

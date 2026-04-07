@@ -14,7 +14,7 @@ import { YtdDeathsPlot } from "@/src/njsp/YtdDeathsPlot"
 import { HomicidesComparisonPlot } from "@/src/njsp/HomicidesComparisonPlot"
 import { FatalitiesByMonthBarsPlot } from "@/src/njsp/FatalitiesByMonthBarsPlot"
 import { PlotContainer } from "@/src/components/PlotContainer"
-import { Breadcrumbs } from "@/src/components/Breadcrumbs"
+import { GeoNavBar } from "@/src/components/GeoNavBar"
 import { useGeoFilter } from "@/src/GeoFilterContext"
 import { normalize } from "@/src/county"
 import { Counties } from "@/src/njdot/data"
@@ -97,7 +97,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
             />
 
             <main className={css.index} onClick={handleMainClick}>
-                <Breadcrumbs />
+                <GeoNavBar />
                 <h1 className={css.title}>{regionLabel ? `${regionLabel} Crash Data` : "NJ Car Crash Data"}</h1>
                 {!regionLabel && (
                     <p>
