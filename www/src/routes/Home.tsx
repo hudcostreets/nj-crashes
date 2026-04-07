@@ -112,17 +112,17 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                     </p>
                 )}
 
-                <PlotContainer><FatalitiesPerYearPlot initialCounty={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
+                <PlotContainer><FatalitiesPerYearPlot key={`p1-${cc}-${mc}`} initialCounty={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
 
                 {/* NJSP Fatal Crashes Table */}
                 <h2 id="njsp-crashes"><a href="#njsp-crashes">Recent Fatal Crashes</a></h2>
                 <div className={css.subtitle}>Fatal crashes, 2008–present{geo} <PlotInfo source="njsp" showLegendHint={false} /></div>
                 <LazySection placeholder={<p>Loading crash data...</p>}>
-                    <NjspCrashesSection />
+                    <NjspCrashesSection key={`njsp-${cc}-${mc}`} />
                 </LazySection>
 
                 <PlotContainer><YtdDeathsPlot key={`ytd-${cc}-${mc}`} county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
-                {!municipalityName && <PlotContainer><HomicidesComparisonPlot county={countyName} /></PlotContainer>}
+                {!municipalityName && <PlotContainer><HomicidesComparisonPlot key={`hom-${countyName}`} county={countyName} /></PlotContainer>}
                 <PlotContainer><FatalitiesByMonthBarsPlot key={`fbm-${cc}-${mc}`} county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
 
                 {/* NJ DOT Section */}
@@ -137,20 +137,20 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                         {" "}including property-damage, injury, and fatal crashes, going back to 2001 (≈6MM records, currently through {EndYear}).
                     </p>
                 }
-                <PlotContainer showHr={false}><CrashPlot counties={countyFilter} mc={mc} /></PlotContainer>
+                <PlotContainer showHr={false}><CrashPlot key={`dot-${cc}-${mc}`} counties={countyFilter} mc={mc} /></PlotContainer>
 
                 {/* Annual Statistics Table (NJ DOT) */}
                 <h2 id="stats"><a href="#stats">Annual Statistics (NJ DOT)</a></h2>
                 <div className={css.subtitle}>All reported crashes, 2001–{EndYear}{geo}</div>
                 <LazySection placeholder={<p>Loading annual statistics...</p>}>
-                    <YearStatsSection />
+                    <YearStatsSection key={`stats-${cc}-${mc}`} />
                 </LazySection>
 
                 {/* NJDOT Crash Details Table */}
                 <h2 id="njdot-crashes"><a href="#njdot-crashes">Crash Details (NJ DOT)</a></h2>
                 <div className={css.subtitle}>Injury and fatal crashes, 2001–{EndYear}{geo}</div>
                 <LazySection placeholder={<p>Loading crash data...</p>}>
-                    <NjdotCrashesSection />
+                    <NjdotCrashesSection key={`njdot-${cc}-${mc}`} />
                 </LazySection>
 
                 <Footer />
