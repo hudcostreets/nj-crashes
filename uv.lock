@@ -2404,6 +2404,7 @@ dependencies = [
     { name = "slack-sdk" },
     { name = "sqlalchemy" },
     { name = "tabula-py" },
+    { name = "thrds" },
     { name = "utz" },
 ]
 
@@ -2456,6 +2457,7 @@ requires-dist = [
     { name = "sqlalchemy", specifier = ">=2.0" },
     { name = "stdlb", marker = "extra == 'slack'", specifier = ">=0.0.4" },
     { name = "tabula-py", specifier = ">=2.10" },
+    { name = "thrds", git = "https://github.com/runsascoded/thrds?rev=eb392c9" },
     { name = "utz", specifier = ">=0.21" },
 ]
 provides-extras = ["bsky", "slack"]
@@ -4172,6 +4174,11 @@ sdist = { url = "https://files.pythonhosted.org/packages/8a/11/965c6fd8e5cc254f1
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6a/9e/2064975477fdc887e47ad42157e214526dcad8f317a948dee17e1659a62f/terminado-0.18.1-py3-none-any.whl", hash = "sha256:a4468e1b37bb318f8a86514f65814e1afc977cf29b3992a4500d9dd305dcceb0", size = 14154, upload-time = "2024-03-12T14:34:36.569Z" },
 ]
+
+[[package]]
+name = "thrds"
+version = "0.1.0"
+source = { git = "https://github.com/runsascoded/thrds?rev=eb392c9#eb392c926b397204d21f27821b23e83a44b10242" }
 
 [[package]]
 name = "tinycss2"

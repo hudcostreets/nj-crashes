@@ -325,76 +325,52 @@ class ChannelClient:
         overwrite_existing: int = 0,
         dry_run: int | None = None,
     ) -> None:
+        from thrds import SlackClient as ThrdsSlack, Thread as ThrdsThread
+
         if dry_run is None:
             dry_run = self.dry_run
-        thread = self.accid_thread(accid)
-        if thread:
-            msgs = thread.msgs
-            thread_ts = thread.ts
-        else:
-            msgs = []
-            thread_ts = None
 
-        def log(msg: str):
-            if dry_run:
-                msg = f"DRY RUN {msg}"
-            err(f"{BLUE}{accid:>5d}: {msg}{RESET}")
+        thread = self.accid_thread(accid)
+        thread_ts = thread.ts if thread else None
 
         vs = [
             (idx, v)
             for idx, v in enumerate(crash_log.versions)
             if not v.is_noop
         ]
-        # Top of thread always shows latest version
-        msg_versions = [vs[-1]]
+        # Build desired messages: latest version first, then "Previous versions:" divider, then older
+        messages: list[str] = []
+        metadata: dict[str, dict] = {}
+
+        latest_text = vs[-1][1].slack_update_str(vs[-1][0], len(vs))
+        messages.append(latest_text)
+        metadata[latest_text] = {
+            'event_type': 'new_crash',
+            'event_payload': {'ACCID': str(accid)},
+        }
+
         if len(vs) > 1:
-            msg_versions.append(None)  # "Previous versions" message
-            msg_versions += vs[:-1]    # Previous versions
+            messages.append("Previous versions:")
+            for vidx, v in vs[:-1]:
+                text = v.slack_update_str(vidx, len(vs))
+                messages.append(text)
+                metadata[text] = {
+                    'event_type': 'update_crash',
+                    'event_payload': {'ACCID': str(accid)},
+                }
 
-        for i, t in enumerate(msg_versions):
-            if t is None:
-                assert i == 1
-                new_text = "Previous versions:"
-            else:
-                vidx, v = t
-                new_text = v.slack_update_str(vidx, len(vs))
+        thrds_client = ThrdsSlack(
+            token=self.client.token,
+            channel=self.channel,
+        )
+        result = thrds_client.sync(
+            ThrdsThread(messages=messages),
+            thread_ts=thread_ts,
+            dry_run=bool(dry_run),
+            metadata=metadata,
+        )
 
-            event_type = "new_crash" if i == 0 else "update_crash"
-            tts = thread_ts
-            if i > 0 and not tts:
-                raise RuntimeError(f"Missing thread_ts for update {i} of {accid}")
-
-            update_kwargs = dict(accid=accid, text=new_text, event_type=event_type)
-            post_kwargs = dict(**update_kwargs, thread_ts=tts)
-            if i < len(msgs):
-                msg = msgs[i]
-                text = msg.text
-                ts = msg.ts
-                if overwrite_existing > 1:
-                    log(f"deleting and re-posting:\n{RED}-{text}\n{GREEN}+{new_text}")
-                    if not dry_run:
-                        self.delete_msg(ts=ts)
-                    ts = self.post_msg(**post_kwargs)
-                    if not thread_ts:
-                        thread_ts = ts
-                elif new_text != text or overwrite_existing:
-                    if new_text != text:
-                        m = f"text doesn't match:\n{RED}-{text}\n{GREEN}+{new_text}"
-                    else:
-                        m = f"overwriting message: {text}"
-                    log(m)
-                    if not dry_run:
-                        self.update_msg(ts=ts, **update_kwargs)
-                else:
-                    log(f"text matches: {text}")
-            else:
-                log(f"new message:\n{GREEN}+{new_text}")
-                ts = self.post_msg(**post_kwargs)
-                if not thread_ts:
-                    thread_ts = ts
-
-        if len(msgs) > len(msg_versions):
-            for msg in msgs[len(msg_versions):]:
-                log(f"deleting extra message:\n{RED}-{msg.text}")
-                if not dry_run:
-                    self.delete_msg(ts=msg.ts)
+        # Log actions
+        for action in result.actions:
+            prefix = f"DRY RUN " if dry_run else ""
+            err(f"{BLUE}{accid:>5d}: {prefix}{action.type.value} [{action.index}]{RESET}")

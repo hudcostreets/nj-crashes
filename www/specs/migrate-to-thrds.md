@@ -98,7 +98,7 @@ The lookup returns a `thread_id` (Slack `thread_ts` or Bsky root URI), which is 
 
 | File | Action |
 |------|--------|
-| `njsp/cli/slack/channel_client.py` | Replace `sync_crash()` body (~80 lines) with `thrds.sync()` call. Keep `accid_thread()` lookup, metadata posting. |
+| `njsp/cli/slack/channel_client.py` | **Done**: `sync_crash()` replaced with `thrds.SlackClient.sync()`. Keeps `accid_thread()` lookup. |
 | `njsp/cli/slack/msg.py` | Keep (crash-specific message formatting) |
 | `njsp/cli/slack/sync.py` | Keep (CLI entry point, minimal changes) |
 | `njsp/cli/bsky/client.py` | Replace `sync_crash()` body with `thrds.sync()` call. Keep auth, cache, retry. |
@@ -107,26 +107,27 @@ The lookup returns a `thread_id` (Slack `thread_ts` or Bsky root URI), which is 
 
 Net reduction: ~150-200 lines of sync logic replaced by `thrds.sync()` calls.
 
-### 6. Metadata support in thrds (future)
+### 6. Metadata support in thrds (done)
 
-Slack messages can carry metadata (`event_type`, `event_payload`). Discord has embeds. Bluesky has facets. Currently `thrds.Thread` is `list[str]`. A future extension could be:
+`thrds.SlackClient.sync()` now accepts a `metadata` parameter: a dict mapping message content → Slack metadata dict. Each matching message gets metadata attached on post/edit API calls.
 
 ```python
-@dataclass
-class RichMessage:
-    content: str
-    metadata: dict | None = None  # Platform-specific
-
-Thread(messages=[
-    RichMessage("crash text", metadata={"event_type": "new_crash", "event_payload": {"ACCID": "12345"}}),
-    "Previous versions:",  # Plain string still works
-])
+client = SlackClient(token=token, channel=channel)
+desired = Thread(messages=build_thread_messages(crash_log))
+result = client.sync(
+    desired,
+    thread_ts=existing_thread_ts,
+    metadata={
+        latest_version_text: {
+            "event_type": "new_crash",
+            "event_payload": {"ACCID": str(accid)},
+        },
+        # Other messages get no metadata (not in dict)
+    },
+)
 ```
-
-This is out of scope for the initial migration — the crash-bot can add metadata in a post-sync step (edit the message to add metadata after `thrds` creates it).
 
 ## Open questions
 
-- Should `thrds.SlackClient` support message metadata natively? Or is that a crashes-specific concern?
 - Bluesky rich text (facets): plain text OK for crash updates? Or do we need link formatting?
 - Should `thrds` be published to PyPI, or installed via git dep?
