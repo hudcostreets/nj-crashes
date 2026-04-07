@@ -224,8 +224,9 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     const ytRows = yearlyFromMonthly.length > 0 ? yearlyFromMonthly : ytcRows
 
     // Projections (county-level only, not available at muni level)
-    const projectionsQueryStr = useMemo(() => typeCountsQuery(county), [county])
-    const [projections] = useQuery<TypeCounts>({ db: projectionsDb, query: projectionsQueryStr, init: [{ driver: 0, pedestrian: 0, cyclist: 0, passenger: 0 }] })
+    const projectionsQueryStr = useMemo(() => hasMuniFilter ? null : typeCountsQuery(county), [county, hasMuniFilter])
+    const [projectionsRaw] = useQuery<TypeCounts>({ db: projectionsDb, query: projectionsQueryStr, init: [{ driver: 0, pedestrian: 0, cyclist: 0, passenger: 0 }] })
+    const projections = hasMuniFilter ? null : projectionsRaw
     const monthlyQueryStr = useMemo(() => monthlyQueryFn(county, propCc ?? null, propMc ?? null), [county, propCc, propMc])
     const monthlyRows = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
 
@@ -404,7 +405,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
 
         // Calculate projected remainders for current year (per type)
         const projectedRemainder: Record<string, number> = {}
-        if (lastYear === curYear) {
+        if (lastYear === curYear && projections) {
             for (const type of Types) {
                 const col = typesMap[type]
                 const actual = lastRow[col] || 0

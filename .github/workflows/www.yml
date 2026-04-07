@@ -67,6 +67,7 @@ jobs:
           cd www
           pnpm install
           pnpm run build
+          cp dist/index.html dist/404.html
           du -sh dist
       - if: steps.www-changed.outputs.WWW_CHANGED
         name: Deploy to GH Pages
