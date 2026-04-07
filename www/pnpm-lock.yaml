@@ -57,8 +57,8 @@ importers:
         specifier: ^2.16.2
         version: 2.16.2
       hyparquet:
-        specifier: github:runsascoded/hyparquet#6d0c51c
-        version: https://codeload.github.com/runsascoded/hyparquet/tar.gz/6d0c51c
+        specifier: https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz
+        version: https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
@@ -108,8 +108,8 @@ importers:
         specifier: ^0.10.2
         version: 0.10.2
       use-prms:
-        specifier: github:runsascoded/use-prms#36c2ddcaa1d23d8c4901b2769bac3ce69528691a
-        version: git+https://git@github.com:runsascoded/use-prms.git#36c2ddcaa1d23d8c4901b2769bac3ce69528691a(react@18.2.0)
+        specifier: https://github.com/runsascoded/use-prms#b357b48290740ae53a0ccc5fe837cf312c29f81d
+        version: https://codeload.github.com/runsascoded/use-prms/tar.gz/b357b48290740ae53a0ccc5fe837cf312c29f81d(react@18.2.0)
       use-session-storage-state:
         specifier: ^18.2.0
         version: 18.2.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -1989,8 +1989,8 @@ packages:
   hoist-non-react-statics@3.3.2:
     resolution: {integrity: sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==}
 
-  hyparquet@https://codeload.github.com/runsascoded/hyparquet/tar.gz/6d0c51c:
-    resolution: {tarball: https://codeload.github.com/runsascoded/hyparquet/tar.gz/6d0c51c}
+  hyparquet@https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz:
+    resolution: {tarball: https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz}
     version: 1.22.1
 
   iconv-lite@0.4.24:
@@ -2836,11 +2836,11 @@ packages:
   update-diff@1.1.0:
     resolution: {integrity: sha512-rCiBPiHxZwT4+sBhEbChzpO5hYHjm91kScWgdHf4Qeafs6Ba7MBl+d9GlGv72bcTZQO0sLmtQS1pHSWoCLtN/A==}
 
-  use-prms@git+https://git@github.com:runsascoded/use-prms.git#36c2ddcaa1d23d8c4901b2769bac3ce69528691a:
-    resolution: {commit: 36c2ddcaa1d23d8c4901b2769bac3ce69528691a, repo: git@github.com:runsascoded/use-prms.git, type: git}
-    version: 0.4.1-dist.cba8449
+  use-prms@https://codeload.github.com/runsascoded/use-prms/tar.gz/b357b48290740ae53a0ccc5fe837cf312c29f81d:
+    resolution: {tarball: https://codeload.github.com/runsascoded/use-prms/tar.gz/b357b48290740ae53a0ccc5fe837cf312c29f81d}
+    version: 0.4.1-dist.b48b378
     peerDependencies:
-      react: ^18.0.0
+      react: ^18.0.0 || ^19.0.0
 
   use-session-storage-state@18.2.0:
     resolution: {integrity: sha512-FO+L8B73DA78SxbeWo80Q/Dt+EtK/BgkONwFK3pmbntMolNh9Mij43qBxKFWfVWl7OOpeYm/M984var2utSEJQ==}
@@ -4911,7 +4911,7 @@ snapshots:
     dependencies:
       react-is: 16.13.1
 
-  hyparquet@https://codeload.github.com/runsascoded/hyparquet/tar.gz/6d0c51c: {}
+  hyparquet@https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz: {}
 
   iconv-lite@0.4.24:
     dependencies:
@@ -5879,7 +5879,7 @@ snapshots:
 
   update-diff@1.1.0: {}
 
-  use-prms@git+https://git@github.com:runsascoded/use-prms.git#36c2ddcaa1d23d8c4901b2769bac3ce69528691a(react@18.2.0):
+  use-prms@https://codeload.github.com/runsascoded/use-prms/tar.gz/b357b48290740ae53a0ccc5fe837cf312c29f81d(react@18.2.0):
     dependencies:
       react: 18.2.0
 
