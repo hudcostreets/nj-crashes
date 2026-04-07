@@ -1,21 +1,21 @@
-import { Result } from "@rdub/react-sql.js-httpvfs/query";
+import { Result, useApi, useApiEager, apiUrl } from "@/src/api";
 import { ReactNode, useMemo } from "react";
-import { useSqlQuery, useSqlQueryEager } from "@/src/sql";
-import { CC2MC2MN, County } from "@/src/county";
+import { CC2MC2MN } from "@/src/county";
 import { map } from "fp-ts/Either";
-import { Base, ConditionMap, } from "./use-njdot-crashes";
+
 import { Row } from "@/src/result-table";
 import { fromEntries } from "@rdub/base/objs";
 import { range } from "@rdub/base/arr";
 import strftime from "strftime";
 import css from "@/src/use-crashes.module.scss";
 import { Cyclist, Driver, Passenger, Pedestrian, Person } from "@/src/icons";
+import { fadeColor } from "pltly";
 import { Tooltip } from "@/src/tooltip";
 import CityLink from "@/src/city-link";
 import CountyLink from "@/src/county-link";
-import { curYear } from "@/src/plotSpecs";
+import { curYear } from "@/src/constants";
 
-export type Props = Base & {
+export type Props = {
     cc: number | null
     cn?: string
     mc: number | null
@@ -41,6 +41,8 @@ export type Crash = {
 
 export const ColLabels = {
     id: "ID",
+    date: "Date",
+    time: "Time",
     dt: "Date/Time",
     cc: "County",
     mc: "Municipality",
@@ -53,57 +55,42 @@ export type Col = keyof typeof ColLabels
 
 export type Total = { total: number }
 
-export function totalsQuery({ cc, mc, }: { cc: number | null, mc: number | null }) {
-    const where = cc ? `where cc=${cc}${mc ? ` and mc=${mc}` : ""}` : ""
-    return `
-        select count(*) as total from crashes
-        ${where}
-    `}
-
-export function crashesQuery({ cc, mc, page, perPage, }: { cc: number | null, mc: number | null, page: number, perPage: number }) {
-    const where = cc ? `where cc=${cc}${mc ? ` and mc=${mc}` : ""}` : ""
-    const offset = page * perPage
-    return `
-        select * from crashes
-        ${where}
-        order by dt desc
-        limit ${perPage} offset ${offset}
-    `}
-
-export function useNjspCrashesTotal(
-    {
-        cc, mc,
-        timerId = "njsp-crashes-total",
-        urls,
-        totals,
-        ...base
-    }: Omit<Props, 'cn' | 'page' | 'perPage'> & { totals: Total[] }
-): Result<Total> {
-    const query = useMemo(() => totalsQuery({ cc, mc, }), [ cc, mc, ])
-    return useSqlQueryEager<Total>({ ...base, url: urls.njsp.crashes, timerId, query, init: totals, })
-}
-export function useNjspCrashes({ cc, mc, page, perPage, timerId = "njsp-crashes", urls, crashes, ...base }: Props & { crashes: Crash[] }): Result<Crash> {
-    const query = useMemo(
-        () => {
-            return crashesQuery({ cc, mc, page, perPage })
-        },
-        [ cc, mc, page, perPage ]
+export function useNjspCrashesTotal({ cc, mc }: { cc: number | null, mc: number | null }): Result<Total> {
+    const url = useMemo(
+        () => apiUrl("/njsp/crashes/count", { cc, mc }),
+        [cc, mc],
     )
-    return useSqlQueryEager<Crash>({ ...base, url: urls.njsp.crashes, timerId, query, init: crashes, })
+    return useApiEager<Total>(url, [{ total: 0 }])
 }
+
+export function useNjspCrashes({ cc, mc, page, perPage }: Props): Result<Crash> {
+    const offset = page * perPage
+    const url = useMemo(
+        () => apiUrl("/njsp/crashes", { cc, mc, limit: perPage, offset }),
+        [cc, mc, perPage, offset],
+    )
+    return useApiEager<Crash>(url, [])
+}
+
+// Match colors from FatalitiesPerYearPlot (the plot directly above this table)
+const driverColor = '#a94c9a'
+const passengerColor = '#f08030'
+const pedestrianColor = '#d85a6a'
+const cyclistColor = '#7c5295'
+const unknownColor = '#7F7F7F'
+const injuryFadedUnknown = fadeColor(unknownColor)
 
 export function CrashIcons({ tk, dk, ok, pk, bk, ti, }: Crash) {
-    const injuryFill = ConditionMap[0].fill
     const uk = tk - dk - ok - pk - bk
     return (
         <div className={css.icons}>
             <span className={css.typeIcons}>
-                {range(dk).map(idx => <Driver key={idx} title={"Driver killed"} />)}
-                {range(ok).map(idx => <Passenger key={idx} title={"Passenger killed"} />)}
-                {range(pk).map(idx => <Pedestrian key={idx} title={"Pedestrian killed"} />)}
-                {range(bk).map(idx => <Cyclist key={idx} title={"Cyclist killed"} />)}
-                {range(uk).map(idx => <Person key={idx} title={"Person killed"} />)}
-                {range(ti).map(idx => <Person key={idx} title={"Person injured"} style={{ fill: injuryFill }} />)}
+                {range(dk).map(idx => <Driver key={`dk${idx}`} title={"Driver killed"} style={{ fill: driverColor }} />)}
+                {range(ok).map(idx => <Passenger key={`ok${idx}`} title={"Passenger killed"} style={{ fill: passengerColor }} />)}
+                {range(pk).map(idx => <Pedestrian key={`pk${idx}`} title={"Pedestrian killed"} style={{ fill: pedestrianColor }} />)}
+                {range(bk).map(idx => <Cyclist key={`bk${idx}`} title={"Cyclist killed"} style={{ fill: cyclistColor }} />)}
+                {range(uk).map(idx => <Person key={`uk${idx}`} title={"Person killed"} style={{ fill: unknownColor }} />)}
+                {range(ti).map(idx => <Person key={`ti${idx}`} title={"Person injured"} style={{ fill: injuryFadedUnknown }} />)}
             </span>
         </div>
     )
@@ -120,9 +107,18 @@ export function getNjspCrashRows({ rows, cols, cc2mc2mn, }: {
             [ 'key', id ],
             ...cols.map(col => {
                 let txt: ReactNode = ''
-                if (col == 'dt') {
+                if (col == 'date') {
                     const date = new Date(row.dt)
-                    const fmt = date.getFullYear() == curYear ? '%a %b %-d %-I:%M%p' : `%-m/%-d/%y, %-I:%M%p`
+                    const fmt = date.getFullYear() == curYear ? '%a %b %-d' : `%-m/%-d/%y`
+                    txt = <Tooltip title={`NJSP ACCID: ${id}`}>
+                        <span>{strftime(fmt, date)}</span>
+                    </Tooltip>
+                } else if (col == 'time') {
+                    const date = new Date(row.dt)
+                    txt = strftime('%-I:%M%p', date)
+                } else if (col == 'dt') {
+                    const date = new Date(row.dt)
+                    const fmt = date.getFullYear() == curYear ? '%a %b %-d %-I:%M%p' : `%-m/%-d/%y %-I:%M%p`
                     txt = <Tooltip title={`NJSP ACCID: ${id}`}>
                         <span>{strftime(fmt, date)}</span>
                     </Tooltip>
@@ -141,14 +137,13 @@ export function getNjspCrashRows({ rows, cols, cc2mc2mn, }: {
     })
 }
 
-export function useNjspCrashRows({ cc2mc2mn, ...props }: Props & { cc2mc2mn: CC2MC2MN, crashes: Crash[], }) {
-    const crashesResult = useNjspCrashes({ ...props })
+export function useNjspCrashRows({ cc2mc2mn, ...props }: Props & { cc2mc2mn: CC2MC2MN }) {
+    const crashesResult = useNjspCrashes(props)
     const ccCol: Col[] = props.cc ? [] : ['cc']
     const mcCol: Col[] = props.mc ? [] : ['mc']
-    const cols: Col[] = [ 'dt', ...ccCol, ...mcCol, 'casualties', 'location', ]  // 'street', 'highway', ]
+    const cols: Col[] = [ 'date', 'time', ...ccCol, ...mcCol, 'casualties', 'location', ]
     const crashRows = useMemo(
         () => {
-            // console.log("useNjspCrashRows effect")
             const crashRows = map(
                 (crashes: Crash[]) => getNjspCrashRows({ rows: crashes, cols, cc2mc2mn, })
             )(crashesResult)
@@ -158,4 +153,3 @@ export function useNjspCrashRows({ cc2mc2mn, ...props }: Props & { cc2mc2mn: CC2
     )
     return crashRows
 }
-

@@ -1,0 +1,15 @@
+deps:
+- path: https://njsp.njoag.gov/wp/wp-content/uploads/UCR/UCR%20reports/2010's/20180504_crimetrend_2017.pdf
+  checksum: '"148b3d-63bdddb106852"'
+  size: 1346365
+  mtime: '2025-08-08T17:25:09+00:00'
+  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+outs:
+- md5: e9a5b2f9d87a268a451c9b2e93e1db90
+  size: 1346365
+  hash: md5
+  path: 2017_Uniform_Crime_Report.pdf
+meta:
+  git_tracked: true
+  import:
+    fetched: '2026-03-09'

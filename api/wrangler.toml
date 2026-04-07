@@ -1,0 +1,39 @@
+name = "crashes-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[[d1_databases]]
+binding = "CRASHES_DB"
+database_name = "crashes"
+database_id = "1946fe7f-f971-49f0-ad43-671d8cbc534a"
+
+[[d1_databases]]
+binding = "VEHICLES_DB"
+database_name = "vehicles"
+database_id = "80cedca5-c5b4-43b6-9e53-fa4d8326c944"
+
+[[d1_databases]]
+binding = "OCCUPANTS_DB"
+database_name = "occupants"
+database_id = "7b8b18d7-7406-483c-b8c5-52edce99d187"
+
+[[d1_databases]]
+binding = "PEDESTRIANS_DB"
+database_name = "pedestrians"
+database_id = "8c457970-66fb-47cf-8526-5f0c48238195"
+
+[[d1_databases]]
+binding = "CMYMC_DB"
+database_name = "cmymc"
+database_id = "5e10adf8-9503-4ec9-8b1f-9e7b532d07b9"
+
+[[d1_databases]]
+binding = "NJSP_CRASHES_DB"
+database_name = "njsp-crashes"
+database_id = "f0ff5e40-0bd2-49d2-9de4-7039728494dc"
+
+[dev]
+port = 51894
+
+[vars]
+CORS_ORIGIN = "*"

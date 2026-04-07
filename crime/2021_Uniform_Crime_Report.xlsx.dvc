@@ -1,0 +1,15 @@
+deps:
+- path: https://www.nj.gov/njsp/ucr/pdf/current/20241101_2021_Uniform_Crime_Report.xlsx
+  checksum: '"32ad4-67250d5e"'
+  size: 207572
+  mtime: '2024-11-01T17:18:22+00:00'
+  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+outs:
+- md5: 6e3b332e2d95743105b39bed6e0555ea
+  size: 207572
+  hash: md5
+  path: 2021_Uniform_Crime_Report.xlsx
+meta:
+  git_tracked: true
+  import:
+    fetched: '2026-03-09'

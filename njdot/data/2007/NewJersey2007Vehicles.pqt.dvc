@@ -3,3 +3,8 @@ outs:
   size: 11325309
   hash: md5
   path: NewJersey2007Vehicles.pqt
+meta:
+  computation:
+    cmd: rawdata pqt -r NJ -y 2007 -t vehicles
+    deps:
+      njdot/data/2007/NewJersey2007Vehicles.zip: b362f2d4d2a93b025dad13b47bdab4f2

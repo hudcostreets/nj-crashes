@@ -1,0 +1,15 @@
+deps:
+- path: https://njsp.njoag.gov/wp/wp-content/uploads/2023%20Uniform%20Crime%20Report.xlsx
+  checksum: '"26658-63bdddfa091f0"'
+  size: 157272
+  mtime: '2025-08-08T17:26:25+00:00'
+  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+outs:
+- md5: 0f90c78d392f6827234ff4df41e5375a
+  size: 157272
+  hash: md5
+  path: 2023_Uniform_Crime_Report.xlsx
+meta:
+  git_tracked: true
+  import:
+    fetched: '2026-03-09'

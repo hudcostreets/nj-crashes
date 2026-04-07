@@ -1,14 +1,19 @@
 .crashesTable {
   margin: 0.5em 0;
   width: 100%;
-  //border-collapse: collapse;
   th {
     font-weight: bold;
   }
 }
 
 .sqlError {
-  background-color: #ffdddd;
+  background-color: var(--bg-error);
+  color: var(--text-error);
+  padding: 0.5em 1em;
+  border-radius: 4px;
+  pre {
+    color: var(--text-secondary);
+  }
 }
 
 .tableHead {
@@ -21,4 +26,46 @@
 
 .rowsTable {
   box-shadow: none;
+  background: transparent;
+
+  :global(.MuiPaper-root) {
+    background: transparent;
+  }
+
+  :global(.MuiTable-root) {
+    background: transparent;
+  }
+
+  :global(.MuiTableCell-root) {
+    color: var(--text-primary);
+    border-bottom-color: var(--border-primary);
+  }
+
+  :global(.MuiTableCell-head) {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-weight: bold;
+  }
+
+  :global(.MuiTableRow-root):hover {
+    background: var(--bg-secondary);
+  }
+
+  :global(.MuiTableCell-footer) {
+    border-bottom: none;
+  }
+
+  &:global(.compact) :global(.MuiTableCell-root) {
+    padding-top: 0.3em;
+    padding-bottom: 0.3em;
+    line-height: 1.5;
+  }
+
+  :global(.MuiTableCell-root)[data-col="Date"] {
+    padding-right: 0.2em;
+  }
+  :global(.MuiTableCell-root)[data-col="Time"] {
+    padding-left: 0.2em;
+    white-space: nowrap;
+  }
 }

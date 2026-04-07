@@ -1,7 +1,7 @@
 import { AsyncDuckDB } from "@duckdb/duckdb-wasm";
 import { TypeCounts } from "@/src/njsp/plot";
 import { ProjectedCsv } from "@/src/paths";
-import { basename } from "path";
+import { basename } from "@/src/lib/path";
 
 export type HasDb = {
     db: AsyncDuckDB

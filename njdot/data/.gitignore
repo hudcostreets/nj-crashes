@@ -5,3 +5,4 @@
 /occupants.parquet
 /pedestrians.parquet
 /drivers.parquet
+/crash_pk_mappings.parquet

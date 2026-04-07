@@ -3,3 +3,8 @@ outs:
   size: 7991658
   hash: md5
   path: NewJersey2010Drivers.pqt
+meta:
+  computation:
+    cmd: rawdata pqt -r NJ -y 2010 -t drivers
+    deps:
+      njdot/data/2010/NewJersey2010Drivers.zip: d16b21bd8d5aff48a52c23fa4e824c1d

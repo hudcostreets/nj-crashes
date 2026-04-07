@@ -1,0 +1,222 @@
+.subtitle {
+  text-align: center;
+  color: var(--text-secondary);
+  margin-top: -0.3em;
+  margin-bottom: 0.5em;
+}
+
+.plotNotes {
+  margin-top: 0.5em;
+
+  p {
+    margin: 0.5em 0;
+  }
+}
+
+// Info icon only (no gear) - tuck up under plot aligned with legend
+.plotToolbarCompact {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-top: 0.3em;
+  padding-left: 0.25em;
+  position: relative;
+  z-index: 1;  // Sit above Plotly's .svg-container
+
+  > svg {
+    opacity: 0.5;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+// Dynamic stats/caption text below the plot
+.plotStats {
+  margin-top: 1em !important;  // Override container p margin
+  font-size: 0.9em;
+  line-height: 1.6;
+  opacity: 0.9;
+  text-align: center;
+}
+
+.controls {
+  margin-top: 0.5em;
+  text-align: left;
+
+  > summary {
+    cursor: pointer;
+    list-style: none;
+    display: inline-block;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+  }
+}
+
+.settingsGear {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
+  font-size: 1.5em;
+  opacity: 0.6;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &::before {
+    content: "▸";
+    font-size: 0.7em;
+  }
+}
+
+.controls[open] .settingsGear::before {
+  content: "▾";
+}
+
+.controlsContent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1em;
+  padding: 0.5em 0;
+  font-size: 12px;
+  align-items: center;
+}
+
+// Button bar (segmented control) for view mode, etc.
+.buttonBar {
+  display: inline-flex;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border-primary);
+  font-size: 12px;
+
+  button {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: none;
+    border-right: 1px solid var(--border-primary);
+    padding: 3px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+
+    &:last-child {
+      border-right: none;
+    }
+
+    &:hover:not(.active) {
+      background: var(--bg-primary);
+    }
+
+    &.active {
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      font-weight: 600;
+    }
+  }
+}
+
+// Custom icon legend (replaces Plotly's native legend)
+.iconLegend {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 0.2em 0.5em;
+  cursor: default;
+}
+
+.iconLegendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  padding: 0 0.4em;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  user-select: none;
+
+  &:hover {
+    opacity: 1 !important;
+  }
+
+  &.greyed {
+    opacity: 0.3;
+  }
+
+  &.solo {
+    opacity: 1;
+  }
+
+  svg {
+    width: 1.8em;
+    height: 1.8em;
+    position: relative;
+    top: 0;
+  }
+}
+
+.iconLegendLabel {
+  white-space: nowrap;
+}
+
+.iconLegendLine {
+  display: inline-block;
+  width: 18px;
+  height: 3px;
+  background: var(--text-primary);
+  border-radius: 1px;
+}
+
+.iconLegendSwatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+}
+
+.victimTypeDropdown {
+  position: relative;
+  display: inline-block;
+}
+.victimTypeDropdown summary {
+  cursor: pointer;
+  padding: 0.2em 0.5em;
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 12px;
+  list-style: none;
+}
+.victimTypeDropdown summary::-webkit-details-marker { display: none; }
+.victimTypeDropdown summary::after { content: " ▼"; font-size: 0.7em; }
+.victimTypeDropdown[open] summary::after { content: " ▲"; }
+.victimTypeList {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  z-index: 100;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  min-width: 140px;
+  padding: 0.3em;
+}
+.victimTypeList label {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.15em 0.3em;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+.victimTypeList label:hover { background: var(--bg-primary); }
+.victimTypeList .selectAll {
+  border-bottom: 1px solid var(--border-secondary);
+  margin-bottom: 0.2em;
+}

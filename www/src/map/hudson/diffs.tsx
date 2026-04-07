@@ -1,54 +1,70 @@
-import { Circle, GeoJSON, Polyline } from "react-leaflet"
-import MapContainer from "@rdub/next-leaflet/container"
-import type { MapContainerProps } from "@rdub/next-leaflet/container"
-
-import { Crash } from "@/pages/map/hudson/diffs";
+import { Circle, GeoJSON, Polyline, MapContainer, TileLayer, useMapEvents, useMap } from "react-leaflet"
+import type { MapContainerProps } from "react-leaflet"
+import { CrashDiff, LL } from "@/src/map/types";
 import { Fragment } from "react";
 import { FeatureCollection, MultiPolygon } from "geojson";
+import "leaflet/dist/leaflet.css"
 
-export type Props = MapContainerProps & {
-    crashes: Crash[]
+export type Props = Omit<MapContainerProps, 'center'> & {
+    crashes: CrashDiff[]
     hudco: FeatureCollection<MultiPolygon>
+    center: LL
+    setCenter?: (ll: LL) => void
+    setZoom?: (z: number) => void
 }
 
-export default function Map({ crashes, hudco, ...mapProps }: Props) {
-    const [ feature ] = hudco.features
-    const [ lineStrings ] = feature.geometry.coordinates
-    // console.log(`${lineStrings.length} linestrings:`, lineStrings)
-    return <MapContainer {...mapProps}>
-        {
-            crashes.map(({ lat, lon, oilat, oilon }, idx) => {
-                return <Fragment key={idx}>
-                    <Polyline
-                        positions={[ [ lat, lon ], [ oilat, oilon ] ]}
-                        weight={1}
-                        opacity={0.5}
-                        color={"orange"}
-                        // fillColor={"red"}
-                    />
-                    <Circle color={"red"} fillColor={"red"} center={[ lat, lon ]} radius={5} />
-                    <Circle color={"blue"} fillColor={"blue"} center={[ oilat, oilon ]} radius={5} />
-                </Fragment>
-            })
-        }
-        {/*{*/}
-        {/*    lineStrings.map((positions: Position[], idx: number) => {*/}
-        {/*        return <Polyline*/}
-        {/*            key={idx}*/}
-        {/*            positions={positions.map(([ lat, lon ]) => [ lat, lon ])}*/}
-        {/*            // weight={1}*/}
-        {/*            // opacity={0.5}*/}
-        {/*            color={"yellow"}*/}
-        {/*            fillColor={"red"}*/}
-        {/*        />*/}
-        {/*    })*/}
-        {/*}*/}
-        <GeoJSON data={hudco} style={{
-            fillColor: "yellow",
-            color: "yellow",
-            opacity: 0.5,
-            fillOpacity: 0,
-        }} />
-        {/*<Clusters crashes={crashes} setLL={setLL} setZoom={setZoom} />*/}
-    </MapContainer>
+function MapEvents({ setCenter, setZoom }: {
+    setCenter?: (ll: LL) => void
+    setZoom?: (z: number) => void
+}) {
+    const map = useMap()
+
+    useMapEvents({
+        moveend: () => {
+            if (setCenter) {
+                const center = map.getCenter()
+                setCenter({ lat: center.lat, lng: center.lng })
+            }
+            if (setZoom) {
+                setZoom(map.getZoom())
+            }
+        },
+    })
+
+    return null
+}
+
+export default function Map({ crashes, hudco, center, setCenter, setZoom, ...mapProps }: Props) {
+    return (
+        <MapContainer
+            center={[center.lat, center.lng]}
+            {...mapProps}
+        >
+            <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {
+                crashes.map(({ lat, lon, oilat, oilon }, idx) => {
+                    return <Fragment key={idx}>
+                        <Polyline
+                            positions={[[lat, lon], [oilat, oilon]]}
+                            weight={1}
+                            opacity={0.5}
+                            color={"orange"}
+                        />
+                        <Circle color={"red"} fillColor={"red"} center={[lat, lon]} radius={5} />
+                        <Circle color={"blue"} fillColor={"blue"} center={[oilat, oilon]} radius={5} />
+                    </Fragment>
+                })
+            }
+            <GeoJSON data={hudco} style={{
+                fillColor: "yellow",
+                color: "yellow",
+                opacity: 0.5,
+                fillOpacity: 0,
+            }} />
+            <MapEvents setCenter={setCenter} setZoom={setZoom} />
+        </MapContainer>
+    )
 }

@@ -1,0 +1,15 @@
+deps:
+- path: https://njsp.njoag.gov/wp/wp-content/uploads/UCR/UCR%20reports/2010's/2013_ucrfull.pdf
+  checksum: '"2bf9a9-63bdddb16781a"'
+  size: 2881961
+  mtime: '2025-08-08T17:25:09+00:00'
+  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+outs:
+- md5: 92925138ff75c49ef604ea9e31314836
+  size: 2881961
+  hash: md5
+  path: 2013_ucrfull.pdf
+meta:
+  git_tracked: true
+  import:
+    fetched: '2026-03-09'

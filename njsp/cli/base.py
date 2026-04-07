@@ -19,9 +19,9 @@ LAZY_COMMANDS = {
     'refresh_summaries': ('refresh_summaries', 'Update NJSP annual summary PDFs (fetch-summaries.ipynb).'),
     'slack': ('slack', 'Manage automated posts to the #crash-bot channel in HCCS Slack.'),
     'update_cmymc': ('update_cmymc', 'Update county/muni/year/month crash aggregation databases.'),
-    'update_plots': ('update_plots', 'Regenerate plots based on latest NJSP data.'),
     'update_pqts': ('update_pqts', 'Update crashes Parquet/SQLite with NJSP crash data, update rundate.json.'),
     'update_projections': ('update_projections', 'Update projected rest-of-year fatalities based on latest NJSP data.'),
+    'update_www_data': ('update_www_data', 'Generate CSV data files for frontend plots.'),
 }
 
 

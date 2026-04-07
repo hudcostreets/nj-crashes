@@ -1,0 +1,31 @@
+graph LR
+  combined_crashes["combined_crashes\nCombine 23 years of crash data (2001-2023), generate PK mapping table"]
+  combined_drivers["combined_drivers\nCombine driver records across all years, apply PK mapping fixes"]
+  combined_occupants["combined_occupants\nCombine occupant records across all years, apply PK mapping fixes"]
+  combined_pedestrians["combined_pedestrians\nCombine pedestrian records across all years, apply PK mapping fixes"]
+  combined_vehicles["combined_vehicles\nCombine vehicle records across all years, apply PK mapping fixes"]
+  db_crashes["db_crashes\nConvert crashes parquet → SQLite database (6.6M rows, 2.6GB)"]
+  db_drivers["db_drivers\nConvert drivers parquet → SQLite database (10.7M rows, 1.1GB)"]
+  db_occupants["db_occupants\nConvert occupants parquet → SQLite database (13.1M rows, 957MB)"]
+  db_pedestrians["db_pedestrians\nConvert pedestrians parquet → SQLite database (130K rows, 20MB)"]
+  db_vehicles["db_vehicles\nConvert vehicles parquet → SQLite database (11.8M rows, 1.2GB)"]
+  raw_2023_accidents["raw_2023_accidents\nParse 2023 crash records from raw ZIP, apply geocoding fixes"]
+  raw_2023_drivers["raw_2023_drivers\nParse 2023 driver records from raw ZIP"]
+  raw_2023_occupants["raw_2023_occupants\nParse 2023 occupant records from raw ZIP"]
+  raw_2023_pedestrians["raw_2023_pedestrians\nParse 2023 pedestrian records from raw ZIP"]
+  raw_2023_vehicles["raw_2023_vehicles\nParse 2023 vehicle records from raw ZIP"]
+
+  raw_2023_accidents --> combined_crashes
+  combined_crashes --> combined_drivers
+  raw_2023_drivers --> combined_drivers
+  combined_crashes --> combined_occupants
+  raw_2023_occupants --> combined_occupants
+  combined_crashes --> combined_pedestrians
+  raw_2023_pedestrians --> combined_pedestrians
+  combined_crashes --> combined_vehicles
+  raw_2023_vehicles --> combined_vehicles
+  combined_crashes --> db_crashes
+  combined_drivers --> db_drivers
+  combined_occupants --> db_occupants
+  combined_pedestrians --> db_pedestrians
+  combined_vehicles --> db_vehicles

@@ -3,3 +3,8 @@ outs:
   size: 155428
   hash: md5
   path: NewJersey2021Pedestrians.pqt
+meta:
+  computation:
+    cmd: rawdata pqt -r NJ -y 2021 -t pedestrians
+    deps:
+      njdot/data/2021/NewJersey2021Pedestrians.zip: 8eedca8c32b00a76d614f9abda5bd108

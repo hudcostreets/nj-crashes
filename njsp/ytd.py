@@ -33,6 +33,7 @@ def normalized_ytd_days(dt):
 
 
 def fill_all_days(df, rundate: Rundate):
+    year = df.name
     all_days = get_all_days()
     df = df.set_index('Days').merge(
         all_days,
@@ -40,14 +41,9 @@ def fill_all_days(df, rundate: Rundate):
         right_index=True,
         how='right',
     )
-    years = df.Year.dropna().unique()
-    if len(years) > 1:
-        raise ValueError(f"Years: {years}")
-    [year] = years
     rundate_ytd_days = normalized_ytd_days(rundate.cur)
     if year == rundate.year:
         df = df[df.index < rundate_ytd_days]
-    df = df.drop(columns='Year')
     df['YTD Deaths'] = df['YTD Deaths'].ffill().fillna(0).astype(int)
     return df
 
@@ -112,12 +108,13 @@ class Ytd:
         ytds['Days'] = ytds.dt.apply(normalized_ytd_days)
         ytds = (
             ytds
-            .groupby('Year', group_keys=False)
+            .groupby('Year')
             .apply(lambda df: (
                 df.assign(**{
                     'YTD Deaths': df.tk.cumsum().astype(int)
                 })
-            ))
+            ), include_groups=False)
+            .reset_index()
         )
         ytds = (
             ytds[['Year', 'Days', 'YTD Deaths']]
@@ -126,7 +123,7 @@ class Ytd:
             .reset_index()
         )
 
-        ytds = ytds.groupby('Year').apply(fill_all_days, rundate=self.rundate).reset_index()
+        ytds = ytds.groupby('Year').apply(fill_all_days, rundate=self.rundate, include_groups=False).reset_index()
         return ytds
 
     @property

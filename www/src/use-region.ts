@@ -2,8 +2,7 @@ import { CC2MC2MN, County, denormalize, MC2MN, normalize } from "@/src/county";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { keys, mapEntries } from "@rdub/base/objs";
 import { Arr } from "@rdub/base/arr";
-import { useRouter } from "next/router";
-import { TransitionsOptions } from "@mui/material";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export type Region = {
     cn?: string
@@ -24,64 +23,46 @@ export default function useRegion({ cc2mc2mn, urlPrefix, ...props }: {
     cc2mc2mn: CC2MC2MN
     urlPrefix?: string
 }): Region {
-    const router = useRouter()
+    const navigate = useNavigate()
+    const location = useLocation()
     const cn2cc: Record<string, number> = useMemo(() => mapEntries(cc2mc2mn, (cc, { cn }) => [ cn, cc ]), [ cc2mc2mn ])
     const [ cc, setCc ] = useState<number | null>(props.cc)
     const [ mc, setMc ] = useState<number | null>(props.mc)
-    // console.log("useRegion", cc, mc)
 
     const updateCodes = useCallback(
-        (url: string) => {
-            if (!urlPrefix) return true
-            if (!url.startsWith(urlPrefix + "/")) return true
-            url = url.slice(urlPrefix.length + 1)
-            const [ cn, mn ] = url.split("/").map(s => s ? denormalize(s) : undefined)
-            console.log(`useRegion: updateCodes url ${url} cn ${cn} mn ${mn}`)
-            if (!cn) {
-                const cc = null
-                console.log(`beforePopState setting cc ${cc}`)
-                setCc(cc)
-                return true
+        (pathname: string) => {
+            if (!urlPrefix) return
+            if (!pathname.startsWith(urlPrefix + "/") && pathname !== urlPrefix) return
+            const suffix = pathname === urlPrefix ? "" : pathname.slice(urlPrefix.length + 1)
+            const [ cnPart, mnPart ] = suffix.split("/").map(s => s ? denormalize(s) : undefined)
+            console.log(`useRegion: updateCodes pathname ${pathname} cn ${cnPart} mn ${mnPart}`)
+            if (!cnPart) {
+                console.log(`setting cc null`)
+                setCc(null)
             } else {
-                const cc = cn2cc[cn]
-                console.log(`beforePopState setting cc ${cc}`)
-                setCc(cc)
-                if (!mn) {
-                    const mc = null
-                    console.log(`beforePopState setting mc ${mc}`)
-                    setMc(mc)
-                    return true
+                const newCc = cn2cc[cnPart]
+                console.log(`setting cc ${newCc}`)
+                setCc(newCc)
+                if (!mnPart) {
+                    console.log(`setting mc null`)
+                    setMc(null)
                 } else {
-                    const { mc2mn } = cc2mc2mn[cc]
+                    const { mc2mn } = cc2mc2mn[newCc]
                     const mn2mc = mapEntries(mc2mn, (mc, mn) => [ mn, mc ])
-                    const mc = mn2mc[mn]
-                    console.log(`beforePopState setting mc ${mc}`)
-                    setMc(mc)
-                    return true
+                    const newMc = mn2mc[mnPart]
+                    console.log(`setting mc ${newMc}`)
+                    setMc(newMc)
                 }
             }
         },
         [ urlPrefix, setCc, setMc, cn2cc, cc2mc2mn, ]
     )
 
+    // Update state when location changes (handles browser back/forward)
     useEffect(() => {
         if (!urlPrefix) return
-        router.beforePopState(({ url, as, options }) => {
-            return updateCodes(as)
-        })
-        const handleRouteChange = (url: string, { shallow }: { shallow: boolean }) => {
-            updateCodes(url)
-            // console.log(`useRegion: App is changing to ${url} ${shallow ? 'with' : 'without'} shallow routing`)
-        }
-
-        router.events.on('routeChangeStart', handleRouteChange)
-
-        // If the component is unmounted, unsubscribe
-        // from the event with the `off` method:
-        return () => {
-            router.events.off('routeChangeStart', handleRouteChange)
-        }
-    }, [ router, urlPrefix, updateCodes, ])
+        updateCodes(location.pathname)
+    }, [ location.pathname, urlPrefix, updateCodes, ])
 
     const setCounty = useCallback(
         (county: string | null) => {
@@ -90,11 +71,11 @@ export default function useRegion({ cc2mc2mn, urlPrefix, ...props }: {
             setCc(cc)
             if (urlPrefix !== undefined) {
                 const url = `${urlPrefix}/${county ? normalize(county) : ""}`
-                console.log(`pushing ${url}`)
-                router.push(url, undefined, { shallow: true })
+                console.log(`navigating to ${url}`)
+                navigate(url)
             }
         },
-        [ cn2cc, setCc, urlPrefix, ]
+        [ cn2cc, setCc, urlPrefix, navigate, ]
     )
     const { county, cn, mn, mc2mn, mn2mc, cities, }: {
         county?: County
@@ -126,11 +107,11 @@ export default function useRegion({ cc2mc2mn, urlPrefix, ...props }: {
             setMc(mc)
             if (urlPrefix !== undefined && cn) {
                 const url = `${urlPrefix}/${normalize(cn)}/${normalize(city)}`
-                console.log(`pushing ${url}`)
-                router.push(url, undefined, { shallow: true })
+                console.log(`navigating to ${url}`)
+                navigate(url)
             }
         },
-        [ setMc, urlPrefix, cn, mn2mc, ]
+        [ setMc, urlPrefix, cn, mn2mc, navigate, ]
     )
     // console.log(`region returning cc ${cc} cn ${cn} mc ${mc} mn ${mn}`)
     return {

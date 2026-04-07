@@ -1,0 +1,15 @@
+deps:
+- path: https://njsp.njoag.gov/wp/wp-content/uploads/2026/02/2024-AGENCY-GROUPS-OFFENSE-SUMMARY-REPORT.xlsx
+  checksum: '"31d52-64bbcc1fee28e"'
+  size: 204114
+  mtime: '2026-02-26T16:39:00+00:00'
+  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+outs:
+- md5: e2154bc8fc884a25f5f8a50534b23b4a
+  size: 204114
+  hash: md5
+  path: 2024-AGENCY-GROUPS-OFFENSE-SUMMARY-REPORT.xlsx
+meta:
+  git_tracked: true
+  import:
+    fetched: '2026-03-09'

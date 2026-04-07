@@ -2,7 +2,7 @@ import React, { CSSProperties, ReactNode, SVGProps } from "react"
 import css from "./icons.module.scss"
 import { Tooltip } from "@/src/tooltip"
 import { InfoOutlined as MuiInfo } from "@mui/icons-material";
-import A from "@rdub/next-base/a";
+import A from "@/src/lib/a"
 import { NjdotRawData, NjspFatalAcc } from "@/src/urls";
 
 export type Props = {
@@ -192,5 +192,90 @@ export function NjdotSource() {
             Source: <A href={NjdotRawData}>NJ DOT</A>
             <Info title={`Includes non-fatal crashes; most recent data: 2021`}/>
         </div>
+    )
+}
+
+export function LegendHint() {
+    return (
+        <Info title="Hover legend labels to preview; click to lock." />
+    )
+}
+
+// Data source definitions for PlotInfo
+export type DataSource = {
+    label: string
+    href: string
+    note?: string
+}
+
+const NJSP_SOURCE: DataSource = {
+    label: "NJ State Police",
+    href: NjspFatalAcc,
+    note: "Fatal crashes only; typically published 1 day to a few months after the fact.",
+}
+
+const NJDOT_SOURCE: DataSource = {
+    label: "NJ DOT",
+    href: NjdotRawData,
+    note: "Includes all reported crashes; most recent data: 2023.",
+}
+
+export type PlotInfoProps = {
+    /** Data source: 'njsp', 'njdot', or custom sources array */
+    source?: 'njsp' | 'njdot' | DataSource[]
+    /** Whether to show legend interaction hints (default: true) */
+    showLegendHint?: boolean
+    /** Additional notes to display */
+    children?: ReactNode
+    /** Optional className for positioning */
+    className?: string
+}
+
+/**
+ * Unified plot info icon with rich tooltip containing:
+ * - Legend interaction hints
+ * - Data source attribution with links
+ * - Additional plot-specific notes
+ */
+export function PlotInfo({ source, showLegendHint = true, children, className }: PlotInfoProps) {
+    // Resolve sources to array
+    const sources: DataSource[] = source === 'njsp' ? [NJSP_SOURCE]
+        : source === 'njdot' ? [NJDOT_SOURCE]
+        : Array.isArray(source) ? source
+        : []
+
+    const tooltipContent = (
+        <div className={css.plotInfoTooltip}>
+            {showLegendHint && (
+                <div className={css.plotInfoSection}>
+                    <strong>Legend:</strong> Hover to preview, click to lock.
+                </div>
+            )}
+            {sources.length > 0 && (
+                <div className={css.plotInfoSection}>
+                    <strong>{sources.length > 1 ? 'Sources' : 'Source'}:</strong>
+                    {sources.map((s, i) => (
+                        <div key={i} className={css.plotInfoSourceItem}>
+                            <A href={s.href}>{s.label}</A>
+                            {s.note && <span className={css.plotInfoNote}> — {s.note}</span>}
+                        </div>
+                    ))}
+                </div>
+            )}
+            {children && (
+                <div className={css.plotInfoSection}>
+                    {children}
+                </div>
+            )}
+        </div>
+    )
+
+    return (
+        <Tooltip title={tooltipContent}>
+            <MuiInfo
+                className={`${css.icon} ${css.info} ${css.plotInfoIcon} ${className ?? ''}`}
+                fontSize="medium"
+            />
+        </Tooltip>
     )
 }

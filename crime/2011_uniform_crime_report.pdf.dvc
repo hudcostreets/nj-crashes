@@ -1,0 +1,15 @@
+deps:
+- path: https://njsp.njoag.gov/wp/wp-content/uploads/UCR/UCR%20reports/2010's/2011_uniform_crime_report.pdf
+  checksum: '"52ccde-63bdddb1943b6"'
+  size: 5426398
+  mtime: '2025-08-08T17:25:09+00:00'
+  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+outs:
+- md5: a930f924e89e8b26ba651743faee0cc7
+  size: 5426398
+  hash: md5
+  path: 2011_uniform_crime_report.pdf
+meta:
+  git_tracked: true
+  import:
+    fetched: '2026-03-09'

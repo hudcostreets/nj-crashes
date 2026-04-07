@@ -1,0 +1,10 @@
+outs:
+- md5: 55e2f9299f30d45d0435080bcc733af4
+  size: 5227171
+  hash: md5
+  path: NewJersey2023Occupants.pqt
+meta:
+  computation:
+    cmd: rawdata pqt -r NJ -y 2023 -t occupants
+    deps:
+      njdot/data/2023/NewJersey2023Occupants.zip: 26771b9f8c53b63718b05bb0fbaedc18

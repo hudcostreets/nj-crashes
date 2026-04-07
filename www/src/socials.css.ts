@@ -1,8 +1,10 @@
-import {globalStyle} from '@vanilla-extract/css'
-import * as css from "@rdub/next-base/socials.css";
-import { logo, socials } from '@rdub/next-base/socials.css';
+import { globalStyle } from '@vanilla-extract/css'
+import * as css from "@/src/lib/socials.css"
 
 export const svg = css.svg
+export const socials = css.socials
+export const logo = css.logo
+
 globalStyle(`.${css.socials} path, .${css.socials} polygon`, {
     fill: "black",
     "@media": {

@@ -1,0 +1,136 @@
+.controls {
+    margin-top: -2.5em;  /* Pull up to align with legend */
+    text-align: left;
+    padding-left: 0.25em;
+}
+.controls > summary {
+    cursor: pointer;
+    list-style: none;
+    display: inline-block;
+}
+.controls > summary::-webkit-details-marker {
+    display: none;
+}
+.settingsGear {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15em;
+    font-size: 1.5em;
+    opacity: 0.6;
+}
+.settingsGear:hover {
+    opacity: 1;
+}
+.settingsGear::before {
+    content: "▸";
+    font-size: 0.7em;
+}
+.controls[open] .settingsGear::before {
+    content: "▾";
+}
+.controlsContent {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1em;
+    padding: 0.5em 0;
+}
+.control {
+    min-width: 6em;
+}
+.control label {
+    display: block;
+    margin: 0;
+    font-size: 14px;
+    cursor: pointer;
+}
+.control .nowrap {
+    white-space: nowrap;
+}
+.control label > input {
+    margin-right: 0.3em;
+}
+.controlHeader {
+    font-weight: bold;
+    white-space: nowrap;
+    margin-bottom: 0.3em;
+}
+.subControl {
+    margin-bottom: 0.3em;
+}
+
+/* County dropdown filter */
+.countyDropdown {
+    position: relative;
+    display: inline-block;
+}
+.countyDropdown summary {
+    cursor: pointer;
+    padding: 0.3em 0.6em;
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 14px;
+    list-style: none;
+}
+.countyDropdown summary::-webkit-details-marker {
+    display: none;
+}
+.countyDropdown summary::after {
+    content: " ▼";
+    font-size: 0.7em;
+}
+.countyDropdown[open] summary::after {
+    content: " ▲";
+}
+.countyList {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 100;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px var(--shadow);
+    max-height: 300px;
+    overflow-y: auto;
+    min-width: 150px;
+    padding: 0.3em;
+}
+.countyList label {
+    display: block;
+    padding: 0.2em 0.4em;
+    cursor: pointer;
+    color: var(--text-primary);
+}
+.countyList label:hover {
+    background: var(--bg-primary);
+}
+.selectAll {
+    border-bottom: 1px solid var(--border-secondary);
+    margin-bottom: 0.3em;
+    padding-bottom: 0.3em;
+    font-weight: bold;
+}
+.muniRow {
+    display: flex !important;
+    align-items: center;
+    gap: 0;
+}
+.muniName {
+    cursor: pointer;
+    flex: 1;
+    border-radius: 3px;
+    padding: 0 0.2em;
+}
+.muniName:hover {
+    background: var(--border-primary);
+}
+
+/* Plot info line */
+.plotInfo {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+    text-align: center;
+}

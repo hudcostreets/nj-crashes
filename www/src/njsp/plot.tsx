@@ -1,24 +1,38 @@
-import { Annotations, Layout, PlotData } from "plotly.js";
-import * as Plotly from "react-plotly.js";
+import type { Annotations, Config, Data as PlotlyData, Layout, PlotData } from "plotly.js";
 import { TableData, useCsvTable, useTable } from "@/src/tableData";
-import { useDb, useQuery, } from "@rdub/duckdb/duckdb";
-import { curYear, Data, njspPlotSpec, prvYear, YearTotalsMap } from "@/src/plotSpecs";
+import { useDb, useQuery } from "@/src/lib/DuckDbContext";
+import { curYear, prvYear } from "@/src/constants";
 import React, { Dispatch, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { HasCounty, table, typeCountsQuery } from "./projections";
 import { ProjectedCsv } from "@/src/paths";
 import { ytcQuery } from "@/src/njsp/ytc";
 import { repoWithOwner } from "@/src/github";
-import A from "@rdub/next-base/a";
-import { GitHub } from "@/src/socials";
-import { Plot, PlotSpec } from "@rdub/next-plotly/plot";
+import A from "@/src/lib/a"
+import { GitHub } from "@/src/socials"
+import { Plot, PlotSpec } from "@/src/lib/plot"
 import { fromEntries } from "@rdub/base/objs";
 import { normalize } from "../county";
 import { CountySelect } from "../county-select";
-import { NjspSource } from "@/src/icons";
+import { PlotInfo } from "@/src/icons";
 import { Crash, Total } from "@/src/use-njsp-crashes";
+import css from "./plot.module.scss"
 
-export type PlotParams = { data: PlotData[] } & Omit<Plotly.PlotParams, "data">
+export type PlotParams = { data: PlotData[], layout: Partial<Layout>, config?: Partial<Config>, [key: string]: unknown }
 export type Annotation = Partial<Annotations>
+
+export type Year = "2021" | "2022" | typeof prvYear | typeof curYear
+export type YearTotalsMap = { [k in Year]: { total: number, projected: number } }
+export type Data = {
+    rundate: string
+    yearTotalsMap: YearTotalsMap
+}
+
+export const njspPlotSpec: PlotSpec = {
+    id: "per-year",
+    name: "fatalities_per_year_by_type",
+    menuName: "Traffic Deaths / Year",
+    dropdownSection: "NJSP",
+}
 
 export type InitProps = {
     crashes: Crash[]
@@ -72,7 +86,6 @@ export async function getPlotData({ ytRows, typeProjections, initialPlotData, ty
         "Passengers": "passenger",
         "Projected": "projected",
     }
-    console.log("typeProjections:", typeProjections)
     const projectedTotal = typesArr.map(type => {
         const col = typesMap[type] as keyof TypeCounts
         return col in typeProjections ? typeProjections[col] : 0
@@ -165,14 +178,17 @@ export function NjspChildren(
     const curYearProjectedTotal = curYearTotal + curYearProjected
     const shortDate = new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
     return <>
-        <p>Click/Double-click the legend labels to toggle or solo each type.</p>
-        <p>
+        <div className={css.plotToolbarCompact}>
+            <PlotInfo source="njsp">
+                {county === null && total2021 > 0 && total2022 > 0 ? (
+                    <p style={{ margin: 0 }}>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
+                ) : null}
+            </PlotInfo>
+        </div>
+        <p className={css.plotStats}>
             <A href={`${GitHub.href}/commits/main`}>As of {shortDate}</A>, {county ? `${county} County` : "NJ"} has {curYearTotal} reported deaths in {curYear}, and <A href={estimationHref}>is on pace</A> for {curYearProjectedTotal}{curYearProjectedTotal > prvYearTotal ? `, exceeding ${prvYear}'s ${prvYearTotal}` : ""}.
             {includeMoreInfoLink ? <>{' '}<A href={`/c/${county ? normalize(county) : ""}`}>More {county ? `${county} County` : "state-wide"} data</A>.</> : null}
         </p>
-        {county === null ? <p>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p> : null}
-        <NjspSource />
-        {/*<p>Data comes from <A title={"NJ State Police fatal crash data"} href={NjspFatalAcc}>NJ State Police</A>, and is updated daily (though crashes sometimes take weeks or months to show up).</p>*/}
     </>
 }
 
@@ -202,7 +218,8 @@ export function NjspPlot(
     spec = spec ?? njspPlotSpec
     let { src, name } = spec
     src = src ?? `plots/${name}.png`
-    const [ types, setTypes ] = useState<Set<Type>>(new Set(AllTypes))
+    const [ soloType, setSoloType ] = useState<Type | null>(null)
+    const [ showProjected, setShowProjected ] = useState(true)
     const db = useDb()
     const { data: initialPlotData, layout, ...plotRest } = params as PlotParams
     const [ data, setData ] = useState<PlotData[]>(initialPlotData)
@@ -216,38 +233,36 @@ export function NjspPlot(
     })
     const [ yearTotalsMap, setYearTotalsMap ] = useState<YearTotalsMap>(initYearTotalsMap)
 
+    // Compute active types based on solo selection
+    const types = useMemo(
+        () => new Set(soloType ? [soloType, ...(showProjected ? ["Projected" as Type] : [])] : AllTypes),
+        [soloType, showProjected]
+    )
+
     const onLegendClick = useCallback(
         (name: Type) => {
-            if (types.has(name)) {
-                console.log(`types: disable ${name}`)
-                const newTypes = new Set(Array.from(types))
-                newTypes.delete(name)
-                setTypes(newTypes)
+            if (name === "Projected") {
+                setShowProjected(!showProjected)
+            } else if (soloType === name) {
+                // Clicking solo'd type again clears solo
+                setSoloType(null)
             } else {
-                console.log(`types: enable ${name}`)
-                const newTypes = new Set(Array.from(types))
-                newTypes.add(name)
-                setTypes(newTypes)
+                // Solo this type
+                setSoloType(name)
             }
             return false
         },
-        [ types ]
+        [soloType, showProjected]
     )
 
     const onLegendDoubleClick = useCallback(
-        (name: Type) => {
-            if (types.size <= 1) {
-                // Remove solo; show all traces
-                console.log(`types: remove solo ${name}`)
-                setTypes(new Set(AllTypes))
-            } else {
-                // Solo trace
-                console.log(`types: solo ${name}`)
-                setTypes(new Set([ name ]))
-            }
+        () => {
+            // Double-click resets to show all
+            setSoloType(null)
+            setShowProjected(true)
             return false
         },
-        [ types ]
+        []
     )
 
     const target = useTable({ db, tableData, stem: "ytc" })
@@ -288,7 +303,7 @@ export function NjspPlot(
     //console.log("trace visibility:", data.map(d => d.visible))
     const newLayout: Partial<Layout> = useMemo(
         () => {
-            const { xaxis, yaxis, ...rest } = layout
+            const { xaxis, yaxis, title: _title, ...rest } = layout
             return {
                 ...rest,
                 xaxis: { ...xaxis, fixedrange: true },
@@ -322,8 +337,8 @@ export function NjspPlot(
                         : null
                 )
             }
-            onLegendClick={onLegendClick}
-            onLegendDoubleClick={onLegendDoubleClick}
+            onLegendClick={onLegendClick as any}
+            onLegendDoubleClick={onLegendDoubleClick as any}
         >
             <NjspChildren
                 rundate={rundate}

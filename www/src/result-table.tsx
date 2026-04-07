@@ -1,5 +1,5 @@
 import css from "./result-table.module.scss";
-import { Result } from "@rdub/react-sql.js-httpvfs/query";
+import { Result } from "@/src/api";
 import TableContainer from "@mui/material/TableContainer";
 import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
@@ -42,7 +42,7 @@ export function RowsTable(
                             key =>
                                 key !== 'key' &&
                                 <Tooltip title={colTitles?.[key]} key={key} arrow>
-                                    <TableCell align="right" className={css.noselect}>{key}</TableCell>
+                                    <TableCell align="right" className={css.noselect} data-col={key}>{key}</TableCell>
                                 </Tooltip>
                         )
                     }</TableRow>
@@ -56,7 +56,7 @@ export function RowsTable(
                                 sx={{'&:last-child td, &:last-child th': {border: 0}}}
                             >{
                                 o2a(row, (col, val) =>
-                                    col !== 'key' && <TableCell key={col} align="right">{val}</TableCell>
+                                    col !== 'key' && <TableCell key={col} align="right" data-col={col}>{val}</TableCell>
                                 )
                             }</TableRow>
                         )
@@ -66,11 +66,11 @@ export function RowsTable(
                     pagination &&
                     <TableFooter>
                         <TableRow>
-                            <td colSpan={6}>{
+                            <TableCell colSpan={6}>{
                                 ('before' in pagination)
                                     ? <DatePagination {...pagination} />
                                     : <Pagination {...pagination} />
-                            }</td>
+                            }</TableCell>
                         </TableRow>
                     </TableFooter>
                 }
