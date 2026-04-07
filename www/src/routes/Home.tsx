@@ -121,9 +121,9 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                     <NjspCrashesSection />
                 </LazySection>
 
-                <PlotContainer><YtdDeathsPlot county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
+                <PlotContainer><YtdDeathsPlot key={`ytd-${cc}-${mc}`} county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
                 {!municipalityName && <PlotContainer><HomicidesComparisonPlot county={countyName} /></PlotContainer>}
-                <PlotContainer><FatalitiesByMonthBarsPlot county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
+                <PlotContainer><FatalitiesByMonthBarsPlot key={`fbm-${cc}-${mc}`} county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
 
                 {/* NJ DOT Section */}
                 <h2 id="njdot"><a href="#njdot">NJ DOT Crash Data</a></h2>
