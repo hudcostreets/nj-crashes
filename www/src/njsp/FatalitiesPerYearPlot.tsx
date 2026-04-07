@@ -13,6 +13,7 @@ import { GitHub } from "@/src/socials"
 import { PlotInfo, Cyclist, Driver, Pedestrian, Passenger } from "@/src/icons"
 import { repoWithOwner } from "@/src/github"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
+import { useGeoFilter } from "@/src/GeoFilterContext"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import css from "./plot.module.scss"
 
@@ -172,9 +173,12 @@ export type Props = {
 export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, cc: propCc = null, mc: propMc = null, regionLabel, height = 500 }: Props) {
     const db = useDb()
     const plotColors = usePlotColors()
-    const [county, setCounty] = useState<string | null>(initialCounty)
+    const { setCounty: navigateCounty } = useGeoFilter()
+    const [county, setCountyLocal] = useState<string | null>(initialCounty)
     // Sync with external county prop (geo filter)
-    useEffect(() => { setCounty(initialCounty) }, [initialCounty])
+    useEffect(() => { setCountyLocal(initialCounty) }, [initialCounty])
+    // County change navigates to county page
+    const setCounty = (name: string | null) => { setCountyLocal(name); navigateCounty(name) }
     // Municipality-level: use cc/mc from props (no county dropdown when muni-level)
     const hasMuniFilter = propCc !== null && propMc !== null
     // hoverTrace from pltly (unused — no native Plotly legend on this plot)
