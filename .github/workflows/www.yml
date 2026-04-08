@@ -1,8 +1,5 @@
-name: Build + Deploy to GitHub Pages
+name: Build + Deploy to Cloudflare Pages
 on:
-  push:
-    branches:
-      - www
   workflow_call:
     inputs:
       ref:
@@ -17,10 +14,9 @@ on:
         description: "The branch, tag, or SHA to run the workflow from"
 jobs:
   run:
-    name: Build + Deploy to GitHub Pages (iff www/ has changed since last gh-pages push)
+    name: Build + Deploy to Cloudflare Pages
     runs-on: ubuntu-latest
     steps:
-      # See https://github.com/actions/checkout/issues/265#issuecomment-1936792528
       - name: Resolve inputs.ref to full SHA
         id: resolve-ref
         env:
@@ -40,27 +36,12 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 9
-      - run: git fetch origin gh-pages
-      - id: base-sha
-        run: echo "BASE_SHA=$(./parse-ghp-base-sha.py -d root origin/gh-pages)" >> $GITHUB_OUTPUT
-      - name: Check whether www was changed
-        id: www-changed
-        env:
-          BASE_SHA: ${{ steps.base-sha.outputs.BASE_SHA }}
-        run: |
-          echo "BASE_SHA: $BASE_SHA"
-          git fetch --depth 1 origin $BASE_SHA
-          echo "WWW_CHANGED=$([ $BASE_SHA != 'root' ] && git diff --quiet $BASE_SHA && echo '' || echo 'true')" >> $GITHUB_OUTPUT
-      - run: |
-          echo "WWW_CHANGED: ${{ steps.www-changed.outputs.WWW_CHANGED }}"
-      - if: steps.www-changed.outputs.WWW_CHANGED
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'pnpm'
           cache-dependency-path: www/pnpm-lock.yaml
-      - name: pnpm install, build, export
-        if: steps.www-changed.outputs.WWW_CHANGED
+      - name: Build
         env:
           VITE_API_URL: https://crashes-api.ryan-0dc.workers.dev
         run: |
@@ -68,10 +49,14 @@ jobs:
           pnpm install
           pnpm run build
           cp dist/index.html dist/404.html
+          # Remove large files not needed for CF Pages (served via D1 API)
+          find dist -name '*.db' -o -name '*.db.bak' | xargs rm -f
+          find dist -size +25M -delete
           du -sh dist
-      - if: steps.www-changed.outputs.WWW_CHANGED
-        name: Deploy to GH Pages
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: gh-pages
-          folder: www/dist
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          cd www
+          npx wrangler pages deploy dist --project-name nj-crashes --commit-dirty=true
