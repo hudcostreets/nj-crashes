@@ -548,11 +548,10 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 gridcolor: plotColors.gridColor,
                 tickangle: -45,  // Slant from LL to UR
                 automargin: true,
-                // Limit range to actual data years (prevent auto-extension)
-                range: [rows[0].year - 0.5, rows[rows.length - 1].year + 0.5],
-                // Format years as 'yy
-                tickvals: rows.map(r => r.year),
-                ticktext: rows.map(r => `'${String(r.year).slice(2)}`),
+                // Show all years from 2008 to current (including empty years)
+                range: [2007.5, curYear + 0.5],
+                tickvals: Array.from({ length: curYear - 2007 }, (_, i) => 2008 + i),
+                ticktext: Array.from({ length: curYear - 2007 }, (_, i) => `'${String(2008 + i).slice(2)}`),
             },
             yaxis: {
                 fixedrange: true,
