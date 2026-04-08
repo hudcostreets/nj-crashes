@@ -1,53 +1,37 @@
-import { useMemo } from "react"
-import countyShapes from "@/src/county-shapes.json"
+import mapData from "@/src/nj-county-map.json"
 import css from "./CountyPicker.module.scss"
+
+const { viewBox, counties: countyMap } = mapData as {
+    viewBox: string
+    counties: Record<string, { path: string; labelX: number; labelY: number }>
+}
 
 type Props = {
     selected: string | null
     onSelect: (county: string | null) => void
 }
 
-function CountyIcon({ name, size = 32 }: { name: string; size?: number }) {
-    const path = (countyShapes as Record<string, string>)[name]
-    if (!path) return null
-    return (
-        <svg viewBox="0 0 40 40" width={size} height={size} className={css.icon}>
-            <path d={path} />
-        </svg>
-    )
-}
-
 export function CountyPicker({ selected, onSelect }: Props) {
-    const counties = useMemo(
-        () => Object.keys(countyShapes as Record<string, string>).sort(),
-        [],
-    )
-
     return (
-        <div className={css.picker}>
+        <div className={css.mapContainer}>
+            <svg viewBox={viewBox} className={css.map}>
+                {Object.entries(countyMap).map(([name, { path, labelX, labelY }]) => (
+                    <g
+                        key={name}
+                        className={`${css.county} ${selected === name ? css.active : ''}`}
+                        onClick={() => onSelect(name)}
+                    >
+                        <path d={path} />
+                        <text x={labelX} y={labelY} className={css.countyLabel}>{name}</text>
+                    </g>
+                ))}
+            </svg>
             <button
-                className={`${css.item} ${!selected ? css.active : ''}`}
+                className={`${css.njButton} ${!selected ? css.active : ''}`}
                 onClick={() => onSelect(null)}
-                title="All of New Jersey"
             >
-                <svg viewBox="0 0 40 40" width={32} height={32} className={css.icon}>
-                    {counties.map(name => (
-                        <path key={name} d={(countyShapes as Record<string, string>)[name]} />
-                    ))}
-                </svg>
-                <span className={css.label}>NJ</span>
+                All NJ
             </button>
-            {counties.map(name => (
-                <button
-                    key={name}
-                    className={`${css.item} ${selected === name ? css.active : ''}`}
-                    onClick={() => onSelect(name)}
-                    title={`${name} County`}
-                >
-                    <CountyIcon name={name} />
-                    <span className={css.label}>{name}</span>
-                </button>
-            ))}
         </div>
     )
 }

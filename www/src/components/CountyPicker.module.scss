@@ -1,52 +1,70 @@
-.picker {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 4px;
+.mapContainer {
     padding: 8px;
-    width: 420px;
-}
-
-.item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    background: none;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    padding: 4px 6px;
+    gap: 6px;
+}
+
+.map {
+    width: 250px;
+    height: auto;
+}
+
+.county {
     cursor: pointer;
+
+    path {
+        fill: var(--plot-bg, #2a2a3e);
+        stroke: var(--grid-color, #444);
+        stroke-width: 0.5;
+        transition: fill 0.15s;
+    }
+
+    &:hover path {
+        fill: rgba(100, 150, 255, 0.2);
+    }
+
+    &.active path {
+        fill: var(--link-color, #6ea8fe);
+        fill-opacity: 0.4;
+        stroke: var(--link-color, #6ea8fe);
+        stroke-width: 1.5;
+    }
+}
+
+.countyLabel {
+    font-size: 8px;
+    fill: var(--text-color, #e0e0e0);
+    text-anchor: middle;
+    dominant-baseline: central;
+    pointer-events: none;
+    opacity: 0.7;
+
+    .active & {
+        opacity: 1;
+        font-weight: 600;
+        font-size: 9px;
+    }
+}
+
+.njButton {
+    background: none;
+    border: 1px solid var(--grid-color, #444);
+    border-radius: 4px;
+    padding: 4px 12px;
     color: var(--text-color, #e0e0e0);
-    transition: border-color 0.15s, background 0.15s;
+    cursor: pointer;
+    font-size: 12px;
 
     &:hover {
-        border-color: var(--grid-color, #444);
-        background: var(--plot-bg, rgba(255, 255, 255, 0.05));
+        border-color: var(--link-color, #6ea8fe);
+        background: rgba(100, 150, 255, 0.1);
     }
 
     &.active {
         border-color: var(--link-color, #6ea8fe);
-        background: var(--plot-bg, rgba(100, 150, 255, 0.1));
-    }
-}
-
-.icon {
-    fill: var(--text-color, #e0e0e0);
-    opacity: 0.7;
-
-    .active & {
-        opacity: 1;
-        fill: var(--link-color, #6ea8fe);
-    }
-}
-
-.label {
-    font-size: 9px;
-    opacity: 0.7;
-    white-space: nowrap;
-
-    .active & {
-        opacity: 1;
+        background: rgba(100, 150, 255, 0.15);
         font-weight: 600;
     }
 }
