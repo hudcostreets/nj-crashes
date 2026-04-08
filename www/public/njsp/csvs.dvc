@@ -1,0 +1,5 @@
+meta:
+  computation:
+    cmd: njsp update_www_data -f
+    deps:
+      njsp/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540

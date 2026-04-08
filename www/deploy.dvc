@@ -1,0 +1,8 @@
+meta:
+  computation:
+    cmd: cd www && pnpm build && cp dist/index.html dist/404.html && find dist -name '*.db' -o -name '*.db.bak' | xargs rm -f && find dist -size +25M -delete && npx wrangler pages deploy dist --project-name nj-crashes --commit-dirty=true
+    git_deps:
+      www/src: 02feb602896bed981d7d8844be2d4c90a14c999e
+      www/public: cfa32ea06f8a2b02fff7a650b8591be498d9c464
+      www/package.json: a6f4d56befdab8ca7da83b044d6c3442c84411d8
+      www/functions: d45da0aa448a9be329f954bccdc77cf1d675f5de

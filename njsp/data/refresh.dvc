@@ -1,0 +1,5 @@
+meta:
+  computation:
+    cmd: njsp refresh-data
+    fetch:
+      schedule: daily

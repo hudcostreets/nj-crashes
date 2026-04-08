@@ -1,0 +1,6 @@
+meta:
+  computation:
+    cmd: ./api/d1-import.sh
+    deps:
+      www/public/njsp/crashes.db: c41605984996c16df73bccaf2e3d6982
+      www/public/njdot/crashes.db: 3e90ac771fb610caa64043998ddf5aff
