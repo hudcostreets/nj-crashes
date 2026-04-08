@@ -1,6 +1,6 @@
 meta:
   computation:
-    cmd: cd www && pnpm build && cp dist/index.html dist/404.html && find dist -name '*.db' -o -name '*.db.bak' | xargs rm -f && find dist -size +25M -delete && npx wrangler pages deploy dist --project-name nj-crashes --commit-dirty=true
+    cmd: cd www && VITE_API_URL=https://crashes-api.ryan-0dc.workers.dev pnpm build && cp dist/index.html dist/404.html && find dist -name '*.db' -o -name '*.db.bak' | xargs rm -f && find dist -size +25M -delete && npx wrangler pages deploy dist --project-name nj-crashes --commit-dirty=true
     git_deps:
       www/src: 02feb602896bed981d7d8844be2d4c90a14c999e
       www/public: cfa32ea06f8a2b02fff7a650b8591be498d9c464
