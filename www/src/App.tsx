@@ -1,4 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
+import { HotkeysProvider, Omnibar, ShortcutsModal, LookupModal, SpeedDial } from 'use-kbd'
+import 'use-kbd/styles.css'
 import Home from './routes/Home'
 import NotFound from './routes/NotFound'
 import SqlPage from './routes/SqlPage'
@@ -9,13 +11,21 @@ import OgImage from './routes/OgImage'
 import { ThemeToggle } from './components/ThemeToggle'
 import { GeoFilterProvider } from './GeoFilterContext'
 import { DuckDbProvider } from './lib/DuckDbContext'
+import { useGeoActions } from './components/GeoOmnibar'
 
 function GeoHome() {
-    return <GeoFilterProvider><Home /></GeoFilterProvider>
+    return <GeoFilterProvider><GeoActionsRegistrar /><Home /></GeoFilterProvider>
+}
+
+/** Register geo actions inside GeoFilterProvider */
+function GeoActionsRegistrar() {
+    useGeoActions()
+    return null
 }
 
 export default function App() {
     return (
+        <HotkeysProvider>
         <DuckDbProvider>
             <Routes>
                 <Route path="/" element={<GeoHome />} />
@@ -31,7 +41,12 @@ export default function App() {
                 <Route path="/map/hudson/diffs" element={<HudsonDiffs />} />
                 <Route path="*" element={<NotFound />} />
             </Routes>
+            <Omnibar />
+            <ShortcutsModal />
+            <LookupModal />
+            <SpeedDial />
             <ThemeToggle />
         </DuckDbProvider>
+        </HotkeysProvider>
     )
 }

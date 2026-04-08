@@ -107,6 +107,9 @@ importers:
       strftime:
         specifier: ^0.10.2
         version: 0.10.2
+      use-kbd:
+        specifier: ^0.12.0
+        version: 0.12.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       use-prms:
         specifier: https://github.com/runsascoded/use-prms#b357b48290740ae53a0ccc5fe837cf312c29f81d
         version: https://codeload.github.com/runsascoded/use-prms/tar.gz/b357b48290740ae53a0ccc5fe837cf312c29f81d(react@18.2.0)
@@ -2836,6 +2839,12 @@ packages:
   update-diff@1.1.0:
     resolution: {integrity: sha512-rCiBPiHxZwT4+sBhEbChzpO5hYHjm91kScWgdHf4Qeafs6Ba7MBl+d9GlGv72bcTZQO0sLmtQS1pHSWoCLtN/A==}
 
+  use-kbd@0.12.0:
+    resolution: {integrity: sha512-mt5BchpLyYi1tm0brENlZYYk6ta92JIZlVmLzGBrdjHpjKR2aEzst7b1BbWJcVn/nzXfJxf8DOwibt0YsGOOeg==}
+    peerDependencies:
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+
   use-prms@https://codeload.github.com/runsascoded/use-prms/tar.gz/b357b48290740ae53a0ccc5fe837cf312c29f81d:
     resolution: {tarball: https://codeload.github.com/runsascoded/use-prms/tar.gz/b357b48290740ae53a0ccc5fe837cf312c29f81d}
     version: 0.4.1-dist.b48b378
@@ -3092,7 +3101,7 @@ snapshots:
       '@babel/parser': 7.29.0
       '@babel/template': 7.27.2
       '@babel/types': 7.29.0
-      debug: 4.3.4
+      debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
 
@@ -5878,6 +5887,14 @@ snapshots:
       picocolors: 1.1.1
 
   update-diff@1.1.0: {}
+
+  use-kbd@0.12.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
+    dependencies:
+      debug: 4.4.3
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+    transitivePeerDependencies:
+      - supports-color
 
   use-prms@https://codeload.github.com/runsascoded/use-prms/tar.gz/b357b48290740ae53a0ccc5fe837cf312c29f81d(react@18.2.0):
     dependencies:

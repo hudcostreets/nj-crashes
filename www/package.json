@@ -47,6 +47,7 @@
     "react-router-dom": "^6.21.0",
     "sass": "^1",
     "strftime": "^0.10.2",
+    "use-kbd": "^0.12.0",
     "use-prms": "https://github.com/runsascoded/use-prms#b357b48290740ae53a0ccc5fe837cf312c29f81d",
     "use-session-storage-state": "^18.2.0"
   },
