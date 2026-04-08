@@ -36,6 +36,33 @@
     display: flex;
     gap: 0.5em;
     align-items: center;
+    position: relative;
+}
+
+.pickerToggle {
+    background: var(--plot-bg, #1a1a2e);
+    color: var(--text-color, #e0e0e0);
+    border: 1px solid var(--grid-color, #333);
+    border-radius: 4px;
+    padding: 0.3em 0.5em;
+    font-size: 0.85em;
+    cursor: pointer;
+
+    &:hover {
+        border-color: var(--link-color, #6ea8fe);
+    }
+}
+
+.pickerDropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 100;
+    margin-top: 4px;
+    background: var(--paper-bg, #161b22);
+    border: 1px solid var(--grid-color, #333);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .geoSelect {

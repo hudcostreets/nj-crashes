@@ -1,16 +1,26 @@
-import { useMemo } from "react"
+import { useMemo, useState, useRef, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { useGeoFilter } from "@/src/GeoFilterContext"
 import { normalize } from "@/src/county"
+import { CountyPicker } from "./CountyPicker"
 import css from "./GeoNavBar.module.scss"
 
 export function GeoNavBar() {
     const { countyName, municipalityName, cc, cc2mc2mn, setCounty, setMunicipality } = useGeoFilter()
+    const [showPicker, setShowPicker] = useState(false)
+    const pickerRef = useRef<HTMLDivElement>(null)
 
-    const counties = useMemo(() => {
-        if (!cc2mc2mn) return []
-        return Object.values(cc2mc2mn).map(c => c.cn).sort()
-    }, [cc2mc2mn])
+    // Close picker on click outside
+    useEffect(() => {
+        if (!showPicker) return
+        const handler = (e: MouseEvent) => {
+            if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+                setShowPicker(false)
+            }
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
+    }, [showPicker])
 
     const municipalities = useMemo(() => {
         if (!cc2mc2mn || cc === null) return []
@@ -34,15 +44,14 @@ export function GeoNavBar() {
                     <span className={css.current}>{municipalityName}</span>
                 </>}
             </div>
-            <div className={css.selectors}>
-                <select
-                    className={css.geoSelect}
-                    value={countyName ?? ""}
-                    onChange={e => setCounty(e.target.value || null)}
+            <div className={css.selectors} ref={pickerRef}>
+                <button
+                    className={css.pickerToggle}
+                    onClick={() => setShowPicker(!showPicker)}
+                    title="Browse counties"
                 >
-                    <option value="">All counties</option>
-                    {counties.map(cn => <option key={cn} value={cn}>{cn}</option>)}
-                </select>
+                    {countyName ?? "All counties"} ▾
+                </button>
                 {countyName && municipalities.length > 0 && (
                     <select
                         className={css.geoSelect}
@@ -52,6 +61,17 @@ export function GeoNavBar() {
                         <option value="">All municipalities</option>
                         {municipalities.map(mn => <option key={mn} value={mn}>{mn}</option>)}
                     </select>
+                )}
+                {showPicker && (
+                    <div className={css.pickerDropdown}>
+                        <CountyPicker
+                            selected={countyName}
+                            onSelect={(name) => {
+                                setCounty(name)
+                                setShowPicker(false)
+                            }}
+                        />
+                    </div>
                 )}
             </div>
         </nav>

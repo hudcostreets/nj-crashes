@@ -1,0 +1,52 @@
+.picker {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    padding: 8px;
+    width: 420px;
+}
+
+.item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 4px 6px;
+    cursor: pointer;
+    color: var(--text-color, #e0e0e0);
+    transition: border-color 0.15s, background 0.15s;
+
+    &:hover {
+        border-color: var(--grid-color, #444);
+        background: var(--plot-bg, rgba(255, 255, 255, 0.05));
+    }
+
+    &.active {
+        border-color: var(--link-color, #6ea8fe);
+        background: var(--plot-bg, rgba(100, 150, 255, 0.1));
+    }
+}
+
+.icon {
+    fill: var(--text-color, #e0e0e0);
+    opacity: 0.7;
+
+    .active & {
+        opacity: 1;
+        fill: var(--link-color, #6ea8fe);
+    }
+}
+
+.label {
+    font-size: 9px;
+    opacity: 0.7;
+    white-space: nowrap;
+
+    .active & {
+        opacity: 1;
+        font-weight: 600;
+    }
+}
