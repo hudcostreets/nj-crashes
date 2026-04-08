@@ -1,70 +1,59 @@
-.mapContainer {
-    padding: 8px;
+.pickerLayout {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
+    gap: 4px;
+    padding: 8px;
+    max-height: 500px;
+}
+
+.mapSide {
+    flex: 0 0 200px;
 }
 
 .map {
-    width: 250px;
+    width: 200px;
     height: auto;
 }
 
-.county {
+.countyPath {
     cursor: pointer;
-
-    path {
-        fill: var(--plot-bg, #2a2a3e);
-        stroke: var(--grid-color, #444);
-        stroke-width: 0.5;
-        transition: fill 0.15s;
-    }
-
-    &:hover path {
-        fill: rgba(100, 150, 255, 0.2);
-    }
-
-    &.active path {
-        fill: var(--link-color, #6ea8fe);
-        fill-opacity: 0.4;
-        stroke: var(--link-color, #6ea8fe);
-        stroke-width: 1.5;
-    }
+    transition: fill 0.12s, opacity 0.12s;
 }
 
-.countyLabel {
-    font-size: 8px;
-    fill: var(--text-color, #e0e0e0);
-    text-anchor: middle;
-    dominant-baseline: central;
-    pointer-events: none;
-    opacity: 0.7;
-
-    .active & {
-        opacity: 1;
-        font-weight: 600;
-        font-size: 9px;
-    }
+.listSide {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 480px;
+    min-width: 120px;
 }
 
-.njButton {
+.listItem {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
     background: none;
-    border: 1px solid var(--grid-color, #444);
-    border-radius: 4px;
-    padding: 4px 12px;
-    color: var(--text-color, #e0e0e0);
+    border: none;
+    border-radius: 3px;
+    padding: 3px 6px;
     cursor: pointer;
-    font-size: 12px;
+    color: var(--text-color, #e0e0e0);
+    font-size: 11px;
+    text-align: left;
+    white-space: nowrap;
 
-    &:hover {
-        border-color: var(--link-color, #6ea8fe);
-        background: rgba(100, 150, 255, 0.1);
+    &:hover, &.highlight {
+        background: rgba(255, 255, 255, 0.08);
     }
 
     &.active {
-        border-color: var(--link-color, #6ea8fe);
-        background: rgba(100, 150, 255, 0.15);
         font-weight: 600;
     }
+}
+
+.swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
 }

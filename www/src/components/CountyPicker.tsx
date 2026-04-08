@@ -1,10 +1,8 @@
 import mapData from "@/src/nj-county-map.json"
-import css from "./CountyPicker.module.scss"
+import { RegionMapPicker, type RegionData } from "./RegionMapPicker"
 
-const { viewBox, counties: countyMap } = mapData as {
-    viewBox: string
-    counties: Record<string, { path: string; labelX: number; labelY: number }>
-}
+const raw = mapData as { viewBox: string; counties: RegionData['regions'] }
+const countyMapData: RegionData = { viewBox: raw.viewBox, regions: raw.counties }
 
 type Props = {
     selected: string | null
@@ -13,25 +11,11 @@ type Props = {
 
 export function CountyPicker({ selected, onSelect }: Props) {
     return (
-        <div className={css.mapContainer}>
-            <svg viewBox={viewBox} className={css.map}>
-                {Object.entries(countyMap).map(([name, { path, labelX, labelY }]) => (
-                    <g
-                        key={name}
-                        className={`${css.county} ${selected === name ? css.active : ''}`}
-                        onClick={() => onSelect(name)}
-                    >
-                        <path d={path} />
-                        <text x={labelX} y={labelY} className={css.countyLabel}>{name}</text>
-                    </g>
-                ))}
-            </svg>
-            <button
-                className={`${css.njButton} ${!selected ? css.active : ''}`}
-                onClick={() => onSelect(null)}
-            >
-                All NJ
-            </button>
-        </div>
+        <RegionMapPicker
+            data={countyMapData}
+            selected={selected}
+            onSelect={onSelect}
+            allLabel="All NJ"
+        />
     )
 }
