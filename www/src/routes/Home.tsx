@@ -93,7 +93,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                 title={title}
                 description={description}
                 url={pageUrl}
-                thumbnail={`${url}/plots/fatalities_per_year_by_type.png`}
+                thumbnail={`${url}/og.png`}
             />
 
             <main className={css.index} onClick={handleMainClick}>

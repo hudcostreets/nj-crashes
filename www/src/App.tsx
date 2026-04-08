@@ -5,6 +5,7 @@ import SqlPage from './routes/SqlPage'
 import DuckDbPage from './routes/DuckDbPage'
 import HudsonMap from './routes/HudsonMap'
 import HudsonDiffs from './routes/HudsonDiffs'
+import OgImage from './routes/OgImage'
 import { ThemeToggle } from './components/ThemeToggle'
 import { GeoFilterProvider } from './GeoFilterContext'
 import { DuckDbProvider } from './lib/DuckDbContext'
@@ -25,6 +26,7 @@ export default function App() {
                 <Route path="/njsp/:county" element={<GeoHome />} />
                 <Route path="/sql" element={<SqlPage />} />
                 <Route path="/duckdb" element={<DuckDbPage />} />
+                <Route path="/og" element={<OgImage />} />
                 <Route path="/map/hudson" element={<HudsonMap />} />
                 <Route path="/map/hudson/diffs" element={<HudsonDiffs />} />
                 <Route path="*" element={<NotFound />} />

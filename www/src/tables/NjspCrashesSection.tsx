@@ -5,9 +5,10 @@ import { useNjspCrashRows, useNjspCrashesTotal, Total } from "@/src/use-njsp-cra
 import { ResultTable } from "@/src/result-table"
 import { fold } from "fp-ts/Either"
 
-export function NjspCrashesSection() {
+export function NjspCrashesSection({ perPage: perPageProp, hidePagination }: { perPage?: number; hidePagination?: boolean } = {}) {
     const { cc, mc, cc2mc2mn } = useGeoFilter()
-    const { page, setPage, perPage, setPerPage } = usePaginationControls({ id: "njsp-crashes", perPage: 20 })
+    const { page, setPage, perPage: defaultPerPage, setPerPage } = usePaginationControls({ id: "njsp-crashes", perPage: perPageProp ?? 20 })
+    const perPage = perPageProp ?? defaultPerPage
 
     const totalsResult = useNjspCrashesTotal({ cc, mc })
     const total = useMemo(
@@ -32,7 +33,7 @@ export function NjspCrashesSection() {
     return (
         <ResultTable
             result={crashRows}
-            pagination={pagination}
+            pagination={hidePagination ? undefined : pagination}
             className="compact"
         />
     )

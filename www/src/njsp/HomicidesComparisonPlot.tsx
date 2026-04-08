@@ -31,6 +31,8 @@ export type Props = {
     county?: string | null
     cc?: number | null
     mc?: number | null
+    height?: number
+    width?: number
 }
 
 type CrashHomicideRow = {
@@ -49,7 +51,8 @@ const crashHomicideQueryFn = (county: string | null, source: CrashSource) => `
     ORDER BY year
 `
 
-export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) {
+export function HomicidesComparisonPlot({ id = "vs-homicides", county, height: propHeight, width: propWidth }: Props) {
+    const plotHeight = propHeight ?? HEIGHT
     // Note: crash-homicide data only exists at statewide and county level (no muni breakdowns)
     const db = useDb()
     const plotColors = usePlotColors()
@@ -130,7 +133,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
 
         const layout: Partial<Layout> = {
             showlegend: true,
-            height: HEIGHT,
+            height: plotHeight,
             margin: { t: 0, b: 40, l: 0, r: 0 },
             paper_bgcolor: plotColors.paperBg,
             plot_bgcolor: plotColors.plotBg,
@@ -214,7 +217,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county }: Props) 
 
 
     if (!data.length) {
-        return <div style={{ height: HEIGHT }}>Loading...</div>
+        return <div style={{ height: plotHeight }}>Loading...</div>
     }
 
     const region = county ? `${county} County` : 'NJ'
