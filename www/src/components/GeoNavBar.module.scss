@@ -1,12 +1,9 @@
 .geoNav {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1em;
     padding: 0.4em 0;
     margin-bottom: 0.5em;
     border-bottom: 1px solid var(--grid-color, #333);
-    flex-wrap: wrap;
 }
 
 .breadcrumb {
@@ -14,49 +11,53 @@
     align-items: center;
     gap: 0.3em;
     font-size: 0.95em;
+}
 
-    a {
-        color: var(--link-color, #6ea8fe);
-        text-decoration: none;
+.crumb {
+    background: none;
+    border: none;
+    color: var(--link-color, #6ea8fe);
+    cursor: pointer;
+    padding: 0.2em 0.3em;
+    border-radius: 3px;
+    font-size: inherit;
+    font-family: inherit;
+
+    &:hover {
+        text-decoration: underline;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    &.current {
+        color: var(--text-color, #e0e0e0);
+        font-weight: 600;
+        cursor: default;
         &:hover {
-            text-decoration: underline;
+            text-decoration: none;
+            background: none;
         }
     }
 }
 
-.current {
-    font-weight: 600;
+.caret {
+    font-size: 0.7em;
+    opacity: 0.6;
 }
 
 .sep {
-    opacity: 0.4;
+    opacity: 0.3;
+    user-select: none;
 }
 
-.selectors {
-    display: flex;
-    gap: 0.5em;
-    align-items: center;
+.crumbDropdown {
     position: relative;
-}
-
-.pickerToggle {
-    background: var(--plot-bg, #1a1a2e);
-    color: var(--text-color, #e0e0e0);
-    border: 1px solid var(--grid-color, #333);
-    border-radius: 4px;
-    padding: 0.3em 0.5em;
-    font-size: 0.85em;
-    cursor: pointer;
-
-    &:hover {
-        border-color: var(--link-color, #6ea8fe);
-    }
+    display: inline-flex;
 }
 
 .pickerDropdown {
     position: absolute;
     top: 100%;
-    right: 0;
+    left: 0;
     z-index: 100;
     margin-top: 4px;
     background: var(--paper-bg, #161b22);
@@ -65,14 +66,27 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
-.geoSelect {
-    background: var(--plot-bg, #1a1a2e);
-    color: var(--text-color, #e0e0e0);
-    border: 1px solid var(--grid-color, #333);
-    border-radius: 4px;
-    padding: 0.3em 0.5em;
-    font-size: 0.85em;
+.muniSelect {
+    appearance: none;
+    -webkit-appearance: none;
+    background: none;
+    border: none;
+    color: var(--link-color, #6ea8fe);
     cursor: pointer;
+    padding: 0.2em 0.3em;
+    border-radius: 3px;
+    font-size: inherit;
+    font-family: inherit;
+
+    &:hover {
+        text-decoration: underline;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    &.current {
+        color: var(--text-color, #e0e0e0);
+        font-weight: 600;
+    }
 
     &:focus {
         outline: 1px solid var(--link-color, #6ea8fe);

@@ -1,5 +1,4 @@
 import { useMemo, useState, useRef, useEffect } from "react"
-import { Link } from "react-router-dom"
 import { useGeoFilter } from "@/src/GeoFilterContext"
 import { normalize } from "@/src/county"
 import { CountyPicker } from "./CountyPicker"
@@ -10,7 +9,6 @@ export function GeoNavBar() {
     const [showPicker, setShowPicker] = useState(false)
     const pickerRef = useRef<HTMLDivElement>(null)
 
-    // Close picker on click outside
     useEffect(() => {
         if (!showPicker) return
         const handler = (e: MouseEvent) => {
@@ -31,48 +29,49 @@ export function GeoNavBar() {
     return (
         <nav className={css.geoNav}>
             <div className={css.breadcrumb}>
-                {countyName ? <Link to="/">NJ</Link> : <span className={css.current}>NJ</span>}
+                {/* NJ — link home or show as current */}
+                <button
+                    className={`${css.crumb} ${!countyName ? css.current : ''}`}
+                    onClick={() => setCounty(null)}
+                    title="New Jersey (statewide)"
+                >
+                    NJ
+                </button>
+
+                {/* County — dropdown trigger with picker */}
+                <span className={css.sep}>/</span>
+                <div className={css.crumbDropdown} ref={pickerRef}>
+                    <button
+                        className={`${css.crumb} ${countyName && !municipalityName ? css.current : ''}`}
+                        onClick={() => setShowPicker(!showPicker)}
+                    >
+                        {countyName ?? 'County'} <span className={css.caret}>▾</span>
+                    </button>
+                    {showPicker && (
+                        <div className={css.pickerDropdown}>
+                            <CountyPicker
+                                selected={countyName}
+                                onSelect={(name) => {
+                                    setCounty(name)
+                                    setShowPicker(false)
+                                }}
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* Municipality — dropdown (only when county is selected) */}
                 {countyName && <>
                     <span className={css.sep}>/</span>
-                    {municipalityName
-                        ? <Link to={`/c/${normalize(countyName)}`}>{countyName}</Link>
-                        : <span className={css.current}>{countyName}</span>
-                    }
-                </>}
-                {municipalityName && <>
-                    <span className={css.sep}>/</span>
-                    <span className={css.current}>{municipalityName}</span>
-                </>}
-            </div>
-            <div className={css.selectors} ref={pickerRef}>
-                <button
-                    className={css.pickerToggle}
-                    onClick={() => setShowPicker(!showPicker)}
-                    title="Browse counties"
-                >
-                    {countyName ?? "All counties"} ▾
-                </button>
-                {countyName && municipalities.length > 0 && (
                     <select
-                        className={css.geoSelect}
+                        className={`${css.crumb} ${css.muniSelect} ${municipalityName ? css.current : ''}`}
                         value={municipalityName ?? ""}
                         onChange={e => setMunicipality(e.target.value || null)}
                     >
-                        <option value="">All municipalities</option>
+                        <option value="">Municipality</option>
                         {municipalities.map(mn => <option key={mn} value={mn}>{mn}</option>)}
                     </select>
-                )}
-                {showPicker && (
-                    <div className={css.pickerDropdown}>
-                        <CountyPicker
-                            selected={countyName}
-                            onSelect={(name) => {
-                                setCounty(name)
-                                setShowPicker(false)
-                            }}
-                        />
-                    </div>
-                )}
+                </>}
             </div>
         </nav>
     )
