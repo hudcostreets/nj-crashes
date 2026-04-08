@@ -58,12 +58,7 @@ jobs:
         run: |
           args=""
           if [ "${{ inputs.force }}" = "true" ]; then args="$args --force"; fi
-          if [ -n "${{ inputs.targets }}" ]; then
-            args="$args ${{ inputs.targets }}"
-          else
-            # Default: run all pipeline stages
-            args="$args njsp/data/refresh.dvc www/public/njsp/csvs.dvc www/deploy.dvc api/d1-import.dvc"
-          fi
+          if [ -n "${{ inputs.targets }}" ]; then args="$args ${{ inputs.targets }}"; fi
           dvx run $args
       - name: Commit and push updated artifacts
         run: |
