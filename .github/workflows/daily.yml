@@ -27,23 +27,21 @@ jobs:
     name: DVX pipeline
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.ref_name }}
-      - uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.GHA_DEPLOY_KEY }}
+          token: ${{ secrets.GH_TOKEN }}
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           uv sync
           echo "$PWD/.venv/bin" >> $GITHUB_PATH
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
         with:
-          version: 9
-      - uses: actions/setup-node@v4
+          version: 10
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: 'pnpm'
