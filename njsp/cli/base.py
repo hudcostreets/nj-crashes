@@ -117,6 +117,16 @@ def command(fn):
                 raise RuntimeError("Git tree has unstaged changes")
 
         msg = fn(*args, **kwargs)
+
+        # DVX stage output protocol: write commit message for DVX to commit
+        dvx_commit_msg_file = env.get('DVX_COMMIT_MSG_FILE')
+        if dvx_commit_msg_file and msg:
+            _repo = repo if do_commit else Repo()
+            if _repo.is_dirty():
+                with open(dvx_commit_msg_file, 'w') as f:
+                    f.write(msg)
+                err(f"Wrote DVX commit message: {msg}")
+
         if do_commit:
             if repo.is_dirty():
                 do_configure_author = ctx.obj['do_configure_author']
