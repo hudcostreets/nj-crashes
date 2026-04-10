@@ -1,0 +1,6 @@
+# DVX run configuration
+# Defaults are safe for local dev (no commit, no push).
+# CI passes: dvx run --commit --push end
+run:
+  commit: never
+  push: never

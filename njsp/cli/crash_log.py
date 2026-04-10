@@ -134,6 +134,13 @@ def crash_log_cmd(fn):
             else:
                 print(df)
 
+        # Signal DVX commit
+        try:
+            from dvx.stage import stage as dvx_stage
+            if dvx_stage.is_dvx_run:
+                dvx_stage.commit("Update crash log")
+        except ImportError:
+            pass
 
     return _fn
 

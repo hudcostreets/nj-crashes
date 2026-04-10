@@ -1,5 +1,5 @@
 meta:
   computation:
-    cmd: njsp refresh_data --s3
+    cmd: njsp refresh_summaries
     fetch:
       schedule: daily

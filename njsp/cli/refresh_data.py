@@ -35,7 +35,7 @@ def update_years(*years, current_year: int = None, log_s3: bool = False):
         res = requests.get(
             f'https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/{name}',
             allow_redirects=True,
-            timeout=10,
+            timeout=30,
             headers={
                 'Accept': 'text/xml',
                 'Cache-Control': 'no-cache',

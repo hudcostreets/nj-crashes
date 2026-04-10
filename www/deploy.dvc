@@ -1,8 +1,9 @@
 meta:
   computation:
-    cmd: cd www && VITE_API_URL=https://crashes-api.ryan-0dc.workers.dev pnpm build && cp dist/index.html dist/404.html && find dist -name '*.db' -o -name '*.db.bak' | xargs rm -f && find dist -size +25M -delete && npx wrangler pages deploy dist --project-name nj-crashes --commit-dirty=true
+    cmd: ./deploy.sh
     git_deps:
-      www/src: 02feb602896bed981d7d8844be2d4c90a14c999e
-      www/public: cfa32ea06f8a2b02fff7a650b8591be498d9c464
-      www/package.json: a6f4d56befdab8ca7da83b044d6c3442c84411d8
-      www/functions: d45da0aa448a9be329f954bccdc77cf1d675f5de
+      deploy.sh: 9690bd2ac469fd84ff5b3780f940f3c2622ae86c
+      src: 02feb602896bed981d7d8844be2d4c90a14c999e
+      public: cfa32ea06f8a2b02fff7a650b8591be498d9c464
+      package.json: a6f4d56befdab8ca7da83b044d6c3442c84411d8
+      functions: d45da0aa448a9be329f954bccdc77cf1d675f5de

@@ -308,3 +308,8 @@ TOML
 fi
 
 echo "All imports complete."
+
+# Signal DVX to commit
+if [ -n "${DVX_COMMIT_MSG_FILE:-}" ]; then
+    echo "Import databases to D1" > "$DVX_COMMIT_MSG_FILE"
+fi

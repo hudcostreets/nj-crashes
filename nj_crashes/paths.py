@@ -25,3 +25,8 @@ S3 = f's3://{BKT}'
 
 def relpath(dst: str, src: str = ROOT_DIR) -> str:
     return path.relpath(dst, src)
+
+
+def resolve(relpath: str) -> str:
+    """Resolve a repo-root-relative path to absolute."""
+    return join(ROOT_DIR, relpath)

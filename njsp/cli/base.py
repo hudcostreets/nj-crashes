@@ -1,13 +1,9 @@
 from functools import wraps
 from importlib import import_module
 
-from click import pass_context, Group, option
-from git import Repo
-from utz import process, env, err
-
-
-DEFAULT_AUTHOR_NAME = 'GitHub Actions'
-DEFAULT_AUTHOR_EMAIL = 'ryan-williams@users.noreply.github.com'
+from click import pass_context, Group
+from nj_crashes.paths import ROOT_DIR
+from utz import err
 
 
 # Commands to load lazily: module_name → (command_name, help_text)
@@ -72,37 +68,17 @@ class LazyGroup(Group):
                 formatter.write_dl(rows)
 
 
-# Create the group using decorators, then swap the class
 @pass_context
-@option('-a', '--configure-author', 'do_configure_author', is_flag=True, help='Set Git user.{name,email} configs: %s / %s' % (DEFAULT_AUTHOR_NAME, DEFAULT_AUTHOR_EMAIL))
-@option('-c', '--commit', 'do_commit', count=True, help='1x: commit changes; 2x: commit and push')
-def _njsp_callback(ctx, do_configure_author, do_commit):
-    ctx.obj = dict(
-        do_configure_author=do_configure_author,
-        do_commit=do_commit,
-    )
+def _njsp_callback(ctx):
+    import os
+    ctx.obj = dict(original_cwd=os.getcwd())
+    os.chdir(ROOT_DIR)
 
 
-# Create LazyGroup with the decorated callback's params
 njsp = LazyGroup(
     'njsp',
     callback=_njsp_callback,
-    params=_njsp_callback.__click_params__,
 )
-
-
-def step_output(key, value):
-    GITHUB_OUTPUT = env.get('GITHUB_OUTPUT')
-    if GITHUB_OUTPUT:
-        with open(GITHUB_OUTPUT, 'a') as f:
-            kv = f'{key}={value}'
-            f.write(f'{kv}\n')
-            err(f"Step output: {kv}")
-
-
-def configure_author(name, email):
-    process.run('git', 'config', '--global', 'user.name', name)
-    process.run('git', 'config', '--global', 'user.email', email)
 
 
 def command(fn):
@@ -110,36 +86,15 @@ def command(fn):
     @pass_context
     @wraps(fn)
     def _fn(ctx, *args, **kwargs):
-        do_commit = ctx.obj['do_commit']
-        if do_commit:
-            repo = Repo()
-            if repo.is_dirty():
-                raise RuntimeError("Git tree has unstaged changes")
-
         msg = fn(*args, **kwargs)
 
-        # DVX stage output protocol: write commit message for DVX to commit
-        dvx_commit_msg_file = env.get('DVX_COMMIT_MSG_FILE')
-        if dvx_commit_msg_file and msg:
-            _repo = repo if do_commit else Repo()
-            if _repo.is_dirty():
-                with open(dvx_commit_msg_file, 'w') as f:
-                    f.write(msg)
-                err(f"Wrote DVX commit message: {msg}")
-
-        if do_commit:
-            if repo.is_dirty():
-                do_configure_author = ctx.obj['do_configure_author']
-                if do_configure_author:
-                    configure_author(
-                        env.get('GIT_AUTHOR_NAME', DEFAULT_AUTHOR_NAME),
-                        env.get('GIT_AUTHOR_EMAIL', DEFAULT_AUTHOR_EMAIL),
-                    )
-                process.run('git', 'commit', '-am', msg)
-                step_output('sha', repo.commit().hexsha)
-                if do_commit > 1:
-                    process.run('git', 'push')
-            else:
-                err("Nothing to commit")
+        # Signal commit message to DVX harness
+        try:
+            from dvx.stage import stage as dvx_stage
+            if dvx_stage.is_dvx_run and msg:
+                dvx_stage.commit(msg)
+                err(f"DVX commit: {msg}")
+        except ImportError:
+            pass
 
     return _fn

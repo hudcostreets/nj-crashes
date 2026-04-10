@@ -1,0 +1,7 @@
+meta:
+  computation:
+    cmd: ./slack_post.sh
+    git_deps:
+      slack_post.sh: 0000000000000000000000000000000000000000
+    deps:
+      crash-log.parquet: 00000000000000000000000000000000

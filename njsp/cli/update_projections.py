@@ -17,7 +17,7 @@ def update_projections():
     fauqstats_path = fauqstats_relpath(current_year)
     if not exists(fauqstats_path):
         err(f"Skipping projections: {fauqstats_path} not found (current year data not yet available)")
-        return None
+        return f"Skip NJSP projections ({current_year} data not yet available)"
     nb_path = 'njsp/update-projections.ipynb'
     nb, exc = papermill_run(nb_path)
     write_nb(nb, nb_path)

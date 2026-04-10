@@ -2,8 +2,6 @@ name: "Daily: refresh NJSP data, update www"
 on:
   schedule:
     - cron: "10 15 * * *"
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       force:
@@ -26,6 +24,8 @@ jobs:
   run:
     name: DVX pipeline
     runs-on: ubuntu-latest
+    env:
+      DVX: dvx run --commit --push each ${{ inputs.force == true && '--force' || '' }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -52,20 +52,43 @@ jobs:
         run: |
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'ryan-williams@users.noreply.github.com'
+      - name: Pull DVC-tracked deps from S3
+        run: dvx pull njdot/data/crashes.parquet
       - name: DVX status
         run: dvx status
-      - name: DVX run
+      # === Pipeline stages (sequential, matching old daily.yml order) ===
+      - name: Refresh NJSP data
+        if: ${{ !inputs.targets }}
+        run: $DVX njsp/data/refresh.dvc
+      - name: Update NJSP parquets
+        if: ${{ !inputs.targets }}
+        run: $DVX njsp/data/update_pqts.dvc
+      - name: Harmonize county/muni codes
+        if: ${{ !inputs.targets }}
+        run: $DVX njsp/data/harmonize.dvc
+      - name: Update crash log
+        if: ${{ !inputs.targets }}
+        run: $DVX njsp/data/crash_log.dvc
+      - name: Refresh annual summaries
+        if: ${{ !inputs.targets }}
+        run: $DVX njsp/data/summaries.dvc
+      - name: "Fetch ≈1yr of git history"
+        if: ${{ !inputs.targets }}
         run: |
-          args=""
-          if [ "${{ inputs.force }}" = "true" ]; then args="$args --force"; fi
-          if [ -n "${{ inputs.targets }}" ]; then args="$args ${{ inputs.targets }}"; fi
-          dvx run $args
-      - name: Commit and push updated artifacts
-        run: |
-          git add -u
-          if ! git diff --cached --quiet; then
-            git commit -m "Update DVX artifacts [skip ci]"
-            git push
-          else
-            echo "No changes to commit"
-          fi
+          since="$(date --date="$(date +%Y-%m-%d) -375 day" +%Y-%m-%d)"
+          git fetch --shallow-since "$since" origin ${{ github.ref_name }} || true
+      - name: Update NJSP projections
+        if: ${{ !inputs.targets }}
+        run: $DVX www/public/njsp/projections.dvc
+      - name: Update www CSVs
+        if: ${{ !inputs.targets }}
+        run: $DVX www/public/njsp/csvs.dvc
+      - name: Post to Slack
+        if: ${{ !inputs.targets }}
+        run: $DVX njsp/data/slack_post.dvc
+      - name: Deploy www to CF Pages
+        if: ${{ !inputs.targets }}
+        run: $DVX www/deploy.dvc
+      - name: Run custom targets
+        if: ${{ inputs.targets }}
+        run: $DVX ${{ inputs.targets }}

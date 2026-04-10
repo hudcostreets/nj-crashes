@@ -49,6 +49,7 @@ def refresh_summaries(years):
             err(f"Failed to refresh summaries for {year}: {e}")
             err("Continuing (PDF summaries are optional for years 2020+)")
 
+    years_str = ','.join(map(str, years))
     if refreshed_years:
         return f'Refresh NJSP annual summaries: {",".join(map(str, refreshed_years))}'
-    return None
+    return f'Run NJSP annual summaries ({years_str}): no updates'

@@ -1,0 +1,7 @@
+meta:
+  computation:
+    cmd: njsp update_pqts --s3
+    git_deps:
+      /data/FAUQStats2024.xml: 0000000000000000000000000000000000000000
+      /data/FAUQStats2025.xml: 0000000000000000000000000000000000000000
+      /data/FAUQStats2026.xml: 0000000000000000000000000000000000000000

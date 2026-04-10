@@ -1,0 +1,5 @@
+meta:
+  computation:
+    cmd: njsp crash_log compute --s3 -v
+    deps:
+      crashes.parquet: 00000000000000000000000000000000
