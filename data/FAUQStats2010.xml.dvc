@@ -1,0 +1,9 @@
+deps:
+- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2010.xml
+outs:
+- md5: 1208a430c6fa0fd9c1e17e258e92e2f6
+  size: 191959
+  hash: md5
+  path: FAUQStats2010.xml
+meta:
+  git_tracked: true

@@ -1,5 +1,7 @@
+import hashlib
 import re
 from os.path import basename
+from pathlib import Path
 
 from datetime import datetime
 
@@ -19,6 +21,35 @@ def parse_rundate(xml_content: bytes) -> str | None:
     return match.group(1).decode('utf-8') if match else None
 
 
+def rundate_short(rundate_str: str) -> str:
+    """Extract short date (e.g. '4/9') from RUNDATE string like 'Thu Apr 09 10:00:01 EDT 2026'."""
+    from email.utils import parsedate
+    parts = rundate_str.replace('EDT ', '').replace('EST ', '')
+    try:
+        dt = datetime.strptime(parts, '%a %b %d %H:%M:%S %Y')
+        return f'{dt.month}/{dt.day}'
+    except ValueError:
+        return rundate_str
+
+
+def update_xml_dvc(out_path: str, content: bytes):
+    """Update the .dvc provenance file for a fetched XML."""
+    import yaml
+    dvc_path = Path(out_path + '.dvc')
+    if not dvc_path.exists():
+        return
+    md5 = hashlib.md5(content).hexdigest()
+    size = len(content)
+    with open(dvc_path) as f:
+        data = yaml.safe_load(f)
+    if data and 'outs' in data:
+        data['outs'][0]['md5'] = md5
+        data['outs'][0]['size'] = size
+    with open(dvc_path, 'w') as f:
+        yaml.dump(data, f, sort_keys=False, default_flow_style=False)
+    process.run('git', 'add', str(dvc_path))
+
+
 def update_years(*years, current_year: int = None, log_s3: bool = False):
     """Update FAUQStats XML files for the given years.
 
@@ -26,9 +57,13 @@ def update_years(*years, current_year: int = None, log_s3: bool = False):
         years: Years to update
         current_year: If provided, 404 errors for this year are tolerated (file may not exist yet)
         log_s3: If True, append fetch metadata to S3 parquet log
+
+    Returns:
+        Latest RUNDATE string across all fetched XMLs, or None.
     """
     fetch_records = []
     fetch_time = datetime.now()
+    latest_rundate = None
     for year in years:
         out_path = fauqstats_relpath(year)
         name = basename(out_path)
@@ -56,16 +91,23 @@ def update_years(*years, current_year: int = None, log_s3: bool = False):
         with open(out_path, 'wb') as f:
             f.write(content)
 
+        rundate = parse_rundate(content)
+
         # Record fetch metadata
         fetch_records.append({
             'fetch_time': fetch_time,
             'year': year,
             'last_modified': res.headers.get('Last-Modified'),
-            'rundate': parse_rundate(content),
+            'rundate': rundate,
             'content_length': len(content),
         })
 
+        # Track latest rundate (from current year XML)
+        if year == current_year and rundate:
+            latest_rundate = rundate
+
         process.run('git', 'add', out_path)
+        update_xml_dvc(out_path, content)
 
     # Append to S3 fetch log
     if log_s3 and fetch_records:
@@ -83,6 +125,8 @@ def update_years(*years, current_year: int = None, log_s3: bool = False):
             df.to_parquet(tmp, index=False)
         err(f"Appended {len(fetch_records)} records to {S3_XML_FETCH_LOG}")
 
+    return latest_rundate
+
 
 @command
 @flag('--s3', 'log_s3', help='Log fetch metadata to S3')
@@ -91,6 +135,7 @@ def refresh_data(log_s3, years):
     """Snapshot NJSP fatal crash data for the given years."""
     current_year = datetime.now().year
     if not years:
-        years = [ current_year - 2, current_year - 1, current_year ]
-    update_years(*years, current_year=current_year, log_s3=log_s3)
-    return 'Refresh NJSP data'
+        years = [current_year - 2, current_year - 1, current_year]
+    latest_rundate = update_years(*years, current_year=current_year, log_s3=log_s3)
+    date_suffix = f' ({rundate_short(latest_rundate)})' if latest_rundate else ''
+    return f'Refresh NJSP data{date_suffix}'

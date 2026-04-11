@@ -1,16 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Find the most recent "Refresh NJSP data" commit
-refresh_sha=$(git log --format=%H --grep="Refresh NJSP data" -1)
-if [ -z "$refresh_sha" ]; then
-    echo "No 'Refresh NJSP data' commit found, skipping Slack post" >&2
+cd "$(git rev-parse --show-toplevel)"
+
+# Find all "Refresh NJSP data" commits in the last 7 days
+# Pass them all to slack sync — it's idempotent (skips already-posted)
+refresh_shas=$(git log --format=%H --grep="Refresh NJSP data" --since="7 days ago")
+if [ -z "$refresh_shas" ]; then
+    echo "No recent 'Refresh NJSP data' commits found, skipping Slack post" >&2
     exit 0
 fi
 
-echo "Posting Slack updates for refresh commit: $refresh_sha"
-cd "$(git rev-parse --show-toplevel)"
-njsp slack sync -r "$refresh_sha"
+args=""
+for sha in $refresh_shas; do
+    args="$args -r $sha"
+done
+
+echo "Posting Slack updates for refresh commits: $refresh_shas"
+njsp slack sync $args
 
 # Signal DVX to commit
 if [ -n "${DVX_COMMIT_MSG_FILE:-}" ]; then

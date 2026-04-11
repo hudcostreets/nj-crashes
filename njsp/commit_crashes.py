@@ -78,7 +78,7 @@ def get_rundate(tree: Tree) -> str:
         xmls = {
             blob.name: blob
             for blob in blobs
-            if blob.name.startswith('FAUQStats')
+            if blob.name.startswith('FAUQStats') and blob.name.endswith('.xml')
         }
         blob = list(xmls.values())[-1]
         fauqstats = get_fauqstats(blob.data_stream)
