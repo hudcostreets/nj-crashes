@@ -7,6 +7,14 @@ NJSP publishes two per-crash sources:
 - Annual PDF reports (per-crash "Fatal Crashes by County..." section): has
   per-type breakdowns for every year 2001-2024.
 
+**XML is authoritative where the two disagree on date, cc, mc, or location
+text.** The crash-log reveals a consistent directional pattern in XML
+revisions (local street name -> canonical road name -> with milepost), and
+the reverse has never been observed; XML is the live source and the PDF
+is a yearly snapshot compiled downstream. We therefore keep XML's values
+for these fields and only import PDF's per-victim-type counts (which are
+not present in pre-2020 XML).
+
 The join happens in three passes, to handle cases where the two sources
 disagree on the `(cc, mc)` assignment of the same physical crash:
 
@@ -19,6 +27,10 @@ disagree on the `(cc, mc)` assignment of the same physical crash:
 
 Unmatched rows are flagged `type_source='unresolved'` and listed in the
 returned residuals report.
+
+Known expected mismatches (documented, not surfaced as residuals):
+- 2022-06-17 (XML) vs 2022-06-18 (PDF) for the Bergen/Englewood pedestrian
+  crash at SH 4 MP 8.8. XML's 06-17 is canonical.
 """
 import json
 import re

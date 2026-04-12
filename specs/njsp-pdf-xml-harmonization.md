@@ -46,7 +46,26 @@ Documented in detail in
 - 2003 April: Section B claims 47 accidents; the per-crash listing has 46
   rows. The PDF's own tables disagree on the number of April crashes.
 - 2022-06-17 / 2022-06-18: a single Bergen crash (Englewood City, SH 4
-  MP 8.8) is listed on 06-17 in the XML feed and 06-18 in the PDF.
+  MP 8.8) is listed on 06-17 in the XML feed and 06-18 in the PDF. XML
+  is canonical (see "XML authority" below).
+
+## XML authority for date, cc/mc, and location text
+
+Where the XML feed and the PDF disagree on the date, municipality
+assignment, or free-text road/location of a crash, the XML is treated
+as canonical. Rationale (from crash-log observation):
+
+- XML revisions consistently evolve in one direction: a local street
+  name (e.g. "Elm Ave") is later updated to a canonical road name
+  (e.g. "State Highway 4"), and then an MP is added in a further
+  revision. The reverse — the XML reverting to less-canonical text —
+  has not been observed.
+- The XML is the live, continuously-updated source. The PDF is a
+  yearly snapshot compiled downstream.
+
+The harmonization pipeline therefore keeps XML values for `dt`, `cc`,
+`mc`, `location`, `street`, and `highway`, importing only the
+per-victim-type counts (`dk`/`ok`/`pk`/`bk`) from the PDF.
 
 For every crash count or fatality count check, the **XML feed agrees with
 the fixed per-crash listing**. Where the PDF's Section A disagrees, Section A
