@@ -1,5 +1,37 @@
 # Extend `crashes.parquet` with pre-2008 PDF crashes
 
+## Status (2026-04-12): done
+
+- `njsp/harmonize_pdfs.py`: added `load_pre_xml_crashes()` helper.
+- `njsp/cli/update_pqts.py`: after harmonization, concats pre-XML PDF-only
+  rows. 4605 rows added (2001-2007); 193 PDF rows dropped due to
+  unresolved mc (abbreviated/mislabeled munis — follow-up to improve
+  the upstream parser).
+- `crashes.parquet`: now spans 2001-2026 with `type_source='pdf-only'`
+  for pre-XML rows. IDs for new rows start past the XML-derived max to
+  avoid collisions.
+- `njsp/cli/update_www_data.py`: added `year-type-county.csv`
+  generation (previously maintained by `NJSP summary PDFs.ipynb`);
+  now also extends back to 2001. `monthly.csv`, `ytd.csv`,
+  `month-year.csv`, `crash-homicide.csv` auto-extended.
+- FE: subtitles ("2008–present" → "2001–present"), tick0 / tickvals /
+  colorscale `minYear` in `FatalitiesPerYearPlot`,
+  `FatalitiesPerMonthPlot`, `FatalitiesByMonthBarsPlot`, `YtdDeathsPlot`,
+  `HomicidesComparisonPlot`, `lib/plot.tsx`, and `Home.tsx` updated.
+- `njsp/cli/bsky/backfill.py`: filters out `type_source='pdf-only'`
+  rows defensively (PDF-only lacks XML URL provenance and time-of-day).
+- `update_projections` verified idempotent after the change.
+
+Follow-ups:
+- Recover the 193 dropped pre-2008 rows with abbreviation/typo-aware
+  muni resolution (e.g. "SO BRUNSWICK TWP" → "South Brunswick Twp").
+- Narrative copy in `FatalitiesPerYearPlot`/`plot.tsx` ("worst years
+  in the NJSP record (since 2008)") is now slightly stale: 2006 had
+  763 deaths, higher than any year 2008-present. Decide whether to
+  rewrite or keep the "since 2008" qualifier.
+- Optionally parse per-crash time-of-day from PDF `TIME` column
+  (currently all pre-2008 rows have `dt` at 00:00).
+
 ## Context
 
 `njsp/data/crashes.parquet` currently covers 2008 onward (from FAUQStats XMLs).

@@ -59,6 +59,73 @@ New endpoint needed:
 ### From Search
 - Future: search by case number, location, date range
 
+## Cross-media aggregation (UGC-ish)
+
+Each detail page should aggregate off-site discussion and primary
+sources about the crash. Three upstreams to mirror/backfill:
+
+1. **News articles**: manual links today, but we can parse URLs out
+   of historical `#crashdashbot` Slack threads (years of replies
+   contain shared news URLs). Also expect some semi-structured
+   sources — local outlets like Patch, APP.com, NJ.com — that could
+   be scraped for known-date-and-location matches.
+2. **Bluesky**: `@crashes.hudcostreets.org` posts each fatal crash
+   (see `njsp/cli/bsky/`). The post URI becomes the canonical
+   thread root; any replies on Bluesky should render on the crash
+   page as a conversation view. Long-term: auto-post new notes and
+   allow comment threads.
+3. **Slack `#crashdashbot`**: the Slack bot has posted a notification
+   per crash for years. Replies in those threads contain news links
+   and user commentary. Backfill task: walk the channel history,
+   tie each thread to its corresponding crash id, extract URLs and
+   anonymized quotes.
+
+### Data schema
+
+Store cross-references as:
+
+- `crash_refs.parquet` (project-tracked, maybe DVX):
+  `crash_pk`, `source_type` (`news` | `bluesky` | `slack` | `other`),
+  `url`, `title`, `summary`, `captured_at`, `author_handle?`
+- Slack threads mapped to crash IDs via a join on the bot's post
+  metadata (`accid` was typically included in each post).
+
+### Rendering
+
+On `/crash/:year/:cc/:mc/:case`:
+
+- A **"References"** section listing news links (sorted by date)
+- A **"Discussion"** section embedding (not linking to) the Bluesky
+  thread — avoids requiring a Bluesky account
+- A **"Slack thread"** summary (counts, notable quotes) — possibly
+  aggregated/anonymized depending on privacy constraints
+- Admin action: "Add a reference" → PR template pre-filled
+
+Each reference is one Markdown block. PR-editable; aspirationally
+editable through a light auth flow later.
+
+### Relationship to page-level annotations
+
+Per-crash refs are the fine-grained analog of
+`specs/page-annotations.md`. Share the same YAML/Markdown authoring
+pattern; `crash_refs` is keyed by PK, annotations are keyed by geo
++ page + year range.
+
+## Slack backfill
+
+See also `specs/slack-sync-lookback.md` (orthogonal — that's about
+pipeline-run lookback). A separate task:
+
+1. Use Slack Web API (`conversations.history`) to pull
+   `#crashdashbot` channel history.
+2. For each thread, pull `conversations.replies`.
+3. Parse each bot-post for the `accid` (typically embedded in the
+   message text or as metadata) to tie to a crash PK.
+4. For each reply, extract URLs (and surrounding message text for
+   title/summary). Dedupe URLs across threads.
+5. Emit `slack_crash_refs.parquet` with one row per reply-URL pair.
+6. Merge into `crash_refs.parquet`.
+
 ## Implementation Order
 1. Add `/njdot/crash` API endpoint (or use existing endpoints)
 2. Add route + page component for `/crash/:year/:cc/:mc/:case`
@@ -66,3 +133,7 @@ New endpoint needed:
 4. Add vehicle/occupant/pedestrian sections (data already available via API)
 5. Wire up table row links → detail page
 6. Add NJSP cross-reference for fatal crashes
+7. Slack backfill → `crash_refs.parquet`
+8. "References" section on detail pages rendering `crash_refs`
+9. Embed Bluesky thread view
+10. PR-template "Add a reference" affordance
