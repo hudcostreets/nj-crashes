@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
-import { EndYear } from "@/src/constants"
+import { EndYear, StartYear } from "@/src/constants"
 import type { Layout, PlotData } from "plotly.js"
 import { lightenColor, useTheme } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
@@ -437,11 +437,19 @@ export default function CrashPlot({
                 gridcolor: plotColors.gridColor,
                 fixedrange: true,
                 tickangle: -45,
-                // Format years as 'yy when in year granularity
-                ...(timeGranularity === 'year' && traces.length > 0 && traces[0].x ? {
-                    tickvals: traces[0].x as number[],
-                    ticktext: (traces[0].x as number[]).map(y => `'${String(y).slice(2)}`),
-                } : {}),
+                // Format years as 'yy when in year granularity; show all years in range
+                // (including empty ones) so tick density is consistent across geos.
+                ...(timeGranularity === 'year' ? (() => {
+                    const years = Array.from(
+                        { length: EndYear - StartYear + 1 },
+                        (_, i) => StartYear + i,
+                    )
+                    return {
+                        range: [StartYear - 0.5, EndYear + 0.5],
+                        tickvals: years,
+                        ticktext: years.map(y => `'${String(y).slice(2)}`),
+                    }
+                })() : {}),
             },
             yaxis: {
                 gridcolor: plotColors.gridColor,
