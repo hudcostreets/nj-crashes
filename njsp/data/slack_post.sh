@@ -17,7 +17,7 @@ for sha in $refresh_shas; do
 done
 
 echo "Posting Slack updates for refresh commits: $refresh_shas"
-njsp slack sync $args
+njsp slack sync -l njsp/data/crash-log.parquet $args
 
 # Signal DVX to commit
 if [ -n "${DVX_COMMIT_MSG_FILE:-}" ]; then

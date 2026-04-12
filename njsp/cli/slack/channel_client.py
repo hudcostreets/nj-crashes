@@ -373,4 +373,9 @@ class ChannelClient:
         # Log actions
         for action in result.actions:
             prefix = f"DRY RUN " if dry_run else ""
-            err(f"{BLUE}{accid:>5d}: {prefix}{action.type.value} [{action.index}]{RESET}")
+            header = f"{BLUE}{accid:>5d}: {prefix}{action.type.value} [{action.index}]{RESET}"
+            body = action.format(color=True)
+            body_lines = body.splitlines()[1:] if '\n' in body else []
+            err(header)
+            for line in body_lines:
+                err(f"       {line}")
