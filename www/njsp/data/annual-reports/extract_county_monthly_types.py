@@ -43,7 +43,7 @@ TYPE_PATTERNS = [
     (re.compile(r'(\d+)\s*DRIVER', re.IGNORECASE), 'driver'),
     (re.compile(r'(\d+)\s*PASSENGER', re.IGNORECASE), 'passenger'),
     (re.compile(r'(\d+)\s*(?:PEDAL\s*(?:CYCLIST|CYCLE)|BICYCLIST)', re.IGNORECASE), 'cyclist'),
-    (re.compile(r'(\d+)\s*PEDESTRIAN', re.IGNORECASE), 'pedestrian'),
+    (re.compile(r'(\d+)\s*PED(?:ED)?ESTRIAN', re.IGNORECASE), 'pedestrian'),
 ]
 
 err = lambda *a, **kw: print(*a, **kw, file=sys.stderr)
@@ -136,7 +136,7 @@ def extract_crashes_from_pdf(pdf_path: str) -> list[dict]:
                 # "1 PASSENGER, 1 DRIVER" don't get truncated after "DRIVER".
                 positions = [
                     upper_line.find(w)
-                    for w in ('DRIVER', 'PASSENGER', 'PEDESTRIAN', 'PEDAL', 'BICYC', 'UNKNOWN')
+                    for w in ('DRIVER', 'PASSENGER', 'PEDESTRIAN', 'PEDEDESTRIAN', 'PEDAL', 'BICYC', 'UNKNOWN')
                 ]
                 positions = [p for p in positions if p >= 0]
                 if positions:
@@ -144,7 +144,7 @@ def extract_crashes_from_pdf(pdf_path: str) -> list[dict]:
                     persons_killed = stripped[search_start:]
                 else:
                     persons_killed = ''
-                    end_match = re.search(r'\d+\s*(?:DRIVER|PASSENGER|PEDESTRIAN|PEDAL(?:CYCLE|CYCLIST)|BICYCLIST|UNKNOWN)', upper_line)
+                    end_match = re.search(r'\d+\s*(?:DRIVER|PASSENGER|PED(?:ED)?ESTRIAN|PEDAL(?:CYCLE|CYCLIST)|BICYCLIST|UNKNOWN)', upper_line)
                     if end_match:
                         persons_killed = stripped[end_match.start():]
 

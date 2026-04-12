@@ -496,6 +496,7 @@ year,county,cc,mc,month,driver,passenger,cyclist,pedestrian,fatalities
 2001,Passaic,16,15.0,6,1,0,0,0,1
 2001,Passaic,16,15.0,7,1,0,0,0,1
 2001,Passaic,16,15.0,9,0,1,0,0,1
+2001,Salem,17,2.0,2,0,0,0,1,1
 2001,Salem,17,9.0,11,1,0,0,0,1
 2001,Salem,17,11.0,1,0,0,0,1,1
 2001,Salem,17,11.0,10,0,1,0,0,1
