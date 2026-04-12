@@ -1,5 +1,20 @@
 # Remove redundant aggregate-PDF backfill from `update_www_data.py`
 
+## Status (2026-04-12): done
+
+- Removed the three `_BACKFILL` constants and their backfill loops
+  from `njsp/cli/update_www_data.py`.
+- Regenerated `monthly.csv`. Diff vs. the backfilled version showed
+  17 county-level rows (all pre-2008) where the aggregate PDF
+  disagreed with the per-crash PDF, producing inconsistent rows
+  (types summing to more than the fatality count — e.g. Middlesex
+  Dec 2001: 6 fatalities but 8 summed types). After removal,
+  types sum correctly to fatalities for every affected row.
+- Statewide and municipality-level rows: 0 diffs.
+- `validate_monthly_types.py` still passes.
+- Per-crash PDF data in `crashes.parquet` is now the sole source
+  of truth for per-type monthly aggregates.
+
 ## Context
 
 `njsp/cli/update_www_data.py` currently does a post-hoc backfill of

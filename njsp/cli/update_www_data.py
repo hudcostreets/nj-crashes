@@ -10,11 +10,6 @@ from utz import err
 from njsp.cli.base import command
 from njsp.paths import CRASHES_PQT, WWW_NJSP
 
-# Monthly type backfill from annual report PDFs (pre-2020)
-MONTHLY_TYPES_BACKFILL = join('www', 'njsp', 'data', 'annual-reports', 'monthly_types_from_pdfs.csv')
-COUNTY_MONTHLY_TYPES_BACKFILL = join('www', 'njsp', 'data', 'annual-reports', 'county_monthly_types_from_pdfs.csv')
-MUNI_MONTHLY_TYPES_BACKFILL = join('www', 'njsp', 'data', 'annual-reports', 'muni_monthly_types_from_pdfs.csv')
-
 CC2CN = {
     1: 'Atlantic', 2: 'Bergen', 3: 'Burlington', 4: 'Camden', 5: 'Cape May',
     6: 'Cumberland', 7: 'Essex', 8: 'Gloucester', 9: 'Hudson', 10: 'Hunterdon',
@@ -133,58 +128,6 @@ def update_www_data(force):
         if muni_data['fatalities'].sum() > 0:
             monthly_parts.append(compute_monthly(muni_data, cn, cc_val, mc_val))
     monthly = pd.concat(monthly_parts, ignore_index=True)
-
-    # Backfill pre-2020 statewide monthly type data from annual report PDFs
-    try:
-        backfill = pd.read_csv(MONTHLY_TYPES_BACKFILL)
-        err(f"  Backfilling {len(backfill)} statewide monthly type rows from annual report PDFs...")
-        statewide_mask = (monthly['county'] == '') & (monthly['cc'] == '') & (monthly['mc'] == '')
-        for _, row in backfill.iterrows():
-            match = statewide_mask & (monthly['year'] == row['year']) & (monthly['month'] == row['month'])
-            if match.any():
-                idx = monthly.index[match][0]
-                # Only backfill if current values are 0 (don't overwrite parquet-derived data)
-                if monthly.loc[idx, 'driver'] == 0:
-                    monthly.loc[idx, 'driver'] = row['driver']
-                    monthly.loc[idx, 'passenger'] = row['passenger']
-                    monthly.loc[idx, 'pedestrian'] = row['pedestrian']
-                    monthly.loc[idx, 'cyclist'] = row['cyclist']
-    except FileNotFoundError:
-        err(f"  Warning: {MONTHLY_TYPES_BACKFILL} not found, skipping backfill")
-
-    # Backfill pre-2020 county-level monthly type data from annual report PDFs
-    try:
-        county_backfill = pd.read_csv(COUNTY_MONTHLY_TYPES_BACKFILL)
-        err(f"  Backfilling {len(county_backfill)} county monthly type rows from annual report PDFs...")
-        for _, row in county_backfill.iterrows():
-            county_mask = (monthly['county'] == row['county']) & (monthly['mc'] == '')
-            match = county_mask & (monthly['year'] == row['year']) & (monthly['month'] == row['month'])
-            if match.any():
-                idx = monthly.index[match][0]
-                if monthly.loc[idx, 'driver'] == 0:
-                    monthly.loc[idx, 'driver'] = row['driver']
-                    monthly.loc[idx, 'passenger'] = row['passenger']
-                    monthly.loc[idx, 'pedestrian'] = row['pedestrian']
-                    monthly.loc[idx, 'cyclist'] = row['cyclist']
-    except FileNotFoundError:
-        err(f"  Warning: {COUNTY_MONTHLY_TYPES_BACKFILL} not found, skipping county backfill")
-
-    # Backfill municipality-level monthly type data from annual report PDFs
-    try:
-        muni_backfill = pd.read_csv(MUNI_MONTHLY_TYPES_BACKFILL)
-        err(f"  Backfilling {len(muni_backfill)} muni monthly type rows from annual report PDFs...")
-        for _, row in muni_backfill.iterrows():
-            muni_mask = (monthly['cc'] == row['cc']) & (monthly['mc'] == row['mc'])
-            match = muni_mask & (monthly['year'] == row['year']) & (monthly['month'] == row['month'])
-            if match.any():
-                idx = monthly.index[match][0]
-                if monthly.loc[idx, 'driver'] == 0:
-                    monthly.loc[idx, 'driver'] = row['driver']
-                    monthly.loc[idx, 'passenger'] = row['passenger']
-                    monthly.loc[idx, 'pedestrian'] = row['pedestrian']
-                    monthly.loc[idx, 'cyclist'] = row['cyclist']
-    except FileNotFoundError:
-        err(f"  Warning: {MUNI_MONTHLY_TYPES_BACKFILL} not found, skipping muni backfill")
 
     monthly.to_csv(monthly_path, index=False)
     err(f"  Wrote {len(monthly)} rows")
