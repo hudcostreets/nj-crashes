@@ -1,5 +1,26 @@
 # NJSP historical PDF parsing
 
+## Status (2026-04-12)
+
+**Parsing: done.** 2001-2024 per-crash PDFs all parsed into
+`www/njsp/data/annual-reports/per_crash_from_pdfs.csv` (14,418 rows).
+See `specs/done/njsp-annual-reports-parsing.md`.
+
+**Harmonization: done for 2008-2024.** `crashes.parquet` uses per-crash
+PDF types for 2008-2019 (backfilled) and XML types for 2020+. See
+`specs/done/njsp-pdf-xml-harmonization.md`.
+
+**Remaining: pre-2008 integration.** The 2001-2007 PDF crashes (~4,100
+rows) are *not yet* in `crashes.parquet`. See
+`specs/njsp-pre-2008-crashes.md` for the plan to add them. Frontend
+plot axes (`HomicidesComparisonPlot`, `FatalitiesPerYearPlot`,
+`year-type-county.csv`, etc.) would extend back to 2001 for free once
+the upstream data is added.
+
+The original plan below is kept for context.
+
+---
+
 ## Context
 
 NJSP publishes fatal crash statistics as a web page with data going back to 2008. But NJSP has published annual fatal crash reports as PDFs going back further — at least to the early 2000s, possibly earlier. These PDFs contain per-county breakdowns that would let county-level pages show longer time series (e.g. homicides-comparison plot currently starts at 2008).

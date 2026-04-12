@@ -1,5 +1,26 @@
 # NJSP municipality-level plot data
 
+## Status (2026-04-12)
+
+Phase 1 is **mostly done** — 4 of 5 CSVs now include per-muni rows:
+
+| CSV | State | County | Muni |
+|-----|-------|--------|------|
+| `monthly.csv`         | 220  | 3805 | 8989 (done) |
+| `month-year.csv`      | 220  | 3805 | 8989 (done) |
+| `ytd.csv`             | 5149 | 9851 | 10241 (done) |
+| `year-type-county.csv`|   -  |  387 |   0 (pending) |
+| `crash-homicide.csv`  |   -  |  397 |   -  (skip; homicide data is county-level) |
+
+`year-type-county.csv` is still county-only. Adding muni is trivial
+now that `crashes.parquet` has per-muni types for all years via
+harmonization (see `specs/done/njsp-pdf-xml-harmonization.md`).
+
+Phase 2 (update plot components to use muni data) and Phase 3 (UX for
+sparse muni data) are not yet started.
+
+---
+
 ## Problem
 
 On municipality pages (e.g. `/c/Hudson/Weehawken`), the 5 NJSP plots show **county-level** data because their data sources (CSV files) only have county-level aggregations. A note on the page says "NJSP fatal crash data is available at the county level" but ideally we'd show muni-level data where possible.
