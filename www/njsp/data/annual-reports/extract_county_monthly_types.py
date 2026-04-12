@@ -49,6 +49,38 @@ TYPE_PATTERNS = [
 err = lambda *a, **kw: print(*a, **kw, file=sys.stderr)
 
 
+CONT_START_RE = re.compile(
+    # Allow optional leading digit (e.g. '1PEDESTRIAN' or '1 PASSENGER').
+    r'^\s*\d*\s*(?:DRIVER|PASSENGER|PED(?:ED)?ESTRIAN|PEDAL\s*(?:CYCLIST|CYCLE)|BICYCLIST|UNKNOWN)\b',
+    re.IGNORECASE,
+)
+DATE_RE = re.compile(r'\d{2}/\d{2}/\d{4}')
+
+
+def _merge_wrapped_persons_killed(raw_lines):
+    """Fold continuation lines into the preceding crash row.
+
+    The 'Persons Killed' column sometimes wraps across two PDF lines, e.g.
+    ``"... 1 PASSENGER, 1"`` then ``"PEDESTRIAN"`` on the next line. A
+    continuation line has no date and starts with a victim-type keyword.
+    """
+    out = []
+    for raw in raw_lines:
+        s = raw.strip()
+        if (
+            out
+            and s
+            and CONT_START_RE.match(s)
+            and not DATE_RE.search(s)
+            and DATE_RE.search(out[-1])
+        ):
+            out[-1] = out[-1].rstrip() + ' ' + s
+        else:
+            out.append(raw)
+    return out
+
+
+
 def parse_persons_killed(text: str) -> dict[str, int]:
     """Parse "Persons Killed" text into type counts."""
     counts = {'driver': 0, 'passenger': 0, 'cyclist': 0, 'pedestrian': 0}
@@ -91,7 +123,7 @@ def extract_crashes_from_pdf(pdf_path: str) -> list[dict]:
             if not in_county_section:
                 continue
 
-            lines = text.split('\n')
+            lines = _merge_wrapped_persons_killed(text.split('\n'))
             for line in lines:
                 stripped = line.strip()
                 upper_line = stripped.upper()

@@ -28,6 +28,21 @@ extracts all three independently so we can triangulate.
 
 So **within the PDF, Section A and Section B are always internally consistent**.
 
+## Finding 0: XML feed agrees with the per-crash listing
+
+NJSP's XML feed (`FAUQStats*.xml`) provides one record per crash, with a
+total-killed field and (from 2020 on) per-type breakdowns. For every year
+2008 through 2024:
+
+- Annual crash count: XML = per-crash PDF rows
+- Annual fatality total: XML `tk` = sum of per-crash type counts
+- 2020+ monthly by-type: XML = Section A
+
+Where Section A disagrees with the per-crash listing (e.g. 2016-11, where
+Section A says 52 and both XML and per-crash have 51), the XML feed sides
+with the per-crash listing. The PDFs per-crash listing and the XML feed
+are effectively two views of the same underlying data.
+
 ## Finding 1: Per-crash row count matches Section B accident count (99.9% of months)
 
 For every residual year (2001–2005, 2012, 2015, 2016, 2017, 2019, 2022), the
@@ -121,20 +136,23 @@ Two residuals show both a type shift and a fatality-count change:
 
 |Year|Δ Driver|Δ Passenger|Δ Cyclist|Δ Pedestrian|Net|
 |----|--------|-----------|---------|------------|---|
-|2001| +1     | 0         | 0       | −1         | 0 |
+|2001| +1     | 0         | 0       | -1         | 0 |
 |2002| +1     | 0         | 0       | 0          |+1 |
-|2003| +2     | −1        | 0       | −2         | −1|
-|2004| +3     | −1        | 0       | 0          |+2 |
-|2005| +1     | −1        | 0       | 0          | 0 |
-|2012| 0      | 0         | 0       | −1         | −1|
-|2015| 0      | 0         | 0       | −2         | −2|
-|2016| −1     | 0         | 0       | 0          | −1|
-|2017| 0      | 0         | −1      | 0          | −1|
-|2019| 0      | 0         | 0       | −1         | −1|
-|2022| 0      | 0         | 0       | −1         | −1|
+|2003| +2     | -1        | 0       | -2         | -1|
+|2004| +3     | -1        | 0       | 0          |+2 |
+|2005| +1     | -1        | 0       | 0          | 0 |
+|2016| -1     | 0         | 0       | 0          | -1|
 
-Years not listed (2006–2011, 2013–2014, 2018, 2020–2021, 2023–2024) match
-Section A **exactly** on every type and total.
+Years not listed (2006-2015, 2017-2024) match Section A **exactly** on
+every type and total.
+
+For 2016, the XML feed corroborates the per-crash listing (51 November
+fatalities); Section A's 52 is an NJSP-side mistake.
+
+For 2001-2005, XML type data isn't available, so we can't cross-check.
+The per-crash listing's totals agree with Section A's totals each year
+(net = 0, +1, -1, +2, 0). Type reclassifications between Section A and
+the per-crash listing are internal to each PDF.
 
 Max annual |net| is 2. Sum of all 21 nonzero cells' absolute deltas = 23
 victim-type units across 24 years × ~620 annual fatalities ≈ **0.02% of
