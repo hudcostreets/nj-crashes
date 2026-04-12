@@ -52,24 +52,39 @@ For every crash count or fatality count check, the **XML feed agrees with
 the fixed per-crash listing**. Where the PDF's Section A disagrees, Section A
 is the outlier.
 
-## Proposed canonical dataset
+## Canonical dataset (implemented)
 
-Make `njsp/data/crashes.parquet` the output of a harmonization step rather
-than a direct XML dump:
+`njsp/data/crashes.parquet` is now the output of a harmonization step rather
+than a direct XML dump. See `njsp/harmonize_pdfs.py` (called from
+`njsp/cli/update_pqts.py`).
 
-1. **Load XML records** (current behavior) as the primary source.
-2. **Load per-crash PDF records** using `extract_county_monthly_types.py`.
-3. **Join on `(date, cc, mc)`** (or `(date, county, muni)` via the existing
-   `_normalize_pdf_muni` logic) and verify 1:1 correspondence.
-4. **Emit a single harmonized record per crash** with fields from both
-   sources plus a provenance column (`xml_id`, `pdf_row`) and a `_diffs`
-   column listing any field-level disagreements.
-5. **Fail the build** (or log warnings) if any crash exists in one source
-   but not the other, or if the number of diffs exceeds a small threshold.
+The harmonization joins XML records with PDF per-crash records in four
+successive passes, each relaxing the match key when the prior one can't
+pair everything:
 
-Downstream consumers (`crashes.py`, `monthly.csv`, etc.) continue to read
-`crashes.parquet` unchanged — the harmonization is an implementation
-detail.
+1. Exact `(date, cc, mc)` match with equal row count and `tk` sum.
+2. Same `(date, cc)`, different mc — handles Neptune City vs Neptune Twp
+   and similar borough/township confusion.
+3. Cross-county by muni name stem — handles PDFs that file a crash under
+   the wrong county header (e.g. "Pilesgrove Twsp" listed under Union).
+4. Same-date any-cc — handles pre-rename muni names (Mercer's Robbinsville
+   was "Washington Twp" until 2007), OCR truncations, and PDF typos.
+
+Output: a new `type_source` column records provenance:
+- `'xml'`: native XML (2020+, where `dk`/`ok`/`pk`/`bk` are in the feed)
+- `'pdf'`: backfilled from the annual-report PDFs
+- `'unresolved'`: could not be matched (currently 0 rows)
+
+For the current dataset (10,294 crashes, 2008-2026):
+- 3,758 rows use native XML types (2020+)
+- 6,536 rows use PDF-backfilled types (2008-2019)
+- 0 unresolved residuals
+
+Downstream consumers (`monthly.csv`, `ytd.csv`, `crash-homicide.csv`,
+`update_www_data.py`, etc.) read `crashes.parquet` unchanged; they now see
+types for pre-2020 crashes that previously had NA. This replaces the
+aggregate-level PDF backfill logic in `update_www_data.py` (which was only
+statewide; harmonization covers county and municipality levels too).
 
 ### Type backfill for pre-2020 crashes
 
