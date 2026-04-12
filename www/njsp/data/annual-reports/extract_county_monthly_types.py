@@ -35,10 +35,14 @@ COUNTY_NAMES = {c: c.title() for c in COUNTIES}
 COUNTY_NAMES['CAPE MAY'] = 'Cape May'
 
 # Victim type patterns in "Persons Killed" column
+# Cyclist is spelled three ways across years:
+#   2001:     PEDALCYCLE (no space)
+#   2002–05:  BICYCLIST
+#   2006+:    PEDAL CYCLIST / PEDALCYCLIST
 TYPE_PATTERNS = [
     (re.compile(r'(\d+)\s*DRIVER', re.IGNORECASE), 'driver'),
     (re.compile(r'(\d+)\s*PASSENGER', re.IGNORECASE), 'passenger'),
-    (re.compile(r'(\d+)\s*PEDAL\s*CYCLIST', re.IGNORECASE), 'cyclist'),
+    (re.compile(r'(\d+)\s*(?:PEDAL\s*(?:CYCLIST|CYCLE)|BICYCLIST)', re.IGNORECASE), 'cyclist'),
     (re.compile(r'(\d+)\s*PEDESTRIAN', re.IGNORECASE), 'pedestrian'),
 ]
 
@@ -73,7 +77,11 @@ def extract_crashes_from_pdf(pdf_path: str) -> list[dict]:
 
             # Detect start of county crash listing section
             # Must also have a county header on same page (not just TOC reference)
-            if 'FATAL CRASHES BY COUNTY' in upper and any(f'{c} COUNTY' in upper for c in COUNTIES):
+            # 2001–2005 use "FATAL ACCIDENTS BY COUNTY"; 2006+ use "FATAL CRASHES BY COUNTY"
+            if (
+                ('FATAL CRASHES BY COUNTY' in upper or 'FATAL ACCIDENTS BY COUNTY' in upper)
+                and any(f'{c} COUNTY' in upper for c in COUNTIES)
+            ):
                 in_county_section = True
 
             # Detect end (map page or end of report)
@@ -122,21 +130,17 @@ def extract_crashes_from_pdf(pdf_path: str) -> list[dict]:
                     continue
 
                 # Everything after MP (number) is "Persons Killed"
-                # Look for the victim type keywords
+                # PEDAL catches PEDALCYCLE (2001) & PEDALCYCLIST (2006+); BICYC catches BICYCLIST (2002–05).
                 persons_killed = ''
-                for typ_word in ['DRIVER', 'PASSENGER', 'PEDESTRIAN', 'PEDALCYCLIST', 'UNKNOWN']:
+                for typ_word in ['DRIVER', 'PASSENGER', 'PEDESTRIAN', 'PEDAL', 'BICYC', 'UNKNOWN']:
                     idx = upper_line.find(typ_word)
                     if idx >= 0:
-                        # Find the start of the "Persons Killed" part (look back for the count)
-                        # Search backwards from the first type word for a digit
                         search_start = max(0, idx - 5)
                         persons_killed = stripped[search_start:]
                         break
 
                 if not persons_killed:
-                    # Some rows might have just a number + type at the end
-                    # Try matching the end of line
-                    end_match = re.search(r'\d+\s+(?:DRIVER|PASSENGER|PEDESTRIAN|PEDALCYCLIST|UNKNOWN)', upper_line)
+                    end_match = re.search(r'\d+\s*(?:DRIVER|PASSENGER|PEDESTRIAN|PEDAL(?:CYCLE|CYCLIST)|BICYCLIST|UNKNOWN)', upper_line)
                     if end_match:
                         persons_killed = stripped[end_match.start():]
 
@@ -401,7 +405,11 @@ def aggregate_muni_monthly(crashes: list[dict]) -> list[dict]:
 @click.option('-y', '--year', 'years', multiple=True, type=int, help='Only process specific year(s)')
 def main(output, raw, muni, verbose, years):
     """Extract county-level monthly victim type data from NJSP annual report PDFs."""
-    pdfs = sorted(glob(str(REPORT_DIR / '*_fatal_crash*.pdf')))
+    pdfs = sorted(
+        glob(str(REPORT_DIR / '*_fatal_crash*.pdf'))
+        + glob(str(REPORT_DIR / 'fatalacc_*.pdf'))
+        + glob(str(REPORT_DIR / 'fatalcrash_*.pdf'))
+    )
     if not pdfs:
         err("No PDF files found matching *_fatal_crash*.pdf")
         sys.exit(1)

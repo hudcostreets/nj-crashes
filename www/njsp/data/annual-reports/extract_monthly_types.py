@@ -46,7 +46,9 @@ def extract_victim_table(pdf_path: str) -> list[dict]:
         for page in pdf.pages:
             text = page.extract_text() or ''
             upper = text.upper()
-            # 2008-2022: "VICTIM CLASSIFICATION BY MONTH", 2023+: "FATALITY CLASSIFICATION BY MONTH"
+            # 2001-2005: "Accident Victim Classification by Month"
+            # 2006-2022: "VICTIM CLASSIFICATION BY MONTH"
+            # 2023+:     "FATALITY CLASSIFICATION BY MONTH"
             if 'CLASSIFICATION BY MONTH' not in upper:
                 continue
 
@@ -54,15 +56,34 @@ def extract_victim_table(pdf_path: str) -> list[dict]:
             lines = text.split('\n')
             rows = []
             in_section_a = False
+            # Column order for the 4 victim types (Driver & Passenger always first two):
+            #   2001-2005: Driver Passenger Pedestrian   Pedalcyclist
+            #   2006+:     Driver Passenger Pedalcyclist Pedestrian
+            cyclist_idx, pedestrian_idx = 2, 3  # default (2006+)
             for line in lines:
                 upper_line = line.upper()
                 if 'CLASSIFICATION BY MONTH' in upper_line:
                     in_section_a = True
                     continue
-                if in_section_a and ('CRASHES AND FATALITIES' in upper_line or 'CLASSIFICATION BY COUNTY' in upper_line):
+                if in_section_a and (
+                    'CRASHES AND FATALITIES' in upper_line
+                    or 'ACCIDENTS AND FATALITIES' in upper_line
+                    or 'CLASSIFICATION BY COUNTY' in upper_line
+                ):
                     break  # Section B or C — stop
 
                 if not in_section_a:
+                    continue
+
+                # Detect column order from header (e.g. "Month Driver Passenger Pedestrian Pedalcyclist Totals")
+                if 'DRIVER' in upper_line and 'PASSENGER' in upper_line and 'TOTALS' in upper_line:
+                    ped_pos = upper_line.find('PEDESTRIAN')
+                    cyc_pos = upper_line.find('PEDAL')  # matches PEDALCYCLIST / PEDAL CYCLIST
+                    if ped_pos >= 0 and cyc_pos >= 0:
+                        if ped_pos < cyc_pos:
+                            pedestrian_idx, cyclist_idx = 2, 3
+                        else:
+                            cyclist_idx, pedestrian_idx = 2, 3
                     continue
 
                 parts = line.split()
@@ -72,14 +93,14 @@ def extract_victim_table(pdf_path: str) -> list[dict]:
                 month_name = parts[0]
                 nums = parts[1:]
 
-                # Section A has exactly 5 numbers: Driver, Passenger, Pedalcyclist, Pedestrian, Totals
+                # Section A has exactly 5 numbers: Driver, Passenger, <v3>, <v4>, Totals
                 if len(nums) != 5:
                     continue
 
                 driver = fix_corrupted_number(nums[0])
                 passenger = fix_corrupted_number(nums[1])
-                cyclist = fix_corrupted_number(nums[2])
-                pedestrian = fix_corrupted_number(nums[3])
+                cyclist = fix_corrupted_number(nums[cyclist_idx])
+                pedestrian = fix_corrupted_number(nums[pedestrian_idx])
                 total = int(nums[4])
 
                 computed = driver + passenger + cyclist + pedestrian
