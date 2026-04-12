@@ -100,6 +100,9 @@ def backfill(
     snapshot of ≈3000 crashes from 2020–20250322.
     """
     c = read_parquet(CRASHES_PQT)
+    # PDF-only rows (pre-2008) lack XML provenance and time-of-day; skip them.
+    if 'type_source' in c.columns:
+        c = c[c['type_source'] != 'pdf-only']
     c['CNAME'] = c.cc.map(cc2cn)
     c['MNAME'] = c.apply(lambda r: cc2mc2mn[r.cc].mc2mn[r.mc], axis=1)
     c = c.rename(columns=RENAMES)

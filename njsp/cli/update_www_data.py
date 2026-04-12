@@ -217,7 +217,23 @@ def update_www_data(force):
     month_year.to_csv(month_year_path, index=False)
     err(f"  Wrote {len(month_year)} rows")
 
-    # 4. Crash-homicide comparison (NJSP + NJDOT traffic deaths vs UCR homicides)
+    # 4. year-type-county: per-year, per-county fatality breakdown by victim type
+    ytc_path = join(WWW_NJSP, 'year-type-county.csv')
+    err(f"Generating {ytc_path}...")
+    ytc = (
+        crashes[crashes['county'] != '']
+        .groupby(['year', 'county'])
+        .agg(driver=('driver', 'sum'),
+             passenger=('passenger', 'sum'),
+             cyclist=('cyclist', 'sum'),
+             pedestrian=('pedestrian', 'sum'),
+             crashes=('year', 'size'))
+        .reset_index()
+    )
+    ytc.to_csv(ytc_path, index=False)
+    err(f"  Wrote {len(ytc)} rows")
+
+    # 5. Crash-homicide comparison (NJSP + NJDOT traffic deaths vs UCR homicides)
     crash_homicide_path = join(WWW_NJSP, 'crash-homicide.csv')
     err(f"Generating {crash_homicide_path}...")
     try:

@@ -111,13 +111,22 @@ def update_pqts(replace_db, sync_s3):
     # Harmonize XML records with PDF per-crash listings: backfill pre-2020
     # dk/ok/pk/bk from the annual-report PDFs, add a `type_source` column,
     # and surface any rows that could not be matched.
-    from njsp.harmonize_pdfs import harmonize
+    from njsp.harmonize_pdfs import harmonize, load_pre_xml_crashes
     crashes, residuals = harmonize(crashes)
     if len(residuals):
         err(f"WARNING: {len(residuals)} unresolved harmonization rows:")
         err(residuals.to_string(index=False))
     else:
         err("Harmonization: all pre-2020 crashes backfilled from PDFs (0 residuals)")
+
+    # Extend with pre-XML PDF-only crashes (2001-2007). IDs start past the
+    # existing XML-derived max to avoid collisions.
+    earliest_xml_year = int(crashes.dt.dt.year.min())
+    pre_xml = load_pre_xml_crashes(earliest_xml_year)
+    id_start = int(crashes.index.max()) + 1
+    pre_xml.index = pd.RangeIndex(id_start, id_start + len(pre_xml), name='id').astype('int16')
+    crashes = pd.concat([pre_xml, crashes]).sort_values('dt')
+    err(f"Added {len(pre_xml)} pre-XML PDF-only crashes ({int(pre_xml.dt.dt.year.min())}-{earliest_xml_year - 1})")
 
     # ### Save to file
 

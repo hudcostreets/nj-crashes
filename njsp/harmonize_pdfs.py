@@ -199,6 +199,45 @@ def harmonize(xml: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     return out, pd.DataFrame(residuals)
 
 
+def load_pre_xml_crashes(
+        earliest_xml_year: int,
+        tz: str = 'US/Eastern',
+) -> pd.DataFrame:
+    """Load PDF-only crashes (pre-XML-era) matching `crashes.parquet` schema.
+
+    Returns rows for years < earliest_xml_year with columns:
+      cc, mc, dt, tk, ti, dk, ok, pk, bk, location, street, highway, type_source
+    and `type_source` set to 'pdf-only'. Rows missing mc are dropped (the
+    PDF parser couldn't resolve their municipality).
+    """
+    pdf = load_pdf_crashes()
+    pdf = pdf[pdf['year'] < earliest_xml_year].copy()
+    unresolved = pdf['mc'].isna().sum()
+    if unresolved:
+        from nj_crashes.utils.log import err
+        err(f"pre-2008 PDF crashes: dropping {unresolved} rows with unresolved mc")
+    pdf = pdf[pdf['mc'].notna()].copy()
+
+    dt = pd.to_datetime(pdf['date']).dt.tz_localize(tz)
+    tk = pdf[['driver', 'passenger', 'pedestrian', 'cyclist']].sum(axis=1)
+    out = pd.DataFrame({
+        'cc': pdf['cc'].astype('int8'),
+        'mc': pdf['mc'].astype('int8'),
+        'dt': dt,
+        'tk': tk.astype('Int8'),
+        'ti': pd.Series(pd.NA, index=pdf.index, dtype='Int8'),
+        'dk': pdf['driver'].astype('Int8'),
+        'ok': pdf['passenger'].astype('Int8'),
+        'pk': pdf['pedestrian'].astype('Int8'),
+        'bk': pdf['cyclist'].astype('Int8'),
+        'location': pd.Series(pd.NA, index=pdf.index, dtype='object'),
+        'street': pd.Series(pd.NA, index=pdf.index, dtype='object'),
+        'highway': pd.Series(pd.NA, index=pdf.index, dtype='object'),
+        'type_source': pd.Series('pdf-only', index=pdf.index, dtype='string'),
+    })
+    return out
+
+
 def _match_group(xg, pg, filled, claimed_xml_idx, claimed_pdf_idx):
     """Pair up rows in two groups of equal length and equal tk sum."""
     xg_sorted = xg.sort_values('tk', ascending=False)
