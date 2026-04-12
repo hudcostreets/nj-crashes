@@ -129,17 +129,21 @@ def extract_crashes_from_pdf(pdf_path: str) -> list[dict]:
                 except (ValueError, IndexError):
                     continue
 
-                # Everything after MP (number) is "Persons Killed"
-                # PEDAL catches PEDALCYCLE (2001) & PEDALCYCLIST (2006+); BICYC catches BICYCLIST (2002–05).
-                persons_killed = ''
-                for typ_word in ['DRIVER', 'PASSENGER', 'PEDESTRIAN', 'PEDAL', 'BICYC', 'UNKNOWN']:
-                    idx = upper_line.find(typ_word)
-                    if idx >= 0:
-                        search_start = max(0, idx - 5)
-                        persons_killed = stripped[search_start:]
-                        break
-
-                if not persons_killed:
+                # Everything after MP (number) is "Persons Killed".
+                # PEDAL covers PEDALCYCLE (2001) and PEDALCYCLIST (2006+);
+                # BICYC covers BICYCLIST (2002-2005).
+                # Use the EARLIEST victim-type token so rows like
+                # "1 PASSENGER, 1 DRIVER" don't get truncated after "DRIVER".
+                positions = [
+                    upper_line.find(w)
+                    for w in ('DRIVER', 'PASSENGER', 'PEDESTRIAN', 'PEDAL', 'BICYC', 'UNKNOWN')
+                ]
+                positions = [p for p in positions if p >= 0]
+                if positions:
+                    search_start = max(0, min(positions) - 5)
+                    persons_killed = stripped[search_start:]
+                else:
+                    persons_killed = ''
                     end_match = re.search(r'\d+\s*(?:DRIVER|PASSENGER|PEDESTRIAN|PEDAL(?:CYCLE|CYCLIST)|BICYCLIST|UNKNOWN)', upper_line)
                     if end_match:
                         persons_killed = stripped[end_match.start():]
