@@ -7,4 +7,4 @@ meta:
   computation:
     cmd: njsp crash_log compute -a njsp/data/crash-log.parquet -i -v
     deps:
-      crashes.parquet: a5bd221a32d64e57d35ca6d10c2160d4
+      crashes.parquet: e9799868d9114846a7052100454cde51
