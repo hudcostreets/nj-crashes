@@ -108,6 +108,17 @@ def update_pqts(replace_db, sync_s3):
     if not njsp_diffs.empty:
         raise RuntimeError(f"NJSP totals don't match crash records:\n{njsp_diffs}")
 
+    # Harmonize XML records with PDF per-crash listings: backfill pre-2020
+    # dk/ok/pk/bk from the annual-report PDFs, add a `type_source` column,
+    # and surface any rows that could not be matched.
+    from njsp.harmonize_pdfs import harmonize
+    crashes, residuals = harmonize(crashes)
+    if len(residuals):
+        err(f"WARNING: {len(residuals)} unresolved harmonization rows:")
+        err(residuals.to_string(index=False))
+    else:
+        err("Harmonization: all pre-2020 crashes backfilled from PDFs (0 residuals)")
+
     # ### Save to file
 
     from njsp.paths import CRASHES_DB, CRASHES_DB_URI
