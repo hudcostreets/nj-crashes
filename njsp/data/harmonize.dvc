@@ -2,4 +2,4 @@ meta:
   computation:
     cmd: njsp harmonize_muni_codes
     deps:
-      crashes.parquet: 00000000000000000000000000000000
+      crashes.parquet: 7471d4ecfbcd084edeb18d391e987458
