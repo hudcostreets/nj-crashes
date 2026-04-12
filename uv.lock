@@ -1053,8 +1053,8 @@ wheels = [
 
 [[package]]
 name = "dvx"
-version = "0.3.1.dev35+gadf4989d7"
-source = { git = "https://github.com/runsascoded/dvx?rev=adf4989d7#adf4989d73c3672f3a83cd8ad63c67784d8d511f" }
+version = "0.3.1.dev42+g3dadb9df2"
+source = { git = "https://github.com/runsascoded/dvx?rev=3dadb9df2#3dadb9df287ea0a41551f50dc1d0d17d268228cb" }
 dependencies = [
     { name = "click" },
     { name = "dffs" },
@@ -2450,7 +2450,7 @@ requires-dist = [
     { name = "dask", specifier = ">=2024" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "dvc", extras = ["s3"], specifier = ">=3.59" },
-    { name = "dvx", git = "https://github.com/runsascoded/dvx?rev=adf4989d7" },
+    { name = "dvx", git = "https://github.com/runsascoded/dvx?rev=3dadb9df2" },
     { name = "geopandas", specifier = ">=1.0" },
     { name = "geopy", specifier = ">=2.4" },
     { name = "gitpython", specifier = ">=3.1" },
@@ -2480,7 +2480,7 @@ requires-dist = [
     { name = "sqlalchemy", specifier = ">=2.0" },
     { name = "stdlb", marker = "extra == 'slack'", specifier = ">=0.0.4" },
     { name = "tabula-py", specifier = ">=2.10" },
-    { name = "thrds", git = "https://github.com/runsascoded/thrds?rev=eb392c9" },
+    { name = "thrds", git = "https://github.com/runsascoded/thrds?rev=a14fff0" },
     { name = "utz", specifier = ">=0.21" },
 ]
 provides-extras = ["bsky", "slack"]
@@ -4200,8 +4200,8 @@ wheels = [
 
 [[package]]
 name = "thrds"
-version = "0.1.0"
-source = { git = "https://github.com/runsascoded/thrds?rev=eb392c9#eb392c926b397204d21f27821b23e83a44b10242" }
+version = "0.2.0"
+source = { git = "https://github.com/runsascoded/thrds?rev=a14fff0#a14fff0d7838d61aea01a1de766cd17d6542f148" }
 
 [[package]]
 name = "tinycss2"
