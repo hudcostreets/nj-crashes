@@ -333,7 +333,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                     gridcolor: plotColors.gridColor,
                     automargin: true,
                     tickangle: -45,
-                    tick0: "2008-01-01",
+                    tick0: "2001-01-01",
                     dtick: "M12",
                     tickformat: "'%y",
                     hoverformat: "%b '%y",
@@ -548,10 +548,10 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 gridcolor: plotColors.gridColor,
                 tickangle: -45,  // Slant from LL to UR
                 automargin: true,
-                // Show all years from 2008 to current (including empty years)
-                range: [2007.5, curYear + 0.5],
-                tickvals: Array.from({ length: curYear - 2007 }, (_, i) => 2008 + i),
-                ticktext: Array.from({ length: curYear - 2007 }, (_, i) => `'${String(2008 + i).slice(2)}`),
+                // Show all years from 2001 to current (including empty years)
+                range: [2000.5, curYear + 0.5],
+                tickvals: Array.from({ length: curYear - 2000 }, (_, i) => 2001 + i),
+                ticktext: Array.from({ length: curYear - 2000 }, (_, i) => `'${String(2001 + i).slice(2)}`),
             },
             yaxis: {
                 fixedrange: true,
@@ -617,7 +617,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             <h2 id={id}>
                 <a href={`#${id}`}>Car Crash Deaths</a>
             </h2>
-            <div className={css.subtitle}>Fatalities, 2008–present{regionLabel ? ` · ${regionLabel}` : initialCounty ? ` · ${initialCounty} County` : ''}</div>
+            <div className={css.subtitle}>Fatalities, 2001–present{regionLabel ? ` · ${regionLabel}` : initialCounty ? ` · ${initialCounty} County` : ''}</div>
             <PlotWrapper
                 key={`${timeGranularity}-${activeType ?? 'all'}-${highlightProjected}`}
                 id={id}

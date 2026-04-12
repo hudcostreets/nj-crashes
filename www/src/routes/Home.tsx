@@ -102,7 +102,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                 {!regionLabel && (
                     <p>
                         Data analysis and visualization from two NJ sources:{" "}
-                        <A title="NJ State Police fatal crash data" href={NjspFatalAcc}>NJ State Police</A> (fatal crashes, 2008-present, updated daily) and{" "}
+                        <A title="NJ State Police fatal crash data" href={NjspFatalAcc}>NJ State Police</A> (fatal crashes, 2001-present, updated daily) and{" "}
                         <A title="NJ DOT raw crash data" href={NjdotRawData}>NJ DOT</A> (all crashes including property-damage and injury, 2001-{EndYear}).
                     </p>
                 )}
@@ -116,7 +116,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
 
                 {/* NJSP Fatal Crashes Table */}
                 <h2 id="njsp-crashes"><a href="#njsp-crashes">Recent Fatal Crashes</a></h2>
-                <div className={css.subtitle}>Fatal crashes, 2008–present{geo} <PlotInfo source="njsp" showLegendHint={false} /></div>
+                <div className={css.subtitle}>Fatal crashes, 2001–present{geo} <PlotInfo source="njsp" showLegendHint={false} /></div>
                 <LazySection placeholder={<p>Loading crash data...</p>}>
                     <NjspCrashesSection key={`njsp-${cc}-${mc}`} />
                 </LazySection>

@@ -411,7 +411,7 @@ export function Plot({
                     const yearMatch = originalName.match(/^20\d{2}$/)
                     if (yearMatch) {
                         const year = parseInt(yearMatch[0])
-                        const minYear = 2008, maxYear = 2026
+                        const minYear = 2001, maxYear = 2026
                         const t = (year - minYear) / (maxYear - minYear)
                         traceColor = getColorAt(colorScale, t)
                     } else {
@@ -478,11 +478,11 @@ export function Plot({
         if (!color) return color
         const lower = color.toLowerCase()
 
-        // Year traces (2008-2026): Apply selected colorscale
+        // Year traces (2001-2026): Apply selected colorscale
         const yearMatch = traceName?.match(/^20\d{2}$/)
         if (yearMatch) {
             const year = parseInt(yearMatch[0])
-            const minYear = 2008, maxYear = 2026
+            const minYear = 2001, maxYear = 2026
             // t=0 for oldest year (dark), t=1 for newest (bright) - chronological order
             const t = (year - minYear) / (maxYear - minYear)
             return getColorAt(colorScale, t)

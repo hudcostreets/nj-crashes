@@ -221,7 +221,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, height: p
     }
 
     const region = county ? `${county} County` : 'NJ'
-    const minYear = rows.length ? rows[0].year : 2008
+    const minYear = rows.length ? rows[0].year : 2001
     const maxYear = rows.length ? rows[rows.length - 1].year : 2024
     const sourceLabel = effectiveSource === 'njsp' ? 'NJSP' : 'NJ DOT'
 
@@ -244,7 +244,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, height: p
                         <button
                             className={crashSource === 'njsp' ? css.active : ''}
                             onClick={() => setCrashSource('njsp')}
-                        >NJSP ('08–'24)</button>
+                        >NJSP ('01–'24)</button>
                         <button
                             className={crashSource === 'njdot' ? css.active : ''}
                             onClick={() => setCrashSource('njdot')}

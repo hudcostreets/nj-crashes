@@ -136,7 +136,7 @@ export function FatalitiesPerMonthPlot({ id = "per-month", county, cc = null, mc
                 gridcolor: plotColors.gridColor,
                 automargin: true,
                 tickangle: -45,
-                tick0: "2008-01-01",
+                tick0: "2001-01-01",
                 dtick: "M12",
                 tickformat: "'%y",
                 hoverformat: "%b '%y",
@@ -171,7 +171,7 @@ export function FatalitiesPerMonthPlot({ id = "per-month", county, cc = null, mc
     return (
         <div>
             <h2 id={id}><a href={`#${id}`}>Fatalities per Month</a></h2>
-            <div className={css.subtitle}>Fatalities, 2008–present{regionLabel ? ` · ${regionLabel}` : county ? ` · ${county} County` : ''}</div>
+            <div className={css.subtitle}>Fatalities, 2001–present{regionLabel ? ` · ${regionLabel}` : county ? ` · ${county} County` : ''}</div>
             <PlotWrapper
                 id={id}
                 data={data}
