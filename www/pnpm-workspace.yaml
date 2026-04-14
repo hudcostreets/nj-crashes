@@ -1,6 +1,3 @@
-packages:
-  - .
-
 ignoredBuiltDependencies:
   - '@fortawesome/fontawesome-common-types'
   - '@fortawesome/fontawesome-svg-core'
