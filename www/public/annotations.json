@@ -1,0 +1,16 @@
+[
+  {
+    "id": "alpine-palisades-ipw-gap",
+    "title": "NJDOT crashes under-reported 2013-2018",
+    "body": "Route 445 (Palisades Interstate Parkway) runs along Alpine's eastern border, and crashes on it are typically assigned to Alpine municipality. From 2013-2018, the Palisades Interstate Parkway Police Department stopped filing crash reports with NJDOT — Route 445 crashes dropped from 134/year in 2012 to 1/year during 2013-2018, then returned to 230/year from 2019. This means Alpine's NJDOT crash counts for 2013-2018 under-report actual crashes by roughly 75%. NJSP fatal-crash data is not affected.",
+    "applies_to": {
+      "geo": { "cc": 2, "mc": 2 },
+      "pages": ["njdot-crash-plot", "annual-stats-table"],
+      "year_range": [2013, 2018],
+      "data_source": "njdot"
+    },
+    "severity": "warning",
+    "authored": { "author": "rw", "date": "2026-04-12" },
+    "refs": []
+  }
+]

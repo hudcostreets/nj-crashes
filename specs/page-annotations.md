@@ -54,18 +54,34 @@ Alternative: a single `annotations.yml` indexed by geo/page. Smaller
 footprint, easier to diff; fine while the list is <~200 entries.
 Default to the single-file approach and split later if needed.
 
-### Rendering
+### Rendering — a zoo of anchor/display kinds
 
-Three surfaces:
+Annotations range from "flat bullet of text pinned to a geo" up to
+"fully custom React component that draws interactive overlays." Rather
+than pick one abstraction, the system supports a small fixed set of
+**kinds**, each with a known renderer. Every annotation declares its
+`kind`; the flat-data kinds cover the UGC / crowdsourced-comment use
+case, and the `custom` kind is an escape hatch for irreducibly
+bespoke visuals.
 
-1. **Inline plot annotation**: a small "!" badge near the plot title
-   (like `PlotInfo`) that expands into the note; optionally a shaded
-   region on the x-axis for the affected `year_range`.
-2. **Banner above the page/section**: when ≥1 annotation with
-   `severity: warning` applies to the current geo, show a dismissable
-   banner at the top of the crash sections.
-3. **Dedicated "Notes" section** on muni/county pages: list all
-   annotations that apply to this geo, sorted by date.
+| kind | declared fields | renderer behavior |
+|------|----------------|-------------------|
+| `panel` | `title`, `body`, `refs` | Section-level banner (the original design). Sits above the relevant plot/table. |
+| `plot-range-shade` | `title`, `body`, `year_range` | Shade the plot's x-range; warning icon pinned at upper-right; hover for tooltip with title/summary; optional "notes" icon below plot opens full panel. **This is what Alpine uses.** |
+| `plot-point-marker` | `title`, `body`, `x_value` | Single annotation arrow + callout at a specific x-value (e.g. "this spike coincides with <event>"). |
+| `plot-series-caption` | `title`, `body`, `series_match` | Caption attached to a specific trace name / stack segment (e.g. "this category was introduced in 2012"). Rendered near the legend entry. |
+| `custom` | `component: string`, arbitrary `props: object` | Looks up `component` in a registry of React components; renders it with `props`. Lets us ship truly bespoke visuals (e.g. HBT's bus-lane-capacity overlay) without inventing new kinds for every one-off. |
+
+All kinds share the `applies_to` (geo/pages/data_source) and `severity`
+fields, so the targeting logic is common; only the render is kind-
+specific.
+
+**UGC / comments**: the flat-data kinds (`panel`, `plot-range-shade`,
+`plot-point-marker`, `plot-series-caption`) are all authorable via
+the crowdsourced-edit flow in `specs/crowdsourced-edits.md`. The
+`custom` kind requires a code change (new component registered) — not
+something a reader can submit via form. That's fine: `custom` is rare
+and treated as developer-only.
 
 Annotations are inherently subjective. Rendering respects both
 `severity` and plot scale:
@@ -99,16 +115,30 @@ external sources / mirror across media" pattern.
 
 ## Plan
 
-### Phase 1: single-geo annotation, hard-rendered
+### Phase 1: single-geo annotation, hard-rendered (done 2026-04-12)
 
-1. Define the YAML schema (typed via TS types in
-   `www/src/annotations/types.ts`).
-2. Build `AnnotationsProvider` that loads `annotations.yml` once.
-3. Build `<Annotation>` component: badge + expandable note.
-4. Seed with the Alpine 2013-2018 entry. Render on the muni page
-   near `CrashPlot` and the crash table.
-5. Verify: visiting `/c/bergen/alpine` shows the badge; visiting
-   `/c/bergen` doesn't.
+1. ✅ JSON schema + TS types in `www/src/annotations/types.ts`.
+   (YAML deferred until we add a yaml parser dep.)
+2. ✅ `useAnnotations({ page, cc, mc })` hook loading
+   `www/public/annotations.json` once and filtering by geo+page.
+3. ✅ `<Annotation>` / `<AnnotationsPanel>` components (kind=`panel`).
+4. ✅ `plot.ts`: `toPlotLayers()` producing Plotly `shapes` +
+   `annotations` for `plot-range-shade`. Integrated into `CrashPlot`.
+5. ✅ Alpine 2013-2018 seed entry: reddish tint across 2013-2018 bars
+   with ⚠ icon pinned upper-right of the shaded band; hover for
+   tooltip.
+6. ✅ Verified on `/c/bergen/alpine` (shape present); not on
+   `/c/bergen` (shape absent).
+
+Follow-ups from phase 1:
+- Hover zone currently only on the ⚠ icon, not the full shaded
+  region. Full-region hover needs an invisible scatter-marker trace
+  spanning the x-range; add when we have a second example.
+- Add a footer icon below the plot (next to `ControlsGear` or
+  symmetric lower-right) that re-opens the full panel-style note.
+- Currently the `panel` renderer is only wired into the crashes
+  table below the plot. Decide whether to keep both panel+shade or
+  only shade.
 
 ### Phase 2: more annotations + bulk UX
 

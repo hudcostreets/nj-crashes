@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react"
+import { useEffect, useMemo, useState, useCallback, useRef } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import { EndYear, StartYear } from "@/src/constants"
 import type { Layout, PlotData } from "plotly.js"
@@ -22,6 +22,9 @@ import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { Tooltip } from "@/src/tooltip"
 import { ControlsGear } from "@/src/components/ControlsGear"
 import css from "./controls.module.css"
+import { useAnnotations } from "@/src/annotations/useAnnotations"
+import { toPlotLayers, yearInAnyRange } from "@/src/annotations/plot"
+import { AnnotationTrigger, AnnotationBody, useAnnotationOpenState } from "@/src/annotations/AnnotationDetails"
 
 type CrashPlotProps = {
     /** Stack by dimension */
@@ -77,6 +80,33 @@ export default function CrashPlot({
     const { cc2mc2mn } = useGeoFilter()
     const hasMuniFilter = mc !== null
     const isSingleCounty = counties.length === 1
+    const annotationCc = isSingleCounty ? counties[0] : null
+    const plotAnnotations = useAnnotations({ page: 'njdot-crash-plot', cc: annotationCc, mc })
+    const [barHovered, setBarHovered] = useState(false)
+    const annOpen = useAnnotationOpenState(barHovered)
+    // Debounce unhover — when the cursor crosses between stacked bar segments,
+    // Plotly fires unhover then hover back-to-back, which would otherwise cause
+    // the annotation body to flicker closed-then-open.
+    const unhoverTimerRef = useRef<number | null>(null)
+
+    const handleHover = useCallback((ev: { points?: Array<{ x: number | string }> }) => {
+        if (unhoverTimerRef.current !== null) {
+            clearTimeout(unhoverTimerRef.current)
+            unhoverTimerRef.current = null
+        }
+        if (!plotAnnotations.length) return
+        const x = ev.points?.[0]?.x
+        const year = typeof x === 'number' ? x : typeof x === 'string' ? parseInt(x) : NaN
+        if (isFinite(year)) setBarHovered(yearInAnyRange(plotAnnotations, year))
+    }, [plotAnnotations])
+
+    const handleUnhover = useCallback(() => {
+        if (unhoverTimerRef.current !== null) clearTimeout(unhoverTimerRef.current)
+        unhoverTimerRef.current = window.setTimeout(() => {
+            setBarHovered(false)
+            unhoverTimerRef.current = null
+        }, 150)
+    }, [])
 
     // Municipality multi-select for county-level pages
     const mc2mn = isSingleCounty && cc2mc2mn?.[counties[0]]?.mc2mn || null
@@ -395,8 +425,11 @@ export default function CrashPlot({
             }
         }
 
+        // Inject page-annotation shapes/icons (e.g. shade years with known data gaps)
+        const { shapes: annShapes, annotations: annTextEls } = toPlotLayers(plotAnnotations)
+
         // Compute totals for annotations (only when few enough bars to label, not in percentage mode)
-        const annotations: Layout['annotations'] = []
+        const annotations: Layout['annotations'] = [...annTextEls]
         // Count unique x values to determine if we should annotate
         const uniqueXValues = new Set(traces.flatMap(t => t.x as (string | number)[] || []))
         const shouldAnnotate = !stackPercent && activeTrace === null && uniqueXValues.size <= 30
@@ -469,16 +502,21 @@ export default function CrashPlot({
             },
             hovermode: 'x unified',
             hoverlabel: {
-                bgcolor: plotColors.legendBg,
+                bgcolor: isDark ? 'rgba(20, 22, 34, 0.98)' : 'rgba(252, 252, 255, 0.98)',
                 bordercolor: plotColors.gridColor,
-                font: { color: plotColors.textColor },
+                font: { color: plotColors.textColor, size: 13, family: 'system-ui, sans-serif' },
+                align: 'left',
             },
             paper_bgcolor: plotColors.paperBg,
             plot_bgcolor: plotColors.plotBg,
             annotations,
+            shapes: annShapes,
         }
 
-        // Solo mode: when a trace is active (hovered/pinned), hide all others
+        // Solo mode: when a trace is click-pinned as active, hide others. This
+        // is the "solo" behavior — only fires on click (hover uses pltly's
+        // built-in opacity fade; the no-flicker fix is `boldWeight="normal"`
+        // passed to PlotWrapper, which stops legend text from reflowing).
         if (activeTrace) {
             for (const trace of traces) {
                 const isActive = trace.name === activeTrace || trace.legendgroup === activeTrace
@@ -487,7 +525,7 @@ export default function CrashPlot({
         }
 
         return { traces, layout }
-    }, [data, effectiveStackBy, severities, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors, isDark, cc2mc2mn])
+    }, [data, effectiveStackBy, severities, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors, isDark, cc2mc2mn, plotAnnotations])
 
     // Check if we're waiting for county data (need ymccs but have yms)
     const waitingForCountyData = needsCountyData && data && data.length > 0 && !('cc' in data[0])
@@ -537,12 +575,21 @@ export default function CrashPlot({
                         data={traces as PlotData[]}
                         layout={layout}
                         onActiveTrace={setActiveTrace}
+                        onHover={handleHover}
+                        onUnhover={handleUnhover}
                         disableFade
+                        boldWeight="normal"
                     />
                 )}
             </div>
             {showControls && (
-                <ControlsGear open={controlsOpen} onToggle={setControlsOpen} contentClassName={css.controlsContent} inlineWithLegend>
+                <ControlsGear
+                    open={controlsOpen}
+                    onToggle={setControlsOpen}
+                    contentClassName={css.controlsContent}
+                    inlineWithLegend
+                    extra={<AnnotationTrigger annotations={plotAnnotations} state={annOpen} />}
+                >
                     <Radios
                         label="Stack By"
                         name="stackBy"
@@ -615,6 +662,7 @@ export default function CrashPlot({
                     </div>
                 </ControlsGear>
             )}
+            <AnnotationBody annotations={plotAnnotations} state={annOpen} />
             {timing && (
                 <div className={css.plotInfo}>
                     Loaded {data?.length.toLocaleString()} rows in {timing.totalMs.toFixed(0)}ms

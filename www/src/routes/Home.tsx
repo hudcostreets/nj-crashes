@@ -23,6 +23,7 @@ import { NjspCrashesSection } from "@/src/tables/NjspCrashesSection"
 import { NjdotCrashesSection } from "@/src/tables/NjdotCrashesSection"
 import { LazySection } from "@/src/components/LazySection"
 import { PlotInfo } from "@/src/icons"
+import { useEffect } from "react"
 import { ResetSoloProvider, useResetAllSolo } from "@/src/lib/ResetSoloContext"
 
 export default function Home() {
@@ -76,16 +77,23 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
 }) {
     const resetAll = useResetAllSolo()
 
-    const handleMainClick = (e: React.MouseEvent) => {
-        const target = e.target as Element
-        // Don't reset if clicking interactive elements
-        if (target.closest('.legend .traces')) return
-        if (target.closest('.trace')) return
-        if (target.closest('button, a, select, input, label')) return
-        if (target.closest('[class*="iconLegend"]')) return
-        if (target.closest('[class*="controlsContent"]')) return
-        resetAll()
-    }
+    // Document-level click listener so empty page margins (outside the
+    // centered `.container`) also reset. Exclude interactive areas.
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            const target = e.target as Element | null
+            if (!target) return
+            if (target.closest('.legend .traces')) return
+            if (target.closest('.trace')) return
+            if (target.closest('button, a, select, input, label, summary')) return
+            if (target.closest('[class*="iconLegend"]')) return
+            if (target.closest('[class*="controlsContent"]')) return
+            if (target.closest('[class*="bodyPanel"]')) return
+            resetAll()
+        }
+        document.addEventListener('click', handler)
+        return () => document.removeEventListener('click', handler)
+    }, [resetAll])
 
     return (
         <div className={css.container}>
@@ -96,7 +104,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                 thumbnail={`${url}/og.png`}
             />
 
-            <main className={css.index} onClick={handleMainClick}>
+            <main className={css.index}>
                 <GeoNavBar />
                 <h1 className={css.title}>{regionLabel ? `${regionLabel} Crash Data` : "NJ Car Crash Data"}</h1>
                 {!regionLabel && (

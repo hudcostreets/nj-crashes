@@ -1,0 +1,142 @@
+/* --- Compact inline trigger (sits next to gear) --- */
+
+.trigger {
+    --accent: #e07070;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 2px 5px;
+    cursor: pointer;
+    font: inherit;
+    color: var(--accent);
+    line-height: 1;
+    font-size: 1.15em;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    position: relative;
+}
+
+.trigger.caveat { --accent: #dab270; }
+.trigger.info { --accent: #7aa5e0; }
+
+.trigger:hover,
+.trigger.open {
+    background: rgba(216, 96, 96, 0.14);
+    border-color: rgba(216, 96, 96, 0.45);
+}
+
+.trigger.caveat:hover,
+.trigger.caveat.open {
+    background: rgba(216, 176, 96, 0.14);
+    border-color: rgba(216, 176, 96, 0.45);
+}
+
+.trigger.info:hover,
+.trigger.info.open {
+    background: rgba(96, 144, 216, 0.14);
+    border-color: rgba(96, 144, 216, 0.45);
+}
+
+.triggerIcon {
+    display: inline-block;
+}
+
+.triggerChevron {
+    display: inline-block;
+    font-size: 1.1em;
+    line-height: 1;
+    opacity: 0.85;
+    color: var(--accent);
+    margin-left: 1px;
+    transition: font-size 0.1s ease, opacity 0.1s ease;
+}
+
+/* When pinned, the chevron itself gets beefier — serves as the "locked open"
+ * indicator so we don't need a separate pin dot. */
+.trigger.pinned .triggerChevron {
+    font-size: 1.3em;
+    opacity: 1;
+    text-shadow: 0 0 4px var(--accent);
+}
+
+/* --- Body panel (below plot/table, full width, only when open) --- */
+
+.bodyWrap {
+    margin: 0.4rem 0 1rem;
+}
+
+.bodyPanel {
+    --accent: #c06060;
+    --accent-bg: rgba(216, 96, 96, 0.12);
+    border: 1px solid rgba(216, 96, 96, 0.45);
+    background: var(--accent-bg);
+    border-radius: 4px;
+}
+
+.bodyPanel.caveat {
+    --accent: #c8a050;
+    --accent-bg: rgba(216, 176, 96, 0.12);
+    border-color: rgba(216, 176, 96, 0.45);
+}
+
+.bodyPanel.info {
+    --accent: #6090d8;
+    --accent-bg: rgba(96, 144, 216, 0.12);
+    border-color: rgba(96, 144, 216, 0.45);
+}
+
+.bodyHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.85rem 0.25rem;
+    font-weight: 600;
+}
+
+.bodyIcon {
+    color: var(--accent);
+    font-size: 1.1em;
+}
+
+.bodyTitle {
+    flex: 1;
+}
+
+.bodyUnpin {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    opacity: 0.6;
+    cursor: pointer;
+    font-size: 0.85em;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.bodyUnpin:hover {
+    background: rgba(255, 255, 255, 0.08);
+    opacity: 1;
+}
+
+.bodyText {
+    padding: 0 0.85rem 0.7rem;
+    line-height: 1.55;
+    font-size: 0.94rem;
+}
+
+.bodyText p {
+    margin: 0.3rem 0;
+}
+
+.bodyRefs {
+    margin: 0.4rem 0;
+    padding-left: 1.2rem;
+    font-size: 0.88em;
+}
+
+.bodyMeta {
+    margin-top: 0.4rem;
+    font-size: 0.78em;
+    opacity: 0.6;
+}

@@ -4,6 +4,9 @@ import { useYearStats, ColTitles, YearStatsDicts, YearStatsDict } from "@/src/us
 import { Tooltip } from "@/src/tooltip"
 import { fold } from "fp-ts/Either"
 import { o2a } from "@rdub/base/objs"
+import { useAnnotations } from "@/src/annotations/useAnnotations"
+import type { Annotation } from "@/src/annotations/types"
+import { AnnotationBody, AnnotationTrigger, useAnnotationOpenState } from "@/src/annotations/AnnotationDetails"
 import css from "./year-stats.module.scss"
 
 type YearRow = {
@@ -47,7 +50,34 @@ const columns: { label: string, value: (d: YearStatsDict) => number, tooltip?: s
     { label: "Other Reported Injuries", value: d => d.pi, tooltip: ColTitles["Other Reported Injuries"] },
 ]
 
-function YearStatsTable({ ysds }: { ysds: YearStatsDicts }) {
+function annotationForYear(anns: Annotation[], year: number): Annotation | null {
+    for (const a of anns) {
+        const yr = a.applies_to.year_range
+        if (!yr) continue
+        if (year >= yr[0] && year <= yr[1]) return a
+    }
+    return null
+}
+
+function YearStatsTable({ ysds, annotations }: { ysds: YearStatsDicts; annotations: Annotation[] }) {
+    const [rowHovered, setRowHovered] = useState(false)
+    const annOpen = useAnnotationOpenState(rowHovered)
+    const rowUnhoverTimer = useRef<number | null>(null)
+    const setRowHoveredDebounced = useCallback((v: boolean) => {
+        if (v) {
+            if (rowUnhoverTimer.current !== null) {
+                clearTimeout(rowUnhoverTimer.current)
+                rowUnhoverTimer.current = null
+            }
+            setRowHovered(true)
+        } else {
+            if (rowUnhoverTimer.current !== null) clearTimeout(rowUnhoverTimer.current)
+            rowUnhoverTimer.current = window.setTimeout(() => {
+                setRowHovered(false)
+                rowUnhoverTimer.current = null
+            }, 150)
+        }
+    }, [])
     const allRows = useMemo(() => buildRows(ysds), [ysds])
     const dataRows = useMemo(() => allRows.filter(r => r.key !== 'totals'), [allRows])
 
@@ -144,14 +174,24 @@ function YearStatsTable({ ysds }: { ysds: YearStatsDicts }) {
                 <tbody>
                     {dataRows.map((row, idx) => {
                         const selected = selectedKeys.has(row.key)
+                        const yearNum = typeof row.year === 'number' ? row.year : parseInt(String(row.year))
+                        const warnAnn = isFinite(yearNum) ? annotationForYear(annotations, yearNum) : null
+                        const rowClasses = [
+                            selected ? css.selected : '',
+                            warnAnn ? css.warningRow : '',
+                        ].filter(Boolean).join(' ')
                         return (
                             <tr
                                 key={row.key}
-                                className={selected ? css.selected : ''}
+                                className={rowClasses}
                                 onMouseDown={handleRowMouseDown}
                                 onClick={e => handleRowClick(e, idx)}
+                                onMouseEnter={warnAnn ? () => setRowHoveredDebounced(true) : undefined}
+                                onMouseLeave={warnAnn ? () => setRowHoveredDebounced(false) : undefined}
                             >
-                                <td className={css.yearCol}>{row.year}</td>
+                                <td className={css.yearCol}>
+                                    {row.year}
+                                </td>
                                 {columns.map(col =>
                                     <td key={col.label} className={css.numCol}>
                                         {col.value(row.data).toLocaleString()}
@@ -162,6 +202,12 @@ function YearStatsTable({ ysds }: { ysds: YearStatsDicts }) {
                     })}
                 </tbody>
             </table>
+            {annotations.length > 0 && (
+                <div className={css.annotationFooter}>
+                    <AnnotationTrigger annotations={annotations} state={annOpen} />
+                </div>
+            )}
+            <AnnotationBody annotations={annotations} state={annOpen} />
         </div>
     )
 }
@@ -169,9 +215,10 @@ function YearStatsTable({ ysds }: { ysds: YearStatsDicts }) {
 export function YearStatsSection() {
     const { cc, mc } = useGeoFilter()
     const result = useYearStats({ cc, mc })
+    const annotations = useAnnotations({ page: 'annual-stats-table', cc, mc })
     if (!result) return <p>Loading annual statistics...</p>
     return fold(
         (err: Error) => <div><p>Error loading statistics: {err.message}</p></div>,
-        (ysds: YearStatsDicts) => <YearStatsTable ysds={ysds} />
+        (ysds: YearStatsDicts) => <YearStatsTable ysds={ysds} annotations={annotations} />
     )(result)
 }

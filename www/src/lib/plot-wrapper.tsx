@@ -31,6 +31,9 @@ export type Props = {
     disableSolo?: boolean
     /** Fade the non-associated Y-axis on dual-axis plots when a trace is highlighted */
     fadeInactiveAxis?: boolean
+    /** Font-weight for active legend items. Pass 'normal' to disable bolding
+     *  (prevents flicker at legend-item boundaries on hover). */
+    boldWeight?: number | 'bold' | 'normal'
 } & LegendHandlers & OtherHandlers
 
 export const DEFAULT_MARGIN: Partial<Margin> = { t: 0, r: 15, b: 0, l: 0 }
@@ -52,6 +55,7 @@ export default function PlotWrapper({
     disableFade,
     disableSolo,
     fadeInactiveAxis,
+    boldWeight,
 }: Props) {
     const height = layout.height ?? DEFAULT_HEIGHT
 
@@ -76,6 +80,7 @@ export default function PlotWrapper({
             disableLegendHover={disableFade}
             disableSoloTrace={disableSolo}
             fadeInactiveAxis={fadeInactiveAxis}
+            boldWeight={boldWeight}
             fallback={
                 <div style={{
                     height: `${height}px`,

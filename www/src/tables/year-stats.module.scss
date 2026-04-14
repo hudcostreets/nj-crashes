@@ -65,3 +65,26 @@
         z-index: 1;
     }
 }
+
+.warningRow {
+    td {
+        background: rgba(216, 96, 96, 0.13) !important;
+    }
+
+    &:hover td {
+        background: rgba(216, 96, 96, 0.22) !important;
+    }
+}
+
+.warningIcon {
+    display: inline-block;
+    margin-right: 0.4em;
+    color: #d88;
+    cursor: help;
+}
+
+.annotationFooter {
+    display: flex;
+    margin-top: 1.2rem;
+    padding-left: 0.25rem;
+}
