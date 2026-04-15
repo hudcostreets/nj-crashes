@@ -242,8 +242,15 @@ else
     echo "Importing into REMOTE D1 databases (staging workflow)"
     echo
 
-    # Save wrangler.toml before appending staging entries
+    # Save wrangler.toml before appending staging entries. The happy path
+    # restores from this backup and then rewrites the prod IDs (below). If
+    # the script aborts before reaching that point, restore via trap — earlier
+    # runs that crashed mid-import left orphaned `STAGING_*` bindings, which
+    # then collided on the next run with "binding assigned to multiple D1
+    # Database bindings".
     cp wrangler.toml "$CHUNK_DIR/wrangler.toml.pre-staging"
+    staging_done=0
+    trap '[[ $staging_done -eq 0 ]] && cp "$CHUNK_DIR/wrangler.toml.pre-staging" wrangler.toml || true' EXIT
 
     # Track staging database names/IDs for the deploy step
     declare -A staging_ids=()
@@ -297,6 +304,7 @@ TOML
         new_id="${staging_ids[$db_name]}"
         update_wrangler_toml "$db_name" "$new_id"
     done
+    staging_done=1  # past the trap-driven cleanup window
 
     echo
     echo "Deploying worker with new bindings..."
