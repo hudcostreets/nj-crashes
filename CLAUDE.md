@@ -5,8 +5,9 @@ This document contains important context for Claude Code when working on this pr
 ## Project Overview
 
 This repository analyzes NJ car crash data from two sources:
-- **NJSP**: Fatal crashes (2008-present), small datasets, git-tracked, daily updates
-- **NJDOT**: All crashes (2001-2023), large datasets, DVC-tracked in S3, annual updates
+- **NJSP**: Fatal crashes (2001-present), small datasets, git-tracked, daily updates. XML feed covers 2008+; pre-2008 rows backfilled from annual-report PDFs (`type_source='pdf-only'`).
+- **NJDOT**: All crashes (2001-2023), large datasets, DVC-tracked in S3, annual updates.
+- **Harmonized crash-pair matches** between the two: `njsp/data/njsp_njdot_match.parquet` (NJSP↔NJDOT fatal-crash PKs, produced by `njsp match_njdot`, currently ~93% coverage).
 
 ## Municipality Code Complexity
 
@@ -55,7 +56,7 @@ Other types reference crashes via denormalized PK fields:
 - `monthly.csv`: Per-month fatality counts with type breakdown. Has statewide (`county=''`), county (`mc IS NULL`), and municipality rows. Pre-2020 type breakdown only exists at statewide level.
 - `year-type-county.csv`: Per-year, per-county fatality counts by type. County-level only (no municipality).
 - `ytd.csv`: Year-to-date cumulative fatality data per day-of-year.
-- `crash-homicide.csv`: Traffic deaths vs homicides comparison. Has NJSP (2008–) and NJDOT (2001–) sources, statewide and county levels.
+- `crash-homicide.csv`: Traffic deaths vs homicides comparison. Has NJSP (2001–) and NJDOT (2001–) sources, statewide and county levels.
 
 ## DVX (Data Version Control)
 
@@ -103,6 +104,10 @@ dvx pull
 - `njdot/data/drivers.parquet.dvc` - Combined drivers
 - `njdot/data/occupants.parquet.dvc` - Combined occupants
 - `njdot/data/pedestrians.parquet.dvc` - Combined pedestrians
+- `njsp/data/njsp_njdot_match.parquet.dvc` - NJSP↔NJDOT fatal-crash matches (see `specs/njsp-njdot-fatal-harmonization.md`)
+
+### Daily pipeline
+GHA workflow at `.github/workflows/daily.yml` runs at 11:10 AM EDT daily. Stages (in order): `refresh.dvc` → `update_pqts.dvc` → `harmonize.dvc` → `crash-log.parquet.dvc` → `summaries.dvc` → `projections.dvc` → `csvs.dvc` → `slack_post.dvc` → `deploy.dvc`. Each stage uses `dvx run --commit --push each` so commits and pushes incrementally. The matcher (`njsp_njdot_match.parquet.dvc`) is *not* in the daily chain — NJDOT only updates annually, so matches are run manually when that happens.
 
 ## Useful Commands
 
