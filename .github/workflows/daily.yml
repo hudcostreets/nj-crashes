@@ -53,7 +53,12 @@ jobs:
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'ryan-williams@users.noreply.github.com'
       - name: Pull DVC-tracked deps from S3
-        run: dvx pull njdot/data/crashes.parquet
+        # Per-year NewJersey*Accidents.pqt files are deps of harmonize.dvc
+        # (read by `Data(types=['Accidents'])` in the harmonize-muni-codes
+        # notebook); without these, harmonize fails with FileNotFoundError.
+        run: |
+          dvx pull njdot/data/crashes.parquet
+          dvx pull njdot/data/*/NewJersey*Accidents.pqt
       - name: DVX status
         run: dvx status
       # === Pipeline stages (sequential, matching old daily.yml order) ===
