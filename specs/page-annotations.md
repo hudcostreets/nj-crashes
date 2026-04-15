@@ -130,24 +130,37 @@ external sources / mirror across media" pattern.
 6. ✅ Verified on `/c/bergen/alpine` (shape present); not on
    `/c/bergen` (shape absent).
 
+Iteration history:
+- v1: full-width DOM hover strip → flickered, blocked bar hover
+- v2: x-unified hoverbox injection → too dense, single tooltip didn't
+  separate trace data from disclaimer
+- **v3 (current)**: Plotly shape (full-height tint) + small ⚠ icon
+  (Plotly annotation, no hover) + `<details>`-style trigger inline
+  with gear+legend + body panel below toolbar (auto-expand on bar
+  hover, click-pin, click-away-to-unpin via global reset signal)
+
 Follow-ups from phase 1:
-- Hover zone currently only on the ⚠ icon, not the full shaded
-  region. Full-region hover needs an invisible scatter-marker trace
-  spanning the x-range; add when we have a second example.
-- Add a footer icon below the plot (next to `ControlsGear` or
-  symmetric lower-right) that re-opens the full panel-style note.
-- Currently the `panel` renderer is only wired into the crashes
-  table below the plot. Decide whether to keep both panel+shade or
-  only shade.
+- **Visual band on plot itself**. Currently the ⚠ trigger shows the
+  presence of a note, but a casual viewer doesn't see anything
+  unusual on the plot until they click. Add a translucent reddish
+  `vrect`-style shape (Plotly already supports it) across the
+  affected `year_range` so the gap is obvious at a glance. The
+  shape was *removed* in v3 because it visually conflicted with the
+  bars; needs a softer/dashed treatment that doesn't compete.
+- Add more annotations from `tmp/gap-candidates.md` (after hand-
+  review).
+- Add a site-wide "Notes" index page listing all annotations across
+  all geos.
 
-### Phase 2: more annotations + bulk UX
+### Phase 2: visual shading + more entries
 
-6. Add the confirmed entries from `tmp/gap-candidates.md` (after
-   hand-review to distinguish real reporting gaps from COVID /
-   construction / real traffic changes).
-7. Shade the `year_range` on the plot x-axis for warning-severity
-   annotations.
-8. Add a site-wide "Notes" index page listing all annotations.
+6. Re-introduce the year-range tint on the plot, tuned so it doesn't
+   compete with the bars (lighter, dashed border, or only show on
+   trigger-hover).
+7. Add 5-10 confirmed entries from `tmp/gap-candidates.md`
+   (Bridgeton, Ocean City, Bergen/Edgewater, Camden/Haddonfield,
+   etc.).
+8. Site-wide "Notes" index page.
 
 ### Phase 3: propose-edit / mirror
 
