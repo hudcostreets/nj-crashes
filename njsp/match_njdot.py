@@ -199,10 +199,33 @@ def _route_mp_agree(s_route: str | None, s_mp: float | None,
     return abs(s_mp - d_mp) <= MP_TOLERANCE
 
 
+def load_manual_matches(path: str = 'njsp/data/njsp_njdot_manual_matches.csv') -> pd.DataFrame:
+    """Load manually-curated NJSP↔NJDOT pairings that the heuristic passes
+    can't produce (e.g. route alias cases, day-boundary crashes with too
+    much time skew, NJSP records where the location text is too cryptic
+    for `norm_street`).
+
+    CSV schema: `njsp_id, year, cc, mc, case, note`. The (year, cc, mc,
+    case) tuple is the NJDOT PK. `note` is optional human commentary.
+
+    Returns an empty DataFrame if the file doesn't exist — manual
+    overrides are strictly additive, not required.
+    """
+    import os
+    if not os.path.exists(path):
+        return pd.DataFrame(columns=['njsp_id', 'year', 'cc', 'mc', 'case', 'note'])
+    df = pd.read_csv(path)
+    if 'note' not in df.columns:
+        df['note'] = ''
+    df['note'] = df['note'].fillna('')
+    return df
+
+
 def match(
     njsp: pd.DataFrame,
     njdot: pd.DataFrame,
     years: Iterable[int] = DEFAULT_YEARS,
+    manual_matches: pd.DataFrame | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Match NJSP fatal crashes to NJDOT fatal crashes via multi-pass greedy.
 
@@ -235,6 +258,28 @@ def match(
         })
         claimed_njsp.add(njsp_id)
         claimed_njdot.add(njdot_idx)
+
+    # --- Pass 0: manual overrides (human-curated pairings) ---
+    # Applied FIRST so heuristic passes can't double-claim these rows.
+    if manual_matches is None:
+        manual_matches = load_manual_matches()
+    if len(manual_matches):
+        # Build njdot index from (year, cc, mc, case) → njdot_idx
+        do_pk = do.set_index(['year', 'cc', 'mc', 'case'])['njdot_idx']
+        n_manual = 0
+        for _, m in manual_matches.iterrows():
+            sid = int(m['njsp_id'])
+            if sid not in sp.index:
+                err(f"  manual-match skipped: njsp_id {sid} not in NJSP data (filtered out by years?)")
+                continue
+            pk = (int(m['year']), int(m['cc']), int(m['mc']), str(m['case']))
+            if pk not in do_pk.index:
+                err(f"  manual-match skipped: NJDOT PK {pk} not found")
+                continue
+            did = int(do_pk.loc[pk])
+            _record(sid, did, 0)
+            n_manual += 1
+        err(f"  pass 0 (manual overrides): {n_manual} pairs")
 
     # --- Pass 1: exact (date, cc, mc) with equal row count + tk sum ---
     for key, xg in sp.groupby(['date', 'cc', 'mc'], sort=False):

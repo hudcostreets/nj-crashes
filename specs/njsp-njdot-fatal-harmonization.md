@@ -15,6 +15,7 @@
   | 6 | `(date, cc, tk, pk)` decomposition | 10 |
   | 7 | route+mp agree, tk disagrees | 21 |
   | 8 | `(date, cc)` street-name fuzzy | 8 |
+  | 0 | manual overrides (human-curated) | — |
 - Residual breakdown (2008-2023):
   | side | pd_missing | route_mismatch | unresolved |
   |------|-----------|----------------|-----------|
@@ -22,6 +23,19 @@
   | njsp | 454 | 6 | 85 |
 
 Remaining `route_mismatch` residuals (10) are ~half NJ Turnpike 95↔700 aliasing (next session: route alias normalization) and ~half physically-different locations that happen to share a day+county.
+
+## Manual overrides
+
+Pass 0 (runs first) reads `njsp/data/njsp_njdot_manual_matches.csv` for human-curated `(njsp_id → year, cc, mc, case)` pairings the heuristic passes can't produce. Schema: `njsp_id, year, cc, mc, case, note`. Unknown IDs / PKs are skipped with a warning (strictly additive, never causes failure).
+
+The idea: once we review the ~1300 `pd_missing` + 182 recoverable residuals, any confirmed pairs that slipped the heuristics go in this file. Reviewer workflow:
+
+1. Inspect `njsp_njdot_residuals.parquet` (regenerated on every matcher run).
+2. Identify same-crash pairs across sides (e.g. via date/county/street/tk eyeballing, or external news-article search).
+3. Add row to `njsp_njdot_manual_matches.csv` with a `note` citing the evidence.
+4. Re-run `njsp match_njdot`; the pair lands as pass-0.
+
+This is the "we only need to do it once per DOT year tranche" fill-in the user asked for. Bridges to the crowdsourced-edits flow in `specs/crowdsourced-edits.md` (eventual): the Slack-review queue writes to this same CSV.
 
 Remaining work:
 - **Richer residual categorization** — ✅ done (`91c5c71650e`). Split into `pd_missing`, `route_mismatch`, `unresolved`.

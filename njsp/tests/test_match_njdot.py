@@ -268,6 +268,44 @@ def test_pass_8_skips_different_streets():
     assert len(matches) == 0
 
 
+def test_pass_0_manual_match_overrides_heuristic():
+    """A manual match entry forces pairing, even when heuristic passes
+    would've paired differently or not at all."""
+    sp = _mk_njsp([
+        # Different cc, different date, different route, different tk —
+        # no heuristic pass would match these. Only manual.
+        {'cc': 1, 'mc': 2, 'dt': '2020-06-10', 'tk': 1, 'location': 'Main St', 'highway': None},
+    ])
+    do = _mk_njdot([
+        {'year': 2020, 'cc': 5, 'mc': 99, 'case': 'MANUAL-X', 'dt': '2020-07-15 03:00', 'tk': 3, 'route': '999', 'mp': None, 'road': 'OTHER ST'},
+    ])
+    manual = pd.DataFrame([{'njsp_id': 100, 'year': 2020, 'cc': 5, 'mc': 99, 'case': 'MANUAL-X', 'note': 'human review'}])
+    matches, residuals = match(sp, do, years=range(2020, 2021), manual_matches=manual)
+    assert len(matches) == 1
+    assert matches.iloc[0]['pass'] == 0
+    assert matches.iloc[0]['case'] == 'MANUAL-X'
+
+
+def test_pass_0_skips_unknown_ids():
+    """Unknown `njsp_id` or NJDOT PK in manual file → skip with warning,
+    don't error."""
+    sp = _mk_njsp([
+        {'cc': 1, 'mc': 2, 'dt': '2020-01-15', 'tk': 1, 'location': 'Main St', 'highway': None},
+    ])
+    do = _mk_njdot([
+        {'year': 2020, 'cc': 1, 'mc': 2, 'case': 'X1', 'dt': '2020-01-15 14:00', 'tk': 1, 'route': None, 'mp': None, 'road': 'MAIN ST'},
+    ])
+    # Manual entry with bogus IDs — should be skipped, not raise
+    manual = pd.DataFrame([
+        {'njsp_id': 99999, 'year': 2020, 'cc': 1, 'mc': 2, 'case': 'X1', 'note': 'bad njsp id'},
+        {'njsp_id': 100, 'year': 2020, 'cc': 1, 'mc': 2, 'case': 'NONEXIST', 'note': 'bad njdot PK'},
+    ])
+    matches, residuals = match(sp, do, years=range(2020, 2021), manual_matches=manual)
+    # Pass 1 should still match the real pair (X1) via heuristics
+    assert len(matches) == 1
+    assert matches.iloc[0]['pass'] == 1
+
+
 def test_residual_kind_unresolved():
     """Same date on both sides but no route info → `unresolved`."""
     sp = _mk_njsp([
