@@ -11,6 +11,7 @@ LAZY_COMMANDS = {
     'bsky': ('bsky', 'Manage @crashes.hudcostreets.org on Bluesky.'),
     'crash_log': ('crash_log', 'Maintain a history of crash-records adds/updates/deletes.'),
     'harmonize_muni_codes': ('harmonize_muni_codes', 'Harmonize county/muni codes between NJDOT and NJSP, output cc2mc2mn.json'),
+    'match_njdot': ('match_njdot', 'Multi-pass match NJSP ↔ NJDOT fatal crashes.'),
     'refresh_data': ('refresh_data', 'Snapshot NJSP fatal crash data for the given years.'),
     'refresh_summaries': ('refresh_summaries', 'Update NJSP annual summary PDFs (fetch-summaries.ipynb).'),
     'slack': ('slack', 'Manage automated posts to the #crash-bot channel in HCCS Slack.'),

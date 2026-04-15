@@ -1,1 +1,6 @@
 out
+
+# Debug residuals from `njsp match_njdot`. The matched pairs are
+# DVC-tracked via `njsp/data/njsp_njdot_match.parquet.dvc`; the residuals
+# file is regenerable by re-running the cmd, used for inspection only.
+njsp/data/njsp_njdot_residuals.parquet

@@ -1,0 +1,122 @@
+"""Unit tests for `njsp.match_njdot` normalization helpers + matcher core."""
+import pandas as pd
+
+from njsp.match_njdot import (
+    parse_mp_from_location, norm_route, _route_mp_agree, match,
+)
+
+
+def test_parse_mp_from_location():
+    assert parse_mp_from_location('Interstate 80 W MP 37.3') == 37.3
+    assert parse_mp_from_location('State Highway 70 E MP 55.22') == 55.22
+    assert parse_mp_from_location('County 618 E MP 1.5') == 1.5
+    assert parse_mp_from_location('Garden State Parkway MP 120') == 120.0
+    # Lower-case / spacing variants
+    assert parse_mp_from_location('mp 5') == 5.0
+    assert parse_mp_from_location('MP5.5') == 5.5
+    # No MP
+    assert parse_mp_from_location('Bergenline Ave') is None
+    assert parse_mp_from_location('') is None
+    assert parse_mp_from_location(None) is None
+
+
+def test_norm_route():
+    # Numeric strings, with various float/int representations
+    assert norm_route('80') == '80'
+    assert norm_route(80) == '80'
+    assert norm_route('80.0') == '80'
+    # Leading zeros stripped
+    assert norm_route('009') == '9'
+    assert norm_route('0') == '0'  # keep at least one digit
+    # Whitespace / case
+    assert norm_route(' 444 ') == '444'
+    # Empty / null
+    assert norm_route(None) is None
+    assert norm_route('') is None
+    assert norm_route('NaN') is None
+    assert norm_route('<NA>') is None
+    assert norm_route(float('nan')) is None
+
+
+def test_route_mp_agree():
+    # Exact match
+    assert _route_mp_agree('80', 37.3, '80', 37.3) is True
+    # Within tolerance
+    assert _route_mp_agree('80', 37.3, '80', 37.7) is True
+    assert _route_mp_agree('80', 37.3, '80', 38.3) is True  # exactly 1.0
+    # Outside tolerance
+    assert _route_mp_agree('80', 37.3, '80', 39.0) is False
+    # Both MPs missing — ok if routes match
+    assert _route_mp_agree('80', None, '80', None) is True
+    # One MP missing — fail
+    assert _route_mp_agree('80', None, '80', 37.3) is False
+    assert _route_mp_agree('80', 37.3, '80', None) is False
+    # Different routes
+    assert _route_mp_agree('80', 37.3, '78', 37.3) is False
+    # Either route missing
+    assert _route_mp_agree(None, 37.3, '80', 37.3) is False
+    assert _route_mp_agree('80', 37.3, None, 37.3) is False
+
+
+def _mk_njsp(rows):
+    """Build a minimal NJSP-shaped dataframe from per-row dicts."""
+    df = pd.DataFrame(rows)
+    df['dt'] = pd.to_datetime(df['dt']).dt.tz_localize('US/Eastern')
+    df.index.name = 'id'
+    df.index = df.index.astype('int16') + 100
+    df['ti'] = pd.NA
+    df['dk'] = df['ok'] = df['pk'] = df['bk'] = pd.NA
+    df['street'] = None
+    df['type_source'] = 'xml'
+    return df
+
+
+def _mk_njdot(rows):
+    """Build a minimal NJDOT-shaped dataframe from per-row dicts."""
+    df = pd.DataFrame(rows)
+    df['dt'] = pd.to_datetime(df['dt'])
+    df['severity'] = 'f'
+    return df
+
+
+def test_pass_1_exact_match():
+    """Pass 1: identical (date, cc, mc) on both sides → match."""
+    sp = _mk_njsp([
+        {'cc': 1, 'mc': 2, 'dt': '2020-01-15', 'tk': 1, 'location': 'Foo Rd', 'highway': None},
+    ])
+    do = _mk_njdot([
+        {'year': 2020, 'cc': 1, 'mc': 2, 'case': 'X1', 'dt': '2020-01-15 14:00', 'tk': 1, 'route': None, 'mp': None, 'road': 'Foo Rd'},
+    ])
+    matches, residuals = match(sp, do, years=range(2020, 2021))
+    assert len(matches) == 1
+    assert matches.iloc[0]['pass'] == 1
+    assert matches.iloc[0]['case'] == 'X1'
+    assert residuals.empty
+
+
+def test_pass_2_cross_mc_route_mp():
+    """Pass 2: same (date, cc) different mc, but route+mp align → match."""
+    sp = _mk_njsp([
+        {'cc': 14, 'mc': 8, 'dt': '2015-03-26', 'tk': 1, 'location': 'Interstate 80 W MP 37.3', 'highway': '80'},
+    ])
+    do = _mk_njdot([
+        {'year': 2015, 'cc': 14, 'mc': 35, 'case': 'X1', 'dt': '2015-03-26 02:00', 'tk': 1, 'route': '80', 'mp': 37.7, 'road': 'I-80'},
+    ])
+    matches, residuals = match(sp, do, years=range(2015, 2016))
+    assert len(matches) == 1
+    assert matches.iloc[0]['pass'] == 2
+    assert matches.iloc[0]['mc'] == 35  # NJDOT's mc wins (we record the NJDOT side's PK)
+
+
+def test_no_spurious_match_when_routes_disagree():
+    """Same (date, cc) different mc, but routes don't match → unmatched residuals."""
+    sp = _mk_njsp([
+        {'cc': 14, 'mc': 8, 'dt': '2015-03-26', 'tk': 1, 'location': 'Interstate 80 W MP 37.3', 'highway': '80'},
+    ])
+    do = _mk_njdot([
+        {'year': 2015, 'cc': 14, 'mc': 35, 'case': 'X1', 'dt': '2015-03-26 02:00', 'tk': 1, 'route': '78', 'mp': 37.3, 'road': 'I-78'},
+    ])
+    matches, residuals = match(sp, do, years=range(2015, 2016))
+    assert len(matches) == 0
+    assert (residuals.side == 'njsp').sum() == 1
+    assert (residuals.side == 'njdot').sum() == 1
