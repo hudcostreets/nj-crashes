@@ -7,4 +7,4 @@ meta:
   computation:
     cmd: rawdata pqt -r NJ -y 2003 -t accidents
     deps:
-      njdot/data/2003/NewJersey2003Accidents.zip: 3eb06023b1d0932304a5493ac6b38e73
+      NewJersey2003Accidents.zip: 3eb06023b1d0932304a5493ac6b38e73

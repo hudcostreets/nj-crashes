@@ -7,4 +7,4 @@ meta:
   computation:
     cmd: rawdata pqt -r NJ -y 2001 -t accidents
     deps:
-      njdot/data/2001/NewJersey2001Accidents.zip: 96e5863a2aa39811950695701e2f5faa
+      NewJersey2001Accidents.zip: 96e5863a2aa39811950695701e2f5faa

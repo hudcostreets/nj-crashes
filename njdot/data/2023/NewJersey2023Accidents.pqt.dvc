@@ -7,4 +7,4 @@ meta:
   computation:
     cmd: rawdata pqt -r NJ -y 2023 -t accidents
     deps:
-      njdot/data/2023/NewJersey2023Accidents.zip: af1756f11fb5caeab007d9b9683d77b9
+      NewJersey2023Accidents.zip: af1756f11fb5caeab007d9b9683d77b9

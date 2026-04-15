@@ -7,4 +7,4 @@ meta:
   computation:
     cmd: rawdata pqt -r NJ -y 2018 -t accidents
     deps:
-      njdot/data/2018/NewJersey2018Accidents.zip: c5433ef5f98e75b90adc570461b565ff
+      NewJersey2018Accidents.zip: c5433ef5f98e75b90adc570461b565ff
