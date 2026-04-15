@@ -244,6 +244,63 @@ def match(
                 break
     err(f"  pass 4 (date±1, route+mp): {sum(m['pass']==4 for m in matches)} pairs")
 
+    # --- Pass 5: same (date, cc, tk), time-of-day within ±3 hours ---
+    # Catches side-street crashes with no route info (residual kind:
+    # `unresolved`) where the two sources agree on date, county, and
+    # fatality count, and the dt times are close enough to be the same
+    # crash. Skip if both sides have routes that disagree (those are
+    # `route_mismatch` residuals — different physical locations, not
+    # the same crash despite same time).
+    sp_left = sp[~sp['njsp_id'].isin(claimed_njsp)]
+    do_left = do[~do['njdot_idx'].isin(claimed_njdot)]
+    for key, xg in sp_left.groupby(['date', 'cc'], sort=False):
+        pg = do_left[(do_left['date'] == key[0]) & (do_left['cc'] == key[1])]
+        if pg.empty or xg.empty:
+            continue
+        for _, srow in xg.iterrows():
+            if srow['njsp_id'] in claimed_njsp:
+                continue
+            for _, drow in pg.iterrows():
+                if drow['njdot_idx'] in claimed_njdot:
+                    continue
+                if srow['tk'] != drow['tk']:
+                    continue
+                # If both sides have routes, they must agree.
+                if srow['route'] and drow['route'] and srow['route'] != drow['route']:
+                    continue
+                # Compare dt times (align by UTC epoch).
+                s_ts = pd.Timestamp(srow['dt']).tz_convert('UTC') if pd.Timestamp(srow['dt']).tz else pd.Timestamp(srow['dt']).tz_localize('US/Eastern').tz_convert('UTC')
+                d_ts = pd.Timestamp(drow['dt']).tz_convert('UTC') if pd.Timestamp(drow['dt']).tz else pd.Timestamp(drow['dt']).tz_localize('US/Eastern').tz_convert('UTC')
+                if abs((s_ts - d_ts).total_seconds()) <= 3 * 3600:
+                    _record(int(srow['njsp_id']), int(drow['njdot_idx']), 5)
+                    break
+    err(f"  pass 5 ((date,cc,tk), ±3hr time): {sum(m['pass']==5 for m in matches)} pairs")
+
+    # --- Pass 6: same (date, cc, tk, pk) — pedestrians-killed decomposition ---
+    # Both sources track `pk` (pedestrians killed); the decomposition
+    # disambiguates multiple same-tk crashes on same date+cc (rare but
+    # happens in high-fatality days).
+    sp_left = sp[~sp['njsp_id'].isin(claimed_njsp)]
+    do_left = do[~do['njdot_idx'].isin(claimed_njdot)]
+    for key, xg in sp_left.groupby(['date', 'cc'], sort=False):
+        pg = do_left[(do_left['date'] == key[0]) & (do_left['cc'] == key[1])]
+        if pg.empty or xg.empty:
+            continue
+        for _, srow in xg.iterrows():
+            if srow['njsp_id'] in claimed_njsp:
+                continue
+            if pd.isna(srow.get('pk')):
+                continue
+            for _, drow in pg.iterrows():
+                if drow['njdot_idx'] in claimed_njdot:
+                    continue
+                if pd.isna(drow.get('pk')):
+                    continue
+                if srow['tk'] == drow['tk'] and srow['pk'] == drow['pk']:
+                    _record(int(srow['njsp_id']), int(drow['njdot_idx']), 6)
+                    break
+    err(f"  pass 6 ((date,cc,tk,pk) decomposition): {sum(m['pass']==6 for m in matches)} pairs")
+
     # --- Residuals report ---
     # Categorize each residual row by WHY it didn't match:
     #   `pd_missing`  — no same-date crash on the other side ANYWHERE

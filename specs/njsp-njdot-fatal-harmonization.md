@@ -7,10 +7,62 @@
 - Pass breakdown: 8128 (exact date,cc,mc) + 163 (cross-mc route+mp) + 16 (cross-county) + 16 (date±1).
 
 Remaining work:
-- **Richer residual categorization** — currently all residuals are `kind='unmatched'`. Spec calls for `pd_missing`, `route_mismatch`, `unresolved`. Splitting them informs where to look for fixes.
+- **Richer residual categorization** — ✅ done (`91c5c71650e`). Split into `pd_missing`, `route_mismatch`, `unresolved`.
 - **Per-pass observability** — one `njsp_njdot_match.parquet` today; consider emitting per-pass files or a `/harmonization` debug page.
 - **Downstream consumers** — the matches aren't used yet. Obvious candidates: `crash-homicide.csv` gains a "reconciled" source (union of matched + NJSP-only + NJDOT-only); crash-detail pages (when built) can link to the NJDOT counterpart.
 - **Crowdsourced pairing UI** — see `specs/crowdsourced-edits.md`.
+
+## Pipeline-cadence modeling (annual vs daily)
+
+NJSP data updates daily; NJDOT data updates annually and currently ends at 2023. The matcher's logical scope is the intersection: years where both sources fully cover. So:
+
+- **Correct behavior**: matcher re-runs when NJDOT data (or pre-NJDOT-end NJSP rows) change. NOT when NJSP adds a new 2026 crash — those are out of NJDOT's range, can't be matched.
+- **Current behavior**: `match_njdot.dvc` lists `crashes.parquet` (NJSP, full) as a dep. Any NJSP row update invalidates the stage. `dvx status` would flag it stale daily after each NJSP refresh, creating noise.
+
+**Proposed fix**: introduce an intermediate stage `njsp/data/crashes_pre_njdot_end.parquet` (name TBD) that filters `crashes.parquet` to `year <= NJDOT_END_YEAR`. Key property: **its md5 is stable when pre-2024 NJSP rows don't change**, even if crashes.parquet gets new 2024+ rows. The matcher depends on this filtered parquet + `njdot/data/crashes.parquet`, so it only invalidates when either changes *in a way that affects the match*.
+
+Stages:
+
+```
+  njsp/data/crashes.parquet ──► crashes_pre_njdot_end.parquet ──┐
+                                                                 ├──► njsp_njdot_match.parquet
+  njdot/data/crashes.parquet ─────────────────────────────────── ┘
+```
+
+Daily refresh adds a 2026 NJSP crash → `crashes.parquet` md5 changes → filter stage re-runs → filtered parquet md5 **unchanged** (no new pre-2024 rows) → matcher dep is fresh → matcher doesn't re-run. Waste: re-reading crashes.parquet and filtering (~1s). Acceptable.
+
+Annual NJDOT refresh → NJDOT `crashes.parquet` changes → matcher re-runs. Expected.
+
+Pre-2024 NJSP correction (e.g., re-harmonized via `njsp harmonize_muni_codes`) → filtered parquet changes → matcher re-runs. Expected.
+
+This generalizes to other "DOT-dependent" artifacts (future crash-detail pages, reconciled homicides CSV, etc.) — they'd all consume the filtered intermediate.
+
+## Further match-recovery heuristics
+
+Current: passes 1-4 recover ~93% of NJSP, ~89% of NJDOT-fatal. Residuals (on 2008-2023):
+
+| side | pd_missing | route_mismatch | unresolved |
+|------|-----------|----------------|-----------|
+| njdot | 803 | 74 | 144 |
+| njsp | 449 | 74 | 127 |
+
+`pd_missing` (1252) are genuine data gaps — one side records a crash the other doesn't. Not recoverable via better matching. **Recovery ceiling is `route_mismatch + unresolved = 419 residuals.** At best we could reach ~95% coverage.
+
+Heuristic ideas, ranked by likely yield-per-effort:
+
+1. **Time-of-day pass**. Within same `(date, cc)`, pair NJSP and NJDOT rows where `dt` times are within ±3 hours AND `tk` matches. Catches `unresolved` residuals on side-streets (no route info) but same time. **Low effort, medium yield.**
+
+2. **Victim-type breakdown**. Within same `(date, cc, tk)`, pair on matching `pk` (pedestrians killed) — the one per-type count both sources track (NJSP has dk/ok/pk/bk; NJDOT only has tk/pk). Disambiguates when multiple same-tk same-cc crashes exist. **Low effort, low-medium yield.**
+
+3. **Street-name fuzzy match**. For `unresolved` + `route_mismatch` residuals, fuzzy-match NJSP's `street` / `location` text against NJDOT's `road` / `cross_street`. Use `rapidfuzz` token-set ratio with a 0.7+ threshold. **Medium effort, medium yield.**
+
+4. **Route alias normalization**. For `route_mismatch`, expand route normalization: map "GSP" / "Garden State Parkway" → "444", "NJTP" / "Turnpike" → "95" + milepost offset, etc. Would catch cases like a crash reported as "US 1" on one side and "NJ 26" on the other (renumbered). **Medium effort, low yield** (small number of known aliases).
+
+5. **Lat/lon proximity**. NJDOT has `olat`/`olon`; NJSP doesn't. Would need to geocode NJSP's `location` text via OSM / NJDOT gazetteer. **High effort, medium yield** (most highway crashes have MP-derivable locations already captured by pass 2).
+
+6. **Contact agencies**. Once the matcher tops out, the `pd_missing` residuals become a concrete list to show NJSP/NJDOT for review. Not a "heuristic" but the endgame for the last few %.
+
+Implementation order: pass 5 (time-of-day) + pass 6 (victim-type) first since they're cheap. Then evaluate: if `unresolved` shrinks meaningfully, proceed to fuzzy-street. If most residuals end up as `pd_missing`, we're at the ceiling for heuristics and the remaining work is coordination with the source agencies.
 
 ## Motivation
 

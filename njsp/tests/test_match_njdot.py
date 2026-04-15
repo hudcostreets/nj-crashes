@@ -138,6 +138,73 @@ def test_residual_kind_pd_missing():
     assert residuals[residuals['side'] == 'njdot']['kind'].iloc[0] == 'pd_missing'
 
 
+def test_pass_5_time_of_day():
+    """Same (date, cc, tk), no route info, but dt times within ±3h → pair."""
+    sp = _mk_njsp([
+        {'cc': 7, 'mc': 16, 'dt': '2020-05-10 08:30', 'tk': 1, 'location': 'Main St', 'highway': None},
+    ])
+    do = _mk_njdot([
+        {'year': 2020, 'cc': 7, 'mc': 16, 'case': 'X1', 'dt': '2020-05-10 10:15', 'tk': 1, 'route': None, 'mp': None, 'road': 'MAIN ST'},
+    ])
+    matches, residuals = match(sp, do, years=range(2020, 2021))
+    # Pass 1 should fail (same mc but let's double-check this test: same
+    # (date, cc, mc, tk_sum) → pass 1 actually matches). Instead set
+    # different mc to force pass 5.
+    assert len(matches) == 1
+    # Pass 1 fires here since (date, cc, mc) match exactly. Make a
+    # stricter test for pass 5 in isolation below.
+
+
+def test_pass_5_cross_mc_no_route():
+    """(date, cc) match, different mc, no route, close time → pass 5."""
+    sp = _mk_njsp([
+        {'cc': 7, 'mc': 16, 'dt': '2020-05-10 08:30', 'tk': 1, 'location': 'Main St', 'highway': None},
+    ])
+    do = _mk_njdot([
+        {'year': 2020, 'cc': 7, 'mc': 99, 'case': 'X1', 'dt': '2020-05-10 10:15', 'tk': 1, 'route': None, 'mp': None, 'road': 'MAIN ST'},
+    ])
+    matches, residuals = match(sp, do, years=range(2020, 2021))
+    assert len(matches) == 1
+    assert matches.iloc[0]['pass'] == 5
+
+
+def test_pass_5_skips_when_times_too_far():
+    """Same (date, cc, tk) but times > ±3h apart → no match."""
+    sp = _mk_njsp([
+        {'cc': 7, 'mc': 16, 'dt': '2020-05-10 01:00', 'tk': 1, 'location': 'Main St', 'highway': None},
+    ])
+    do = _mk_njdot([
+        {'year': 2020, 'cc': 7, 'mc': 99, 'case': 'X1', 'dt': '2020-05-10 14:00', 'tk': 1, 'route': None, 'mp': None, 'road': 'MAIN ST'},
+    ])
+    matches, residuals = match(sp, do, years=range(2020, 2021))
+    assert len(matches) == 0
+
+
+def test_pass_6_pedestrian_decomp():
+    """Two same-(date,cc,tk) crashes disambiguated by pk (pedestrians killed)."""
+    sp = _mk_njsp([
+        # Same date+cc+tk=2, but one crash has 2 peds killed, other has 0.
+        # Timestamps far apart so pass 5 can't match.
+        {'cc': 7, 'mc': 16, 'dt': '2020-05-10 01:00', 'tk': 2, 'location': 'Main St', 'highway': None},
+        {'cc': 7, 'mc': 16, 'dt': '2020-05-10 20:00', 'tk': 2, 'location': 'Other St', 'highway': None},
+    ])
+    # Set `pk` on NJSP rows (usually NA for pre-2020 but we're 2020)
+    sp.loc[sp.index[0], 'pk'] = 2
+    sp.loc[sp.index[1], 'pk'] = 0
+    do = _mk_njdot([
+        {'year': 2020, 'cc': 7, 'mc': 99, 'case': 'X1', 'dt': '2020-05-10 11:00', 'tk': 2, 'pk': 0, 'route': None, 'mp': None, 'road': 'A'},
+        {'year': 2020, 'cc': 7, 'mc': 99, 'case': 'X2', 'dt': '2020-05-10 15:00', 'tk': 2, 'pk': 2, 'route': None, 'mp': None, 'road': 'B'},
+    ])
+    matches, residuals = match(sp, do, years=range(2020, 2021))
+    # Both NJSP rows matched — pk=2 NJSP → X2, pk=0 NJSP → X1
+    assert len(matches) == 2
+    assert set(matches['pass']) == {6}
+    m_by_njsp_id = matches.set_index('njsp_id')['case'].to_dict()
+    # NJSP id 100 has pk=2 → should pair with X2 (pk=2)
+    assert m_by_njsp_id[100] == 'X2'
+    assert m_by_njsp_id[101] == 'X1'
+
+
 def test_residual_kind_unresolved():
     """Same date on both sides but no route info → `unresolved`."""
     sp = _mk_njsp([
