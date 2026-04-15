@@ -56,9 +56,11 @@ jobs:
         # Per-year NewJersey*Accidents.pqt files are deps of harmonize.dvc
         # (read by `Data(types=['Accidents'])` in the harmonize-muni-codes
         # notebook); without these, harmonize fails with FileNotFoundError.
+        # Glob the `.pqt.dvc` files (these exist on fresh checkout; the
+        # `.pqt` outputs do not).
         run: |
           dvx pull njdot/data/crashes.parquet
-          dvx pull njdot/data/*/NewJersey*Accidents.pqt
+          dvx pull njdot/data/*/NewJersey*Accidents.pqt.dvc
       - name: DVX status
         run: dvx status
       # === Pipeline stages (sequential, matching old daily.yml order) ===
