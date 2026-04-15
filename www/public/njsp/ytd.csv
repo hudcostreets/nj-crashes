@@ -7250,6 +7250,8 @@ county,cc,mc,year,day_of_year,date_label,fatalities,cumulative
 ,,,2026,98,Apr 08,1,133
 ,,,2026,99,Apr 09,1,134
 ,,,2026,101,Apr 11,1,135
+,,,2026,102,Apr 12,1,136
+,,,2026,103,Apr 13,1,137
 Atlantic,1,,2001,20,Jan 20,1,1
 Atlantic,1,,2001,25,Jan 25,1,2
 Atlantic,1,,2001,36,Feb 05,1,3
@@ -15069,6 +15071,7 @@ Mercer,11,,2026,69,Mar 10,2,3
 Mercer,11,,2026,76,Mar 17,1,4
 Mercer,11,,2026,81,Mar 22,1,5
 Mercer,11,,2026,87,Mar 28,1,6
+Mercer,11,,2026,102,Apr 12,1,7
 Middlesex,12,,2001,3,Jan 03,1,1
 Middlesex,12,,2001,40,Feb 09,1,2
 Middlesex,12,,2001,42,Feb 11,1,3
@@ -16208,6 +16211,7 @@ Middlesex,12,,2026,79,Mar 20,1,12
 Middlesex,12,,2026,86,Mar 27,1,13
 Middlesex,12,,2026,90,Mar 31,1,14
 Middlesex,12,,2026,91,Apr 01,1,15
+Middlesex,12,,2026,103,Apr 13,1,16
 Monmouth,13,,2001,13,Jan 13,1,1
 Monmouth,13,,2001,17,Jan 17,1,2
 Monmouth,13,,2001,20,Jan 20,1,3
@@ -29255,6 +29259,7 @@ Mercer,11,3,2025,211,Jul 30,1,6
 Mercer,11,3,2025,271,Sep 28,1,7
 Mercer,11,3,2025,309,Nov 05,1,8
 Mercer,11,3,2026,76,Mar 17,1,1
+Mercer,11,3,2026,102,Apr 12,1,2
 Mercer,11,4,2005,148,May 28,1,1
 Mercer,11,4,2005,213,Aug 01,1,2
 Mercer,11,4,2022,252,Sep 09,1,1
@@ -29675,6 +29680,7 @@ Middlesex,12,2,2023,299,Oct 26,1,4
 Middlesex,12,2,2024,72,Mar 13,1,1
 Middlesex,12,2,2024,282,Oct 09,1,2
 Middlesex,12,2,2025,116,Apr 26,1,1
+Middlesex,12,2,2026,103,Apr 13,1,1
 Middlesex,12,3,2004,51,Feb 20,1,1
 Middlesex,12,3,2005,42,Feb 11,1,1
 Middlesex,12,3,2006,103,Apr 13,1,1
