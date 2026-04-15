@@ -2,7 +2,8 @@
 import pandas as pd
 
 from njsp.match_njdot import (
-    parse_mp_from_location, norm_route, _route_mp_agree, match,
+    parse_mp_from_location, norm_route, norm_street, street_hints_agree,
+    _route_mp_agree, match,
 )
 
 
@@ -39,6 +40,37 @@ def test_norm_route():
     assert norm_route('NaN') is None
     assert norm_route('<NA>') is None
     assert norm_route(float('nan')) is None
+
+
+def test_norm_street():
+    # Abbreviation expansion
+    assert norm_street('Orange St') == 'ORANGE STREET'
+    assert norm_street('Main Ave') == 'MAIN AVENUE'
+    assert norm_street('Riverwood Dr') == 'RIVERWOOD DRIVE'
+    # Cross-source equivalence (NJSP hint vs NJDOT road)
+    assert norm_street('Orange St E MP 5.2') == norm_street('ORANGE ST MP0.23999')
+    assert norm_street('S. Mill Rd E MP 0') == norm_street('SOUTH MILL RD')
+    assert norm_street('Broad St') == norm_street('BROAD ST MP1.77')
+    assert norm_street('Myrtle Ave') == norm_street('MYRTLE AVE ** MP0.15')
+    # Leading street number stripped
+    assert norm_street('200 RIVERWOOD DR') == 'RIVERWOOD DRIVE'
+    assert norm_street('2361 SH 66') == norm_street('2361 NJ 66')
+    # Empty / None
+    assert norm_street(None) is None
+    assert norm_street('') is None
+    assert norm_street('   ') is None
+
+
+def test_street_hints_agree():
+    # Match on NJDOT `road`
+    assert street_hints_agree('Orange St E MP 5.2', 'ORANGE ST', None) is True
+    # Match on NJDOT `cross_street` when `road` differs
+    assert street_hints_agree('Main St', 'Broad St', 'MAIN STREET') is True
+    # No match
+    assert street_hints_agree('Terminal Ave', 'WESTFIELD AVE', None) is False
+    # Empty inputs
+    assert street_hints_agree(None, 'ORANGE ST', None) is False
+    assert street_hints_agree('Orange St', None, None) is False
 
 
 def test_route_mp_agree():
@@ -172,12 +204,14 @@ def test_pass_5_cross_mc_no_route():
 
 
 def test_pass_5_skips_when_times_too_far():
-    """Same (date, cc, tk) but times > ±3h apart → no match."""
+    """Same (date, cc, tk) but times > ±3h apart AND clearly different
+    street names → no match (pass 5 rejects on time, pass 8 rejects on
+    street)."""
     sp = _mk_njsp([
         {'cc': 7, 'mc': 16, 'dt': '2020-05-10 01:00', 'tk': 1, 'location': 'Main St', 'highway': None},
     ])
     do = _mk_njdot([
-        {'year': 2020, 'cc': 7, 'mc': 99, 'case': 'X1', 'dt': '2020-05-10 14:00', 'tk': 1, 'route': None, 'mp': None, 'road': 'MAIN ST'},
+        {'year': 2020, 'cc': 7, 'mc': 99, 'case': 'X1', 'dt': '2020-05-10 14:00', 'tk': 1, 'route': None, 'mp': None, 'road': 'OTHER ST'},
     ])
     matches, residuals = match(sp, do, years=range(2020, 2021))
     assert len(matches) == 0
@@ -206,6 +240,32 @@ def test_pass_6_pedestrian_decomp():
     # NJSP id 100 has pk=2 → should pair with X2 (pk=2)
     assert m_by_njsp_id[100] == 'X2'
     assert m_by_njsp_id[101] == 'X1'
+
+
+def test_pass_8_street_fuzzy():
+    """Same (date, cc), no route, different mc, matching normalized street
+    name with tk differing by 1 → pass 8."""
+    sp = _mk_njsp([
+        {'cc': 7, 'mc': 16, 'dt': '2020-05-10', 'tk': 2, 'location': 'Orange St E MP 5.2', 'highway': None},
+    ])
+    do = _mk_njdot([
+        {'year': 2020, 'cc': 7, 'mc': 99, 'case': 'X1', 'dt': '2020-05-10 14:00', 'tk': 1, 'route': None, 'mp': None, 'road': 'ORANGE ST MP0.23'},
+    ])
+    matches, residuals = match(sp, do, years=range(2020, 2021))
+    assert len(matches) == 1
+    assert matches.iloc[0]['pass'] == 8
+
+
+def test_pass_8_skips_different_streets():
+    """Same (date, cc) but distinctly different street names → no pass 8 match."""
+    sp = _mk_njsp([
+        {'cc': 7, 'mc': 16, 'dt': '2020-05-10', 'tk': 2, 'location': 'Terminal Ave', 'highway': None},
+    ])
+    do = _mk_njdot([
+        {'year': 2020, 'cc': 7, 'mc': 99, 'case': 'X1', 'dt': '2020-05-10 14:00', 'tk': 1, 'route': None, 'mp': None, 'road': 'WESTFIELD AVE'},
+    ])
+    matches, residuals = match(sp, do, years=range(2020, 2021))
+    assert len(matches) == 0
 
 
 def test_residual_kind_unresolved():

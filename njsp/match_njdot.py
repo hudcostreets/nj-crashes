@@ -40,6 +40,22 @@ DEFAULT_YEARS = range(2008, 2024)
 MP_TOLERANCE = 1.0  # miles
 
 _MP_RE = re.compile(r'\bMP\s*(\d*\.?\d+)', re.IGNORECASE)
+# Trailing directional suffix before an MP segment, e.g. "Orange St E MP 5.2"
+_MP_AND_DIR_RE = re.compile(r'\s+[NSEW]\b.*$|\s*MP\s*\d*\.?\d+.*$', re.IGNORECASE)
+# Trailing "at CROSS ST" segments
+_AT_CROSS_RE = re.compile(r'\s+at\s+.*$', re.IGNORECASE)
+# Leading street number (e.g. "200 RIVERWOOD DR" or "2361 SH 66")
+_LEAD_NUM_RE = re.compile(r'^\s*\d+\s+')
+# Abbreviation expansion (street-type only, for normalization comparison)
+_ABBREV = {
+    'ST': 'STREET', 'AVE': 'AVENUE', 'AV': 'AVENUE', 'RD': 'ROAD',
+    'DR': 'DRIVE', 'BLVD': 'BOULEVARD', 'LN': 'LANE', 'CT': 'COURT',
+    'PL': 'PLACE', 'PKWY': 'PARKWAY', 'TPKE': 'TURNPIKE', 'HWY': 'HIGHWAY',
+    'N': 'NORTH', 'S': 'SOUTH', 'E': 'EAST', 'W': 'WEST',
+    'NO': 'NORTH', 'SO': 'SOUTH',
+    'SH': 'STATEHIGHWAY', 'NJ': 'STATEHIGHWAY', 'US': 'USHIGHWAY',
+    'I': 'INTERSTATE',
+}
 
 
 def parse_mp_from_location(loc: str | None) -> float | None:
@@ -48,6 +64,56 @@ def parse_mp_from_location(loc: str | None) -> float | None:
         return None
     m = _MP_RE.search(loc)
     return float(m.group(1)) if m else None
+
+
+def norm_street(s: str | None) -> str | None:
+    """Normalize a street-name string for fuzzy-matching across sources.
+
+    NJSP's `location` / `street` and NJDOT's `road` / `cross_street` have
+    different casing, punctuation, trailing direction/MP, street numbers,
+    and standard abbreviations. Canonicalize to: uppercase, no leading
+    number prefix, no trailing direction/MP/at-cross segment, standard
+    abbreviations expanded, single spaces, no punctuation.
+
+    Examples:
+      "Orange St E MP 5.2"  → "ORANGE STREET"
+      "ORANGE ST MP0.24"    → "ORANGE STREET"
+      "S. Mill Rd E MP 0"   → "SOUTH MILL ROAD"
+      "2361 SH 66"          → "STATEHIGHWAY 66"
+      "200 RIVERWOOD DR"    → "RIVERWOOD DRIVE"
+    """
+    if not s or not isinstance(s, str):
+        return None
+    s = s.strip().upper()
+    # Strip trailing "at CROSS ST" phrase
+    s = _AT_CROSS_RE.sub('', s)
+    # Strip trailing direction + MP segments
+    s = _MP_AND_DIR_RE.sub('', s)
+    # Strip "**" markers sometimes in NJDOT road names
+    s = s.replace('**', '')
+    # Drop punctuation (periods, commas)
+    s = re.sub(r'[.,;:()\'"]', '', s)
+    # Collapse whitespace
+    s = re.sub(r'\s+', ' ', s).strip()
+    # Drop leading street-number
+    s = _LEAD_NUM_RE.sub('', s)
+    # Expand abbreviations token-by-token
+    tokens = [_ABBREV.get(tok, tok) for tok in s.split()]
+    s = ' '.join(tokens).strip()
+    return s or None
+
+
+def street_hints_agree(s_hint: str | None, d_road: str | None,
+                       d_cross: str | None = None) -> bool:
+    """True if normalized NJSP hint matches NJDOT `road` or `cross_street`."""
+    s_norm = norm_street(s_hint)
+    if not s_norm:
+        return False
+    for d in (d_road, d_cross):
+        d_norm = norm_street(d)
+        if d_norm and s_norm == d_norm:
+            return True
+    return False
 
 
 def norm_route(s: str | int | None) -> str | None:
@@ -330,6 +396,37 @@ def match(
                 _record(int(srow['njsp_id']), int(drow['njdot_idx']), 7)
                 break
     err(f"  pass 7 (route+mp agree, tk disagrees): {sum(m['pass']==7 for m in matches)} pairs")
+
+    # --- Pass 8: same (date, cc), street-name fuzzy match, tk within 2 ---
+    # Targets `unresolved` residuals on side-streets with no route+mp.
+    # NJSP's `street` / `location` text vs NJDOT's `road` / `cross_street`
+    # differ in casing, abbreviations, direction suffixes, and street-
+    # number prefixes but often name the same physical road. Normalize
+    # via `norm_street` and compare; `tk` may differ up to 2 (same logic
+    # as pass 7).
+    sp_left = sp[~sp['njsp_id'].isin(claimed_njsp)]
+    do_left = do[~do['njdot_idx'].isin(claimed_njdot)]
+    for key, xg in sp_left.groupby(['date', 'cc'], sort=False):
+        pg = do_left[(do_left['date'] == key[0]) & (do_left['cc'] == key[1])]
+        if pg.empty or xg.empty:
+            continue
+        for _, srow in xg.iterrows():
+            if srow['njsp_id'] in claimed_njsp:
+                continue
+            # NJSP's street text: prefer `street` if set, else `location`
+            s_street = srow.get('street') or srow.get('location')
+            s_norm = norm_street(s_street)
+            if not s_norm:
+                continue
+            for _, drow in pg.iterrows():
+                if drow['njdot_idx'] in claimed_njdot:
+                    continue
+                if abs(int(srow['tk']) - int(drow['tk'])) > 2:
+                    continue
+                if street_hints_agree(s_street, drow.get('road'), drow.get('cross_street')):
+                    _record(int(srow['njsp_id']), int(drow['njdot_idx']), 8)
+                    break
+    err(f"  pass 8 ((date,cc) street-name fuzzy): {sum(m['pass']==8 for m in matches)} pairs")
 
     # --- Residuals report ---
     # Categorize each residual row by WHY it didn't match:

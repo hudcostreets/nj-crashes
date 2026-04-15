@@ -3,7 +3,7 @@
 ## Status (2026-04-15)
 
 - **Core matcher landed** (`54984e2ebf9`). `njsp/match_njdot.py` implements 7 passes; CLI at `njsp match_njdot`; dvc stage at `njsp/data/njsp_njdot_match.parquet.dvc`; 16 unit tests at `njsp/tests/test_match_njdot.py`.
-- Current coverage on 2008-2023: **8420 pairs (93.8% NJSP, 90.1% NJDOT-fatal)**. Residuals: 553 NJSP-only, 924 NJDOT-only.
+- Current coverage on 2008-2023: **8428 pairs (93.9% NJSP, 90.2% NJDOT-fatal)**. Residuals: 545 NJSP-only, 916 NJDOT-only.
 - Pass breakdown (landed 2026-04-14/15):
   | # | key | pairs |
   |---|-----|-------|
@@ -14,11 +14,12 @@
   | 5 | `(date, cc, tk)` ±3hr time | 54 |
   | 6 | `(date, cc, tk, pk)` decomposition | 10 |
   | 7 | route+mp agree, tk disagrees | 21 |
+  | 8 | `(date, cc)` street-name fuzzy | 8 |
 - Residual breakdown (2008-2023):
   | side | pd_missing | route_mismatch | unresolved |
   |------|-----------|----------------|-----------|
-  | njdot | 823 | 4 | 97 |
-  | njsp | 454 | 6 | 93 |
+  | njdot | 825 | 4 | 87 |
+  | njsp | 454 | 6 | 85 |
 
 Remaining `route_mismatch` residuals (10) are ~half NJ Turnpike 95↔700 aliasing (next session: route alias normalization) and ~half physically-different locations that happen to share a day+county.
 
