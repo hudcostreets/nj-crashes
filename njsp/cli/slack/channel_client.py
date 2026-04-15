@@ -227,7 +227,12 @@ class ChannelClient:
             if replies_df.empty:
                 replies = []
             else:
-                reply_accids = replies_df.metadata.apply(Series).event_payload.apply(Series).ACCID.astype(int)
+                # Bot replies usually carry an ACCID in `metadata.event_payload`;
+                # older replies (or edits/restores) may have neither, surfacing
+                # as NaN. Drop NaN before the int cast and only validate the
+                # ones we can actually check.
+                reply_accids = replies_df.metadata.apply(Series).event_payload.apply(Series).ACCID
+                reply_accids = reply_accids.dropna().astype(int)
                 wrong_accid_msk = reply_accids != accid
                 if wrong_accid_msk.any():
                     raise ValueError(f"Thread {thread_ts} has replies from {uid} for other ACCIDs: {replies_df[wrong_accid_msk.index]}")
