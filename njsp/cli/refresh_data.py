@@ -32,8 +32,15 @@ def rundate_short(rundate_str: str) -> str:
         return rundate_str
 
 
-def update_xml_dvc(out_path: str, content: bytes):
-    """Update the .dvc provenance file for a fetched XML."""
+def update_xml_dvc(out_path: str, content: bytes, response=None):
+    """Update the .dvc provenance file for a fetched XML.
+
+    Writes both `outs[0]` (md5, size) and — when `response` is provided —
+    `deps[0]` (checksum from ETag, size, mtime from Last-Modified) plus
+    `meta.import.fetched`. Matches the shape that `dvx import-url --git`
+    produces, so `dvx update` can use the dvc as-is for ETag-based
+    re-fetch checks.
+    """
     import yaml
     dvc_path = Path(out_path + '.dvc')
     if not dvc_path.exists():
@@ -45,6 +52,19 @@ def update_xml_dvc(out_path: str, content: bytes):
     if data and 'outs' in data:
         data['outs'][0]['md5'] = md5
         data['outs'][0]['size'] = size
+    if data and 'deps' in data and response is not None:
+        d = data['deps'][0]
+        d['size'] = size
+        etag = response.headers.get('ETag')
+        if etag:
+            d['checksum'] = etag
+        last_mod = response.headers.get('Last-Modified')
+        if last_mod:
+            from email.utils import parsedate_to_datetime
+            d['mtime'] = parsedate_to_datetime(last_mod).isoformat()
+    if data and 'meta' in data:
+        data['meta'].setdefault('import', {})
+        data['meta']['import']['fetched'] = datetime.now().date().isoformat()
     with open(dvc_path, 'w') as f:
         yaml.dump(data, f, sort_keys=False, default_flow_style=False)
     process.run('git', 'add', str(dvc_path))
@@ -107,7 +127,7 @@ def update_years(*years, current_year: int = None, log_s3: bool = False):
             latest_rundate = rundate
 
         process.run('git', 'add', out_path)
-        update_xml_dvc(out_path, content)
+        update_xml_dvc(out_path, content, response=res)
 
     # Append to S3 fetch log
     if log_s3 and fetch_records:
