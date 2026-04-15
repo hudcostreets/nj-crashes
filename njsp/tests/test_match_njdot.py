@@ -118,5 +118,37 @@ def test_no_spurious_match_when_routes_disagree():
     ])
     matches, residuals = match(sp, do, years=range(2015, 2016))
     assert len(matches) == 0
-    assert (residuals.side == 'njsp').sum() == 1
-    assert (residuals.side == 'njdot').sum() == 1
+    assert (residuals['side'] == 'njsp').sum() == 1
+    assert (residuals['side'] == 'njdot').sum() == 1
+    # Both sides share (date, cc) + routes present → categorized as `route_mismatch`
+    assert set(residuals['kind']) == {'route_mismatch'}
+
+
+def test_residual_kind_pd_missing():
+    """NJSP-only crash (no NJDOT row on that date) → `pd_missing`."""
+    sp = _mk_njsp([
+        {'cc': 1, 'mc': 2, 'dt': '2020-01-15', 'tk': 1, 'location': 'Foo Rd', 'highway': None},
+    ])
+    do = _mk_njdot([
+        {'year': 2020, 'cc': 5, 'mc': 5, 'case': 'X1', 'dt': '2020-06-01 14:00', 'tk': 1, 'route': None, 'mp': None, 'road': 'Bar Rd'},
+    ])
+    matches, residuals = match(sp, do, years=range(2020, 2021))
+    assert len(matches) == 0
+    assert residuals[residuals['side'] == 'njsp']['kind'].iloc[0] == 'pd_missing'
+    assert residuals[residuals['side'] == 'njdot']['kind'].iloc[0] == 'pd_missing'
+
+
+def test_residual_kind_unresolved():
+    """Same date on both sides but no route info → `unresolved`."""
+    sp = _mk_njsp([
+        {'cc': 1, 'mc': 2, 'dt': '2020-01-15', 'tk': 2, 'location': 'Foo Rd', 'highway': None},
+    ])
+    do = _mk_njdot([
+        {'year': 2020, 'cc': 5, 'mc': 5, 'case': 'X1', 'dt': '2020-01-15 14:00', 'tk': 1, 'route': None, 'mp': None, 'road': 'Bar Rd'},
+    ])
+    matches, residuals = match(sp, do, years=range(2020, 2021))
+    assert len(matches) == 0
+    # tk mismatch prevents pass 1 match; shared date but different cc and no
+    # route info → unresolved on both sides
+    assert residuals[residuals['side'] == 'njsp']['kind'].iloc[0] == 'unresolved'
+    assert residuals[residuals['side'] == 'njdot']['kind'].iloc[0] == 'unresolved'

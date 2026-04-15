@@ -245,35 +245,76 @@ def match(
     err(f"  pass 4 (date±1, route+mp): {sum(m['pass']==4 for m in matches)} pairs")
 
     # --- Residuals report ---
+    # Categorize each residual row by WHY it didn't match:
+    #   `pd_missing`  — no same-date crash on the other side ANYWHERE
+    #                   (likely a filing gap or an NJSP-only / NJDOT-only
+    #                   record of a true crash — e.g. PIPW didn't report)
+    #   `route_mismatch` — same (date, cc) present on both sides but
+    #                   `route` disagrees; could be a genuine crash-pair
+    #                   needing human review
+    #   `unresolved`  — neither of the above; usually means the crash is
+    #                   on a side-street (no route info) so our MP-based
+    #                   passes couldn't fire
     residuals: list[dict] = []
-    for _, r in sp[~sp['njsp_id'].isin(claimed_njsp)].iterrows():
+
+    sp_unmatched = sp[~sp['njsp_id'].isin(claimed_njsp)]
+    do_unmatched = do[~do['njdot_idx'].isin(claimed_njdot)]
+    # Index same-date presence on the opposing side for fast lookup
+    sp_dates = set(sp_unmatched['date'])
+    do_dates = set(do_unmatched['date'])
+    sp_date_cc = set(zip(sp_unmatched['date'], sp_unmatched['cc']))
+    do_date_cc = set(zip(do_unmatched['date'], do_unmatched['cc']))
+
+    def _categorize(row: pd.Series, side: str) -> str:
+        date, cc = row['date'], int(row['cc'])
+        other_dates = do_dates if side == 'njsp' else sp_dates
+        other_date_cc = do_date_cc if side == 'njsp' else sp_date_cc
+        if date not in other_dates:
+            return 'pd_missing'
+        if (date, cc) in other_date_cc and row.get('route'):
+            return 'route_mismatch'
+        return 'unresolved'
+
+    for _, r in sp_unmatched.iterrows():
         residuals.append({
             'side': 'njsp',
-            'kind': 'unmatched',
+            'kind': _categorize(r, 'njsp'),
             'year': int(r['year']),
             'cc': int(r['cc']),
             'mc': int(r['mc']),
             'date': r['date'],
             'tk': int(r['tk']),
+            'route': r.get('route'),
+            'mp': r.get('mp'),
             'hint': r.get('location') or r.get('street') or '',
         })
-    for _, r in do[~do['njdot_idx'].isin(claimed_njdot)].iterrows():
+    for _, r in do_unmatched.iterrows():
+        mp_val = r.get('mp')
+        mp_suffix = f" MP{mp_val}" if pd.notna(mp_val) else ''
         residuals.append({
             'side': 'njdot',
-            'kind': 'unmatched',
+            'kind': _categorize(r, 'njdot'),
             'year': int(r['year']),
             'cc': int(r['cc']),
             'mc': int(r['mc']),
             'date': r['date'],
             'tk': int(r['tk']),
-            'hint': str(r.get('road') or '') + (f" MP{r['mp']}" if pd.notna(r.get('mp')) else ''),
+            'route': r.get('route'),
+            'mp': float(mp_val) if pd.notna(mp_val) else None,
+            'hint': str(r.get('road') or '') + mp_suffix,
         })
 
     matches_df = pd.DataFrame(matches)
-    residuals_df = pd.DataFrame(residuals, columns=['side', 'kind', 'year', 'cc', 'mc', 'date', 'tk', 'hint'])
+    residuals_df = pd.DataFrame(
+        residuals,
+        columns=['side', 'kind', 'year', 'cc', 'mc', 'date', 'tk', 'route', 'mp', 'hint'],
+    )
     n_njsp_resid = (residuals_df['side'] == 'njsp').sum() if not residuals_df.empty else 0
     n_njdot_resid = (residuals_df['side'] == 'njdot').sum() if not residuals_df.empty else 0
     err(f"Total: matched {len(matches_df)} pairs ({len(matches_df)/len(sp)*100:.1f}% of NJSP, "
         f"{len(matches_df)/len(do)*100:.1f}% of NJDOT-fatal); "
         f"residuals: {n_njsp_resid} NJSP, {n_njdot_resid} NJDOT")
+    if not residuals_df.empty:
+        by_kind = residuals_df.groupby(['side', 'kind']).size().unstack(fill_value=0)
+        err(f"Residual kinds:\n{by_kind.to_string()}")
     return matches_df, residuals_df

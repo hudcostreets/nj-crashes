@@ -1,5 +1,17 @@
 # Harmonize NJSP and NJDOT fatal crashes
 
+## Status (2026-04-15)
+
+- **Core matcher landed** (`54984e2ebf9`). `njsp/match_njdot.py` implements passes 1-4; CLI at `njsp match_njdot`; dvc stage at `njsp/data/njsp_njdot_match.parquet.dvc`; unit tests at `njsp/tests/test_match_njdot.py`.
+- Current coverage on 2008-2023: **8323 pairs (92.8% NJSP, 89.1% NJDOT-fatal)**. Residuals: 650 NJSP-only, 1021 NJDOT-only.
+- Pass breakdown: 8128 (exact date,cc,mc) + 163 (cross-mc route+mp) + 16 (cross-county) + 16 (date±1).
+
+Remaining work:
+- **Richer residual categorization** — currently all residuals are `kind='unmatched'`. Spec calls for `pd_missing`, `route_mismatch`, `unresolved`. Splitting them informs where to look for fixes.
+- **Per-pass observability** — one `njsp_njdot_match.parquet` today; consider emitting per-pass files or a `/harmonization` debug page.
+- **Downstream consumers** — the matches aren't used yet. Obvious candidates: `crash-homicide.csv` gains a "reconciled" source (union of matched + NJSP-only + NJDOT-only); crash-detail pages (when built) can link to the NJDOT counterpart.
+- **Crowdsourced pairing UI** — see `specs/crowdsourced-edits.md`.
+
 ## Motivation
 
 The two sources for NJ fatal crashes disagree on year-level totals by
