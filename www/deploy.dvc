@@ -4,6 +4,6 @@ meta:
     git_deps:
       deploy.sh: b7d74d01e7d3fe4c928885d649c19e572a7e6c41
       src: 39a7ed6af2e83c27fd92c6b3435dbd9475afc372
-      public: a5a027fc284435a4ba4739cffd781e34b9b05472
+      public: 661ec2eb0f4f737363a0e08fa6978b0870034349
       package.json: 56f82e2ea89145d4ca0e13e0d2da6a6869d19512
       functions: d45da0aa448a9be329f954bccdc77cf1d675f5de
