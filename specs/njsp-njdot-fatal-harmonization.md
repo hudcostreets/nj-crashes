@@ -2,9 +2,25 @@
 
 ## Status (2026-04-15)
 
-- **Core matcher landed** (`54984e2ebf9`). `njsp/match_njdot.py` implements passes 1-4; CLI at `njsp match_njdot`; dvc stage at `njsp/data/njsp_njdot_match.parquet.dvc`; unit tests at `njsp/tests/test_match_njdot.py`.
-- Current coverage on 2008-2023: **8323 pairs (92.8% NJSP, 89.1% NJDOT-fatal)**. Residuals: 650 NJSP-only, 1021 NJDOT-only.
-- Pass breakdown: 8128 (exact date,cc,mc) + 163 (cross-mc route+mp) + 16 (cross-county) + 16 (date±1).
+- **Core matcher landed** (`54984e2ebf9`). `njsp/match_njdot.py` implements 7 passes; CLI at `njsp match_njdot`; dvc stage at `njsp/data/njsp_njdot_match.parquet.dvc`; 16 unit tests at `njsp/tests/test_match_njdot.py`.
+- Current coverage on 2008-2023: **8420 pairs (93.8% NJSP, 90.1% NJDOT-fatal)**. Residuals: 553 NJSP-only, 924 NJDOT-only.
+- Pass breakdown (landed 2026-04-14/15):
+  | # | key | pairs |
+  |---|-----|-------|
+  | 1 | exact `(date, cc, mc)` + tk-sum | 8128 |
+  | 2 | `(date, cc)` cross-mc on route+mp | 173 |
+  | 3 | `(date)` cross-county on route+mp | 16 |
+  | 4 | `date ± 1` on route+mp | 18 |
+  | 5 | `(date, cc, tk)` ±3hr time | 54 |
+  | 6 | `(date, cc, tk, pk)` decomposition | 10 |
+  | 7 | route+mp agree, tk disagrees | 21 |
+- Residual breakdown (2008-2023):
+  | side | pd_missing | route_mismatch | unresolved |
+  |------|-----------|----------------|-----------|
+  | njdot | 823 | 4 | 97 |
+  | njsp | 454 | 6 | 93 |
+
+Remaining `route_mismatch` residuals (10) are ~half NJ Turnpike 95↔700 aliasing (next session: route alias normalization) and ~half physically-different locations that happen to share a day+county.
 
 Remaining work:
 - **Richer residual categorization** — ✅ done (`91c5c71650e`). Split into `pd_missing`, `route_mismatch`, `unresolved`.
