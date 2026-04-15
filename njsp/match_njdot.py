@@ -39,7 +39,7 @@ from nj_crashes.utils.log import err
 DEFAULT_YEARS = range(2008, 2024)
 MP_TOLERANCE = 1.0  # miles
 
-_MP_RE = re.compile(r'\bMP\s*(\d+(?:\.\d+)?)', re.IGNORECASE)
+_MP_RE = re.compile(r'\bMP\s*(\d*\.?\d+)', re.IGNORECASE)
 
 
 def parse_mp_from_location(loc: str | None) -> float | None:
@@ -300,6 +300,36 @@ def match(
                     _record(int(srow['njsp_id']), int(drow['njdot_idx']), 6)
                     break
     err(f"  pass 6 ((date,cc,tk,pk) decomposition): {sum(m['pass']==6 for m in matches)} pairs")
+
+    # --- Pass 7: route+mp agree, tk disagrees (<= 2 apart) ---
+    # Inspection of `route_mismatch` residuals showed most pairs have
+    # matching route+mp but different `tk` — usually because one source
+    # recorded a later-died hospital fatality the other didn't, or because
+    # one counted a non-occupant fatality (pedestrian + driver = 2 deaths
+    # vs just the driver = 1). Accept these with `tk_delta` recorded;
+    # downstream consumers can decide whether to trust one side.
+    sp_left = sp[~sp['njsp_id'].isin(claimed_njsp)]
+    do_left = do[~do['njdot_idx'].isin(claimed_njdot)]
+    for key, xg in sp_left.groupby(['date', 'cc'], sort=False):
+        pg = do_left[(do_left['date'] == key[0]) & (do_left['cc'] == key[1])]
+        if pg.empty or xg.empty:
+            continue
+        for _, srow in xg.iterrows():
+            if srow['njsp_id'] in claimed_njsp:
+                continue
+            if not srow['route'] or srow['mp'] is None:
+                continue
+            for _, drow in pg.iterrows():
+                if drow['njdot_idx'] in claimed_njdot:
+                    continue
+                if not _route_mp_agree(srow['route'], srow['mp'],
+                                        drow['route'], drow['mp']):
+                    continue
+                if abs(int(srow['tk']) - int(drow['tk'])) > 2:
+                    continue
+                _record(int(srow['njsp_id']), int(drow['njdot_idx']), 7)
+                break
+    err(f"  pass 7 (route+mp agree, tk disagrees): {sum(m['pass']==7 for m in matches)} pairs")
 
     # --- Residuals report ---
     # Categorize each residual row by WHY it didn't match:

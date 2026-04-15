@@ -14,6 +14,9 @@ def test_parse_mp_from_location():
     # Lower-case / spacing variants
     assert parse_mp_from_location('mp 5') == 5.0
     assert parse_mp_from_location('MP5.5') == 5.5
+    # Leading-decimal form (NJSP writes e.g. 'MP .77' for sub-1-mile posts)
+    assert parse_mp_from_location('County 609 MP .77') == 0.77
+    assert parse_mp_from_location('MP.5') == 0.5
     # No MP
     assert parse_mp_from_location('Bergenline Ave') is None
     assert parse_mp_from_location('') is None
