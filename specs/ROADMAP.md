@@ -3,48 +3,41 @@
 Living doc capturing relative priority across open specs. Update as
 priorities shift; treat as a default ordering, not a contract.
 
-## Now / next (small wins, contained scope)
+## Active sequence (2026-04-14)
 
-1. **`dvx-external-https-deps.md`** — adopt `dvx import-url --git`
-   for NJSP XML / PDF fetching; replaces custom Python fetch logic
-   in `refresh_data` / `refresh_summaries`. Cleaner integration with
-   the dvx pipeline we just standardized on.
-2. **`slack-sync-lookback.md`** — replace the arbitrary 7-day window
-   in `slack_post.sh` with smart "walk back to fully synced"
-   logic. (Related: see `projection-and-yoy-audit.md` for the
-   broader git-log-walking audit.)
-3. **`page-annotations.md`** — phase 2: visually shade the affected
-   year range on the plot itself (currently only icon trigger), add
-   5-10 more confirmed entries from `tmp/gap-candidates.md`.
+User-confirmed ordering:
 
-## Mid-term
-
-4. **`njsp-njdot-fatal-harmonization.md`** — multi-pass matcher
+1. **`dvx-external-https-deps.md`** — *in progress*. Adopt
+   `dvx import-url --git` for NJSP XML / PDF fetching. Internal
+   plumbing; user-invisible but cleans up custom Python fetch
+   logic in `refresh_data` / `refresh_summaries`.
+2. **`njsp-njdot-fatal-harmonization.md`** — multi-pass matcher
    between NJSP and NJDOT fatal crashes. Foundational for
    crash-detail enrichment + reconciled annual totals.
-5. **`slack-channel-client-cleanup.md`** — defensive parsing,
-   per-crash `try/except`, fixtures + tests. The NaN-on-int fix was
-   one symptom; more bugs likely lurking.
-6. **`projection-and-yoy-audit.md`** — audit git-log-walking,
-   replace Jan-1-anchored projection with 365d-lookback, add new
-   trailing-365 mode to YTD plot.
-7. **`crashplot-facet-by-police-dept.md`** — least important of
-   the mid-term; nice link target for the Alpine annotation, but
-   not blocking other work.
+3. **`county-maps-and-og-images.md`** — generalize the
+   Hudson-only Leaflet map to all counties + munis + statewide.
+   Big visual gap.
+4. **`crash-detail-pages.md`** — per-crash pages aggregating NJSP
+   + NJDOT + news links + Bluesky thread embed + Slack
+   `#crashdashbot` backfill.
 
-## Larger / multi-session
+Annotations explicitly deprioritized — they only surface on
+random sub-pages most users won't encounter.
 
-8. **`crash-detail-pages.md`** — *high user demand*. Per-crash
-   pages aggregating NJSP + NJDOT + news links + Bluesky thread
-   embed + Slack `#crashdashbot` backfill.
-9. **`omnibar-navigation.md`** — Cmd+K nav to counties / munis /
-   sections via `use-kbd`. Probably easier than expected.
-10. **`county-maps-and-og-images.md`** — generalize the
-    Hudson-only Leaflet map to all counties + munis + statewide.
-    State / county / muni map coverage is a big visual gap.
-11. **`crowdsourced-edits.md`** — auth + Slack review queue for
-    user-submitted annotations / harmonization pairings / crash
-    refs. Lowest priority of the longs.
+## Other queued work
+
+- `slack-sync-lookback.md` — small win, but coordinate with
+  `projection-and-yoy-audit.md`'s broader git-log-walking audit
+- `slack-channel-client-cleanup.md` — defensive parsing, fixtures,
+  tests; NaN-on-int fix was one symptom, more bugs likely lurking
+- `projection-and-yoy-audit.md` — audit git-log-walking, replace
+  Jan-1-anchored projection with 365d-lookback, add trailing-365
+  YTD mode
+- `crashplot-facet-by-police-dept.md` — link target for Alpine
+  annotation; nice-to-have
+- `omnibar-navigation.md` — Cmd+K nav via `use-kbd`
+- `crowdsourced-edits.md` — auth + Slack review queue for
+  user-submitted edits
 
 ## Other open specs (not yet ranked)
 
