@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Apr 13 10:00:02 EDT 2026</RUNDATE>
+  <RUNDATE>Tue Apr 14 10:00:05 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2624,7 +2624,7 @@
     <MUNICIPALITY MCODE="1507" MNAME="Toms River">
       <ACCIDENT ACCID="14103" DATE="08/29/2025" TIME="0702">
         <HIGHWAY>444</HIGHWAY>
-        <LOCATION>Garden State Parkway</LOCATION>
+        <LOCATION>Garden State Parkway MP 86.7</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
