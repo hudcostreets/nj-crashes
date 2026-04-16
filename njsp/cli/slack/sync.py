@@ -67,5 +67,5 @@ def sync(
                 crash_log=crash_log,
                 overwrite_existing=overwrite_existing,
             )
-        except Exception:
-            raise RuntimeError(f"Failed to sync crash {accid=}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to sync crash {accid=}") from e
