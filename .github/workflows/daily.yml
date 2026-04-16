@@ -53,12 +53,11 @@ jobs:
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'ryan-williams@users.noreply.github.com'
       - name: Pull DVC-tracked deps from S3
-        # - Per-year NewJersey*Accidents.pqt: deps of harmonize.dvc
-        # - crash-log.parquet: incremental append in crash-log stage
         run: |
           dvx pull njdot/data/crashes.parquet
           dvx pull njdot/data/*/NewJersey*Accidents.pqt.dvc
           dvx pull njsp/data/crash-log.parquet.dvc
+          dvx pull www/public/Municipal_Boundaries_of_NJ.geojson
       - name: DVX status
         run: dvx status
       # === Pipeline stages (sequential, matching old daily.yml order) ===
