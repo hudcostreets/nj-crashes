@@ -199,6 +199,235 @@ def _route_mp_agree(s_route: str | None, s_mp: float | None,
     return abs(s_mp - d_mp) <= MP_TOLERANCE
 
 
+def score_pair(s: pd.Series, d: pd.Series) -> tuple[int, list[str]]:
+    """Score an NJSP ↔ NJDOT candidate pair for human review.
+
+    Higher = more likely the same crash. Returns (score, signals).
+    Signals is a list of tags naming what matched, e.g.
+      ['same-date', 'same-cc', 'route', 'mp', 'tk-delta=1'].
+    """
+    score = 0
+    sig: list[str] = []
+    # --- date ---
+    date_delta = abs((s['date'] - d['date']).days)
+    if date_delta == 0:
+        score += 100; sig.append('same-date')
+    elif date_delta == 1:
+        score += 50; sig.append('date±1')
+    elif date_delta <= 3:
+        score += 20; sig.append(f'date±{date_delta}')
+    else:
+        score -= date_delta  # penalize; still consider if other signals strong
+    # --- geography (county, municipality) ---
+    if int(s['cc']) == int(d['cc']):
+        score += 30; sig.append('same-cc')
+        if int(s['mc']) == int(d['mc']):
+            score += 20; sig.append('same-mc')
+    # --- route + milepost ---
+    s_route = s.get('route')
+    d_route = d.get('route')
+    s_mp = s.get('mp')
+    d_mp = d.get('mp')
+    if s_route and d_route and s_route == d_route:
+        score += 40; sig.append('route')
+        if s_mp is not None and d_mp is not None:
+            mp_delta = abs(s_mp - d_mp)
+            if mp_delta <= 0.5:
+                score += 30; sig.append('mp')
+            elif mp_delta <= 2.0:
+                score += 15; sig.append(f'mp±{mp_delta:.1f}')
+    # --- street name (normalized) ---
+    s_street_norm = norm_street(s.get('location') or s.get('street'))
+    d_street_norm = norm_street(d.get('road'))
+    d_cross_norm = norm_street(d.get('cross_street'))
+    if s_street_norm and (s_street_norm == d_street_norm or s_street_norm == d_cross_norm):
+        score += 40; sig.append('street')
+    # --- victim count (tk) ---
+    tk_delta = abs(int(s['tk']) - int(d['tk']))
+    if tk_delta == 0:
+        score += 20; sig.append('same-tk')
+    elif tk_delta == 1:
+        score += 10; sig.append('tk±1')
+    else:
+        sig.append(f'tk-delta={tk_delta}')
+    # --- pk (pedestrians killed) if both have it ---
+    s_pk = s.get('pk'); d_pk = d.get('pk')
+    if s_pk is not None and d_pk is not None and not pd.isna(s_pk) and not pd.isna(d_pk):
+        if int(s_pk) == int(d_pk):
+            score += 10; sig.append('same-pk')
+    # --- time of day (only if same-date) ---
+    if date_delta == 0 and 'dt' in s and 'dt' in d:
+        try:
+            s_ts = pd.Timestamp(s['dt']).tz_convert('UTC') if pd.Timestamp(s['dt']).tz else pd.Timestamp(s['dt']).tz_localize('US/Eastern').tz_convert('UTC')
+            d_ts = pd.Timestamp(d['dt']).tz_convert('UTC') if pd.Timestamp(d['dt']).tz else pd.Timestamp(d['dt']).tz_localize('US/Eastern').tz_convert('UTC')
+            t_delta_hr = abs((s_ts - d_ts).total_seconds()) / 3600
+            if t_delta_hr <= 3:
+                score += 10; sig.append(f'time±{t_delta_hr:.1f}h')
+        except Exception:
+            pass
+    return score, sig
+
+
+def suggest_candidates(
+    njsp: pd.DataFrame,
+    njdot: pd.DataFrame,
+    match_df: pd.DataFrame,
+    years: Iterable[int] = DEFAULT_YEARS,
+    top_k: int = 3,
+    date_window: int = 3,
+) -> pd.DataFrame:
+    """For each unmatched NJSP residual, score the top-K best NJDOT
+    residual candidates (and vice versa). Output is a review-friendly
+    DataFrame with one row per candidate.
+
+    Only candidates within `date_window` days are considered (residuals
+    far apart in time are almost certainly not the same crash).
+    """
+    years = list(years)
+    sp = _prep_njsp(njsp, years)
+    do = _prep_njdot(njdot[njdot['severity'] == 'f'], years)
+
+    matched_njsp = set(match_df['njsp_id'].astype(int))
+    # Map (year, cc, mc, case) → njdot_idx for set membership
+    matched_njdot_pks = set(zip(
+        match_df['year'].astype(int),
+        match_df['cc'].astype(int),
+        match_df['mc'].astype(int),
+        match_df['case'].astype(str),
+    ))
+
+    sp_un = sp[~sp['njsp_id'].isin(matched_njsp)].copy()
+    do_un = do[~do.apply(
+        lambda r: (int(r['year']), int(r['cc']), int(r['mc']), str(r['case'])) in matched_njdot_pks,
+        axis=1,
+    )].copy()
+
+    err(f"Scoring candidates for {len(sp_un)} NJSP-only + {len(do_un)} NJDOT-only residuals "
+        f"(date window ±{date_window}d)")
+
+    rows: list[dict] = []
+    # For each NJSP residual, score nearby NJDOT residuals
+    from datetime import timedelta
+    for _, srow in sp_un.iterrows():
+        lo = srow['date'] - timedelta(days=date_window)
+        hi = srow['date'] + timedelta(days=date_window)
+        cands = do_un[(do_un['date'] >= lo) & (do_un['date'] <= hi)]
+        if cands.empty:
+            rows.append({
+                'side': 'njsp',
+                'ref_id': int(srow['njsp_id']),
+                'ref_year': int(srow['year']),
+                'ref_cc': int(srow['cc']),
+                'ref_mc': int(srow['mc']),
+                'ref_date': srow['date'],
+                'ref_tk': int(srow['tk']),
+                'ref_route': srow.get('route'),
+                'ref_mp': srow.get('mp'),
+                'ref_hint': srow.get('location') or srow.get('street') or '',
+                'rank': 0,
+                'score': None,
+                'signals': 'no-candidate',
+                'cand_year': None, 'cand_cc': None, 'cand_mc': None, 'cand_case': None,
+                'cand_date': None, 'cand_tk': None, 'cand_route': None, 'cand_mp': None, 'cand_hint': '',
+            })
+            continue
+        scored = [(score_pair(srow, drow), drow) for _, drow in cands.iterrows()]
+        scored.sort(key=lambda x: x[0][0], reverse=True)
+        for rank, ((score, sig), drow) in enumerate(scored[:top_k], start=1):
+            rows.append({
+                'side': 'njsp',
+                'ref_id': int(srow['njsp_id']),
+                'ref_year': int(srow['year']),
+                'ref_cc': int(srow['cc']),
+                'ref_mc': int(srow['mc']),
+                'ref_date': srow['date'],
+                'ref_tk': int(srow['tk']),
+                'ref_route': srow.get('route'),
+                'ref_mp': srow.get('mp'),
+                'ref_hint': srow.get('location') or srow.get('street') or '',
+                'rank': rank,
+                'score': score,
+                'signals': ','.join(sig),
+                'cand_year': int(drow['year']),
+                'cand_cc': int(drow['cc']),
+                'cand_mc': int(drow['mc']),
+                'cand_case': str(drow['case']),
+                'cand_date': drow['date'],
+                'cand_tk': int(drow['tk']),
+                'cand_route': drow.get('route'),
+                'cand_mp': float(drow['mp']) if pd.notna(drow.get('mp')) else None,
+                'cand_hint': str(drow.get('road') or '') + (
+                    f" / {drow['cross_street']}" if pd.notna(drow.get('cross_street')) else ''
+                ),
+            })
+
+    # For each NJDOT residual NOT picked as a top-K candidate by any NJSP
+    # row, also emit candidates from the NJSP side so it gets reviewed
+    # too. Otherwise NJDOT-only residuals with no high-scoring NJSP peer
+    # would be invisible in the report.
+    njdot_seen = set()
+    for r in rows:
+        if r['cand_case'] is not None:
+            njdot_seen.add((r['cand_year'], r['cand_cc'], r['cand_mc'], r['cand_case']))
+    for _, drow in do_un.iterrows():
+        pk = (int(drow['year']), int(drow['cc']), int(drow['mc']), str(drow['case']))
+        if pk in njdot_seen:
+            continue  # already shown as a candidate above
+        lo = drow['date'] - timedelta(days=date_window)
+        hi = drow['date'] + timedelta(days=date_window)
+        cands = sp_un[(sp_un['date'] >= lo) & (sp_un['date'] <= hi)]
+        if cands.empty:
+            rows.append({
+                'side': 'njdot',
+                'ref_id': int(drow['njdot_idx']),
+                'ref_year': int(drow['year']),
+                'ref_cc': int(drow['cc']),
+                'ref_mc': int(drow['mc']),
+                'ref_date': drow['date'],
+                'ref_tk': int(drow['tk']),
+                'ref_route': drow.get('route'),
+                'ref_mp': float(drow['mp']) if pd.notna(drow.get('mp')) else None,
+                'ref_hint': str(drow.get('road') or ''),
+                'rank': 0,
+                'score': None,
+                'signals': 'no-candidate',
+                'cand_year': int(drow['year']), 'cand_cc': int(drow['cc']),
+                'cand_mc': int(drow['mc']), 'cand_case': str(drow['case']),
+                'cand_date': None, 'cand_tk': None, 'cand_route': None, 'cand_mp': None, 'cand_hint': '',
+            })
+            continue
+        scored = [(score_pair(srow, drow), srow) for _, srow in cands.iterrows()]
+        scored.sort(key=lambda x: x[0][0], reverse=True)
+        for rank, ((score, sig), srow) in enumerate(scored[:top_k], start=1):
+            rows.append({
+                'side': 'njdot',
+                'ref_id': int(drow['njdot_idx']),
+                'ref_year': int(drow['year']),
+                'ref_cc': int(drow['cc']),
+                'ref_mc': int(drow['mc']),
+                'ref_date': drow['date'],
+                'ref_tk': int(drow['tk']),
+                'ref_route': drow.get('route'),
+                'ref_mp': float(drow['mp']) if pd.notna(drow.get('mp')) else None,
+                'ref_hint': str(drow.get('road') or ''),
+                'rank': rank,
+                'score': score,
+                'signals': ','.join(sig),
+                # `cand_*` here refers to the njsp candidate
+                'cand_year': int(srow['year']),
+                'cand_cc': int(srow['cc']),
+                'cand_mc': int(srow['mc']),
+                'cand_case': f"NJSP#{int(srow['njsp_id'])}",  # no case number on njsp side
+                'cand_date': srow['date'],
+                'cand_tk': int(srow['tk']),
+                'cand_route': srow.get('route'),
+                'cand_mp': srow.get('mp'),
+                'cand_hint': srow.get('location') or srow.get('street') or '',
+            })
+
+    return pd.DataFrame(rows)
+
+
 def load_manual_matches(path: str = 'njsp/data/njsp_njdot_manual_matches.csv') -> pd.DataFrame:
     """Load manually-curated NJSP↔NJDOT pairings that the heuristic passes
     can't produce (e.g. route alias cases, day-boundary crashes with too
