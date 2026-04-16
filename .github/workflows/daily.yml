@@ -63,7 +63,12 @@ jobs:
       # === Pipeline stages (sequential, matching old daily.yml order) ===
       - name: Refresh NJSP data
         if: ${{ !inputs.targets }}
-        run: $DVX njsp/data/refresh.dvc
+        run: |
+          $DVX njsp/data/refresh.dvc
+          # Workaround: `dvx run --push each` only does git push, not S3
+          # cache push. New FAUQStats md5s would otherwise be orphaned in
+          # S3 (next dvx pull would fail). Remove once DVX pushes both.
+          dvx push data/FAUQStats2024.xml data/FAUQStats2025.xml data/FAUQStats2026.xml
       - name: Update NJSP parquets
         if: ${{ !inputs.targets }}
         run: $DVX njsp/data/update_pqts.dvc
@@ -72,7 +77,10 @@ jobs:
         run: $DVX njsp/data/harmonize.dvc
       - name: Update crash log
         if: ${{ !inputs.targets }}
-        run: $DVX njsp/data/crash-log.parquet.dvc
+        run: |
+          $DVX njsp/data/crash-log.parquet.dvc
+          # Same DVX `--push each` workaround as for refresh stage.
+          dvx push njsp/data/crash-log.parquet
       - name: Refresh annual summaries
         if: ${{ !inputs.targets }}
         run: $DVX njsp/data/summaries.dvc
