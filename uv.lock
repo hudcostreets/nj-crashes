@@ -695,6 +695,18 @@ wheels = [
 ]
 
 [[package]]
+name = "croniter"
+version = "6.2.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-dateutil" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/df/de/5832661ed55107b8a09af3f0a2e71e0957226a59eb1dcf0a445cce6daf20/croniter-6.2.2.tar.gz", hash = "sha256:ba60832a5ec8e12e51b8691c3309a113d1cf6526bdf1a48150ce8ec7a532d0ab", size = 113762, upload-time = "2026-03-15T08:43:48.112Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d0/39/783980e78cb92c2d7bdb1fc7dbc86e94ccc6d58224d76a7f1f51b6c51e30/croniter-6.2.2-py3-none-any.whl", hash = "sha256:a5d17b1060974d36251ea4faf388233eca8acf0d09cbd92d35f4c4ac8f279960", size = 45422, upload-time = "2026-03-15T08:43:46.626Z" },
+]
+
+[[package]]
 name = "cryptography"
 version = "45.0.7"
 source = { registry = "https://pypi.org/simple" }
@@ -1053,8 +1065,8 @@ wheels = [
 
 [[package]]
 name = "dvx"
-version = "0.3.1.dev48+ga04baf8bf"
-source = { git = "https://github.com/runsascoded/dvx?rev=a04baf8bf#a04baf8bfb3b990dc88888ebfd7ab0e61228341f" }
+version = "0.3.1.dev50+g5d0f13896"
+source = { git = "https://github.com/runsascoded/dvx?rev=5d0f13896#5d0f13896ce7b7cd667c9399b23d843ddbced59f" }
 dependencies = [
     { name = "click" },
     { name = "dffs" },
@@ -2397,6 +2409,7 @@ dependencies = [
     { name = "atproto" },
     { name = "beautifulsoup4" },
     { name = "click" },
+    { name = "croniter" },
     { name = "dask" },
     { name = "dotenv" },
     { name = "dvc", extra = ["s3"] },
@@ -2447,10 +2460,11 @@ requires-dist = [
     { name = "atproto", marker = "extra == 'bsky'", specifier = ">=0.0.55" },
     { name = "beautifulsoup4", specifier = ">=4.13" },
     { name = "click", specifier = ">=8.1" },
+    { name = "croniter", specifier = ">=1.0" },
     { name = "dask", specifier = ">=2024" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "dvc", extras = ["s3"], specifier = ">=3.59" },
-    { name = "dvx", git = "https://github.com/runsascoded/dvx?rev=a04baf8bf" },
+    { name = "dvx", git = "https://github.com/runsascoded/dvx?rev=5d0f13896" },
     { name = "geopandas", specifier = ">=1.0" },
     { name = "geopy", specifier = ">=2.4" },
     { name = "gitpython", specifier = ">=3.1" },
