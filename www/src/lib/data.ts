@@ -26,8 +26,8 @@ export async function loadCC2MC2MN(): Promise<CC2MC2MN> {
     return fetchJson<CC2MC2MN>('/njdot/cc2mc2mn.json')
 }
 
-export async function loadRundate(): Promise<{ rundate: string }> {
-    return fetchJson<{ rundate: string }>('/njsp/rundate.json')
+export async function loadRundate(): Promise<{ rundate: string, refresh_sha?: string }> {
+    return fetchJson<{ rundate: string, refresh_sha?: string }>('/njsp/rundate.json')
 }
 
 export async function loadPlot<PP extends PlotParams = PlotParams>(

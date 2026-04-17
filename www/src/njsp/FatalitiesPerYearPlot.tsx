@@ -9,6 +9,7 @@ import PlotWrapper from "@/src/lib/plot-wrapper"
 import { Annotation } from "./plot"
 import A from "@/src/lib/a"
 import { GitHub } from "@/src/socials"
+import { loadRundate } from "@/src/lib/data"
 import { PlotInfo, Cyclist, Driver, Pedestrian, Passenger } from "@/src/icons"
 import { repoWithOwner } from "@/src/github"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
@@ -173,6 +174,16 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     const [timeGranularity, setTimeGranularity] = useSessionStorage<TimeGranularity>('njsp-deaths-timeGranularity', 'year')
     const containerRef = useRef<HTMLDivElement>(null)
     const [containerWidth, setContainerWidth] = useState(800)  // Default to reasonable width before ResizeObserver fires
+    const [rundate, setRundate] = useState<string | null>(null)
+    const [refreshSha, setRefreshSha] = useState<string | null>(null)
+
+    useEffect(() => {
+        loadRundate().then(d => { setRundate(d.rundate); setRefreshSha(d.refresh_sha ?? null) }).catch(() => {})
+    }, [])
+
+    const asOfShort = rundate
+        ? new Date(rundate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: 'UTC' })
+        : null
 
     // Track container width for responsive annotation sizing
     useEffect(() => {
@@ -714,6 +725,9 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             </div>
             {!isMonthly && !hasMuniFilter && (curYearActual > 0 || curYearProjectedTotal > 0) && (
                 <p className={css.plotStats}>
+                    {asOfShort && (
+                        <><A href={refreshSha ? `${GitHub.href}/commit/${refreshSha}` : `${GitHub.href}/commits/main`}>As of {asOfShort}</A>, </>
+                    )}
                     {curYearActual > 0 ? (
                         <>
                             {countyLabel} has {curYearActual} reported deaths in {curYear} so far

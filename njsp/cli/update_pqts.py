@@ -3,6 +3,7 @@
 # - Clean / Assign some dtypes
 # - Write to parquet and SQLite
 import sqlite3
+import subprocess
 from os import remove
 from os.path import exists
 
@@ -98,8 +99,12 @@ def update_pqts(replace_db, sync_s3):
         })
     )
 
+    refresh_sha = subprocess.run(
+        ['git', 'log', '--grep=^Refresh NJSP data', '-1', '--format=%H'],
+        capture_output=True, text=True, check=False,
+    ).stdout.strip() or None
     with open(RUNDATE_PATH, 'w') as f:
-        json.dump({ 'rundate': str(rundate), }, f)
+        json.dump({ 'rundate': str(rundate), 'refresh_sha': refresh_sha }, f)
 
     # Verify the reported "total deaths" stat reflects what we see in the crash records
     njsp_totals = totals.fatalities.rename('NJSP total')
