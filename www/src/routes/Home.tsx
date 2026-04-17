@@ -130,7 +130,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                 </LazySection>
 
                 <PlotContainer><YtdDeathsPlot key={`ytd-${cc}-${mc}`} county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
-                {!municipalityName && <PlotContainer><HomicidesComparisonPlot key={`hom-${countyName}`} county={countyName} /></PlotContainer>}
+                {!municipalityName && <PlotContainer><HomicidesComparisonPlot key={`hom-${countyName}`} county={countyName} cc={cc} /></PlotContainer>}
                 <PlotContainer><FatalitiesByMonthBarsPlot key={`fbm-${cc}-${mc}`} county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
 
                 {/* NJ DOT Section */}

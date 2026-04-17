@@ -9,6 +9,9 @@ import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo, DataSource } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
+import { useAnnotations } from "@/src/annotations/useAnnotations"
+import { toPlotLayers } from "@/src/annotations/plot"
+import { AnnotationTrigger, AnnotationBody, useAnnotationOpenState } from "@/src/annotations/AnnotationDetails"
 import css from "./plot.module.scss"
 
 const HEIGHT = 450
@@ -51,11 +54,13 @@ const crashHomicideQueryFn = (county: string | null, source: CrashSource) => `
     ORDER BY year
 `
 
-export function HomicidesComparisonPlot({ id = "vs-homicides", county, height: propHeight, width: propWidth }: Props) {
+export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null, height: propHeight, width: propWidth }: Props) {
     const plotHeight = propHeight ?? HEIGHT
     // Note: crash-homicide data only exists at statewide and county level (no muni breakdowns)
     const db = useDb()
     const plotColors = usePlotColors()
+    const plotAnnotations = useAnnotations({ page: 'homicides-comparison', cc, mc: null })
+    const annOpen = useAnnotationOpenState()
 
     const [avgYears, setAvgYears] = useSessionStorage<number>('homicides-avg-years', 5)
     // Only show source toggle for statewide (county data is NJSP-only)
@@ -132,7 +137,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, height: p
         ]
 
         const layout: Partial<Layout> = {
-            showlegend: true,
+            showlegend: false,
             height: plotHeight,
             margin: { t: 0, b: 40, l: 0, r: 0 },
             paper_bgcolor: plotColors.paperBg,
@@ -182,17 +187,6 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, height: p
                     standoff: 5,
                 },
             },
-            legend: {
-                font: { color: plotColors.textColor },
-                orientation: 'h' as const,
-                x: 0.5,
-                xanchor: 'center' as const,
-                y: -0.08,
-                yanchor: 'top' as const,
-                itemwidth: 15,
-                textgap: 8,
-                itemgap: 24,
-            },
             dragmode: false,
         }
 
@@ -212,8 +206,17 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, height: p
             ? recentMax
             : latestYear
 
+        // Inject annotation shapes/icons (e.g. shaded year ranges for known data issues)
+        const { shapes: annShapes, annotations: annTextEls } = toPlotLayers(plotAnnotations)
+        if (annShapes.length) {
+            layout.shapes = [...(layout.shapes || []), ...annShapes]
+        }
+        if (annTextEls.length) {
+            layout.annotations = [...(layout.annotations || []), ...annTextEls]
+        }
+
         return { data: traces, layout, highlightRow, avgRatio }
-    }, [rows, activeTrace, plotColors, axisAlignment, avgYears])
+    }, [rows, activeTrace, plotColors, axisAlignment, avgYears, plotAnnotations])
 
 
     if (!data.length) {
@@ -237,8 +240,11 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, height: p
                 onActiveTrace={setActiveTrace}
                 fadeInactiveAxis
             />
-            <div className={css.plotToolbarCompact} style={{ justifyContent: 'center' }}>
-                <PlotInfo source={SOURCES} />
+            <div className={css.plotToolbarCompact} style={{ justifyContent: 'center', position: 'relative' }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, display: 'flex', alignItems: 'center', gap: '0.3em', height: '100%' }}>
+                    <PlotInfo source={SOURCES} showLegendHint={false} />
+                    <AnnotationTrigger annotations={plotAnnotations} state={annOpen} />
+                </div>
                 {!county && (
                     <div className={css.buttonBar}>
                         <button
@@ -251,7 +257,22 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, height: p
                         >DOT ('01–'23)</button>
                     </div>
                 )}
+                <div className={css.iconLegend}>
+                    <span className={css.iconLegendItem}>
+                        <span style={{ display: 'inline-block', width: 12, height: 12, background: TRAFFIC_COLOR, borderRadius: 2 }} />
+                        <span className={css.iconLegendLabel}>Car crash deaths</span>
+                    </span>
+                    <span className={css.iconLegendItem}>
+                        <span style={{ display: 'inline-block', width: 12, height: 12, background: HOMICIDE_COLOR, borderRadius: 2 }} />
+                        <span className={css.iconLegendLabel}>Homicides</span>
+                    </span>
+                    <span className={css.iconLegendItem}>
+                        <span style={{ display: 'inline-block', width: 16, height: 2, background: '#fff', verticalAlign: 'middle' }} />
+                        <span className={css.iconLegendLabel}>Ratio</span>
+                    </span>
+                </div>
             </div>
+            <AnnotationBody annotations={plotAnnotations} state={annOpen} />
             {highlightRow && (
                 <p className={css.plotStats}>
                     Over the last{' '}

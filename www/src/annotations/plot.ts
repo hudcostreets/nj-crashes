@@ -50,16 +50,18 @@ export function toPlotLayers(annotations: Annotation[]): {
             layer: 'below',
         })
         // Small icon pinned inside the upper-right of the shaded rect.
+        const io = a.applies_to.icon_offset
         plotAnns.push({
             xref: 'x',
             yref: 'paper',
-            x: y1 + 0.35,
-            y: 0.97,
+            x: y1 + (io?.dx ?? 0.35),
+            y: io?.y ?? 0.97,
             xanchor: 'right',
             yanchor: 'top',
             text: ICON[a.severity],
             font: { size: 14, color: col.icon },
             showarrow: false,
+            captureevents: true,
         })
     }
     return { shapes, annotations: plotAnns }
