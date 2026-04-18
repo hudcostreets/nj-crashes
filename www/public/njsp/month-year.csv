@@ -301,8 +301,8 @@ county,cc,mc,year,month,fatalities
 ,,,2025,12,49
 ,,,2026,1,39
 ,,,2026,2,32
-,,,2026,3,52
-,,,2026,4,16
+,,,2026,3,53
+,,,2026,4,19
 Atlantic,1,,2001,1,2
 Atlantic,1,,2001,2,8
 Atlantic,1,,2001,3,2
@@ -1167,7 +1167,7 @@ Burlington,3,,2025,12,6
 Burlington,3,,2026,1,1
 Burlington,3,,2026,2,3
 Burlington,3,,2026,3,4
-Burlington,3,,2026,4,1
+Burlington,3,,2026,4,2
 Camden,4,,2001,1,1
 Camden,4,,2001,2,3
 Camden,4,,2001,3,9
@@ -1907,6 +1907,7 @@ Cumberland,6,,2025,11,2
 Cumberland,6,,2025,12,3
 Cumberland,6,,2026,2,1
 Cumberland,6,,2026,3,1
+Cumberland,6,,2026,4,1
 Essex,7,,2001,1,6
 Essex,7,,2001,2,2
 Essex,7,,2001,3,6
@@ -2741,7 +2742,7 @@ Hudson,9,,2025,11,3
 Hudson,9,,2025,12,5
 Hudson,9,,2026,1,1
 Hudson,9,,2026,2,3
-Hudson,9,,2026,3,1
+Hudson,9,,2026,3,2
 Hunterdon,10,,2001,3,1
 Hunterdon,10,,2001,4,3
 Hunterdon,10,,2001,5,1
@@ -4760,7 +4761,7 @@ Salem,17,,2025,10,5
 Salem,17,,2025,11,2
 Salem,17,,2025,12,1
 Salem,17,,2026,1,2
-Salem,17,,2026,4,1
+Salem,17,,2026,4,2
 Somerset,18,,2001,2,1
 Somerset,18,,2001,3,3
 Somerset,18,,2001,4,1
@@ -7850,6 +7851,7 @@ Burlington,3,24,2025,10,1
 Burlington,3,24,2025,12,3
 Burlington,3,24,2026,1,1
 Burlington,3,24,2026,3,1
+Burlington,3,24,2026,4,1
 Burlington,3,25,2003,6,1
 Burlington,3,25,2005,10,1
 Burlington,3,25,2007,1,1
@@ -9437,6 +9439,7 @@ Cumberland,6,1,2025,2,1
 Cumberland,6,1,2025,9,1
 Cumberland,6,1,2025,10,1
 Cumberland,6,1,2025,11,1
+Cumberland,6,1,2026,4,1
 Cumberland,6,2,2001,6,2
 Cumberland,6,2,2006,5,1
 Cumberland,6,2,2006,12,1
@@ -11823,6 +11826,7 @@ Hudson,9,12,2021,10,1
 Hudson,9,12,2021,12,1
 Hudson,9,12,2023,9,1
 Hudson,9,12,2024,8,1
+Hudson,9,12,2026,3,1
 Hunterdon,10,1,2001,6,2
 Hunterdon,10,1,2003,2,1
 Hunterdon,10,1,2015,9,3
@@ -16819,6 +16823,7 @@ Salem,17,10,2024,5,1
 Salem,17,10,2024,12,1
 Salem,17,10,2025,7,1
 Salem,17,10,2025,8,1
+Salem,17,10,2026,4,1
 Salem,17,11,2001,1,1
 Salem,17,11,2001,10,1
 Salem,17,11,2002,8,1
