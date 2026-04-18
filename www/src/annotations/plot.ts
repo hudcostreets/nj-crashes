@@ -49,17 +49,18 @@ export function toPlotLayers(annotations: Annotation[]): {
             line: { color: col.border, width: 0 },
             layer: 'below',
         })
-        // Small icon pinned inside the upper-right of the shaded rect.
+        // Icon near the shaded rect.
         const io = a.applies_to.icon_offset
+        const xanchor = io?.anchor ?? 'right'
         plotAnns.push({
             xref: 'x',
             yref: 'paper',
             x: y1 + (io?.dx ?? 0.35),
             y: io?.y ?? 0.97,
-            xanchor: 'right',
+            xanchor,
             yanchor: 'top',
             text: ICON[a.severity],
-            font: { size: 14, color: col.icon },
+            font: { size: 20, color: col.icon },
             showarrow: false,
             captureevents: true,
         })

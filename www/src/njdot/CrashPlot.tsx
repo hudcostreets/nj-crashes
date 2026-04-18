@@ -577,6 +577,9 @@ export default function CrashPlot({
                         onActiveTrace={setActiveTrace}
                         onHover={handleHover}
                         onUnhover={handleUnhover}
+                        onClickAnnotation={() => annOpen.setPinned(!annOpen.pinned)}
+                        onHoverAnnotation={() => annOpen.setHovered(true)}
+                        onUnhoverAnnotation={() => annOpen.setHovered(false)}
                         disableFade
                         boldWeight="normal"
                     />

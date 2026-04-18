@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import type { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { CrashHomicideCsv } from "@/src/paths"
-import { useAlignedDualAxes } from "pltly/react"
+import { useAlignedDualAxes, LegendRow, LegendItem } from "pltly/react"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo, DataSource } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
@@ -75,6 +75,18 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
 
     const [activeTrace, setActiveTrace] = useState<string | null>(null)
     useResetSolo(() => setActiveTrace(null))
+
+    const containerRef = useRef<HTMLDivElement>(null)
+    const [containerWidth, setContainerWidth] = useState(800)
+    useEffect(() => {
+        const el = containerRef.current
+        if (!el) return
+        const update = () => setContainerWidth(el.clientWidth)
+        update()
+        const obs = new ResizeObserver(update)
+        obs.observe(el)
+        return () => obs.disconnect()
+    }, [])
 
     // Pre-compute value arrays for dual-axis alignment hook (must be unconditional)
     const deathValues = useMemo(() => rows.flatMap(r => [r.traffic_deaths, r.homicides]), [rows])
@@ -229,7 +241,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
     const sourceLabel = effectiveSource === 'njsp' ? 'NJSP' : 'NJ DOT'
 
     return (
-        <div>
+        <div ref={containerRef}>
             <h2 id={id}><a href={`#${id}`}>Car Crash Deaths vs. Homicides</a></h2>
             <div className={css.subtitle}>{sourceLabel} fatalities, {minYear}–{maxYear}{county ? ` · ${county} County` : ''}</div>
             <PlotWrapper
@@ -238,14 +250,23 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
                 data={data}
                 layout={layout}
                 onActiveTrace={setActiveTrace}
+                onClickAnnotation={() => annOpen.setPinned(!annOpen.pinned)}
+                onHoverAnnotation={() => annOpen.setHovered(true)}
+                onUnhoverAnnotation={() => annOpen.setHovered(false)}
                 fadeInactiveAxis
             />
-            <div className={css.plotToolbarCompact} style={{ justifyContent: 'center', position: 'relative' }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, display: 'flex', alignItems: 'center', gap: '0.3em', height: '100%' }}>
+            <LegendRow
+                width={containerWidth}
+                left={<>
                     <PlotInfo source={SOURCES} showLegendHint={false} />
                     <AnnotationTrigger annotations={plotAnnotations} state={annOpen} />
-                </div>
-                {!county && (
+                </>}
+                center={<>
+                    <LegendItem color={TRAFFIC_COLOR} label="Car crash deaths" />
+                    <LegendItem color={HOMICIDE_COLOR} label="Homicides" />
+                    <LegendItem type="line" color="#fff" label="Ratio" />
+                </>}
+                right={!county ? (
                     <div className={css.buttonBar}>
                         <button
                             className={crashSource === 'njsp' ? css.active : ''}
@@ -256,22 +277,8 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
                             onClick={() => setCrashSource('njdot')}
                         >DOT ('01–'23)</button>
                     </div>
-                )}
-                <div className={css.iconLegend}>
-                    <span className={css.iconLegendItem}>
-                        <span style={{ display: 'inline-block', width: 12, height: 12, background: TRAFFIC_COLOR, borderRadius: 2 }} />
-                        <span className={css.iconLegendLabel}>Car crash deaths</span>
-                    </span>
-                    <span className={css.iconLegendItem}>
-                        <span style={{ display: 'inline-block', width: 12, height: 12, background: HOMICIDE_COLOR, borderRadius: 2 }} />
-                        <span className={css.iconLegendLabel}>Homicides</span>
-                    </span>
-                    <span className={css.iconLegendItem}>
-                        <span style={{ display: 'inline-block', width: 16, height: 2, background: '#fff', verticalAlign: 'middle' }} />
-                        <span className={css.iconLegendLabel}>Ratio</span>
-                    </span>
-                </div>
-            </div>
+                ) : undefined}
+            />
             <AnnotationBody annotations={plotAnnotations} state={annOpen} />
             {highlightRow && (
                 <p className={css.plotStats}>

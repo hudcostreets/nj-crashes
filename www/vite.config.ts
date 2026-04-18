@@ -16,7 +16,13 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
+      // Prevent duplicate React across symlink boundary (pds local)
+      'react': path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+      'react/jsx-runtime': path.resolve(__dirname, 'node_modules/react/jsx-runtime'),
+      'react-dom/client': path.resolve(__dirname, 'node_modules/react-dom/client'),
     },
+    dedupe: ['plotly.js', 'react', 'react-dom'],
   },
 
   build: {

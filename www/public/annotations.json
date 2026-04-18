@@ -22,7 +22,7 @@
       "pages": ["homicides-comparison"],
       "year_range": [2020, 2020],
       "data_source": "ucr",
-      "icon_offset": { "dx": 1.4, "y": 0.97 }
+      "icon_offset": { "dx": 0.6, "y": 0.97, "anchor": "left" }
     },
     "severity": "warning",
     "authored": { "author": "rw+claude", "date": "2026-04-16" },

@@ -9,11 +9,13 @@ import '../styles/globals.css'
 import 'leaflet/dist/leaflet.css'
 import '@fortawesome/fontawesome-svg-core/styles.css'
 
+const plotlyBasic = () => import('plotly.js/lib/index-basic.js' as any).then(m => (m as any).default ?? m)
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <HelmetProvider>
       <ThemeProvider>
-        <PlotlyProvider loader={() => import('plotly.js/basic').then(m => (m as any).default ?? m)}>
+        <PlotlyProvider loader={plotlyBasic}>
         <BrowserRouter>
           <App />
         </BrowserRouter>

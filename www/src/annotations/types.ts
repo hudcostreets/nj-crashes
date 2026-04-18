@@ -17,7 +17,7 @@ export type AnnotationAppliesTo = {
     year_range?: [number, number]
     data_source?: DataSource
     /** Override the default icon position on the plot (x offset from year_range end, y in paper coords 0-1) */
-    icon_offset?: { dx?: number; y?: number }
+    icon_offset?: { dx?: number; y?: number; anchor?: 'left' | 'right' }
 }
 
 export type Annotation = {

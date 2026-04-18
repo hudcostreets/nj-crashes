@@ -17,6 +17,9 @@ export type OtherHandlers = {
     onRelayout?: (e: PlotRelayoutEvent) => void
     onHover?: (event: any) => void
     onUnhover?: (event: any) => void
+    onClickAnnotation?: (event: { index: number; annotation: any; fullAnnotation: any }) => void
+    onHoverAnnotation?: (event: { index: number; annotation: any; fullAnnotation: any }) => void
+    onUnhoverAnnotation?: (event: { index: number; annotation: any; fullAnnotation: any }) => void
 }
 
 export type Props = {
@@ -52,6 +55,9 @@ export default function PlotWrapper({
     onRelayout,
     onHover,
     onUnhover,
+    onClickAnnotation,
+    onHoverAnnotation,
+    onUnhoverAnnotation,
     disableFade,
     disableSolo,
     fadeInactiveAxis,
@@ -77,6 +83,9 @@ export default function PlotWrapper({
             onHover={onHover}
             onUnhover={onUnhover}
             onResetSolo={onResetSolo}
+            onClickAnnotation={onClickAnnotation}
+            onHoverAnnotation={onHoverAnnotation}
+            onUnhoverAnnotation={onUnhoverAnnotation}
             disableLegendHover={disableFade}
             disableSoloTrace={disableSolo}
             fadeInactiveAxis={fadeInactiveAxis}
