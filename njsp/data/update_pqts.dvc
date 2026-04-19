@@ -3,5 +3,5 @@ meta:
     cmd: njsp update_pqts --s3
     git_deps:
       /data/FAUQStats2024.xml: e6ece47084bc6d58e8d8aa5a40d0d85f028c1ac3
-      /data/FAUQStats2025.xml: 7ddc61266d6951aae967150f15c5aeff748ab959
-      /data/FAUQStats2026.xml: 5e17c4a13bd4db1d4623dc2df4a87441f1a272a6
+      /data/FAUQStats2025.xml: d2f4ab5ed852420cc2c956637e0eadef318b781e
+      /data/FAUQStats2026.xml: a8970b9f8625dcb40fea261af2fa910a9c96bc0b
