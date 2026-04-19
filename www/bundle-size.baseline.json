@@ -1,0 +1,24 @@
+{
+  "entries": {
+    "assets/TileLayer.js": {
+      "raw": 154144,
+      "gzip": 44983
+    },
+    "assets/diffs.js": {
+      "raw": 1183,
+      "gzip": 663
+    },
+    "assets/index.css": {
+      "raw": 146451,
+      "gzip": 27179
+    },
+    "assets/index.js": {
+      "raw": 2946750,
+      "gzip": 748701
+    }
+  },
+  "total": {
+    "raw": 3248528,
+    "gzip": 821526
+  }
+}

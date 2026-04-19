@@ -8,6 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist node_modules/.vite",
+    "size": "node scripts/check-bundle-size.mjs",
+    "size:update": "node scripts/check-bundle-size.mjs --update",
     "tc": "tsc",
     "test": "playwright test --reporter=list",
     "test:headed": "playwright test --headed --reporter=list",
