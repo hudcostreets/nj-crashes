@@ -82,3 +82,11 @@ Reuse existing table styles from `www/src/tables/`. Use the project's existing S
 2. `MatchReview.tsx` with pass tabs + paginated match table (read-only)
 3. Candidates table with score filtering
 4. Accept/reject buttons + localStorage persistence + CSV export
+
+## Implementation notes (completed)
+
+- `match-review.json` is gitignored (~3 MB generated artifact); run `njsp export_match_review` to regenerate. Not yet wired into the daily DVX pipeline — do that if the page becomes part of production.
+- `MatchReview.tsx` uses a standalone lightweight table (no MUI) to keep the page fast and the bundle small. Tables scroll horizontally on narrow viewports.
+- Candidates controls: min-score slider (default 50) + "Hide decided" checkbox. Score badge colors: green (≥100), yellow (50–99), gray (<50).
+- Accept/Reject toggle: clicking the same action again clears the decision.
+- CSV export for NJDOT-side accepts uses `cand_case` minus the `NJSP#` prefix as `njsp_id`; for NJSP-side accepts uses `cand_year/cc/mc/case` directly. Rejected rows emit `note=rejected` with the ref-side PK only.

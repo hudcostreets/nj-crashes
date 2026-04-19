@@ -10,6 +10,7 @@ from utz import err
 LAZY_COMMANDS = {
     'bsky': ('bsky', 'Manage @crashes.hudcostreets.org on Bluesky.'),
     'crash_log': ('crash_log', 'Maintain a history of crash-records adds/updates/deletes.'),
+    'export_match_review': ('export_match_review', 'Export NJSP↔NJDOT match-review data as JSON for the frontend UI.'),
     'harmonize_muni_codes': ('harmonize_muni_codes', 'Harmonize county/muni codes between NJDOT and NJSP, output cc2mc2mn.json'),
     'match_njdot': ('match_njdot', 'Multi-pass match NJSP ↔ NJDOT fatal crashes.'),
     'refresh_data': ('refresh_data', 'Snapshot NJSP fatal crash data for the given years.'),
