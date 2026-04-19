@@ -8,6 +8,10 @@
     }
     h2 {
         text-align: center;
+        // Breathing room above section headers when scrolled-to via hash
+        // (either browser hash navigation or useScrollAnchor's scrollIntoView).
+        // Also acts as the hash-transition zone used by useScrollAnchor.
+        scroll-margin-top: 2em;
     }
     p {
         margin: 0.5em 0;

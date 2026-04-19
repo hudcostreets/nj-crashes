@@ -9,6 +9,18 @@
           theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
         document.documentElement.setAttribute('data-theme', theme);
+        // Also set inline bg color — default browser white flashes briefly
+        // before globals.css loads and applies the theme CSS vars.
+        document.documentElement.style.backgroundColor = theme === 'dark' ? '#1a1a1a' : '#ffffff';
+        // If URL has a hash, hide content until useScrollAnchor scrolls to
+        // the target. Prevents flash of page-top content before the scroll.
+        // Safety: reveal after 2s even if the hook hasn't (e.g. target not found).
+        if (window.location.hash) {
+          document.documentElement.style.visibility = 'hidden';
+          // Safety: only fires if useScrollAnchor never runs (e.g. JS failure).
+          // The hook reveals immediately after scrollIntoView lands.
+          setTimeout(function() { document.documentElement.style.visibility = ''; }, 5000);
+        }
       })();
     </script>
     <meta charset="UTF-8" />

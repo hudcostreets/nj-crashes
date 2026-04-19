@@ -12,6 +12,7 @@ import { ThemeToggle } from './components/ThemeToggle'
 import { GeoFilterProvider } from './GeoFilterContext'
 import { DuckDbProvider } from './lib/DuckDbContext'
 import { useGeoActions } from './components/GeoOmnibar'
+import { useScrollAnchor } from './lib/useScrollAnchor'
 
 function GeoHome() {
     return <GeoFilterProvider><GeoActionsRegistrar /><Home /></GeoFilterProvider>
@@ -24,6 +25,7 @@ function GeoActionsRegistrar() {
 }
 
 export default function App() {
+    useScrollAnchor()
     return (
         <HotkeysProvider>
         <DuckDbProvider>
