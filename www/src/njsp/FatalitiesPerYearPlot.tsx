@@ -5,6 +5,7 @@ import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { MonthlyCsv, ProjectedCsv, YtcCsv } from "@/src/paths"
 import { fadeColor, lightenColor } from "pltly"
+import { LegendRow, LegendItem } from "pltly/react"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { Annotation } from "./plot"
 import A from "@/src/lib/a"
@@ -638,65 +639,70 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
 
                 onResetSolo={handleUnpin}
             />
-            <div className={css.plotToolbarCompact}>
-                <PlotInfo source="njsp">
-                    {!isMonthly && county === null && total2021 > 0 && total2022 > 0 ? (
-                        <p style={{ margin: 0 }}>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
-                    ) : null}
-                </PlotInfo>
-                <div className={css.buttonBar}>
-                    {([['year', 'By Year'], ['month', 'By Month']] as const).map(([mode, label]) => (
-                        <button
-                            key={mode}
-                            className={timeGranularity === mode ? css.active : ''}
-                            onClick={() => setTimeGranularity(mode)}
-                        >{label}</button>
-                    ))}
-                </div>
-                <div className={css.iconLegend} onClick={e => { if (e.target === e.currentTarget) handleUnpin() }}>
+            <LegendRow
+                width={containerWidth}
+                left={
+                    <PlotInfo source="njsp">
+                        {!isMonthly && county === null && total2021 > 0 && total2022 > 0 ? (
+                            <p style={{ margin: 0 }}>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
+                        ) : null}
+                    </PlotInfo>
+                }
+                right={
+                    <div className={css.buttonBar}>
+                        {([['year', 'By Year'], ['month', 'By Month']] as const).map(([mode, label]) => (
+                            <button
+                                key={mode}
+                                className={timeGranularity === mode ? css.active : ''}
+                                onClick={() => setTimeGranularity(mode)}
+                            >{label}</button>
+                        ))}
+                    </div>
+                }
+                center={<div onClick={e => { if (e.target === e.currentTarget) handleUnpin() }} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
                     {Types.map(type => {
                         const IconComponent = TYPE_ICONS[type]
-                        const isPinned = pinnedType === type
                         const isSolo = activeType === type
-                        const isGreyed = activeType !== null && !isSolo
                         return (
-                            <span
+                            <LegendItem
                                 key={type}
-                                className={`${css.iconLegendItem} ${isSolo ? css.solo : ''} ${isGreyed ? css.greyed : ''}`}
-                                style={isPinned ? { fontWeight: 'bold' } : undefined}
+                                type="icon"
+                                color={COLORS[type]}
+                                icon={<IconComponent style={{ fill: COLORS[type] }} />}
+                                label={type}
+                                active={isSolo}
+                                faded={activeType !== null && !isSolo}
+                                pinned={pinnedType === type}
                                 onMouseEnter={() => setHoverType(type)}
                                 onMouseLeave={() => setHoverType(null)}
                                 onClick={() => handleLegendItemClick(type)}
-                            >
-                                <IconComponent style={{ fill: COLORS[type] }} />
-                                <span className={css.iconLegendLabel}>{type}</span>
-                            </span>
+                            />
                         )
                     })}
                     {isMonthly && (() => {
-                        const soloType = activeType && Types.includes(activeType) ? activeType : null
-                        const avgLiColor = soloType ? lightenColor(COLORS[soloType], 0.5) : undefined
+                        const soloType = activeType && Types.includes(activeType as Type) ? (activeType as Type) : null
+                        const avgLiColor = soloType ? lightenColor(COLORS[soloType], 0.5) : '#ffffff'
                         return (
-                            <span
-                                className={`${css.iconLegendItem} ${activeType === '12-mo avg' as any ? css.solo : ''}`}
-                                style={pinnedType === '12-mo avg' ? { fontWeight: 'bold' } : undefined}
+                            <LegendItem
+                                type="line"
+                                color={avgLiColor}
+                                label="12-mo avg"
+                                active={rawActive === '12-mo avg'}
+                                pinned={pinnedType === '12-mo avg'}
                                 onMouseEnter={() => setHoverType('12-mo avg')}
                                 onMouseLeave={() => setHoverType(null)}
-                            >
-                                <span className={css.iconLegendLine} style={avgLiColor ? { background: avgLiColor } : undefined} />
-                                <span className={css.iconLegendLabel} style={avgLiColor ? { color: avgLiColor } : undefined}>12-mo avg</span>
-                            </span>
+                            />
                         )
                     })()}
                     {!isMonthly && showProjected && (
                         <details style={{ display: 'inline', position: 'relative', cursor: 'pointer' }}>
                             <summary
-                                className={css.iconLegendItem}
-                                style={{ opacity: 0.7, listStyle: 'none', display: 'inline-flex' }}
+                                style={{ opacity: 0.7, listStyle: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25em', padding: '0 0.4em' }}
                                 onMouseEnter={() => setHoverType('* Projected')}
                                 onMouseLeave={() => setHoverType(null)}
                             >
-                                <span className={css.iconLegendSwatch} style={{
+                                <span style={{
+                                    display: 'inline-block', width: 12, height: 12, borderRadius: 2,
                                     background: `repeating-linear-gradient(
                                         -45deg,
                                         rgba(200,200,200,${projFgOpacity}),
@@ -705,7 +711,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                                         transparent 4px
                                     )`,
                                 }} />
-                                <span className={css.iconLegendLabel}>* Projected</span>
+                                <span>* Projected</span>
                             </summary>
                             <div style={{ position: 'absolute', bottom: '100%', right: 0, zIndex: 100, background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 4, padding: '0.4em 0.6em', fontSize: 11, whiteSpace: 'nowrap' }}>
                                 {([
@@ -721,8 +727,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                             </div>
                         </details>
                     )}
-                </div>
-            </div>
+                </div>}
+            />
             {!isMonthly && !hasMuniFilter && (curYearActual > 0 || curYearProjectedTotal > 0) && (
                 <p className={css.plotStats}>
                     {asOfShort && (

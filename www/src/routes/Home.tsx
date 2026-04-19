@@ -86,7 +86,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
             if (target.closest('.legend .traces')) return
             if (target.closest('.trace')) return
             if (target.closest('button, a, select, input, label, summary')) return
-            if (target.closest('[class*="iconLegend"]')) return
+            if (target.closest('[class*="iconLegend"], .pltly-legend-row, .pltly-legend-item')) return
             if (target.closest('[class*="controlsContent"]')) return
             if (target.closest('[class*="bodyPanel"]')) return
             resetAll()
