@@ -641,14 +641,12 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             />
             <LegendRow
                 width={containerWidth}
-                left={
+                center={<div onClick={e => { if (e.target === e.currentTarget) handleUnpin() }} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: '0.25em', rowGap: '0.4em' }}>
                     <PlotInfo source="njsp">
                         {!isMonthly && county === null && total2021 > 0 && total2022 > 0 ? (
                             <p style={{ margin: 0 }}>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
                         ) : null}
                     </PlotInfo>
-                }
-                right={
                     <div className={css.buttonBar}>
                         {([['year', 'By Year'], ['month', 'By Month']] as const).map(([mode, label]) => (
                             <button
@@ -658,8 +656,6 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                             >{label}</button>
                         ))}
                     </div>
-                }
-                center={<div onClick={e => { if (e.target === e.currentTarget) handleUnpin() }} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
                     {Types.map(type => {
                         const IconComponent = TYPE_ICONS[type]
                         const isSolo = activeType === type
