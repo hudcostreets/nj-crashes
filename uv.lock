@@ -2494,7 +2494,7 @@ requires-dist = [
     { name = "sqlalchemy", specifier = ">=2.0" },
     { name = "stdlb", marker = "extra == 'slack'", specifier = ">=0.0.4" },
     { name = "tabula-py", specifier = ">=2.10" },
-    { name = "thrds", git = "https://github.com/runsascoded/thrds?rev=50dc5af" },
+    { name = "thrds", git = "https://github.com/runsascoded/thrds?rev=41ca769" },
     { name = "utz", specifier = ">=0.21" },
 ]
 provides-extras = ["bsky", "slack"]
@@ -4215,7 +4215,7 @@ wheels = [
 [[package]]
 name = "thrds"
 version = "0.2.0"
-source = { git = "https://github.com/runsascoded/thrds?rev=50dc5af#50dc5aff9ab4e23246738bc2f49d4ca1bba0ba0f" }
+source = { git = "https://github.com/runsascoded/thrds?rev=41ca769#41ca76942b71f941ff240e52627505783ba107f8" }
 
 [[package]]
 name = "tinycss2"
