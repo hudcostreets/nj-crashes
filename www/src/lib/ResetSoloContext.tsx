@@ -25,12 +25,13 @@ export function ResetSoloProvider({ children }: { children: React.ReactNode }) {
  */
 export function useResetSolo(onReset: () => void) {
     const { resetCount } = useContext(ResetSoloContext)
-    const mountedRef = useRef(false)
+    // Track the last-observed count rather than a "mounted" flag. StrictMode
+    // (dev) re-invokes effects after cleanup, which with a mounted flag would
+    // spuriously fire onReset on remount even though resetCount didn't change.
+    const lastCountRef = useRef(resetCount)
     useEffect(() => {
-        if (!mountedRef.current) {
-            mountedRef.current = true
-            return
-        }
+        if (resetCount === lastCountRef.current) return
+        lastCountRef.current = resetCount
         onReset()
     }, [resetCount])
 }

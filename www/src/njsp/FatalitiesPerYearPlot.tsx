@@ -228,17 +228,36 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     // Single state for hover/pin — no parallel systems
     const [hoverType, setHoverType] = useState<string | null>(null)
     const [pinnedType, setPinnedType] = useState<string | null>(null)
+    // After unpin-by-re-click, suppress hover-solo on that same item until pointer leaves
+    const suppressHoverRef = useRef<string | null>(null)
 
     // Active type for solo: only actual Types, not special items like "* Projected" or "12-mo avg"
-    const rawActive = pinnedType ?? hoverType
+    const effectiveHover = hoverType && hoverType === suppressHoverRef.current ? null : hoverType
+    const rawActive = pinnedType ?? effectiveHover
     const activeType = (rawActive && Types.includes(rawActive as Type) ? rawActive : null) as Type | null
     // "* Projected" is a special hover mode (fade non-current-year bars)
-    const highlightProjected = hoverType === '* Projected' && !pinnedType
+    const highlightProjected = effectiveHover === '* Projected' && !pinnedType
 
     const handleLegendItemClick = useCallback((name: string) => {
-        setPinnedType(prev => prev === name ? null : name)
+        setPinnedType(prev => {
+            if (prev === name) {
+                suppressHoverRef.current = name
+                return null
+            }
+            suppressHoverRef.current = null
+            return name
+        })
+    }, [])
+    const handleHoverEnter = useCallback((name: string) => {
+        if (suppressHoverRef.current && suppressHoverRef.current !== name) suppressHoverRef.current = null
+        setHoverType(name)
+    }, [])
+    const handleHoverLeave = useCallback(() => {
+        suppressHoverRef.current = null
+        setHoverType(null)
     }, [])
     const handleUnpin = useCallback(() => {
+        suppressHoverRef.current = null
         setPinnedType(null)
     }, [])
     useResetSolo(handleUnpin)
@@ -641,7 +660,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             />
             <LegendRow
                 width={containerWidth}
-                center={<div onClick={e => { if (e.target === e.currentTarget) handleUnpin() }} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: '0.25em', rowGap: '0.4em' }}>
+                center={<div onClick={e => { if (e.target === e.currentTarget) handleUnpin() }} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', rowGap: '0.4em' }}>
                     <PlotInfo source="njsp">
                         {!isMonthly && county === null && total2021 > 0 && total2022 > 0 ? (
                             <p style={{ margin: 0 }}>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
@@ -669,8 +688,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                                 active={isSolo}
                                 faded={activeType !== null && !isSolo}
                                 pinned={pinnedType === type}
-                                onMouseEnter={() => setHoverType(type)}
-                                onMouseLeave={() => setHoverType(null)}
+                                onMouseEnter={() => handleHoverEnter(type)}
+                                onMouseLeave={handleHoverLeave}
                                 onClick={() => handleLegendItemClick(type)}
                             />
                         )
@@ -685,8 +704,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                                 label="12-mo avg"
                                 active={rawActive === '12-mo avg'}
                                 pinned={pinnedType === '12-mo avg'}
-                                onMouseEnter={() => setHoverType('12-mo avg')}
-                                onMouseLeave={() => setHoverType(null)}
+                                onMouseEnter={() => handleHoverEnter('12-mo avg')}
+                                onMouseLeave={handleHoverLeave}
                             />
                         )
                     })()}
@@ -694,8 +713,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                         <details style={{ display: 'inline', position: 'relative', cursor: 'pointer' }}>
                             <summary
                                 style={{ opacity: 0.7, listStyle: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25em', padding: '0 0.4em' }}
-                                onMouseEnter={() => setHoverType('* Projected')}
-                                onMouseLeave={() => setHoverType(null)}
+                                onMouseEnter={() => handleHoverEnter('* Projected')}
+                                onMouseLeave={handleHoverLeave}
                             >
                                 <span style={{
                                     display: 'inline-block', width: 12, height: 12, borderRadius: 2,
