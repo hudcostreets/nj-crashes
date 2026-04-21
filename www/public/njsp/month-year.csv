@@ -302,7 +302,7 @@ county,cc,mc,year,month,fatalities
 ,,,2026,1,39
 ,,,2026,2,32
 ,,,2026,3,53
-,,,2026,4,24
+,,,2026,4,25
 Atlantic,1,,2001,1,2
 Atlantic,1,,2001,2,8
 Atlantic,1,,2001,3,2
@@ -1908,7 +1908,7 @@ Cumberland,6,,2025,11,2
 Cumberland,6,,2025,12,3
 Cumberland,6,,2026,2,1
 Cumberland,6,,2026,3,1
-Cumberland,6,,2026,4,1
+Cumberland,6,,2026,4,2
 Essex,7,,2001,1,6
 Essex,7,,2001,2,2
 Essex,7,,2001,3,6
@@ -9911,6 +9911,7 @@ Cumberland,6,14,2025,11,1
 Cumberland,6,14,2025,12,1
 Cumberland,6,14,2026,2,1
 Cumberland,6,14,2026,3,1
+Cumberland,6,14,2026,4,1
 Essex,7,1,2001,12,1
 Essex,7,1,2002,5,2
 Essex,7,1,2002,6,1
