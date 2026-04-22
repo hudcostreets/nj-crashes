@@ -16,7 +16,10 @@
     "test:grep": "playwright test --reporter=list -g"
   },
   "dependencies": {
+    "@deck.gl/aggregation-layers": "^8.9.36",
+    "@deck.gl/core": "^8.9.34",
     "@deck.gl/layers": "^8.9.34",
+    "@deck.gl/mapbox": "^8.9.36",
     "@deck.gl/react": "^8.9.34",
     "@duckdb/duckdb-wasm": "^1.28.0",
     "@emotion/react": "^11.11.3",
@@ -32,6 +35,7 @@
     "@react-leaflet/core": "^2.1.0",
     "@vanilla-extract/css": "^1.14.0",
     "fp-ts": "^2.16.2",
+    "h3-js": "^4.4.0",
     "hyparquet": "https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz",
     "leaflet": "^1.9.4",
     "leaflet-edgebuffer": "^1",
@@ -39,7 +43,7 @@
     "maplibre-gl": "^3.6.2",
     "moment-timezone": "^0.5.45",
     "plotly.js": "https://github.com/runsascoded/plotly.js#ae23d2ce313e4aae8535f06a35510d6b9e1d86e3",
-    "pltly": "https://gitlab.com/runsascoded/js/pltly/-/archive/345da237b69645116bb310d2f9ab7f7f064bcee9/pltly-345da237b69645116bb310d2f9ab7f7f064bcee9.tar.gz",
+    "pltly": "workspace:*",
     "react": "^18",
     "react-dom": "^18",
     "react-helmet-async": "^2.0.4",
