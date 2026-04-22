@@ -9,6 +9,7 @@ import HudsonMap from './routes/HudsonMap'
 import HudsonDiffs from './routes/HudsonDiffs'
 import OgImage from './routes/OgImage'
 import MatchReview from './routes/MatchReview'
+import CrashMapPage from './routes/CrashMapPage'
 import { ThemeToggle } from './components/ThemeToggle'
 import { GeoFilterProvider } from './GeoFilterContext'
 import { DuckDbProvider } from './lib/DuckDbContext'
@@ -43,6 +44,9 @@ export default function App() {
                 <Route path="/match-review" element={<MatchReview />} />
                 <Route path="/map/hudson" element={<HudsonMap />} />
                 <Route path="/map/hudson/diffs" element={<HudsonDiffs />} />
+                <Route path="/map" element={<CrashMapPage />} />
+                <Route path="/map/c/:county" element={<CrashMapPage />} />
+                <Route path="/map/c/:county/:muni" element={<CrashMapPage />} />
                 <Route path="*" element={<NotFound />} />
             </Routes>
             <Omnibar />

@@ -13,7 +13,7 @@ import { HeatmapLayer } from "@deck.gl/aggregation-layers/typed"
 import type { PickingInfo } from "@deck.gl/core/typed"
 import type { FeatureCollection } from "geojson"
 import { useTouchPitch } from "./hooks/useTouchPitch"
-import { binIntoHexes, hexesToSegments, buildStackedHexLayer, Segment } from "./StackedHexLayer"
+import { binIntoHexes, hexesToSegments, buildStackedHexLayer, Segment, StackedHex } from "./StackedHexLayer"
 
 export type MapMode = "scatter" | "heatmap" | "hexbin"
 
@@ -41,7 +41,14 @@ export type ViewState = {
 }
 
 export type Props = {
-    crashes: Crash[]
+    /** Raw crash-level data, used in scatter/heatmap and to derive
+     *  client-side hex aggregates in hexbin mode when `prebinnedHexes`
+     *  is not provided. */
+    crashes?: Crash[]
+    /** Pre-aggregated hex cells (from a server-side parquet aggregate).
+     *  When provided AND `mode=hexbin`, these are rendered directly,
+     *  skipping the client-side binning. */
+    prebinnedHexes?: StackedHex[]
     outline?: FeatureCollection
     initialBounds?: [number, number, number, number]
     initialCenter?: { longitude: number; latitude: number; zoom: number }
@@ -114,6 +121,7 @@ function defaultView(
 
 export function CrashMap({
     crashes,
+    prebinnedHexes,
     outline,
     initialBounds,
     initialCenter,
@@ -121,6 +129,7 @@ export function CrashMap({
     theme = "dark",
     height = "100%",
 }: Props) {
+    const effectiveCrashes = crashes ?? []
     const [viewState, setViewState] = useState<ViewState>(() => defaultView(initialBounds, initialCenter, mode))
     const [hoverInfo, setHoverInfo] = useState<PickingInfo | null>(null)
     // H3 hex resolution for hexbin mode. `null` = auto (derived from zoom).
@@ -145,7 +154,7 @@ export function CrashMap({
             return [
                 new ScatterplotLayer<Crash>({
                     id: "crashes-scatter",
-                    data: crashes,
+                    data: effectiveCrashes,
                     getPosition: (c) => [c.lon, c.lat],
                     getFillColor: (c) => severityRgba(c.severity, 200),
                     getRadius: (c) => 4 + Math.min(c.tk * 4 + c.ti, 20),
@@ -164,7 +173,7 @@ export function CrashMap({
             return [
                 new HeatmapLayer<Crash>({
                     id: "crashes-heatmap",
-                    data: crashes,
+                    data: effectiveCrashes,
                     getPosition: (c) => [c.lon, c.lat],
                     getWeight: (c) => (c.severity === "f" ? 5 : 1) + c.tk * 3 + c.ti,
                     radiusPixels: 30,
@@ -177,7 +186,7 @@ export function CrashMap({
         // 3-segment column — bottom = other injuries (yellow), middle = ped/
         // cyclist injuries (orange), top = fatal (red). Height encodes total
         // count; color encodes severity breakdown within the stack.
-        const hexes = binIntoHexes(crashes, effectiveHexRes)
+        const hexes = prebinnedHexes ?? binIntoHexes(effectiveCrashes, effectiveHexRes)
         const segments = hexesToSegments(hexes, elevationPerCount)
         return [
             buildStackedHexLayer({
@@ -188,7 +197,7 @@ export function CrashMap({
                 onHover: (info) => { setHoverInfo(info); return false },
             }),
         ]
-    }, [crashes, mode, effectiveHexRes, elevationPerCount])
+    }, [effectiveCrashes, prebinnedHexes, mode, effectiveHexRes, elevationPerCount])
 
     const onViewStateChange = useCallback(({ viewState: vs }: any) => {
         if (isPitchingRef.current) return
