@@ -5,10 +5,10 @@
  * Nav: right-click / ctrl-drag rotates; two-finger touch drag pitches (mobile).
  */
 import React, { useCallback, useEffect, useMemo, useState } from "react"
-import { Map, Source, Layer, type MapRef } from "react-map-gl/maplibre"
+import { Map, type MapRef } from "react-map-gl/maplibre"
 import "maplibre-gl/dist/maplibre-gl.css"
 import DeckGL from "@deck.gl/react/typed"
-import { ScatterplotLayer } from "@deck.gl/layers/typed"
+import { GeoJsonLayer, ScatterplotLayer } from "@deck.gl/layers/typed"
 import { HeatmapLayer } from "@deck.gl/aggregation-layers/typed"
 import type { PickingInfo } from "@deck.gl/core/typed"
 import type { FeatureCollection } from "geojson"
@@ -60,6 +60,14 @@ export type Props = {
     /** Controlled hex pixel target (pairs with `onHexPxTargetChange`). */
     hexPxTarget?: number
     onHexPxTargetChange?: (n: number) => void
+    /** Controlled bar height multiplier (hexbin only). */
+    elevationPerCount?: number
+    onElevationPerCountChange?: (n: number) => void
+    /** Click handler for outline polygons (geo drill-down). */
+    onOutlineClick?: (feature: any) => void
+    /** Render the internal PitchSlider / HexControls corner widgets.
+     *  Caller can disable (when it supplies its own consolidated panel). */
+    showInternalControls?: boolean
     mode?: MapMode
     theme?: "light" | "dark"
     height?: number | string
@@ -144,6 +152,10 @@ export function CrashMap({
     onViewStateChange: onControlledChange,
     hexPxTarget: controlledHexPxTarget,
     onHexPxTargetChange,
+    elevationPerCount: controlledElevation,
+    onElevationPerCountChange,
+    onOutlineClick,
+    showInternalControls = true,
     mode = "scatter",
     theme = "dark",
     height = "100%",
@@ -173,7 +185,12 @@ export function CrashMap({
     }, [controlledHexPxTarget, onHexPxTargetChange])
     const mapRef = React.useRef<MapRef | null>(null)
     // Height multiplier (meters per crash)
-    const [elevationPerCount, setElevationPerCount] = useState(15)
+    const [localElevation, setLocalElevation] = useState(15)
+    const elevationPerCount = controlledElevation ?? localElevation
+    const setElevationPerCount = useCallback((n: number) => {
+        if (controlledElevation !== undefined && onElevationPerCountChange) onElevationPerCountChange(n)
+        else setLocalElevation(n)
+    }, [controlledElevation, onElevationPerCountChange])
 
     // Auto-tilt when switching into hexbin, flatten when leaving
     useEffect(() => {
@@ -192,9 +209,32 @@ export function CrashMap({
         [hexPxTarget, viewState.zoom, viewState.latitude],
     )
 
+    const outlineLayer = useMemo(() => {
+        if (!outline) return null
+        const lineRgb: [number, number, number] = theme === "dark" ? [109, 179, 242] : [0, 102, 204]
+        return new GeoJsonLayer({
+            id: "outline",
+            data: outline,
+            // Transparent fill (only visible via picking; visible tint when clickable).
+            getFillColor: onOutlineClick ? [...lineRgb, 12] as any : [0, 0, 0, 0] as any,
+            getLineColor: [...lineRgb, 204] as any,
+            lineWidthMinPixels: 1.5,
+            pickable: !!onOutlineClick,
+            onClick: onOutlineClick ? (info) => {
+                if (info.object) { onOutlineClick(info.object); return true }
+                return false
+            } : undefined,
+            updateTriggers: {
+                getFillColor: [theme, !!onOutlineClick],
+                getLineColor: [theme],
+            },
+        })
+    }, [outline, theme, onOutlineClick])
+
     const layers = useMemo(() => {
+        const base: any[] = outlineLayer ? [outlineLayer] : []
         if (mode === "scatter") {
-            return [
+            return [...base,
                 new ScatterplotLayer<Crash>({
                     id: "crashes-scatter",
                     data: effectiveCrashes,
@@ -213,7 +253,7 @@ export function CrashMap({
             ]
         }
         if (mode === "heatmap") {
-            return [
+            return [...base,
                 new HeatmapLayer<Crash>({
                     id: "crashes-heatmap",
                     data: effectiveCrashes,
@@ -234,7 +274,7 @@ export function CrashMap({
         // limit exceeded).
         const hexes = prebinnedHexes ?? binIntoHexes(effectiveCrashes, effectiveHexRes)
         const segments = hexesToSegments(hexes, elevationPerCount)
-        return [
+        return [...base,
             buildStackedHexLayer({
                 id: "crashes-hex-stacked",
                 segments,
@@ -243,7 +283,7 @@ export function CrashMap({
                 onHover: (info) => { setHoverInfo(info); return false },
             }),
         ]
-    }, [effectiveCrashes, prebinnedHexes, mode, effectiveHexRes, elevationPerCount])
+    }, [effectiveCrashes, prebinnedHexes, mode, effectiveHexRes, elevationPerCount, outlineLayer])
 
     const onViewStateChange = useCallback(({ viewState: vs }: any) => {
         if (isPitchingRef.current) return
@@ -275,24 +315,10 @@ export function CrashMap({
                             { padding: 20, animate: false },
                         )
                     }}
-                >
-                    {outline && (
-                        <Source id="outline" type="geojson" data={outline}>
-                            <Layer
-                                id="outline-line"
-                                type="line"
-                                paint={{
-                                    "line-color": theme === "dark" ? "#6db3f2" : "#0066cc",
-                                    "line-width": 1.5,
-                                    "line-opacity": 0.8,
-                                }}
-                            />
-                        </Source>
-                    )}
-                </Map>
+                />
             </DeckGL>
-            <PitchSlider viewState={viewState} setViewState={setViewState} theme={theme} />
-            {mode === "hexbin" && (
+            {showInternalControls && <PitchSlider viewState={viewState} setViewState={setViewState} theme={theme} />}
+            {showInternalControls && mode === "hexbin" && (
                 <HexControls
                     effectiveRes={effectiveHexRes}
                     pixelTarget={hexPxTarget}

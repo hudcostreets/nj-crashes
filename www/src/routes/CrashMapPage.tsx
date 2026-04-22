@@ -13,8 +13,8 @@
  *  only the slices needed for the current filter (date range, county/muni,
  *  zoom).
  */
-import { useEffect, useMemo, useRef, useState } from "react"
-import { useParams } from "react-router-dom"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useNavigate, useParams } from "react-router-dom"
 import { useUrlState } from "use-prms"
 import type { Param } from "use-prms"
 import { Head } from "@/src/lib/head"
@@ -27,6 +27,7 @@ import type { MapMode, ViewState } from "@/src/map/CrashMap"
 import type { Crash } from "@/src/map/CrashMap"
 import type { StackedHex } from "@/src/map/StackedHexLayer"
 import type { FeatureCollection } from "geojson"
+import { normalize } from "@/src/county"
 
 const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m.CrashMap })))
 
@@ -157,6 +158,7 @@ function muniFromParam(cc: number | undefined, muni: string | undefined, lookup:
 
 export default function CrashMapPage() {
     const params = useParams()
+    const navigate = useNavigate()
     const [cc2mc2mn, setCc2mc2mn] = useState<Cc2Mc2Mn | null>(null)
     useEffect(() => {
         fetch("/njdot/cc2mc2mn.json").then(r => r.json()).then(setCc2mc2mn).catch(() => {})
@@ -164,6 +166,16 @@ export default function CrashMapPage() {
     const cc = countyFromParam(params.county)
     const mc = muniFromParam(cc, params.muni, cc2mc2mn)
     const { actualTheme } = useTheme()
+    const [elevationPerCount, setElevationPerCount] = useState(15)
+    const [drawerOpen, setDrawerOpen] = useState(true)
+
+    const onOutlineClick = useCallback((feature: any) => {
+        const name: string | undefined = feature?.properties?.name
+        if (!name) return
+        // Statewide → drill to county. (Muni-level drill requires sharded
+        // muni-boundary geojson, not yet wired.)
+        if (cc === undefined) navigate(`/map/${normalize(name)}`)
+    }, [cc, navigate])
 
     // URL-synced state
     const [mode, setMode] = useUrlState("m", modeParam)
@@ -272,6 +284,10 @@ export default function CrashMapPage() {
                             onViewStateChange={setViewState}
                             hexPxTarget={hexPxTarget}
                             onHexPxTargetChange={setHexPxTarget}
+                            elevationPerCount={elevationPerCount}
+                            onElevationPerCountChange={setElevationPerCount}
+                            onOutlineClick={cc === undefined ? onOutlineClick : undefined}
+                            showInternalControls={false}
                             mode={mode}
                             theme={actualTheme}
                         />
@@ -284,34 +300,39 @@ export default function CrashMapPage() {
                             onViewStateChange={setViewState}
                             hexPxTarget={hexPxTarget}
                             onHexPxTargetChange={setHexPxTarget}
+                            elevationPerCount={elevationPerCount}
+                            onElevationPerCountChange={setElevationPerCount}
+                            onOutlineClick={cc === undefined ? onOutlineClick : undefined}
+                            showInternalControls={false}
                             mode="hexbin"
                             theme={actualTheme}
                         />
                     )}
                 </Suspense>
             )}
-            <ControlBar
+            <ControlDrawer
+                open={drawerOpen} setOpen={setDrawerOpen}
+                scopeLabel={
+                    mc !== undefined ? `${muniName}, ${countyName}` :
+                    cc !== undefined ? `${countyName} County` :
+                    "NJ statewide"
+                }
+                detailsHref={
+                    params.muni ? `/c/${params.county}/${params.muni}` :
+                    params.county ? `/c/${params.county}` :
+                    "/"
+                }
                 mode={mode} setMode={setMode}
                 yearRange={yearRange} setYearRange={setYearRange}
                 severities={severities} setSeverities={setSeverities}
+                hexPxTarget={hexPxTarget} setHexPxTarget={setHexPxTarget}
+                elevationPerCount={elevationPerCount} setElevationPerCount={setElevationPerCount}
+                pitch={viewState.pitch}
+                setPitch={p => setViewState(v => ({ ...v, pitch: p }))}
+                total={result.status === "ready" ? result.data.length : undefined}
                 manifest={result.manifest}
                 theme={actualTheme}
             />
-            {result.status === "ready" && (
-                <StatsBox
-                    total={result.data.length}
-                    manifest={result.manifest}
-                    yearRange={yearRange}
-                    cc={cc}
-                    mc={mc}
-                    scopeLabel={
-                        mc !== undefined ? `${muniName}, ${countyName}` :
-                        cc !== undefined ? `${countyName} County` :
-                        "statewide"
-                    }
-                    theme={actualTheme}
-                />
-            )}
         </div>
     )
 }
@@ -320,46 +341,100 @@ function titleCase(s: string): string {
     return s.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())
 }
 
-function ControlBar({
-    mode, setMode, yearRange, setYearRange, severities, setSeverities, manifest, theme,
+type MapManifest = import("@/src/map/useCrashData").MapManifest
+
+const MAX_PITCH = 85
+
+function ControlDrawer({
+    open, setOpen, scopeLabel, detailsHref,
+    mode, setMode,
+    yearRange, setYearRange,
+    severities, setSeverities,
+    hexPxTarget, setHexPxTarget,
+    elevationPerCount, setElevationPerCount,
+    pitch, setPitch,
+    total, manifest, theme,
 }: {
+    open: boolean
+    setOpen: (b: boolean) => void
+    scopeLabel: string
+    detailsHref: string
     mode: MapMode
     setMode: (m: MapMode) => void
     yearRange: [number, number]
     setYearRange: (r: [number, number]) => void
     severities: Set<"f" | "i" | "p">
     setSeverities: (s: Set<"f" | "i" | "p">) => void
+    hexPxTarget: number
+    setHexPxTarget: (n: number) => void
+    elevationPerCount: number
+    setElevationPerCount: (n: number) => void
+    pitch: number
+    setPitch: (n: number) => void
+    total?: number
     manifest: MapManifest | undefined
     theme: "light" | "dark"
 }) {
     const bg = theme === "dark" ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.95)"
     const fg = theme === "dark" ? "#e0e0e0" : "#333"
     const activeBg = theme === "dark" ? "#6db3f2" : "#0066cc"
+    const subtleBorder = theme === "dark" ? "#444" : "#ccc"
     const [y0min, y1max] = manifest?.year_range ?? [2001, 2023]
+    const sliderValue = Math.round(100 * (1 - Math.log2(hexPxTarget) / Math.log2(60)))
+
+    if (!open) {
+        return (
+            <button
+                onClick={() => setOpen(true)}
+                title="Show controls"
+                style={{
+                    position: "absolute", top: "1em", right: "1em", background: bg, color: fg,
+                    padding: "0.35em 0.55em", borderRadius: 4, zIndex: 1000,
+                    border: `1px solid ${subtleBorder}`, cursor: "pointer", fontSize: "1.1em", lineHeight: 1,
+                }}
+            >⚙</button>
+        )
+    }
     return (
         <div style={{
             position: "absolute", top: "1em", right: "1em", background: bg, color: fg,
-            padding: "0.5em 0.7em", borderRadius: 4, zIndex: 1000, fontSize: "0.85em",
-            display: "flex", flexDirection: "column", gap: 8, minWidth: 220,
+            padding: "0.6em 0.8em", borderRadius: 4, zIndex: 1000, fontSize: "0.85em",
+            display: "flex", flexDirection: "column", gap: 10, minWidth: 240, maxWidth: 280,
         }}>
+            {/* Scope header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <div style={{ fontWeight: 600 }}>{scopeLabel}</div>
+                <button
+                    onClick={() => setOpen(false)}
+                    title="Hide controls"
+                    style={{
+                        background: "transparent", color: fg, border: "none",
+                        cursor: "pointer", fontSize: "1em", padding: "0 0.3em",
+                    }}
+                >×</button>
+            </div>
+            <a href={detailsHref}
+               style={{ color: activeBg, textDecoration: "none", fontSize: "0.85em" }}
+            >View charts →</a>
+
+            {/* Mode */}
             <div style={{ display: "flex", gap: 4 }}>
                 {(["scatter", "heatmap", "hexbin"] as MapMode[]).map(m => (
                     <button
                         key={m}
                         onClick={() => setMode(m)}
                         style={{
-                            padding: "0.3em 0.7em",
-                            cursor: "pointer",
+                            padding: "0.3em 0.7em", cursor: "pointer",
                             background: mode === m ? activeBg : "transparent",
                             color: mode === m ? "#fff" : fg,
                             border: `1px solid ${mode === m ? activeBg : fg}`,
-                            borderRadius: 3,
-                            fontSize: "0.9em",
-                            flex: 1,
+                            borderRadius: 3, fontSize: "0.9em", flex: 1,
                         }}
                     >{m === "scatter" ? "Points" : m === "heatmap" ? "Heatmap" : "Hexbin"}</button>
                 ))}
             </div>
+
+            {/* Year range */}
             <div>
                 <div style={{ fontSize: "0.8em", marginBottom: 4 }}>
                     Years: <b>{yearRange[0]}–{yearRange[1]}</b>
@@ -369,21 +444,23 @@ function ControlBar({
                         type="range" min={y0min} max={y1max} step={1}
                         value={yearRange[0]}
                         onChange={e => setYearRange([Math.min(Number(e.target.value), yearRange[1]), yearRange[1]])}
-                        style={{ width: 80 }}
+                        style={{ flex: 1 }}
                     />
                     <input
                         type="range" min={y0min} max={y1max} step={1}
                         value={yearRange[1]}
                         onChange={e => setYearRange([yearRange[0], Math.max(Number(e.target.value), yearRange[0])])}
-                        style={{ width: 80 }}
+                        style={{ flex: 1 }}
                     />
                 </div>
             </div>
-            <div style={{ display: "flex", gap: 4, alignItems: "center", fontSize: "0.85em" }}>
+
+            {/* Severity */}
+            <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: "0.85em" }}>
                 <span>Severity:</span>
                 {(["f", "i"] as const).map(s => {
                     const checked = severities.has(s)
-                    const label = s === "f" ? "Fatal" : s === "i" ? "Injury" : "PDO"
+                    const label = s === "f" ? "Fatal" : "Injury"
                     return (
                         <label key={s} style={{ display: "inline-flex", alignItems: "center", gap: 3, cursor: "pointer" }}>
                             <input
@@ -400,35 +477,57 @@ function ControlBar({
                     )
                 })}
             </div>
-        </div>
-    )
-}
 
-type MapManifest = import("@/src/map/useCrashData").MapManifest
+            {/* Hexbin-only controls */}
+            {mode === "hexbin" && (
+                <>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
+                        <span style={{ fontSize: "0.8em" }}>Hex density: <b>{sliderValue}</b> (~{hexPxTarget.toFixed(hexPxTarget < 5 ? 1 : 0)}px)</span>
+                        <input
+                            type="range" min={0} max={100} step={1}
+                            value={sliderValue}
+                            onChange={e => {
+                                const v = Number(e.target.value)
+                                const px = Math.pow(60, 1 - v / 100)
+                                const rounded = px < 5 ? Math.round(px * 10) / 10 : Math.round(px)
+                                setHexPxTarget(Math.max(0.5, rounded))
+                            }}
+                            style={{ width: 100 }}
+                        />
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
+                        <span style={{ fontSize: "0.8em" }}>Bar height: <b>{elevationPerCount}×</b></span>
+                        <input
+                            type="range" min={3} max={60} step={1}
+                            value={elevationPerCount}
+                            onChange={e => setElevationPerCount(Number(e.target.value))}
+                            style={{ width: 100 }}
+                        />
+                    </label>
+                </>
+            )}
 
-function StatsBox({
-    total, manifest, yearRange, cc, mc, scopeLabel, theme,
-}: {
-    total: number
-    manifest: MapManifest | undefined
-    yearRange: [number, number]
-    cc?: number
-    mc?: number
-    scopeLabel: string
-    theme: "light" | "dark"
-}) {
-    const bg = theme === "dark" ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.95)"
-    const fg = theme === "dark" ? "#e0e0e0" : "#333"
-    return (
-        <div style={{
-            position: "absolute", bottom: "1em", left: "1em", background: bg, color: fg,
-            padding: "0.5em 0.9em", borderRadius: 4, zIndex: 1000, fontSize: "0.85em", maxWidth: 320,
-        }}>
-            <div><b>{total.toLocaleString()}</b> crashes plotted ({yearRange[0]}–{yearRange[1]}, {scopeLabel})</div>
-            {manifest && (
-                <div style={{ fontSize: "0.85em", opacity: 0.75 }}>
-                    geocode: {manifest.by_geocode_src.interpolated?.toLocaleString() ?? 0} interpolated,{" "}
-                    {manifest.by_geocode_src.original?.toLocaleString() ?? 0} original
+            {/* Pitch */}
+            <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
+                <span style={{ fontSize: "0.8em" }}>Pitch: <b>{Math.round(pitch)}°</b></span>
+                <input
+                    type="range" min={0} max={MAX_PITCH} step={1}
+                    value={pitch}
+                    onChange={e => setPitch(Number(e.target.value))}
+                    style={{ width: 100 }}
+                />
+            </label>
+
+            {/* Stats */}
+            {total !== undefined && (
+                <div style={{ borderTop: `1px solid ${subtleBorder}`, paddingTop: 8, fontSize: "0.8em" }}>
+                    <div><b>{total.toLocaleString()}</b> crashes plotted</div>
+                    {manifest && (
+                        <div style={{ opacity: 0.75, marginTop: 2 }}>
+                            geocode: {manifest.by_geocode_src.interpolated?.toLocaleString() ?? 0} interpolated,{" "}
+                            {manifest.by_geocode_src.original?.toLocaleString() ?? 0} original
+                        </div>
+                    )}
                 </div>
             )}
         </div>
