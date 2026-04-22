@@ -194,20 +194,28 @@ def export_map_data(outdir, severities, years, hex_resolutions):
     out.mkdir(parents=True, exist_ok=True)
 
     dts = pd.to_datetime(mapped["dt"] * 60, unit="s", utc=True)
-    # Per-county bboxes for client map fit-bounds. Use 1st-99th percentile
-    # to avoid outliers (a few crashes with `olat` values that pass the NJ
-    # bbox but are wildly misattributed to a different county).
-    county_bboxes = {}
-    for cc, sub in mapped.groupby("cc"):
+    # Per-county + per-muni bboxes for client map fit-bounds. Use 1st-99th
+    # percentile to avoid outliers (a few crashes with `olat` values that pass
+    # the NJ bbox but are wildly misattributed to a different county).
+    def _bbox(sub):
         lat_lo, lat_hi = sub["lat"].quantile([0.01, 0.99])
         lon_lo, lon_hi = sub["lon"].quantile([0.01, 0.99])
-        # Pad 5% outside the inner range so we don't clip real edges
         dlat = (lat_hi - lat_lo) * 0.05
         dlon = (lon_hi - lon_lo) * 0.05
-        county_bboxes[int(cc)] = [
+        return [
             float(lon_lo - dlon), float(lat_lo - dlat),
             float(lon_hi + dlon), float(lat_hi + dlat),
         ]
+    county_bboxes = {}
+    muni_bboxes = {}
+    for cc, sub in mapped.groupby("cc"):
+        if len(sub) < 3:
+            continue
+        county_bboxes[int(cc)] = _bbox(sub)
+        for mc, msub in sub.groupby("mc"):
+            if len(msub) < 3:
+                continue
+            muni_bboxes[f"{int(cc)}-{int(mc)}"] = _bbox(msub)
     manifest = {
         "schema_version": 1,
         "severities": sorted(keep_sevs),
@@ -216,6 +224,7 @@ def export_map_data(outdir, severities, years, hex_resolutions):
         "total_rows": int(len(mapped)),
         "by_geocode_src": mapped["geocode_src"].value_counts().to_dict(),
         "county_bboxes": county_bboxes,
+        "muni_bboxes": muni_bboxes,
     }
 
     print(f"\nWriting by-year + by-year-county shards to {out}/...")

@@ -38,9 +38,27 @@ function countyFromParam(param?: string): number | undefined {
     return COUNTY_NAMES[k]
 }
 
+type Cc2Mc2Mn = Record<string, { cn: string; mc2mn: Record<string, string> }>
+
+function muniFromParam(cc: number | undefined, muni: string | undefined, lookup: Cc2Mc2Mn | null): number | undefined {
+    if (!cc || !muni || !lookup) return undefined
+    const mc2mn = lookup[String(cc)]?.mc2mn
+    if (!mc2mn) return undefined
+    const norm = muni.toLowerCase().replace(/-/g, " ").replace(/\s+/g, " ").trim()
+    for (const [mc, name] of Object.entries(mc2mn)) {
+        if (name.toLowerCase() === norm) return Number(mc)
+    }
+    return undefined
+}
+
 export default function CrashMapPage() {
     const params = useParams()
+    const [cc2mc2mn, setCc2mc2mn] = useState<Cc2Mc2Mn | null>(null)
+    useEffect(() => {
+        fetch("/njdot/cc2mc2mn.json").then(r => r.json()).then(setCc2mc2mn).catch(() => {})
+    }, [])
     const cc = countyFromParam(params.county)
+    const mc = muniFromParam(cc, params.muni, cc2mc2mn)
     const { actualTheme } = useTheme()
     const [mode, setMode] = useState<MapMode>("hexbin")
     const [yearRange, setYearRange] = useState<[number, number]>([2019, 2023])
@@ -56,9 +74,10 @@ export default function CrashMapPage() {
     const filter: CrashFilter = useMemo(() => ({
         yearRange,
         ccs: cc ? [cc] : undefined,
+        mc,
         severities,
         scale: "detail",
-    }), [yearRange, cc, severities])
+    }), [yearRange, cc, mc, severities])
 
     const result = useCrashData(filter)
     const [outline, setOutline] = useState<FeatureCollection | null>(null)
@@ -72,13 +91,21 @@ export default function CrashMapPage() {
     // Prefer bbox from manifest (exact, computed from data points) once loaded.
     const initialBounds: [number, number, number, number] = useMemo(() => {
         const m = result.manifest
+        if (cc !== undefined && mc !== undefined) {
+            const mb = m?.muni_bboxes?.[`${cc}-${mc}`]
+            if (mb) return mb
+        }
         if (cc !== undefined && m?.county_bboxes?.[cc]) return m.county_bboxes[cc]
         return STATE_BBOX
-    }, [cc, result.manifest])
+    }, [cc, mc, result.manifest])
 
+    const muniName = params.muni ? titleCase(params.muni) : undefined
+    const countyName = params.county ? titleCase(params.county) : undefined
     const title = cc === undefined
         ? "NJ Crash Map"
-        : `${titleCase(params.county ?? "")} County Crash Map`
+        : mc !== undefined
+            ? `${muniName}, ${countyName} County Crash Map`
+            : `${countyName} County Crash Map`
 
     return (
         <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
@@ -113,6 +140,12 @@ export default function CrashMapPage() {
                     manifest={result.manifest}
                     yearRange={yearRange}
                     cc={cc}
+                    mc={mc}
+                    scopeLabel={
+                        mc !== undefined ? `${muniName}, ${countyName}` :
+                        cc !== undefined ? `${countyName} County` :
+                        "statewide"
+                    }
                     theme={actualTheme}
                 />
             )}
@@ -211,12 +244,14 @@ function ControlBar({
 type MapManifest = import("@/src/map/useCrashData").MapManifest
 
 function StatsBox({
-    total, manifest, yearRange, cc, theme,
+    total, manifest, yearRange, cc, mc, scopeLabel, theme,
 }: {
     total: number
     manifest: MapManifest | undefined
     yearRange: [number, number]
     cc?: number
+    mc?: number
+    scopeLabel: string
     theme: "light" | "dark"
 }) {
     const bg = theme === "dark" ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.95)"
@@ -226,7 +261,7 @@ function StatsBox({
             position: "absolute", bottom: "1em", left: "1em", background: bg, color: fg,
             padding: "0.5em 0.9em", borderRadius: 4, zIndex: 1000, fontSize: "0.85em", maxWidth: 320,
         }}>
-            <div><b>{total.toLocaleString()}</b> crashes plotted ({yearRange[0]}–{yearRange[1]}{cc ? `, cc=${cc}` : ", statewide"})</div>
+            <div><b>{total.toLocaleString()}</b> crashes plotted ({yearRange[0]}–{yearRange[1]}, {scopeLabel})</div>
             {manifest && (
                 <div style={{ fontSize: "0.85em", opacity: 0.75 }}>
                     geocode: {manifest.by_geocode_src.interpolated?.toLocaleString() ?? 0} interpolated,{" "}
