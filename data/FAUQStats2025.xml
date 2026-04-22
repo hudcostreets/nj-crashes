@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Apr 21 10:00:02 EDT 2026</RUNDATE>
+  <RUNDATE>Wed Apr 22 10:00:07 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -142,10 +142,11 @@
         <HIGHWAY>73</HIGHWAY>
         <LOCATION>State Highway 73 MP 26.76</LOCATION>
         <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
+        <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
+        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1448,6 +1449,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2013,7 +2015,7 @@
     <MUNICIPALITY MCODE="0328" MNAME="Palmyra Boro">
       <ACCIDENT ACCID="14173" DATE="09/28/2025" TIME="0321">
         <HIGHWAY>73</HIGHWAY>
-        <LOCATION>State Highway 73</LOCATION>
+        <LOCATION>State Highway 73 MP 34.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3357,12 +3359,13 @@
     <MUNICIPALITY MCODE="1325" MNAME="Long Branch City">
       <ACCIDENT ACCID="14163" DATE="07/26/2025" TIME="1027">
         <HIGHWAY>57</HIGHWAY>
-        <LOCATION>County 57</LOCATION>
+        <LOCATION>County 57 MP .4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4211,12 +4214,13 @@
     <MUNICIPALITY MCODE="0333" MNAME="Shamong Twsp">
       <ACCIDENT ACCID="13976" DATE="06/22/2025" TIME="0621">
         <HIGHWAY>206</HIGHWAY>
-        <LOCATION>State Highway 206 MP 78.6</LOCATION>
+        <LOCATION>State Highway 206 MP 7.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0338" MNAME="Westampton Twsp">
@@ -4544,13 +4548,14 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2012" MNAME="Plainfield City">
       <ACCIDENT ACCID="13942" DATE="06/07/2025" TIME="2011">
-        <HIGHWAY>28</HIGHWAY>
-        <LOCATION>State Highway 28</LOCATION>
+        <STREET>Watching Ave</STREET>
+        <LOCATION>Watching Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4571,23 +4576,25 @@
     <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
       <ACCIDENT ACCID="13941" DATE="06/05/2025" TIME="2044">
         <HIGHWAY>35</HIGHWAY>
-        <LOCATION>State Highway 35</LOCATION>
+        <LOCATION>State Highway 35 MP 56.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1220" MNAME="South Amboy City">
       <ACCIDENT ACCID="13937" DATE="06/04/2025" TIME="0345">
-        <HIGHWAY>35</HIGHWAY>
-        <LOCATION>State Highway 35</LOCATION>
+        <HIGHWAY>9</HIGHWAY>
+        <LOCATION>State Highway 9 MP 129.92</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5940,12 +5947,13 @@
     <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="13849" DATE="03/27/2025" TIME="1343">
         <HIGHWAY>533</HIGHWAY>
-        <LOCATION>County 533 MP 2.4</LOCATION>
+        <LOCATION>County 533 MP 2.44</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -6364,7 +6372,7 @@
         <FATAL_B>0</FATAL_B>
         <INJURIES>1</INJURIES>
       </ACCIDENT>
-      <ACCIDENT ACCID="13804" DATE="03/01/2025" TIME="2237">
+      <ACCIDENT ACCID="13804" DATE="03/01/2025" TIME="2234">
         <STREET>Mayor Kenneth A. Gibson Blvd</STREET>
         <LOCATION>Mayor Kenneth A. Gibson Blvd</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -7398,5 +7406,5 @@
   </COUNTY>
   <TOTACCIDENTS>548</TOTACCIDENTS>
   <TOTFATALITIES>583</TOTFATALITIES>
-  <TOTINJURIES>251</TOTINJURIES>
+  <TOTINJURIES>253</TOTINJURIES>
 </FAUQSTATS>
