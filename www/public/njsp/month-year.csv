@@ -302,7 +302,7 @@ county,cc,mc,year,month,fatalities
 ,,,2026,1,39
 ,,,2026,2,32
 ,,,2026,3,53
-,,,2026,4,25
+,,,2026,4,26
 Atlantic,1,,2001,1,2
 Atlantic,1,,2001,2,8
 Atlantic,1,,2001,3,2
@@ -1168,7 +1168,7 @@ Burlington,3,,2025,12,6
 Burlington,3,,2026,1,1
 Burlington,3,,2026,2,3
 Burlington,3,,2026,3,4
-Burlington,3,,2026,4,2
+Burlington,3,,2026,4,3
 Camden,4,,2001,1,1
 Camden,4,,2001,2,3
 Camden,4,,2001,3,9
@@ -7737,6 +7737,7 @@ Burlington,3,22,2018,1,1
 Burlington,3,22,2020,5,3
 Burlington,3,22,2022,12,1
 Burlington,3,22,2024,7,1
+Burlington,3,22,2026,4,1
 Burlington,3,23,2002,12,1
 Burlington,3,23,2005,6,1
 Burlington,3,23,2005,10,1
