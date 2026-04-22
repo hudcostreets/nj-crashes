@@ -22,12 +22,7 @@ import type { FeatureCollection } from "geojson"
 
 const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m.CrashMap })))
 
-// County-code → approximate bbox lookup. Built from the Hudson example +
-// sensible statewide default. We can enrich once manifest carries bboxes.
 const STATE_BBOX: [number, number, number, number] = [-75.7, 38.9, -73.9, 41.4]
-const COUNTY_BBOX: Record<number, [number, number, number, number]> = {
-    9: [-74.16, 40.64, -73.98, 40.80],  // Hudson
-}
 
 // Local county-name → cc map (subset; full table in nj_crashes data files)
 const COUNTY_NAMES: Record<string, number> = {
@@ -47,26 +42,39 @@ export default function CrashMapPage() {
     const params = useParams()
     const cc = countyFromParam(params.county)
     const { actualTheme } = useTheme()
-    const [mode, setMode] = useState<MapMode>("scatter")
+    const [mode, setMode] = useState<MapMode>("hexbin")
     const [yearRange, setYearRange] = useState<[number, number]>([2019, 2023])
+    // Severities to include. 'f' and 'i' by default (what's in the exported
+    // parquet shards at the time of writing — `p` stretch).
+    const [severities, setSeverities] = useState<Set<"f" | "i" | "p">>(() => new Set(["f", "i"]))
 
+    // Use hex aggregates at low zoom (statewide / multi-county). Zoom-aware
+    // switching happens in CrashMap itself; the client loader uses 'detail'
+    // for now, and the hex mode client-side bins on the already-loaded data.
+    // TODO: wire statewide low-zoom to `scale: 'r8'` and dispatch based on
+    // zoom. For now the 234K-point statewide scatter works at ~30fps on desktop.
     const filter: CrashFilter = useMemo(() => ({
         yearRange,
         ccs: cc ? [cc] : undefined,
+        severities,
         scale: "detail",
-    }), [yearRange, cc])
+    }), [yearRange, cc, severities])
 
     const result = useCrashData(filter)
     const [outline, setOutline] = useState<FeatureCollection | null>(null)
     useEffect(() => {
-        if (cc === 9) {
-            fetch("/hudson.geojson").then(r => r.json()).then(setOutline).catch(() => {})
-        }
+        const url = cc === undefined
+            ? "/njdot/map/counties.geojson"
+            : `/njdot/map/counties/${String(cc).padStart(2, "0")}.geojson`
+        fetch(url).then(r => r.ok ? r.json() : null).then(setOutline).catch(() => setOutline(null))
     }, [cc])
 
-    const initialBounds: [number, number, number, number] = useMemo(() => (
-        cc !== undefined && COUNTY_BBOX[cc] ? COUNTY_BBOX[cc] : STATE_BBOX
-    ), [cc])
+    // Prefer bbox from manifest (exact, computed from data points) once loaded.
+    const initialBounds: [number, number, number, number] = useMemo(() => {
+        const m = result.manifest
+        if (cc !== undefined && m?.county_bboxes?.[cc]) return m.county_bboxes[cc]
+        return STATE_BBOX
+    }, [cc, result.manifest])
 
     const title = cc === undefined
         ? "NJ Crash Map"
@@ -95,6 +103,7 @@ export default function CrashMapPage() {
             <ControlBar
                 mode={mode} setMode={setMode}
                 yearRange={yearRange} setYearRange={setYearRange}
+                severities={severities} setSeverities={setSeverities}
                 manifest={result.manifest}
                 theme={actualTheme}
             />
@@ -116,12 +125,14 @@ function titleCase(s: string): string {
 }
 
 function ControlBar({
-    mode, setMode, yearRange, setYearRange, manifest, theme,
+    mode, setMode, yearRange, setYearRange, severities, setSeverities, manifest, theme,
 }: {
     mode: MapMode
     setMode: (m: MapMode) => void
     yearRange: [number, number]
     setYearRange: (r: [number, number]) => void
+    severities: Set<"f" | "i" | "p">
+    setSeverities: (s: Set<"f" | "i" | "p">) => void
     manifest: MapManifest | undefined
     theme: "light" | "dark"
 }) {
@@ -171,6 +182,27 @@ function ControlBar({
                         style={{ width: 80 }}
                     />
                 </div>
+            </div>
+            <div style={{ display: "flex", gap: 4, alignItems: "center", fontSize: "0.85em" }}>
+                <span>Severity:</span>
+                {(["f", "i"] as const).map(s => {
+                    const checked = severities.has(s)
+                    const label = s === "f" ? "Fatal" : s === "i" ? "Injury" : "PDO"
+                    return (
+                        <label key={s} style={{ display: "inline-flex", alignItems: "center", gap: 3, cursor: "pointer" }}>
+                            <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => {
+                                    const next = new Set(severities)
+                                    if (checked) next.delete(s); else next.add(s)
+                                    setSeverities(next)
+                                }}
+                            />
+                            {label}
+                        </label>
+                    )
+                })}
             </div>
         </div>
     )

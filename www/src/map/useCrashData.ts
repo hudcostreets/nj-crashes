@@ -23,6 +23,7 @@ export type MapManifest = {
     per_year: Record<string, number>
     per_year_county: Record<string, number>
     hex_aggregates: Record<string, Record<string, number>>
+    county_bboxes?: Record<number, [number, number, number, number]>
 }
 
 export type CrashFilter = {
