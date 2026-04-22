@@ -4,7 +4,7 @@
  * Overlay: Deck.gl layers (Scatterplot / Heatmap / Hexbin) with controlled viewState.
  * Nav: right-click / ctrl-drag rotates; two-finger touch drag pitches (mobile).
  */
-import { useCallback, useEffect, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { Map, Source, Layer } from "react-map-gl/maplibre"
 import "maplibre-gl/dist/maplibre-gl.css"
 import DeckGL from "@deck.gl/react/typed"
@@ -52,6 +52,11 @@ export type Props = {
     outline?: FeatureCollection
     initialBounds?: [number, number, number, number]
     initialCenter?: { longitude: number; latitude: number; zoom: number }
+    /** Controlled viewState (use when caller owns URL/state sync). When
+     *  omitted, `CrashMap` manages its own internal state derived from
+     *  `initialBounds`/`initialCenter`. */
+    viewState?: ViewState
+    onViewStateChange?: (v: ViewState) => void
     mode?: MapMode
     theme?: "light" | "dark"
     height?: number | string
@@ -125,12 +130,23 @@ export function CrashMap({
     outline,
     initialBounds,
     initialCenter,
+    viewState: controlledView,
+    onViewStateChange: onControlledChange,
     mode = "scatter",
     theme = "dark",
     height = "100%",
 }: Props) {
     const effectiveCrashes = crashes ?? []
-    const [viewState, setViewState] = useState<ViewState>(() => defaultView(initialBounds, initialCenter, mode))
+    const [localViewState, setLocalViewState] = useState<ViewState>(() => defaultView(initialBounds, initialCenter, mode))
+    const viewState = controlledView ?? localViewState
+    const setViewState: React.Dispatch<React.SetStateAction<ViewState>> = useCallback((updater) => {
+        if (controlledView !== undefined && onControlledChange) {
+            const next = typeof updater === "function" ? (updater as (v: ViewState) => ViewState)(controlledView) : updater
+            onControlledChange(next)
+        } else {
+            setLocalViewState(updater)
+        }
+    }, [controlledView, onControlledChange])
     const [hoverInfo, setHoverInfo] = useState<PickingInfo | null>(null)
     // H3 hex resolution for hexbin mode. `null` = auto (derived from zoom).
     // Range 6 (big) .. 11 (tiny). Default auto.

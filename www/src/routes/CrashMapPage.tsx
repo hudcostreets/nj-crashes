@@ -1,29 +1,97 @@
 /** General crash-map route, parquet-backed via `useCrashData`.
  *
- *  URL: /map  OR  /map/:county  OR  /map/:county/:muni
+ *  URL: /map  OR  /map/c/:county  OR  /map/c/:county/:muni
+ *
+ *  Query params (use-prms):
+ *    v  – viewState: "lat lon zoom pitch bearing" (packed, 1-decimal zoom)
+ *    m  – mode: s (scatter) | h (heatmap) | x (hexbin; default)
+ *    y  – year range: "Y0-Y1" (default "2019-2023")
+ *    s  – severities: concat of {f,i,p}, default "fi"
  *
  *  The parquet backend (see `specs/map-data-backend.md`) ships per-year,
  *  per-county shards and pre-aggregated hex parquets. This component loads
  *  only the slices needed for the current filter (date range, county/muni,
  *  zoom).
  */
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useParams } from "react-router-dom"
+import { useUrlState } from "use-prms"
+import type { Param } from "use-prms"
 import { Head } from "@/src/lib/head"
 import { url } from "@/src/site"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import { lazy, Suspense } from "react"
 import type { CrashFilter } from "@/src/map/useCrashData"
 import { useCrashData } from "@/src/map/useCrashData"
-import type { MapMode } from "@/src/map/CrashMap"
+import type { MapMode, ViewState } from "@/src/map/CrashMap"
 import type { Crash } from "@/src/map/CrashMap"
 import type { StackedHex } from "@/src/map/StackedHexLayer"
-// (keep StackedHex import even though narrow; the type is used below)
 import type { FeatureCollection } from "geojson"
 
 const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m.CrashMap })))
 
 const STATE_BBOX: [number, number, number, number] = [-75.7, 38.9, -73.9, 41.4]
+
+// --- URL param encoders ---
+const MODE_CODES: Record<MapMode, string> = { scatter: "s", heatmap: "h", hexbin: "x" }
+const MODE_FROM_CODE: Record<string, MapMode> = { s: "scatter", h: "heatmap", x: "hexbin" }
+
+const modeParam: Param<MapMode> = {
+    encode: (m) => MODE_CODES[m],
+    decode: (s) => s ? (MODE_FROM_CODE[s] ?? "hexbin") : "hexbin",
+}
+
+function encodeView(v: ViewState): string {
+    const parts = [
+        v.latitude.toFixed(4),
+        v.longitude.toFixed(4),
+        v.zoom.toFixed(1),
+        String(Math.round(v.pitch)),
+        String(Math.round(v.bearing)),
+    ]
+    // Space-separated, but put "+" between parts so urlencoding keeps them
+    // compact and no extra % escapes. Readers tolerate any whitespace.
+    return parts.join("_")
+}
+function decodeView(s: string | undefined): ViewState | null {
+    if (!s) return null
+    const parts = s.split(/[_\s]/).map(Number)
+    if (parts.length < 3 || parts.some(isNaN)) return null
+    return {
+        latitude: parts[0],
+        longitude: parts[1],
+        zoom: parts[2],
+        pitch: parts[3] ?? 0,
+        bearing: parts[4] ?? 0,
+    }
+}
+const viewParam: Param<ViewState | null> = {
+    encode: (v) => v ? encodeView(v) : "",
+    decode: (s) => decodeView(s),
+}
+
+const yearRangeParam: Param<[number, number]> = {
+    encode: ([a, b]) => `${a}-${b}`,
+    decode: (s) => {
+        if (!s) return [2019, 2023]
+        const m = s.match(/^(\d{4})-(\d{4})$/)
+        if (!m) return [2019, 2023]
+        const a = +m[1], b = +m[2]
+        return a <= b ? [a, b] : [b, a]
+    },
+}
+
+const severitiesParam: Param<Set<"f" | "i" | "p">> = {
+    encode: (s) => [...s].sort().join(""),
+    decode: (str) => {
+        if (!str) return new Set(["f", "i"])
+        const out = new Set<"f" | "i" | "p">()
+        for (const c of str) {
+            if (c === "f" || c === "i" || c === "p") out.add(c)
+        }
+        return out.size ? out : new Set(["f", "i"])
+    },
+}
 
 // Local county-name → cc map (subset; full table in nj_crashes data files)
 const COUNTY_NAMES: Record<string, number> = {
@@ -61,11 +129,12 @@ export default function CrashMapPage() {
     const cc = countyFromParam(params.county)
     const mc = muniFromParam(cc, params.muni, cc2mc2mn)
     const { actualTheme } = useTheme()
-    const [mode, setMode] = useState<MapMode>("hexbin")
-    const [yearRange, setYearRange] = useState<[number, number]>([2019, 2023])
-    // Severities to include. 'f' and 'i' by default (what's in the exported
-    // parquet shards at the time of writing — `p` stretch).
-    const [severities, setSeverities] = useState<Set<"f" | "i" | "p">>(() => new Set(["f", "i"]))
+
+    // URL-synced state
+    const [mode, setMode] = useUrlState("m", modeParam)
+    const [yearRange, setYearRange] = useUrlState("y", yearRangeParam)
+    const [severities, setSeverities] = useUrlState("s", severitiesParam)
+    const [urlView, setUrlView] = useUrlState("v", viewParam)
 
     // For statewide views in hexbin mode, fetch pre-aggregated h3-r8 cells
     // from the server (~2 MB vs 30 MB for 234K raw rows) and skip client-side
@@ -101,6 +170,38 @@ export default function CrashMapPage() {
         return STATE_BBOX
     }, [cc, mc, result.manifest])
 
+    // Internal viewState mirrors URL but updates at 60fps; URL writes
+    // debounced at 500ms to avoid spamming history.
+    const [viewState, setViewState] = useState<ViewState>(() => (
+        urlView ?? {
+            latitude: (initialBounds[1] + initialBounds[3]) / 2,
+            longitude: (initialBounds[0] + initialBounds[2]) / 2,
+            zoom: 11,
+            pitch: mode === "hexbin" ? 45 : 0,
+            bearing: 0,
+        }
+    ))
+    const urlViewRef = useRef(urlView)
+    urlViewRef.current = urlView
+    const setUrlViewRef = useRef(setUrlView)
+    setUrlViewRef.current = setUrlView
+    // Apply URL → internal when URL changes externally (e.g. back/forward).
+    useEffect(() => {
+        if (!urlView) return
+        setViewState(v => (
+            v.latitude === urlView.latitude
+            && v.longitude === urlView.longitude
+            && v.zoom === urlView.zoom
+            && v.pitch === urlView.pitch
+            && v.bearing === urlView.bearing
+        ) ? v : urlView)
+    }, [urlView])
+    // Debounce URL writes when internal view changes.
+    useEffect(() => {
+        const t = setTimeout(() => setUrlViewRef.current(viewState), 400)
+        return () => clearTimeout(t)
+    }, [viewState])
+
     const muniName = params.muni ? titleCase(params.muni) : undefined
     const countyName = params.county ? titleCase(params.county) : undefined
     const title = cc === undefined
@@ -125,6 +226,8 @@ export default function CrashMapPage() {
                             crashes={result.data as Crash[]}
                             outline={outline ?? undefined}
                             initialBounds={initialBounds}
+                            viewState={viewState}
+                            onViewStateChange={setViewState}
                             mode={mode}
                             theme={actualTheme}
                         />
@@ -133,6 +236,8 @@ export default function CrashMapPage() {
                             prebinnedHexes={result.data as StackedHex[]}
                             outline={outline ?? undefined}
                             initialBounds={initialBounds}
+                            viewState={viewState}
+                            onViewStateChange={setViewState}
                             mode="hexbin"
                             theme={actualTheme}
                         />
