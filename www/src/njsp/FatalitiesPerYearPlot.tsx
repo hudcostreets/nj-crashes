@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import type { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb } from "@/src/tableData"
 import { MonthlyCsv, ProjectedCsv, YtcCsv } from "@/src/paths"
 import { fadeColor, lightenColor } from "pltly"
-import { LegendRow, LegendItem } from "pltly/react"
+import { LegendRow, LegendItem, useLegendPin } from "pltly/react"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { Annotation } from "./plot"
 import A from "@/src/lib/a"
@@ -225,42 +225,22 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
 
     const isMonthly = timeGranularity === 'month'
 
-    // Single state for hover/pin — no parallel systems
-    const [hoverType, setHoverType] = useState<string | null>(null)
-    const [pinnedType, setPinnedType] = useState<string | null>(null)
-    // After unpin-by-re-click, suppress hover-solo on that same item until pointer leaves
-    const suppressHoverRef = useRef<string | null>(null)
-
-    // Active type for solo: only actual Types, not special items like "* Projected" or "12-mo avg"
-    const effectiveHover = hoverType && hoverType === suppressHoverRef.current ? null : hoverType
-    const rawActive = pinnedType ?? effectiveHover
+    // Pinnable legend items: Types + (monthly-only) '12-mo avg'. '* Projected'
+    // is a popover trigger (`<details>`), tracked with a simple hover state below.
+    type PinItem = Type | '12-mo avg'
+    const pinItems = useMemo<readonly PinItem[]>(
+        () => isMonthly ? [...Types, '12-mo avg'] : Types,
+        [isMonthly],
+    )
+    const legend = useLegendPin<PinItem>(pinItems)
+    const rawActive = legend.activeItem
     const activeType = (rawActive && Types.includes(rawActive as Type) ? rawActive : null) as Type | null
-    // "* Projected" is a special hover mode (fade non-current-year bars)
-    const highlightProjected = effectiveHover === '* Projected' && !pinnedType
 
-    const handleLegendItemClick = useCallback((name: string) => {
-        setPinnedType(prev => {
-            if (prev === name) {
-                suppressHoverRef.current = name
-                return null
-            }
-            suppressHoverRef.current = null
-            return name
-        })
-    }, [])
-    const handleHoverEnter = useCallback((name: string) => {
-        if (suppressHoverRef.current && suppressHoverRef.current !== name) suppressHoverRef.current = null
-        setHoverType(name)
-    }, [])
-    const handleHoverLeave = useCallback(() => {
-        suppressHoverRef.current = null
-        setHoverType(null)
-    }, [])
-    const handleUnpin = useCallback(() => {
-        suppressHoverRef.current = null
-        setPinnedType(null)
-    }, [])
-    useResetSolo(handleUnpin)
+    // '* Projected' hover-only (no pin): fades non-current-year bars when hovered
+    const [projHovered, setProjHovered] = useState(false)
+    const highlightProjected = projHovered && !legend.pinnedItem
+
+    useResetSolo(legend.clear)
 
     // Build plot data
     const { data, annotations, layout } = useMemo(() => {
@@ -656,11 +636,11 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 layout={layout}
                 disableFade
 
-                onResetSolo={handleUnpin}
+                onResetSolo={legend.clear}
             />
             <LegendRow
                 width={containerWidth}
-                center={<div onClick={e => { if (e.target === e.currentTarget) handleUnpin() }} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', rowGap: '0.4em' }}>
+                center={<>
                     <PlotInfo source="njsp">
                         {!isMonthly && county === null && total2021 > 0 && total2022 > 0 ? (
                             <p style={{ margin: 0 }}>2021 and 2022 were the worst years in the NJSP record (since 2008), with {total2021} and {total2022} deaths, resp.</p>
@@ -677,7 +657,6 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                     </div>
                     {Types.map(type => {
                         const IconComponent = TYPE_ICONS[type]
-                        const isSolo = activeType === type
                         return (
                             <LegendItem
                                 key={type}
@@ -685,27 +664,18 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                                 color={COLORS[type]}
                                 icon={<IconComponent style={{ fill: COLORS[type] }} />}
                                 label={type}
-                                active={isSolo}
-                                faded={activeType !== null && !isSolo}
-                                pinned={pinnedType === type}
-                                onMouseEnter={() => handleHoverEnter(type)}
-                                onMouseLeave={handleHoverLeave}
-                                onClick={() => handleLegendItemClick(type)}
+                                {...legend.getItemProps(type)}
                             />
                         )
                     })}
                     {isMonthly && (() => {
-                        const soloType = activeType && Types.includes(activeType as Type) ? (activeType as Type) : null
-                        const avgLiColor = soloType ? lightenColor(COLORS[soloType], 0.5) : '#ffffff'
+                        const avgLiColor = activeType ? lightenColor(COLORS[activeType], 0.5) : '#ffffff'
                         return (
                             <LegendItem
                                 type="line"
                                 color={avgLiColor}
                                 label="12-mo avg"
-                                active={rawActive === '12-mo avg'}
-                                pinned={pinnedType === '12-mo avg'}
-                                onMouseEnter={() => handleHoverEnter('12-mo avg')}
-                                onMouseLeave={handleHoverLeave}
+                                {...legend.getItemProps('12-mo avg')}
                             />
                         )
                     })()}
@@ -713,8 +683,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                         <details style={{ display: 'inline', position: 'relative', cursor: 'pointer' }}>
                             <summary
                                 style={{ opacity: 0.7, listStyle: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25em', padding: '0 0.4em' }}
-                                onMouseEnter={() => handleHoverEnter('* Projected')}
-                                onMouseLeave={handleHoverLeave}
+                                onMouseEnter={() => setProjHovered(true)}
+                                onMouseLeave={() => setProjHovered(false)}
                             >
                                 <span style={{
                                     display: 'inline-block', width: 12, height: 12, borderRadius: 2,
@@ -742,7 +712,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                             </div>
                         </details>
                     )}
-                </div>}
+                </>}
             />
             {!isMonthly && !hasMuniFilter && (curYearActual > 0 || curYearProjectedTotal > 0) && (
                 <p className={css.plotStats}>
