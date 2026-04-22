@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Dissolve Municipal_Boundaries_of_NJ.geojson into per-county GeoJSON polygons.
 
 Writes:
@@ -6,12 +5,12 @@ Writes:
     www/public/njdot/map/counties.geojson  (statewide: all counties, low-res)
 """
 import json
-import sys
 from pathlib import Path
 
+import click
 import geopandas as gpd
 
-sys.path.insert(0, ".")
+from njdot.cli.base import njdot
 
 
 # NJ county name → cc code (matches `njsp/data/counties.parquet` mapping)
@@ -24,9 +23,12 @@ COUNTY_CC = {
 }
 
 
-def main():
-    src = "www/public/Municipal_Boundaries_of_NJ.geojson"
-    out_dir = Path("www/public/njdot/map/counties")
+@njdot.command("gen_county_outlines")
+@click.option("-s", "--src", default="www/public/Municipal_Boundaries_of_NJ.geojson", help="Source muni boundaries geojson")
+@click.option("-o", "--out-dir", default="www/public/njdot/map/counties", help="Per-county output dir")
+def gen_county_outlines(src, out_dir):
+    """Dissolve NJ muni boundaries into per-county GeoJSON for map overlays."""
+    out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     print(f"Reading {src}...")
     munis = gpd.read_file(src)
@@ -74,7 +76,4 @@ def main():
     with combined_path.open("w") as f:
         json.dump(combined, f)
     print(f"\nWrote combined {combined_path} ({combined_path.stat().st_size//1024} KB)")
-
-
-if __name__ == "__main__":
-    main()
+    return f"Generated county outlines: {len(counties)} counties"

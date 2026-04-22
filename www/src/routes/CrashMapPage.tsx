@@ -18,6 +18,7 @@ import { useCrashData } from "@/src/map/useCrashData"
 import type { MapMode } from "@/src/map/CrashMap"
 import type { Crash } from "@/src/map/CrashMap"
 import type { StackedHex } from "@/src/map/StackedHexLayer"
+// (keep StackedHex import even though narrow; the type is used below)
 import type { FeatureCollection } from "geojson"
 
 const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m.CrashMap })))
@@ -66,18 +67,19 @@ export default function CrashMapPage() {
     // parquet shards at the time of writing — `p` stretch).
     const [severities, setSeverities] = useState<Set<"f" | "i" | "p">>(() => new Set(["f", "i"]))
 
-    // Use hex aggregates at low zoom (statewide / multi-county). Zoom-aware
-    // switching happens in CrashMap itself; the client loader uses 'detail'
-    // for now, and the hex mode client-side bins on the already-loaded data.
-    // TODO: wire statewide low-zoom to `scale: 'r8'` and dispatch based on
-    // zoom. For now the 234K-point statewide scatter works at ~30fps on desktop.
+    // For statewide views in hexbin mode, fetch pre-aggregated h3-r8 cells
+    // from the server (~2 MB vs 30 MB for 234K raw rows) and skip client-side
+    // binning. Everything else uses individual crash rows ("detail").
+    const scale: CrashFilter["scale"] =
+        (cc === undefined && mode === "hexbin") ? "r8" : "detail"
+
     const filter: CrashFilter = useMemo(() => ({
         yearRange,
         ccs: cc ? [cc] : undefined,
         mc,
         severities,
-        scale: "detail",
-    }), [yearRange, cc, mc, severities])
+        scale,
+    }), [yearRange, cc, mc, severities, scale])
 
     const result = useCrashData(filter)
     const [outline, setOutline] = useState<FeatureCollection | null>(null)
@@ -118,13 +120,23 @@ export default function CrashMapPage() {
             )}
             {result.status === "ready" && (
                 <Suspense fallback={<div style={{ padding: "1em" }}>Loading map…</div>}>
-                    <CrashMap
-                        crashes={result.data as Crash[]}
-                        outline={outline ?? undefined}
-                        initialBounds={initialBounds}
-                        mode={mode}
-                        theme={actualTheme}
-                    />
+                    {scale === "detail" ? (
+                        <CrashMap
+                            crashes={result.data as Crash[]}
+                            outline={outline ?? undefined}
+                            initialBounds={initialBounds}
+                            mode={mode}
+                            theme={actualTheme}
+                        />
+                    ) : (
+                        <CrashMap
+                            prebinnedHexes={result.data as StackedHex[]}
+                            outline={outline ?? undefined}
+                            initialBounds={initialBounds}
+                            mode="hexbin"
+                            theme={actualTheme}
+                        />
+                    )}
                 </Suspense>
             )}
             <ControlBar
