@@ -8,6 +8,7 @@ import A from "@/src/lib/a"
 import { EndYear } from "@/src/constants"
 import css from "@/src/home.module.scss"
 import CrashPlot from "@/src/njdot/CrashPlot"
+import { CrashMapSection } from "@/src/map/CrashMapSection"
 // import { VictimSeverityPlot } from "@/src/njdot/VictimSeverityPlot"
 import { FatalitiesPerYearPlot } from "@/src/njsp/FatalitiesPerYearPlot"
 import { YtdDeathsPlot } from "@/src/njsp/YtdDeathsPlot"
@@ -146,6 +147,16 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                     </p>
                 }
                 <PlotContainer showHr={false}><CrashPlot key={`dot-${cc}-${mc}`} counties={countyFilter} mc={mc} /></PlotContainer>
+
+                {/* Crash map */}
+                <h2 id="map"><a href="#map">Crash Map</a></h2>
+                <div className={css.subtitle}>
+                    Injury and fatal crashes{geo}{" "}
+                    (<a href={`/map${cc !== null ? `/c/${countyName?.toLowerCase().replace(/\s+/g, "-")}${mc !== null && municipalityName ? `/${municipalityName.toLowerCase().replace(/\s+/g, "-")}` : ""}` : ""}`}>open full-screen</a>)
+                </div>
+                <PlotContainer showHr={false}>
+                    <CrashMapSection key={`map-${cc}-${mc}`} cc={cc} mc={mc} height={500} />
+                </PlotContainer>
 
                 {/* Annual Statistics Table (NJ DOT) */}
                 <h2 id="stats"><a href="#stats">Annual Statistics (NJ DOT)</a></h2>
