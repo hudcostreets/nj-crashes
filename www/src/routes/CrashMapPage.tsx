@@ -32,6 +32,32 @@ const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m
 
 const STATE_BBOX: [number, number, number, number] = [-75.7, 38.9, -73.9, 41.4]
 
+/** Compute a ViewState that fits the given [w,s,e,n] bounds into the
+ *  current window with some padding. Uses Web Mercator meters/pixel math.
+ *  Matches (approximately) `maplibregl.Map.cameraForBounds` behaviour but
+ *  runs without a Map instance. */
+function fitBoundsToView(
+    bounds: [number, number, number, number],
+    pitch = 0,
+): ViewState {
+    const [w, s, e, n] = bounds
+    const lat = (s + n) / 2
+    const lon = (w + e) / 2
+    const padPx = 40
+    const containerW = Math.max(200, window.innerWidth - padPx * 2)
+    const containerH = Math.max(200, window.innerHeight - padPx * 2)
+    const COS = Math.cos(lat * Math.PI / 180)
+    const metersPerDegLon = 111_320 * COS
+    const metersPerDegLat = 110_574
+    const lateralM = Math.max(1, (e - w) * metersPerDegLon)
+    const verticalM = Math.max(1, (n - s) * metersPerDegLat)
+    const mppNeeded = Math.max(lateralM / containerW, verticalM / containerH)
+    // Zoom where m/px at this latitude ≈ mppNeeded
+    // m/px at zoom z = 156543.03 * cos(lat) / 2^z  =>  z = log2(156543.03 * cos(lat) / m/px)
+    const zoom = Math.log2(156543.03 * COS / mppNeeded)
+    return { latitude: lat, longitude: lon, zoom: Math.max(7, Math.min(18, zoom)), pitch, bearing: 0 }
+}
+
 // --- URL param encoders ---
 const MODE_CODES: Record<MapMode, string> = { scatter: "s", heatmap: "h", hexbin: "x" }
 const MODE_FROM_CODE: Record<string, MapMode> = { s: "scatter", h: "heatmap", x: "hexbin" }
@@ -78,6 +104,15 @@ const yearRangeParam: Param<[number, number]> = {
         if (!m) return [2019, 2023]
         const a = +m[1], b = +m[2]
         return a <= b ? [a, b] : [b, a]
+    },
+}
+
+const hexPxParam: Param<number> = {
+    encode: (n) => n.toString(),
+    decode: (s) => {
+        if (!s) return 1.8
+        const n = Number(s)
+        return Number.isFinite(n) && n > 0 ? n : 1.8
     },
 }
 
@@ -135,6 +170,7 @@ export default function CrashMapPage() {
     const [yearRange, setYearRange] = useUrlState("y", yearRangeParam)
     const [severities, setSeverities] = useUrlState("s", severitiesParam)
     const [urlView, setUrlView] = useUrlState("v", viewParam)
+    const [hexPxTarget, setHexPxTarget] = useUrlState("h", hexPxParam)
 
     // For statewide views in hexbin mode, fetch pre-aggregated h3-r8 cells
     // from the server (~2 MB vs 30 MB for 234K raw rows) and skip client-side
@@ -173,14 +209,20 @@ export default function CrashMapPage() {
     // Internal viewState mirrors URL but updates at 60fps; URL writes
     // debounced at 500ms to avoid spamming history.
     const [viewState, setViewState] = useState<ViewState>(() => (
-        urlView ?? {
-            latitude: (initialBounds[1] + initialBounds[3]) / 2,
-            longitude: (initialBounds[0] + initialBounds[2]) / 2,
-            zoom: 11,
-            pitch: mode === "hexbin" ? 45 : 0,
-            bearing: 0,
-        }
+        urlView ?? fitBoundsToView(initialBounds, mode === "hexbin" ? 45 : 0)
     ))
+    // If the manifest arrives after mount AND we don't have a URL view,
+    // snap to a proper fit of the new bounds (fixes e.g. /map/bergen where
+    // initial default `initialBounds` is the statewide box but we got the
+    // Bergen-specific one after manifest load).
+    const fitKeyRef = useRef<string>(JSON.stringify(initialBounds))
+    useEffect(() => {
+        if (urlView) return
+        const key = JSON.stringify(initialBounds)
+        if (key === fitKeyRef.current) return
+        fitKeyRef.current = key
+        setViewState(fitBoundsToView(initialBounds, mode === "hexbin" ? 45 : 0))
+    }, [initialBounds, urlView, mode])
     const urlViewRef = useRef(urlView)
     urlViewRef.current = urlView
     const setUrlViewRef = useRef(setUrlView)
@@ -228,6 +270,8 @@ export default function CrashMapPage() {
                             initialBounds={initialBounds}
                             viewState={viewState}
                             onViewStateChange={setViewState}
+                            hexPxTarget={hexPxTarget}
+                            onHexPxTargetChange={setHexPxTarget}
                             mode={mode}
                             theme={actualTheme}
                         />
@@ -238,6 +282,8 @@ export default function CrashMapPage() {
                             initialBounds={initialBounds}
                             viewState={viewState}
                             onViewStateChange={setViewState}
+                            hexPxTarget={hexPxTarget}
+                            onHexPxTargetChange={setHexPxTarget}
                             mode="hexbin"
                             theme={actualTheme}
                         />

@@ -28,7 +28,7 @@ export type MapManifest = {
 }
 
 export type CrashFilter = {
-    /** Inclusive year range [y0, y1]. */
+    /** Inclusive year range. */
     yearRange: [number, number]
     /** County codes to include (empty = all). */
     ccs?: number[]

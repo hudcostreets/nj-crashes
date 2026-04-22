@@ -5,7 +5,7 @@
  * Nav: right-click / ctrl-drag rotates; two-finger touch drag pitches (mobile).
  */
 import React, { useCallback, useEffect, useMemo, useState } from "react"
-import { Map, Source, Layer } from "react-map-gl/maplibre"
+import { Map, Source, Layer, type MapRef } from "react-map-gl/maplibre"
 import "maplibre-gl/dist/maplibre-gl.css"
 import DeckGL from "@deck.gl/react/typed"
 import { ScatterplotLayer } from "@deck.gl/layers/typed"
@@ -13,7 +13,7 @@ import { HeatmapLayer } from "@deck.gl/aggregation-layers/typed"
 import type { PickingInfo } from "@deck.gl/core/typed"
 import type { FeatureCollection } from "geojson"
 import { useTouchPitch } from "./hooks/useTouchPitch"
-import { binIntoHexes, hexesToSegments, buildStackedHexLayer, Segment, StackedHex } from "./StackedHexLayer"
+import { binIntoHexes, hexesToSegments, buildStackedHexLayer, Segment, StackedHex, H3_RADIUS_METERS } from "./StackedHexLayer"
 
 export type MapMode = "scatter" | "heatmap" | "hexbin"
 
@@ -57,6 +57,9 @@ export type Props = {
      *  `initialBounds`/`initialCenter`. */
     viewState?: ViewState
     onViewStateChange?: (v: ViewState) => void
+    /** Controlled hex pixel target (pairs with `onHexPxTargetChange`). */
+    hexPxTarget?: number
+    onHexPxTargetChange?: (n: number) => void
     mode?: MapMode
     theme?: "light" | "dark"
     height?: number | string
@@ -92,24 +95,31 @@ function severityRgba(sev: Crash["severity"], alpha = 200): [number, number, num
     return [r, g, b, alpha]
 }
 
+/** Web-mercator meters-per-pixel at given zoom + latitude. */
+function metersPerPixel(zoom: number, lat: number): number {
+    return 156543.03 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom)
+}
+
+/** Pick integer H3 resolution whose cell-edge length in meters is closest
+ *  to the desired pixel-radius at the current zoom+latitude. Comparison on
+ *  a log2 scale so ±1 resolution is one constant step of coarseness. */
+function pickHexResolutionForPixels(pixelTarget: number, zoom: number, lat: number): number {
+    const targetMeters = pixelTarget * metersPerPixel(zoom, lat)
+    let best = 9, bestDiff = Infinity
+    for (const rStr of Object.keys(H3_RADIUS_METERS)) {
+        const r = Number(rStr)
+        const edge = H3_RADIUS_METERS[r]
+        const diff = Math.abs(Math.log2(edge / targetMeters))
+        if (diff < bestDiff) { bestDiff = diff; best = r }
+    }
+    return best
+}
+
 function fmtDate(d: Date | number): string {
     const date = d instanceof Date ? d : new Date(d)
     return date.toISOString().slice(0, 10)
 }
 
-/** Map MapLibre zoom → a reasonable H3 resolution.
- *  Zoom 9  → r7 (big hexes, ~1.2km)
- *  Zoom 11 → r8 (~460m)
- *  Zoom 13 → r9 (~175m)
- *  Zoom 15 → r10 (~65m)
- */
-function zoomToH3Resolution(zoom: number): number {
-    if (zoom < 10) return 7
-    if (zoom < 12) return 8
-    if (zoom < 14) return 9
-    if (zoom < 16) return 10
-    return 11
-}
 
 function defaultView(
     initialBounds: Props["initialBounds"],
@@ -132,6 +142,8 @@ export function CrashMap({
     initialCenter,
     viewState: controlledView,
     onViewStateChange: onControlledChange,
+    hexPxTarget: controlledHexPxTarget,
+    onHexPxTargetChange,
     mode = "scatter",
     theme = "dark",
     height = "100%",
@@ -148,10 +160,18 @@ export function CrashMap({
         }
     }, [controlledView, onControlledChange])
     const [hoverInfo, setHoverInfo] = useState<PickingInfo | null>(null)
-    // H3 hex resolution for hexbin mode. `null` = auto (derived from zoom).
-    // Range 6 (big) .. 11 (tiny). Default auto.
-    const [hexRes, setHexRes] = useState<number | null>(null)
-    const effectiveHexRes = hexRes ?? zoomToH3Resolution(viewState.zoom)
+    // Target on-screen hex radius in pixels. Auto-picks the H3 resolution
+    // whose edge length at the current zoom+latitude is closest to this
+    // target, so hexes stay ~constant size as you zoom (and don't jitter
+    // as you pan at a constant zoom — the choice depends only on zoom/lat,
+    // not on which points are visible).
+    const [localHexPxTarget, setLocalHexPxTarget] = useState(1.8)
+    const hexPxTarget = controlledHexPxTarget ?? localHexPxTarget
+    const setHexPxTarget = useCallback((n: number) => {
+        if (controlledHexPxTarget !== undefined && onHexPxTargetChange) onHexPxTargetChange(n)
+        else setLocalHexPxTarget(n)
+    }, [controlledHexPxTarget, onHexPxTargetChange])
+    const mapRef = React.useRef<MapRef | null>(null)
     // Height multiplier (meters per crash)
     const [elevationPerCount, setElevationPerCount] = useState(15)
 
@@ -164,6 +184,13 @@ export function CrashMap({
     }, [mode])
 
     const isPitchingRef = useTouchPitch({ setViewState, maxPitch: MAX_PITCH })
+
+    // H3 resolution picked from pixel target + current zoom+latitude.
+    // Purely derived — no data binning, no viewport filter → pan is stable.
+    const effectiveHexRes = useMemo(
+        () => pickHexResolutionForPixels(hexPxTarget, viewState.zoom, viewState.latitude),
+        [hexPxTarget, viewState.zoom, viewState.latitude],
+    )
 
     const layers = useMemo(() => {
         if (mode === "scatter") {
@@ -202,6 +229,9 @@ export function CrashMap({
         // 3-segment column — bottom = other injuries (yellow), middle = ped/
         // cyclist injuries (orange), top = fatal (red). Height encodes total
         // count; color encodes severity breakdown within the stack.
+        // Pick the finest resolution that produces ≤ `maxHexes` hexes; bin
+        // inline (single pass at each candidate resolution; stop when size
+        // limit exceeded).
         const hexes = prebinnedHexes ?? binIntoHexes(effectiveCrashes, effectiveHexRes)
         const segments = hexesToSegments(hexes, elevationPerCount)
         return [
@@ -228,11 +258,24 @@ export function CrashMap({
             <DeckGL
                 viewState={viewState}
                 onViewStateChange={onViewStateChange}
-                controller={{ touchRotate: true, dragRotate: true } as any}
+                controller={{ touchRotate: true, dragRotate: true, maxPitch: MAX_PITCH } as any}
                 layers={layers}
                 style={{ position: "absolute", inset: "0" }}
             >
-                <Map mapStyle={style} maxPitch={MAX_PITCH} attributionControl={false}>
+                <Map
+                    ref={mapRef}
+                    mapStyle={style}
+                    maxPitch={MAX_PITCH}
+                    attributionControl={false}
+                    onLoad={() => {
+                        const map = mapRef.current?.getMap()
+                        if (!map || !initialBounds || controlledView) return
+                        map.fitBounds(
+                            [[initialBounds[0], initialBounds[1]], [initialBounds[2], initialBounds[3]]],
+                            { padding: 20, animate: false },
+                        )
+                    }}
+                >
                     {outline && (
                         <Source id="outline" type="geojson" data={outline}>
                             <Layer
@@ -251,9 +294,9 @@ export function CrashMap({
             <PitchSlider viewState={viewState} setViewState={setViewState} theme={theme} />
             {mode === "hexbin" && (
                 <HexControls
-                    hexRes={hexRes}
-                    setHexRes={setHexRes}
-                    autoHexRes={zoomToH3Resolution(viewState.zoom)}
+                    effectiveRes={effectiveHexRes}
+                    pixelTarget={hexPxTarget}
+                    setPixelTarget={setHexPxTarget}
                     elevationPerCount={elevationPerCount}
                     setElevationPerCount={setElevationPerCount}
                     theme={theme}
@@ -275,7 +318,7 @@ function PitchSlider({
     const fg = theme === "dark" ? "#e0e0e0" : "#333"
     return (
         <div style={{
-            position: "absolute", top: "3.5em", right: "1em", background: bg, color: fg,
+            position: "absolute", top: "1em", left: "1em", background: bg, color: fg,
             padding: "0.4em 0.7em", borderRadius: 4, zIndex: 1000, fontSize: "0.85em",
             display: "flex", alignItems: "center", gap: 8,
         }}>
@@ -293,55 +336,56 @@ function PitchSlider({
 }
 
 function HexControls({
-    hexRes, setHexRes, autoHexRes, elevationPerCount, setElevationPerCount, theme,
+    effectiveRes, pixelTarget, setPixelTarget, elevationPerCount, setElevationPerCount, theme,
 }: {
-    hexRes: number | null
-    setHexRes: (v: number | null) => void
-    autoHexRes: number
+    effectiveRes: number
+    pixelTarget: number
+    setPixelTarget: (v: number) => void
     elevationPerCount: number
     setElevationPerCount: (v: number) => void
     theme: "light" | "dark"
 }) {
     const bg = theme === "dark" ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.95)"
     const fg = theme === "dark" ? "#e0e0e0" : "#333"
-    const effective = hexRes ?? autoHexRes
     return (
         <div style={{
-            position: "absolute", top: "6em", right: "1em", background: bg, color: fg,
+            position: "absolute", top: "3.5em", left: "1em", background: bg, color: fg,
             padding: "0.5em 0.7em", borderRadius: 4, zIndex: 1000, fontSize: "0.85em",
-            display: "flex", flexDirection: "column", gap: 6, minWidth: 180,
+            display: "flex", flexDirection: "column", gap: 6, minWidth: 210,
         }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
-                <span>Hex size: r{effective}{hexRes === null ? " (auto)" : ""}</span>
-                <input
-                    type="range" min={6} max={11} step={1}
-                    value={effective}
-                    onChange={(e) => setHexRes(Number(e.target.value))}
-                    style={{ width: 80 }}
-                />
-            </label>
-            {hexRes !== null && (
-                <button
-                    onClick={() => setHexRes(null)}
-                    style={{
-                        padding: "0.15em 0.4em",
-                        fontSize: "0.75em",
-                        cursor: "pointer",
-                        background: "transparent",
-                        color: fg,
-                        border: `1px solid ${fg}`,
-                        borderRadius: 3,
-                        alignSelf: "flex-start",
-                    }}
-                >Reset to auto</button>
-            )}
+            {(() => {
+                // Log slider: each H3 resolution jump is ~log2(2.65) ≈ 1.4 units,
+                // so uniform log-px coverage gives even stops through r5…r13.
+                // slider value ∈ [0, 100]; higher = higher density = smaller hexes.
+                //   0   → 60px (coarse, big hexes)
+                //   100 → 1px (dense, one-per-point)
+                const sliderValue = Math.round(100 * (1 - Math.log2(pixelTarget) / Math.log2(60)))
+                return (
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
+                        <span>Hex density: {sliderValue} (~{pixelTarget.toFixed(pixelTarget < 5 ? 1 : 0)}px, r{effectiveRes})</span>
+                        <input
+                            type="range" min={0} max={100} step={1}
+                            value={sliderValue}
+                            onChange={(e) => {
+                                const v = Number(e.target.value)
+                                // Inverse of the encoding above:
+                                const px = Math.pow(60, 1 - v / 100)
+                                // Round to a pleasant tick for the label (0.1 below 5px, integer above)
+                                const rounded = px < 5 ? Math.round(px * 10) / 10 : Math.round(px)
+                                setPixelTarget(Math.max(0.5, rounded))
+                            }}
+                            style={{ width: 100 }}
+                        />
+                    </label>
+                )
+            })()}
             <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
                 <span>Bar height: {elevationPerCount}×</span>
                 <input
                     type="range" min={3} max={60} step={1}
                     value={elevationPerCount}
                     onChange={(e) => setElevationPerCount(Number(e.target.value))}
-                    style={{ width: 80 }}
+                    style={{ width: 90 }}
                 />
             </label>
         </div>
@@ -375,15 +419,21 @@ function CrashTooltip({ info }: { info: PickingInfo }) {
         return (
             <div style={tooltipStyle(info)}>
                 <div><b>{h.total}</b> injury/fatal crashes in this hex</div>
-                <div style={{ color: "rgb(200,40,40)" }}>
-                    <b>{h.fatal}</b> fatal
-                </div>
-                <div style={{ color: "rgb(253,140,60)" }}>
-                    <b>{h.pedInj}</b> ped/cyclist injury
-                </div>
-                <div style={{ color: "rgb(230,220,100)" }}>
-                    <b>{h.otherInj}</b> other injury
-                </div>
+                {h.fatal > 0 && (
+                    <div style={{ color: "rgb(200,40,40)" }}>
+                        <b>{h.fatal}</b> fatal
+                    </div>
+                )}
+                {h.pedInj > 0 && (
+                    <div style={{ color: "rgb(253,140,60)" }}>
+                        <b>{h.pedInj}</b> ped/cyclist injury
+                    </div>
+                )}
+                {h.otherInj > 0 && (
+                    <div style={{ color: "rgb(230,220,100)" }}>
+                        <b>{h.otherInj}</b> other injury
+                    </div>
+                )}
             </div>
         )
     }

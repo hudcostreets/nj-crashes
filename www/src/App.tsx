@@ -42,9 +42,13 @@ export default function App() {
                 <Route path="/duckdb" element={<DuckDbPage />} />
                 <Route path="/og" element={<OgImage />} />
                 <Route path="/match-review" element={<MatchReview />} />
-                <Route path="/map/hudson" element={<HudsonMap />} />
                 <Route path="/map/hudson/diffs" element={<HudsonDiffs />} />
+                <Route path="/map/hudson/legacy" element={<HudsonMap />} />
                 <Route path="/map" element={<CrashMapPage />} />
+                {/* short form */}
+                <Route path="/map/:county" element={<CrashMapPage />} />
+                <Route path="/map/:county/:muni" element={<CrashMapPage />} />
+                {/* `/c/` form for disambiguation in case we add other /map/* sub-routes later */}
                 <Route path="/map/c/:county" element={<CrashMapPage />} />
                 <Route path="/map/c/:county/:muni" element={<CrashMapPage />} />
                 <Route path="*" element={<NotFound />} />
