@@ -1,24 +1,36 @@
 {
   "entries": {
-    "assets/TileLayer.js": {
-      "raw": 154144,
-      "gzip": 44983
+    "assets/CrashMap.css": {
+      "raw": 63741,
+      "gzip": 9108
+    },
+    "assets/CrashMap.js": {
+      "raw": 488733,
+      "gzip": 144538
     },
     "assets/diffs.js": {
-      "raw": 1183,
-      "gzip": 663
+      "raw": 154632,
+      "gzip": 45185
+    },
+    "assets/h3-js.es.js": {
+      "raw": 183374,
+      "gzip": 55527
     },
     "assets/index.css": {
-      "raw": 146451,
-      "gzip": 27179
+      "raw": 150170,
+      "gzip": 27817
     },
     "assets/index.js": {
-      "raw": 2946750,
-      "gzip": 748701
+      "raw": 2966804,
+      "gzip": 754525
+    },
+    "assets/maplibre.js": {
+      "raw": 762498,
+      "gzip": 207352
     }
   },
   "total": {
-    "raw": 3248528,
-    "gzip": 821526
+    "raw": 4769952,
+    "gzip": 1244052
   }
 }
