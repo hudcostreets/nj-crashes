@@ -485,7 +485,7 @@ function CrashTooltip({ info }: { info: PickingInfo }) {
         const injury = h.pedInj + h.otherInj
         return (
             <div style={tooltipStyle(info)}>
-                <div><b>{h.total}</b> injury/fatal crashes in this hex</div>
+                <div><b>{h.total}</b> crashes in this hex</div>
                 {h.fatal > 0 && (
                     <div style={{ color: "rgb(210,28,28)" }}>
                         <b>{h.fatal}</b> fatal
@@ -494,6 +494,11 @@ function CrashTooltip({ info }: { info: PickingInfo }) {
                 {injury > 0 && (
                     <div style={{ color: "rgb(245,158,11)" }}>
                         <b>{injury}</b> injury{h.pedInj > 0 ? ` (incl. ${h.pedInj} ped/cyclist)` : ""}
+                    </div>
+                )}
+                {h.pdo > 0 && (
+                    <div style={{ color: "rgb(220,200,90)" }}>
+                        <b>{h.pdo}</b> property damage
                     </div>
                 )}
             </div>

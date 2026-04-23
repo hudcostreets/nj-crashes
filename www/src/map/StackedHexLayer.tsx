@@ -32,6 +32,7 @@ export type StackedHex = {
     fatal: number
     pedInj: number
     otherInj: number
+    pdo: number
     total: number
 }
 
@@ -40,7 +41,7 @@ export type Segment = {
     height: number
     color: [number, number, number, number]
     hex: StackedHex
-    tier: "fatal" | "injury"
+    tier: "fatal" | "injury" | "pdo"
 }
 
 export function binIntoHexes<T extends StackableCrash>(
@@ -52,7 +53,7 @@ export function binIntoHexes<T extends StackableCrash>(
         const h3 = latLngToCell(c.lat, c.lon, resolution)
         let b = bins.get(h3)
         if (!b) {
-            b = { h3, center: [0, 0], fatal: 0, pedInj: 0, otherInj: 0, total: 0 }
+            b = { h3, center: [0, 0], fatal: 0, pedInj: 0, otherInj: 0, pdo: 0, total: 0 }
             bins.set(h3, b)
         }
         b.total += 1
@@ -73,8 +74,9 @@ export function hexesToSegments(
     hexes: StackedHex[],
     elevationPerCount = 15,
     colors = {
-        injury: [245, 158, 11, 180] as [number, number, number, number],  // orange (matches bar-chart "Injury")
-        fatal:  [210, 28, 28, 220]  as [number, number, number, number],  // red
+        pdo:    [235, 218, 108, 140] as [number, number, number, number],  // pale yellow (matches bar-chart "Prop. Damage")
+        injury: [245, 158, 11, 180]  as [number, number, number, number],  // orange ("Injury")
+        fatal:  [210, 28, 28, 220]   as [number, number, number, number],  // red ("Fatal")
     },
 ): Segment[] {
     const segs: Segment[] = []
@@ -86,6 +88,7 @@ export function hexesToSegments(
             segs.push({ center: [h.center[0], h.center[1], z], height: dz, color, hex: h, tier })
             z += dz
         }
+        push("pdo", h.pdo, colors.pdo)
         push("injury", h.pedInj + h.otherInj, colors.injury)
         push("fatal", h.fatal, colors.fatal)
     }

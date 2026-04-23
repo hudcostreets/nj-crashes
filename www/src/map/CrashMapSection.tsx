@@ -151,16 +151,25 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
                         />
                     </div>
                 </div>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: "0.85em" }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: "0.85em", flexWrap: "wrap" }}>
                     <span>Severity:</span>
-                    {(["f", "i"] as const).map(s => {
+                    {(["f", "i", "p"] as const).map(s => {
                         const checked = severities.has(s)
-                        const label = s === "f" ? "Fatal" : "Injury"
+                        const label = s === "f" ? "Fatal" : s === "i" ? "Injury" : "PDO"
+                        const disabled = s === "p" && mode !== "hexbin"
                         return (
-                            <label key={s} style={{ display: "inline-flex", alignItems: "center", gap: 3, cursor: "pointer" }}>
+                            <label key={s}
+                                title={disabled ? "PDO only available in Hexbin mode" : undefined}
+                                style={{
+                                    display: "inline-flex", alignItems: "center", gap: 3,
+                                    cursor: disabled ? "not-allowed" : "pointer",
+                                    opacity: disabled ? 0.5 : 1,
+                                }}
+                            >
                                 <input
                                     type="checkbox"
-                                    checked={checked}
+                                    checked={checked && !disabled}
+                                    disabled={disabled}
                                     onChange={() => {
                                         const next = new Set(severities)
                                         if (checked) next.delete(s); else next.add(s)

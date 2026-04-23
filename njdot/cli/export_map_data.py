@@ -170,10 +170,11 @@ def _emit_hex_aggregates(df: pd.DataFrame, outdir: Path, resolutions=(7, 8)) -> 
 
 @njdot.command("export_map_data")
 @click.option("-o", "--outdir", default="www/public/njdot/map", help="Output dir for map data")
-@click.option("-s", "--severities", default="i,f", help="Comma-separated severities to include (default: i,f; use i,f,p for everything)")
+@click.option("-s", "--severities", default="i,f", help="Severities for the point-level shards (default: i,f). PDO is excluded by default because including it ~4x's the point dataset.")
+@click.option("-H", "--hex-severities", default="i,f,p", help="Severities for the hex aggregates (default: i,f,p). PDO counts are cheap at the aggregate level.")
 @click.option("--years", default=None, help="Year range, e.g. 2019:2023 (inclusive, default: all)")
 @click.option("--hex-resolutions", default="7,8", help="H3 resolutions for pre-aggregates")
-def export_map_data(outdir, severities, years, hex_resolutions):
+def export_map_data(outdir, severities, hex_severities, years, hex_resolutions):
     """Export crash data as sharded parquet for the interactive map frontend."""
     print(f"Loading crashes.parquet...")
     df = pd.read_parquet("njdot/data/crashes.parquet")
@@ -184,16 +185,20 @@ def export_map_data(outdir, severities, years, hex_resolutions):
         df = df[(df["year"] >= y0) & (df["year"] <= y1)]
         print(f"  filtered to years {y0}-{y1}: {len(df):,}")
 
-    keep_sevs = {s.strip() for s in severities.split(",") if s.strip()}
-    print(f"  severities: {keep_sevs}")
+    point_sevs = {s.strip() for s in severities.split(",") if s.strip()}
+    hex_sevs = {s.strip() for s in hex_severities.split(",") if s.strip()}
+    print(f"  point severities: {sorted(point_sevs)}")
+    print(f"  hex severities:   {sorted(hex_sevs)}")
 
-    mapped = _build_base(df, keep_sevs)
-    print(f"  with lat/lon: {len(mapped):,} ({100*len(mapped)/len(df):.1f}% of filtered)")
+    # Build once for the hex agg (widest), then filter down for point shards.
+    hex_base = _build_base(df, hex_sevs)
+    point_base = hex_base[hex_base["severity"].isin(point_sevs)].copy()
+    print(f"  with lat/lon: {len(hex_base):,} total, {len(point_base):,} points")
 
     out = Path(outdir)
     out.mkdir(parents=True, exist_ok=True)
 
-    dts = pd.to_datetime(mapped["dt"] * 60, unit="s", utc=True)
+    dts = pd.to_datetime(hex_base["dt"] * 60, unit="s", utc=True)
     # Per-county + per-muni bboxes for client map fit-bounds. Use 1st-99th
     # percentile to avoid outliers (a few crashes with `olat` values that pass
     # the NJ bbox but are wildly misattributed to a different county).
@@ -208,7 +213,7 @@ def export_map_data(outdir, severities, years, hex_resolutions):
         ]
     county_bboxes = {}
     muni_bboxes = {}
-    for cc, sub in mapped.groupby("cc"):
+    for cc, sub in hex_base.groupby("cc"):
         if len(sub) < 3:
             continue
         county_bboxes[int(cc)] = _bbox(sub)
@@ -218,26 +223,28 @@ def export_map_data(outdir, severities, years, hex_resolutions):
             muni_bboxes[f"{int(cc)}-{int(mc)}"] = _bbox(msub)
     manifest = {
         "schema_version": 1,
-        "severities": sorted(keep_sevs),
+        "point_severities": sorted(point_sevs),
+        "hex_severities": sorted(hex_sevs),
         "year_range": [int(dts.dt.year.min()), int(dts.dt.year.max())],
-        "dt_epoch_minutes_range": [int(mapped["dt"].min()), int(mapped["dt"].max())],
-        "total_rows": int(len(mapped)),
-        "by_geocode_src": mapped["geocode_src"].value_counts().to_dict(),
+        "dt_epoch_minutes_range": [int(hex_base["dt"].min()), int(hex_base["dt"].max())],
+        "total_rows": int(len(hex_base)),
+        "point_rows": int(len(point_base)),
+        "by_geocode_src": hex_base["geocode_src"].value_counts().to_dict(),
         "county_bboxes": county_bboxes,
         "muni_bboxes": muni_bboxes,
     }
 
     print(f"\nWriting by-year + by-year-county shards to {out}/...")
-    shard_manifest = _emit_shards(mapped, out)
+    shard_manifest = _emit_shards(point_base, out)
     manifest.update(shard_manifest)
 
     res_list = [int(r) for r in hex_resolutions.split(",") if r]
     print(f"\nComputing h3 aggregates (resolutions {res_list})...")
-    hex_manifest = _emit_hex_aggregates(mapped, out, resolutions=res_list)
+    hex_manifest = _emit_hex_aggregates(hex_base, out, resolutions=res_list)
     manifest["hex_aggregates"] = hex_manifest
 
     manifest_path = out / "manifest.json"
     with manifest_path.open("w") as f:
         json.dump(manifest, f, indent=2, default=str)
     print(f"\nWrote manifest to {manifest_path}")
-    return f"Export map data ({len(mapped):,} crashes, years {manifest['year_range'][0]}-{manifest['year_range'][1]}, severities={','.join(sorted(keep_sevs))})"
+    return f"Export map data ({len(hex_base):,} hex / {len(point_base):,} point crashes, years {manifest['year_range'][0]}-{manifest['year_range'][1]})"

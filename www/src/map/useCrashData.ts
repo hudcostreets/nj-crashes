@@ -16,9 +16,11 @@ import type { StackedHex } from "./StackedHexLayer"
 
 export type MapManifest = {
     schema_version: 1
-    severities: string[]
+    point_severities: string[]
+    hex_severities: string[]
     year_range: [number, number]
     total_rows: number
+    point_rows: number
     by_geocode_src: Record<string, number>
     per_year: Record<string, number>
     per_year_county: Record<string, number>
@@ -146,30 +148,37 @@ export function useCrashData(filter: CrashFilter | null):
                         fetchParquet<HexRow>(p).catch(() => [] as HexRow[]),
                     ))
                     const merged = batches.flat()
+                    const sevs = filter.severities
+                    const wantF = !sevs || sevs.has("f")
+                    const wantI = !sevs || sevs.has("i")
+                    const wantP = !sevs || sevs.has("p")
                     const aggByHex = new Map<string, StackedHex>()
                     for (const r of merged) {
                         if (filter.ccs && filter.ccs.length > 0 && !filter.ccs.includes(r.cc)) continue
                         if (filter.mc != null && r.mc !== filter.mc) continue
                         let h = aggByHex.get(r.h3)
                         if (!h) {
-                            h = { h3: r.h3, center: [0, 0], fatal: 0, pedInj: 0, otherInj: 0, total: 0 }
+                            h = { h3: r.h3, center: [0, 0], fatal: 0, pedInj: 0, otherInj: 0, pdo: 0, total: 0 }
                             aggByHex.set(r.h3, h)
                         }
-                        h.fatal += r.n_fatal
-                        h.pedInj += r.n_ped_inj
-                        h.otherInj += r.n_other_inj
-                        h.total += r.n_fatal + r.n_ped_inj + r.n_other_inj + r.n_pdo
+                        if (wantF) h.fatal += r.n_fatal
+                        if (wantI) { h.pedInj += r.n_ped_inj; h.otherInj += r.n_other_inj }
+                        if (wantP) h.pdo += r.n_pdo
                     }
-                    // Resolve centers
+                    // Drop hexes fully filtered out; compute totals + centers for survivors.
                     const { cellToBoundary } = await import("h3-js")
+                    const kept: StackedHex[] = []
                     for (const h of aggByHex.values()) {
+                        h.total = h.fatal + h.pedInj + h.otherInj + h.pdo
+                        if (h.total === 0) continue
                         const boundary = cellToBoundary(h.h3, true)
                         let lon = 0, lat = 0
                         for (const [ln, la] of boundary) { lon += ln; lat += la }
                         h.center = [lon / boundary.length, lat / boundary.length]
+                        kept.push(h)
                     }
                     if (!cancelled) {
-                        setState({ key: filterKey, data: [...aggByHex.values()], status: "ready" })
+                        setState({ key: filterKey, data: kept, status: "ready" })
                     }
                 }
             } catch (e) {
