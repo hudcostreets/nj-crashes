@@ -129,6 +129,30 @@ function fmtDate(d: Date | number): string {
 }
 
 
+/** Web-mercator fit: zoom where `[w,s,e,n]` fits inside (containerW×containerH)
+ *  pixels at the bounds' center latitude. Matches `maplibregl.Map.cameraForBounds`. */
+export function fitBoundsToView(
+    bounds: [number, number, number, number],
+    containerW: number,
+    containerH: number,
+    pitch = 0,
+    padPx = 40,
+): ViewState {
+    const [w, s, e, n] = bounds
+    const lat = (s + n) / 2
+    const lon = (w + e) / 2
+    const cw = Math.max(50, containerW - padPx * 2)
+    const ch = Math.max(50, containerH - padPx * 2)
+    const COS = Math.cos(lat * Math.PI / 180)
+    const metersPerDegLon = 111_320 * COS
+    const metersPerDegLat = 110_574
+    const lateralM = Math.max(1, (e - w) * metersPerDegLon)
+    const verticalM = Math.max(1, (n - s) * metersPerDegLat)
+    const mppNeeded = Math.max(lateralM / cw, verticalM / ch)
+    const zoom = Math.log2(156543.03 * COS / mppNeeded)
+    return { latitude: lat, longitude: lon, zoom: Math.max(7, Math.min(18, zoom)), pitch, bearing: 0 }
+}
+
 function defaultView(
     initialBounds: Props["initialBounds"],
     initialCenter: Props["initialCenter"],
@@ -161,8 +185,24 @@ export function CrashMap({
     height = "100%",
 }: Props) {
     const effectiveCrashes = crashes ?? []
+    const containerRef = React.useRef<HTMLDivElement | null>(null)
     const [localViewState, setLocalViewState] = useState<ViewState>(() => defaultView(initialBounds, initialCenter, mode))
     const viewState = controlledView ?? localViewState
+    // Auto-fit bounds when uncontrolled: re-run whenever `initialBounds` change
+    // AND the container has a measurable size. Caller-owned `controlledView`
+    // skips this (CrashMapPage does its own `fitBoundsToView`).
+    const fitKeyRef = React.useRef<string>("")
+    useEffect(() => {
+        if (controlledView !== undefined || !initialBounds) return
+        const el = containerRef.current
+        if (!el) return
+        const { clientWidth: cw, clientHeight: ch } = el
+        if (!cw || !ch) return
+        const key = `${initialBounds.join(",")}-${cw}x${ch}-${mode}`
+        if (key === fitKeyRef.current) return
+        fitKeyRef.current = key
+        setLocalViewState(fitBoundsToView(initialBounds, cw, ch, mode === "hexbin" ? 45 : 0))
+    }, [initialBounds, controlledView, mode])
     const setViewState: React.Dispatch<React.SetStateAction<ViewState>> = useCallback((updater) => {
         if (controlledView !== undefined && onControlledChange) {
             const next = typeof updater === "function" ? (updater as (v: ViewState) => ViewState)(controlledView) : updater
@@ -294,7 +334,7 @@ export function CrashMap({
     const style = useMemo(() => rasterStyle(theme), [theme])
 
     return (
-        <div style={{ position: "relative", height, width: "100%" }}>
+        <div ref={containerRef} style={{ position: "relative", height, width: "100%" }}>
             <DeckGL
                 viewState={viewState}
                 onViewStateChange={onViewStateChange}
@@ -442,22 +482,18 @@ function CrashTooltip({ info }: { info: PickingInfo }) {
     if (isStackedSegment) {
         const seg = obj as Segment
         const h = seg.hex
+        const injury = h.pedInj + h.otherInj
         return (
             <div style={tooltipStyle(info)}>
                 <div><b>{h.total}</b> injury/fatal crashes in this hex</div>
                 {h.fatal > 0 && (
-                    <div style={{ color: "rgb(200,40,40)" }}>
+                    <div style={{ color: "rgb(210,28,28)" }}>
                         <b>{h.fatal}</b> fatal
                     </div>
                 )}
-                {h.pedInj > 0 && (
-                    <div style={{ color: "rgb(253,140,60)" }}>
-                        <b>{h.pedInj}</b> ped/cyclist injury
-                    </div>
-                )}
-                {h.otherInj > 0 && (
-                    <div style={{ color: "rgb(230,220,100)" }}>
-                        <b>{h.otherInj}</b> other injury
+                {injury > 0 && (
+                    <div style={{ color: "rgb(245,158,11)" }}>
+                        <b>{injury}</b> injury{h.pedInj > 0 ? ` (incl. ${h.pedInj} ped/cyclist)` : ""}
                     </div>
                 )}
             </div>

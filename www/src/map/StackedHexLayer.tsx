@@ -1,6 +1,10 @@
 /** Stacked hex-column layer: per-hex cylinder split into colored segments
- *  stacked by severity. Fatal on top, pedestrian/cyclist injury in middle,
- *  other injury at bottom.
+ *  stacked by severity. Fatal on top, injury below.
+ *
+ *  (The hex data still tracks ped/cyclist vs. other injury separately; that
+ *  distinction is available in tooltips if a caller wants to render it, but
+ *  the segments collapse both into a single "injury" tier by default so the
+ *  palette lines up with the bar-chart legend.)
  *
  *  Implementation: emit one `ColumnLayer` instance per (hex, severity tier).
  *  `getPosition` includes a 3D altitude (the segment's base-z), and
@@ -36,7 +40,7 @@ export type Segment = {
     height: number
     color: [number, number, number, number]
     hex: StackedHex
-    tier: "fatal" | "pedInj" | "otherInj"
+    tier: "fatal" | "injury"
 }
 
 export function binIntoHexes<T extends StackableCrash>(
@@ -69,9 +73,8 @@ export function hexesToSegments(
     hexes: StackedHex[],
     elevationPerCount = 15,
     colors = {
-        otherInj: [247, 237, 108, 110] as [number, number, number, number],  // pale yellow, low alpha
-        pedInj:   [253, 140, 60, 160]  as [number, number, number, number],  // orange, mid alpha
-        fatal:    [210, 28, 28, 200]   as [number, number, number, number],  // red, translucent so stacked fatals read as darker bands
+        injury: [245, 158, 11, 180] as [number, number, number, number],  // orange (matches bar-chart "Injury")
+        fatal:  [210, 28, 28, 220]  as [number, number, number, number],  // red
     },
 ): Segment[] {
     const segs: Segment[] = []
@@ -83,8 +86,7 @@ export function hexesToSegments(
             segs.push({ center: [h.center[0], h.center[1], z], height: dz, color, hex: h, tier })
             z += dz
         }
-        push("otherInj", h.otherInj, colors.otherInj)
-        push("pedInj", h.pedInj, colors.pedInj)
+        push("injury", h.pedInj + h.otherInj, colors.injury)
         push("fatal", h.fatal, colors.fatal)
     }
     return segs

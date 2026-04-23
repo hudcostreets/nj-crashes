@@ -30,6 +30,8 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
     const [mode, setMode] = useState<MapMode>("hexbin")
     const [yearRange, setYearRange] = useState<[number, number]>([2019, 2023])
     const [severities, setSeverities] = useState<Set<"f" | "i" | "p">>(() => new Set(["f", "i"]))
+    const [hexPxTarget, setHexPxTarget] = useState(1.8)
+    const [elevationPerCount, setElevationPerCount] = useState(15)
 
     const scale: CrashFilter["scale"] = (cc === null && mode === "hexbin") ? "r8" : "detail"
 
@@ -84,6 +86,11 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
                             mode={mode}
                             theme={actualTheme}
                             height={height}
+                            showInternalControls={false}
+                            hexPxTarget={hexPxTarget}
+                            onHexPxTargetChange={setHexPxTarget}
+                            elevationPerCount={elevationPerCount}
+                            onElevationPerCountChange={setElevationPerCount}
                         />
                     ) : (
                         <CrashMap
@@ -93,14 +100,19 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
                             mode="hexbin"
                             theme={actualTheme}
                             height={height}
+                            showInternalControls={false}
+                            hexPxTarget={hexPxTarget}
+                            onHexPxTargetChange={setHexPxTarget}
+                            elevationPerCount={elevationPerCount}
+                            onElevationPerCountChange={setElevationPerCount}
                         />
                     )}
                 </Suspense>
             )}
             <div style={{
-                position: "absolute", top: 8, left: 8, background: bg, color: fg,
+                position: "absolute", top: 8, right: 8, background: bg, color: fg,
                 padding: "0.4em 0.6em", borderRadius: 4, zIndex: 1000, fontSize: "0.82em",
-                display: "flex", flexDirection: "column", gap: 6, maxWidth: 260,
+                display: "flex", flexDirection: "column", gap: 6, minWidth: 210, maxWidth: 260,
             }}>
                 <div style={{ display: "flex", gap: 4 }}>
                     {(["scatter", "heatmap", "hexbin"] as MapMode[]).map(m => (
@@ -115,6 +127,7 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
                                 border: `1px solid ${mode === m ? activeBg : fg}`,
                                 borderRadius: 3,
                                 fontSize: "0.85em",
+                                flex: 1,
                             }}
                         >{m === "scatter" ? "Points" : m === "heatmap" ? "Heatmap" : "Hexbin"}</button>
                     ))}
@@ -128,17 +141,18 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
                             type="range" min={y0min} max={y1max} step={1}
                             value={yearRange[0]}
                             onChange={e => setYearRange([Math.min(Number(e.target.value), yearRange[1]), yearRange[1]])}
-                            style={{ width: 80 }}
+                            style={{ flex: 1 }}
                         />
                         <input
                             type="range" min={y0min} max={y1max} step={1}
                             value={yearRange[1]}
                             onChange={e => setYearRange([yearRange[0], Math.max(Number(e.target.value), yearRange[0])])}
-                            style={{ width: 80 }}
+                            style={{ flex: 1 }}
                         />
                     </div>
                 </div>
-                <div style={{ display: "flex", gap: 4, alignItems: "center", fontSize: "0.85em" }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: "0.85em" }}>
+                    <span>Severity:</span>
                     {(["f", "i"] as const).map(s => {
                         const checked = severities.has(s)
                         const label = s === "f" ? "Fatal" : "Injury"
@@ -158,6 +172,38 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
                         )
                     })}
                 </div>
+                {mode === "hexbin" && (
+                    <>
+                        {(() => {
+                            const sliderValue = Math.round(100 * (1 - Math.log2(hexPxTarget) / Math.log2(60)))
+                            return (
+                                <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
+                                    <span style={{ fontSize: "0.78em" }}>Hex density: <b>{sliderValue}</b></span>
+                                    <input
+                                        type="range" min={0} max={100} step={1}
+                                        value={sliderValue}
+                                        onChange={e => {
+                                            const v = Number(e.target.value)
+                                            const px = Math.pow(60, 1 - v / 100)
+                                            const rounded = px < 5 ? Math.round(px * 10) / 10 : Math.round(px)
+                                            setHexPxTarget(Math.max(0.5, rounded))
+                                        }}
+                                        style={{ width: 100 }}
+                                    />
+                                </label>
+                            )
+                        })()}
+                        <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
+                            <span style={{ fontSize: "0.78em" }}>Bar height: <b>{elevationPerCount}×</b></span>
+                            <input
+                                type="range" min={3} max={60} step={1}
+                                value={elevationPerCount}
+                                onChange={e => setElevationPerCount(Number(e.target.value))}
+                                style={{ width: 100 }}
+                            />
+                        </label>
+                    </>
+                )}
             </div>
         </div>
     )
