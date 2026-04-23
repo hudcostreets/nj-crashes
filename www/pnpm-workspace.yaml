@@ -4,7 +4,3 @@ ignoredBuiltDependencies:
   - '@fortawesome/free-solid-svg-icons'
   - es5-ext
   - esbuild
-
-packages:
-  - .
-  - ../../../js/pltly
