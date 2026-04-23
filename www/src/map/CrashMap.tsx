@@ -160,8 +160,14 @@ function defaultView(
 ): ViewState {
     const pitch = mode === "hexbin" ? 45 : 0
     if (initialBounds) {
-        const [w, s, e, n] = initialBounds
-        return { longitude: (w + e) / 2, latitude: (s + n) / 2, zoom: 11, pitch, bearing: 0 }
+        // Guess a reasonable fit using window dims — `fitBoundsToView` will
+        // re-fit more precisely once the container is measured. Starting
+        // near the target zoom avoids a visible zoom-out-then-snap on load,
+        // and avoids a hard-coded `zoom:11` that can stick when deck.gl's
+        // controller echoes the initial viewState back synchronously.
+        const w = typeof window !== "undefined" ? Math.max(300, Math.min(1200, window.innerWidth * 0.6)) : 800
+        const h = typeof window !== "undefined" ? Math.max(300, Math.min(800, window.innerHeight * 0.6)) : 500
+        return fitBoundsToView(initialBounds, w, h, pitch)
     }
     return { ...(initialCenter ?? { longitude: -74.08, latitude: 40.73, zoom: 11 }), pitch, bearing: 0 }
 }
@@ -196,12 +202,20 @@ export function CrashMap({
         if (controlledView !== undefined || !initialBounds) return
         const el = containerRef.current
         if (!el) return
-        const { clientWidth: cw, clientHeight: ch } = el
-        if (!cw || !ch) return
-        const key = `${initialBounds.join(",")}-${cw}x${ch}-${mode}`
-        if (key === fitKeyRef.current) return
-        fitKeyRef.current = key
-        setLocalViewState(fitBoundsToView(initialBounds, cw, ch, mode === "hexbin" ? 45 : 0))
+        const tryFit = () => {
+            const { clientWidth: cw, clientHeight: ch } = el
+            if (!cw || !ch) return false
+            const key = `${initialBounds.join(",")}-${cw}x${ch}-${mode}`
+            if (key === fitKeyRef.current) return true
+            fitKeyRef.current = key
+            setLocalViewState(fitBoundsToView(initialBounds, cw, ch, mode === "hexbin" ? 45 : 0))
+            return true
+        }
+        if (tryFit()) return
+        // Container not yet sized — observe until it is.
+        const ro = new ResizeObserver(() => { tryFit() })
+        ro.observe(el)
+        return () => ro.disconnect()
     }, [initialBounds, controlledView, mode])
     const setViewState: React.Dispatch<React.SetStateAction<ViewState>> = useCallback((updater) => {
         if (controlledView !== undefined && onControlledChange) {
@@ -325,8 +339,20 @@ export function CrashMap({
         ]
     }, [effectiveCrashes, prebinnedHexes, mode, effectiveHexRes, elevationPerCount, outlineLayer])
 
-    const onViewStateChange = useCallback(({ viewState: vs }: any) => {
+    // DeckGL echoes the initial viewState back synchronously on mount via an
+    // onViewStateChange with oldViewState === viewState and no interactionState.
+    // Guard against that so our fit effect's setState isn't clobbered by a
+    // stale, no-op callback.
+    const onViewStateChange = useCallback(({ viewState: vs, oldViewState, interactionState }: any) => {
         if (isPitchingRef.current) return
+        const interacting = interactionState && (interactionState.isDragging || interactionState.isPanning || interactionState.isZooming || interactionState.isRotating || interactionState.inTransition)
+        const changed = !oldViewState
+            || oldViewState.latitude !== vs.latitude
+            || oldViewState.longitude !== vs.longitude
+            || oldViewState.zoom !== vs.zoom
+            || oldViewState.pitch !== vs.pitch
+            || oldViewState.bearing !== vs.bearing
+        if (!interacting && !changed) return
         const { longitude, latitude, zoom, pitch, bearing } = vs
         setViewState({ longitude, latitude, zoom, pitch, bearing })
     }, [isPitchingRef])
@@ -338,7 +364,7 @@ export function CrashMap({
             <DeckGL
                 viewState={viewState}
                 onViewStateChange={onViewStateChange}
-                controller={{ touchRotate: true, dragRotate: true, maxPitch: MAX_PITCH } as any}
+                controller={{ touchRotate: true, dragRotate: true, maxPitch: MAX_PITCH, maxZoom: 20, minZoom: 0 } as any}
                 layers={layers}
                 style={{ position: "absolute", inset: "0" }}
             >
@@ -346,15 +372,9 @@ export function CrashMap({
                     ref={mapRef}
                     mapStyle={style}
                     maxPitch={MAX_PITCH}
+                    minZoom={0}
+                    maxZoom={20}
                     attributionControl={false}
-                    onLoad={() => {
-                        const map = mapRef.current?.getMap()
-                        if (!map || !initialBounds || controlledView) return
-                        map.fitBounds(
-                            [[initialBounds[0], initialBounds[1]], [initialBounds[2], initialBounds[3]]],
-                            { padding: 20, animate: false },
-                        )
-                    }}
                 />
             </DeckGL>
             {showInternalControls && <PitchSlider viewState={viewState} setViewState={setViewState} theme={theme} />}
