@@ -74,8 +74,8 @@ export function hexesToSegments(
     hexes: StackedHex[],
     elevationPerCount = 15,
     colors = {
-        pdo:    [235, 218, 108, 140] as [number, number, number, number],  // pale yellow (matches bar-chart "Prop. Damage")
-        injury: [245, 158, 11, 180]  as [number, number, number, number],  // orange ("Injury")
+        pdo:    [235, 218, 108, 120] as [number, number, number, number],  // pale yellow (matches bar-chart "Prop. Damage")
+        injury: [245, 158, 11, 140]  as [number, number, number, number],  // orange ("Injury")
         fatal:  [210, 28, 28, 220]   as [number, number, number, number],  // red ("Fatal")
     },
 ): Segment[] {

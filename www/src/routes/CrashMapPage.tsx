@@ -329,6 +329,7 @@ export default function CrashMapPage() {
                 elevationPerCount={elevationPerCount} setElevationPerCount={setElevationPerCount}
                 pitch={viewState.pitch}
                 setPitch={p => setViewState(v => ({ ...v, pitch: p }))}
+                scale={scale}
                 total={result.status === "ready" ? result.data.length : undefined}
                 manifest={result.manifest}
                 theme={actualTheme}
@@ -353,6 +354,7 @@ function ControlDrawer({
     hexPxTarget, setHexPxTarget,
     elevationPerCount, setElevationPerCount,
     pitch, setPitch,
+    scale,
     total, manifest, theme,
 }: {
     open: boolean
@@ -371,6 +373,7 @@ function ControlDrawer({
     setElevationPerCount: (n: number) => void
     pitch: number
     setPitch: (n: number) => void
+    scale: CrashFilter["scale"]
     total?: number
     manifest: MapManifest | undefined
     theme: "light" | "dark"
@@ -461,11 +464,13 @@ function ControlDrawer({
                 {(["f", "i", "p"] as const).map(s => {
                     const checked = severities.has(s)
                     const label = s === "f" ? "Fatal" : s === "i" ? "Injury" : "PDO"
-                    // PDO data only lives in the hex aggregates; point shards exclude it.
-                    const disabled = s === "p" && mode !== "hexbin"
+                    // PDO data only ships in the statewide hex aggregates; the
+                    // detail/point shards (used for county+muni and all
+                    // non-hexbin views) exclude it.
+                    const disabled = s === "p" && scale !== "r8" && scale !== "r7"
                     return (
                         <label key={s}
-                            title={disabled ? "PDO only available in Hexbin mode" : undefined}
+                            title={disabled ? "PDO only available in statewide + Hexbin mode" : undefined}
                             style={{
                                 display: "inline-flex", alignItems: "center", gap: 3,
                                 cursor: disabled ? "not-allowed" : "pointer",

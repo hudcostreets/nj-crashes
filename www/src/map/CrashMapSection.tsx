@@ -156,10 +156,10 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
                     {(["f", "i", "p"] as const).map(s => {
                         const checked = severities.has(s)
                         const label = s === "f" ? "Fatal" : s === "i" ? "Injury" : "PDO"
-                        const disabled = s === "p" && mode !== "hexbin"
+                        const disabled = s === "p" && scale !== "r8"
                         return (
                             <label key={s}
-                                title={disabled ? "PDO only available in Hexbin mode" : undefined}
+                                title={disabled ? "PDO only available in statewide + Hexbin mode" : undefined}
                                 style={{
                                     display: "inline-flex", alignItems: "center", gap: 3,
                                     cursor: disabled ? "not-allowed" : "pointer",

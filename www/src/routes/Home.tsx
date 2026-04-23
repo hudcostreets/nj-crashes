@@ -151,7 +151,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                 {/* Crash map */}
                 <h2 id="map"><a href="#map">Crash Map</a></h2>
                 <div className={css.subtitle}>
-                    Injury and fatal crashes{geo}{" "}
+                    {cc === null ? "Crashes" : "Injury and fatal crashes"}{geo}{" "}
                     (<a href={`/map${cc !== null ? `/c/${countyName?.toLowerCase().replace(/\s+/g, "-")}${mc !== null && municipalityName ? `/${municipalityName.toLowerCase().replace(/\s+/g, "-")}` : ""}` : ""}`}>open full-screen</a>)
                 </div>
                 <PlotContainer showHr={false}>
