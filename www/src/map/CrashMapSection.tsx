@@ -16,6 +16,8 @@ const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m
 
 const STATE_BBOX: [number, number, number, number] = [-75.7, 38.9, -73.9, 41.4]
 
+const DRAWER_SS_KEY = "hccs.crashmap.embed.drawerOpen"
+
 export type Props = {
     /** County code (1-21) or null for statewide. */
     cc: number | null
@@ -30,8 +32,14 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
     const [mode, setMode] = useState<MapMode>("hexbin")
     const [yearRange, setYearRange] = useState<[number, number]>([2019, 2023])
     const [severities, setSeverities] = useState<Set<"f" | "i" | "p">>(() => new Set(["f", "i"]))
-    const [hexPxTarget, setHexPxTarget] = useState(1.8)
-    const [elevationPerCount, setElevationPerCount] = useState(15)
+    const [hexPxTarget, setHexPxTarget] = useState(1.2)
+    const [elevationPerCount, setElevationPerCount] = useState(60)
+    const [drawerOpen, setDrawerOpen] = useState<boolean>(() => {
+        try { return sessionStorage.getItem(DRAWER_SS_KEY) === "1" } catch { return false }
+    })
+    useEffect(() => {
+        try { sessionStorage.setItem(DRAWER_SS_KEY, drawerOpen ? "1" : "0") } catch {}
+    }, [drawerOpen])
 
     const scale: CrashFilter["scale"] = (cc === null && mode === "hexbin") ? "r8" : "detail"
 
@@ -109,11 +117,34 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
                     )}
                 </Suspense>
             )}
+            {!drawerOpen && (
+                <button
+                    onClick={() => setDrawerOpen(true)}
+                    title="Show controls"
+                    style={{
+                        position: "absolute", top: 8, right: 8, background: bg, color: fg,
+                        padding: "0.25em 0.5em", borderRadius: 4, zIndex: 1000,
+                        border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
+                        cursor: "pointer", fontSize: "1em", lineHeight: 1,
+                    }}
+                >⚙</button>
+            )}
+            {drawerOpen && (
             <div style={{
                 position: "absolute", top: 8, right: 8, background: bg, color: fg,
                 padding: "0.4em 0.6em", borderRadius: 4, zIndex: 1000, fontSize: "0.82em",
                 display: "flex", flexDirection: "column", gap: 6, minWidth: 210, maxWidth: 260,
             }}>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -4 }}>
+                    <button
+                        onClick={() => setDrawerOpen(false)}
+                        title="Hide controls"
+                        style={{
+                            background: "transparent", color: fg, border: "none",
+                            cursor: "pointer", fontSize: "1em", padding: "0 0.2em", lineHeight: 1,
+                        }}
+                    >×</button>
+                </div>
                 <div style={{ display: "flex", gap: 4 }}>
                     {(["scatter", "heatmap", "hexbin"] as MapMode[]).map(m => (
                         <button
@@ -189,7 +220,7 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
                                 <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
                                     <span style={{ fontSize: "0.78em" }}>Hex density: <b>{sliderValue}</b></span>
                                     <input
-                                        type="range" min={0} max={100} step={1}
+                                        type="range" min={0} max={120} step={1}
                                         value={sliderValue}
                                         onChange={e => {
                                             const v = Number(e.target.value)
@@ -205,7 +236,7 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
                         <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
                             <span style={{ fontSize: "0.78em" }}>Bar height: <b>{elevationPerCount}×</b></span>
                             <input
-                                type="range" min={3} max={60} step={1}
+                                type="range" min={3} max={150} step={1}
                                 value={elevationPerCount}
                                 onChange={e => setElevationPerCount(Number(e.target.value))}
                                 style={{ width: 100 }}
@@ -214,6 +245,7 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
                     </>
                 )}
             </div>
+            )}
         </div>
     )
 }

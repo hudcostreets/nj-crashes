@@ -111,9 +111,9 @@ const yearRangeParam: Param<[number, number]> = {
 const hexPxParam: Param<number> = {
     encode: (n) => n.toString(),
     decode: (s) => {
-        if (!s) return 1.8
+        if (!s) return 1.2
         const n = Number(s)
-        return Number.isFinite(n) && n > 0 ? n : 1.8
+        return Number.isFinite(n) && n > 0 ? n : 1.2
     },
 }
 
@@ -166,7 +166,7 @@ export default function CrashMapPage() {
     const cc = countyFromParam(params.county)
     const mc = muniFromParam(cc, params.muni, cc2mc2mn)
     const { actualTheme } = useTheme()
-    const [elevationPerCount, setElevationPerCount] = useState(15)
+    const [elevationPerCount, setElevationPerCount] = useState(60)
     const [drawerOpen, setDrawerOpen] = useState(true)
 
     const onOutlineClick = useCallback((feature: any) => {
@@ -499,7 +499,7 @@ function ControlDrawer({
                     <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
                         <span style={{ fontSize: "0.8em" }}>Hex density: <b>{sliderValue}</b> (~{hexPxTarget.toFixed(hexPxTarget < 5 ? 1 : 0)}px)</span>
                         <input
-                            type="range" min={0} max={100} step={1}
+                            type="range" min={0} max={120} step={1}
                             value={sliderValue}
                             onChange={e => {
                                 const v = Number(e.target.value)
@@ -513,7 +513,7 @@ function ControlDrawer({
                     <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
                         <span style={{ fontSize: "0.8em" }}>Bar height: <b>{elevationPerCount}×</b></span>
                         <input
-                            type="range" min={3} max={60} step={1}
+                            type="range" min={3} max={150} step={1}
                             value={elevationPerCount}
                             onChange={e => setElevationPerCount(Number(e.target.value))}
                             style={{ width: 100 }}
