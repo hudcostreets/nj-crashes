@@ -126,16 +126,16 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
 
     const [y0min, y1max] = result.manifest?.year_range ?? [2001, 2023]
 
+    const emptySeverities = severities.size === 0
+
     return (
         <div style={{ position: "relative", height, width: "100%", borderRadius: 4, overflow: "hidden" }}>
             {result.status === "error" && (
                 <div style={{ padding: "1em", color: "red" }}>Error: {result.error}</div>
             )}
-            {result.status === "loading" && (
-                <div style={{ padding: "1em", color: fg }}>Loading map data…</div>
-            )}
+            {result.status === "loading" && <LoadingOverlay theme={actualTheme} />}
             {result.status === "ready" && (
-                <Suspense fallback={<div style={{ padding: "1em", color: fg }}>Loading map…</div>}>
+                <Suspense fallback={<LoadingOverlay theme={actualTheme} />}>
                     {scale === "detail" ? (
                         <CrashMap
                             crashes={result.data as Crash[]}
@@ -152,6 +152,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                             onHexPxTargetChange={setHexPxTarget}
                             elevationPerCount={elevationPerCount}
                             onElevationPerCountChange={setElevationPerCount}
+                            yearSpan={yearRange[1] - yearRange[0] + 1}
                         />
                     ) : (
                         <CrashMap
@@ -169,6 +170,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                             onHexPxTargetChange={setHexPxTarget}
                             elevationPerCount={elevationPerCount}
                             onElevationPerCountChange={setElevationPerCount}
+                            yearSpan={yearRange[1] - yearRange[0] + 1}
                         />
                     )}
                 </Suspense>
@@ -177,6 +179,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                 <button
                     onClick={() => setDrawerOpen(true)}
                     title="Show controls"
+                    aria-label="Show map controls"
                     style={{
                         position: "absolute", top: 8, right: 8, background: bg, color: fg,
                         padding: "0.25em 0.5em", borderRadius: 4, zIndex: 1000,
@@ -191,10 +194,24 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                 padding: "0.4em 0.6em", borderRadius: 4, zIndex: 1000, fontSize: "0.82em",
                 display: "flex", flexDirection: "column", gap: 6, minWidth: 210, maxWidth: 260,
             }}>
-                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -4 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: -4 }}>
+                    {llz ? (
+                        <button
+                            onClick={() => setLlz(null)}
+                            title="Reset to default view"
+                            aria-label="Reset map view"
+                            style={{
+                                background: "transparent", color: fg,
+                                border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
+                                borderRadius: 3, cursor: "pointer",
+                                fontSize: "0.75em", padding: "1px 6px", lineHeight: 1.2,
+                            }}
+                        >↺ Reset view</button>
+                    ) : <span />}
                     <button
                         onClick={() => setDrawerOpen(false)}
                         title="Hide controls"
+                        aria-label="Hide map controls"
                         style={{
                             background: "transparent", color: fg, border: "none",
                             cursor: "pointer", fontSize: "1em", padding: "0 0.2em", lineHeight: 1,
@@ -306,6 +323,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                 <a
                     href={fullScreenHref}
                     title="Open full-screen"
+                    aria-label="Open map in full-screen view"
                     style={{
                         position: "absolute", bottom: 8, right: 8, zIndex: 1000,
                         background: bg, color: fg,
@@ -318,6 +336,84 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                     <FiMaximize2 size={14} />
                 </a>
             )}
+            <Legend theme={actualTheme} pdoEnabled={scale === "r8"} severities={severities} />
+            {emptySeverities && result.status === "ready" && (
+                <div style={{
+                    position: "absolute", inset: 0, zIndex: 900,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: actualTheme === "dark" ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)",
+                    color: fg, fontSize: "0.9em", pointerEvents: "none",
+                }}>
+                    <div style={{
+                        background: bg, padding: "0.5em 0.8em", borderRadius: 4,
+                        border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
+                    }}>
+                        Select at least one severity
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
+function LoadingOverlay({ theme }: { theme: "light" | "dark" }) {
+    const fg = theme === "dark" ? "#e0e0e0" : "#333"
+    const border = theme === "dark" ? "#666" : "#888"
+    const keyframes = `@keyframes hccs-spin { to { transform: rotate(360deg) } }`
+    return (
+        <div style={{
+            position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", gap: 8, color: fg,
+            fontSize: "0.9em",
+        }}>
+            <style>{keyframes}</style>
+            <div style={{
+                width: 24, height: 24, borderRadius: "50%",
+                border: `2px solid ${border}`, borderTopColor: "transparent",
+                animation: "hccs-spin 0.8s linear infinite",
+            }} />
+            <div>Loading map…</div>
+        </div>
+    )
+}
+
+function Legend({
+    theme, pdoEnabled, severities,
+}: {
+    theme: "light" | "dark"
+    pdoEnabled: boolean
+    severities: Set<"f" | "i" | "p">
+}) {
+    const bg = theme === "dark" ? "rgba(30,30,30,0.85)" : "rgba(255,255,255,0.9)"
+    const fg = theme === "dark" ? "#e0e0e0" : "#333"
+    const items: { key: "f" | "i" | "p"; label: string; color: string }[] = [
+        { key: "f", label: "Fatal",  color: "rgb(239,68,68)" },
+        { key: "i", label: "Injury", color: "rgb(245,158,11)" },
+        { key: "p", label: "PDO",    color: "rgb(220,200,90)" },
+    ]
+    return (
+        <div style={{
+            position: "absolute", top: 8, left: 8, zIndex: 1000,
+            background: bg, color: fg, padding: "4px 8px", borderRadius: 4,
+            fontSize: "0.72em", display: "flex", flexDirection: "column", gap: 2,
+            border: `1px solid ${theme === "dark" ? "#444" : "#ccc"}`,
+        }}>
+            {items.map(it => {
+                const showable = it.key !== "p" || pdoEnabled
+                const on = showable && severities.has(it.key)
+                return (
+                    <div key={it.key} style={{
+                        display: "flex", alignItems: "center", gap: 6,
+                        opacity: on ? 1 : 0.4,
+                    }}>
+                        <span style={{
+                            display: "inline-block", width: 10, height: 10,
+                            background: it.color, borderRadius: 2,
+                        }} />
+                        <span>{it.label}</span>
+                    </div>
+                )
+            })}
         </div>
     )
 }

@@ -75,6 +75,9 @@ export type Props = {
     mode?: MapMode
     theme?: "light" | "dark"
     height?: number | string
+    /** Number of years in the selected range, for per-year rate display in
+     *  hex tooltips. When ≥ 2, tooltips show "N crashes (≈N/yr)". */
+    yearSpan?: number
 }
 
 const MAX_PITCH = 85
@@ -239,6 +242,7 @@ export function CrashMap({
     mode = "scatter",
     theme = "dark",
     height = "100%",
+    yearSpan,
 }: Props) {
     const effectiveCrashes = crashes ?? []
     const containerRef = React.useRef<HTMLDivElement | null>(null)
@@ -469,7 +473,52 @@ export function CrashMap({
                     theme={theme}
                 />
             )}
-            {hoverInfo?.object && mode !== "heatmap" && <CrashTooltip info={hoverInfo} />}
+            {hoverInfo?.object && mode !== "heatmap" && <CrashTooltip info={hoverInfo} yearSpan={yearSpan} />}
+            <AttributionPopover theme={theme} />
+        </div>
+    )
+}
+
+/** Compact "ⓘ" badge in the bottom-left that reveals the tile attribution on
+ *  hover. Replaces MapLibre's default AttributionControl (disabled) with
+ *  something less screenshot-noisy while still honoring Stadia's attribution
+ *  terms (https://stadiamaps.com/docs/attribution). */
+function AttributionPopover({ theme }: { theme: "light" | "dark" }) {
+    const [open, setOpen] = useState(false)
+    const bg = theme === "dark" ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.95)"
+    const fg = theme === "dark" ? "#e0e0e0" : "#333"
+    const border = `1px solid ${theme === "dark" ? "#444" : "#ccc"}`
+    const linkStyle: React.CSSProperties = { color: fg, textDecoration: "underline" }
+    return (
+        <div
+            onMouseEnter={() => setOpen(true)}
+            onMouseLeave={() => setOpen(false)}
+            style={{ position: "absolute", bottom: 8, left: 8, zIndex: 1000 }}
+        >
+            <button
+                type="button"
+                aria-label="Map attribution"
+                onClick={() => setOpen(o => !o)}
+                style={{
+                    background: bg, color: fg, border, borderRadius: 4,
+                    width: 20, height: 20, padding: 0, fontSize: "0.75em",
+                    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+            >ⓘ</button>
+            {open && (
+                <div style={{
+                    position: "absolute", bottom: "100%", left: 0,
+                    background: bg, color: fg, border, borderRadius: 4,
+                    padding: "4px 8px", fontSize: "0.72em", whiteSpace: "nowrap",
+                    pointerEvents: "auto",
+                }}>
+                    © <a href="https://stadiamaps.com/" style={linkStyle}>Stadia Maps</a>
+                    {" · "}
+                    <a href="https://openmaptiles.org/" style={linkStyle}>OpenMapTiles</a>
+                    {" · "}
+                    <a href="https://www.openstreetmap.org/copyright" style={linkStyle}>OpenStreetMap</a>
+                </div>
+            )}
         </div>
     )
 }
@@ -575,7 +624,14 @@ function tooltipStyle(info: PickingInfo): React.CSSProperties {
     }
 }
 
-function CrashTooltip({ info }: { info: PickingInfo }) {
+function fmtRate(n: number, yearSpan: number | undefined): string {
+    if (!yearSpan || yearSpan < 2) return ""
+    const rate = n / yearSpan
+    const formatted = rate >= 10 ? Math.round(rate).toString() : rate.toFixed(1)
+    return ` · ${formatted}/yr`
+}
+
+function CrashTooltip({ info, yearSpan }: { info: PickingInfo; yearSpan?: number }) {
     const obj = info.object
     if (!obj) return null
     const isHex = Array.isArray(obj.points)
@@ -586,20 +642,20 @@ function CrashTooltip({ info }: { info: PickingInfo }) {
         const injury = h.pedInj + h.otherInj
         return (
             <div style={tooltipStyle(info)}>
-                <div><b>{h.total}</b> crashes</div>
+                <div><b>{h.total}</b> crashes{fmtRate(h.total, yearSpan)}</div>
                 {h.fatal > 0 && (
                     <div style={{ color: "rgb(210,28,28)" }}>
-                        <b>{h.fatal}</b> fatal
+                        <b>{h.fatal}</b> fatal{fmtRate(h.fatal, yearSpan)}
                     </div>
                 )}
                 {injury > 0 && (
                     <div style={{ color: "rgb(245,158,11)" }}>
-                        <b>{injury}</b> injury{h.pedInj > 0 ? ` (incl. ${h.pedInj} ped/cyclist)` : ""}
+                        <b>{injury}</b> injury{h.pedInj > 0 ? ` (incl. ${h.pedInj} ped/cyclist)` : ""}{fmtRate(injury, yearSpan)}
                     </div>
                 )}
                 {h.pdo > 0 && (
                     <div style={{ color: "rgb(220,200,90)" }}>
-                        <b>{h.pdo}</b> property damage
+                        <b>{h.pdo}</b> property damage{fmtRate(h.pdo, yearSpan)}
                     </div>
                 )}
             </div>
@@ -609,7 +665,7 @@ function CrashTooltip({ info }: { info: PickingInfo }) {
         <div style={tooltipStyle(info)}>
             {isHex ? (
                 <>
-                    <div><b>{obj.points.length}</b> crashes</div>
+                    <div><b>{obj.points.length}</b> crashes{fmtRate(obj.points.length, yearSpan)}</div>
                     {(() => {
                         let tk = 0, ti = 0
                         for (const p of obj.points) {
