@@ -102,6 +102,23 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
             : `/njdot/map/counties/${String(cc).padStart(2, "0")}.geojson`
         fetch(url).then(r => r.ok ? r.json() : null).then(setOutline).catch(() => setOutline(null))
     }, [cc])
+    // Muni outline: only when a muni is selected. File is ~30-130 KB/county;
+    // filter client-side to the single feature matching our mc.
+    const [muniOutline, setMuniOutline] = useState<FeatureCollection | null>(null)
+    useEffect(() => {
+        if (cc === null || mc === null) { setMuniOutline(null); return }
+        const url = `/njdot/map/munis/${String(cc).padStart(2, "0")}.geojson`
+        let cancelled = false
+        fetch(url)
+            .then(r => r.ok ? r.json() as Promise<FeatureCollection> : null)
+            .then(fc => {
+                if (cancelled || !fc) { if (!cancelled) setMuniOutline(null); return }
+                const feat = fc.features.find(f => f.properties?.mc === mc)
+                setMuniOutline(feat ? { type: "FeatureCollection", features: [feat] } : null)
+            })
+            .catch(() => { if (!cancelled) setMuniOutline(null) })
+        return () => { cancelled = true }
+    }, [cc, mc])
 
     const initialBounds: [number, number, number, number] = useMemo(() => {
         const m = result.manifest
@@ -144,6 +161,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                         <CrashMap
                             crashes={result.data as Crash[]}
                             outline={outline ?? undefined}
+                            muniOutline={muniOutline ?? undefined}
                             initialBounds={initialBounds}
                             initialView={initialView}
                             viewState={llz ?? undefined}
@@ -163,6 +181,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                         <CrashMap
                             prebinnedHexes={result.data as StackedHex[]}
                             outline={outline ?? undefined}
+                            muniOutline={muniOutline ?? undefined}
                             initialBounds={initialBounds}
                             initialView={initialView}
                             viewState={llz ?? undefined}

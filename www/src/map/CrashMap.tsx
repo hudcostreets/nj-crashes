@@ -50,6 +50,9 @@ export type Props = {
      *  skipping the client-side binning. */
     prebinnedHexes?: StackedHex[]
     outline?: FeatureCollection
+    /** Secondary outline (e.g. muni boundary drawn on top of the county
+     *  outline). Rendered above `outline` with a brighter, thicker stroke. */
+    muniOutline?: FeatureCollection
     initialBounds?: [number, number, number, number]
     initialCenter?: { longitude: number; latitude: number; zoom: number }
     /** Per-scope initial-view override (replaces `initialBounds`-based auto-fit).
@@ -230,6 +233,7 @@ export function CrashMap({
     crashes,
     prebinnedHexes,
     outline,
+    muniOutline,
     initialBounds,
     initialCenter,
     initialView,
@@ -350,30 +354,48 @@ export function CrashMap({
         [hexPxTarget, viewState.zoom, viewState.latitude],
     )
 
-    const outlineLayer = useMemo(() => {
-        if (!outline) return null
+    const outlineLayers = useMemo(() => {
+        const layers: any[] = []
         const lineRgb: [number, number, number] = theme === "dark" ? [109, 179, 242] : [0, 102, 204]
-        return new GeoJsonLayer({
-            id: "outline",
-            data: outline,
-            // Transparent fill (only visible via picking; visible tint when clickable).
-            getFillColor: onOutlineClick ? [...lineRgb, 12] as any : [0, 0, 0, 0] as any,
-            getLineColor: [...lineRgb, 204] as any,
-            lineWidthMinPixels: 1.5,
-            pickable: !!onOutlineClick,
-            onClick: onOutlineClick ? (info) => {
-                if (info.object) { onOutlineClick(info.object); return true }
-                return false
-            } : undefined,
-            updateTriggers: {
-                getFillColor: [theme, !!onOutlineClick],
-                getLineColor: [theme],
-            },
-        })
-    }, [outline, theme, onOutlineClick])
+        // County (or parent) outline: dimmed when a muni overlay is present
+        // so it reads as context without competing visually.
+        if (outline) {
+            const alpha = muniOutline ? 100 : 204
+            layers.push(new GeoJsonLayer({
+                id: "outline",
+                data: outline,
+                getFillColor: onOutlineClick ? [...lineRgb, 12] as any : [0, 0, 0, 0] as any,
+                getLineColor: [...lineRgb, alpha] as any,
+                lineWidthMinPixels: muniOutline ? 0.8 : 1.5,
+                pickable: !!onOutlineClick,
+                onClick: onOutlineClick ? (info: any) => {
+                    if (info.object) { onOutlineClick(info.object); return true }
+                    return false
+                } : undefined,
+                updateTriggers: {
+                    getFillColor: [theme, !!onOutlineClick],
+                    getLineColor: [theme, !!muniOutline],
+                    lineWidthMinPixels: [!!muniOutline],
+                },
+            }))
+        }
+        // Muni outline: brighter, slightly thicker, drawn on top.
+        if (muniOutline) {
+            layers.push(new GeoJsonLayer({
+                id: "muni-outline",
+                data: muniOutline,
+                getFillColor: [0, 0, 0, 0] as any,
+                getLineColor: [...lineRgb, 230] as any,
+                lineWidthMinPixels: 1.8,
+                pickable: false,
+                updateTriggers: { getLineColor: [theme] },
+            }))
+        }
+        return layers
+    }, [outline, muniOutline, theme, onOutlineClick])
 
     const layers = useMemo(() => {
-        const base: any[] = outlineLayer ? [outlineLayer] : []
+        const base: any[] = [...outlineLayers]
         if (mode === "scatter") {
             return [...base,
                 new ScatterplotLayer<Crash>({
@@ -424,7 +446,7 @@ export function CrashMap({
                 onHover: (info) => { setHoverInfo(info); return false },
             }),
         ]
-    }, [effectiveCrashes, prebinnedHexes, mode, effectiveHexRes, elevationPerCount, outlineLayer])
+    }, [effectiveCrashes, prebinnedHexes, mode, effectiveHexRes, elevationPerCount, outlineLayers])
 
     // Only bubble user-driven changes. DeckGL also echoes back programmatic
     // viewState updates (from the fit effect, mode-switch tilt, etc.) via
