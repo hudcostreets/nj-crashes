@@ -52,6 +52,10 @@ export type Props = {
     outline?: FeatureCollection
     initialBounds?: [number, number, number, number]
     initialCenter?: { longitude: number; latitude: number; zoom: number }
+    /** Per-scope initial-view override (replaces `initialBounds`-based auto-fit).
+     *  Caller supplies hand-tuned `mobile` and `desktop` view states; this
+     *  component lerps between them based on the container width. */
+    initialView?: { mobile: ViewState; desktop: ViewState } | null
     /** Controlled viewState (use when caller owns URL/state sync). When
      *  omitted, `CrashMap` manages its own internal state derived from
      *  `initialBounds`/`initialCenter`. */
@@ -173,12 +177,36 @@ export function fitBoundsToView(
     }
 }
 
+/** Width thresholds for {mobile, desktop} `initialView` interpolation.
+ *  Outside the range we clamp; inside we linearly lerp all fields. */
+const LERP_MIN_W = 400
+const LERP_MAX_W = 900
+
+function lerpView(o: { mobile: ViewState; desktop: ViewState }, containerW: number): ViewState {
+    const t = Math.max(0, Math.min(1, (containerW - LERP_MIN_W) / (LERP_MAX_W - LERP_MIN_W)))
+    const { mobile: m, desktop: d } = o
+    return {
+        latitude: m.latitude + t * (d.latitude - m.latitude),
+        longitude: m.longitude + t * (d.longitude - m.longitude),
+        zoom: m.zoom + t * (d.zoom - m.zoom),
+        pitch: m.pitch + t * (d.pitch - m.pitch),
+        bearing: m.bearing + t * (d.bearing - m.bearing),
+    }
+}
+
 function defaultView(
     initialBounds: Props["initialBounds"],
     initialCenter: Props["initialCenter"],
+    initialView: Props["initialView"],
     mode: MapMode,
 ): ViewState {
     const pitch = mode === "hexbin" ? 45 : 0
+    if (initialView) {
+        // Approximate container width from window. Fit effect will re-lerp
+        // with measured width once the container mounts.
+        const w = typeof window !== "undefined" ? Math.max(300, Math.min(1200, window.innerWidth * 0.6)) : 800
+        return lerpView(initialView, w)
+    }
     if (initialBounds) {
         // Guess a reasonable fit using window dims — `fitBoundsToView` will
         // re-fit more precisely once the container is measured. Starting
@@ -198,6 +226,7 @@ export function CrashMap({
     outline,
     initialBounds,
     initialCenter,
+    initialView,
     viewState: controlledView,
     onViewStateChange: onControlledChange,
     hexPxTarget: controlledHexPxTarget,
@@ -212,23 +241,32 @@ export function CrashMap({
 }: Props) {
     const effectiveCrashes = crashes ?? []
     const containerRef = React.useRef<HTMLDivElement | null>(null)
-    const [localViewState, setLocalViewState] = useState<ViewState>(() => defaultView(initialBounds, initialCenter, mode))
+    const [localViewState, setLocalViewState] = useState<ViewState>(() => defaultView(initialBounds, initialCenter, initialView, mode))
     const viewState = controlledView ?? localViewState
     // Auto-fit bounds when uncontrolled: re-run whenever `initialBounds` change
     // AND the container has a measurable size. Caller-owned `controlledView`
     // skips this (CrashMapPage does its own `fitBoundsToView`).
+    // `initialView` (per-scope override) takes precedence over `initialBounds`
+    // auto-fit; lerps by container width.
     const fitKeyRef = React.useRef<string>("")
     useEffect(() => {
-        if (controlledView !== undefined || !initialBounds) return
+        if (controlledView !== undefined) return
+        if (!initialView && !initialBounds) return
         const el = containerRef.current
         if (!el) return
         const tryFit = () => {
             const { clientWidth: cw, clientHeight: ch } = el
             if (!cw || !ch) return false
-            const key = `${initialBounds.join(",")}-${cw}x${ch}-${mode}`
+            const boundsKey = initialBounds ? initialBounds.join(",") : ""
+            const ivKey = initialView ? `${initialView.mobile.zoom},${initialView.desktop.zoom}` : ""
+            const key = `${boundsKey}-${ivKey}-${cw}x${ch}-${mode}`
             if (key === fitKeyRef.current) return true
             fitKeyRef.current = key
-            setLocalViewState(fitBoundsToView(initialBounds, cw, ch, mode === "hexbin" ? 45 : 0))
+            setLocalViewState(
+                initialView
+                    ? lerpView(initialView, cw)
+                    : fitBoundsToView(initialBounds!, cw, ch, mode === "hexbin" ? 45 : 0)
+            )
             return true
         }
         if (tryFit()) return
@@ -236,7 +274,7 @@ export function CrashMap({
         const ro = new ResizeObserver(() => { tryFit() })
         ro.observe(el)
         return () => ro.disconnect()
-    }, [initialBounds, controlledView, mode])
+    }, [initialBounds, initialView, controlledView, mode])
     // User-driven view changes go through `setViewState` (pan/drag via
     // `onViewStateChange`, pitch via slider/touch). Fit-effect updates
     // call `setLocalViewState` directly to avoid notifying the parent
@@ -248,9 +286,15 @@ export function CrashMap({
         } else {
             setLocalViewState(prev => {
                 const next = typeof updater === "function" ? (updater as (v: ViewState) => ViewState)(prev) : updater
-                // Notify the parent of uncontrolled-mode user interactions
-                // (e.g. to persist the view to a URL param as the user pans).
-                if (onControlledChange) onControlledChange(next)
+                // Notify parent only on actual change (persist user interactions
+                // to URL). No-op updates from mode-switch auto-tilt etc. must
+                // not leak to `?llz=`.
+                const changed = next.longitude !== prev.longitude
+                    || next.latitude !== prev.latitude
+                    || next.zoom !== prev.zoom
+                    || next.pitch !== prev.pitch
+                    || next.bearing !== prev.bearing
+                if (changed && onControlledChange) onControlledChange(next)
                 return next
             })
         }
@@ -369,20 +413,21 @@ export function CrashMap({
         ]
     }, [effectiveCrashes, prebinnedHexes, mode, effectiveHexRes, elevationPerCount, outlineLayer])
 
-    // DeckGL echoes the initial viewState back synchronously on mount via an
-    // onViewStateChange with oldViewState === viewState and no interactionState.
-    // Guard against that so our fit effect's setState isn't clobbered by a
-    // stale, no-op callback.
-    const onViewStateChange = useCallback(({ viewState: vs, oldViewState, interactionState }: any) => {
+    // Only bubble user-driven changes. DeckGL also echoes back programmatic
+    // viewState updates (from the fit effect, mode-switch tilt, etc.) via
+    // onViewStateChange with no interactionState — ignoring those avoids
+    // leaking the auto-fit into `?llz=` and stops a re-entrancy loop where
+    // the callback clobbers our own setState.
+    const onViewStateChange = useCallback(({ viewState: vs, interactionState }: any) => {
         if (isPitchingRef.current) return
-        const interacting = interactionState && (interactionState.isDragging || interactionState.isPanning || interactionState.isZooming || interactionState.isRotating || interactionState.inTransition)
-        const changed = !oldViewState
-            || oldViewState.latitude !== vs.latitude
-            || oldViewState.longitude !== vs.longitude
-            || oldViewState.zoom !== vs.zoom
-            || oldViewState.pitch !== vs.pitch
-            || oldViewState.bearing !== vs.bearing
-        if (!interacting && !changed) return
+        const interacting = interactionState && (
+            interactionState.isDragging ||
+            interactionState.isPanning ||
+            interactionState.isZooming ||
+            interactionState.isRotating ||
+            interactionState.inTransition
+        )
+        if (!interacting) return
         const { longitude, latitude, zoom, pitch, bearing } = vs
         setViewState({ longitude, latitude, zoom, pitch, bearing })
     }, [isPitchingRef])

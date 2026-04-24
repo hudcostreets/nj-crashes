@@ -20,6 +20,22 @@ const STATE_BBOX: [number, number, number, number] = [-75.7, 38.9, -73.9, 41.4]
 
 const DRAWER_SS_KEY = "hccs.crashmap.embed.drawerOpen"
 
+/** Per-county initial view overrides (mobile + desktop pairs, lerped by width).
+ *  Keys are numeric county codes (cc). Captured from user-tuned `?llz=` URLs
+ *  and used instead of `initialBounds` auto-fit for these scopes. Add entries
+ *  by loading the map, dragging to the desired framing at mobile and desktop
+ *  viewport widths, and copying the `?llz=` values into this table. */
+const LLZ_OVERRIDES: Record<number, { mobile: ViewState; desktop: ViewState }> = {
+    9: {  // Hudson
+        mobile:  { latitude: 40.7135, longitude: -74.0956, zoom: 10.63, pitch: 45, bearing: 0 },
+        desktop: { latitude: 40.7119, longitude: -74.0936, zoom: 10.84, pitch: 45, bearing: 0 },
+    },
+    13: {  // Monmouth
+        mobile:  { latitude: 40.1719, longitude: -74.3069, zoom: 8.65, pitch: 45, bearing: 0 },
+        desktop: { latitude: 40.2188, longitude: -74.3049, zoom: 9.61, pitch: 45, bearing: 0 },
+    },
+}
+
 /** `llz` URL param: "lat_lon_zoom_pitch_bearing" (pitch/bearing optional).
  *  Overrides the auto-fit. Intended for tuning default embed views. */
 const llzParam: Param<ViewState | null> = {
@@ -93,6 +109,10 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
         return STATE_BBOX
     }, [cc, mc, result.manifest])
 
+    // Per-county override applies only when no muni is selected (muni view
+    // still auto-fits from the muni bbox, which is typically small enough).
+    const initialView = cc !== null && mc === null ? (LLZ_OVERRIDES[cc] ?? null) : null
+
     const bg = actualTheme === "dark" ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.95)"
     const fg = actualTheme === "dark" ? "#e0e0e0" : "#333"
     const activeBg = actualTheme === "dark" ? "#6db3f2" : "#0066cc"
@@ -114,6 +134,7 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
                             crashes={result.data as Crash[]}
                             outline={outline ?? undefined}
                             initialBounds={initialBounds}
+                            initialView={initialView}
                             viewState={llz ?? undefined}
                             onViewStateChange={setLlz}
                             mode={mode}
@@ -130,6 +151,7 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
                             prebinnedHexes={result.data as StackedHex[]}
                             outline={outline ?? undefined}
                             initialBounds={initialBounds}
+                            initialView={initialView}
                             viewState={llz ?? undefined}
                             onViewStateChange={setLlz}
                             mode="hexbin"
