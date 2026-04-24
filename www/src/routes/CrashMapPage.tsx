@@ -207,6 +207,21 @@ export default function CrashMapPage() {
             : `/njdot/map/counties/${String(cc).padStart(2, "0")}.geojson`
         fetch(url).then(r => r.ok ? r.json() : null).then(setOutline).catch(() => setOutline(null))
     }, [cc])
+    const [muniOutline, setMuniOutline] = useState<FeatureCollection | null>(null)
+    useEffect(() => {
+        if (cc === undefined || mc === undefined) { setMuniOutline(null); return }
+        const url = `/njdot/map/munis/${String(cc).padStart(2, "0")}.geojson`
+        let cancelled = false
+        fetch(url)
+            .then(r => r.ok ? r.json() as Promise<FeatureCollection> : null)
+            .then(fc => {
+                if (cancelled || !fc) { if (!cancelled) setMuniOutline(null); return }
+                const feat = fc.features.find(f => f.properties?.mc === mc)
+                setMuniOutline(feat ? { type: "FeatureCollection", features: [feat] } : null)
+            })
+            .catch(() => { if (!cancelled) setMuniOutline(null) })
+        return () => { cancelled = true }
+    }, [cc, mc])
 
     // Prefer bbox from manifest (exact, computed from data points) once loaded.
     const initialBounds: [number, number, number, number] = useMemo(() => {
@@ -280,6 +295,7 @@ export default function CrashMapPage() {
                         <CrashMap
                             crashes={result.data as Crash[]}
                             outline={outline ?? undefined}
+                            muniOutline={muniOutline ?? undefined}
                             initialBounds={initialBounds}
                             viewState={viewState}
                             onViewStateChange={setViewState}
@@ -287,6 +303,7 @@ export default function CrashMapPage() {
                             onHexPxTargetChange={setHexPxTarget}
                             elevationPerCount={elevationPerCount}
                             onElevationPerCountChange={setElevationPerCount}
+                            yearSpan={yearRange[1] - yearRange[0] + 1}
                             onOutlineClick={cc === undefined ? onOutlineClick : undefined}
                             showInternalControls={false}
                             mode={mode}
@@ -296,6 +313,7 @@ export default function CrashMapPage() {
                         <CrashMap
                             prebinnedHexes={result.data as StackedHex[]}
                             outline={outline ?? undefined}
+                            muniOutline={muniOutline ?? undefined}
                             initialBounds={initialBounds}
                             viewState={viewState}
                             onViewStateChange={setViewState}
@@ -303,6 +321,7 @@ export default function CrashMapPage() {
                             onHexPxTargetChange={setHexPxTarget}
                             elevationPerCount={elevationPerCount}
                             onElevationPerCountChange={setElevationPerCount}
+                            yearSpan={yearRange[1] - yearRange[0] + 1}
                             onOutlineClick={cc === undefined ? onOutlineClick : undefined}
                             showInternalControls={false}
                             mode="hexbin"
