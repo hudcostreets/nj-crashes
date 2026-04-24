@@ -130,7 +130,12 @@ function fmtDate(d: Date | number): string {
 
 
 /** Web-mercator fit: zoom where `[w,s,e,n]` fits inside (containerW×containerH)
- *  pixels at the bounds' center latitude. Matches `maplibregl.Map.cameraForBounds`. */
+ *  pixels at the bounds' center latitude. For pitched views (pitch > 0),
+ *  applies two corrections to keep the full bbox visible:
+ *  - Zoom out proportionally to pitch (full bbox doesn't clip on the near
+ *    side, which compresses vertically due to perspective).
+ *  - Shift latitude toward the camera (south, assuming bearing=0) so the
+ *    asymmetric visible ground area centers on the bbox. */
 export function fitBoundsToView(
     bounds: [number, number, number, number],
     containerW: number,
@@ -139,18 +144,33 @@ export function fitBoundsToView(
     padPx = 40,
 ): ViewState {
     const [w, s, e, n] = bounds
-    const lat = (s + n) / 2
     const lon = (w + e) / 2
+    const bboxCenterLat = (s + n) / 2
     const cw = Math.max(50, containerW - padPx * 2)
     const ch = Math.max(50, containerH - padPx * 2)
-    const COS = Math.cos(lat * Math.PI / 180)
+    const COS = Math.cos(bboxCenterLat * Math.PI / 180)
     const metersPerDegLon = 111_320 * COS
     const metersPerDegLat = 110_574
     const lateralM = Math.max(1, (e - w) * metersPerDegLon)
     const verticalM = Math.max(1, (n - s) * metersPerDegLat)
-    const mppNeeded = Math.max(lateralM / cw, verticalM / ch)
+    // Pitch compresses the "near" half of the visible ground; treat the
+    // effective container as smaller vertically. cos(pitch) is too mild,
+    // cos(pitch)^2 lines up better with MapLibre's `cameraForBounds`.
+    const pitchRad = pitch * Math.PI / 180
+    const chEff = ch * Math.pow(Math.cos(pitchRad), 2)
+    const mppNeeded = Math.max(lateralM / cw, verticalM / chEff)
     const zoom = Math.log2(156543.03 * COS / mppNeeded)
-    return { latitude: lat, longitude: lon, zoom: Math.max(7, Math.min(18, zoom)), pitch, bearing: 0 }
+    // Shift the center toward the camera so the bbox sits centered in the
+    // (asymmetric) visible ground region. At pitch=45° this is ~25% of the
+    // bbox vertical extent southward.
+    const latShiftDeg = -(n - s) * 0.5 * Math.sin(pitchRad) * Math.cos(pitchRad)
+    return {
+        latitude: bboxCenterLat + latShiftDeg,
+        longitude: lon,
+        zoom: Math.max(7, Math.min(18, zoom)),
+        pitch,
+        bearing: 0,
+    }
 }
 
 function defaultView(
@@ -217,12 +237,22 @@ export function CrashMap({
         ro.observe(el)
         return () => ro.disconnect()
     }, [initialBounds, controlledView, mode])
+    // User-driven view changes go through `setViewState` (pan/drag via
+    // `onViewStateChange`, pitch via slider/touch). Fit-effect updates
+    // call `setLocalViewState` directly to avoid notifying the parent
+    // for auto-fit.
     const setViewState: React.Dispatch<React.SetStateAction<ViewState>> = useCallback((updater) => {
-        if (controlledView !== undefined && onControlledChange) {
+        if (controlledView !== undefined) {
             const next = typeof updater === "function" ? (updater as (v: ViewState) => ViewState)(controlledView) : updater
-            onControlledChange(next)
+            onControlledChange?.(next)
         } else {
-            setLocalViewState(updater)
+            setLocalViewState(prev => {
+                const next = typeof updater === "function" ? (updater as (v: ViewState) => ViewState)(prev) : updater
+                // Notify the parent of uncontrolled-mode user interactions
+                // (e.g. to persist the view to a URL param as the user pans).
+                if (onControlledChange) onControlledChange(next)
+                return next
+            })
         }
     }, [controlledView, onControlledChange])
     const [hoverInfo, setHoverInfo] = useState<PickingInfo | null>(null)

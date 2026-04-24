@@ -5,9 +5,11 @@
  *  toggle (hexbin default), outline overlay, fit-bounds on scope.
  */
 import { lazy, Suspense, useEffect, useMemo, useState } from "react"
+import { useUrlState } from "use-prms"
+import type { Param } from "use-prms"
 import { useCrashData } from "@/src/map/useCrashData"
 import type { CrashFilter } from "@/src/map/useCrashData"
-import type { Crash, MapMode } from "@/src/map/CrashMap"
+import type { Crash, MapMode, ViewState } from "@/src/map/CrashMap"
 import type { StackedHex } from "@/src/map/StackedHexLayer"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import type { FeatureCollection } from "geojson"
@@ -17,6 +19,26 @@ const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m
 const STATE_BBOX: [number, number, number, number] = [-75.7, 38.9, -73.9, 41.4]
 
 const DRAWER_SS_KEY = "hccs.crashmap.embed.drawerOpen"
+
+/** `llz` URL param: "lat_lon_zoom_pitch_bearing" (pitch/bearing optional).
+ *  Overrides the auto-fit. Intended for tuning default embed views. */
+const llzParam: Param<ViewState | null> = {
+    encode: (v) => v
+        ? [v.latitude.toFixed(4), v.longitude.toFixed(4), v.zoom.toFixed(2), Math.round(v.pitch), Math.round(v.bearing)].join("_")
+        : "",
+    decode: (s) => {
+        if (!s) return null
+        const parts = s.split(/[_\s]/).map(Number)
+        if (parts.length < 3 || parts.some(isNaN)) return null
+        return {
+            latitude: parts[0],
+            longitude: parts[1],
+            zoom: parts[2],
+            pitch: parts[3] ?? 45,
+            bearing: parts[4] ?? 0,
+        }
+    },
+}
 
 export type Props = {
     /** County code (1-21) or null for statewide. */
@@ -40,6 +62,7 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
     useEffect(() => {
         try { sessionStorage.setItem(DRAWER_SS_KEY, drawerOpen ? "1" : "0") } catch {}
     }, [drawerOpen])
+    const [llz, setLlz] = useUrlState("llz", llzParam)
 
     const scale: CrashFilter["scale"] = (cc === null && mode === "hexbin") ? "r8" : "detail"
 
@@ -91,6 +114,8 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
                             crashes={result.data as Crash[]}
                             outline={outline ?? undefined}
                             initialBounds={initialBounds}
+                            viewState={llz ?? undefined}
+                            onViewStateChange={setLlz}
                             mode={mode}
                             theme={actualTheme}
                             height={height}
@@ -105,6 +130,8 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
                             prebinnedHexes={result.data as StackedHex[]}
                             outline={outline ?? undefined}
                             initialBounds={initialBounds}
+                            viewState={llz ?? undefined}
+                            onViewStateChange={setLlz}
                             mode="hexbin"
                             theme={actualTheme}
                             height={height}
