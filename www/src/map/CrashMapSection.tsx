@@ -125,18 +125,15 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
 
     const emptySeverities = severities.size === 0
 
-    // Click-through-to-close: a click that lands on the deck.gl canvas
-    // (rather than drawer/legend/gear/etc.) dismisses an open drawer.
-    const onBackgroundClick = (e: React.MouseEvent) => {
-        if (!drawerOpen) return
-        if ((e.target as Element).tagName === "CANVAS") setDrawerOpen(false)
+    const closeDrawerIfOpen = () => { if (drawerOpen) setDrawerOpen(false) }
+    const toggleSeverity = (s: "f" | "i" | "p") => {
+        const next = new Set(severities)
+        if (next.has(s)) next.delete(s); else next.add(s)
+        setSeverities(next)
     }
 
     return (
-        <div
-            style={{ position: "relative", height, width: "100%", borderRadius: 4, overflow: "hidden" }}
-            onClick={onBackgroundClick}
-        >
+        <div style={{ position: "relative", height, width: "100%", borderRadius: 4, overflow: "hidden" }}>
             {result.status === "error" && (
                 <div style={{ padding: "1em", color: "red" }}>Error: {result.error}</div>
             )}
@@ -160,6 +157,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                             elevationPerCount={elevationPerCount}
                             onElevationPerCountChange={setElevationPerCount}
                             yearSpan={yearRange[1] - yearRange[0] + 1}
+                            onMapClick={closeDrawerIfOpen}
                         />
                     ) : (
                         <CrashMap
@@ -178,6 +176,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                             elevationPerCount={elevationPerCount}
                             onElevationPerCountChange={setElevationPerCount}
                             yearSpan={yearRange[1] - yearRange[0] + 1}
+                            onMapClick={closeDrawerIfOpen}
                         />
                     )}
                 </Suspense>
@@ -198,15 +197,16 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                     {llz && (
                         <button
                             onClick={() => setLlz(null)}
-                            title="Reset to default view"
+                            title="Reset view"
                             aria-label="Reset map view"
                             style={{
-                                position: "absolute", top: 8, right: 44, background: bg, color: fg,
-                                padding: "0.2em 0.5em", borderRadius: 4, zIndex: 1000,
+                                position: "absolute", top: 8, right: 40, background: bg, color: fg,
+                                width: 24, height: 24, padding: 0, borderRadius: 4, zIndex: 1000,
                                 border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
-                                cursor: "pointer", fontSize: "0.78em", lineHeight: 1.2,
+                                cursor: "pointer", fontSize: "0.95em", lineHeight: 1,
+                                display: "inline-flex", alignItems: "center", justifyContent: "center",
                             }}
-                        >↺ Reset</button>
+                        >↺</button>
                     )}
                 </>
             )}
@@ -216,20 +216,18 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                 padding: "0.4em 0.6em", borderRadius: 4, zIndex: 1000, fontSize: "0.82em",
                 display: "flex", flexDirection: "column", gap: 6, minWidth: 210, maxWidth: 260,
             }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: -4 }}>
-                    {llz ? (
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 4, alignItems: "center", marginBottom: -4 }}>
+                    {llz && (
                         <button
                             onClick={() => setLlz(null)}
-                            title="Reset to default view"
+                            title="Reset view"
                             aria-label="Reset map view"
                             style={{
-                                background: "transparent", color: fg,
-                                border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
-                                borderRadius: 3, cursor: "pointer",
-                                fontSize: "0.75em", padding: "1px 6px", lineHeight: 1.2,
+                                background: "transparent", color: fg, border: "none",
+                                cursor: "pointer", fontSize: "0.95em", padding: "0 0.2em", lineHeight: 1,
                             }}
-                        >↺ Reset view</button>
-                    ) : <span />}
+                        >↺</button>
+                    )}
                     <button
                         onClick={() => setDrawerOpen(false)}
                         title="Hide controls"
@@ -258,54 +256,23 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                         >{m === "scatter" ? "Points" : m === "heatmap" ? "Heatmap" : "Hexbin"}</button>
                     ))}
                 </div>
-                <div>
-                    <div style={{ fontSize: "0.85em" }}>
-                        Years: <b>{yearRange[0]}–{yearRange[1]}</b>
-                    </div>
-                    <div style={{ display: "flex", gap: 4 }}>
-                        <input
-                            type="range" min={y0min} max={y1max} step={1}
-                            value={yearRange[0]}
-                            onChange={e => setYearRange([Math.min(Number(e.target.value), yearRange[1]), yearRange[1]])}
-                            style={{ flex: 1 }}
-                        />
-                        <input
-                            type="range" min={y0min} max={y1max} step={1}
-                            value={yearRange[1]}
-                            onChange={e => setYearRange([yearRange[0], Math.max(Number(e.target.value), yearRange[0])])}
-                            style={{ flex: 1 }}
-                        />
-                    </div>
-                </div>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: "0.85em", flexWrap: "wrap" }}>
-                    <span>Severity:</span>
-                    {(["f", "i", "p"] as const).map(s => {
-                        const checked = severities.has(s)
-                        const label = s === "f" ? "Fatal" : s === "i" ? "Injury" : "Other"
-                        const disabled = s === "p" && scale !== "r8"
-                        return (
-                            <label key={s}
-                                title={disabled ? "Other only available in statewide + Hexbin mode" : undefined}
-                                style={{
-                                    display: "inline-flex", alignItems: "center", gap: 3,
-                                    cursor: disabled ? "not-allowed" : "pointer",
-                                    opacity: disabled ? 0.5 : 1,
-                                }}
-                            >
-                                <input
-                                    type="checkbox"
-                                    checked={checked && !disabled}
-                                    disabled={disabled}
-                                    onChange={() => {
-                                        const next = new Set(severities)
-                                        if (checked) next.delete(s); else next.add(s)
-                                        setSeverities(next)
-                                    }}
-                                />
-                                {label}
-                            </label>
-                        )
-                    })}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.85em" }}>
+                    <span>Years:</span>
+                    <YearSelect
+                        value={yearRange[0]}
+                        min={y0min}
+                        max={yearRange[1]}
+                        onChange={y => setYearRange([y, yearRange[1]])}
+                        theme={actualTheme}
+                    />
+                    <span>–</span>
+                    <YearSelect
+                        value={yearRange[1]}
+                        min={yearRange[0]}
+                        max={y1max}
+                        onChange={y => setYearRange([yearRange[0], y])}
+                        theme={actualTheme}
+                    />
                 </div>
                 {mode === "hexbin" && (
                     <>
@@ -358,7 +325,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                     <FiMaximize2 size={14} />
                 </a>
             )}
-            <Legend theme={actualTheme} pdoEnabled={scale === "r8"} severities={severities} />
+            <Legend theme={actualTheme} pdoEnabled={scale === "r8"} severities={severities} onToggle={toggleSeverity} />
             {emptySeverities && result.status === "ready" && (
                 <div style={{
                     position: "absolute", inset: 0, zIndex: 900,
@@ -400,11 +367,12 @@ function LoadingOverlay({ theme }: { theme: "light" | "dark" }) {
 }
 
 function Legend({
-    theme, pdoEnabled, severities,
+    theme, pdoEnabled, severities, onToggle,
 }: {
     theme: "light" | "dark"
     pdoEnabled: boolean
     severities: Set<"f" | "i" | "p">
+    onToggle: (s: "f" | "i" | "p") => void
 }) {
     const bg = theme === "dark" ? "rgba(30,30,30,0.85)" : "rgba(255,255,255,0.9)"
     const fg = theme === "dark" ? "#e0e0e0" : "#333"
@@ -424,18 +392,58 @@ function Legend({
                 const showable = it.key !== "p" || pdoEnabled
                 const on = showable && severities.has(it.key)
                 return (
-                    <div key={it.key} style={{
-                        display: "flex", alignItems: "center", gap: 6,
-                        opacity: on ? 1 : 0.4,
-                    }}>
+                    <button
+                        key={it.key}
+                        disabled={!showable}
+                        title={!showable
+                            ? "Other only available in statewide + Hexbin mode"
+                            : on ? `Hide ${it.label}` : `Show ${it.label}`}
+                        aria-pressed={on}
+                        onClick={() => showable && onToggle(it.key)}
+                        style={{
+                            display: "flex", alignItems: "center", gap: 6,
+                            opacity: on ? 1 : 0.4,
+                            background: "transparent", color: fg, border: "none", padding: 0,
+                            cursor: showable ? "pointer" : "not-allowed",
+                            font: "inherit", textAlign: "left",
+                        }}
+                    >
                         <span style={{
                             display: "inline-block", width: 10, height: 10,
                             background: it.color, borderRadius: 2,
                         }} />
                         <span>{it.label}</span>
-                    </div>
+                    </button>
                 )
             })}
         </div>
+    )
+}
+
+function YearSelect({
+    value, min, max, onChange, theme,
+}: {
+    value: number
+    min: number
+    max: number
+    onChange: (y: number) => void
+    theme: "light" | "dark"
+}) {
+    const bg = theme === "dark" ? "#2a2a2a" : "#fff"
+    const fg = theme === "dark" ? "#e0e0e0" : "#333"
+    const border = `1px solid ${theme === "dark" ? "#444" : "#ccc"}`
+    const opts: number[] = []
+    for (let y = min; y <= max; y++) opts.push(y)
+    return (
+        <select
+            value={value}
+            onChange={e => onChange(Number(e.target.value))}
+            style={{
+                background: bg, color: fg, border, borderRadius: 3,
+                padding: "1px 4px", fontSize: "0.95em",
+            }}
+        >
+            {opts.map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
     )
 }

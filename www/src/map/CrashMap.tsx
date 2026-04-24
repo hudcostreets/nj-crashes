@@ -69,6 +69,8 @@ export type Props = {
     onElevationPerCountChange?: (n: number) => void
     /** Click handler for outline polygons (geo drill-down). */
     onOutlineClick?: (feature: any) => void
+    /** Fired for any click on the map canvas (used for drawer close-on-click). */
+    onMapClick?: () => void
     /** Render the internal PitchSlider / HexControls corner widgets.
      *  Caller can disable (when it supplies its own consolidated panel). */
     showInternalControls?: boolean
@@ -238,6 +240,7 @@ export function CrashMap({
     elevationPerCount: controlledElevation,
     onElevationPerCountChange,
     onOutlineClick,
+    onMapClick,
     showInternalControls = true,
     mode = "scatter",
     theme = "dark",
@@ -451,6 +454,7 @@ export function CrashMap({
                 onViewStateChange={onViewStateChange}
                 controller={{ touchRotate: true, dragRotate: true, maxPitch: MAX_PITCH, maxZoom: 20, minZoom: 0 } as any}
                 layers={layers}
+                onClick={onMapClick ? () => { onMapClick() } : undefined}
                 style={{ position: "absolute", inset: "0" }}
             >
                 <Map
