@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Apr 23 10:00:07 EDT 2026</RUNDATE>
+  <RUNDATE>Fri Apr 24 10:00:02 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -5211,8 +5211,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
       <ACCIDENT ACCID="13887" DATE="05/01/2025" TIME="0700">
-        <STREET>1083 CR 602</STREET>
-        <LOCATION>1083 CR 602</LOCATION>
+        <HIGHWAY>602</HIGHWAY>
+        <LOCATION>County 602 MP 3.14</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
