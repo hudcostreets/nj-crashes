@@ -56,6 +56,9 @@ export type HexRow = {
     n_ped_inj: number
     n_other_inj: number
     n_pdo: number
+    /** Most common `route` value among the bin's crashes; empty if unknown.
+     *  Optional because older shards don't have this column. */
+    top_route?: string
 }
 
 async function fetchParquet<T>(url: string, columns?: string[]): Promise<T[]> {
@@ -153,6 +156,9 @@ export function useCrashData(filter: CrashFilter | null):
                     const wantI = !sevs || sevs.has("i")
                     const wantP = !sevs || sevs.has("p")
                     const aggByHex = new Map<string, StackedHex>()
+                    // Per-h3 route → cumulative count (so multi-year/cc/mc shards
+                    // aggregating into one hex pick the overall mode).
+                    const routeCounts = new Map<string, Map<string, number>>()
                     for (const r of merged) {
                         if (filter.ccs && filter.ccs.length > 0 && !filter.ccs.includes(r.cc)) continue
                         if (filter.mc != null && r.mc !== filter.mc) continue
@@ -164,6 +170,16 @@ export function useCrashData(filter: CrashFilter | null):
                         if (wantF) h.fatal += r.n_fatal
                         if (wantI) { h.pedInj += r.n_ped_inj; h.otherInj += r.n_other_inj }
                         if (wantP) h.pdo += r.n_pdo
+                        const rt = (r.top_route ?? "").trim()
+                        if (rt) {
+                            // Per-bin row counts as the weight for its mode-route.
+                            const w = (wantF ? r.n_fatal : 0) + (wantI ? r.n_ped_inj + r.n_other_inj : 0) + (wantP ? r.n_pdo : 0)
+                            if (w > 0) {
+                                let m = routeCounts.get(r.h3)
+                                if (!m) { m = new Map(); routeCounts.set(r.h3, m) }
+                                m.set(rt, (m.get(rt) ?? 0) + w)
+                            }
+                        }
                     }
                     // Drop hexes fully filtered out; compute totals + centers for survivors.
                     const { cellToBoundary } = await import("h3-js")
@@ -175,6 +191,12 @@ export function useCrashData(filter: CrashFilter | null):
                         let lon = 0, lat = 0
                         for (const [ln, la] of boundary) { lon += ln; lat += la }
                         h.center = [lon / boundary.length, lat / boundary.length]
+                        const m = routeCounts.get(h.h3)
+                        if (m && m.size > 0) {
+                            let topR = "", topN = 0
+                            for (const [r, n] of m) { if (n > topN) { topR = r; topN = n } }
+                            h.topRoute = topR
+                        }
                         kept.push(h)
                     }
                     if (!cancelled) {

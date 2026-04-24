@@ -19,7 +19,7 @@ export type MapMode = "scatter" | "heatmap" | "hexbin"
 
 export type Crash = {
     dt: Date | number
-    severity: "i" | "f"
+    severity: "i" | "f" | "p"
     lon: number
     lat: number
     tk: number
@@ -30,6 +30,9 @@ export type Crash = {
     city?: string
     sri?: string
     mp?: number
+    /** State route label (`route` column in the export). Empty when not on
+     *  a numbered route. Used to populate the dominant-road TT field. */
+    route?: string
 }
 
 export type ViewState = {
@@ -108,6 +111,7 @@ function rasterStyle(theme: "light" | "dark"): any {
 const SEVERITY_COLOR: Record<Crash["severity"], [number, number, number]> = {
     f: [239, 68, 68],
     i: [245, 158, 11],
+    p: [220, 200, 90],
 }
 
 function severityRgba(sev: Crash["severity"], alpha = 200): [number, number, number, number] {
@@ -668,6 +672,11 @@ function CrashTooltip({ info, yearSpan }: { info: PickingInfo; yearSpan?: number
         const injury = h.pedInj + h.otherInj
         return (
             <div style={tooltipStyle(info)}>
+                {h.topRoute && (
+                    <div style={{ fontSize: "0.85em", opacity: 0.85, marginBottom: 2 }}>
+                        near <b>{h.topRoute}</b>
+                    </div>
+                )}
                 <div><b>{h.total}</b> crashes{fmtRate(h.total, yearSpan)}</div>
                 {h.fatal > 0 && (
                     <div style={{ color: "rgb(210,28,28)" }}>
@@ -704,7 +713,7 @@ function CrashTooltip({ info, yearSpan }: { info: PickingInfo; yearSpan?: number
                 </>
             ) : (
                 <>
-                    <div><b>{obj.severity === "f" ? "Fatal" : "Injury"}</b> · {fmtDate(obj.dt)}</div>
+                    <div><b>{obj.severity === "f" ? "Fatal" : obj.severity === "p" ? "Other" : "Injury"}</b> · {fmtDate(obj.dt)}</div>
                     <div>{obj.tk} killed · {obj.ti} injured · {obj.tv} vehicles</div>
                     {(obj.pk > 0 || obj.pi > 0) && (
                         <div>Pedestrians: {obj.pk} killed, {obj.pi} injured</div>

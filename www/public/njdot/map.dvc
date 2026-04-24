@@ -5,7 +5,7 @@ outs:
   path: map
 meta:
   computation:
-    cmd: njdot export_map_data -s i,f -H i,f,p && njdot gen_county_outlines && njdot
+    cmd: njdot export_map_data -s i,f,p -H i,f,p && njdot gen_county_outlines && njdot
       gen_muni_outlines
     deps:
       /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540

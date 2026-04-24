@@ -344,7 +344,12 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                     <FiMaximize2 size={14} />
                 </a>
             )}
-            <Legend theme={actualTheme} pdoEnabled={scale === "r8"} severities={severities} onToggle={toggleSeverity} />
+            <Legend
+                theme={actualTheme}
+                pdoEnabled={scale === "r8" || (result.manifest?.point_severities?.includes("p") ?? false)}
+                severities={severities}
+                onToggle={toggleSeverity}
+            />
             {emptySeverities && result.status === "ready" && (
                 <div style={{
                     position: "absolute", inset: 0, zIndex: 900,

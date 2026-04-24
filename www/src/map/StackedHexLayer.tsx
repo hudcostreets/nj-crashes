@@ -20,10 +20,14 @@ import type { PickingInfo } from "@deck.gl/core/typed"
 export type StackableCrash = {
     lon: number
     lat: number
-    severity: "i" | "f"
+    severity: "i" | "f" | "p"
     tk: number
     pk: number
     pi: number
+    /** Optional route/road label, used to populate `topRoute` in the
+     *  client-side binning path. Server-side aggregates carry it
+     *  precomputed as the per-bin mode. */
+    route?: string | null
 }
 
 export type StackedHex = {
@@ -34,6 +38,10 @@ export type StackedHex = {
     otherInj: number
     pdo: number
     total: number
+    /** Most common `route` value among the crashes in this bin. Empty
+     *  string when no crash had a route value (or the dataset doesn't
+     *  carry it). */
+    topRoute?: string
 }
 
 export type Segment = {
@@ -49,6 +57,8 @@ export function binIntoHexes<T extends StackableCrash>(
     resolution: number = 9,
 ): StackedHex[] {
     const bins = new Map<string, StackedHex>()
+    // Per-bin route counts to pick the mode after aggregation.
+    const routeCounts = new Map<string, Map<string, number>>()
     for (const c of crashes) {
         const h3 = latLngToCell(c.lat, c.lon, resolution)
         let b = bins.get(h3)
@@ -58,14 +68,27 @@ export function binIntoHexes<T extends StackableCrash>(
         }
         b.total += 1
         if (c.severity === "f" || c.tk > 0) b.fatal += 1
-        else if (c.pi > 0 || c.pk > 0) b.pedInj += 1
-        else b.otherInj += 1
+        else if (c.severity === "i" && (c.pi > 0 || c.pk > 0)) b.pedInj += 1
+        else if (c.severity === "i") b.otherInj += 1
+        else b.pdo += 1
+        const rt = (c.route ?? "").trim()
+        if (rt) {
+            let m = routeCounts.get(h3)
+            if (!m) { m = new Map(); routeCounts.set(h3, m) }
+            m.set(rt, (m.get(rt) ?? 0) + 1)
+        }
     }
     for (const b of bins.values()) {
         const boundary = cellToBoundary(b.h3, true)
         let lon = 0, lat = 0
         for (const [ln, la] of boundary) { lon += ln; lat += la }
         b.center = [lon / boundary.length, lat / boundary.length]
+        const m = routeCounts.get(b.h3)
+        if (m && m.size > 0) {
+            let topR = "", topN = 0
+            for (const [r, n] of m) { if (n > topN) { topR = r; topN = n } }
+            b.topRoute = topR
+        }
     }
     return [...bins.values()]
 }

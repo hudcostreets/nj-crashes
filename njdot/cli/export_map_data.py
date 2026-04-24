@@ -106,7 +106,15 @@ def _emit_shards(df: pd.DataFrame, outdir: Path) -> dict:
 
 
 def _emit_hex_aggregates(df: pd.DataFrame, outdir: Path, resolutions=(7, 8)) -> dict:
-    """Bin crashes into H3 cells per (year, cc, mc). One parquet per (res, year)."""
+    """Bin crashes into H3 cells per (year, cc, mc). One parquet per (res, year).
+
+    Each row is one (h3, year, cc, mc) bin with:
+      n_fatal, n_ped_inj, n_other_inj, n_pdo  – severity-tier counts
+      top_route                                – most common `route` in the
+                                                 bin (mode; ties broken
+                                                 arbitrarily). Empty when
+                                                 no row has a route value.
+    """
     import h3
 
     manifest = {}
@@ -117,6 +125,8 @@ def _emit_hex_aggregates(df: pd.DataFrame, outdir: Path, resolutions=(7, 8)) -> 
             np.where((df["severity"] == "i") & ((df["pi"] > 0) | (df["pk"] > 0)), "ped_inj",
             np.where(df["severity"] == "i", "other_inj", "pdo")))
     df["_tier"] = tier
+    # Normalize blank / NaN routes to a sentinel so they don't dominate the mode.
+    df["_route"] = df["route"].fillna("").astype("string").str.strip()
 
     for res in resolutions:
         sub_dir = outdir / f"hex-r{res}"
@@ -129,7 +139,7 @@ def _emit_hex_aggregates(df: pd.DataFrame, outdir: Path, resolutions=(7, 8)) -> 
             h3_idx[i] = h3.latlng_to_cell(float(la), float(lo), res)
         df[f"_h3_r{res}"] = h3_idx
 
-        # Aggregate
+        # Severity tier counts per bin
         grouped = (
             df.groupby([f"_h3_r{res}", "_year", "cc", "mc", "_tier"])
             .size()
@@ -144,10 +154,24 @@ def _emit_hex_aggregates(df: pd.DataFrame, outdir: Path, resolutions=(7, 8)) -> 
                 "pdo": "n_pdo",
             })
         )
-        # Ensure all tier columns exist (some might be absent if filtered)
         for col in ("n_fatal", "n_ped_inj", "n_other_inj", "n_pdo"):
             if col not in grouped.columns:
                 grouped[col] = 0
+
+        # Mode of `route` per bin (filter out blanks before mode).
+        non_blank = df[df["_route"] != ""]
+        if len(non_blank):
+            top_route = (
+                non_blank.groupby([f"_h3_r{res}", "_year", "cc", "mc"])["_route"]
+                .agg(lambda s: s.mode().iloc[0] if len(s.mode()) else "")
+                .reset_index()
+                .rename(columns={f"_h3_r{res}": "h3", "_year": "year", "_route": "top_route"})
+            )
+            grouped = grouped.merge(top_route, on=["h3", "year", "cc", "mc"], how="left")
+            grouped["top_route"] = grouped["top_route"].fillna("").astype("string")
+        else:
+            grouped["top_route"] = pd.Series([""] * len(grouped), dtype="string")
+
         # Cast counts to int32
         for col in ("n_fatal", "n_ped_inj", "n_other_inj", "n_pdo"):
             grouped[col] = grouped[col].astype("int32")
@@ -155,7 +179,7 @@ def _emit_hex_aggregates(df: pd.DataFrame, outdir: Path, resolutions=(7, 8)) -> 
         grouped["cc"] = grouped["cc"].astype("Int8")
         grouped["mc"] = grouped["mc"].astype("Int16")
         grouped["h3"] = grouped["h3"].astype("string")
-        grouped = grouped[["h3", "year", "cc", "mc", "n_fatal", "n_ped_inj", "n_other_inj", "n_pdo"]]
+        grouped = grouped[["h3", "year", "cc", "mc", "n_fatal", "n_ped_inj", "n_other_inj", "n_pdo", "top_route"]]
 
         per_year = {}
         for y, sub in grouped.groupby("year"):
