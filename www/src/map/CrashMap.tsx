@@ -655,7 +655,7 @@ function CrashTooltip({ info, yearSpan }: { info: PickingInfo; yearSpan?: number
                 )}
                 {h.pdo > 0 && (
                     <div style={{ color: "rgb(220,200,90)" }}>
-                        <b>{h.pdo}</b> property damage{fmtRate(h.pdo, yearSpan)}
+                        <b>{h.pdo}</b> other{fmtRate(h.pdo, yearSpan)}
                     </div>
                 )}
             </div>

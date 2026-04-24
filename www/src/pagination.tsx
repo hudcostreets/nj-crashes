@@ -300,7 +300,6 @@ export function DatePagination(
         total,
     }: DatePagination
 ) {
-    console.log("DatePagination: before", before, "end:", end)
     const [dateTxtState, setDateTxtState] = useState<string>(before)
     const [dateTxtStateDirty, setDateTxtStateDirty] = useState<boolean>(false)
     const mStr = useMemo(() => moment.tz(before, TZ).format("M/D/YY"), [ before ])

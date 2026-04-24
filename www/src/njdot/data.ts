@@ -5,7 +5,7 @@ export const Severities: Severity[] = ['f', 'i', 'p']  // stack order: fatal, in
 export const SeverityLabels: Record<Severity, string> = {
     f: 'Fatal',
     i: 'Injury',
-    p: 'Prop. Damage',
+    p: 'Other',
 }
 export const SeverityColorsLight: Record<Severity, string> = {
     p: '#E0C830',  // gold

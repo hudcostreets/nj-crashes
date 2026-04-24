@@ -232,19 +232,19 @@ export function useNjdotCrashRows({ cc2mc2mn, ...props }: Props & { cc2mc2mn: CC
     const crashOccupants = useCrashOccupants({ crashesResult })
     const crashPedestrians = useCrashPedestrians({ crashesResult })
     const crashVehicles = useCrashVehicles({ crashesResult })
-    const ccCol: Col[] = props.cc ? [] : ['cc']
-    const mcCol: Col[] = props.mc ? [] : ['mc']
-    const cols: Col[] = [ 'dt', ...ccCol, ...mcCol, 'casualties', 'road', 'cross_street', 'mp', ]
+    const cols = useMemo<Col[]>(() => {
+        const ccCol: Col[] = props.cc ? [] : ['cc']
+        const mcCol: Col[] = props.mc ? [] : ['mc']
+        return [ 'dt', ...ccCol, ...mcCol, 'casualties', 'road', 'cross_street', 'mp', ]
+    }, [props.cc, props.mc])
     const crashRows = useMemo(
         () => {
             if (!crashesResult) return
-            console.log(`crashRows effect`)
-            const crashRows = map(
+            return map(
                 (crashes: Crash[]) => getNjdotCrashRows({ rows: crashes, cols, cc2mc2mn, crashOccupants, crashPedestrians, crashVehicles, })
             )(crashesResult)
-            return crashRows
         },
-        [ crashesResult, cols, crashOccupants, ]
+        [ crashesResult, cols, cc2mc2mn, crashOccupants, crashPedestrians, crashVehicles, ]
     )
     return crashRows
 }

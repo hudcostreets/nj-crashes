@@ -14,12 +14,11 @@ import type { StackedHex } from "@/src/map/StackedHexLayer"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import type { FeatureCollection } from "geojson"
 import { FiMaximize2 } from "react-icons/fi"
+import { useToolboxOpen } from "@/src/map/useToolboxOpen"
 
 const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m.CrashMap })))
 
 const STATE_BBOX: [number, number, number, number] = [-75.7, 38.9, -73.9, 41.4]
-
-const DRAWER_SS_KEY = "hccs.crashmap.embed.drawerOpen"
 
 /** Per-county initial view overrides (mobile + desktop pairs, lerped by width).
  *  Keys are numeric county codes (cc). Captured from user-tuned `?llz=` URLs
@@ -44,9 +43,12 @@ const LLZ_OVERRIDES: Record<number, { mobile: ViewState; desktop: ViewState }> =
 /** `llz` URL param: "lat_lon_zoom_pitch_bearing" (pitch/bearing optional).
  *  Overrides the auto-fit. Intended for tuning default embed views. */
 const llzParam: Param<ViewState | null> = {
+    // `undefined` means "param absent" per use-prms 2-way binding contract
+    // (default value ↔ param omitted). Avoid emitting `?llz=` or `?llz` for
+    // the default / cleared state.
     encode: (v) => v
         ? [v.latitude.toFixed(4), v.longitude.toFixed(4), v.zoom.toFixed(2), Math.round(v.pitch), Math.round(v.bearing)].join("_")
-        : "",
+        : undefined,
     decode: (s) => {
         if (!s) return null
         const parts = s.split(/[_\s]/).map(Number)
@@ -79,12 +81,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
     const [severities, setSeverities] = useState<Set<"f" | "i" | "p">>(() => new Set(["f", "i"]))
     const [hexPxTarget, setHexPxTarget] = useState(1.2)
     const [elevationPerCount, setElevationPerCount] = useState(60)
-    const [drawerOpen, setDrawerOpen] = useState<boolean>(() => {
-        try { return sessionStorage.getItem(DRAWER_SS_KEY) === "1" } catch { return false }
-    })
-    useEffect(() => {
-        try { sessionStorage.setItem(DRAWER_SS_KEY, drawerOpen ? "1" : "0") } catch {}
-    }, [drawerOpen])
+    const [drawerOpen, setDrawerOpen] = useToolboxOpen(false)
     const [llz, setLlz] = useUrlState("llz", llzParam)
 
     const scale: CrashFilter["scale"] = (cc === null && mode === "hexbin") ? "r8" : "detail"
@@ -128,8 +125,18 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
 
     const emptySeverities = severities.size === 0
 
+    // Click-through-to-close: a click that lands on the deck.gl canvas
+    // (rather than drawer/legend/gear/etc.) dismisses an open drawer.
+    const onBackgroundClick = (e: React.MouseEvent) => {
+        if (!drawerOpen) return
+        if ((e.target as Element).tagName === "CANVAS") setDrawerOpen(false)
+    }
+
     return (
-        <div style={{ position: "relative", height, width: "100%", borderRadius: 4, overflow: "hidden" }}>
+        <div
+            style={{ position: "relative", height, width: "100%", borderRadius: 4, overflow: "hidden" }}
+            onClick={onBackgroundClick}
+        >
             {result.status === "error" && (
                 <div style={{ padding: "1em", color: "red" }}>Error: {result.error}</div>
             )}
@@ -176,17 +183,32 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                 </Suspense>
             )}
             {!drawerOpen && (
-                <button
-                    onClick={() => setDrawerOpen(true)}
-                    title="Show controls"
-                    aria-label="Show map controls"
-                    style={{
-                        position: "absolute", top: 8, right: 8, background: bg, color: fg,
-                        padding: "0.25em 0.5em", borderRadius: 4, zIndex: 1000,
-                        border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
-                        cursor: "pointer", fontSize: "1em", lineHeight: 1,
-                    }}
-                >⚙</button>
+                <>
+                    <button
+                        onClick={() => setDrawerOpen(true)}
+                        title="Show controls"
+                        aria-label="Show map controls"
+                        style={{
+                            position: "absolute", top: 8, right: 8, background: bg, color: fg,
+                            padding: "0.25em 0.5em", borderRadius: 4, zIndex: 1000,
+                            border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
+                            cursor: "pointer", fontSize: "1em", lineHeight: 1,
+                        }}
+                    >⚙</button>
+                    {llz && (
+                        <button
+                            onClick={() => setLlz(null)}
+                            title="Reset to default view"
+                            aria-label="Reset map view"
+                            style={{
+                                position: "absolute", top: 8, right: 44, background: bg, color: fg,
+                                padding: "0.2em 0.5em", borderRadius: 4, zIndex: 1000,
+                                border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
+                                cursor: "pointer", fontSize: "0.78em", lineHeight: 1.2,
+                            }}
+                        >↺ Reset</button>
+                    )}
+                </>
             )}
             {drawerOpen && (
             <div style={{
@@ -259,11 +281,11 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                     <span>Severity:</span>
                     {(["f", "i", "p"] as const).map(s => {
                         const checked = severities.has(s)
-                        const label = s === "f" ? "Fatal" : s === "i" ? "Injury" : "PDO"
+                        const label = s === "f" ? "Fatal" : s === "i" ? "Injury" : "Other"
                         const disabled = s === "p" && scale !== "r8"
                         return (
                             <label key={s}
-                                title={disabled ? "PDO only available in statewide + Hexbin mode" : undefined}
+                                title={disabled ? "Other only available in statewide + Hexbin mode" : undefined}
                                 style={{
                                     display: "inline-flex", alignItems: "center", gap: 3,
                                     cursor: disabled ? "not-allowed" : "pointer",
@@ -389,7 +411,7 @@ function Legend({
     const items: { key: "f" | "i" | "p"; label: string; color: string }[] = [
         { key: "f", label: "Fatal",  color: "rgb(239,68,68)" },
         { key: "i", label: "Injury", color: "rgb(245,158,11)" },
-        { key: "p", label: "PDO",    color: "rgb(220,200,90)" },
+        { key: "p", label: "Other",  color: "rgb(220,200,90)" },
     ]
     return (
         <div style={{

@@ -28,6 +28,7 @@ import type { Crash } from "@/src/map/CrashMap"
 import type { StackedHex } from "@/src/map/StackedHexLayer"
 import type { FeatureCollection } from "geojson"
 import { normalize } from "@/src/county"
+import { useToolboxOpen } from "@/src/map/useToolboxOpen"
 
 const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m.CrashMap })))
 
@@ -167,7 +168,7 @@ export default function CrashMapPage() {
     const mc = muniFromParam(cc, params.muni, cc2mc2mn)
     const { actualTheme } = useTheme()
     const [elevationPerCount, setElevationPerCount] = useState(60)
-    const [drawerOpen, setDrawerOpen] = useState(true)
+    const [drawerOpen, setDrawerOpen] = useToolboxOpen(true)
 
     const onOutlineClick = useCallback((feature: any) => {
         const name: string | undefined = feature?.properties?.name
