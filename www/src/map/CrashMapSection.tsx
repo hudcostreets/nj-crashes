@@ -13,6 +13,7 @@ import type { Crash, MapMode, ViewState } from "@/src/map/CrashMap"
 import type { StackedHex } from "@/src/map/StackedHexLayer"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import type { FeatureCollection } from "geojson"
+import { FiMaximize2 } from "react-icons/fi"
 
 const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m.CrashMap })))
 
@@ -26,6 +27,10 @@ const DRAWER_SS_KEY = "hccs.crashmap.embed.drawerOpen"
  *  by loading the map, dragging to the desired framing at mobile and desktop
  *  viewport widths, and copying the `?llz=` values into this table. */
 const LLZ_OVERRIDES: Record<number, { mobile: ViewState; desktop: ViewState }> = {
+    2: {  // Bergen (single value — good at both widths)
+        mobile:  { latitude: 40.9267, longitude: -74.0606, zoom: 9.66, pitch: 45, bearing: 0 },
+        desktop: { latitude: 40.9267, longitude: -74.0606, zoom: 9.66, pitch: 45, bearing: 0 },
+    },
     9: {  // Hudson
         mobile:  { latitude: 40.7135, longitude: -74.0956, zoom: 10.63, pitch: 45, bearing: 0 },
         desktop: { latitude: 40.7119, longitude: -74.0936, zoom: 10.84, pitch: 45, bearing: 0 },
@@ -63,9 +68,11 @@ export type Props = {
     mc: number | null
     /** Embed height. Default 500px. */
     height?: number | string
+    /** Optional `href` for the full-screen icon (bottom-right). Omit to hide. */
+    fullScreenHref?: string
 }
 
-export function CrashMapSection({ cc, mc, height = 500 }: Props) {
+export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props) {
     const { actualTheme } = useTheme()
     const [mode, setMode] = useState<MapMode>("hexbin")
     const [yearRange, setYearRange] = useState<[number, number]>([2019, 2023])
@@ -294,6 +301,22 @@ export function CrashMapSection({ cc, mc, height = 500 }: Props) {
                     </>
                 )}
             </div>
+            )}
+            {fullScreenHref && (
+                <a
+                    href={fullScreenHref}
+                    title="Open full-screen"
+                    style={{
+                        position: "absolute", bottom: 8, right: 8, zIndex: 1000,
+                        background: bg, color: fg,
+                        padding: "0.3em", borderRadius: 4,
+                        border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
+                        display: "inline-flex", alignItems: "center", justifyContent: "center",
+                        textDecoration: "none", lineHeight: 1,
+                    }}
+                >
+                    <FiMaximize2 size={14} />
+                </a>
             )}
         </div>
     )

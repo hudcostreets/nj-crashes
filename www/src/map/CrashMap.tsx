@@ -158,16 +158,17 @@ export function fitBoundsToView(
     const lateralM = Math.max(1, (e - w) * metersPerDegLon)
     const verticalM = Math.max(1, (n - s) * metersPerDegLat)
     // Pitch compresses the "near" half of the visible ground; treat the
-    // effective container as smaller vertically. cos(pitch) is too mild,
-    // cos(pitch)^2 lines up better with MapLibre's `cameraForBounds`.
+    // effective container as smaller vertically. Exponent `1.5` on cos(pitch)
+    // empirically matches user-tuned views for Bergen / Hudson / Monmouth
+    // better than cos(pitch)^2 (too loose) or cos(pitch) (too tight).
     const pitchRad = pitch * Math.PI / 180
-    const chEff = ch * Math.pow(Math.cos(pitchRad), 2)
+    const chEff = ch * Math.pow(Math.cos(pitchRad), 1.5)
     const mppNeeded = Math.max(lateralM / cw, verticalM / chEff)
     const zoom = Math.log2(156543.03 * COS / mppNeeded)
-    // Shift the center toward the camera so the bbox sits centered in the
-    // (asymmetric) visible ground region. At pitch=45° this is ~25% of the
-    // bbox vertical extent southward.
-    const latShiftDeg = -(n - s) * 0.5 * Math.sin(pitchRad) * Math.cos(pitchRad)
+    // Shift the center slightly toward the camera (south at bearing=0) so the
+    // bbox's south edge isn't buried in the pitched near-field. Kept small
+    // (~10% of bbox height) — users prefer near-centered over visually-centered.
+    const latShiftDeg = -(n - s) * 0.1 * Math.sin(pitchRad)
     return {
         latitude: bboxCenterLat + latShiftDeg,
         longitude: lon,
@@ -243,6 +244,12 @@ export function CrashMap({
     const containerRef = React.useRef<HTMLDivElement | null>(null)
     const [localViewState, setLocalViewState] = useState<ViewState>(() => defaultView(initialBounds, initialCenter, initialView, mode))
     const viewState = controlledView ?? localViewState
+    // Ref mirrors current viewState so `setViewState` can compute `next`
+    // without putting a parent-notifying side effect inside the setState
+    // updater (which React warns about: "Cannot update a component while
+    // rendering a different component").
+    const viewStateRef = React.useRef<ViewState>(viewState)
+    viewStateRef.current = viewState
     // Auto-fit bounds when uncontrolled: re-run whenever `initialBounds` change
     // AND the container has a measurable size. Caller-owned `controlledView`
     // skips this (CrashMapPage does its own `fitBoundsToView`).
@@ -283,21 +290,20 @@ export function CrashMap({
         if (controlledView !== undefined) {
             const next = typeof updater === "function" ? (updater as (v: ViewState) => ViewState)(controlledView) : updater
             onControlledChange?.(next)
-        } else {
-            setLocalViewState(prev => {
-                const next = typeof updater === "function" ? (updater as (v: ViewState) => ViewState)(prev) : updater
-                // Notify parent only on actual change (persist user interactions
-                // to URL). No-op updates from mode-switch auto-tilt etc. must
-                // not leak to `?llz=`.
-                const changed = next.longitude !== prev.longitude
-                    || next.latitude !== prev.latitude
-                    || next.zoom !== prev.zoom
-                    || next.pitch !== prev.pitch
-                    || next.bearing !== prev.bearing
-                if (changed && onControlledChange) onControlledChange(next)
-                return next
-            })
+            return
         }
+        const prev = viewStateRef.current
+        const next = typeof updater === "function" ? (updater as (v: ViewState) => ViewState)(prev) : updater
+        setLocalViewState(next)
+        // Notify parent only on actual change (persist user interactions to
+        // URL). No-op updates from mode-switch auto-tilt etc. must not leak
+        // to `?llz=`.
+        const changed = next.longitude !== prev.longitude
+            || next.latitude !== prev.latitude
+            || next.zoom !== prev.zoom
+            || next.pitch !== prev.pitch
+            || next.bearing !== prev.bearing
+        if (changed && onControlledChange) onControlledChange(next)
     }, [controlledView, onControlledChange])
     const [hoverInfo, setHoverInfo] = useState<PickingInfo | null>(null)
     // Target on-screen hex radius in pixels. Auto-picks the H3 resolution
@@ -580,7 +586,7 @@ function CrashTooltip({ info }: { info: PickingInfo }) {
         const injury = h.pedInj + h.otherInj
         return (
             <div style={tooltipStyle(info)}>
-                <div><b>{h.total}</b> crashes in this hex</div>
+                <div><b>{h.total}</b> crashes</div>
                 {h.fatal > 0 && (
                     <div style={{ color: "rgb(210,28,28)" }}>
                         <b>{h.fatal}</b> fatal
