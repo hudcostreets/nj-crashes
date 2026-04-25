@@ -4,7 +4,7 @@
  *  standalone `/map` route: year-range slider, severity toggle, mode
  *  toggle (hexbin default), outline overlay, fit-bounds on scope.
  */
-import { lazy, Suspense, useEffect, useMemo, useState } from "react"
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react"
 import { useUrlState } from "use-prms"
 import type { Param } from "use-prms"
 import { useCrashData } from "@/src/map/useCrashData"
@@ -72,9 +72,12 @@ export type Props = {
     height?: number | string
     /** Optional `href` for the full-screen icon (bottom-right). Omit to hide. */
     fullScreenHref?: string
+    /** Geographic scope label rendered in the subtitle (e.g.
+     *  "Jersey City, Hudson County"). When omitted, the subtitle is hidden. */
+    scopeLabel?: string
 }
 
-export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props) {
+export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLabel }: Props) {
     const { actualTheme } = useTheme()
     const [mode, setMode] = useState<MapMode>("hexbin")
     const [yearRange, setYearRange] = useState<[number, number]>([2019, 2023])
@@ -142,15 +145,59 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
 
     const emptySeverities = severities.size === 0
 
-    const closeDrawerIfOpen = () => { if (drawerOpen) setDrawerOpen(false) }
     const toggleSeverity = (s: "f" | "i" | "p") => {
         const next = new Set(severities)
         if (next.has(s)) next.delete(s); else next.add(s)
         setSeverities(next)
     }
+    const severityPhrase = formatSeverityPhrase(severities)
+
+    // Close drawer on canvas pointerdown. Hooks a native capture-phase
+    // listener on the wrapper element — React's onPointerDownCapture
+    // doesn't fire for real native events (mjolnir.js consumes them
+    // before they reach React's root listener).
+    const wrapRef = useRef<HTMLDivElement | null>(null)
+    useEffect(() => {
+        if (!drawerOpen) return
+        const el = wrapRef.current
+        if (!el) return
+        const handler = (e: PointerEvent) => {
+            const target = e.target as Element | null
+            if (target?.tagName === "CANVAS") setDrawerOpen(false)
+        }
+        el.addEventListener("pointerdown", handler, true)
+        return () => el.removeEventListener("pointerdown", handler, true)
+    }, [drawerOpen, setDrawerOpen])
 
     return (
-        <div style={{ position: "relative", height, width: "100%", borderRadius: 4, overflow: "hidden" }}>
+        <>
+            {(scopeLabel || true) && (
+                <div style={{
+                    textAlign: "center", color: "var(--text-secondary)",
+                    marginTop: "-0.3em", marginBottom: "0.4em",
+                    display: "flex", flexWrap: "wrap", alignItems: "center",
+                    justifyContent: "center", gap: 6, fontSize: "0.95em",
+                }}>
+                    <span>{severityPhrase} crashes</span>
+                    {scopeLabel && <><span>·</span><span>{scopeLabel}</span></>}
+                    <span>·</span>
+                    <YearSelect
+                        value={yearRange[0]} min={y0min} max={yearRange[1]}
+                        onChange={y => setYearRange([y, yearRange[1]])}
+                        theme={actualTheme}
+                    />
+                    <span>–</span>
+                    <YearSelect
+                        value={yearRange[1]} min={yearRange[0]} max={y1max}
+                        onChange={y => setYearRange([yearRange[0], y])}
+                        theme={actualTheme}
+                    />
+                </div>
+            )}
+        <div
+            ref={wrapRef}
+            style={{ position: "relative", height, width: "100%", borderRadius: 4, overflow: "hidden" }}
+        >
             {result.status === "error" && (
                 <div style={{ padding: "1em", color: "red" }}>Error: {result.error}</div>
             )}
@@ -175,7 +222,6 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                             elevationPerCount={elevationPerCount}
                             onElevationPerCountChange={setElevationPerCount}
                             yearSpan={yearRange[1] - yearRange[0] + 1}
-                            onMapClick={closeDrawerIfOpen}
                         />
                     ) : (
                         <CrashMap
@@ -195,7 +241,6 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                             elevationPerCount={elevationPerCount}
                             onElevationPerCountChange={setElevationPerCount}
                             yearSpan={yearRange[1] - yearRange[0] + 1}
-                            onMapClick={closeDrawerIfOpen}
                         />
                     )}
                 </Suspense>
@@ -275,24 +320,6 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                         >{m === "scatter" ? "Points" : m === "heatmap" ? "Heatmap" : "Hexbin"}</button>
                     ))}
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.85em" }}>
-                    <span>Years:</span>
-                    <YearSelect
-                        value={yearRange[0]}
-                        min={y0min}
-                        max={yearRange[1]}
-                        onChange={y => setYearRange([y, yearRange[1]])}
-                        theme={actualTheme}
-                    />
-                    <span>–</span>
-                    <YearSelect
-                        value={yearRange[1]}
-                        min={yearRange[0]}
-                        max={y1max}
-                        onChange={y => setYearRange([yearRange[0], y])}
-                        theme={actualTheme}
-                    />
-                </div>
                 {mode === "hexbin" && (
                     <>
                         {(() => {
@@ -366,7 +393,20 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref }: Props)
                 </div>
             )}
         </div>
+        </>
     )
+}
+
+function formatSeverityPhrase(severities: Set<"f" | "i" | "p">): string {
+    if (severities.size === 0) return "No"
+    if (severities.size === 3) return "All reported"
+    const parts: string[] = []
+    if (severities.has("f")) parts.push("Fatal")
+    if (severities.has("i")) parts.push("Injury")
+    if (severities.has("p")) parts.push("Other")
+    if (parts.length === 1) return parts[0]
+    if (parts.length === 2) return `${parts[0]} & ${parts[1].toLowerCase()}`
+    return parts.join(", ")
 }
 
 function LoadingOverlay({ theme }: { theme: "light" | "dark" }) {

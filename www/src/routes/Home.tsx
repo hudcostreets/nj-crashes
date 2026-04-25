@@ -150,9 +150,6 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
 
                 {/* Crash map */}
                 <h2 id="map"><a href="#map">Crash Map</a></h2>
-                <div className={css.subtitle}>
-                    {cc === null ? "Crashes" : "Injury and fatal crashes"}{geo}
-                </div>
                 <PlotContainer showHr={false}>
                     <CrashMapSection
                         key={`map-${cc}-${mc}`}
@@ -160,6 +157,11 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                         mc={mc}
                         height={500}
                         fullScreenHref={`/map${cc !== null ? `/c/${countyName?.toLowerCase().replace(/\s+/g, "-")}${mc !== null && municipalityName ? `/${municipalityName.toLowerCase().replace(/\s+/g, "-")}` : ""}` : ""}`}
+                        scopeLabel={
+                            mc !== null && municipalityName ? `${municipalityName}, ${countyName} County`
+                            : cc !== null && countyName ? `${countyName} County`
+                            : undefined
+                        }
                     />
                 </PlotContainer>
 

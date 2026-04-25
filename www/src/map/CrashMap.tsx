@@ -30,9 +30,14 @@ export type Crash = {
     city?: string
     sri?: string
     mp?: number
-    /** State route label (`route` column in the export). Empty when not on
-     *  a numbered route. Used to populate the dominant-road TT field. */
+    /** State route number (`route` column in the export). Empty when not on
+     *  a numbered route. */
     route?: string
+    /** Human-readable road label ("CALDERON AVENUE", "ROUTE 9"). Source
+     *  for the `topRoute` per-hex mode. */
+    road?: string
+    /** Cross-street name at the crash location, when known. */
+    cross_street?: string
 }
 
 export type ViewState = {
@@ -140,7 +145,9 @@ function pickHexResolutionForPixels(pixelTarget: number, zoom: number, lat: numb
 }
 
 function fmtDate(d: Date | number): string {
-    const date = d instanceof Date ? d : new Date(d)
+    // Point shards encode `dt` as epoch *minutes* (int32) per the export
+    // pipeline, not milliseconds. Multiply by 60_000 before `new Date()`.
+    const date = d instanceof Date ? d : new Date(Number(d) * 60_000)
     return date.toISOString().slice(0, 10)
 }
 
@@ -714,12 +721,26 @@ function CrashTooltip({ info, yearSpan }: { info: PickingInfo; yearSpan?: number
             ) : (
                 <>
                     <div><b>{obj.severity === "f" ? "Fatal" : obj.severity === "p" ? "Other" : "Injury"}</b> · {fmtDate(obj.dt)}</div>
-                    <div>{obj.tk} killed · {obj.ti} injured · {obj.tv} vehicles</div>
+                    <div>{
+                        [
+                            obj.tk > 0 ? `${obj.tk} killed` : null,
+                            obj.ti > 0 ? `${obj.ti} injured` : null,
+                            obj.tv > 0 ? `${obj.tv} vehicle${obj.tv === 1 ? "" : "s"}` : null,
+                        ].filter(Boolean).join(" · ") || "No reported casualties"
+                    }</div>
                     {(obj.pk > 0 || obj.pi > 0) && (
                         <div>Pedestrians: {obj.pk} killed, {obj.pi} injured</div>
                     )}
-                    {obj.city && <div>{obj.city}</div>}
-                    {obj.sri && obj.mp != null && <div>SRI {obj.sri} · MP {obj.mp.toFixed(2)}</div>}
+                    {obj.road && (
+                        <div>
+                            {obj.road}
+                            {obj.cross_street && <> at <b>{obj.cross_street}</b></>}
+                            {obj.mp != null && Number.isFinite(obj.mp) && <> · MP {obj.mp.toFixed(2)}</>}
+                        </div>
+                    )}
+                    {!obj.road && obj.sri && obj.mp != null && Number.isFinite(obj.mp) && (
+                        <div style={{ opacity: 0.7, fontSize: "0.85em" }}>SRI {obj.sri} · MP {obj.mp.toFixed(2)}</div>
+                    )}
                 </>
             )}
         </div>

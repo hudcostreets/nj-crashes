@@ -9,10 +9,15 @@ treated as empty / 0). Outputs are DVX-tracked under
 
 - `njdot/cli/export_map_data.py`
   - `_emit_hex_aggregates` now also emits a `top_route` column per
-    `(h3, year, cc, mc)` bin: the **mode of `route`** among the bin's
-    crashes, blanks excluded. Empty string when no crash has a route.
+    `(h3, year, cc, mc)` bin: the **mode of the human-readable `road`**
+    column ("CALDERON AVENUE", "ROUTE 9"), with `Route <N>` as a
+    fallback when `road` is blank. Empty string when neither is known.
+  - Point shards (`MAP_COLS`) now include `road` and `cross_street` so
+    the per-crash tooltip can render "{road} at <cross_street> · MP".
   - Schema for `hex-r{N}/{year}.parquet`:
     `[h3, year, cc, mc, n_fatal, n_ped_inj, n_other_inj, n_pdo, top_route]`.
+  - Schema for `by-year(/-county)/{year}.parquet` adds `road` and
+    `cross_street` columns.
 - `www/public/njdot/map.dvc`
   - Cmd updated: `njdot export_map_data -s i,f,p -H i,f,p` (PDO now
     included in **point** shards too — was `i,f`). Plus the existing

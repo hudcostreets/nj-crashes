@@ -24,9 +24,11 @@ export type StackableCrash = {
     tk: number
     pk: number
     pi: number
-    /** Optional route/road label, used to populate `topRoute` in the
-     *  client-side binning path. Server-side aggregates carry it
-     *  precomputed as the per-bin mode. */
+    /** Optional human-readable road label ("CALDERON AVENUE", "ROUTE 9").
+     *  Used to populate `topRoute` in the client-side binning path.
+     *  Server-side aggregates carry it precomputed as the per-bin mode. */
+    road?: string | null
+    /** Numeric route fallback when `road` is empty. */
     route?: string | null
 }
 
@@ -71,7 +73,7 @@ export function binIntoHexes<T extends StackableCrash>(
         else if (c.severity === "i" && (c.pi > 0 || c.pk > 0)) b.pedInj += 1
         else if (c.severity === "i") b.otherInj += 1
         else b.pdo += 1
-        const rt = (c.route ?? "").trim()
+        const rt = (c.road ?? "").trim() || (c.route ? `Route ${c.route}` : "")
         if (rt) {
             let m = routeCounts.get(h3)
             if (!m) { m = new Map(); routeCounts.set(h3, m) }

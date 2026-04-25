@@ -24,7 +24,7 @@ SEVERITY_ORDER = ["f", "i", "p"]
 MAP_COLS = [
     "dt", "cc", "mc", "case",
     "tk", "ti", "pk", "pi", "tv",
-    "severity", "route", "mp", "sri",
+    "severity", "road", "cross_street", "route", "mp", "sri",
     "lat", "lon", "geocode_src",
 ]
 
@@ -63,6 +63,10 @@ def _build_base(df: pd.DataFrame, keep_severities: set[str]) -> pd.DataFrame:
     # Route is often numeric but we store as str for dictionary-encoding
     keep["route"] = keep["route"].astype("string")
     keep["sri"] = keep["sri"].astype("string")
+    # Road is the human-readable label ("ROUTE 9", "CALDERON AVENUE", etc.).
+    # Cross_street is its perpendicular at the crash location ("CR 630").
+    keep["road"] = keep["road"].fillna("").astype("string").str.strip()
+    keep["cross_street"] = keep["cross_street"].fillna("").astype("string").str.strip()
     keep["mp"] = keep["mp"].astype("float32")
     keep["severity"] = keep["severity"].astype("string")
     keep["case"] = keep["case"].astype("string")
@@ -125,8 +129,12 @@ def _emit_hex_aggregates(df: pd.DataFrame, outdir: Path, resolutions=(7, 8)) -> 
             np.where((df["severity"] == "i") & ((df["pi"] > 0) | (df["pk"] > 0)), "ped_inj",
             np.where(df["severity"] == "i", "other_inj", "pdo")))
     df["_tier"] = tier
-    # Normalize blank / NaN routes to a sentinel so they don't dominate the mode.
-    df["_route"] = df["route"].fillna("").astype("string").str.strip()
+    # Use the human-readable `road` column for the per-bin mode (e.g.
+    # "CALDERON AVENUE", "ROUTE 9"). Falls back to `route` number if road
+    # is blank.
+    road = df["road"].fillna("").astype("string").str.strip()
+    route_num = df["route"].fillna("").astype("string").str.strip()
+    df["_road"] = road.where(road != "", route_num.where(route_num != "", "").map(lambda r: f"Route {r}" if r else ""))
 
     for res in resolutions:
         sub_dir = outdir / f"hex-r{res}"
@@ -158,16 +166,18 @@ def _emit_hex_aggregates(df: pd.DataFrame, outdir: Path, resolutions=(7, 8)) -> 
             if col not in grouped.columns:
                 grouped[col] = 0
 
-        # Mode of `route` per bin (filter out blanks before mode).
-        non_blank = df[df["_route"] != ""]
+        # Mode of `road` per bin (filter out blanks before mode). Stored as
+        # `top_route` for back-compat with the column name; the value is the
+        # human-readable road label ("ROUTE 9", "CALDERON AVENUE", etc.).
+        non_blank = df[df["_road"] != ""]
         if len(non_blank):
-            top_route = (
-                non_blank.groupby([f"_h3_r{res}", "_year", "cc", "mc"])["_route"]
+            top_road = (
+                non_blank.groupby([f"_h3_r{res}", "_year", "cc", "mc"])["_road"]
                 .agg(lambda s: s.mode().iloc[0] if len(s.mode()) else "")
                 .reset_index()
-                .rename(columns={f"_h3_r{res}": "h3", "_year": "year", "_route": "top_route"})
+                .rename(columns={f"_h3_r{res}": "h3", "_year": "year", "_road": "top_route"})
             )
-            grouped = grouped.merge(top_route, on=["h3", "year", "cc", "mc"], how="left")
+            grouped = grouped.merge(top_road, on=["h3", "year", "cc", "mc"], how="left")
             grouped["top_route"] = grouped["top_route"].fillna("").astype("string")
         else:
             grouped["top_route"] = pd.Series([""] * len(grouped), dtype="string")
