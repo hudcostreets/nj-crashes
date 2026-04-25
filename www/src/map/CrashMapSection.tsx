@@ -152,21 +152,24 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
     }
     const severityPhrase = formatSeverityPhrase(severities)
 
-    // Close drawer on canvas pointerdown. Hooks a native capture-phase
-    // listener on the wrapper element — React's onPointerDownCapture
-    // doesn't fire for real native events (mjolnir.js consumes them
-    // before they reach React's root listener).
+    // Close drawer on map click. Listen at window-capture phase for
+    // pointerdown — fires before deck.gl's pointer manager processes it.
+    // The click target is usually deck.gl's `#view-default-view` div (not
+    // the underlying canvas), so we identify "map clicks" as anything
+    // inside the wrap that isn't a form control / link / button.
     const wrapRef = useRef<HTMLDivElement | null>(null)
     useEffect(() => {
         if (!drawerOpen) return
-        const el = wrapRef.current
-        if (!el) return
-        const handler = (e: PointerEvent) => {
+        const handler = (e: Event) => {
             const target = e.target as Element | null
-            if (target?.tagName === "CANVAS") setDrawerOpen(false)
+            const wrap = wrapRef.current
+            if (!target || !wrap || !wrap.contains(target)) return
+            // Don't close if click was on one of our overlays/controls.
+            if (target.closest("button, a, label, input, select, textarea")) return
+            setDrawerOpen(false)
         }
-        el.addEventListener("pointerdown", handler, true)
-        return () => el.removeEventListener("pointerdown", handler, true)
+        window.addEventListener("pointerdown", handler, true)
+        return () => window.removeEventListener("pointerdown", handler, true)
     }, [drawerOpen, setDrawerOpen])
 
     return (
