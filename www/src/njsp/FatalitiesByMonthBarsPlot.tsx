@@ -211,7 +211,6 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
             const t = (year - minYear) / (maxYear - minYear)
             const color = getColorAt(colorScale, t)
 
-            const hasActive = activeYear != null
             const isActive = activeYear === year
 
             // Get values for each month (null for future months of current year → hidden from hover)
@@ -224,11 +223,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
                 return 0
             })
 
-            // Fade is baked into the trace data (rather than via pltly's
-            // `Plotly.restyle`), since multi-index opacity restyle on `bar`
-            // traces has a paint bug where per-trace opacity doesn't reflect
-            // in the SVG. Pairs with `disableFade` + `disableSolo` on the
-            // PlotWrapper below.
+            // pltly handles fade; we add extras for the active trace
             const trace: any = {
                 type: "bar",
                 name: `'${String(year).slice(2)}`,
@@ -240,7 +235,6 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
                 },
                 legendrank: idx,
                 hovertemplate: `%{y}<extra>'${String(year).slice(2)}</extra>`,
-                opacity: hasActive && !isActive ? 0.3 : undefined,
                 text: isActive ? values.map(v => v && v > 0 ? `<b>${v}</b>` : '') : undefined,
                 textposition: isActive ? 'outside' : undefined,
                 textfont: isActive ? { color: '#ffffff', size: 14 } : undefined,
@@ -248,7 +242,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
                 constraintext: 'none',
                 cliponaxis: false,
                 width: isActive ? 0.25 : undefined,
-                zorder: isActive ? 100 : 1,
+                zorder: isActive ? 100 : undefined,
             }
 
             return trace as PlotData
@@ -321,8 +315,6 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
                 data={data}
                 layout={layout}
                 onActiveTrace={setActiveTrace}
-                disableFade
-                disableSolo
             />
             <ControlsGear
                 open={controlsOpen}
