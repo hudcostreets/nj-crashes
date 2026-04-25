@@ -144,6 +144,24 @@ function pickHexResolutionForPixels(pixelTarget: number, zoom: number, lat: numb
     return best
 }
 
+/** SRIs in NJDOT data are zero-padded route numbers (e.g. "00000525__") —
+ *  show as a friendlier "Route N" label. Once the EC2 pipeline rerun lands
+ *  the human-readable `road` field, this fallback rarely fires. Friendly
+ *  per-county nicknames (JFK Blvd for 501 in Hudson, etc.) require a
+ *  lookup table we don't have yet. */
+const SRI_PREFIX_NAMES: Record<string, string> = {
+    "1": "US 1", "9": "US 9", "22": "US 22", "30": "US 30", "46": "US 46",
+    "70": "US 70", "130": "US 130", "202": "US 202", "206": "US 206",
+    "78": "I-78", "80": "I-80", "95": "I-95", "195": "I-195",
+    "278": "I-278", "280": "I-280", "287": "I-287", "295": "I-295",
+}
+function fmtSri(sri: string): string {
+    const m = sri.match(/^0+(\d+)/)
+    if (!m) return `SRI ${sri}`
+    const num = m[1]
+    return SRI_PREFIX_NAMES[num] ?? `Route ${num}`
+}
+
 function fmtDate(d: Date | number): string {
     // Point shards encode `dt` as epoch *minutes* (int32) per the export
     // pipeline, not milliseconds. Multiply by 60_000 before `new Date()`.
@@ -447,7 +465,17 @@ export function CrashMap({
         // inline (single pass at each candidate resolution; stop when size
         // limit exceeded).
         const hexes = prebinnedHexes ?? binIntoHexes(effectiveCrashes, effectiveHexRes)
-        const segments = hexesToSegments(hexes, elevationPerCount)
+        // Auto-scale bar heights based on the visible max count: when the
+        // user filters to fatal-only (max ~5) we'd otherwise get pancake
+        // bars vs the baseline fatal+injury view (max ~100). Keep the
+        // tallest bar near a target height of `elevationPerCount × 100`,
+        // clamped so we don't inflate single-crash hexes wildly. Sqrt-
+        // softened so the slider still has perceptible effect.
+        const maxCount = hexes.reduce((m, h) => Math.max(m, h.total), 1)
+        const HEIGHT_TARGET = 100  // calibrated for typical fatal+injury max
+        const autoScale = Math.min(8, Math.max(0.4, Math.sqrt(HEIGHT_TARGET / maxCount)))
+        const effectiveElevation = elevationPerCount * autoScale
+        const segments = hexesToSegments(hexes, effectiveElevation)
         return [...base,
             buildStackedHexLayer({
                 id: "crashes-hex-stacked",
@@ -739,7 +767,7 @@ function CrashTooltip({ info, yearSpan }: { info: PickingInfo; yearSpan?: number
                         </div>
                     )}
                     {!obj.road && obj.sri && obj.mp != null && Number.isFinite(obj.mp) && (
-                        <div style={{ opacity: 0.7, fontSize: "0.85em" }}>SRI {obj.sri} · MP {obj.mp.toFixed(2)}</div>
+                        <div style={{ opacity: 0.7, fontSize: "0.85em" }}>{fmtSri(obj.sri)} · MP {obj.mp.toFixed(2)}</div>
                     )}
                 </>
             )}
