@@ -408,15 +408,10 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     }, [ytdRows, colorScale, plotColors, legendPosition, viewMode, effectiveFadeOpacity, futureDash])
 
 
-    // Post-plot SVG fixups for pltly's hover/pin fade:
-    // 1. Mirror main-trace opacity onto each year's `showlegend:false` RoY
-    //    sibling (pltly's `applyFadeSolo` skips them, but the year group
-    //    should fade as a unit).
-    // 2. Bump the active line's stroke-width to match the prod visual
-    //    (active main: 5, active future: 4) — pltly only restyles
-    //    opacity, not width.
-    // Hooked into plotly's `plotly_afterplot` so we always run *after*
-    // every restyle paint.
+    // Active-line width bump is now declarative via pltly's
+    // `activeStyle` (below). Pltly's `applyFadeSolo` still skips
+    // `showlegend: false` traces, so YTD's RoY sibling needs an
+    // afterplot mirror until pltly handles `legendgroup`-based fade.
     const wrapRef = useRef<HTMLDivElement | null>(null)
     useEffect(() => {
         const wrap = wrapRef.current
@@ -426,7 +421,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
         const apply = () => {
             if (!plotDiv?.data) return
             const traceEls = wrap.querySelectorAll('.scatterlayer .trace.scatter')
-            // Pass 1: pick up each main trace's opacity (pltly already set).
+            // Pass 1: capture each main trace's opacity (set by pltly).
             const opByGroup = new Map<string, string>()
             plotDiv.data.forEach((t: any, i: number) => {
                 if (t.showlegend === false) return
@@ -435,25 +430,21 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                 const op = (traceEls[i] as SVGElement | undefined)?.style.opacity
                 if (op) opByGroup.set(g, op)
             })
-            // Is any group faded right now? If not, there's no active
-            // selection — leave widths at their base data values.
             const anyFaded = [...opByGroup.values()].some(op => op !== '1')
-            // Pass 2: mirror to RoY siblings + bump active-trace width.
+            // Pass 2: mirror opacity onto RoY siblings + bump active RoY width.
             plotDiv.data.forEach((t: any, i: number) => {
+                if (t.showlegend !== false) return
                 const el = traceEls[i] as SVGElement | undefined
                 if (!el) return
+                const op = opByGroup.get(t.legendgroup ?? '')
+                if (op !== undefined) el.style.opacity = op
                 const path = el.querySelector('path.js-line') as SVGPathElement | null
-                const groupOp = opByGroup.get(t.legendgroup ?? '')
-                const isActive = anyFaded && groupOp === '1'
-                if (t.showlegend === false && groupOp !== undefined) {
-                    el.style.opacity = groupOp
-                }
                 if (path) {
-                    const baseW = (t.line?.width as number | undefined) ?? 2
+                    const isActive = anyFaded && op === '1'
                     if (isActive) {
-                        const isFuture = t.showlegend === false
-                        path.style.strokeWidth = isFuture ? '4px' : '5px'
+                        path.style.strokeWidth = '4px'
                     } else {
+                        const baseW = (t.line?.width as number | undefined) ?? 1
                         path.style.strokeWidth = `${baseW}px`
                     }
                 }
@@ -496,6 +487,9 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     data={data}
                     layout={layout}
                     onActiveTrace={setActiveTrace}
+                    activeStyle={(t: any) => ({
+                        'line.width': t.showlegend === false ? 4 : 5,
+                    })}
                     {...(isFadedMode ? { onHover: customHover.handleHover, onUnhover: customHover.handleUnhover } : {})}
                 />
                 {isFadedMode && customHover.isActive && customHover.position && customHover.x != null && (() => {

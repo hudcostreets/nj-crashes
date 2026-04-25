@@ -1,6 +1,7 @@
 import React from "react"
 import type { PlotData, Layout, Margin, PlotRelayoutEvent } from "plotly.js"
 import { Plot } from "pltly/react"
+import type { StyleFn } from "pltly/react"
 import { LegendClickEvent } from "pltly"
 
 export type LegendHandlers = {
@@ -37,6 +38,10 @@ export type Props = {
     /** Font-weight for active legend items. Pass 'normal' to disable bolding
      *  (prevents flicker at legend-item boundaries on hover). */
     boldWeight?: number | 'bold' | 'normal'
+    /** Style override for the active trace (passed through to pltly). */
+    activeStyle?: StyleFn
+    /** Style override for non-active traces while a trace is active. */
+    inactiveStyle?: StyleFn
 } & LegendHandlers & OtherHandlers
 
 export const DEFAULT_MARGIN: Partial<Margin> = { t: 0, r: 15, b: 0, l: 0 }
@@ -62,6 +67,8 @@ export default function PlotWrapper({
     disableSolo,
     fadeInactiveAxis,
     boldWeight,
+    activeStyle,
+    inactiveStyle,
 }: Props) {
     const height = layout.height ?? DEFAULT_HEIGHT
 
@@ -90,6 +97,8 @@ export default function PlotWrapper({
             disableSoloTrace={disableSolo}
             fadeInactiveAxis={fadeInactiveAxis}
             boldWeight={boldWeight}
+            activeStyle={activeStyle}
+            inactiveStyle={inactiveStyle}
             fallback={
                 <div style={{
                     height: `${height}px`,

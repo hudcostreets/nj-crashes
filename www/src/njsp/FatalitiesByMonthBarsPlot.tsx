@@ -205,15 +205,15 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
             return selectedTypes.reduce((sum, t) => sum + row[t], 0)
         }
 
-        // Build traces (one bar trace per year)
+        // Build traces (one bar trace per year). Active-trace styling
+        // (width/zorder/text labels) is declared via pltly's `activeStyle`
+        // prop on the wrapper — pltly applies it via Plotly.restyle so
+        // hovering doesn't trigger a Plotly.react redraw of all 25 traces.
         const traces: PlotData[] = years.map((year, idx) => {
             const monthData = yearData.get(year)!
             const t = (year - minYear) / (maxYear - minYear)
             const color = getColorAt(colorScale, t)
 
-            const isActive = activeYear === year
-
-            // Get values for each month (null for future months of current year → hidden from hover)
             const isCurrentYear = year === currentYear
             const values = MONTH_NAMES.map((_, i) => {
                 const month = i + 1
@@ -223,7 +223,6 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
                 return 0
             })
 
-            // pltly handles fade; we add extras for the active trace
             const trace: any = {
                 type: "bar",
                 name: `'${String(year).slice(2)}`,
@@ -235,14 +234,9 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
                 },
                 legendrank: idx,
                 hovertemplate: `%{y}<extra>'${String(year).slice(2)}</extra>`,
-                text: isActive ? values.map(v => v && v > 0 ? `<b>${v}</b>` : '') : undefined,
-                textposition: isActive ? 'outside' : undefined,
-                textfont: isActive ? { color: '#ffffff', size: 14 } : undefined,
                 textangle: 0,
                 constraintext: 'none',
                 cliponaxis: false,
-                width: isActive ? 0.25 : undefined,
-                zorder: isActive ? 100 : undefined,
             }
 
             return trace as PlotData
@@ -299,7 +293,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
         }
 
         return { data: traces, layout }
-    }, [monthlyRows, activeYear, colorScale, plotColors, legendPosition, selectedTypes, allSelected])
+    }, [monthlyRows, colorScale, plotColors, legendPosition, selectedTypes, allSelected])
 
 
     if (!data.length) {
@@ -315,6 +309,13 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
                 data={data}
                 layout={layout}
                 onActiveTrace={setActiveTrace}
+                activeStyle={(t: any) => ({
+                    width: 0.25,
+                    zorder: 100,
+                    text: (t.y as Array<number | null> | undefined)?.map(v => v && v > 0 ? `<b>${v}</b>` : '') ?? '',
+                    textposition: 'outside',
+                    textfont: { color: '#ffffff', size: 14 },
+                })}
             />
             <ControlsGear
                 open={controlsOpen}
