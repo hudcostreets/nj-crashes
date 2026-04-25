@@ -1,6 +1,29 @@
 # Serve map shards from public S3 instead of bundling into CFP
 
-## Status: not started (2026-04-25)
+## Status: implemented 2026-04-25
+
+- `www/src/map/config.ts` adds `MAP_BASE_URL`, env-overridable via
+  `VITE_MAP_BASE_URL`. Falls back to `/njdot/map` for local dev so
+  Vite keeps serving from `public/` unchanged.
+- `useCrashData.ts`, `CrashMapSection.tsx`, `CrashMapPage.tsx`
+  threaded through `MAP_BASE_URL`.
+- `www/deploy.sh` exports
+  `VITE_MAP_BASE_URL=https://nj-crashes.s3.amazonaws.com/njdot/map`
+  for `pnpm build` and `rm -rf dist/njdot/map` before the wrangler
+  push, so map shards never ship in CFP.
+- One-off `aws s3 sync www/public/njdot/map s3://nj-crashes/njdot/map`
+  populated the bucket. Manifest + range-request fetch verified
+  (`206 Partial Content`, `Accept-Ranges: bytes`).
+- TS check (`pnpm tc`) passes.
+- Browser-tab smoke test against the deployed site is the remaining
+  sanity check (not done here — laptop will verify after the next
+  deploy lands).
+
+The sync runs **outside** daily CI: NJDOT data updates annually, so
+the existing daily loop doesn't touch `map.dvc` and the S3 bucket
+stays in lockstep with whatever the most recent rerun produced.
+After any future `dvx run www/public/njdot/map.dvc`, run the same
+`aws s3 sync` to refresh.
 
 ## Motivation
 

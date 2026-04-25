@@ -9,6 +9,7 @@ import { useUrlState } from "use-prms"
 import type { Param } from "use-prms"
 import { useCrashData } from "@/src/map/useCrashData"
 import type { CrashFilter } from "@/src/map/useCrashData"
+import { MAP_BASE_URL } from "@/src/map/config"
 import type { Crash, MapMode, ViewState } from "@/src/map/CrashMap"
 import type { StackedHex } from "@/src/map/StackedHexLayer"
 import { useTheme } from "@/src/contexts/ThemeContext"
@@ -102,8 +103,8 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
     const [outline, setOutline] = useState<FeatureCollection | null>(null)
     useEffect(() => {
         const url = cc === null
-            ? "/njdot/map/counties.geojson"
-            : `/njdot/map/counties/${String(cc).padStart(2, "0")}.geojson`
+            ? `${MAP_BASE_URL}/counties.geojson`
+            : `${MAP_BASE_URL}/counties/${String(cc).padStart(2, "0")}.geojson`
         fetch(url).then(r => r.ok ? r.json() : null).then(setOutline).catch(() => setOutline(null))
     }, [cc])
     // Muni outline: only when a muni is selected. File is ~30-130 KB/county;
@@ -111,7 +112,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
     const [muniOutline, setMuniOutline] = useState<FeatureCollection | null>(null)
     useEffect(() => {
         if (cc === null || mc === null) { setMuniOutline(null); return }
-        const url = `/njdot/map/munis/${String(cc).padStart(2, "0")}.geojson`
+        const url = `${MAP_BASE_URL}/munis/${String(cc).padStart(2, "0")}.geojson`
         let cancelled = false
         fetch(url)
             .then(r => r.ok ? r.json() as Promise<FeatureCollection> : null)

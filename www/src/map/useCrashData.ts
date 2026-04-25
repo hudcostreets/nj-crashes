@@ -13,6 +13,7 @@ import {
 } from "hyparquet"
 import type { Crash } from "./CrashMap"
 import type { StackedHex } from "./StackedHexLayer"
+import { MAP_BASE_URL } from "./config"
 
 export type MapManifest = {
     schema_version: 1
@@ -42,7 +43,7 @@ export type CrashFilter = {
     scale: "detail" | "r8" | "r7"
 }
 
-const MANIFEST_PATH = "/njdot/map/manifest.json"
+const MANIFEST_PATH = `${MAP_BASE_URL}/manifest.json`
 
 // Small in-memory cache of parsed shards for the session.
 const shardCache = new Map<string, Promise<Crash[] | HexRow[]>>()
@@ -81,13 +82,13 @@ function shardPathsForFilter(f: CrashFilter): string[] {
 
     if (f.scale === "detail") {
         if (ccs) {
-            return years.flatMap(y => ccs.map(cc => `/njdot/map/by-year-county/${y}-${String(cc).padStart(2, "0")}.parquet`))
+            return years.flatMap(y => ccs.map(cc => `${MAP_BASE_URL}/by-year-county/${y}-${String(cc).padStart(2, "0")}.parquet`))
         }
-        return years.map(y => `/njdot/map/by-year/${y}.parquet`)
+        return years.map(y => `${MAP_BASE_URL}/by-year/${y}.parquet`)
     }
     // r7/r8 hex aggregates
     const res = f.scale  // "r7" | "r8"
-    return years.map(y => `/njdot/map/hex-${res}/${y}.parquet`)
+    return years.map(y => `${MAP_BASE_URL}/hex-${res}/${y}.parquet`)
 }
 
 function applyPostFilters(rows: Crash[], f: CrashFilter): Crash[] {

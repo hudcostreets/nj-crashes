@@ -23,6 +23,7 @@ import { useTheme } from "@/src/contexts/ThemeContext"
 import { lazy, Suspense } from "react"
 import type { CrashFilter } from "@/src/map/useCrashData"
 import { useCrashData } from "@/src/map/useCrashData"
+import { MAP_BASE_URL } from "@/src/map/config"
 import type { MapMode, ViewState } from "@/src/map/CrashMap"
 import type { Crash } from "@/src/map/CrashMap"
 import type { StackedHex } from "@/src/map/StackedHexLayer"
@@ -206,14 +207,14 @@ export default function CrashMapPage() {
     const [outline, setOutline] = useState<FeatureCollection | null>(null)
     useEffect(() => {
         const url = cc === undefined
-            ? "/njdot/map/counties.geojson"
-            : `/njdot/map/counties/${String(cc).padStart(2, "0")}.geojson`
+            ? `${MAP_BASE_URL}/counties.geojson`
+            : `${MAP_BASE_URL}/counties/${String(cc).padStart(2, "0")}.geojson`
         fetch(url).then(r => r.ok ? r.json() : null).then(setOutline).catch(() => setOutline(null))
     }, [cc])
     const [muniOutline, setMuniOutline] = useState<FeatureCollection | null>(null)
     useEffect(() => {
         if (cc === undefined || mc === undefined) { setMuniOutline(null); return }
-        const url = `/njdot/map/munis/${String(cc).padStart(2, "0")}.geojson`
+        const url = `${MAP_BASE_URL}/munis/${String(cc).padStart(2, "0")}.geojson`
         let cancelled = false
         fetch(url)
             .then(r => r.ok ? r.json() as Promise<FeatureCollection> : null)
