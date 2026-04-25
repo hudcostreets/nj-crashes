@@ -19,11 +19,30 @@
   sanity check (not done here — laptop will verify after the next
   deploy lands).
 
-The sync runs **outside** daily CI: NJDOT data updates annually, so
-the existing daily loop doesn't touch `map.dvc` and the S3 bucket
-stays in lockstep with whatever the most recent rerun produced.
-After any future `dvx run www/public/njdot/map.dvc`, run the same
-`aws s3 sync` to refresh.
+The sync is modeled as a side-effect DVX stage at
+`www/public/njdot/map_sync.dvc`:
+
+```yaml
+meta:
+  computation:
+    cmd: aws s3 sync map s3://nj-crashes/njdot/map --delete
+    deps:
+      map: <md5 from map.dvc outs>   # no `.dir` suffix — DVX strips it
+```
+
+No `outs` (the "real output" is the remote S3 prefix, which DVX has
+no way to hash — same shape as `deploy.dvc` / `slack_post.dvc`).
+`dvx status` flags it stale only when `map.dvc`'s out md5 changes,
+i.e. annually after a `dvx run map.dvc`. Daily runs no-op it.
+
+`awscli>=1.40` added to `pyproject.toml` so `aws` is on PATH wherever
+DVX runs (laptop, EC2, daily CI).
+
+Subtle DVX gotcha worth recording: when a downstream `.dvc` lists a
+dir output as a dep, **omit the `.dir` suffix on the md5** — DVX
+strips it when reading `outs.md5` (`dvc_files.py:458`), so the
+recorded dep md5 must match the stripped form or freshness checks
+will report `dep changed` even when nothing has.
 
 ## Motivation
 

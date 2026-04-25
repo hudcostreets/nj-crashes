@@ -9,6 +9,7 @@ authors = [
 ]
 dependencies = [
     "atproto>=0.0.62",
+    "awscli>=1.40",
     "beautifulsoup4>=4.13",
     "click>=8.1",
     "croniter>=1.0",
