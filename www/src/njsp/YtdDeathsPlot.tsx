@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import type { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
@@ -150,9 +150,14 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
             const t = (year - minYear) / (maxYear - minYear)
             const color = getColorAt(colorScale, t)
 
-            const isActive = activeYear === year
-            const isGreyed = activeYear !== null && !isActive
             const isCurrentYear = year === currentYear
+            // Active-trace highlighting (width-5 active line, color-faded
+            // others) used to be baked in here, but rebuilding 51 × 365
+            // points on every hover landed at ~200ms lag. Pltly handles
+            // hover/pin fade via opacity restyle (after the bar-paint fix
+            // in dist.ba3e854). Active-line `width: 5` thicker-line
+            // visual is deferred to pltly's planned `activeStyle` prop
+            // (see specs/declarative-active-inactive-styling.md).
 
             // Forward-fill data so every day has a point (for correct hover)
             // For current year: extend to today; for past years: extend to end of their data
@@ -174,31 +179,27 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
             // Current year gets thicker line by default
             const defaultWidth = isCurrentYear ? 4 : 2
 
+            const yearLabel = `'${String(year).slice(2)}`
+
             if (isYtd) {
                 // YTD mode: clip all traces to today
                 const clipped = filledRows.filter(r => r.day <= dayOfYear)
                 traces.push({
                     type: "scatter",
                     mode: "lines",
-                    name: `'${String(year).slice(2)}`,
+                    name: yearLabel,
                     x: clipped.map(r => toRefDate(year, r.day)),
                     y: clipped.map(r => r.cumulative),
                     customdata: clipped.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
-                    line: {
-                        color: isGreyed ? fadeColor(color, { opacity: greyOpacity }) : color,
-                        width: isActive ? 5 : (isGreyed ? 1 : defaultWidth),
-                    },
+                    line: { color, width: defaultWidth },
                     legendrank: idx,
-                    hovertemplate: `%{y}%{customdata}<extra>'${String(year).slice(2)}</extra>`,
+                    hovertemplate: `%{y}%{customdata}<extra>${yearLabel}</extra>`,
                 } as PlotData)
             } else if (isFaded && !isCurrentYear && filledRows.length > 0) {
                 // Faded/Full mode: solid + faded future traces
                 const solidRows = filledRows.filter(r => r.day <= dayOfYear)
                 const futureRows = filledRows.filter(r => r.day >= dayOfYear)
-                const yearLabel = `'${String(year).slice(2)}`
-                const baseWidth = isActive ? 5 : (isGreyed ? 1 : defaultWidth)
 
-                // Solid portion (up to today)
                 if (solidRows.length > 0) {
                     traces.push({
                         type: "scatter",
@@ -207,17 +208,13 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                         x: solidRows.map(r => toRefDate(year, r.day)),
                         y: solidRows.map(r => r.cumulative),
                         customdata: solidRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
-                        line: {
-                            color: isGreyed ? fadeColor(color, { opacity: greyOpacity }) : color,
-                            width: baseWidth,
-                        },
+                        line: { color, width: defaultWidth },
                         legendrank: idx,
                         legendgroup: yearLabel,
                         hoverinfo: 'none',
                     } as PlotData)
                 }
 
-                // Future portion (faded by effectiveFadeOpacity)
                 if (futureRows.length > 0) {
                     const futureColor = fadeColor(color, { opacity: effectiveFadeOpacity })
                     traces.push({
@@ -228,8 +225,8 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                         y: futureRows.map(r => r.cumulative),
                         customdata: futureRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
                         line: {
-                            color: isGreyed ? fadeColor(color, { opacity: greyOpacity * effectiveFadeOpacity }) : futureColor,
-                            width: Math.max(1, baseWidth - 1),
+                            color: futureColor,
+                            width: Math.max(1, defaultWidth - 1),
                             dash: effectiveFadeOpacity >= 1.0 ? 'solid' : futureDash,
                         },
                         legendrank: idx,
@@ -239,8 +236,6 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     } as PlotData)
                 }
             } else {
-                // Current year in faded mode, or YTD mode fallthrough
-                const yearLabel = `'${String(year).slice(2)}`
                 const useCustom = isFaded
                 traces.push({
                     type: "scatter",
@@ -249,10 +244,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                     x: filledRows.map(r => toRefDate(year, r.day)),
                     y: filledRows.map(r => r.cumulative),
                     customdata: filledRows.map(r => r.fatalities > 0 ? ` +${r.fatalities}` : ''),
-                    line: {
-                        color: isGreyed ? fadeColor(color, { opacity: greyOpacity }) : color,
-                        width: isActive ? 5 : (isGreyed ? 1 : defaultWidth),
-                    },
+                    line: { color, width: defaultWidth },
                     legendrank: idx,
                     legendgroup: useCustom ? yearLabel : undefined,
                     ...(useCustom
@@ -413,8 +405,66 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
         }
 
         return { data: traces, layout }
-    }, [ytdRows, activeYear, colorScale, plotColors, legendPosition, viewMode, effectiveFadeOpacity, greyOpacity, futureDash])
+    }, [ytdRows, colorScale, plotColors, legendPosition, viewMode, effectiveFadeOpacity, futureDash])
 
+
+    // Post-plot SVG fixups for pltly's hover/pin fade:
+    // 1. Mirror main-trace opacity onto each year's `showlegend:false` RoY
+    //    sibling (pltly's `applyFadeSolo` skips them, but the year group
+    //    should fade as a unit).
+    // 2. Bump the active line's stroke-width to match the prod visual
+    //    (active main: 5, active future: 4) — pltly only restyles
+    //    opacity, not width.
+    // Hooked into plotly's `plotly_afterplot` so we always run *after*
+    // every restyle paint.
+    const wrapRef = useRef<HTMLDivElement | null>(null)
+    useEffect(() => {
+        const wrap = wrapRef.current
+        if (!wrap) return
+        const plotDiv = wrap.querySelector('.js-plotly-plot') as any
+        if (!plotDiv?.on) return
+        const apply = () => {
+            if (!plotDiv?.data) return
+            const traceEls = wrap.querySelectorAll('.scatterlayer .trace.scatter')
+            // Pass 1: pick up each main trace's opacity (pltly already set).
+            const opByGroup = new Map<string, string>()
+            plotDiv.data.forEach((t: any, i: number) => {
+                if (t.showlegend === false) return
+                const g = t.legendgroup
+                if (!g) return
+                const op = (traceEls[i] as SVGElement | undefined)?.style.opacity
+                if (op) opByGroup.set(g, op)
+            })
+            // Is any group faded right now? If not, there's no active
+            // selection — leave widths at their base data values.
+            const anyFaded = [...opByGroup.values()].some(op => op !== '1')
+            // Pass 2: mirror to RoY siblings + bump active-trace width.
+            plotDiv.data.forEach((t: any, i: number) => {
+                const el = traceEls[i] as SVGElement | undefined
+                if (!el) return
+                const path = el.querySelector('path.js-line') as SVGPathElement | null
+                const groupOp = opByGroup.get(t.legendgroup ?? '')
+                const isActive = anyFaded && groupOp === '1'
+                if (t.showlegend === false && groupOp !== undefined) {
+                    el.style.opacity = groupOp
+                }
+                if (path) {
+                    const baseW = (t.line?.width as number | undefined) ?? 2
+                    if (isActive) {
+                        const isFuture = t.showlegend === false
+                        path.style.strokeWidth = isFuture ? '4px' : '5px'
+                    } else {
+                        path.style.strokeWidth = `${baseW}px`
+                    }
+                }
+            })
+        }
+        plotDiv.on('plotly_afterplot', apply)
+        apply()
+        return () => {
+            try { plotDiv.removeAllListeners?.('plotly_afterplot') } catch {}
+        }
+    }, [data])
 
     const isFadedMode = viewMode === 'full-faded' || viewMode === 'full'
     const customHover = useCustomHover({
@@ -439,15 +489,13 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
         <div>
             <h2 id={id}><a href={`#${id}`}>YTD Deaths</a></h2>
             <div className={css.subtitle}>Fatalities, 2001–present{regionLabel ? ` · ${regionLabel}` : county ? ` · ${county} County` : ''}</div>
-            <div style={{ position: 'relative' }}>
+            <div ref={wrapRef} style={{ position: 'relative' }}>
                 <PlotWrapper
                     key={viewMode}
                     id={id}
                     data={data}
                     layout={layout}
-
                     onActiveTrace={setActiveTrace}
-                    disableFade
                     {...(isFadedMode ? { onHover: customHover.handleHover, onUnhover: customHover.handleUnhover } : {})}
                 />
                 {isFadedMode && customHover.isActive && customHover.position && customHover.x != null && (() => {
