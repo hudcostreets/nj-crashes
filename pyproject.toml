@@ -19,6 +19,7 @@ dependencies = [
     "geopandas>=1.0",
     "geopy>=2.4",
     "GitPython>=3.1",
+    "h3>=4.0",
     "humanize>=4.12",
     "joblib>=1.5",
     "juq-py>=0.6.0",

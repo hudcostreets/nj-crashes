@@ -53,17 +53,38 @@ stay empty/disabled until the rerun completes.
 4. `dvx push www/public/njdot/map.dvc` — uploads new bundle to S3.
 5. Push the resulting commit (the `.dvc` md5 will have updated).
 
+### Rerun notes (2026-04-25)
+
+- `dvx run www/public/njdot/map.dvc` runs the cmd with cwd =
+  `www/public/njdot/`, but the cmd uses project-root-relative paths
+  (`njdot/data/crashes.parquet`, `www/public/njdot/map`). Workaround:
+  ran the three subcommands manually from the repo root, then
+  `dvx add -f www/public/njdot/map` to refresh the .dvc md5
+  (preserves `meta.computation`). Same pattern likely affects other
+  subdir stages (`crash-log.parquet.dvc`, etc.) — flagged for a
+  follow-up; not in this spec's scope.
+- `h3` was missing from `pyproject.toml` despite being imported in
+  `_emit_hex_aggregates`. Added (`h3>=4.0`); `uv.lock` updated.
+
 ## Size impact
 
 Adding PDO to point shards roughly **3×s** the row count of
 `by-year/{year}.parquet` and `by-year-county/{year}-{cc}.parquet`
-files. Estimated total bundle size:
-- Before: ~68 MB
-- After: ~110-130 MB
+files.
+
+Actual rerun (2026-04-25):
+- Before: ~70 MB (`51232694…`, 69,522,796 B)
+- After: **~241 MB** (`5200239a…`, 252,799,663 B) — well above the
+  pre-rerun 110-130 MB estimate. The 3× point multiplier was correct,
+  but the pre-existing `route`/`mp`/`sri` columns plus the new
+  `road`/`cross_street` strings carry meaningful size at 4M point
+  rows (~3.6× total bundle vs ~3× row count).
 
 Hex aggregates are unchanged in row count (PDO was already in `-H`).
 Adding `top_route` is a small string column with ~200 distinct values,
-dictionary-encoded — single-digit MB at most.
+dictionary-encoded — single-digit MB at most. Final breakdown:
+`by-year` 116 MB, `by-year-county` 120 MB, hex aggregates ~5 MB,
+counties+munis ~2 MB.
 
 ## Verification post-rerun
 
