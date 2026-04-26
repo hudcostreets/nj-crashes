@@ -13,7 +13,7 @@ import { HeatmapLayer } from "@deck.gl/aggregation-layers/typed"
 import type { PickingInfo } from "@deck.gl/core/typed"
 import type { FeatureCollection } from "geojson"
 import { useTouchPitch } from "./hooks/useTouchPitch"
-import { binIntoHexes, hexesToSegments, buildStackedHexLayer, Segment, StackedHex, H3_RADIUS_METERS } from "./StackedHexLayer"
+import { binIntoHexes, coarsenHexes, hexesToSegments, buildStackedHexLayer, Segment, StackedHex, H3_RADIUS_METERS } from "./StackedHexLayer"
 
 export type MapMode = "scatter" | "heatmap" | "hexbin"
 
@@ -464,7 +464,14 @@ export function CrashMap({
         // Pick the finest resolution that produces ≤ `maxHexes` hexes; bin
         // inline (single pass at each candidate resolution; stop when size
         // limit exceeded).
-        const hexes = prebinnedHexes ?? binIntoHexes(effectiveCrashes, effectiveHexRes)
+        // Detail mode bins fresh at `effectiveHexRes`. Statewide loads a
+        // single fixed-res prebin (e.g. r8) — when the zoom-driven target
+        // is coarser than the prebin, coarsen client-side via H3 parent
+        // (exact, lossless). Finer than the prebin: nothing we can do
+        // without raw rows; cells just render larger than ideal.
+        const hexes = prebinnedHexes
+            ? coarsenHexes(prebinnedHexes, effectiveHexRes)
+            : binIntoHexes(effectiveCrashes, effectiveHexRes)
         // Auto-scale bar heights based on the visible max count: when the
         // user filters to fatal-only (max ~5) we'd otherwise get pancake
         // bars vs the baseline fatal+injury view (max ~100). Keep the

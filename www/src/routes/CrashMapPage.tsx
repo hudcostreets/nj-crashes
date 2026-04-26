@@ -185,11 +185,14 @@ export default function CrashMapPage() {
     const [urlView, setUrlView] = useUrlState("v", viewParam)
     const [hexPxTarget, setHexPxTarget] = useUrlState("h", hexPxParam)
 
-    // For statewide views in hexbin mode, fetch pre-aggregated h3-r8 cells
-    // from the server (~2 MB vs 30 MB for 234K raw rows) and skip client-side
-    // binning. Everything else uses individual crash rows ("detail").
+    // Statewide hexbin: load raw fatal+injury rows (~6.5 MB for 5 yrs) and
+    // bin client-side at the picker's per-zoom resolution — same as
+    // county/muni detail mode. Avoids the uniform-grid artifact a fixed-
+    // resolution prebin produces when crashes are sparse relative to cell
+    // size. Falls back to r8 prebins only when PDO is on, since point
+    // shards don't carry pdo.
     const scale: CrashFilter["scale"] =
-        (cc === undefined && mode === "hexbin") ? "r8" : "detail"
+        (cc === undefined && mode === "hexbin" && severities.has("p")) ? "r8" : "detail"
 
     const filter: CrashFilter = useMemo(() => ({
         yearRange,

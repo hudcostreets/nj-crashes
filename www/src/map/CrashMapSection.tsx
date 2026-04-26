@@ -87,7 +87,8 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
     const [drawerOpen, setDrawerOpen] = useToolboxOpen(false)
     const [llz, setLlz] = useUrlState("llz", llzParam)
 
-    const scale: CrashFilter["scale"] = (cc === null && mode === "hexbin") ? "r8" : "detail"
+    const scale: CrashFilter["scale"] =
+        (cc === null && mode === "hexbin" && severities.has("p")) ? "r8" : "detail"
 
     const filter: CrashFilter = useMemo(() => ({
         yearRange,

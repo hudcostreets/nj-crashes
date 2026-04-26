@@ -13,7 +13,7 @@
  *  extrudes from `baseZ` up to `baseZ + height` — which gives us stacked
  *  segments with no shader mods.
  */
-import { latLngToCell, cellToBoundary } from "h3-js"
+import { latLngToCell, cellToBoundary, cellToParent, getResolution } from "h3-js"
 import { ColumnLayer } from "@deck.gl/layers/typed"
 import type { PickingInfo } from "@deck.gl/core/typed"
 
@@ -93,6 +93,51 @@ export function binIntoHexes<T extends StackableCrash>(
         }
     }
     return [...bins.values()]
+}
+
+/** Re-aggregate a finer-resolution hex set into coarser parents.
+ *  H3 parent containment is exact: every cell at res N has exactly one
+ *  parent at any res < N, so summing children → parents is lossless.
+ *  No-op when `targetRes >= sourceRes` (we can't synthesize finer data).
+ *  `topRoute` resolves by weighted vote — each child's topRoute counted
+ *  by that child's total. */
+export function coarsenHexes(hexes: StackedHex[], targetRes: number): StackedHex[] {
+    if (hexes.length === 0) return hexes
+    const sourceRes = getResolution(hexes[0].h3)
+    if (targetRes >= sourceRes) return hexes
+    const parents = new Map<string, StackedHex>()
+    const routeVotes = new Map<string, Map<string, number>>()
+    for (const h of hexes) {
+        const ph3 = cellToParent(h.h3, targetRes)
+        let p = parents.get(ph3)
+        if (!p) {
+            p = { h3: ph3, center: [0, 0], fatal: 0, pedInj: 0, otherInj: 0, pdo: 0, total: 0 }
+            parents.set(ph3, p)
+        }
+        p.fatal += h.fatal
+        p.pedInj += h.pedInj
+        p.otherInj += h.otherInj
+        p.pdo += h.pdo
+        p.total += h.total
+        if (h.topRoute) {
+            let m = routeVotes.get(ph3)
+            if (!m) { m = new Map(); routeVotes.set(ph3, m) }
+            m.set(h.topRoute, (m.get(h.topRoute) ?? 0) + h.total)
+        }
+    }
+    for (const p of parents.values()) {
+        const boundary = cellToBoundary(p.h3, true)
+        let lon = 0, lat = 0
+        for (const [ln, la] of boundary) { lon += ln; lat += la }
+        p.center = [lon / boundary.length, lat / boundary.length]
+        const m = routeVotes.get(p.h3)
+        if (m && m.size > 0) {
+            let topR = "", topN = 0
+            for (const [r, n] of m) { if (n > topN) { topR = r; topN = n } }
+            p.topRoute = topR
+        }
+    }
+    return [...parents.values()]
 }
 
 export function hexesToSegments(
