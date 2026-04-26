@@ -5,11 +5,11 @@ export default defineConfig({
   timeout: 30_000,
   retries: 0,
   use: {
-    baseURL: 'http://localhost:4006',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:4006',
     headless: true,
     viewport: { width: 1280, height: 900 },
   },
-  webServer: {
+  webServer: process.env.PLAYWRIGHT_BASE_URL ? undefined : {
     command: 'pnpm dev',
     port: 4006,
     reuseExistingServer: true,

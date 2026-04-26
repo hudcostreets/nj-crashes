@@ -4,8 +4,8 @@
  * Overlay: Deck.gl layers (Scatterplot / Heatmap / Hexbin) with controlled viewState.
  * Nav: right-click / ctrl-drag rotates; two-finger touch drag pitches (mobile).
  */
-import React, { useCallback, useEffect, useMemo, useState } from "react"
-import { Map, type MapRef } from "react-map-gl/maplibre"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { Map as MapGl, type MapRef } from "react-map-gl/maplibre"
 import "maplibre-gl/dist/maplibre-gl.css"
 import DeckGL from "@deck.gl/react/typed"
 import { GeoJsonLayer, ScatterplotLayer } from "@deck.gl/layers/typed"
@@ -160,6 +160,29 @@ function fmtSri(sri: string): string {
     if (!m) return `SRI ${sri}`
     const num = m[1]
     return SRI_PREFIX_NAMES[num] ?? `Route ${num}`
+}
+
+/** Perf instrumentation enabled when URL has `?perf=1`. Cheap (sync url
+ *  read; no logging on the hot path otherwise). Used by the e2e
+ *  `map-perf.spec.ts` to measure binning + layer-rebuild times. */
+function perfEnabled(): boolean {
+    if (typeof window === "undefined") return false
+    return new URLSearchParams(window.location.search).get("perf") === "1"
+}
+
+/** Module-scoped per-`crashes`-identity bin cache. Survives CrashMap
+ *  Suspense remounts (the component can mount → unmount → remount during
+ *  initial data load + URL settling, and a useRef-based cache would be
+ *  thrown away each cycle). WeakMap → entries GC when the source array is
+ *  no longer referenced. */
+const moduleBinCache: WeakMap<object, Map<number, StackedHex[]>> = new WeakMap()
+function getBinCache(src: object): Map<number, StackedHex[]> {
+    let m = moduleBinCache.get(src)
+    if (!m) {
+        m = new Map()
+        moduleBinCache.set(src, m)
+    }
+    return m
 }
 
 function fmtDate(d: Date | number): string {
@@ -383,6 +406,102 @@ export function CrashMap({
         [hexPxTarget, viewState.zoom, viewState.latitude],
     )
 
+    // Per-resolution bin cache: re-binning ~250k rows takes ~330ms on a fast
+    // M1, blocking the main thread. Cache by H3 resolution so once we've
+    // binned at r6 / r7 / r8, navigating zoom levels back through them is
+    // O(1). Cache lives at module scope (keyed by the crashes array
+    // reference via WeakMap) so it survives Suspense / data-loading
+    // remounts of CrashMap itself.
+    const binCache = getBinCache(effectiveCrashes)
+
+    // Hexes (memoized separately from `layers` so it doesn't re-run when
+    // unrelated layer deps — outline geojson, mode-tilt, etc. — change).
+    const hexes = useMemo<StackedHex[] | null>(() => {
+        if (mode !== "hexbin") return null
+        if (prebinnedHexes) {
+            const t0 = perfEnabled() ? performance.now() : 0
+            const out = coarsenHexes(prebinnedHexes, effectiveHexRes)
+            if (perfEnabled()) {
+                const w = window as any
+                w.__crashMapDebug = {
+                    ...(w.__crashMapDebug ?? {}),
+                    hexCount: out.length,
+                    resolution: effectiveHexRes,
+                    crashCount: prebinnedHexes.length,
+                    lastBinMs: performance.now() - t0,
+                }
+                console.log(`[perf] coarsenHexes r${effectiveHexRes}: ${(performance.now() - t0).toFixed(1)}ms `
+                    + `(${prebinnedHexes.length} prebins → ${out.length} hexes)`)
+            }
+            return out
+        }
+        const cache = binCache
+        let bins = cache.get(effectiveHexRes)
+        if (!bins) {
+            const t0 = perfEnabled() ? performance.now() : 0
+            bins = binIntoHexes(effectiveCrashes, effectiveHexRes)
+            cache.set(effectiveHexRes, bins)
+            if (perfEnabled()) {
+                const ms = performance.now() - t0
+                const w = window as any
+                w.__crashMapDebug = {
+                    ...(w.__crashMapDebug ?? {}),
+                    hexCount: bins.length,
+                    resolution: effectiveHexRes,
+                    crashCount: effectiveCrashes.length,
+                    lastBinMs: ms,
+                }
+                console.log(`[perf] binIntoHexes r${effectiveHexRes}: ${ms.toFixed(1)}ms `
+                    + `(${effectiveCrashes.length} rows → ${bins.length} hexes)`)
+            }
+        } else if (perfEnabled()) {
+            const w = window as any
+            w.__crashMapDebug = {
+                ...(w.__crashMapDebug ?? {}),
+                hexCount: bins.length,
+                resolution: effectiveHexRes,
+                lastBinMs: 0,  // cached
+            }
+        }
+        return bins
+    }, [mode, prebinnedHexes, effectiveCrashes, effectiveHexRes])
+
+    // Idle prewarm: after data is loaded, bin all common resolutions in
+    // chained idle callbacks. Subsequent zoom-driven res transitions hit the
+    // cache and are O(1). Skipped for prebin mode (we already have one
+    // canonical resolution; coarsenHexes is fast).
+    useEffect(() => {
+        if (mode !== "hexbin" || prebinnedHexes || effectiveCrashes.length === 0) return
+        if (perfEnabled()) console.log(`[perf] prewarm scheduled (${effectiveCrashes.length} rows)`)
+        const cache = binCache
+        const COMMON_RES = [6, 7, 8, 9, 10]
+        let i = 0
+        let cancelled = false
+        const ric: (cb: () => void) => any =
+            (window as any).requestIdleCallback ?? ((cb) => setTimeout(cb, 50))
+        const cic: (h: any) => void =
+            (window as any).cancelIdleCallback ?? ((h) => clearTimeout(h))
+        let handle: any
+        const tick = () => {
+            if (cancelled) return
+            // Skip resolutions already cached.
+            while (i < COMMON_RES.length && cache.has(COMMON_RES[i])) i++
+            if (i >= COMMON_RES.length) {
+                if (perfEnabled()) console.log(`[perf] prewarm done`)
+                return
+            }
+            const res = COMMON_RES[i++]
+            const t0 = perfEnabled() ? performance.now() : 0
+            cache.set(res, binIntoHexes(effectiveCrashes, res))
+            if (perfEnabled()) {
+                console.log(`[perf] prewarm r${res}: ${(performance.now() - t0).toFixed(1)}ms`)
+            }
+            handle = ric(tick)
+        }
+        handle = ric(tick)
+        return () => { cancelled = true; if (handle) cic(handle) }
+    }, [mode, prebinnedHexes, effectiveCrashes])
+
     const outlineLayers = useMemo(() => {
         const layers: any[] = []
         const lineRgb: [number, number, number] = theme === "dark" ? [109, 179, 242] : [0, 102, 204]
@@ -424,6 +543,7 @@ export function CrashMap({
     }, [outline, muniOutline, theme, onOutlineClick])
 
     const layers = useMemo(() => {
+        const t0 = perfEnabled() ? performance.now() : 0
         const base: any[] = [...outlineLayers]
         if (mode === "scatter") {
             return [...base,
@@ -469,21 +589,20 @@ export function CrashMap({
         // is coarser than the prebin, coarsen client-side via H3 parent
         // (exact, lossless). Finer than the prebin: nothing we can do
         // without raw rows; cells just render larger than ideal.
-        const hexes = prebinnedHexes
-            ? coarsenHexes(prebinnedHexes, effectiveHexRes)
-            : binIntoHexes(effectiveCrashes, effectiveHexRes)
+        if (!hexes) return base
+        const hexesArr = hexes
         // Auto-scale bar heights based on the visible max count: when the
         // user filters to fatal-only (max ~5) we'd otherwise get pancake
         // bars vs the baseline fatal+injury view (max ~100). Keep the
         // tallest bar near a target height of `elevationPerCount × 100`,
         // clamped so we don't inflate single-crash hexes wildly. Sqrt-
         // softened so the slider still has perceptible effect.
-        const maxCount = hexes.reduce((m, h) => Math.max(m, h.total), 1)
+        const maxCount = hexesArr.reduce((m, h) => Math.max(m, h.total), 1)
         const HEIGHT_TARGET = 100  // calibrated for typical fatal+injury max
         const autoScale = Math.min(8, Math.max(0.4, Math.sqrt(HEIGHT_TARGET / maxCount)))
         const effectiveElevation = elevationPerCount * autoScale
-        const segments = hexesToSegments(hexes, effectiveElevation)
-        return [...base,
+        const segments = hexesToSegments(hexesArr, effectiveElevation)
+        const result = [...base,
             buildStackedHexLayer({
                 id: "crashes-hex-stacked",
                 segments,
@@ -492,7 +611,12 @@ export function CrashMap({
                 onHover: (info) => { setHoverInfo(info); return false },
             }),
         ]
-    }, [effectiveCrashes, prebinnedHexes, mode, effectiveHexRes, elevationPerCount, outlineLayers])
+        if (perfEnabled()) {
+            const ms = performance.now() - t0
+            console.log(`[perf] layers: ${ms.toFixed(1)}ms (mode=${mode}, segments=${segments.length})`)
+        }
+        return result
+    }, [hexes, effectiveCrashes, mode, effectiveHexRes, elevationPerCount, outlineLayers])
 
     // Only bubble user-driven changes. DeckGL also echoes back programmatic
     // viewState updates (from the fit effect, mode-switch tilt, etc.) via
@@ -525,7 +649,7 @@ export function CrashMap({
                 onClick={onMapClick ? () => { onMapClick() } : undefined}
                 style={{ position: "absolute", inset: "0" }}
             >
-                <Map
+                <MapGl
                     ref={mapRef}
                     mapStyle={style}
                     maxPitch={MAX_PITCH}
