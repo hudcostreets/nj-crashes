@@ -24,6 +24,7 @@ import { lazy, Suspense } from "react"
 import type { CrashFilter } from "@/src/map/useCrashData"
 import { useCrashData } from "@/src/map/useCrashData"
 import { MAP_BASE_URL } from "@/src/map/config"
+import { bboxFromViewport, v2Enabled } from "@/src/map/v2"
 import type { MapMode, ViewState } from "@/src/map/CrashMap"
 import type { Crash } from "@/src/map/CrashMap"
 import type { StackedHex } from "@/src/map/StackedHexLayer"
@@ -186,6 +187,14 @@ export default function CrashMapPage() {
     const [urlView, setUrlView] = useUrlState("v", viewParam)
     const [hexPxTarget, setHexPxTarget] = useUrlState("h", hexPxParam)
 
+    // viewState is built before the filter so the v2 backend (when active)
+    // can include the viewport bbox in its shard-selection plan. Initial
+    // fit uses STATE_BBOX as a placeholder; once `result.manifest` loads,
+    // the per-county/muni bbox is applied via the snap effect below.
+    const [viewState, setViewState] = useState<ViewState>(() => (
+        urlView ?? fitBoundsToView(STATE_BBOX, mode === "hexbin" ? 45 : 0)
+    ))
+
     // Statewide hexbin: load raw fatal+injury rows (~6.5 MB for 5 yrs) and
     // bin client-side at the picker's per-zoom resolution — same as
     // county/muni detail mode. Avoids the uniform-grid artifact a fixed-
@@ -195,13 +204,27 @@ export default function CrashMapPage() {
     const scale: CrashFilter["scale"] =
         (cc === undefined && mode === "hexbin" && severities.has("p")) ? "r8" : "detail"
 
-    const filter: CrashFilter = useMemo(() => ({
-        yearRange,
-        ccs: cc ? [cc] : undefined,
-        mc,
-        severities,
-        scale,
-    }), [yearRange, cc, mc, severities, scale])
+    const filter: CrashFilter = useMemo(() => {
+        const base: CrashFilter = {
+            yearRange,
+            ccs: cc ? [cc] : undefined,
+            mc,
+            severities,
+            scale,
+        }
+        if (!v2Enabled()) return base
+        // Approximate the visible bbox from viewState. Width/height come
+        // from the window — the map fills the viewport on this route.
+        const w = typeof window !== "undefined" ? window.innerWidth : 1280
+        const h = typeof window !== "undefined" ? window.innerHeight : 900
+        return {
+            ...base,
+            viewport: bboxFromViewport(viewState.latitude, viewState.longitude, viewState.zoom, w, h, viewState.pitch),
+            viewportLat: viewState.latitude,
+            zoom: viewState.zoom,
+            hexPxTarget,
+        }
+    }, [yearRange, cc, mc, severities, scale, viewState, hexPxTarget])
 
     const result = useCrashData(filter)
     const [outline, setOutline] = useState<FeatureCollection | null>(null)
@@ -238,11 +261,9 @@ export default function CrashMapPage() {
         return STATE_BBOX
     }, [cc, mc, result.manifest])
 
-    // Internal viewState mirrors URL but updates at 60fps; URL writes
-    // debounced at 500ms to avoid spamming history.
-    const [viewState, setViewState] = useState<ViewState>(() => (
-        urlView ?? fitBoundsToView(initialBounds, mode === "hexbin" ? 45 : 0)
-    ))
+    // viewState was declared above the filter (see comment there). Internal
+    // state mirrors URL but updates at 60fps; URL writes are debounced at
+    // 500ms to avoid spamming history.
     // If the manifest arrives after mount AND we don't have a URL view,
     // snap to a proper fit of the new bounds (fixes e.g. /map/bergen where
     // initial default `initialBounds` is the statewide box but we got the
