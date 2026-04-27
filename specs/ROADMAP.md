@@ -26,10 +26,10 @@ gating the other today.
 
 1. **Map v2 Phase 2 cleanup** — see "Phase 2 follow-ups" in
    `map-h3-shard-rearchitecture.md`:
-   - Picker should snap to `hex-r6` single-file at low zoom or
-     high shard count (state-zoom-8 currently fetches 153 r7
-     shards = 2.5 MB; r6 single file is ~50 KB after pushdown).
-   - Drop `PREBIN_MIN_PX` floor in `pickHexResolutionForPixels`.
+   - ~~Picker snap to `hex-r6` single-file at low zoom or high
+     shard count.~~ Done — `pickFetchPlanV2` falls back to r6
+     when picked r7/r8/r9 would need >10 viewport-intersecting
+     shards.
    - Collapse `CrashFilter.scale: "detail"|"r8"|"r7"` into the
      v2 `FetchPlan` (now that `dataKind` exists, `scale` has
      no remaining callers).

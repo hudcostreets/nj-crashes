@@ -165,7 +165,7 @@ v1 + v2 coexist while client migrates: `map.dvc` outs grew 243 MB → 376 MB.
 
 5. `coarsenHexes` already handles "we have r9, want r7 visually" — so it stays useful when the planner gives us a finer prebin than the picker wants.
 
-6. The `pickHexResolutionForPixels` floor-at-`PREBIN_MIN_PX` hack is no longer needed once the planner can choose a coarser prebin.
+6. The planner can pick a coarser prebin directly (no `pickHexResolutionForPixels` floor needed; the function already considers all resolutions unfiltered).
 
 ## Migration / back-compat
 
@@ -231,7 +231,7 @@ Old layout stays under `www/public/njdot/map/` until v2 lands and the client swi
 | r9   | ~1140 ft           | 26 acres  | a building cluster           |
 | r10  | ~432 ft            | 3.7 acres | a single building            |
 
-Rough zoom mapping: r6 ≈ z9–10, r7 ≈ z11–12, r8 ≈ z13–14, r9 ≈ z15+. `pickHexResolutionForPixels` already does this comparison on a log2 scale; planner can reuse it but no longer needs the `PREBIN_MIN_PX` floor.
+Rough zoom mapping: r6 ≈ z9–10, r7 ≈ z11–12, r8 ≈ z13–14, r9 ≈ z15+. `pickHexResolutionForPixels` already does this comparison on a log2 scale; planner can reuse it.
 
 ### Largest point shards (for client perf budget)
 
@@ -264,7 +264,6 @@ The v2 data is already live at `https://nj-crashes.s3.amazonaws.com/njdot/map/v2
 
 Phase 2 starting points:
 - `www/src/map/useCrashData.ts` — replace `CrashFilter.scale: "detail"|"r8"|"r7"` with `FetchPlan` (see "Client" section above).
-- `www/src/map/CrashMap.tsx:135` (`pickHexResolutionForPixels`) — remove the `PREBIN_MIN_PX` floor (line ~404), let the planner pick coarser prebins instead.
 - New util: `pickFetchPlan(bbox, zoom, severities, manifest) → FetchPlan` and `visibleShards(bbox, manifest)`.
 - Manifest fetch: `${MAP_BASE_URL}/v2/manifest.v2.json` (toggle behind a feature flag for one deploy).
 
@@ -289,10 +288,10 @@ Verified bytes (instrumented `fetch` wrapper distinguishing HEAD vs GET 200/206)
 2. **Hex shards (r7/r8/r9) row groups are NOT year-sorted.** **Resolved**: `_hex_aggregate` now `sort_values(["year", "h3"])` before write. Hex shards with ≥2 RGs (the 26 largest r9 shards, 2 r8, 0 r7, plus the single hex-r6 file with 5 RGs) now have year-bounded RG stats, so `canSkipRowGroup` prunes year-out-of-range RGs. Smaller shards remain single-RG (file size 50–150 KB makes pruning irrelevant).
 3. **`points/{cell}.parquet` files include all 19 columns** — including `case`, `geocode_src`, `cross_street`, `road`, `route`, `sri`, `mp`. Client projects to a 10-column subset (`POINT_COLUMNS = [lat, lon, severity, dt, tk, ti, pk, pi, tv, … ]`) for typical render+tooltip needs. Tooltips needing `road`/`route`/`cross_street` can refetch with a wider projection; current implementation skips those entirely. *No backend change needed.*
 
-### Phase 2 follow-ups (FE-side, not yet done)
+### Phase 2 follow-ups (FE-side)
 
-- **Picker snaps to fine prebins at low zoom.** `pickFetchPlanV2` matches H3 cell-edge to `hexPxTarget * mppx`. Default `hexPxTarget=1.2 (px)` is fine at street zoom but biases toward r8/r9 statewide. Should snap to r6 single-file when (a) zoom ≤ 9 OR (b) visible-shard count crosses a threshold. Needs to be a richer planner pass, not just nearest-edge match.
-- **Drop `PREBIN_MIN_PX` floor in `pickHexResolutionForPixels`** (`CrashMap.tsx:135` per spec). Once the planner above can choose r6 directly, the floor becomes dead weight.
+- **Picker snaps to fine prebins at low zoom.** **Resolved**: `pickFetchPlanV2` now falls back to `hex_r6` single-file (~400 KB raw, ~50 KB after pushdown) when the picked r7/r8/r9 prebin would require more than `maxHexShards = 10` viewport-intersecting shards. State-zoom-8 used to fan out across 154 r7 shards (~2.5 MB + ~3000 range GETs); now collapses to one parquet. Fine-grained prebins remain in play whenever the viewport is small enough that ≤10 r5 parents intersect.
+- **Note on `PREBIN_MIN_PX`**: earlier spec drafts referenced a floor in `pickHexResolutionForPixels` to be dropped — the floor was never landed (the function already iterates r5–r13 unfiltered), so no code change needed.
 - **Collapse `CrashFilter.scale: "detail"|"r8"|"r7"` into the v2 `FetchPlan`.** Both v1 and v2 paths still coexist; once v1 is retired (Phase 3) the union narrows.
 - **Severity filter pushdown on `points/`** — `severity` is a string column, possibly worth indexing for `severity ∈ {f, i}` queries that exclude PDO. Marginal; defer until profiling.
 

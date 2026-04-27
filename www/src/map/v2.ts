@@ -172,6 +172,14 @@ export type PickFetchPlanArgs = {
      *  fetch is ~600 KB – 2 MB. Cap = 2 keeps worst-case under ~4 MB on
      *  the dense urban corridor (Newark/Hudson). */
     maxPointShards?: number
+    /** When the chosen r7/r8/r9 prebin would require more than this many
+     *  shards, fall back to the r6 single-file (~400 KB raw, ~50 KB after
+     *  column + year-range pushdown). 154 r7 shards across NJ ≈ 2.5 MB +
+     *  3000 range GETs; r6 single-file is one parquet with a handful of
+     *  range GETs. Threshold of 30 keeps city-zoom views (Newark/Hudson
+     *  z12: ~12 visible shards) on fine prebins while still folding wide
+     *  metro/statewide views (≥50% of NJ visible) into the single file. */
+    maxHexShards?: number
 }
 
 export function pickFetchPlanV2(args: PickFetchPlanArgs): FetchPlan {
@@ -184,6 +192,7 @@ export function pickFetchPlanV2(args: PickFetchPlanArgs): FetchPlan {
         hexPxTarget,
         pointZoomThreshold = 11,
         maxPointShards = 2,
+        maxHexShards = 30,
     } = args
 
     if (zoom >= pointZoomThreshold) {
@@ -211,6 +220,12 @@ export function pickFetchPlanV2(args: PickFetchPlanArgs): FetchPlan {
     }
     const artifact = `hex_r${resolution}` as "hex_r7" | "hex_r8" | "hex_r9"
     const shards = visibleShardsV2(viewport, manifest, artifact)
+    // High-shard-count fallback: viewport spans many r5 parents (e.g.
+    // statewide view at z8) → r6 single-file is cheaper in bytes AND in
+    // round-trips than fanning out across N×r7+ shards.
+    if (shards.length > maxHexShards) {
+        return { kind: "hex", res: 6, shards: null }
+    }
     return { kind: "hex", res: resolution, shards }
 }
 
