@@ -30,7 +30,7 @@ SHARD_RES = 5
 HEX_RESOLUTIONS = (6, 7, 8, 9)
 
 POINT_COLS_OUT = [
-    "dt", "cc", "mc", "case",
+    "dt", "year", "cc", "mc", "case",
     "tk", "ti", "pk", "pi", "tv",
     "severity", "road", "cross_street", "route", "mp", "sri",
     "lat", "lon", "geocode_src",
@@ -131,7 +131,7 @@ def _hex_aggregate(df: pd.DataFrame, res: int) -> pd.DataFrame:
     grouped["cc"] = grouped["cc"].astype("Int8")
     grouped["mc"] = grouped["mc"].astype("Int16")
     grouped["h3"] = grouped["h3"].astype("string")
-    return grouped[HEX_COLS_OUT]
+    return grouped[HEX_COLS_OUT].sort_values(["year", "h3"], kind="mergesort").reset_index(drop=True)
 
 
 def _emit_hex(df: pd.DataFrame, outdir: Path) -> dict:
