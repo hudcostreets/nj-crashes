@@ -10,6 +10,7 @@ import HudsonDiffs from './routes/HudsonDiffs'
 import OgImage from './routes/OgImage'
 import MatchReview from './routes/MatchReview'
 import CrashMapPage from './routes/CrashMapPage'
+import CrashDetailPage from './routes/CrashDetailPage'
 import { ThemeToggle } from './components/ThemeToggle'
 import { GeoFilterProvider } from './GeoFilterContext'
 import { DuckDbProvider } from './lib/DuckDbContext'
@@ -60,6 +61,7 @@ export default function App() {
                 {/* `/c/` form for disambiguation in case we add other /map/* sub-routes later */}
                 <Route path="/map/c/:county" element={<CrashMapPage />} />
                 <Route path="/map/c/:county/:muni" element={<CrashMapPage />} />
+                <Route path="/crash/:year/:cc/:mc/:case" element={<CrashDetailPage />} />
                 <Route path="*" element={<NotFound />} />
             </Routes>
             <Omnibar />

@@ -4,6 +4,7 @@
  * Endpoints:
  *   GET /njdot/crashes?cc=&mc=&before=&limit=&offset=
  *   GET /njdot/crashes/count?cc=&mc=&before=
+ *   GET /njdot/crash?year=&cc=&mc=&case=
  *   GET /njdot/vehicles?crash_ids=1,2,3
  *   GET /njdot/occupants?crash_ids=1,2,3
  *   GET /njdot/pedestrians?crash_ids=1,2,3
@@ -110,6 +111,36 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 		const sql = `SELECT count(*) as total FROM crashes WHERE ${clause}`
 		const result = await env.CRASHES_DB.prepare(sql).bind(...params).all()
 		return Response.json(result.results, { headers: corsHeaders(env) })
+	}
+
+	// NJDOT single crash by natural PK (year, cc, mc, case) — joins V/O/P
+	// in one round-trip. `case` is URL-decoded by the URL parser.
+	if (path === "/njdot/crash") {
+		const year = intParam(url, "year")
+		const cc = intParam(url, "cc")
+		const mc = intParam(url, "mc")
+		const caseStr = strParam(url, "case")
+		if (year === null || cc === null || mc === null || !caseStr) {
+			return Response.json({ error: "year, cc, mc, case all required" }, { status: 400, headers: corsHeaders(env) })
+		}
+		const crashSql = `SELECT * FROM crashes WHERE year = ?1 AND cc = ?2 AND mc = ?3 AND "case" = ?4 LIMIT 1`
+		const crash = await env.CRASHES_DB.prepare(crashSql).bind(year, cc, mc, caseStr).first()
+		if (!crash) {
+			return Response.json({ error: "not found" }, { status: 404, headers: corsHeaders(env) })
+		}
+		const id = (crash as { id: number }).id
+		const [vehicles, occupants, pedestrians] = await Promise.all([
+			env.VEHICLES_DB.prepare(
+				"SELECT id, crash_id, vn, make, model, vy, color, type, damage, damage_loc, impact_loc, departure, dir, hit_run FROM vehicles WHERE crash_id = ?1 ORDER BY vn",
+			).bind(id).all().then(r => r.results),
+			env.OCCUPANTS_DB.prepare(
+				"SELECT crash_id, vehicle_id, pos, condition, eject, age, sex, inj_loc, inj_type FROM occupants WHERE crash_id = ?1 ORDER BY vehicle_id, pos",
+			).bind(id).all().then(r => r.results),
+			env.PEDESTRIANS_DB.prepare(
+				"SELECT crash_id, pn, condition, age, sex, inj_loc, inj_type, cyclist FROM pedestrians WHERE crash_id = ?1 ORDER BY cyclist, pn",
+			).bind(id).all().then(r => r.results),
+		])
+		return Response.json({ crash, vehicles, occupants, pedestrians }, { headers: corsHeaders(env) })
 	}
 
 	// NJDOT vehicles/occupants/pedestrians by crash_ids
