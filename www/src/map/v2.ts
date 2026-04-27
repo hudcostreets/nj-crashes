@@ -30,20 +30,19 @@ export type MapManifestV2 = {
      *  client-side `cellToBoundary` on every pan). */
     shard_bboxes: Record<string, Bbox>
     row_counts?: Record<string, number>
-    /** Legacy fields kept for parity with v1 manifest consumers. */
+    /** Legacy fields carried over from the v1 manifest — used by
+     *  non-spatial UIs (year-range slider bounds, county/muni bbox
+     *  fits, geocode-source breakdowns). */
     county_bboxes?: Record<number, Bbox>
     muni_bboxes?: Record<string, Bbox>
+    by_geocode_src?: Record<string, number>
+    per_year?: Record<string, number>
+    per_year_county?: Record<string, number>
 }
 
 export type FetchPlan =
     | { kind: "hex"; res: 6 | 7 | 8 | 9; shards: string[] | null }
     | { kind: "points"; shards: string[] }
-
-/** Read once per session: did the user request v2? */
-export function v2Enabled(): boolean {
-    if (typeof window === "undefined") return false
-    return new URLSearchParams(window.location.search).get("v2") === "1"
-}
 
 const MANIFEST_V2_URL = `${MAP_BASE_URL}/v2/manifest.v2.json`
 
@@ -155,15 +154,21 @@ function pickHexRes(pxTarget: number, zoom: number, lat: number): number {
  *  - Otherwise → prebin at the resolution closest to a target pixel size
  */
 export type PickFetchPlanArgs = {
-    viewport: Bbox
-    zoom: number
+    /** Visible bbox `[w,s,e,n]`. Optional: when omitted (e.g. an
+     *  embedded section without live viewport state), the picker
+     *  returns the r6 single-file (~400 KB raw, ~50 KB after pushdown)
+     *  as a no-viewport-aware fallback. */
+    viewport?: Bbox
+    /** Optional alongside viewport. When viewport is omitted, these
+     *  are unused. */
+    zoom?: number
     /** Center latitude — for meters-per-pixel calc. */
-    lat: number
+    lat?: number
     severities: Set<"f" | "i" | "p">
     manifest: MapManifestV2
     /** Pixel target driving the prebin resolution choice. Mirrors
-     *  `hexPxTarget` in `CrashMap`. */
-    hexPxTarget: number
+     *  `hexPxTarget` in `CrashMap`. Optional alongside viewport. */
+    hexPxTarget?: number
     /** Above this zoom, prefer raw points when available. */
     pointZoomThreshold?: number
     /** Cap how many `points/{cell}.parquet` shards we'll fetch in a single
@@ -194,6 +199,12 @@ export function pickFetchPlanV2(args: PickFetchPlanArgs): FetchPlan {
         maxPointShards = 2,
         maxHexShards = 30,
     } = args
+
+    // No viewport → callers (e.g. `CrashMapSection` embeds without live
+    // viewState) just want a coarse-but-cheap statewide aggregate.
+    if (!viewport || zoom === undefined || lat === undefined || hexPxTarget === undefined) {
+        return { kind: "hex", res: 6, shards: null }
+    }
 
     if (zoom >= pointZoomThreshold) {
         const ptShards = visibleShardsV2(viewport, manifest, "points")

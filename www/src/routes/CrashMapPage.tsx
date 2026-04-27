@@ -24,7 +24,7 @@ import { lazy, Suspense } from "react"
 import type { CrashFilter } from "@/src/map/useCrashData"
 import { useCrashData } from "@/src/map/useCrashData"
 import { MAP_BASE_URL } from "@/src/map/config"
-import { bboxFromViewport, v2Enabled } from "@/src/map/v2"
+import { bboxFromViewport } from "@/src/map/v2"
 import type { MapMode, ViewState } from "@/src/map/CrashMap"
 import type { Crash } from "@/src/map/CrashMap"
 import type { StackedHex } from "@/src/map/StackedHexLayer"
@@ -195,25 +195,18 @@ export default function CrashMapPage() {
         urlView ?? fitBoundsToView(STATE_BBOX, mode === "hexbin" ? 45 : 0)
     ))
 
-    // PDO data is only accessible in v1's r8 prebins (statewide + hexbin)
-    // or in v2 (where hex prebins / point shards both carry it). Used to
-    // disable the PDO checkbox when neither path is selectable.
-    const pdoSelectable = v2Enabled() || (cc === undefined && mode === "hexbin")
-
+    // PDO data is always available in v2 (hex prebins + point shards
+    // both carry it), so the PDO checkbox is unconditionally enabled now.
     const filter: CrashFilter = useMemo(() => {
-        const base: CrashFilter = {
-            yearRange,
-            ccs: cc ? [cc] : undefined,
-            mc,
-            severities,
-        }
-        if (!v2Enabled()) return base
         // Approximate the visible bbox from viewState. Width/height come
         // from the window — the map fills the viewport on this route.
         const w = typeof window !== "undefined" ? window.innerWidth : 1280
         const h = typeof window !== "undefined" ? window.innerHeight : 900
         return {
-            ...base,
+            yearRange,
+            ccs: cc ? [cc] : undefined,
+            mc,
+            severities,
             viewport: bboxFromViewport(viewState.latitude, viewState.longitude, viewState.zoom, w, h, viewState.pitch),
             viewportLat: viewState.latitude,
             zoom: viewState.zoom,
@@ -369,7 +362,6 @@ export default function CrashMapPage() {
                 elevationPerCount={elevationPerCount} setElevationPerCount={setElevationPerCount}
                 pitch={viewState.pitch}
                 setPitch={p => setViewState(v => ({ ...v, pitch: p }))}
-                pdoSelectable={pdoSelectable}
                 total={result.status === "ready" ? result.data.length : undefined}
                 manifest={result.manifest}
                 theme={actualTheme}
@@ -394,7 +386,6 @@ function ControlDrawer({
     hexPxTarget, setHexPxTarget,
     elevationPerCount, setElevationPerCount,
     pitch, setPitch,
-    pdoSelectable,
     total, manifest, theme,
 }: {
     open: boolean
@@ -413,7 +404,6 @@ function ControlDrawer({
     setElevationPerCount: (n: number) => void
     pitch: number
     setPitch: (n: number) => void
-    pdoSelectable: boolean
     total?: number
     manifest: MapManifest | undefined
     theme: "light" | "dark"
@@ -504,23 +494,16 @@ function ControlDrawer({
                 {(["f", "i", "p"] as const).map(s => {
                     const checked = severities.has(s)
                     const label = s === "f" ? "Fatal" : s === "i" ? "Injury" : "PDO"
-                    // PDO data only ships in the statewide hex aggregates; the
-                    // detail/point shards (used for county+muni and all
-                    // non-hexbin views) exclude it.
-                    const disabled = s === "p" && !pdoSelectable
                     return (
                         <label key={s}
-                            title={disabled ? "PDO only available in statewide + Hexbin mode" : undefined}
                             style={{
                                 display: "inline-flex", alignItems: "center", gap: 3,
-                                cursor: disabled ? "not-allowed" : "pointer",
-                                opacity: disabled ? 0.5 : 1,
+                                cursor: "pointer",
                             }}
                         >
                             <input
                                 type="checkbox"
-                                checked={checked && !disabled}
-                                disabled={disabled}
+                                checked={checked}
                                 onChange={() => {
                                     const next = new Set(severities)
                                     if (checked) next.delete(s); else next.add(s)
@@ -577,7 +560,7 @@ function ControlDrawer({
             {total !== undefined && (
                 <div style={{ borderTop: `1px solid ${subtleBorder}`, paddingTop: 8, fontSize: "0.8em" }}>
                     <div><b>{total.toLocaleString()}</b> crashes plotted</div>
-                    {manifest && (
+                    {manifest?.by_geocode_src && (
                         <div style={{ opacity: 0.75, marginTop: 2 }}>
                             geocode: {manifest.by_geocode_src.interpolated?.toLocaleString() ?? 0} interpolated,{" "}
                             {manifest.by_geocode_src.original?.toLocaleString() ?? 0} original

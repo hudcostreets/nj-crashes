@@ -16,6 +16,9 @@ import { useTheme } from "@/src/contexts/ThemeContext"
 import type { FeatureCollection } from "geojson"
 import { FiMaximize2 } from "react-icons/fi"
 import { useToolboxOpen } from "@/src/map/useToolboxOpen"
+import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
+import type { MapManifestV2 } from "@/src/map/v2"
+import { fitBoundsToView } from "@/src/map/CrashMap"
 
 const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m.CrashMap })))
 
@@ -88,12 +91,45 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
     const [drawerOpen, setDrawerOpen] = useToolboxOpen(false)
     const [llz, setLlz] = useUrlState("llz", llzParam)
 
-    const filter: CrashFilter = useMemo(() => ({
-        yearRange,
-        ccs: cc !== null ? [cc] : undefined,
-        mc: mc ?? undefined,
-        severities,
-    }), [yearRange, cc, mc, severities])
+    // Pre-fetch the v2 manifest so we can derive a sensible initial
+    // viewport from the county/muni bbox before the user has moved the
+    // map. Otherwise the picker's no-viewport fallback (r6 single-file)
+    // gives us only ~14 hexes for Hudson — not granular enough.
+    const [v2Manifest, setV2Manifest] = useState<MapManifestV2 | null>(null)
+    useEffect(() => {
+        loadManifestV2().then(m => { if (m) setV2Manifest(m) }).catch(() => {})
+    }, [])
+
+    // Approximate the section's visible viewport. Priority:
+    //   1. live `llz` (round-tripped from CrashMap's viewState via URL)
+    //   2. synthetic viewState derived from county/muni bbox via
+    //      `fitBoundsToView` (so the initial fetch picks fine prebins
+    //      matching the county-zoomed view, not the statewide-coarse r6)
+    //   3. no viewport → picker falls back to r6 single-file
+    const filter: CrashFilter = useMemo(() => {
+        const base: CrashFilter = {
+            yearRange,
+            ccs: cc !== null ? [cc] : undefined,
+            mc: mc ?? undefined,
+            severities,
+        }
+        const w = typeof window !== "undefined" ? Math.min(window.innerWidth, 1280) : 1280
+        const h = 480
+        let view = llz
+        if (!view && v2Manifest && cc !== null) {
+            const bbox = (mc !== null ? v2Manifest.muni_bboxes?.[`${cc}-${mc}`] : null)
+                ?? v2Manifest.county_bboxes?.[cc]
+            if (bbox) view = fitBoundsToView(bbox, w, h, mode === "hexbin" ? 45 : 0)
+        }
+        if (!view) return base
+        return {
+            ...base,
+            viewport: bboxFromViewport(view.latitude, view.longitude, view.zoom, w, h, view.pitch),
+            viewportLat: view.latitude,
+            zoom: view.zoom,
+            hexPxTarget,
+        }
+    }, [yearRange, cc, mc, severities, llz, hexPxTarget, mode, v2Manifest])
 
     const result = useCrashData(filter)
     const [outline, setOutline] = useState<FeatureCollection | null>(null)
@@ -374,7 +410,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
             )}
             <Legend
                 theme={actualTheme}
-                pdoEnabled={(cc === null && mode === "hexbin" && severities.has("p")) || (result.manifest?.point_severities?.includes("p") ?? false)}
+                pdoEnabled={severities.has("p")}
                 severities={severities}
                 onToggle={toggleSeverity}
             />
