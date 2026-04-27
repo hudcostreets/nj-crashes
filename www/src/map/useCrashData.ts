@@ -193,11 +193,16 @@ async function aggregateHexes(rows: HexRow[], f: CrashFilter): Promise<StackedHe
     return kept
 }
 
-/** Load crash-map data for the given filter. */
+export type DataKind = "points" | "hex"
+
+/** Load crash-map data for the given filter. `dataKind` discriminates
+ *  whether `data` is raw `Crash[]` or pre-aggregated `StackedHex[]`;
+ *  the v2 planner can return `hex` even when `filter.scale === "detail"`,
+ *  so callers must branch on `dataKind` (not `scale`). */
 export function useCrashData(filter: CrashFilter | null):
-    | { status: "loading"; data?: undefined; error?: undefined; manifest?: MapManifest }
-    | { status: "ready"; data: Crash[] | StackedHex[]; manifest: MapManifest; error?: undefined }
-    | { status: "error"; error: string; data?: undefined; manifest?: MapManifest } {
+    | { status: "loading"; data?: undefined; dataKind?: undefined; error?: undefined; manifest?: MapManifest }
+    | { status: "ready"; data: Crash[] | StackedHex[]; dataKind: DataKind; manifest: MapManifest; error?: undefined }
+    | { status: "error"; error: string; data?: undefined; dataKind?: undefined; manifest?: MapManifest } {
     const [manifest, setManifest] = useState<MapManifest | null>(null)
     const [manifestErr, setManifestErr] = useState<string | null>(null)
     const [manifestV2, setManifestV2] = useState<MapManifestV2 | null>(null)
@@ -269,9 +274,10 @@ export function useCrashData(filter: CrashFilter | null):
     const [state, setState] = useState<{
         key: string | null
         data: Crash[] | StackedHex[]
+        dataKind: DataKind
         status: "loading" | "ready" | "error"
         error?: string
-    }>({ key: null, data: [], status: "loading" })
+    }>({ key: null, data: [], dataKind: "points", status: "loading" })
 
     useEffect(() => {
         if (!filter || !filterKey) return
@@ -285,43 +291,27 @@ export function useCrashData(filter: CrashFilter | null):
             try {
                 if (v2Active && v2Plan) {
                     const [y0, y1] = filter.yearRange
+                    // Year-range row-group pushdown. Both points and
+                    // hex shards have a `year` column with year-bounded
+                    // RG stats (commit `06a5b26`).
+                    const yearFilter = { year: { $gte: y0, $lte: y1 } }
                     if (v2Plan.kind === "points") {
-                        // Points shards have no `year` column but row
-                        // groups are dt-sorted (each ~1 year). Convert
-                        // the year range to epoch-minutes so hyparquet
-                        // can prune row groups via dt min/max stats.
-                        const dtMin = Math.floor(Date.UTC(y0, 0, 1) / 60_000)
-                        const dtMax = Math.floor(Date.UTC(y1 + 1, 0, 1) / 60_000) - 1
-                        const dtFilter = { dt: { $gte: dtMin, $lte: dtMax } }
                         const urls = v2Plan.shards.map(s => shardUrlV2("points", s))
                         const batches = await Promise.all(urls.map(p =>
-                            fetchParquet<Crash>(p, POINT_COLUMNS, dtFilter).catch(() => [] as Crash[]),
+                            fetchParquet<Crash>(p, POINT_COLUMNS, yearFilter).catch(() => [] as Crash[]),
                         ))
-                        // Belt-and-suspenders dt guard for rows that
-                        // survived in not-fully-pruned RGs, then
-                        // cc/mc/severity post-filter.
                         const merged = applyPostFilters(batches.flat(), filter)
-                            .filter(r => {
-                                const dt = (r as any).dt as number | undefined
-                                return dt === undefined || (dt >= dtMin && dt <= dtMax)
-                            })
-                        if (!cancelled) setState({ key: filterKey, data: merged, status: "ready" })
+                        if (!cancelled) setState({ key: filterKey, data: merged, dataKind: "points", status: "ready" })
                     } else {
-                        // Hex shards have `year` but row groups are NOT
-                        // year-sorted today (each RG spans 2001-2023),
-                        // so pushdown can't prune. Skip the filter and
-                        // rely on `aggregateHexes`'s client-side year
-                        // skip. Per-shard hex files are 50-150 KB —
-                        // unfiltered fetch is fine.
                         const artifact = (v2Plan.res === 6 ? "hex_r6" : `hex_r${v2Plan.res}`) as "hex_r6" | "hex_r7" | "hex_r8" | "hex_r9"
                         const urls = v2Plan.shards
                             ? v2Plan.shards.map(s => shardUrlV2(artifact, s))
                             : [shardUrlV2(artifact, null)]
                         const batches = await Promise.all(urls.map(p =>
-                            fetchParquet<HexRow>(p, HEX_COLUMNS).catch(() => [] as HexRow[]),
+                            fetchParquet<HexRow>(p, HEX_COLUMNS, yearFilter).catch(() => [] as HexRow[]),
                         ))
                         const kept = await aggregateHexes(batches.flat(), filter)
-                        if (!cancelled) setState({ key: filterKey, data: kept, status: "ready" })
+                        if (!cancelled) setState({ key: filterKey, data: kept, dataKind: "hex", status: "ready" })
                     }
                     return
                 }
@@ -332,17 +322,17 @@ export function useCrashData(filter: CrashFilter | null):
                         fetchParquet<Crash>(p).catch(() => [] as Crash[]),
                     ))
                     const merged = applyPostFilters(batches.flat(), filter)
-                    if (!cancelled) setState({ key: filterKey, data: merged, status: "ready" })
+                    if (!cancelled) setState({ key: filterKey, data: merged, dataKind: "points", status: "ready" })
                 } else {
                     const batches = await Promise.all(paths.map(p =>
                         fetchParquet<HexRow>(p).catch(() => [] as HexRow[]),
                     ))
                     const kept = await aggregateHexes(batches.flat(), filter)
-                    if (!cancelled) setState({ key: filterKey, data: kept, status: "ready" })
+                    if (!cancelled) setState({ key: filterKey, data: kept, dataKind: "hex", status: "ready" })
                 }
             } catch (e) {
                 if (!cancelled) {
-                    setState({ key: filterKey, data: [], status: "error", error: String(e) })
+                    setState({ key: filterKey, data: [], dataKind: "points", status: "error", error: String(e) })
                 }
             }
         })()
@@ -353,5 +343,5 @@ export function useCrashData(filter: CrashFilter | null):
     if (!manifest) return { status: "loading" }
     if (state.status === "loading") return { status: "loading", manifest }
     if (state.status === "error") return { status: "error", error: state.error ?? "unknown", manifest }
-    return { status: "ready", data: state.data, manifest }
+    return { status: "ready", data: state.data, dataKind: state.dataKind, manifest }
 }

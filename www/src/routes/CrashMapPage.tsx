@@ -316,7 +316,7 @@ export default function CrashMapPage() {
             )}
             {result.status === "ready" && (
                 <Suspense fallback={<div style={{ padding: "1em" }}>Loading map…</div>}>
-                    {scale === "detail" ? (
+                    {result.dataKind === "points" ? (
                         <CrashMap
                             crashes={result.data as Crash[]}
                             outline={outline ?? undefined}

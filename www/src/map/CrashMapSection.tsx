@@ -209,7 +209,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
             {result.status === "loading" && <LoadingOverlay theme={actualTheme} />}
             {result.status === "ready" && (
                 <Suspense fallback={<LoadingOverlay theme={actualTheme} />}>
-                    {scale === "detail" ? (
+                    {result.dataKind === "points" ? (
                         <CrashMap
                             crashes={result.data as Crash[]}
                             outline={outline ?? undefined}
