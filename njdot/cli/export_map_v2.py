@@ -221,6 +221,35 @@ def export_map_v2(outdir, severities, hex_severities, years):
         "hex_r9": sorted(hex_counts["r9"].keys()),
     }
 
+    # Per-county / per-muni bboxes for fit-bounds (1st–99th percentile +5% pad,
+    # same convention as v1). Keep the same key types so v1 and v2 manifests
+    # are interchangeable for these fields.
+    def _bbox(sub):
+        lat_lo, lat_hi = sub["lat"].quantile([0.01, 0.99])
+        lon_lo, lon_hi = sub["lon"].quantile([0.01, 0.99])
+        dlat = (lat_hi - lat_lo) * 0.05
+        dlon = (lon_hi - lon_lo) * 0.05
+        return [
+            float(lon_lo - dlon), float(lat_lo - dlat),
+            float(lon_hi + dlon), float(lat_hi + dlat),
+        ]
+    county_bboxes: dict[int, list[float]] = {}
+    muni_bboxes: dict[str, list[float]] = {}
+    per_year: dict[int, int] = {}
+    per_year_county: dict[str, int] = {}
+    for cc, sub in base.groupby("cc"):
+        if len(sub) < 3:
+            continue
+        county_bboxes[int(cc)] = _bbox(sub)
+        for mc, msub in sub.groupby("mc"):
+            if len(msub) < 3:
+                continue
+            muni_bboxes[f"{int(cc)}-{int(mc)}"] = _bbox(msub)
+    for y, sub in base.groupby("year"):
+        per_year[int(y)] = int(len(sub))
+        for cc, ccsub in sub.groupby("cc"):
+            per_year_county[f"{int(y)}-{int(cc):02d}"] = int(len(ccsub))
+
     year_range = [int(base["year"].min()), int(base["year"].max())]
     manifest = {
         "schema_version": 2,
@@ -237,6 +266,13 @@ def export_map_v2(outdir, severities, hex_severities, years):
             "hex_r8": int(sum(hex_counts["r8"].values())),
             "hex_r9": int(sum(hex_counts["r9"].values())),
         },
+        # Legacy carry-overs (unchanged from v1's manifest.json — present
+        # here so a v2-only client doesn't need to fetch both manifests).
+        "county_bboxes": county_bboxes,
+        "muni_bboxes": muni_bboxes,
+        "by_geocode_src": base["geocode_src"].value_counts().to_dict(),
+        "per_year": per_year,
+        "per_year_county": per_year_county,
     }
 
     manifest_path = out / "manifest.v2.json"

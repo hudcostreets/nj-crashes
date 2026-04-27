@@ -188,3 +188,86 @@ Old layout stays under `www/public/njdot/map/` until v2 lands and the client swi
 - `www/public/njdot/map.dvc`: `cmd` extended to chain `njdot export_map_v2`; outs md5 refreshed to cover the new `map/v2/` subtree.
 - `www/public/njdot/map_sync.dvc`: dep md5 updated so `aws s3 sync` picks up the new tree.
 - Pipeline runtime on `e`: ~5 min (h3 cells: ~37s for 5 resolutions × 4M rows; r9 hex aggregate is the long pole at ~150s due to per-bin `top_route` mode via `groupby.apply`).
+- Public S3 mirror: `https://nj-crashes.s3.amazonaws.com/njdot/map/v2/...` (CORS + range-request enabled; verified `Accept-Ranges: bytes`).
+
+### `manifest.v2.json` schema (as emitted)
+
+```jsonc
+{
+  "schema_version": 2,
+  "shard_res": 5,
+  "point_severities": ["f", "i", "p"],
+  "hex_severities":   ["f", "i", "p"],
+  "year_range": [2001, 2023],
+  "shards": {
+    "points": [<r5 cells, 153>],
+    "hex_r7": [<r5 cells, 154>],
+    "hex_r8": [<r5 cells, 154>],
+    "hex_r9": [<r5 cells, 154>]
+  },
+  "shard_bboxes": { "<r5cell>": [w, s, e, n], ... },
+  "row_counts": { "points": 3978856, "hex_r6": 46703, "hex_r7": 118678, "hex_r8": 322941, "hex_r9": 722805 },
+  // Legacy carry-overs (same shape as v1's manifest.json — present
+  // here so a v2-only client doesn't need both manifests):
+  "county_bboxes":  { "<cc>":      [w, s, e, n], ... },     // 21 entries
+  "muni_bboxes":    { "<cc>-<mc>": [w, s, e, n], ... },     // 563 entries
+  "by_geocode_src": { "interpolated": ..., "original": ... },
+  "per_year":        { "<year>": <count>, ... },
+  "per_year_county": { "<year>-<cc>": <count>, ... }
+}
+```
+
+`hex-r6.parquet` is *not* listed in `shards` (it's a single file, not sharded — just fetch it directly).
+
+### H3 cell sizes at NJ latitude (for planner thresholds)
+
+| res  | flat-to-flat width | area      | typical landmark             |
+|------|-------------------:|----------:|------------------------------|
+| r4   | ~28 mi             | 683 sq mi | quarter of NJ                |
+| r5   | ~10.6 mi           | 97 sq mi  | a county (Hudson = 47 sq mi) |
+| r6   | ~4.0 mi            | 14 sq mi  | a town                       |
+| r7   | ~1.5 mi            | 2.0 sq mi | a neighborhood               |
+| r8   | ~3000 ft           | 0.28 sq mi| a few blocks                 |
+| r9   | ~1140 ft           | 26 acres  | a building cluster           |
+| r10  | ~432 ft            | 3.7 acres | a single building            |
+
+Rough zoom mapping: r6 ≈ z9–10, r7 ≈ z11–12, r8 ≈ z13–14, r9 ≈ z15+. `pickHexResolutionForPixels` already does this comparison on a log2 scale; planner can reuse it but no longer needs the `PREBIN_MIN_PX` floor.
+
+### Largest point shards (for client perf budget)
+
+The Newark / Jersey City / Hudson core has the densest data — top point shards (compressed parquet, all 23 yrs, all severities):
+
+| shard cell        | size   | rough area         |
+|-------------------|-------:|--------------------|
+| `852a107bfffffff` | 8.5 MB | central Hudson Co. |
+| `852a1047fffffff` | 8.4 MB | central Essex Co.  |
+| `852a1073fffffff` | 7.2 MB | northern Hudson    |
+| `852a100bfffffff` | 6.3 MB | Bronx/Bergen edge  |
+
+A fully-zoomed viewport on Newark covers 1–2 of these → 8–17 MB on a fresh fetch. Acceptable on broadband, painful on cellular. Phase 2 client should: debounce viewport changes, cache fetched shards, and consider falling back to hex prebins (~100 KB) if visible-shard count × per-shard size exceeds a budget.
+
+### Known gotchas for Phase 2
+
+- **`pandas.to_parquet` is non-deterministic across runs.** Re-running the exporter with identical input data still produces byte-different files (timestamps in metadata + dict ordering). Consequence: any re-run triggers a full S3 re-upload (617 files / ~120 MB). Annoying but harmless. Could fix with deterministic ordering + a stripped metadata pass; deferred.
+- **DVX `dvx run map_sync.dvc` does not work cleanly today.** Three upstream-DVX issues conspire (see [`~/dvx/specs/`][dvx-specs]): cwd resolution, walk-upstream overreach, `.dir` md5 asymmetry. Workaround: run `aws s3 sync map s3://nj-crashes/njdot/map --delete` directly from `www/public/njdot/`.
+
+[dvx-specs]: ../../dvx/specs/
+
+## For laptop, picking up Phase 2
+
+Pull / fetch (not via GH; laptop pulls directly from `e`):
+```
+git fetch e && git merge --ff-only e/main
+```
+
+The v2 data is already live at `https://nj-crashes.s3.amazonaws.com/njdot/map/v2/`. No `dvx pull` needed — laptop can hit the public URL during dev.
+
+Phase 2 starting points:
+- `www/src/map/useCrashData.ts` — replace `CrashFilter.scale: "detail"|"r8"|"r7"` with `FetchPlan` (see "Client" section above).
+- `www/src/map/CrashMap.tsx:135` (`pickHexResolutionForPixels`) — remove the `PREBIN_MIN_PX` floor (line ~404), let the planner pick coarser prebins instead.
+- New util: `pickFetchPlan(bbox, zoom, severities, manifest) → FetchPlan` and `visibleShards(bbox, manifest)`.
+- Manifest fetch: `${MAP_BASE_URL}/v2/manifest.v2.json` (toggle behind a feature flag for one deploy).
+
+Recent deviations from the original spec (search this doc for "**Phase 1 actuals**" + "Severity / point coverage"):
+- All severities now in raw points (PDO included, default `-s i,f,p`); client filters at fetch time.
+- `manifest.v2.json` carries the full set of legacy fields (county/muni bboxes, etc.) so the client doesn't need v1's manifest.

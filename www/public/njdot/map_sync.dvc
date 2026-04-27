@@ -2,4 +2,4 @@ meta:
   computation:
     cmd: aws s3 sync map s3://nj-crashes/njdot/map --delete
     deps:
-      map: d9bccd195461ca74598dc03c22f8761d
+      map: f50c4aedc0a54dc2d80f53b730a9c440
