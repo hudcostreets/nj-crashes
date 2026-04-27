@@ -14,6 +14,7 @@ import { ThemeToggle } from './components/ThemeToggle'
 import { GeoFilterProvider } from './GeoFilterContext'
 import { DuckDbProvider } from './lib/DuckDbContext'
 import { useGeoActions } from './components/GeoOmnibar'
+import { useSectionsActions } from './components/SectionsOmnibar'
 import { useScrollAnchor } from './lib/useScrollAnchor'
 
 function GeoHome() {
@@ -26,11 +27,19 @@ function GeoActionsRegistrar() {
     return null
 }
 
+/** Register sections-jump omnibar endpoint. Sits at the App level so any
+ *  route with `<h2 id="…">` anchors gets jumpable from Cmd+K. */
+function SectionsRegistrar() {
+    useSectionsActions()
+    return null
+}
+
 export default function App() {
     useScrollAnchor()
     return (
         <HotkeysProvider>
         <DuckDbProvider>
+            <SectionsRegistrar />
             <Routes>
                 <Route path="/" element={<GeoHome />} />
                 <Route path="/c" element={<GeoHome />} />
