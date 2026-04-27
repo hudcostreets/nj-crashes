@@ -248,7 +248,7 @@ A fully-zoomed viewport on Newark covers 1–2 of these → 8–17 MB on a fresh
 
 ### Known gotchas for Phase 2
 
-- **`pandas.to_parquet` is non-deterministic across runs.** Re-running the exporter with identical input data still produces byte-different files (timestamps in metadata + dict ordering). Consequence: any re-run triggers a full S3 re-upload (617 files / ~120 MB). Annoying but harmless. Could fix with deterministic ordering + a stripped metadata pass; deferred.
+- **Re-runs are byte-idempotent.** With identical `crashes.parquet` input, two consecutive `njdot export_map_v2` runs produce bit-identical outputs across all 616 parquet files and `manifest.v2.json` (verified 2026-04-27, pyarrow 21.0.0). `aws s3 sync --delete` is a no-op when there's no upstream change. (An earlier draft of this spec claimed `pandas.to_parquet` was non-deterministic — that was a misattribution: the 617-file re-upload that prompted it was real content/order churn from the same commit's `year`-column add + hex `(year, h3)` sort, not metadata noise. Pyarrow parquet doesn't embed wall-clock timestamps and the exporter creates no categoricals, so neither stated mechanism applies.)
 - **DVX `dvx run map_sync.dvc` does not work cleanly today.** Three upstream-DVX issues conspire (see [`~/dvx/specs/`][dvx-specs]): cwd resolution, walk-upstream overreach, `.dir` md5 asymmetry. Workaround: run `aws s3 sync map s3://nj-crashes/njdot/map --delete` directly from `www/public/njdot/`.
 
 [dvx-specs]: ../../dvx/specs/
