@@ -292,7 +292,7 @@ Verified bytes (instrumented `fetch` wrapper distinguishing HEAD vs GET 200/206)
 
 - **Picker snaps to fine prebins at low zoom.** **Resolved**: `pickFetchPlanV2` now falls back to `hex_r6` single-file (~400 KB raw, ~50 KB after pushdown) when the picked r7/r8/r9 prebin would require more than `maxHexShards = 10` viewport-intersecting shards. State-zoom-8 used to fan out across 154 r7 shards (~2.5 MB + ~3000 range GETs); now collapses to one parquet. Fine-grained prebins remain in play whenever the viewport is small enough that ≤10 r5 parents intersect.
 - **Note on `PREBIN_MIN_PX`**: earlier spec drafts referenced a floor in `pickHexResolutionForPixels` to be dropped — the floor was never landed (the function already iterates r5–r13 unfiltered), so no code change needed.
-- **Collapse `CrashFilter.scale: "detail"|"r8"|"r7"` into the v2 `FetchPlan`.** Both v1 and v2 paths still coexist; once v1 is retired (Phase 3) the union narrows.
+- ~~**Collapse `CrashFilter.scale: "detail"|"r8"|"r7"` into the v2 `FetchPlan`.**~~ **Resolved**: `scale` field removed from public `CrashFilter` type; `useCrashData` derives v1 scale internally via `v1Scale(filter)`. v2 path uses `FetchPlan` (kind+res); render branches on `dataKind`. Pages no longer thread a `scale` value back into the filter they construct.
 - **Severity filter pushdown on `points/`** — `severity` is a string column, possibly worth indexing for `severity ∈ {f, i}` queries that exclude PDO. Marginal; defer until profiling.
 
 ### Known gotchas for Phase 2 (continued)

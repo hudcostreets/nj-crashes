@@ -24,15 +24,9 @@ gating the other today.
 
 ### Frontend (laptop)
 
-1. **Map v2 Phase 2 cleanup** — see "Phase 2 follow-ups" in
-   `map-h3-shard-rearchitecture.md`:
-   - ~~Picker snap to `hex-r6` single-file at low zoom or high
-     shard count.~~ Done — `pickFetchPlanV2` falls back to r6
-     when picked r7/r8/r9 would need >10 viewport-intersecting
-     shards.
-   - Collapse `CrashFilter.scale: "detail"|"r8"|"r7"` into the
-     v2 `FetchPlan` (now that `dataKind` exists, `scale` has
-     no remaining callers).
+1. ~~**Map v2 Phase 2 cleanup**~~ — done. Picker falls back to
+   r6 single-file when shard count >30 (`4529a686`); `scale` field
+   removed from public `CrashFilter` (`63f3247e`).
 2. **`crash-detail-pages.md`** — per-crash pages aggregating
    NJSP + NJDOT + news links + Bluesky thread embed + Slack
    `#crashdashbot` backfill. Builds on the harmonization
