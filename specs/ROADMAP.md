@@ -18,21 +18,27 @@ gating the other today.
    between NJSP and NJDOT fatal crashes (currently ~93%
    coverage). Foundational for crash-detail enrichment +
    reconciled annual totals.
-3. **Map v2 Phase 3** — drop v1 outputs (`map.dvc` cmd no
-   longer chains the v1 exporter; v1 layout deleted from S3).
-   Waits on FE Phase 2 cleanup landing first.
+3. **Map v2 Phase 3 (BE half)** — drop v1 outputs from
+   `map.dvc`; `map_sync.dvc` clears stale S3 keys via
+   `aws s3 sync --delete`. Should land *after* the FE half
+   (item #1 in Frontend lane) so no stale client hits 404s.
 
 ### Frontend (laptop)
 
 1. ~~**Map v2 Phase 2 cleanup**~~ — done. Picker falls back to
    r6 single-file when shard count >30 (`4529a686`); `scale` field
    removed from public `CrashFilter` (`63f3247e`).
-2. **`crash-detail-pages.md`** — per-crash pages aggregating
+2. **Map v2 Phase 3 (FE half)** — delete the v1 fetch path from
+   `useCrashData.ts` (`MANIFEST_PATH`, `shardPathsForFilter`,
+   `v1Scale`, v1 loader branch, v2-probe gate). Quick win, mostly
+   deletions; gates the BE half.
+3. **`crash-detail-pages.md`** — per-crash pages aggregating
    NJSP + NJDOT + news links + Bluesky thread embed + Slack
-   `#crashdashbot` backfill. Builds on the harmonization
-   matcher (#2 above), so partial implementation possible
-   today against the existing matched-pair parquet.
-3. **`crashplot-facet-by-police-dept.md`** — adds
+   `#crash-bot` backfill. Builds on the harmonization
+   matcher (BE #2 above), so partial implementation possible
+   today against the existing matched-pair parquet. Phase 1
+   (route + API endpoint) landed in `f26188d125e`.
+4. **`crashplot-facet-by-police-dept.md`** — adds
    `Police Department` as a `CrashPlot` `stackBy` option;
    link target for the Alpine '13-'18 annotation tooltip. Needs
    the field exposed in the FE-facing parquet (small backend ask).

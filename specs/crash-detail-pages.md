@@ -65,7 +65,7 @@ Each detail page should aggregate off-site discussion and primary
 sources about the crash. Three upstreams to mirror/backfill:
 
 1. **News articles**: manual links today, but we can parse URLs out
-   of historical `#crashdashbot` Slack threads (years of replies
+   of historical `#crash-bot` Slack threads (years of replies
    contain shared news URLs). Also expect some semi-structured
    sources — local outlets like Patch, APP.com, NJ.com — that could
    be scraped for known-date-and-location matches.
@@ -74,7 +74,7 @@ sources about the crash. Three upstreams to mirror/backfill:
    thread root; any replies on Bluesky should render on the crash
    page as a conversation view. Long-term: auto-post new notes and
    allow comment threads.
-3. **Slack `#crashdashbot`**: the Slack bot has posted a notification
+3. **Slack `#crash-bot`**: the Slack bot has posted a notification
    per crash for years. Replies in those threads contain news links
    and user commentary. Backfill task: walk the channel history,
    tie each thread to its corresponding crash id, extract URLs and
@@ -117,7 +117,7 @@ See also `specs/slack-sync-lookback.md` (orthogonal — that's about
 pipeline-run lookback). A separate task:
 
 1. Use Slack Web API (`conversations.history`) to pull
-   `#crashdashbot` channel history.
+   `#crash-bot` channel history.
 2. For each thread, pull `conversations.replies`.
 3. Parse each bot-post for the `accid` (typically embedded in the
    message text or as metadata) to tie to a crash PK.
