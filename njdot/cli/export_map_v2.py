@@ -1,0 +1,251 @@
+"""Export NJDOT crashes as H3 r5-sharded parquet for the interactive map (v2).
+
+Layout under {outdir} (typically www/public/njdot/map/v2):
+
+    manifest.v2.json
+    points/{shardCell}.parquet         # severity in {f,i}, all years
+    hex-r6.parquet                     # whole-state, single file
+    hex-r{N}/{shardCell}.parquet       # N in {7,8,9}, sharded by r5 parent
+
+`shardCell` is an H3 r5 cell (NJ has ~150 non-empty r5 cells). The shard
+filename is the data's own r5 parent — use it to fetch only the shards
+that intersect a viewport.
+
+See specs/map-h3-shard-rearchitecture.md.
+"""
+import json
+from pathlib import Path
+from time import time
+
+import click
+import h3
+import numpy as np
+import pandas as pd
+
+from .base import njdot
+from .export_map_data import _build_base
+
+
+SHARD_RES = 5
+HEX_RESOLUTIONS = (6, 7, 8, 9)
+
+POINT_COLS_OUT = [
+    "dt", "cc", "mc", "case",
+    "tk", "ti", "pk", "pi", "tv",
+    "severity", "road", "cross_street", "route", "mp", "sri",
+    "lat", "lon", "geocode_src",
+    "h3_r5",
+]
+
+HEX_COLS_OUT = [
+    "h3", "year", "cc", "mc",
+    "n_fatal", "n_ped_inj", "n_other_inj", "n_pdo",
+    "top_route",
+]
+
+
+def _h3_column(lat: np.ndarray, lon: np.ndarray, res: int) -> np.ndarray:
+    """Compute H3 cell strings for each (lat, lon) at the given resolution."""
+    out = np.empty(len(lat), dtype=object)
+    for i, (la, lo) in enumerate(zip(lat, lon)):
+        out[i] = h3.latlng_to_cell(float(la), float(lo), res)
+    return out
+
+
+def _add_h3_cols(df: pd.DataFrame, resolutions) -> pd.DataFrame:
+    lat = df["lat"].to_numpy()
+    lon = df["lon"].to_numpy()
+    for res in resolutions:
+        t0 = time()
+        cells = _h3_column(lat, lon, res)
+        df[f"h3_r{res}"] = pd.array(cells, dtype="string")
+        print(f"  h3_r{res}: {time() - t0:.1f}s, {len(np.unique(cells)):,} unique cells")
+    return df
+
+
+def _emit_points(df: pd.DataFrame, outdir: Path, point_sevs: set[str]) -> dict:
+    pts_dir = outdir / "points"
+    pts_dir.mkdir(parents=True, exist_ok=True)
+    pts = df[df["severity"].isin(point_sevs)].copy()
+    print(f"\nEmitting points/ ({len(pts):,} rows, {pts['h3_r5'].nunique()} shards)...")
+    pts = pts.sort_values(["h3_r5", "year", "h3_r9"], kind="mergesort")
+    counts: dict[str, int] = {}
+    for cell, sub in pts.groupby("h3_r5", sort=False):
+        out = sub[POINT_COLS_OUT]
+        path = pts_dir / f"{cell}.parquet"
+        out.to_parquet(path, row_group_size=5_000, index=False, compression="snappy")
+        counts[str(cell)] = len(out)
+    print(f"  wrote {len(counts)} shards, total {sum(counts.values()):,} rows")
+    return counts
+
+
+def _hex_aggregate(df: pd.DataFrame, res: int) -> pd.DataFrame:
+    """Group by (h3_r{res}, year, cc, mc) → severity-tier counts + top_route mode."""
+    h3_col = f"h3_r{res}"
+    tier = np.where(
+        df["severity"] == "f", "fatal",
+        np.where((df["severity"] == "i") & ((df["pi"] > 0) | (df["pk"] > 0)), "ped_inj",
+        np.where(df["severity"] == "i", "other_inj", "pdo")),
+    )
+    base = df.assign(_tier=tier)
+    grouped = (
+        base.groupby([h3_col, "year", "cc", "mc", "_tier"])
+        .size()
+        .unstack(fill_value=0)
+        .reset_index()
+        .rename(columns={
+            h3_col: "h3",
+            "fatal": "n_fatal",
+            "ped_inj": "n_ped_inj",
+            "other_inj": "n_other_inj",
+            "pdo": "n_pdo",
+        })
+    )
+    for col in ("n_fatal", "n_ped_inj", "n_other_inj", "n_pdo"):
+        if col not in grouped.columns:
+            grouped[col] = 0
+
+    road = df["road"].fillna("").astype("string").str.strip()
+    rnum = df["route"].fillna("").astype("string").str.strip()
+    road_eff = road.where(
+        road != "",
+        rnum.where(rnum != "", "").map(lambda r: f"Route {r}" if r else ""),
+    )
+    nb = df.assign(_road=road_eff)
+    nb = nb[nb["_road"] != ""]
+    if len(nb):
+        top = (
+            nb.groupby([h3_col, "year", "cc", "mc"])["_road"]
+            .agg(lambda s: s.mode().iloc[0] if len(s.mode()) else "")
+            .reset_index()
+            .rename(columns={h3_col: "h3", "_road": "top_route"})
+        )
+        grouped = grouped.merge(top, on=["h3", "year", "cc", "mc"], how="left")
+        grouped["top_route"] = grouped["top_route"].fillna("").astype("string")
+    else:
+        grouped["top_route"] = pd.Series([""] * len(grouped), dtype="string")
+
+    for col in ("n_fatal", "n_ped_inj", "n_other_inj", "n_pdo"):
+        grouped[col] = grouped[col].astype("int32")
+    grouped["year"] = grouped["year"].astype("int16")
+    grouped["cc"] = grouped["cc"].astype("Int8")
+    grouped["mc"] = grouped["mc"].astype("Int16")
+    grouped["h3"] = grouped["h3"].astype("string")
+    return grouped[HEX_COLS_OUT]
+
+
+def _emit_hex(df: pd.DataFrame, outdir: Path) -> dict:
+    """Emit hex-r6.parquet (single file) + hex-r{7,8,9}/{shardCell}.parquet."""
+    counts: dict[str, object] = {}
+    for res in HEX_RESOLUTIONS:
+        t0 = time()
+        agg = _hex_aggregate(df, res)
+        if res <= SHARD_RES + 1:
+            path = outdir / f"hex-r{res}.parquet"
+            agg.to_parquet(path, row_group_size=10_000, index=False, compression="snappy")
+            counts[f"r{res}"] = len(agg)
+            print(f"  hex-r{res}.parquet: {len(agg):,} rows ({time() - t0:.1f}s)")
+        else:
+            sub_dir = outdir / f"hex-r{res}"
+            sub_dir.mkdir(parents=True, exist_ok=True)
+            parents = agg["h3"].apply(lambda c: h3.cell_to_parent(c, SHARD_RES)).astype("string")
+            agg = agg.assign(_parent=parents)
+            shard_counts: dict[str, int] = {}
+            for cell, sub in agg.groupby("_parent", sort=False):
+                out = sub.drop(columns=["_parent"])
+                path = sub_dir / f"{cell}.parquet"
+                out.to_parquet(path, row_group_size=10_000, index=False, compression="snappy")
+                shard_counts[str(cell)] = len(out)
+            counts[f"r{res}"] = shard_counts
+            print(f"  hex-r{res}/: {len(agg):,} rows / {len(shard_counts)} shards ({time() - t0:.1f}s)")
+    return counts
+
+
+def _shard_bboxes(cells) -> dict[str, list[float]]:
+    """r5 cell → [w, s, e, n] from cell boundary (lat,lng → lng,lat reordered)."""
+    out: dict[str, list[float]] = {}
+    for c in cells:
+        boundary = h3.cell_to_boundary(c)
+        lats = [p[0] for p in boundary]
+        lons = [p[1] for p in boundary]
+        out[str(c)] = [min(lons), min(lats), max(lons), max(lats)]
+    return out
+
+
+@njdot.command("export_map_v2")
+@click.option("-o", "--outdir", default="www/public/njdot/map/v2", help="Output dir")
+@click.option("-s", "--severities", default="i,f,p", help="Severities for raw point shards (default: all). Client filters by severity at fetch-time; this just controls which rows are written to disk.")
+@click.option("-H", "--hex-severities", default="i,f,p", help="Severities for hex prebins")
+@click.option("--years", default=None, help="Year range, e.g. 2019:2023 (inclusive, default: all)")
+def export_map_v2(outdir, severities, hex_severities, years):
+    """Export H3 r5-sharded crash data for the interactive map (v2 layout)."""
+    print("Loading crashes.parquet...")
+    df = pd.read_parquet("njdot/data/crashes.parquet")
+    print(f"  loaded {len(df):,} crashes")
+
+    if years:
+        y0, y1 = [int(x) for x in years.split(":")]
+        df = df[(df["year"] >= y0) & (df["year"] <= y1)]
+        print(f"  filtered to years {y0}-{y1}: {len(df):,}")
+
+    point_sevs = {s.strip() for s in severities.split(",") if s.strip()}
+    hex_sevs = {s.strip() for s in hex_severities.split(",") if s.strip()}
+    print(f"  point severities: {sorted(point_sevs)}")
+    print(f"  hex severities:   {sorted(hex_sevs)}")
+
+    base = _build_base(df, hex_sevs)
+    print(f"  with lat/lon: {len(base):,}")
+
+    base["year"] = (
+        pd.to_datetime(base["dt"] * 60, unit="s", utc=True).dt.year.astype("int16")
+    )
+
+    print("\nComputing H3 cells per resolution...")
+    base = _add_h3_cols(base, (SHARD_RES,) + HEX_RESOLUTIONS)
+
+    out = Path(outdir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    point_counts = _emit_points(base, out, point_sevs)
+
+    print("\nComputing hex aggregates...")
+    hex_counts = _emit_hex(base, out)
+
+    shard_cells = sorted(point_counts.keys())
+    bboxes = _shard_bboxes(shard_cells)
+
+    shards = {
+        "points": shard_cells,
+        "hex_r7": sorted(hex_counts["r7"].keys()),
+        "hex_r8": sorted(hex_counts["r8"].keys()),
+        "hex_r9": sorted(hex_counts["r9"].keys()),
+    }
+
+    year_range = [int(base["year"].min()), int(base["year"].max())]
+    manifest = {
+        "schema_version": 2,
+        "shard_res": SHARD_RES,
+        "point_severities": sorted(point_sevs),
+        "hex_severities": sorted(hex_sevs),
+        "year_range": year_range,
+        "shards": shards,
+        "shard_bboxes": bboxes,
+        "row_counts": {
+            "points": int(sum(point_counts.values())),
+            "hex_r6": int(hex_counts["r6"]),
+            "hex_r7": int(sum(hex_counts["r7"].values())),
+            "hex_r8": int(sum(hex_counts["r8"].values())),
+            "hex_r9": int(sum(hex_counts["r9"].values())),
+        },
+    }
+
+    manifest_path = out / "manifest.v2.json"
+    with manifest_path.open("w") as f:
+        json.dump(manifest, f, indent=2, default=str)
+    print(f"\nWrote manifest to {manifest_path}")
+    return (
+        f"Export map v2 ("
+        f"{manifest['row_counts']['points']:,} points / "
+        f"{len(shard_cells)} shards, "
+        f"years {year_range[0]}-{year_range[1]})"
+    )

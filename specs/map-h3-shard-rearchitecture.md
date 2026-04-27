@@ -1,6 +1,9 @@
 # Map data backend: H3 parent-cell sharding + multi-resolution prebins
 
-> Status: spec; ready for `e` to implement the pipeline. Client wiring to follow once new layout is generated.
+> Status:
+> - Phase 1 (pipeline): **done**. `njdot export_map_v2` generates `www/public/njdot/map/v2/` alongside the v1 tree; `map.dvc` cmd extended.
+> - Phase 2 (client viewport-aware shard picker): pending.
+> - Phase 3 (drop v1): pending.
 
 ## Motivation
 
@@ -51,7 +54,12 @@ Pick **r5 as the shard parent resolution**. Coverage of NJ envelope:
 
 r4 is too coarse — fetching one shard pulls a quarter of the state. r6 makes too many tiny files (network-overhead-dominated). r5 lands ~50 shards covering NJ, each ~250 KB raw points / ~50 KB prebin — the sweet spot.
 
-For `hex-r6`, all of NJ fits in ~600 r6 cells, ~50 KB total. Single file, no sharding needed.
+**Phase 1 actuals** (full 23 yrs, all severities throughout):
+- 153 non-empty r5 shards for points
+- 154 non-empty r5 shards for hex prebins
+- average shard sizes: ~750 KB points (largest 8.5 MB in the Newark/Jersey City core), ~12 KB hex-r7, ~16 KB hex-r8, ~28 KB hex-r9
+
+For `hex-r6`, all of NJ fits in ~750 r6 cells (one per `(h3, year, cc, mc)` tuple yields ~47K rows total → 308 KB). Single file, no sharding needed.
 
 ### Year as column, not file
 
@@ -61,7 +69,7 @@ This collapses ~23× more files into ~23× larger ones — but each fetch carrie
 
 ### Severity / point coverage
 
-Keep `point_severities = ['f', 'i']` (fatal + injury raw rows). Adding PDO points would inflate raw-point storage ~4×; PDO consumers should use the prebins, which carry `n_pdo` in every cell.
+Include all severities in raw points (`f`, `i`, `p`). The original spec proposed dropping PDO from points to keep raw-point storage small (~4× inflation), but at NJ's scale "4×" is 33 MB → 119 MB total — still trivial. Filtering happens client-side at fetch-time so the network cost is bounded by visible-shard count, not the on-disk total. Hex prebins continue to carry `n_pdo` for low-zoom views where raw points aren't loaded.
 
 ### Schema
 
@@ -123,15 +131,16 @@ Pre-existing helpers worth reusing:
 
 Estimated total bytes published:
 
-| artifact | size |
-|----------|------|
-| `points/` (50 shards × 5 yrs of fatal+injury extrapolated to 23 yrs) | ~25 MB |
-| `hex-r6.parquet` | ~50 KB |
-| `hex-r7/` (50 shards) | ~3 MB |
-| `hex-r8/` (50 shards) | ~10 MB |
-| `hex-r9/` (50-200 shards) | ~30 MB |
+| artifact | spec estimate | actual (23 yrs, all severities) |
+|----------|--------------:|--------------------------------:|
+| `points/` (153 shards)      | ~25 MB | 111 MB |
+| `hex-r6.parquet`            | ~50 KB | 308 KB |
+| `hex-r7/` (154 shards)      | ~3 MB  | 1.8 MB |
+| `hex-r8/` (154 shards)      | ~10 MB | 2.5 MB |
+| `hex-r9/` (154 shards)      | ~30 MB | 4.2 MB |
+| **total** v2                | ~68 MB | **119 MB** |
 
-Roughly the same total bytes as today, but addressable per-viewport.
+v1 + v2 coexist while client migrates: `map.dvc` outs grew 243 MB → 376 MB.
 
 ## Client (this repo)
 
@@ -168,7 +177,14 @@ Old layout stays under `www/public/njdot/map/` until v2 lands and the client swi
 
 ## Open questions
 
-- **r9 worth it?** Adds ~30 MB of files. Useful when fatal+injury point fetch isn't available (PDO selected) but you want fine zoom. If not, drop and let `coarsenHexes` adapt r8 upward only.
-- **Should `hex-r6.parquet` carry per-county/per-muni breakdown columns?** Useful for the homepage NJSP/NJDOT comparison sidebar; cheap to include. Recommend yes.
-- **Single-file vs sharded for r7?** ~3 MB for all NJ. Could go either way. Single file simplifies fetch; sharded keeps the "one schema for all prebins ≥ r7" rule.
+- **r9 worth it?** Came in at 4.2 MB (way under the spec's 30 MB estimate), so the storage argument against it largely evaporates. Keep.
+- **Should `hex-r6.parquet` carry per-county/per-muni breakdown columns?** Yes; included as `cc`/`mc` columns alongside the per-(h3, year) bin counts.
+- **Single-file vs sharded for r7?** Sharded — 154 r5 parents, 1.8 MB total. Sharded keeps the "one schema for all prebins ≥ r7" rule and lets viewport queries skip non-visible shards.
 - **PMTiles instead?** Industry-standard; would be cleaner long-term but a bigger lift (MVT/vector-tile rendering replaces deck.gl ColumnLayer; lose 3D-bar control). Defer; revisit if static parquet hits a wall.
+
+## Phase 1 deliverables
+
+- New CLI: `njdot export_map_v2` (`njdot/cli/export_map_v2.py`) — reuses `_build_base` from the v1 exporter for column projection / lat-lon resolution.
+- `www/public/njdot/map.dvc`: `cmd` extended to chain `njdot export_map_v2`; outs md5 refreshed to cover the new `map/v2/` subtree.
+- `www/public/njdot/map_sync.dvc`: dep md5 updated so `aws s3 sync` picks up the new tree.
+- Pipeline runtime on `e`: ~5 min (h3 cells: ~37s for 5 resolutions × 4M rows; r9 hex aggregate is the long pole at ~150s due to per-bin `top_route` mode via `groupby.apply`).
