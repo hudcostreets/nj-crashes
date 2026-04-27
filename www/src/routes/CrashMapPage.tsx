@@ -195,14 +195,10 @@ export default function CrashMapPage() {
         urlView ?? fitBoundsToView(STATE_BBOX, mode === "hexbin" ? 45 : 0)
     ))
 
-    // Statewide hexbin: load raw fatal+injury rows (~6.5 MB for 5 yrs) and
-    // bin client-side at the picker's per-zoom resolution — same as
-    // county/muni detail mode. Avoids the uniform-grid artifact a fixed-
-    // resolution prebin produces when crashes are sparse relative to cell
-    // size. Falls back to r8 prebins only when PDO is on, since point
-    // shards don't carry pdo.
-    const scale: CrashFilter["scale"] =
-        (cc === undefined && mode === "hexbin" && severities.has("p")) ? "r8" : "detail"
+    // PDO data is only accessible in v1's r8 prebins (statewide + hexbin)
+    // or in v2 (where hex prebins / point shards both carry it). Used to
+    // disable the PDO checkbox when neither path is selectable.
+    const pdoSelectable = v2Enabled() || (cc === undefined && mode === "hexbin")
 
     const filter: CrashFilter = useMemo(() => {
         const base: CrashFilter = {
@@ -210,7 +206,6 @@ export default function CrashMapPage() {
             ccs: cc ? [cc] : undefined,
             mc,
             severities,
-            scale,
         }
         if (!v2Enabled()) return base
         // Approximate the visible bbox from viewState. Width/height come
@@ -224,7 +219,7 @@ export default function CrashMapPage() {
             zoom: viewState.zoom,
             hexPxTarget,
         }
-    }, [yearRange, cc, mc, severities, scale, viewState, hexPxTarget])
+    }, [yearRange, cc, mc, severities, viewState, hexPxTarget])
 
     const result = useCrashData(filter)
     const [outline, setOutline] = useState<FeatureCollection | null>(null)
@@ -374,7 +369,7 @@ export default function CrashMapPage() {
                 elevationPerCount={elevationPerCount} setElevationPerCount={setElevationPerCount}
                 pitch={viewState.pitch}
                 setPitch={p => setViewState(v => ({ ...v, pitch: p }))}
-                scale={scale}
+                pdoSelectable={pdoSelectable}
                 total={result.status === "ready" ? result.data.length : undefined}
                 manifest={result.manifest}
                 theme={actualTheme}
@@ -399,7 +394,7 @@ function ControlDrawer({
     hexPxTarget, setHexPxTarget,
     elevationPerCount, setElevationPerCount,
     pitch, setPitch,
-    scale,
+    pdoSelectable,
     total, manifest, theme,
 }: {
     open: boolean
@@ -418,7 +413,7 @@ function ControlDrawer({
     setElevationPerCount: (n: number) => void
     pitch: number
     setPitch: (n: number) => void
-    scale: CrashFilter["scale"]
+    pdoSelectable: boolean
     total?: number
     manifest: MapManifest | undefined
     theme: "light" | "dark"
@@ -512,7 +507,7 @@ function ControlDrawer({
                     // PDO data only ships in the statewide hex aggregates; the
                     // detail/point shards (used for county+muni and all
                     // non-hexbin views) exclude it.
-                    const disabled = s === "p" && scale !== "r8" && scale !== "r7"
+                    const disabled = s === "p" && !pdoSelectable
                     return (
                         <label key={s}
                             title={disabled ? "PDO only available in statewide + Hexbin mode" : undefined}

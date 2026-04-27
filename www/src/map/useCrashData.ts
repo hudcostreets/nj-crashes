@@ -49,8 +49,6 @@ export type CrashFilter = {
     mc?: number
     /** Severity subset. Default all that are in the manifest. */
     severities?: Set<"f" | "i" | "p">
-    /** Which layer to load: raw rows (scatter/heatmap) or pre-aggregated hex. */
-    scale: "detail" | "r8" | "r7"
     /** V2 only: viewport bbox `[w,s,e,n]`. When supplied with a center
      *  `(lat, zoom, hexPxTarget)`, the v2 picker uses this to fetch only
      *  the shards intersecting the visible area. Ignored unless v2 is
@@ -62,6 +60,14 @@ export type CrashFilter = {
     zoom?: number
     /** V2 only: target H3 cell pixel size driving prebin resolution choice. */
     hexPxTarget?: number
+}
+
+/** V1-only path picker. Statewide + PDO-on → fetch r8 hex prebins (point
+ *  shards exclude PDO in v1). Otherwise raw rows. The "hexbin mode" guard
+ *  in the page is implicit: scatter/heatmap can't select PDO via the UI. */
+function v1Scale(f: CrashFilter): "detail" | "r8" {
+    const ccs = f.ccs && f.ccs.length > 0 ? f.ccs : null
+    return (!ccs && f.severities?.has("p")) ? "r8" : "detail"
 }
 
 const MANIFEST_PATH = `${MAP_BASE_URL}/manifest.json`
@@ -113,21 +119,22 @@ async function fetchParquet<T>(
     return p
 }
 
-function shardPathsForFilter(f: CrashFilter): string[] {
+function shardPathsForFilter(f: CrashFilter): { paths: string[]; scale: "detail" | "r8" } {
     const [y0, y1] = f.yearRange
     const years: number[] = []
     for (let y = y0; y <= y1; y++) years.push(y)
     const ccs = f.ccs && f.ccs.length > 0 ? f.ccs : null
+    const scale = v1Scale(f)
 
-    if (f.scale === "detail") {
-        if (ccs) {
-            return years.flatMap(y => ccs.map(cc => `${MAP_BASE_URL}/by-year-county/${y}-${String(cc).padStart(2, "0")}.parquet`))
-        }
-        return years.map(y => `${MAP_BASE_URL}/by-year/${y}.parquet`)
+    if (scale === "detail") {
+        const paths = ccs
+            ? years.flatMap(y => ccs.map(cc => `${MAP_BASE_URL}/by-year-county/${y}-${String(cc).padStart(2, "0")}.parquet`))
+            : years.map(y => `${MAP_BASE_URL}/by-year/${y}.parquet`)
+        return { paths, scale }
     }
-    // r7/r8 hex aggregates
-    const res = f.scale  // "r7" | "r8"
-    return years.map(y => `${MAP_BASE_URL}/hex-${res}/${y}.parquet`)
+    // r8 hex aggregates (statewide + PDO).
+    const paths = years.map(y => `${MAP_BASE_URL}/hex-${scale}/${y}.parquet`)
+    return { paths, scale }
 }
 
 function applyPostFilters(rows: Crash[], f: CrashFilter): Crash[] {
@@ -267,7 +274,7 @@ export function useCrashData(filter: CrashFilter | null):
             ccs: filter.ccs,
             mc: filter.mc,
             severities: filter.severities ? [...filter.severities].sort() : null,
-            scale: filter.scale,
+            scale: v1Scale(filter),
         })
     }, [filter, v2Active, v2Plan])
 
@@ -316,8 +323,8 @@ export function useCrashData(filter: CrashFilter | null):
                     return
                 }
                 // V1 path.
-                const paths = shardPathsForFilter(filter)
-                if (filter.scale === "detail") {
+                const { paths, scale } = shardPathsForFilter(filter)
+                if (scale === "detail") {
                     const batches = await Promise.all(paths.map(p =>
                         fetchParquet<Crash>(p).catch(() => [] as Crash[]),
                     ))

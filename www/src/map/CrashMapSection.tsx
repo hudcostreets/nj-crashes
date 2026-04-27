@@ -88,16 +88,12 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
     const [drawerOpen, setDrawerOpen] = useToolboxOpen(false)
     const [llz, setLlz] = useUrlState("llz", llzParam)
 
-    const scale: CrashFilter["scale"] =
-        (cc === null && mode === "hexbin" && severities.has("p")) ? "r8" : "detail"
-
     const filter: CrashFilter = useMemo(() => ({
         yearRange,
         ccs: cc !== null ? [cc] : undefined,
         mc: mc ?? undefined,
         severities,
-        scale,
-    }), [yearRange, cc, mc, severities, scale])
+    }), [yearRange, cc, mc, severities])
 
     const result = useCrashData(filter)
     const [outline, setOutline] = useState<FeatureCollection | null>(null)
@@ -378,7 +374,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
             )}
             <Legend
                 theme={actualTheme}
-                pdoEnabled={scale === "r8" || (result.manifest?.point_severities?.includes("p") ?? false)}
+                pdoEnabled={(cc === null && mode === "hexbin" && severities.has("p")) || (result.manifest?.point_severities?.includes("p") ?? false)}
                 severities={severities}
                 onToggle={toggleSeverity}
             />
