@@ -271,3 +271,32 @@ Phase 2 starting points:
 Recent deviations from the original spec (search this doc for "**Phase 1 actuals**" + "Severity / point coverage"):
 - All severities now in raw points (PDO included, default `-s i,f,p`); client filters at fetch time.
 - `manifest.v2.json` carries the full set of legacy fields (county/muni bboxes, etc.) so the client doesn't need v1's manifest.
+
+## Phase 2 actuals (FE wiring landed; commit `e09327c537c`)
+
+Initial client cut behind `?v2=1` flag:
+- `www/src/map/v2.ts` (new) — `MapManifestV2` types, `loadManifestV2()` (single-flight, 404/HTML-fallback safe), `visibleShardsV2(viewport, manifest, artifact)`, `pickFetchPlanV2(...)`, `bboxFromViewport()`, `shardUrlV2()`, `POINT_COLUMNS` / `HEX_COLUMNS` projection lists.
+- `www/src/map/useCrashData.ts` — v2 manifest probe + `v2Active`/`v2Plan` memos; `filterKey` keys on the resulting shard *set* so pans within a shard don't refetch; `v2Probed` gate prevents v1 + v2 from both firing on first load.
+- `www/src/routes/CrashMapPage.tsx` — passes viewport/lat/zoom/hexPxTarget to `useCrashData` when `v2Enabled()`.
+
+Verified bytes (instrumented `fetch` wrapper distinguishing HEAD vs GET 200/206):
+- Newark zoom 17, 5-yr range, raw points, 1 shard → **1.6 MB** across 163 range GETs.
+- State zoom 8, 23-yr hex view → **3.2 MB** across 154 r7 shards (picker tuning issue: should snap to single-file r6 = 308 KB; see follow-up below).
+
+### Phase 1 deviations from the published schema discovered during FE wiring
+
+1. **Points shards have `dt` (epoch minutes) but no `year` column.** Spec line 68 lists `year` among the projected columns. Client uses a `dt`-range pushdown filter instead, derived from the year range. Row groups *are* dt-sorted (each ≈1 yr), so pushdown works. *Backend ask:* either add an explicit `year` column for symmetry/clarity (cheap; ~4 bytes/row), or update the spec to drop `year` and require clients to derive from `dt`.
+2. **Hex shards (r7/r8/r9) row groups are NOT year-sorted** — every RG spans 2001–2023 (verified on `hex-r9/852a1073fffffff.parquet`: 3 RGs, all min=2001/max=2023). Hyparquet's `canSkipRowGroup` therefore can't prune anything based on the `year` filter, so the client skips the filter for hex paths today and relies on client-side year skip in `aggregateHexes`. Files are 50–150 KB so it's not a perf disaster, but it's a missed pushdown opportunity. *Backend ask:* sort hex rows by `year` (or by `(year, h3)`) before writing, so `canSkipRowGroup` can prune year-out-of-range RGs.
+3. **`points/{cell}.parquet` files include all 19 columns** — including `case`, `geocode_src`, `cross_street`, `road`, `route`, `sri`, `mp`. Client projects to a 10-column subset (`POINT_COLUMNS = [lat, lon, severity, dt, tk, ti, pk, pi, tv, … ]`) for typical render+tooltip needs. Tooltips needing `road`/`route`/`cross_street` can refetch with a wider projection; current implementation skips those entirely. *No backend change needed.*
+
+### Phase 2 follow-ups (FE-side, not yet done)
+
+- **Picker snaps to fine prebins at low zoom.** `pickFetchPlanV2` matches H3 cell-edge to `hexPxTarget * mppx`. Default `hexPxTarget=1.2 (px)` is fine at street zoom but biases toward r8/r9 statewide. Should snap to r6 single-file when (a) zoom ≤ 9 OR (b) visible-shard count crosses a threshold. Needs to be a richer planner pass, not just nearest-edge match.
+- **Drop `PREBIN_MIN_PX` floor in `pickHexResolutionForPixels`** (`CrashMap.tsx:135` per spec). Once the planner above can choose r6 directly, the floor becomes dead weight.
+- **Collapse `CrashFilter.scale: "detail"|"r8"|"r7"` into the v2 `FetchPlan`.** Both v1 and v2 paths still coexist; once v1 is retired (Phase 3) the union narrows.
+- **Severity filter pushdown on `points/`** — `severity` is a string column, possibly worth indexing for `severity ∈ {f, i}` queries that exclude PDO. Marginal; defer until profiling.
+
+### Known gotchas for Phase 2 (continued)
+
+- **Cross-origin S3 fetches don't expose `transferSize`** in `PerformanceObserver` because S3 doesn't emit `Timing-Allow-Origin`. Use a `fetch` wrapper to count bytes by `Content-Length` if you need to instrument transfer size in-page; remember to filter out HEAD probes (their `Content-Length` reports the full file size but no body is transferred).
+- **Hyparquet emits 1 HEAD + ~50–200 range GETs per shard.** That's how parquet column-page reads work — many small fetches (5–30 KB each). Total bytes are low; round-trip latency dominates over a slow network. Per-shard cache (existing `shardCache` in `useCrashData.ts`) makes repeated reads free.
