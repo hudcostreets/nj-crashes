@@ -3,7 +3,7 @@
 Living doc capturing relative priority across open specs. Update as
 priorities shift; treat as a default ordering, not a contract.
 
-## Active sequence (2026-04-27)
+## Active sequence (2026-04-28)
 
 User-confirmed ordering. `e` and laptop work in parallel; nothing is
 gating the other today.
@@ -18,10 +18,12 @@ gating the other today.
    between NJSP and NJDOT fatal crashes (currently ~93%
    coverage). Foundational for crash-detail enrichment +
    reconciled annual totals.
-3. **Map v2 Phase 3 (BE half)** — drop v1 outputs from
-   `map.dvc`; `map_sync.dvc` clears stale S3 keys via
-   `aws s3 sync --delete`. Should land *after* the FE half
-   deploys to CFP so no stale client hits 404s.
+3. ~~**Map v2 Phase 3 (BE half)**~~ — done. `map.dvc` cmd
+   rewritten to drop v1 outputs (`55cc13ba1f2`); local
+   re-run shrunk `map/` 377MB → 127MB. CFP redeployed
+   (`d9c8346ce4a`); `map_sync.dvc` ran `aws s3 sync --delete`
+   so v1 S3 keys are gone (`manifest.json`, `by-year/`,
+   `by-year-county/`, `hex-r{7,8}/` all return 404).
 
 ### Frontend (laptop)
 

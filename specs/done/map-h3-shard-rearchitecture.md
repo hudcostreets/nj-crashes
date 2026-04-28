@@ -3,15 +3,15 @@
 > Status:
 > - Phase 1 (pipeline): **done**. `njdot export_map_v2` generates `www/public/njdot/map/v2/` alongside the v1 tree; `map.dvc` cmd extended.
 > - Phase 2 (client viewport-aware shard picker): **done**. `pickFetchPlanV2` in `www/src/map/v2.ts` returns `FetchPlan = points|hex(res)`; viewport-keyed shard cache; year-range row-group pushdown; r6 single-file fallback when shard count >30; `dataKind` plumbed through `useCrashData`; `CrashFilter.scale` removed from public type.
-> - Phase 3 (drop v1): in progress.
->   - FE half **done** (`52ec2653a40`). v1 fetch path removed from
+> - Phase 3 (drop v1): **done** end-to-end (2026-04-28).
+>   - FE half (`52ec2653a40`): v1 fetch path removed from
 >     `useCrashData.ts`; `pickFetchPlanV2` viewport optional with r6
 >     single-file fallback; v2 always-on (`?v2=1` flag deleted).
->   - BE half: `map.dvc` cmd updated to drop v1 outputs (`by-year/`,
->     `by-year-county/`, `hex-r7/`, `hex-r8/`, `manifest.json`) and
->     re-run locally (377MB → 127MB, 660 files). Remaining: push so
->     CFP deploys FE, then run `map_sync.dvc` (`aws s3 sync --delete`)
->     to clean stale S3 keys.
+>   - BE half (`55cc13ba1f2`, `d9c8346ce4a`): `map.dvc` cmd dropped v1
+>     outputs (`by-year/`, `by-year-county/`, `hex-r7/`, `hex-r8/`,
+>     `manifest.json`); local re-run shrunk `map/` 377MB → 127MB.
+>     CFP redeployed; `map_sync.dvc` ran `aws s3 sync --delete` so
+>     v1 S3 keys return 404.
 
 ## Motivation
 
