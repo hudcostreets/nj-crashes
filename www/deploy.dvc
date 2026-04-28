@@ -2,8 +2,8 @@ meta:
   computation:
     cmd: ./deploy.sh
     git_deps:
-      deploy.sh: b7d74d01e7d3fe4c928885d649c19e572a7e6c41
-      src: ac287b7c9db27945930a0d6312cbd9080bd46d68
-      public: 83279f2619980200b4347112bd1dbd362959a38f
+      deploy.sh: 52036a187a99712853c382ec1fdd9df2f6489a0e
+      src: 3c65e426fe61444605f48f14c113b14951e157ad
+      public: 1e7df57f41318ac2ea4f9be03ce9af128f08266b
       package.json: a06e1275ec48bba1bd9eefaaf7b742081dd00118
       functions: d45da0aa448a9be329f954bccdc77cf1d675f5de
