@@ -302,7 +302,7 @@ county,cc,mc,year,month,fatalities
 ,,,2026,1,39
 ,,,2026,2,32
 ,,,2026,3,53
-,,,2026,4,33
+,,,2026,4,34
 Atlantic,1,,2001,1,2
 Atlantic,1,,2001,2,8
 Atlantic,1,,2001,3,2
@@ -3161,7 +3161,7 @@ Mercer,11,,2025,11,2
 Mercer,11,,2025,12,4
 Mercer,11,,2026,2,1
 Mercer,11,,2026,3,5
-Mercer,11,,2026,4,3
+Mercer,11,,2026,4,4
 Middlesex,12,,2001,1,1
 Middlesex,12,,2001,2,3
 Middlesex,12,,2001,3,3
@@ -12603,6 +12603,7 @@ Mercer,11,14,2022,10,1
 Mercer,11,14,2022,11,1
 Mercer,11,14,2023,10,1
 Mercer,11,14,2025,3,1
+Mercer,11,14,2026,4,1
 Middlesex,12,1,2001,8,1
 Middlesex,12,1,2001,9,1
 Middlesex,12,1,2002,12,1
