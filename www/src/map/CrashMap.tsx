@@ -14,6 +14,7 @@ import type { PickingInfo } from "@deck.gl/core/typed"
 import type { FeatureCollection } from "geojson"
 import { useTouchPitch } from "./hooks/useTouchPitch"
 import { binIntoHexes, coarsenHexes, hexesToSegments, buildStackedHexLayer, Segment, StackedHex, H3_RADIUS_METERS } from "./StackedHexLayer"
+import { getResolution } from "h3-js"
 
 export type MapMode = "scatter" | "heatmap" | "hexbin"
 
@@ -589,7 +590,7 @@ export function CrashMap({
         // is coarser than the prebin, coarsen client-side via H3 parent
         // (exact, lossless). Finer than the prebin: nothing we can do
         // without raw rows; cells just render larger than ideal.
-        if (!hexes) return base
+        if (!hexes || hexes.length === 0) return base
         const hexesArr = hexes
         // Auto-scale bar heights based on the visible max count: when the
         // user filters to fatal-only (max ~5) we'd otherwise get pancake
@@ -602,11 +603,18 @@ export function CrashMap({
         const autoScale = Math.min(8, Math.max(0.4, Math.sqrt(HEIGHT_TARGET / maxCount)))
         const effectiveElevation = elevationPerCount * autoScale
         const segments = hexesToSegments(hexesArr, effectiveElevation)
+        // Render columns sized to the data's actual H3 res, not the picker's
+        // desired one. Prebinned data (`prebinnedHexes`) is fetched at a fixed
+        // resolution (r6 fallback or r7/r8/r9 picked by `pickFetchPlanV2`);
+        // when zoom drives `effectiveHexRes` finer than what we have, the
+        // column radius would shrink below the cell's hex-tant and reveal the
+        // underlying lattice as visible gaps between bars.
+        const renderRes = Math.min(effectiveHexRes, getResolution(hexesArr[0].h3))
         const result = [...base,
             buildStackedHexLayer({
                 id: "crashes-hex-stacked",
                 segments,
-                resolution: effectiveHexRes,
+                resolution: renderRes,
                 pickable: true,
                 onHover: (info) => { setHoverInfo(info); return false },
             }),

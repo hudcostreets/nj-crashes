@@ -135,29 +135,44 @@ def _hex_aggregate(df: pd.DataFrame, res: int) -> pd.DataFrame:
 
 
 def _emit_hex(df: pd.DataFrame, outdir: Path) -> dict:
-    """Emit hex-r6.parquet (single file) + hex-r{7,8,9}/{shardCell}.parquet."""
+    """Emit hex-r{N}.parquet single-file (for all N in HEX_RESOLUTIONS) +
+    hex-r{N}/{shardCell}.parquet sharded (for N > SHARD_RES + 1).
+
+    The single-files are the picker's fallback when the visible viewport
+    intersects too many shards to make per-shard fetches efficient (e.g.
+    statewide views). Picker uses the *finest* single-file resolution that
+    makes sense at the current zoom — typically r7 at z6-7, r8 at z8-9, r9
+    at zoom-in, etc. — so the rendered map keeps a hi-fi look without
+    leaking the underlying hex grid.
+    """
     counts: dict[str, object] = {}
     for res in HEX_RESOLUTIONS:
         t0 = time()
         agg = _hex_aggregate(df, res)
+
+        # Single-file (always): used by the picker as a one-shot fallback
+        # at low/wide-viewport zoom levels.
+        single_path = outdir / f"hex-r{res}.parquet"
+        agg.to_parquet(single_path, row_group_size=10_000, index=False, compression="snappy")
+        single_size = single_path.stat().st_size
+
         if res <= SHARD_RES + 1:
-            path = outdir / f"hex-r{res}.parquet"
-            agg.to_parquet(path, row_group_size=10_000, index=False, compression="snappy")
             counts[f"r{res}"] = len(agg)
-            print(f"  hex-r{res}.parquet: {len(agg):,} rows ({time() - t0:.1f}s)")
+            print(f"  hex-r{res}.parquet: {len(agg):,} rows, {single_size / 1024:.0f} KB ({time() - t0:.1f}s)")
         else:
             sub_dir = outdir / f"hex-r{res}"
             sub_dir.mkdir(parents=True, exist_ok=True)
             parents = agg["h3"].apply(lambda c: h3.cell_to_parent(c, SHARD_RES)).astype("string")
-            agg = agg.assign(_parent=parents)
+            agg_sharded = agg.assign(_parent=parents)
             shard_counts: dict[str, int] = {}
-            for cell, sub in agg.groupby("_parent", sort=False):
+            for cell, sub in agg_sharded.groupby("_parent", sort=False):
                 out = sub.drop(columns=["_parent"])
                 path = sub_dir / f"{cell}.parquet"
                 out.to_parquet(path, row_group_size=10_000, index=False, compression="snappy")
                 shard_counts[str(cell)] = len(out)
             counts[f"r{res}"] = shard_counts
-            print(f"  hex-r{res}/: {len(agg):,} rows / {len(shard_counts)} shards ({time() - t0:.1f}s)")
+            print(f"  hex-r{res}.parquet: {len(agg):,} rows, {single_size / 1024:.0f} KB single-file"
+                  f" + {len(shard_counts)} shards ({time() - t0:.1f}s)")
     return counts
 
 
@@ -220,6 +235,9 @@ def export_map_v2(outdir, severities, hex_severities, years):
         "hex_r8": sorted(hex_counts["r8"].keys()),
         "hex_r9": sorted(hex_counts["r9"].keys()),
     }
+    # Resolutions for which `hex-r{N}.parquet` exists at outdir root (i.e.
+    # picker has a single-file fallback at this resolution).
+    single_files = [f"r{res}" for res in HEX_RESOLUTIONS]
 
     # Per-county / per-muni bboxes for fit-bounds (1st–99th percentile +5% pad,
     # same convention as v1). Keep the same key types so v1 and v2 manifests
@@ -258,6 +276,7 @@ def export_map_v2(outdir, severities, hex_severities, years):
         "hex_severities": sorted(hex_sevs),
         "year_range": year_range,
         "shards": shards,
+        "single_files": single_files,
         "shard_bboxes": bboxes,
         "row_counts": {
             "points": int(sum(point_counts.values())),

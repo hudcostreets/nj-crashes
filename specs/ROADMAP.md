@@ -34,13 +34,20 @@ gating the other today.
    fetch path deleted; `pickFetchPlanV2` viewport optional;
    `?v2=1` flag removed; `CrashMapSection` synthesizes initial
    viewState from county/muni bbox so embeds get fine prebins.
-3. **`crash-detail-pages.md`** — per-crash pages aggregating
+3. **`map-multi-res-single-files.md`** — *in progress* (laptop).
+   Publish per-resolution single-file fallbacks (`hex-r{7,8,9}.parquet`)
+   so statewide views don't drop to chunky r6. Backend export +
+   picker logic landed; visual verification pending across all
+   region/zoom combinations before push. Includes the
+   `getResolution` clamp fix for the orthogonal "skinny columns
+   on visible lattice" bug.
+4. **`crash-detail-pages.md`** — per-crash pages aggregating
    NJSP + NJDOT + news links + Bluesky thread embed + Slack
    `#crash-bot` backfill. Builds on the harmonization
    matcher (BE #2 above), so partial implementation possible
    today against the existing matched-pair parquet. Phase 1
    (route + API endpoint) landed in `f26188d125e`.
-4. **`crashplot-facet-by-police-dept.md`** — adds
+5. **`crashplot-facet-by-police-dept.md`** — adds
    `Police Department` as a `CrashPlot` `stackBy` option;
    link target for the Alpine '13-'18 annotation tooltip. Needs
    the field exposed in the FE-facing parquet (small backend ask).

@@ -26,6 +26,11 @@ export type MapManifestV2 = {
         hex_r8?: string[]
         hex_r9?: string[]
     }
+    /** Resolutions for which a single-file `hex-r{N}.parquet` exists at the
+     *  manifest's base URL. The picker uses these as the fallback when the
+     *  visible viewport intersects more shards than `maxHexShards`. Older
+     *  manifests (pre-2026-04-30) only published `r6` here. */
+    single_files?: string[]
     /** Per-shard bbox for cheap viewport-intersection (avoids
      *  client-side `cellToBoundary` on every pan). */
     shard_bboxes: Record<string, Bbox>
@@ -40,6 +45,9 @@ export type MapManifestV2 = {
     per_year_county?: Record<string, number>
 }
 
+/** Plan returned by `pickFetchPlanV2`. `shards: null` means the single-
+ *  file `hex-r{res}.parquet` (always at the manifest root). `shards:
+ *  string[]` is a per-cell sharded fetch (`hex-r{res}/{cell}.parquet`). */
 export type FetchPlan =
     | { kind: "hex"; res: 6 | 7 | 8 | 9; shards: string[] | null }
     | { kind: "points"; shards: string[] }
@@ -174,8 +182,9 @@ export type PickFetchPlanArgs = {
     /** Cap how many `points/{cell}.parquet` shards we'll fetch in a single
      *  pass. Beyond this, fall back to a prebin. Top point shards are
      *  ~8.5 MB raw; with column projection + year-range pushdown a typical
-     *  fetch is ~600 KB – 2 MB. Cap = 2 keeps worst-case under ~4 MB on
-     *  the dense urban corridor (Newark/Hudson). */
+     *  fetch is ~600 KB – 2 MB. Cap = 10 lets a county-wide z11 view (3-7
+     *  visible r5 shards) render as raw points — no hex-grid leak — while
+     *  still falling back to hex prebins at broader zooms.  */
     maxPointShards?: number
     /** When the chosen r7/r8/r9 prebin would require more than this many
      *  shards, fall back to the r6 single-file (~400 KB raw, ~50 KB after
@@ -187,6 +196,24 @@ export type PickFetchPlanArgs = {
     maxHexShards?: number
 }
 
+/** Resolutions for which we have a single-file (statewide) artifact. Older
+ *  manifests omit `single_files` and only publish r6. New manifests include
+ *  r6/r7/r8/r9 — the picker prefers the finest available when falling back
+ *  from a sharded plan with too many visible shards. */
+function singleFileResolutions(manifest: MapManifestV2): Set<6 | 7 | 8 | 9> {
+    if (manifest.single_files) {
+        const out = new Set<6 | 7 | 8 | 9>()
+        for (const k of manifest.single_files) {
+            const m = /^r(\d+)$/.exec(k)
+            if (!m) continue
+            const r = Number(m[1])
+            if (r === 6 || r === 7 || r === 8 || r === 9) out.add(r)
+        }
+        return out
+    }
+    return new Set([6])
+}
+
 export function pickFetchPlanV2(args: PickFetchPlanArgs): FetchPlan {
     const {
         viewport,
@@ -196,20 +223,45 @@ export function pickFetchPlanV2(args: PickFetchPlanArgs): FetchPlan {
         manifest,
         hexPxTarget,
         pointZoomThreshold = 11,
-        maxPointShards = 2,
+        maxPointShards = 10,
         maxHexShards = 30,
     } = args
+    const singleFiles = singleFileResolutions(manifest)
+    const dbg = (typeof window !== "undefined") && (window as any).__pickerDebug
+    const log = (plan: FetchPlan, reason: string): FetchPlan => {
+        if (dbg) {
+            const summary = plan.kind === "points"
+                ? `points (${plan.shards.length})`
+                : `hex r${plan.res} ${plan.shards === null ? "single-file" : `(${plan.shards.length} shards)`}`
+            console.log(`[picker] z=${zoom?.toFixed?.(2) ?? "—"} hexPx=${hexPxTarget} → ${summary} (${reason})`)
+        }
+        return plan
+    }
+
+    // Single-file fallback: prefer the *finest* published single-file ≤
+    // the picker's chosen resolution. This keeps the visual fidelity at
+    // the resolution the user's zoom warrants — no jarring drop to r6
+    // just because the viewport spans too many shards. Older manifests
+    // without finer single-files transparently fall back to r6.
+    const singleFileFallback = (chosen: 6 | 7 | 8 | 9): FetchPlan => {
+        for (const r of [9, 8, 7, 6] as const) {
+            if (r <= chosen && singleFiles.has(r)) return { kind: "hex", res: r, shards: null }
+        }
+        return { kind: "hex", res: 6, shards: null }
+    }
 
     // No viewport → callers (e.g. `CrashMapSection` embeds without live
-    // viewState) just want a coarse-but-cheap statewide aggregate.
+    // viewState) just want a coarse-but-cheap statewide aggregate. Prefer
+    // r7 over r6 when both are available — finer detail without sharding
+    // overhead.
     if (!viewport || zoom === undefined || lat === undefined || hexPxTarget === undefined) {
-        return { kind: "hex", res: 6, shards: null }
+        return log(singleFileFallback(singleFiles.has(7) ? 7 : 6), "no viewport")
     }
 
     if (zoom >= pointZoomThreshold) {
         const ptShards = visibleShardsV2(viewport, manifest, "points")
         if (ptShards.length > 0 && ptShards.length <= maxPointShards) {
-            return { kind: "points", shards: ptShards }
+            return log({ kind: "points", shards: ptShards }, `${ptShards.length} pt shards ≤ ${maxPointShards}`)
         }
     }
 
@@ -226,27 +278,35 @@ export function pickFetchPlanV2(args: PickFetchPlanArgs): FetchPlan {
         }
     }
     if (resolution === 6) {
-        // r6 is a single file (not sharded) per spec.
-        return { kind: "hex", res: 6, shards: null }
+        // r6 has no sharded artifact — single-file is the only option.
+        return log({ kind: "hex", res: 6, shards: null }, "chosen r6 (only single-file)")
     }
     const artifact = `hex_r${resolution}` as "hex_r7" | "hex_r8" | "hex_r9"
     const shards = visibleShardsV2(viewport, manifest, artifact)
     // High-shard-count fallback: viewport spans many r5 parents (e.g.
-    // statewide view at z8) → r6 single-file is cheaper in bytes AND in
-    // round-trips than fanning out across N×r7+ shards.
-    if (shards.length > maxHexShards) {
-        return { kind: "hex", res: 6, shards: null }
-    }
-    return { kind: "hex", res: resolution, shards }
+    // statewide at z8). Prefer the single-file at the *picker's* resolution
+    // (one round-trip, the same cell granularity the user expected) over
+    // bouncing all the way back to r6 single-file (which would visibly
+    // coarsen the map). Older manifests without per-res single-files still
+    // get the r6 fallback for back-compat.
+    if (shards.length > maxHexShards) return log(singleFileFallback(resolution), `${shards.length} ${artifact} shards > ${maxHexShards}`)
+    return log({ kind: "hex", res: resolution, shards }, `${shards.length} ${artifact} shards`)
 }
 
-/** Build a parquet URL for an artifact + (optional) shard cell. */
+/** Build a parquet URL for an artifact + (optional) shard cell. `null`
+ *  shard maps to the single-file `hex-r{N}.parquet` at the manifest root
+ *  (only valid for hex artifacts; `points` is always sharded). */
 export function shardUrlV2(
     artifact: "points" | "hex_r6" | "hex_r7" | "hex_r8" | "hex_r9",
     shard: string | null,
 ): string {
-    if (artifact === "hex_r6") return `${MAP_BASE_URL}/v2/hex-r6.parquet`
-    const dir = artifact === "points" ? "points" : artifact.replace("_", "-")
+    if (artifact === "points") return `${MAP_BASE_URL}/v2/points/${shard}.parquet`
+    if (shard === null) {
+        // Single-file. `hex_r{N}` → `hex-r{N}.parquet`.
+        const stem = artifact.replace("_", "-")
+        return `${MAP_BASE_URL}/v2/${stem}.parquet`
+    }
+    const dir = artifact.replace("_", "-")
     return `${MAP_BASE_URL}/v2/${dir}/${shard}.parquet`
 }
 
