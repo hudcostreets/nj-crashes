@@ -1,8 +1,9 @@
 # Map v2: per-resolution single-file fallbacks
 
-> Status (2026-04-30): in progress on laptop. Backend export +
-> picker logic landed; visual verification pending across all
-> region/zoom combinations before push.
+> Status (2026-04-30): backend export + picker logic landed
+> (`6155bea2287`), `map.dvc` md5 synced (`335c83cdc9d`),
+> verification matrix below complete except for the year-range
+> pushdown finding (called out as a follow-up).
 
 ## Motivation
 
@@ -82,23 +83,42 @@ data).
 
 ## Verification matrix
 
-Before pushing, sanity-check at:
+Sanity-checked end-to-end (2026-04-30) via Chrome MCP + a Python
+mirror of `pickFetchPlanV2` (`tmp/verify_picker.py`):
 
-- [ ] `/` (Home hero map, statewide, no `llz`): r7 single-file
-- [ ] `/?llz=...` zoomed in: r9 sharded
-- [ ] `/map` (full route, statewide): r7 single-file
-- [ ] `/map/c/hudson` (county-fit): r9 sharded ~10 shards
-- [ ] `/map/c/hudson/jersey-city` (muni-fit): r9 sharded ~3-7 shards
-- [ ] zoom 14+ on JC: raw points (≤ 2 shards visible)
-- [ ] year-range filter (e.g. 2023 only): smaller fetched bytes
-- [ ] severity filter (e.g. fatal-only): no rendering glitches
+- [x] `/` (Home hero map, statewide z6.5, no `llz`): r7 single-file
+- [x] `/?llz=…_8_…` (statewide z8): r8 single-file
+- [x] `/?llz=…_10_…` (zoomed mid): r9 single-file (44 shards > 30)
+- [x] `/?llz=…_11_…` (zoomed in, ~Newark): r9 sharded (~2-19 shards)
+- [x] `/map` default (statewide z8.5): r8 single-file
+- [x] `/map/c/hudson` (county-fit z11.5): raw points (~9 shards) —
+  strict improvement over the pre-`maxPointShards`-bump r9-sharded plan
+- [x] `/map/c/hudson` z13: raw points (5 shards)
+- [x] `/map/c/hudson/jersey-city` z12: raw points (6 shards)
+- [x] `/map/c/hudson/jersey-city` z14+: raw points (1-2 shards)
+- [x] severity filter (`?s=f`): no rendering glitches; sparse fatal-only
+  cells cluster along major roads
+- [~] year-range filter (`?y=2023-2023`): only ~3% smaller bytes vs
+  `?y=2019-2023` at /map z8.5 (single-file). At county-fit z12.1 with
+  r9 sharded (Hudson) the narrow filter actually fetched *more* bytes
+  (825 KB vs 644 KB). hyparquet's row-group pushdown for the year
+  filter isn't biting the way the spec assumed — see follow-ups.
 
-In each case, no visible hex grid should be apparent — columns
-should fully cover their cells, with adjacent columns just touching
-at edges (inradius ≈ adjacent-center / 2).
+In each case, no visible hex grid is apparent — columns fully cover
+their cells, with adjacent columns just touching at edges (inradius ≈
+adjacent-center / 2).
 
 ## Out of scope (follow-ups)
 
+- **Year-range pushdown effectiveness**: row groups in
+  `hex-r{N}.parquet` are sorted by `year` and have correct min/max
+  stats (verified via `pqm`), but observed fetched bytes barely shrink
+  with a narrow year filter (`y=2023-2023` vs `y=2019-2023`: ~3%
+  reduction at /map statewide; for sharded r9 at /map/c/hudson the
+  narrow filter was actually slightly *larger*). hyparquet's
+  `{ year: { $gte, $lte } }` predicate either isn't pruning row groups
+  or our HTTP range-fetch coalescer is over-fetching. Worth inspecting
+  the network ranges hyparquet emits.
 - **CC pushdown**: hex shards have a `cc` column but no row-group
   ordering by `cc`. Adding `(cc, year, h3)` sort + RG stats would
   let `/map/c/{name}` skip non-county row groups in the single-file.
