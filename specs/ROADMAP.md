@@ -34,13 +34,16 @@ gating the other today.
    fetch path deleted; `pickFetchPlanV2` viewport optional;
    `?v2=1` flag removed; `CrashMapSection` synthesizes initial
    viewState from county/muni bbox so embeds get fine prebins.
-3. **`map-multi-res-single-files.md`** — *in progress* (laptop).
-   Publish per-resolution single-file fallbacks (`hex-r{7,8,9}.parquet`)
-   so statewide views don't drop to chunky r6. Backend export +
-   picker logic landed; visual verification pending across all
-   region/zoom combinations before push. Includes the
-   `getResolution` clamp fix for the orthogonal "skinny columns
-   on visible lattice" bug.
+3. ~~**`map-multi-res-single-files.md`**~~ — done locally
+   (`6155bea2287`, `335c83cdc9d`, `728128be313`). Per-resolution
+   single-file fallbacks (`hex-r{6,7,8,9}.parquet`), picker prefers
+   the finest single-file ≤ chosen res, `maxPointShards` bumped 2→10
+   so county/muni z11+ views render raw points, `getResolution`
+   render-res clamp fixes the "skinny columns on visible lattice"
+   bug. Verification matrix complete; one follow-up logged: the
+   year-range row-group pushdown isn't actually shrinking fetched
+   bytes (~3% at /map z8.5 single-file, occasionally negative for
+   sharded r9). Local-only — not pushed yet.
 4. **`crash-detail-pages.md`** — per-crash pages aggregating
    NJSP + NJDOT + news links + Bluesky thread embed + Slack
    `#crash-bot` backfill. Builds on the harmonization
