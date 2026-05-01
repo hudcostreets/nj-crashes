@@ -16,7 +16,7 @@ There are THREE different municipality coding systems:
 - **NJSP**: Different codes than NJDOT for same municipalities
 - **NJGIN**: Canonical codes from NJ GIS data (superset of both)
 
-The `harmonize-muni-codes.ipynb` notebook creates mappings between all three systems.
+`njdot/harmonize_muni_codes.py` creates mappings between all three systems.
 
 ## Primary Key Structure
 
@@ -38,7 +38,7 @@ Other types reference crashes via denormalized PK fields:
 
 ### Data pipeline
 - `njdot/rawdata/pqt.py`: Parse raw .txt files to .pqt, apply structural fixes (geocoding, Port Authority drops)
-- `njdot/harmonize-muni-codes.ipynb`: Reconcile municipality codes/names across NJDOT/NJSP/NJGIN via majority voting
+- `njdot/harmonize_muni_codes.py`: Reconcile municipality codes/names across NJDOT/NJSP/NJGIN via majority voting
 - `njdot/crashes.py`: Main crashes data transformation pipeline
 - `njdot/README.md`: Comprehensive pipeline documentation, including 2023 data quality issues
 - `njsp/cli/update_www_data.py`: Generate frontend CSV data files from NJSP crash records
