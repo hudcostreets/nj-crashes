@@ -302,6 +302,22 @@ export default function CrashMapPage() {
             {result.status === "loading" && (
                 <div style={{ padding: "1em" }}>Loading map data…</div>
             )}
+            {result.status === "ready" && result.refetching && (
+                <div style={{
+                    position: "absolute", top: 8, right: 8, zIndex: 5,
+                    width: 24, height: 24, borderRadius: "50%", padding: 4,
+                    background: actualTheme === "dark" ? "rgba(30,30,30,0.6)" : "rgba(255,255,255,0.7)",
+                    pointerEvents: "none",
+                }}>
+                    <style>{`@keyframes hccs-spin { to { transform: rotate(360deg) } }`}</style>
+                    <div style={{
+                        width: "100%", height: "100%", borderRadius: "50%",
+                        border: `2px solid ${actualTheme === "dark" ? "#aaa" : "#555"}`,
+                        borderTopColor: "transparent",
+                        animation: "hccs-spin 0.8s linear infinite",
+                    }} />
+                </div>
+            )}
             {result.status === "ready" && (
                 <Suspense fallback={<div style={{ padding: "1em" }}>Loading map…</div>}>
                     {result.dataKind === "points" ? (
