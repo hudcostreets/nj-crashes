@@ -15,7 +15,12 @@ import { PlotInfo, Cyclist, Driver, Pedestrian, Passenger } from "@/src/icons"
 import { repoWithOwner } from "@/src/github"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
+import { getPopulation, usePopulation } from "@/src/census/usePopulation"
 import css from "./plot.module.scss"
+
+// Latest ACS5 vintage. Years past this reuse 2023's population as the
+// denominator (annual pop changes slowly).
+const POP_LAST_YEAR = 2023
 
 const estimationHref = `https://nbviewer.org/github/${repoWithOwner}/blob/main/njsp/update-projections.ipynb`
 
@@ -173,6 +178,11 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     const [projSolidity, setProjSolidity] = useSessionStorage<number>('njsp-deaths-projSolidity', 0.75)
     const [projFgOpacity, setProjFgOpacity] = useSessionStorage<number>('njsp-deaths-projFgOpacity', 1.0)
     const [timeGranularity, setTimeGranularity] = useSessionStorage<TimeGranularity>('njsp-deaths-timeGranularity', 'year')
+    const [perCapita, setPerCapita] = useSessionStorage<boolean>('njsp-deaths-perCapita', false)
+    // Per-capita is only meaningful in year mode (monthly rates would be 1/12 of annual,
+    // tiny numbers — and the population denominator is annual anyway).
+    const isMonthly = timeGranularity === 'month'
+    const effectivePerCapita = perCapita && !isMonthly
     const containerRef = useRef<HTMLDivElement>(null)
     const [containerWidth, setContainerWidth] = useState(800)  // Default to reasonable width before ResizeObserver fires
     const [rundate, setRundate] = useState<string | null>(null)
@@ -223,7 +233,9 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     const monthlyQueryStr = useMemo(() => monthlyQueryFn(county, propCc ?? null, propMc ?? null), [county, propCc, propMc])
     const monthlyRows = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
 
-    const isMonthly = timeGranularity === 'month'
+    // Population data for per-capita scaling. Loaded unconditionally so the user
+    // can toggle without a fresh fetch.
+    const { lookup: popLookup } = usePopulation()
 
     // Pinnable legend items: Types + (monthly-only) '12-mo avg'. '* Projected'
     // is a popover trigger (`<details>`), tracked with a simple hover state below.
@@ -244,6 +256,18 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
 
     // Build plot data
     const { data, annotations, layout } = useMemo(() => {
+        // Per-capita scaling. Years past the latest ACS5 vintage reuse the 2023
+        // population; if pop is missing, fall back to absolute (returns input).
+        const geo = { cc: propCc ?? null, mc: propMc ?? null }
+        const scale = (year: number, value: number): number => {
+            if (!effectivePerCapita || !popLookup) return value
+            const pop = getPopulation(popLookup, geo, Math.min(year, POP_LAST_YEAR))
+            if (!pop) return value
+            return (value * 1e5) / pop
+        }
+        const yFmt = effectivePerCapita ? '.2f' : 'd'
+        const yLabel = effectivePerCapita ? 'fatalities per 100k' : ''
+
         // Monthly mode — stacked bars by victim type + 12-mo avg line
         if (isMonthly) {
             if (!monthlyRows.length) {
@@ -425,13 +449,13 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 name: type,
                 legendgroup: type,
                 x: rows.map(r => r.year),
-                y: rows.map(r => r[col]),
+                y: rows.map(r => scale(r.year, r[col] as number)),
                 marker: { color: colors },
-                texttemplate: "%{y:d}",
+                texttemplate: `%{y:${yFmt}}`,
                 textfont: { color: textColors },
                 textposition: isSolo ? "auto" : "inside",
                 visible: isActive ? true : 'legendonly',
-                hovertemplate: `%{y}<extra>${type}</extra>`,
+                hovertemplate: `%{y:${yFmt}}<extra>${type}</extra>`,
             } as PlotData
         })
 
@@ -443,9 +467,9 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 name: "Total",
                 showlegend: false,
                 x: rows.map(r => r.year),
-                y: rows.map(r => r.driver + r.pedestrian + r.cyclist + r.passenger),
+                y: rows.map(r => scale(r.year, r.driver + r.pedestrian + r.cyclist + r.passenger)),
                 marker: { size: 0, opacity: 0 },
-                hovertemplate: `<b>%{y}</b><extra>Total</extra>`,
+                hovertemplate: `<b>%{y:${yFmt}}</b><extra>Total</extra>`,
             } as PlotData)
         }
 
@@ -458,14 +482,17 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 if (remainder > 0) {
                     hasProjected = true
                     const actual = lastRow[col] || 0
-                    const projTotal = actual + remainder
+                    const projTotalRaw = actual + remainder
+                    const projTotalDisp = effectivePerCapita
+                        ? scale(curYear, projTotalRaw).toFixed(2)
+                        : String(projTotalRaw)
                     traces.push({
                         type: "bar",
                         name: `${type} (projected)`,
                         legendgroup: type,  // Same group as actual
                         showlegend: false,  // Don't show separate legend entry
                         x: [curYear],  // Only current year
-                        y: [remainder],
+                        y: [scale(curYear, remainder)],
                         marker: {
                             color: 'transparent',
                             pattern: {
@@ -476,11 +503,11 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                                 fgopacity: 1,
                             },
                         } as any,
-                        texttemplate: "%{y:d}*",
+                        texttemplate: `%{y:${yFmt}}*`,
                         textposition: "inside",
                         textfont: { color: '#ffffff' },
                         textangle: 0,  // Force upright text
-                        hovertemplate: `${curYear} est: ${projTotal} (+%{y})<extra>${type}*</extra>`,
+                        hovertemplate: `${curYear} est: ${projTotalDisp} (+%{y:${yFmt}})<extra>${type}*</extra>`,
                         visible: (!activeType || activeType === type) ? true : 'legendonly',
                     } as PlotData)
                 }
@@ -501,6 +528,10 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
 
         // Build annotations (totals above bars)
         const annotations: Annotation[] = []
+        const fmtTotal = (year: number, total: number): string => {
+            const v = scale(year, total)
+            return effectivePerCapita ? v.toFixed(2) : String(Math.round(v))
+        }
         if (!activeType) {
             // Show all year totals when all types visible
             rows.forEach(row => {
@@ -517,10 +548,11 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 // Skip if nothing to show
                 if (total === 0) return
                 const isFaded = highlightProjected && row.year !== curYear
+                const totalText = fmtTotal(row.year, total)
                 annotations.push({
                     x: row.year,
-                    y: total,
-                    text: projected > 0 ? `${total}*` : `${total}`,
+                    y: scale(row.year, total),
+                    text: projected > 0 ? `${totalText}*` : totalText,
                     showarrow: false,
                     yshift: 14,
                     font: { color: isFaded ? 'rgba(255,255,255,0.15)' : plotColors.textColor, size: annotationFontSize },
@@ -538,8 +570,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 if (projected > 0 && actual > 0) {
                     annotations.push({
                         x: curYear,
-                        y: total,
-                        text: `${total}*`,
+                        y: scale(curYear, total),
+                        text: `${fmtTotal(curYear, total)}*`,
                         showarrow: false,
                         yshift: 14,
                         font: { color: plotColors.textColor, size: annotationFontSize },
@@ -569,8 +601,9 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 gridcolor: plotColors.gridColor,
                 rangemode: "tozero",
                 tickfont: { color: plotColors.textColor },
+                title: yLabel ? { text: yLabel, font: { color: plotColors.textColor } } : undefined,
             },
-            margin: { t: 10, r: 0, b: 30, l: 40 },
+            margin: { t: 10, r: 0, b: 30, l: yLabel ? 60 : 40 },
             annotations,
             dragmode: false,
             paper_bgcolor: plotColors.paperBg,
@@ -585,7 +618,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
         }
 
         return { data: traces, annotations, layout, projectedRemainder }
-    }, [ytRows, projections, activeType, highlightProjected, showProjected, projSolidity, projFgOpacity, height, plotColors, containerWidth, isMonthly, monthlyRows])
+    }, [ytRows, projections, activeType, highlightProjected, showProjected, projSolidity, projFgOpacity, height, plotColors, containerWidth, isMonthly, monthlyRows, effectivePerCapita, popLookup, propCc, propMc])
 
     // Compute year totals for summary text
     const yearTotals = useMemo(() => {
@@ -655,6 +688,17 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                             >{label}</button>
                         ))}
                     </div>
+                    {!isMonthly && (
+                        <div className={css.buttonBar}>
+                            {([[false, 'Total'], [true, 'Per 100k']] as const).map(([val, label]) => (
+                                <button
+                                    key={String(val)}
+                                    className={perCapita === val ? css.active : ''}
+                                    onClick={() => setPerCapita(val)}
+                                >{label}</button>
+                            ))}
+                        </div>
+                    )}
                     {Types.map(type => {
                         const IconComponent = TYPE_ICONS[type]
                         return (
