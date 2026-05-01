@@ -16,7 +16,6 @@ import { repoWithOwner } from "@/src/github"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { useUrlState, boolParam } from "use-prms"
-import type { Param } from "use-prms"
 import { getPopulation, usePopulation } from "@/src/census/usePopulation"
 import css from "./plot.module.scss"
 
@@ -28,6 +27,14 @@ const estimationHref = `https://nbviewer.org/github/${repoWithOwner}/blob/main/n
 
 export type Type = "Cyclists" | "Drivers" | "Pedestrians" | "Passengers"
 const Types: Type[] = ["Cyclists", "Drivers", "Pedestrians", "Passengers"]
+
+// Singular adjective form for subtitle ("Pedestrian Fatalities").
+const TYPE_SINGULAR: Record<Type, string> = {
+    Cyclists: "Cyclist",
+    Drivers: "Driver",
+    Pedestrians: "Pedestrian",
+    Passengers: "Passenger",
+}
 
 // Trace colors - lightened for dark mode visibility
 const COLORS: Record<Type, string> = {
@@ -181,6 +188,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     const [projFgOpacity, setProjFgOpacity] = useSessionStorage<number>('njsp-deaths-projFgOpacity', 1.0)
     const [timeGranularity, setTimeGranularity] = useSessionStorage<TimeGranularity>('njsp-deaths-timeGranularity', 'year')
     const [perCapita, setPerCapita] = useUrlState<boolean>('pc', boolParam)
+    const [showPop, setShowPop] = useUrlState<boolean>('pop', boolParam)
     const isMonthly = timeGranularity === 'month'
     const effectivePerCapita = perCapita
     const containerRef = useRef<HTMLDivElement>(null)
@@ -280,6 +288,22 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
         const yFmt = effectivePerCapita ? '.2g' : 'd'
         const yLabel = effectivePerCapita ? 'fatalities per 100k' : ''
 
+        // Population overlay (y2 axis) — subtle dotted line in a muted hue
+        // (`POP_COLOR`). Range starts from 0 so the relative size of the
+        // population is legible vs. the absolute fatality counts.
+        const POP_COLOR = '#7aa6d8'
+        const popAxis = {
+            overlaying: 'y' as const,
+            side: 'right' as const,
+            showgrid: false,
+            tickfont: { color: POP_COLOR },
+            tickformat: '~s',
+            rangemode: 'tozero' as const,
+            fixedrange: true,
+            title: { text: 'population', font: { color: POP_COLOR } },
+            automargin: true,
+        }
+
         // Monthly mode — stacked bars by victim type + 12-mo avg line
         if (isMonthly) {
             if (!monthlyRows.length) {
@@ -376,11 +400,33 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 hovertemplate: `%{y:.2f}<extra>12-mo avg</extra>`,
             } as PlotData)
 
+            // Optional population overlay on y2.
+            if (showPop) {
+                const popX: string[] = []
+                const popY: number[] = []
+                for (const r of filteredRows) {
+                    const p = popFor(r.year, r.month)
+                    if (p !== null) { popX.push(r.date); popY.push(p) }
+                }
+                if (popY.length > 0) {
+                    traces.push({
+                        type: "scatter",
+                        mode: "lines",
+                        name: "Population",
+                        x: popX,
+                        y: popY,
+                        yaxis: "y2",
+                        line: { color: POP_COLOR, width: 2, dash: "dot" },
+                        hovertemplate: `%{y:,.0f}<extra>Population</extra>`,
+                    } as PlotData)
+                }
+            }
+
             const layout: Partial<Layout> = {
                 barmode: "stack",
                 showlegend: false,
                 height,
-                margin: { t: 10, b: 30, l: yLabel ? 60 : 40, r: 0 },
+                margin: { t: 10, b: 30, l: yLabel ? 60 : 40, r: showPop ? 60 : 0 },
                 paper_bgcolor: plotColors.paperBg,
                 plot_bgcolor: plotColors.plotBg,
                 hovermode: "x unified",
@@ -408,6 +454,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                     rangemode: "tozero",
                     title: yLabel ? { text: yLabel, font: { color: plotColors.textColor } } : undefined,
                 },
+                ...(showPop ? { yaxis2: popAxis } : {}),
                 dragmode: false,
             }
 
@@ -553,6 +600,29 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             } as PlotData)
         }
 
+        // Optional population overlay on y2.
+        if (showPop) {
+            const popX: number[] = []
+            const popY: number[] = []
+            for (const r of rows) {
+                const p = popFor(r.year)
+                if (p !== null) { popX.push(r.year); popY.push(p) }
+            }
+            if (popY.length > 0) {
+                traces.push({
+                    type: "scatter",
+                    mode: "lines+markers",
+                    name: "Population",
+                    x: popX,
+                    y: popY,
+                    yaxis: "y2",
+                    line: { color: POP_COLOR, width: 2, dash: "dot" },
+                    marker: { color: POP_COLOR, size: 5 },
+                    hovertemplate: `%{y:,.0f}<extra>Population</extra>`,
+                } as PlotData)
+            }
+        }
+
         // Build annotations (totals above bars)
         const annotations: Annotation[] = []
         const fmtTotal = (year: number, total: number): string => {
@@ -630,7 +700,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 tickfont: { color: plotColors.textColor },
                 title: yLabel ? { text: yLabel, font: { color: plotColors.textColor } } : undefined,
             },
-            margin: { t: 10, r: 0, b: 30, l: yLabel ? 60 : 40 },
+            ...(showPop ? { yaxis2: popAxis } : {}),
+            margin: { t: 10, r: showPop ? 60 : 0, b: 30, l: yLabel ? 60 : 40 },
             annotations,
             dragmode: false,
             paper_bgcolor: plotColors.paperBg,
@@ -645,7 +716,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
         }
 
         return { data: traces, annotations, layout, projectedRemainder }
-    }, [ytRows, projections, activeType, highlightProjected, showProjected, projSolidity, projFgOpacity, height, plotColors, containerWidth, isMonthly, monthlyRows, effectivePerCapita, popLookup, propCc, propMc])
+    }, [ytRows, projections, activeType, highlightProjected, showProjected, projSolidity, projFgOpacity, height, plotColors, containerWidth, isMonthly, monthlyRows, effectivePerCapita, popLookup, propCc, propMc, showPop])
 
     // Compute year totals for summary text
     const yearTotals = useMemo(() => {
@@ -688,9 +759,9 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             <h2 id={id}>
                 <a href={`#${id}`}>Car Crash Deaths</a>
             </h2>
-            <div className={css.subtitle}>Fatalities{effectivePerCapita ? ' per 100k population' : ''}, 2001–present{regionLabel ? ` · ${regionLabel}` : initialCounty ? ` · ${initialCounty} County` : ''}</div>
+            <div className={css.subtitle}>{activeType ? `${TYPE_SINGULAR[activeType]} ` : ''}Fatalities{effectivePerCapita ? ' per 100k population' : ''}, 2001–present{regionLabel ? ` · ${regionLabel}` : initialCounty ? ` · ${initialCounty} County` : ''}</div>
             <PlotWrapper
-                key={`${timeGranularity}-${activeType ?? 'all'}-${highlightProjected}`}
+                key={`${timeGranularity}-${activeType ?? 'all'}-${highlightProjected}-${showPop ? 'pop' : 'nopop'}`}
                 id={id}
                 data={data}
                 layout={layout}
@@ -723,6 +794,13 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                                 onClick={() => setPerCapita(val)}
                             >{label}</button>
                         ))}
+                    </div>
+                    <div className={css.buttonBar} style={{ marginLeft: '0.5em' }}>
+                        <button
+                            className={showPop ? css.active : ''}
+                            onClick={() => setShowPop(!showPop)}
+                            title="Overlay population (right axis)"
+                        >Pop</button>
                     </div>
                     {Types.map(type => {
                         const IconComponent = TYPE_ICONS[type]
