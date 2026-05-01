@@ -4,3 +4,6 @@ out
 # DVC-tracked via `njsp/data/njsp_njdot_match.parquet.dvc`; the residuals
 # file is regenerable by re-running the cmd, used for inspection only.
 njsp/data/njsp_njdot_residuals.parquet
+
+# Census API JSON cache; idempotently re-fetched by `python -m census.fetch`.
+census/data/raw/
