@@ -282,6 +282,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
                     )}
                 </Suspense>
             )}
+            {result.status === "ready" && result.refetching && <RefetchSpinner theme={actualTheme} />}
             {!drawerOpen && (
                 <>
                     <button
@@ -463,6 +464,28 @@ function LoadingOverlay({ theme }: { theme: "light" | "dark" }) {
                 animation: "hccs-spin 0.8s linear infinite",
             }} />
             <div>Loading map…</div>
+        </div>
+    )
+}
+
+/** Subtle top-right spinner shown while a background refetch is in flight
+ *  (e.g. zoom crossed a hex-resolution threshold). The map keeps rendering
+ *  the previous data underneath. */
+function RefetchSpinner({ theme }: { theme: "light" | "dark" }) {
+    const border = theme === "dark" ? "#aaa" : "#555"
+    const bg = theme === "dark" ? "rgba(30,30,30,0.6)" : "rgba(255,255,255,0.7)"
+    return (
+        <div style={{
+            position: "absolute", top: 8, right: 8, zIndex: 5,
+            width: 24, height: 24, borderRadius: "50%", padding: 4,
+            background: bg, pointerEvents: "none",
+        }}>
+            <style>{`@keyframes hccs-spin { to { transform: rotate(360deg) } }`}</style>
+            <div style={{
+                width: "100%", height: "100%", borderRadius: "50%",
+                border: `2px solid ${border}`, borderTopColor: "transparent",
+                animation: "hccs-spin 0.8s linear infinite",
+            }} />
         </div>
     )
 }

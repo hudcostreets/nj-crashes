@@ -169,9 +169,9 @@ export type DataKind = "points" | "hex"
  *  (`pickFetchPlanV2`) chooses among raw points / hex prebins (r6 single-
  *  file, r7/r8/r9 sharded) based on viewport + shard density. */
 export function useCrashData(filter: CrashFilter | null):
-    | { status: "loading"; data?: undefined; dataKind?: undefined; error?: undefined; manifest?: MapManifest }
-    | { status: "ready"; data: Crash[] | StackedHex[]; dataKind: DataKind; manifest: MapManifest; error?: undefined }
-    | { status: "error"; error: string; data?: undefined; dataKind?: undefined; manifest?: MapManifest } {
+    | { status: "loading"; data?: undefined; dataKind?: undefined; error?: undefined; manifest?: MapManifest; refetching?: false }
+    | { status: "ready"; data: Crash[] | StackedHex[]; dataKind: DataKind; manifest: MapManifest; error?: undefined; refetching: boolean }
+    | { status: "error"; error: string; data?: undefined; dataKind?: undefined; manifest?: MapManifest; refetching?: false } {
     const [manifest, setManifest] = useState<MapManifestV2 | null>(null)
     const [manifestErr, setManifestErr] = useState<string | null>(null)
 
@@ -260,7 +260,15 @@ export function useCrashData(filter: CrashFilter | null):
 
     if (manifestErr) return { status: "error", error: manifestErr }
     if (!manifest) return { status: "loading" }
-    if (state.status === "loading") return { status: "loading", manifest }
+    if (state.status === "loading") {
+        // If we have a previous successful fetch, keep showing it while the
+        // new one runs — set `refetching` so the consumer can render a
+        // subtle overlay instead of hiding the map.
+        if (state.data.length > 0) {
+            return { status: "ready", data: state.data, dataKind: state.dataKind, manifest, refetching: true }
+        }
+        return { status: "loading", manifest }
+    }
     if (state.status === "error") return { status: "error", error: state.error ?? "unknown", manifest }
-    return { status: "ready", data: state.data, dataKind: state.dataKind, manifest }
+    return { status: "ready", data: state.data, dataKind: state.dataKind, manifest, refetching: false }
 }
