@@ -2,27 +2,27 @@
 
 ## Status (2026-04-15)
 
-- **Core matcher landed** (`54984e2ebf9`). `njsp/match_njdot.py` implements 7 passes; CLI at `njsp match_njdot`; dvc stage at `njsp/data/njsp_njdot_match.parquet.dvc`; 16 unit tests at `njsp/tests/test_match_njdot.py`.
-- Current coverage on 2008-2023: **8428 pairs (93.9% NJSP, 90.2% NJDOT-fatal)**. Residuals: 545 NJSP-only, 916 NJDOT-only.
-- Pass breakdown (landed 2026-04-14/15):
+- **Core matcher landed** (`54984e2ebf9`). `njsp/match_njdot.py` implements 8 passes + route-alias normalization; CLI at `njsp match_njdot`; dvc stage at `njsp/data/njsp_njdot_match.parquet.dvc`; 20 unit tests at `njsp/tests/test_match_njdot.py`.
+- Current coverage on 2008-2023: **8429 pairs (93.9% NJSP, 90.2% NJDOT-fatal)**. Residuals: 544 NJSP-only, 915 NJDOT-only.
+- Pass breakdown (landed 2026-04-14/15, route-aliases 2026-04-30):
   | # | key | pairs |
   |---|-----|-------|
   | 1 | exact `(date, cc, mc)` + tk-sum | 8128 |
-  | 2 | `(date, cc)` cross-mc on route+mp | 173 |
+  | 2 | `(date, cc)` cross-mc on route+mp | 178 |
   | 3 | `(date)` cross-county on route+mp | 16 |
   | 4 | `date ± 1` on route+mp | 18 |
   | 5 | `(date, cc, tk)` ±3hr time | 54 |
-  | 6 | `(date, cc, tk, pk)` decomposition | 10 |
-  | 7 | route+mp agree, tk disagrees | 21 |
+  | 6 | `(date, cc, tk, pk)` decomposition | 5 |
+  | 7 | route+mp agree, tk disagrees | 22 |
   | 8 | `(date, cc)` street-name fuzzy | 8 |
   | 0 | manual overrides (human-curated) | — |
 - Residual breakdown (2008-2023):
   | side | pd_missing | route_mismatch | unresolved |
   |------|-----------|----------------|-----------|
-  | njdot | 825 | 4 | 87 |
-  | njsp | 454 | 6 | 85 |
+  | njdot | 825 | 3 | 87 |
+  | njsp | 454 | 5 | 85 |
 
-Remaining `route_mismatch` residuals (10) are ~half NJ Turnpike 95↔700 aliasing (next session: route alias normalization) and ~half physically-different locations that happen to share a day+county.
+Remaining `route_mismatch` residuals (8) are physically-different locations that happen to share a day+county — same routes after NJTP `95`↔`700` normalization but `|Δmp| > 1.0` (or `(date, cc)`-collisions on different routes entirely). Next-step lat/lon proximity is the only obvious avenue, and is gated on geocoding NJSP `location` text.
 
 ## Manual overrides
 

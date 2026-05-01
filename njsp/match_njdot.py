@@ -133,6 +133,48 @@ def norm_route(s: str | int | None) -> str | None:
     return s
 
 
+# Regex matching free-text NJ-Turnpike designators. NJSP `location` uses
+# "New Jersey Turnpike" or "State/Interstate Authority 95 …" (the NJTP
+# Authority); NJDOT `road` uses "I-95  N.J. TURNPIKE" / "NJ TURNPIKE".
+# Trigger list is intentionally narrow (TURN(PIKE) / TPKE / AUTHORITY) —
+# matching on "INTERSTATE" or bare "95" would falsely re-route the
+# genuine I-95 segments in Bergen / Mercer (~55 fatal rows on 2008-2023).
+_NJTP_CONTEXT_RE = re.compile(r'\bTURN(?:PIKE)?\b|\bTPKE\b|\bAUTHORITY\b', re.IGNORECASE)
+
+
+def apply_route_aliases(route: str | None, text: str | None) -> str | None:
+    """Canonicalize known route-number aliases that disagree across sources.
+
+    NJSP and NJDOT mostly agree on numeric route codes (e.g. both use 444
+    for the Garden State Parkway, 446 for the AC Expressway), but for the
+    NJ Turnpike NJSP records the interstate-system designation `95` (and
+    free-text "New Jersey Turnpike" / "State/Interstate Authority 95"),
+    while NJDOT inconsistently uses either `95` (I-95 designation, ~80%
+    of fatal NJTP rows: `road = "I-95  N.J. TURNPIKE"`) or `700`
+    (internal route number, ~20%).
+
+    To make `route` comparable across sources, collapse `95` → `700` when
+    surrounding text mentions Turnpike / TPKE / Authority. Routes already
+    coded `700` pass through unchanged. All non-NJTP routes pass through
+    unchanged.
+
+    Examples:
+      apply_route_aliases('95',  'New Jersey Turnpike MP 30.3')           → '700'
+      apply_route_aliases('95',  'State/Interstate Authority 95 S MP 30') → '700'
+      apply_route_aliases('95',  'I-95  N.J. TURNPIKE')                   → '700'
+      apply_route_aliases('95',  'Interstate 95 S MP 7.8')  # actual I-95 → '95'
+      apply_route_aliases('700', 'NEW JERSEY TURNPIKE')                   → '700'
+      apply_route_aliases('80',  'Interstate 80')                         → '80'
+    """
+    if route != '95':
+        return route
+    if not text or not isinstance(text, str):
+        return route
+    if _NJTP_CONTEXT_RE.search(text):
+        return '700'
+    return route
+
+
 def _prep_njsp(njsp: pd.DataFrame, years: Iterable[int]) -> pd.DataFrame:
     """Subset NJSP crashes to `years`; add `date`, `mp`, `route`, `njsp_id`.
 
@@ -145,6 +187,12 @@ def _prep_njsp(njsp: pd.DataFrame, years: Iterable[int]) -> pd.DataFrame:
     df['date'] = df['dt'].dt.date
     df['mp'] = df['location'].apply(parse_mp_from_location)
     df['route'] = df['highway'].apply(norm_route)
+    # Route aliases: NJSP records NJTP as `95` (interstate designator);
+    # NJDOT often uses internal route `700`. Disambiguate via NJSP's
+    # `location` text (mentions "Turnpike" / "Authority").
+    df['route'] = [
+        apply_route_aliases(r, loc) for r, loc in zip(df['route'], df['location'])
+    ]
     df['njsp_id'] = df.index
     df = df.reset_index(drop=True).set_index('njsp_id', drop=False)
     df.index.name = '_njsp_id'
@@ -159,6 +207,12 @@ def _prep_njdot(njdot_fatal: pd.DataFrame, years: Iterable[int]) -> pd.DataFrame
     df = df[df['year'].isin(list(years))].copy()
     df['date'] = df['dt'].dt.date
     df['route'] = df['route'].apply(norm_route)
+    # Route aliases: NJDOT records NJTP fatals as both `95` (I-95
+    # designator, ~80% of fatal NJTP rows) and `700` (internal route);
+    # collapse via `road` text ("I-95  N.J. TURNPIKE" → 700).
+    df['route'] = [
+        apply_route_aliases(r, road) for r, road in zip(df['route'], df['road'])
+    ]
     df['njdot_idx'] = df.index
     df = df.reset_index(drop=True).set_index('njdot_idx', drop=False)
     df.index.name = '_njdot_idx'

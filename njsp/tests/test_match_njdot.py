@@ -3,7 +3,7 @@ import pandas as pd
 
 from njsp.match_njdot import (
     parse_mp_from_location, norm_route, norm_street, street_hints_agree,
-    _route_mp_agree, match,
+    apply_route_aliases, _route_mp_agree, match,
 )
 
 
@@ -40,6 +40,37 @@ def test_norm_route():
     assert norm_route('NaN') is None
     assert norm_route('<NA>') is None
     assert norm_route(float('nan')) is None
+
+
+def test_apply_route_aliases_njtp():
+    """NJ Turnpike: route `95` collapses to `700` when context names the
+    Turnpike (or Authority); routes other than `95` pass through; bare
+    `95` (no Turnpike context) stays `95` (genuine I-95)."""
+    # NJSP-side `location` text — TURN/TURNPIKE
+    assert apply_route_aliases('95', 'New Jersey Turnpike MP 30.3') == '700'
+    assert apply_route_aliases('95', 'NEW JERSEY TURNPIKE') == '700'
+    # NJSP-side `location` text — AUTHORITY (NJTP Authority)
+    assert apply_route_aliases('95', 'State/Interstate Authority 95 S MP 30.3') == '700'
+    # NJDOT-side `road` text — TURN/TPKE
+    assert apply_route_aliases('95', 'I-95  N.J. TURNPIKE') == '700'
+    assert apply_route_aliases('95', 'I-95  N.J. TURNPIKE-WEST ALIGNMENT') == '700'
+    assert apply_route_aliases('95', 'NJ TPKE N') == '700'
+    # Genuine I-95 (Bergen/Mercer) — route stays `95`
+    assert apply_route_aliases('95', 'Interstate 95 S MP 7.8') == '95'
+    assert apply_route_aliases('95', 'I-95') == '95'
+    assert apply_route_aliases('95', 'RT 95') == '95'
+    # Already-canonical NJTP rows pass through
+    assert apply_route_aliases('700', 'NEW JERSEY TURNPIKE') == '700'
+    assert apply_route_aliases('700', 'RT 95') == '700'
+    # Non-NJTP routes (any text) pass through
+    assert apply_route_aliases('80', 'Interstate 80') == '80'
+    assert apply_route_aliases('444', 'Garden State Parkway') == '444'  # already shared
+    assert apply_route_aliases('446', 'ATL CITY EXPWY') == '446'  # already shared
+    # No text / nullish text — `95` stays `95` (no evidence of NJTP)
+    assert apply_route_aliases('95', None) == '95'
+    assert apply_route_aliases('95', '') == '95'
+    # Route-side null/None pass-through
+    assert apply_route_aliases(None, 'NEW JERSEY TURNPIKE') is None
 
 
 def test_norm_street():
@@ -141,6 +172,25 @@ def test_pass_2_cross_mc_route_mp():
     assert len(matches) == 1
     assert matches.iloc[0]['pass'] == 2
     assert matches.iloc[0]['mc'] == 35  # NJDOT's mc wins (we record the NJDOT side's PK)
+
+
+def test_njtp_route_alias_matches():
+    """NJSP `highway=95` + Turnpike-context `location` matches NJDOT
+    `route=700` `road=NEW JERSEY TURNPIKE` via route-alias normalization
+    (the residual `route_mismatch` case from 2011-04-21 cc=4 mc=9)."""
+    sp = _mk_njsp([
+        # Same (date, cc) but different mc → must use route+mp pass.
+        {'cc': 4, 'mc': 9, 'dt': '2011-04-21 06:21', 'tk': 1,
+         'location': 'State/Interstate Authority 95 S MP 30.3', 'highway': '95'},
+    ])
+    do = _mk_njdot([
+        {'year': 2011, 'cc': 4, 'mc': 14, 'case': 'NJTP-1', 'dt': '2011-04-21 06:21',
+         'tk': 1, 'route': '700', 'mp': 30.4, 'road': 'NEW JERSEY TURNPIKE'},
+    ])
+    matches, residuals = match(sp, do, years=range(2011, 2012))
+    assert len(matches) == 1
+    assert matches.iloc[0]['pass'] == 2
+    assert matches.iloc[0]['case'] == 'NJTP-1'
 
 
 def test_no_spurious_match_when_routes_disagree():
