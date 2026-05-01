@@ -217,6 +217,38 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
         return () => observer.disconnect()
     }, [])
 
+    // Pin the unified hover label at a constant y so it doesn't bob up/down
+    // with bar heights as the user moves across x. Plotly anchors the label
+    // to the topmost trace value at each x; we override its SVG `transform`
+    // attribute with a CSS transform (which wins per spec), so Plotly's
+    // re-renders don't fight back.
+    useEffect(() => {
+        const container = containerRef.current
+        if (!container) return
+        const ANCHOR_Y = 24  // pixels from plot top
+        const reposition = (lg: SVGGElement) => {
+            const transform = lg.getAttribute('transform') ?? ''
+            const match = transform.match(/translate\(([-\d.]+)[ ,]\s*([-\d.]+)\)/)
+            if (!match) return
+            const x = parseFloat(match[1])
+            lg.style.transform = `translate(${x}px, ${ANCHOR_Y}px)`
+        }
+        const scan = () => {
+            const lg = container.querySelector(
+                '.js-plotly-plot .hoverlayer g.legend',
+            ) as SVGGElement | null
+            if (lg) reposition(lg)
+        }
+        const observer = new MutationObserver(scan)
+        observer.observe(container, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['transform'],
+        })
+        return () => observer.disconnect()
+    }, [])
+
     // Load data sources
     const ytcDb = useRegisteredDb({ db, table: "ytc", url: YtcCsv })
     const monthlyDb = useRegisteredDb({ db, table: "monthly", url: MonthlyCsv })
@@ -399,6 +431,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 },
                 hovertemplate: `%{y:.2f}<extra>12-mo avg</extra>`,
             } as PlotData)
+
 
             // Optional population overlay on y2.
             if (showPop) {
