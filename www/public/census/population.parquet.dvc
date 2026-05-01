@@ -5,9 +5,9 @@ outs:
   path: population.parquet
 meta:
   computation:
-    cmd: cd ../.. && python -m census.build
+    cmd: cd ../../.. && python -m census.build
     deps:
-      /census/build.py: 096fe7943d504aa488c2625858f993e2
+      /census/build.py: 9796c89538f400532e53a48b10d6eaf8
       /census/fetch.py: 531221207d80a7f7f78f1b8b564a13cb
       /census/harmonize.py: 38d610389c47c8ee5c8a983cf307e2a7
       /census/data/nj_cousub_codes.parquet: 005008c40d2c3ca8160547c9d7b04a36

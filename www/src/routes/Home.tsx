@@ -14,6 +14,7 @@ import { FatalitiesPerYearPlot } from "@/src/njsp/FatalitiesPerYearPlot"
 import { YtdDeathsPlot } from "@/src/njsp/YtdDeathsPlot"
 import { HomicidesComparisonPlot } from "@/src/njsp/HomicidesComparisonPlot"
 import { FatalitiesByMonthBarsPlot } from "@/src/njsp/FatalitiesByMonthBarsPlot"
+import { PerCapitaRatePlot } from "@/src/census/PerCapitaRatePlot"
 import { PlotContainer } from "@/src/components/PlotContainer"
 import { GeoNavBar } from "@/src/components/GeoNavBar"
 import { useGeoFilter } from "@/src/GeoFilterContext"
@@ -133,6 +134,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                 <PlotContainer><YtdDeathsPlot key={`ytd-${cc}-${mc}`} county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
                 {!municipalityName && <PlotContainer><HomicidesComparisonPlot key={`hom-${countyName}`} county={countyName} cc={cc} /></PlotContainer>}
                 <PlotContainer><FatalitiesByMonthBarsPlot key={`fbm-${cc}-${mc}`} county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
+                <PlotContainer><PerCapitaRatePlot key={`pc-${cc}-${mc}`} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
 
                 {/* NJ DOT Section */}
                 <h2 id="njdot"><a href="#njdot">NJ DOT Crash Data</a></h2>

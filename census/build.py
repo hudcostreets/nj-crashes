@@ -21,12 +21,15 @@ import pandas as pd
 from utz import err
 
 from census import (
-    ACS5_FIRST_YEAR, ACS5_LAST_YEAR, DATA_DIR, RAW_DIR,
+    ACS5_FIRST_YEAR, ACS5_LAST_YEAR, CENSUS_DIR, DATA_DIR, RAW_DIR,
     POP_VAR_ACS, POP_VAR_DEC2000,
 )
 from census.harmonize import NJ_FIPS_TO_CC
 
-OUT_PQT = join(DATA_DIR, 'population.parquet')
+# Canonical bundle location — served directly to the FE (matches the
+# `www/public/njdot/cc2mc2mn.json` convention).
+WWW_CENSUS = join(CENSUS_DIR, '..', 'www', 'public', 'census')
+OUT_PQT = join(WWW_CENSUS, 'population.parquet')
 COUSUB_CODES_PQT = join(DATA_DIR, 'nj_cousub_codes.parquet')
 DEC2000_YEAR = 2000
 
