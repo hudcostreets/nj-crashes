@@ -100,6 +100,10 @@ async function fetchParquet<T>(
 
 function applyPostFilters(rows: Crash[], f: CrashFilter): Crash[] {
     let out = rows
+    if (f.ccs && f.ccs.length > 0) {
+        const ccs = new Set(f.ccs)
+        out = out.filter(r => ccs.has((r as any).cc))
+    }
     if (f.mc != null) out = out.filter(r => (r as any).mc === f.mc)
     if (f.severities) {
         const s = f.severities

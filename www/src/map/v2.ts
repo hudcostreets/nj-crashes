@@ -60,6 +60,7 @@ const MANIFEST_V2_URL = `${MAP_BASE_URL}/v2/manifest.v2.json`
  *  pushdown still applies. */
 export const POINT_COLUMNS = [
     "lat", "lon", "severity", "year", "dt",
+    "cc", "mc",
     "tk", "ti", "pk", "pi", "tv",
 ] as const
 
