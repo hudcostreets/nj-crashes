@@ -663,7 +663,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             <h2 id={id}>
                 <a href={`#${id}`}>Car Crash Deaths</a>
             </h2>
-            <div className={css.subtitle}>Fatalities, 2001–present{regionLabel ? ` · ${regionLabel}` : initialCounty ? ` · ${initialCounty} County` : ''}</div>
+            <div className={css.subtitle}>Fatalities{effectivePerCapita ? ' per 100k population' : ''}, 2001–present{regionLabel ? ` · ${regionLabel}` : initialCounty ? ` · ${initialCounty} County` : ''}</div>
             <PlotWrapper
                 key={`${timeGranularity}-${activeType ?? 'all'}-${highlightProjected}`}
                 id={id}
@@ -691,7 +691,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                         ))}
                     </div>
                     {!isMonthly && (
-                        <div className={css.buttonBar}>
+                        <div className={css.buttonBar} style={{ marginLeft: '0.5em' }}>
                             {([[false, 'Total'], [true, 'Per 100k']] as const).map(([val, label]) => (
                                 <button
                                     key={String(val)}
