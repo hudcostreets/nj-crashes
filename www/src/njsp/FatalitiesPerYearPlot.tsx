@@ -265,7 +265,9 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             if (!pop) return value
             return (value * 1e5) / pop
         }
-        const yFmt = effectivePerCapita ? '.2f' : 'd'
+        // 2 sig figs for per-capita (annotations get crowded otherwise);
+        // integer for absolute counts.
+        const yFmt = effectivePerCapita ? '.2g' : 'd'
         const yLabel = effectivePerCapita ? 'fatalities per 100k' : ''
 
         // Monthly mode — stacked bars by victim type + 12-mo avg line
@@ -484,7 +486,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                     const actual = lastRow[col] || 0
                     const projTotalRaw = actual + remainder
                     const projTotalDisp = effectivePerCapita
-                        ? scale(curYear, projTotalRaw).toFixed(2)
+                        ? scale(curYear, projTotalRaw).toPrecision(2)
                         : String(projTotalRaw)
                     traces.push({
                         type: "bar",
@@ -530,7 +532,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
         const annotations: Annotation[] = []
         const fmtTotal = (year: number, total: number): string => {
             const v = scale(year, total)
-            return effectivePerCapita ? v.toFixed(2) : String(Math.round(v))
+            return effectivePerCapita ? v.toPrecision(2) : String(Math.round(v))
         }
         if (!activeType) {
             // Show all year totals when all types visible
