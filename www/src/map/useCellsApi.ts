@@ -67,8 +67,29 @@ async function fetchCells(url: string): Promise<CellsResponse> {
         if (!r.ok) throw new Error(`cells api ${r.status}: ${await r.text().catch(() => "")}`)
         return (await r.json()) as CellsResponse
     })()
+    // Evict the cached promise on failure so retries actually retry instead
+    // of returning the same rejection forever.
+    p.catch(() => { if (responseCache.get(key) === p) responseCache.delete(key) })
     responseCache.set(key, p)
     return p
+}
+
+/** Pyramid resolutions the worker has built (must match the manifest's
+ *  `pyramid_levels`). The client-side picker can produce res values up
+ *  to base_res (14); res > 11 forces the worker into a raw fallback
+ *  that today blows the 128MB Workers memory cap for non-tiny bboxes.
+ *  And even res 10–11 over a multi-county bbox (pitch=45 inflates the
+ *  requested rect well beyond the on-screen footprint) blows up.
+ *
+ *  Cap conservatively at r9 — verified statewide-safe via direct
+ *  worker curls — until either the pyramid path streams shards (vs.
+ *  in-memory load + filter) or the FE shrinks the bbox it asks for.
+ *  Picker still emits any int [4..14]; the cap clamps to [6..9].
+ *  Filed as a follow-up; see `specs/cfw-cells-api.md`. */
+const MAX_PYRAMID_RES = 9
+const MIN_PYRAMID_RES = 6
+function clampRes(res: number): number {
+    return Math.max(MIN_PYRAMID_RES, Math.min(MAX_PYRAMID_RES, Math.round(res)))
 }
 
 function buildUrl(filter: CellsApiFilter, res: number): string {
@@ -110,8 +131,10 @@ export function useCellsApi(filter: CellsApiFilter | null):
     | { status: "error"; error: string; data?: undefined; plan?: CellsApiPlan } {
     const res = useMemo(() => {
         if (!filter) return null
-        if (filter.resOverride != null) return filter.resOverride
-        return pickHexResolutionForPixels(filter.zoom, filter.viewportLat, filter.hexPxTarget ?? 1.2)
+        const raw = filter.resOverride != null
+            ? filter.resOverride
+            : pickHexResolutionForPixels(filter.zoom, filter.viewportLat, filter.hexPxTarget ?? 1.2)
+        return clampRes(raw)
     }, [filter?.zoom, filter?.viewportLat, filter?.hexPxTarget, filter?.resOverride])
 
     const url = useMemo(() => {
