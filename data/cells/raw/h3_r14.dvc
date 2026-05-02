@@ -1,0 +1,10 @@
+outs:
+- md5: 566bb10c418495fd035466bb5f9b4d4e.dir
+  size: 72553707
+  hash: md5
+  path: h3_r14
+meta:
+  computation:
+    cmd: cd ../../.. && njdot compute cells raw -f
+    deps:
+      /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540

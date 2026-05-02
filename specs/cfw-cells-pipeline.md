@@ -40,9 +40,11 @@ nj-crashes/
 ## Phase 1 — raw layer
 
 ```
-Input:  njdot/data/crashes.parquet  (~800k rows, existing schema)
+Input:  njdot/data/crashes.parquet  (6.57M rows, existing schema)
 Output: data/cells/raw/h3_r14/*.parquet
 ```
+
+**Status:** done 2026-05-02. 6.57M crashes → 3.98M with lat/lon (60%; 39.4% are ungeocoded) → **31 r4 shards, 70 MB compressed total**. Tracked at `data/cells/raw/h3_r14.dvc`; mirrored to `s3://nj-crashes/cells/`.
 
 ### Steps
 
@@ -56,7 +58,9 @@ Output: data/cells/raw/h3_r14/*.parquet
 
 ### Schema (Phase 1)
 
-Existing crashes columns + `h3_r14`. Don't drop columns that the worker might project later — the worker selects columns at fetch time via hyparquet column projection.
+Reuses `_build_base()` from `njdot/cli/export_map_data.py` (effective `lat`/`lon` synth from `ilat`/`ilon` → `olat`/`olon` fallback, type-narrowing, dt → epoch minutes), then adds `year` (re-attached from source) + `h3_r14`. Columns the worker doesn't immediately need are kept — projection happens at fetch time via hyparquet column projection.
+
+Resulting schema (20 cols):
 
 | col | type | notes |
 |---|---|---|
@@ -64,18 +68,20 @@ Existing crashes columns + `h3_r14`. Don't drop columns that the worker might pr
 | cc | int8 | provenance (joinable to V/D/O/P) |
 | mc | int16 | provenance |
 | case | string | crash PK |
-| dt | int64 | epoch minutes (existing convention) |
-| lat | float32 | original |
-| lon | float32 | original |
+| dt | int32 | epoch minutes (matches `_build_base`) |
+| lat | float32 | effective (interpolated → original fallback, NJ-bbox-validated) |
+| lon | float32 | effective |
+| geocode_src | string | `'interpolated'` / `'original'` provenance flag |
 | severity | string | `f`/`i`/`p` |
-| tk, ti, pk, pi, tv | int8 | killed/injured tier counts |
-| sri, mp, road | string | route info, optional |
-| **h3_r14** | **uint64** | **new — `int64` with reinterpret if Arrow doesn't support uint64** |
+| tk, ti, pk, pi, tv | int16 | killed/injured tier counts (matches `_build_base` types) |
+| sri, mp, road, cross_street, route | string | route info, optional |
+| **h3_r14** | **int64** | **new — uint64 reinterpret (high bit of H3 cell IDs is reserved/0)** |
 
-### Storage estimate
+### Storage (actuals, 2026-05-02)
 
-- Raw rows: ~800k × ~80 bytes uncompressed ≈ 65 MB → ~10 MB compressed.
-- Per shard: ~50–100k rows × ~100 bytes uncompressed ≈ 5–10 MB → ~1 MB compressed.
+- 3.98M rows × 18 bytes/row median compressed = ~70 MB total
+- 31 shards, distribution heavily right-skewed: 3 shards ≥6 MB (Hudson/Essex/Bergen), median ~250 KB, ~10 micro-shards <20 KB (NJ border strays)
+- Worker fetches only intersecting shards, so micro-shards cost ~nothing at query time
 
 ## Phase 2 — pyramid layer
 
@@ -150,35 +156,40 @@ r11 per-shard is ~10 MB, on the edge of "is this worth pre-computing vs. raw gro
 
 `data_version` is content-addressed — used as cache key in the worker. Bumps on every successful pipeline run.
 
-## R2 push (DVX-style)
+## R2 push (DVX + flat mirror)
 
-Wrap each phase as a `.dvc` stage so it's incremental + content-addressed:
+DVX's content-addressed cache layout (`s3://nj-crashes/.dvc/files/md5/...`) is the right mechanism for *provenance and IDPy*, but the worker reads parquet by **human-readable URLs** (`s3://nj-crashes/cells/raw/h3_r14/{shard}.parquet`). So the pipeline does both:
+
+1. **`dvx push <.dvc>`** — pushes content-addressed blobs to the existing `s3` remote (`s3://nj-crashes/.dvc`). Used for provenance and `dvx pull` recoverability.
+2. **`njdot compute cells push`** — `aws s3 sync data/cells/ s3://nj-crashes/cells/ --exclude '*.dvc' --exclude '.gitignore' --delete` via the `cf` AWS profile. Worker-readable mirror.
+
+Each phase is wrapped as a `.dvc` stage. **The .dvc lives next to its data** (matching the existing `data/*.dvc` and `www/public/njdot/map.dvc` conventions), not under `njdot/data/`:
 
 ```yaml
-# njdot/data/cells_raw.dvc
+# data/cells/raw/h3_r14.dvc — Phase 1 output
 outs:
-  - md5: ...
-    path: ../../data/cells/raw/h3_r14/
+  - md5: <dir-md5>.dir
+    path: h3_r14
 meta:
   computation:
-    cmd: njdot compute cells raw --base-res 14 --shard-res 4
+    cmd: cd ../../.. && njdot compute cells raw -f
     deps:
-      njdot/data/crashes.parquet: <md5>
+      /njdot/data/crashes.parquet: <md5>
 ```
 
 ```yaml
-# njdot/data/cells_pyramid.dvc
+# data/cells/pyramid.dvc — Phase 2 output (TBD)
 outs:
-  - md5: ...
-    path: ../../data/cells/pyramid/
+  - md5: <dir-md5>.dir
+    path: pyramid
 meta:
   computation:
-    cmd: njdot compute cells pyramid --levels 6,7,8,9,10,11
+    cmd: cd ../.. && njdot compute cells pyramid --levels 6,7,8,9,10,11
     deps:
-      data/cells/raw/h3_r14/: <md5>
+      /data/cells/raw/h3_r14: <dir-md5>.dir
 ```
 
-Push to R2 via dvx remote (configure once: `dvx remote add cells s3://nj-crashes/cells -c profile=cf`). Re-run is idempotent — dvx skips if hashes match.
+Re-run is idempotent — DVX skips if hashes match; `aws s3 sync --delete` is byte-identical-skip.
 
 ## Daily integration
 
@@ -190,28 +201,40 @@ Until cutover, keep this as a **manual** stage you trigger when data updates.
 
 ### CLI
 
-Add to `njdot/cli/`:
+Lives at `njdot/cli/cells.py`, registered via `njdot/cli/__init__.py` (avoids the circular import that would arise from registering inside `base.py`):
 
 ```
-njdot compute cells raw [--base-res 14] [--shard-res 4]
-njdot compute cells pyramid [--levels 6,7,8,9,10,11]
-njdot compute cells manifest
-njdot compute cells push     # convenience wrapper around `dvx push cells_*`
+njdot compute cells raw [-b/--base-res 14] [-s/--shard-res 4] [-o/--out-dir data/cells] [-f/--force]
+njdot compute cells pyramid [-l/--levels 6,7,8,9,10,11]   # Phase 2 (TBD)
+njdot compute cells manifest [-b 14] [-s 4] [-l 6,7,8,9,10,11] [-o data/cells]
+njdot compute cells push [-b/--bucket nj-crashes] [-p/--prefix cells] [--profile cf] [-n/--dry-run]
 ```
+
+`push` is `aws s3 sync` (worker-readable mirror), **not** `dvx push` (content-addressed cache). Both are needed; see "R2 push" above.
 
 ### h3 Python package
 
+The default `h3` v4 module returns **strings**:
+
 ```python
 import h3
-h3.latlng_to_cell(lat, lon, 14)            # → int (uint64)
-h3.cell_to_parent(c, 4)                     # → int
-h3.h3_to_string(c)                          # → '8e1f97abcdef123' (15-hex)
-h3.string_to_h3('...')                      # → int
+h3.latlng_to_cell(40.7, -74.0, 14)   # → '8e2a1072d6940cf'  (15-hex string)
+h3.cell_to_parent(c_str, 4)           # → '842a107ffffffff'  (string)
+h3.str_to_int(c_str)                  # → 640251149238747343
+h3.int_to_str(c_int)                  # → '8e2a1072d6940cf'
 ```
 
-Modern h3 (v4) returns ints by default. If we want hex-string IDs in parquet for human readability, convert at write time; otherwise store int64 (cheaper and what hyparquet expects).
+To get ints directly (avoiding string roundtrips), use the `numpy_int` API variant:
 
-**Recommendation**: store `h3_r14` as `int64` (reinterpret of the uint64 — H3 cell IDs fit in int64 since the high bit is always reserved/0). Keeps parquet types clean and Arrow-compatible.
+```python
+from h3.api import numpy_int as h3i
+h3i.latlng_to_cell(lat, lon, 14)       # → int64 directly
+h3i.cell_to_parent(c_int, 4)           # → int64 directly
+```
+
+`latlng_to_cell` is scalar-only (no vectorized variant), but a tight Python loop hits ~565k cells/s — fast enough (~7s for 4M crashes).
+
+**Storage**: `h3_r14` is stored as `int64` per spec — H3 cell IDs fit in int63 (high bit reserved). Sort order on `int64` matches the worker's `BETWEEN min_int AND max_int` filter pushdown.
 
 ### Sort + RG stats correctness
 
@@ -257,7 +280,7 @@ Aggregation produces topK at the cell-year level directly from raw rows (sort by
 
 ## Phasing
 
-1. Implement phase 1 + manifest. Push to R2. Worker can run against this alone (raw groupby for all queries).
+1. ✅ **Phase 1 + manifest done 2026-05-02.** Worker can run against this alone (raw groupby for all queries).
 2. Implement phase 2 (pyramid r6..r11). Push to R2. Worker switches to pyramid for those levels.
 3. Wire into daily.yml (post-cutover).
 
