@@ -1,0 +1,10 @@
+outs:
+- md5: c05238b5deb512d9e5ac1cd79aa9a348.dir
+  size: 166198904
+  hash: md5
+  path: pyramid
+meta:
+  computation:
+    cmd: cd ../.. && njdot compute cells pyramid -f
+    deps:
+      /data/cells/raw/h3_r14: 566bb10c418495fd035466bb5f9b4d4e

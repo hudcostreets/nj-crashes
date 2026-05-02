@@ -90,6 +90,8 @@ Input:  data/cells/raw/h3_r14/*.parquet
 Output: data/cells/pyramid/r{N}/*.parquet  for N in PYRAMID_LEVELS
 ```
 
+**Status:** done 2026-05-02. 6 levels (r6..r11) built in ~2 min. Tracked at `data/cells/pyramid.dvc`; mirrored to `s3://nj-crashes/cells/pyramid/`.
+
 ### Steps
 
 For each `N` in `PYRAMID_LEVELS`:
@@ -101,37 +103,45 @@ For each `N` in `PYRAMID_LEVELS`:
 5. Sort by `(shard_cell, h3_rN, year)`.
 6. Write one parquet per `shard_cell` to `data/cells/pyramid/r{N}/{shard_cell}.parquet`. Same parquet write options as raw (zstd, row groups, stats).
 
-### Schema (Phase 2)
+### Schema (Phase 2) — built v1
 
-Per pyramid level:
+Per pyramid level (13 cols, all crash-level — V/D/O joins deferred to v2):
 
 | col | type | notes |
 |---|---|---|
-| h3_rN | uint64 | the cell at this level |
+| h3_rN | int64 | the cell at this level |
 | year | int16 | per-year breakdown |
-| n_fatal | uint16 | sum |
-| n_inj_ped | uint16 | sum (uses crash-level `pi` count) |
-| n_inj_other | uint16 | sum (`ti - pi`) |
-| n_pdo | uint16 | sum (severity = 'p') |
-| n_killed_drv | uint16 | sum |
-| n_killed_pass | uint16 | sum |
-| n_killed_ped | uint16 | sum from `pk` |
-| n_inj_drv | uint16 | sum |
-| n_inj_pass | uint16 | sum |
-| n_vehs | uint16 | sum |
-| topK | list<struct{year:int16, dt:int64, case:string, severity:string}> | top 10 most recent crashes in this cell-year, by `dt` desc; pair-merge on rollup |
+| n_crashes | int32 | total crashes in cell-year (sanity check vs n_fatal+n_inj+n_pdo) |
+| n_fatal | int32 | count where severity=='f' |
+| n_inj | int32 | count where severity=='i' |
+| n_pdo | int32 | count where severity=='p' |
+| n_killed | int32 | sum(tk) — total persons killed |
+| n_killed_ped | int32 | sum(pk) — pedestrians killed |
+| n_injured | int32 | sum(ti) — total persons injured |
+| n_inj_ped | int32 | sum(pi) — pedestrians injured |
+| n_inj_other | int32 | sum(max(ti - pi, 0)) — non-ped persons injured |
+| n_vehs | int32 | sum(tv) — total vehicles involved |
+| topK | list<struct{case:string, dt:int64, severity:string, year:int64}> | top 10 most recent crashes in this cell-year, by `dt` desc; pair-merge on rollup |
 
-`topK` storage: ~10 entries × ~30 bytes = ~300 bytes/row. Modest. Use parquet `LIST<STRUCT>` encoding.
+Notes / divergences from original spec:
+- All counts are `int32` (not `uint16`): r6 cell-years already exceed uint16 (16-bit unsigned) headroom-wise (densest Hudson r6 cell-year had n_vehs=17375; n_crashes=8590), and pyramid clients may sum across cells/years.
+- `topK[].year` serializes as `int64` (pyarrow inferring from Python ints) — minor opt for later (~200 MB save at r11 if tightened to int16).
+- Granular victim breakdown (`n_killed_drv` / `n_killed_pass` / `n_inj_drv` / `n_inj_pass`) deferred to a future pyramid v2 that joins V/D/O — current crash-level columns don't break out victim role. Keep current schema as the pyramid v1.
 
-For the more granular victim/vehicle counts: pull them out of the existing crashes table (or join V/D/O/P), aggregate. If the join is heavy, defer to a v2 of the pyramid — start with `n_fatal/n_inj_ped/n_inj_other/n_pdo/n_vehs` and `topK`, add the type-severity matrix later.
+### Storage (actuals, 2026-05-02)
 
-### Storage estimate
+| level | cell-years | size | per-shard avg |
+|---|---:|---:|---:|
+| r6  |     13,705 |  1.9 MB | 60 KB |
+| r7  |     72,749 |  7.1 MB | 230 KB |
+| r8  |    273,891 |   19 MB | 600 KB |
+| r9  |    682,660 |   35 MB | 1.1 MB |
+| r10 |  1,204,709 |   47 MB | 1.5 MB |
+| r11 |  1,597,504 |   51 MB | 1.6 MB |
 
-- r6: ~70 cells × 23 years × ~150 B ≈ 250 KB total
-- r9: ~30k × 23 × 150 ≈ 100 MB → ~20 MB compressed; per-shard ~2 MB
-- r11: ~150k × 23 × 150 ≈ 500 MB → ~100 MB compressed; per-shard ~10 MB
+Pyramid total: ~160 MB compressed (raw + pyramid = ~230 MB on R2). r11 per-shard tops out at ~5 MB — well under the spec's "uncomfortable" bar; pre-computing r12 would still likely be too big to be worth it (a future pyramid that joins V/D/O — adding more columns — also pushes per-shard up).
 
-r11 per-shard is ~10 MB, on the edge of "is this worth pre-computing vs. raw groupby?" Acceptable for now; can drop later if cold-cache traffic is low.
+Build time on `e`: ~2 min for all 6 levels (3 min including raw). Most of the cost is per-row Python list construction for `topK` (5–30s/level scaling with cell count).
 
 ## Phase 3 — manifest
 
@@ -281,7 +291,7 @@ Aggregation produces topK at the cell-year level directly from raw rows (sort by
 ## Phasing
 
 1. ✅ **Phase 1 + manifest done 2026-05-02.** Worker can run against this alone (raw groupby for all queries).
-2. Implement phase 2 (pyramid r6..r11). Push to R2. Worker switches to pyramid for those levels.
+2. ✅ **Phase 2 done 2026-05-02.** r6..r11 pyramids built + pushed; worker can switch to pyramid for those levels.
 3. Wire into daily.yml (post-cutover).
 
 ## Hand-off
