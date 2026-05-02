@@ -29,7 +29,7 @@ Replace the static-prebin ladder (`v2/hex-r6.parquet` … `v2/hex_r9/{shard}.par
                                     one row per (h3_r{N}, year)
                             │
                             ▼ dvx push
-                            R2 bucket: `crashes-cells`
+                            R2 bucket: `nj-crashes`, prefix `cells/`
                             │
                             ▼ HTTP range fetches
                             CFW worker (`crashes-cells-api`)
@@ -177,16 +177,19 @@ const data = useFetch(url, { staleWhileRevalidate: true })
 | Pipeline: tag crashes with h3_r{base}, sort+shard, build pyramids, push to R2 | `e` (separate spec) | hand-off as `~/c/hccs/crashes/specs/cfw-cells-pipeline.md` once this spec is approved |
 | Client refactor (replace `pickFetchPlanV2`) | this session | after worker has a stable API |
 
-### R2 bucket setup (user, one-time)
+### R2 bucket setup
 
-1. Cloudflare dashboard → R2 → Create bucket: `crashes-cells`
-2. Settings → Public access → Connect custom domain: `cells.crashes.hudcostreets.org` (or similar; current `crashes.hudcostreets.org` is the CF Pages site, so pick a subdomain).
-3. Create an R2 API token (read+write) for the dvx pipeline + a read-only token for the worker.
-4. Drop `r2 = ...` config into `wrangler.toml` (this session, after bucket exists).
+**Done** (2026-05-02): bucket `nj-crashes` created on `Ryan@runsascoded.com`'s R2 account via the `cf` AWS profile (`AWS_PROFILE=cf aws s3 mb s3://nj-crashes`). Cells artifacts live under the `cells/` prefix; the bucket is **project-wide** so future S3→R2 migrations (csvs, parquets, geo, tiles) share it at sibling prefixes.
+
+Still TODO (when ready to expose):
+
+1. Settings → Public access → Connect custom domain: `cells.crashes.hudcostreets.org` (or similar; current `crashes.hudcostreets.org` is the CF Pages site, so pick a subdomain).
+2. Create an R2 API token (read+write) for the dvx pipeline + a read-only token for the worker (or rely on the worker's `r2_buckets` binding for read).
+3. (Optional) Mark the bucket public for raw-parquet civic-data access at the same custom domain.
 
 ## Open questions / things to revisit during implementation
 
-- **base = r13**: spec'd for now; pipeline takes a flag, can regen at r12 or r14 if r13 turns out poorly chosen.
+- **base = r14** (decided 2026-05-02 — pipeline + worker both default to r14, parameterizable). The earlier draft of this spec said r13; pipeline regenerates from `crashes.parquet` so we can swap to r12 or r15 if r14 turns out poorly chosen.
 - **topK K value**: defaulting to 10. Storage cost is bounded; can tune by use case.
 - **CFW vs. Ducklings (DuckDB-WASM)**: spec'd for plain CFW + parquet via hyparquet (the worker imports the same library the client uses today). Ducklings is appealing for ad-hoc analytics but adds bundle weight and complexity; can swap in later if query patterns get fancier.
 - **API versioning**: prefix `/v1/cells` from day one.
@@ -196,7 +199,7 @@ const data = useFetch(url, { staleWhileRevalidate: true })
 ## Phasing
 
 1. **Spec approval + R2 bucket creation** (now).
-2. **Pipeline spec for `e`** (immediately after approval): tag crashes with `h3_r{base}`, sort+shard, build pyramids, push to R2 via dvx. Output: `crashes-cells` bucket populated with raw + pyramids for r6..r11.
+2. **Pipeline spec for `e`** (immediately after approval): tag crashes with `h3_r{base}`, sort+shard, build pyramids, push to R2 via dvx. Output: `nj-crashes/cells/` populated with raw + pyramids for r6..r11.
 3. **Worker scaffold** (this session, in parallel with pipeline): wrangler config, basic routing, fixture-based dev, parquet read via hyparquet, h3 covering + range computation, response serialization.
 4. **Worker integration tests** against fixtures.
 5. **Client refactor** (this session): introduce `useCellsApi`, gate behind `?api=1` for parity testing.

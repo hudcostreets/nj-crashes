@@ -9,3 +9,12 @@
 export const MAP_BASE_URL = (
     (import.meta.env.VITE_MAP_BASE_URL as string | undefined) ?? "/njdot/map"
 ).replace(/\/+$/, "")
+
+/** Base URL for the dynamic cells API (CFW worker reading from R2 — see
+ *  `specs/cfw-cells-api.md`).
+ *
+ *  Local dev: defaults to the wrangler dev port. Prod: set
+ *  `VITE_CELLS_API_BASE` to the worker's domain. */
+export const CELLS_API_BASE = (
+    (import.meta.env.VITE_CELLS_API_BASE as string | undefined) ?? "http://localhost:51895"
+).replace(/\/+$/, "")

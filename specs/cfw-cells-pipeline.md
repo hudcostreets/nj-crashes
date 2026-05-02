@@ -14,23 +14,25 @@ Read `specs/cfw-cells-api.md` first for architecture context (raw layer + pyrami
   - `SHARD_RES = 4` (one file per r4 parent — ≈10–15 shards covering NJ)
   - `PYRAMID_LEVELS = [6, 7, 8, 9, 10, 11]` (skip r12; worker handles r12+ via raw groupby)
   - `TOPK = 10` (most-recent crashes per pyramid cell, stored as a list)
-- R2 credentials (token, bucket name `crashes-cells`).
+- R2 credentials. The `cf` AWS profile already configured locally on `e` should work for S3-compatible writes (endpoint `https://0dcad5654e9744de6616f74b8df4af63.r2.cloudflarestorage.com`, region `auto`); alternatively a Cloudflare API token with `Workers R2 Storage: Edit`.
+- Bucket: **`nj-crashes`** (project-wide, already created on R2). All cells artifacts live under the **`cells/`** prefix; future migrated S3 data shares the bucket at sibling prefixes (e.g. `parquets/`, `csvs/`).
 
 ## Outputs
 
-R2 bucket layout:
+R2 bucket layout (project-scoped under `cells/`):
 
 ```
-crashes-cells/
-  manifest.json                     # data version + bucket layout, read by worker on cold start
-  raw/h3_r14/
-    {r4_cell_id}.parquet            # 10–15 files, ~5 MB each
-  pyramid/r6/{r4_cell_id}.parquet   # tiny
-  pyramid/r7/...
-  pyramid/r8/...
-  pyramid/r9/...
-  pyramid/r10/...
-  pyramid/r11/...
+nj-crashes/
+  cells/
+    manifest.json                     # data version + bucket layout, read by worker on cold start
+    raw/h3_r14/
+      {r4_cell_id}.parquet            # 10–15 files, ~5 MB each
+    pyramid/r6/{r4_cell_id}.parquet   # tiny
+    pyramid/r7/...
+    pyramid/r8/...
+    pyramid/r9/...
+    pyramid/r10/...
+    pyramid/r11/...
 ```
 
 `{r4_cell_id}` = the H3 cell ID at resolution 4 (rendered as 13-hex-digit string, e.g. `841f97ffffffff`).
@@ -176,7 +178,7 @@ meta:
       data/cells/raw/h3_r14/: <md5>
 ```
 
-Push to R2 via dvx remote (configure once: `dvx remote add cells s3://crashes-cells -c …`). Re-run is idempotent — dvx skips if hashes match.
+Push to R2 via dvx remote (configure once: `dvx remote add cells s3://nj-crashes/cells -c profile=cf`). Re-run is idempotent — dvx skips if hashes match.
 
 ## Daily integration
 

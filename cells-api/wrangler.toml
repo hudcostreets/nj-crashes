@@ -1,0 +1,23 @@
+name = "crashes-cells-api"
+main = "src/index.ts"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[r2_buckets]]
+binding = "CELLS_BUCKET"
+bucket_name = "nj-crashes"
+
+[dev]
+port = 51895
+
+[vars]
+CORS_ORIGIN = "*"
+# Subpath within the project-wide R2 bucket for cells-API artifacts. The
+# pipeline writes manifest/raw/pyramid under this prefix; the worker
+# reads under it. Other crashes-project data (parquets/, csvs/, geo/...)
+# can share the bucket at sibling prefixes.
+CELLS_PREFIX = "cells"
+BASE_RES = "14"
+SHARD_RES = "4"
+PYRAMID_LEVELS = "6,7,8,9,10,11"
+TOPK = "10"
