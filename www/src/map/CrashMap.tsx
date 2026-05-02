@@ -133,7 +133,7 @@ function metersPerPixel(zoom: number, lat: number): number {
 /** Pick integer H3 resolution whose cell-edge length in meters is closest
  *  to the desired pixel-radius at the current zoom+latitude. Comparison on
  *  a log2 scale so ±1 resolution is one constant step of coarseness. */
-function pickHexResolutionForPixels(pixelTarget: number, zoom: number, lat: number): number {
+export function pickHexResolutionForPixels(pixelTarget: number, zoom: number, lat: number): number {
     const targetMeters = pixelTarget * metersPerPixel(zoom, lat)
     let best = 9, bestDiff = Infinity
     for (const rStr of Object.keys(H3_RADIUS_METERS)) {

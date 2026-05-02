@@ -13,7 +13,9 @@
     "tc": "tsc",
     "test": "playwright test --reporter=list",
     "test:headed": "playwright test --headed --reporter=list",
-    "test:grep": "playwright test --reporter=list -g"
+    "test:grep": "playwright test --reporter=list -g",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest"
   },
   "dependencies": {
     "@deck.gl/aggregation-layers": "^8.9.36",
@@ -54,7 +56,7 @@
     "sass": "^1",
     "strftime": "^0.10.2",
     "use-kbd": "^0.12.0",
-    "use-prms": "https://github.com/runsascoded/use-prms#b357b48290740ae53a0ccc5fe837cf312c29f81d",
+    "use-prms": "https://github.com/runsascoded/use-prms#e7d82ad2b2d7834c59bc10f863d186a6d78081de",
     "use-session-storage-state": "^18.2.0"
   },
   "devDependencies": {
@@ -70,8 +72,10 @@
     "@vanilla-extract/vite-plugin": "^4.0.0",
     "@vitejs/plugin-react": "^4.2.1",
     "buffer": "^6.0.3",
+    "happy-dom": "^20.9.0",
     "pnpm-dep-source": "https://github.com/runsascoded/pnpm-dep-source#79efb3d9955c3398ab008cd8a125a6c82cf4f84f",
     "typescript": "^5",
-    "vite": "^5.0.10"
+    "vite": "^5.0.10",
+    "vitest": "^2.1.9"
   }
 }

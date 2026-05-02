@@ -47,10 +47,12 @@ export type MapManifestV2 = {
 
 /** Plan returned by `pickFetchPlanV2`. `shards: null` means the single-
  *  file `hex-r{res}.parquet` (always at the manifest root). `shards:
- *  string[]` is a per-cell sharded fetch (`hex-r{res}/{cell}.parquet`). */
+ *  string[]` is a per-cell sharded fetch (`hex-r{res}/{cell}.parquet`).
+ *  `reason` is a short human-readable phrase describing which decision
+ *  branch produced the plan (consumed by the debug overlay). */
 export type FetchPlan =
-    | { kind: "hex"; res: 6 | 7 | 8 | 9; shards: string[] | null }
-    | { kind: "points"; shards: string[] }
+    | { kind: "hex"; res: 6 | 7 | 8 | 9; shards: string[] | null; reason?: string }
+    | { kind: "points"; shards: string[]; reason?: string }
 
 const MANIFEST_V2_URL = `${MAP_BASE_URL}/v2/manifest.v2.json`
 
@@ -95,6 +97,14 @@ export function loadManifestV2(): Promise<MapManifestV2 | null> {
  *  invalidate the manifest mid-session. */
 export function _resetManifestV2Cache(): void {
     manifestV2Promise = null
+}
+
+/** Compatibility shim. v2 was originally gated behind `?v2=1` while the
+ *  pipeline was being built; v2 is now the only path. The standalone
+ *  `/map` route still imports this — kept so it compiles without churn
+ *  during the migration to the cells API (#52). */
+export function v2Enabled(): boolean {
+    return true
 }
 
 /** True iff `[w0,s0,e0,n0]` and `[w1,s1,e1,n1]` overlap (closed
@@ -230,6 +240,7 @@ export function pickFetchPlanV2(args: PickFetchPlanArgs): FetchPlan {
     const singleFiles = singleFileResolutions(manifest)
     const dbg = (typeof window !== "undefined") && (window as any).__pickerDebug
     const log = (plan: FetchPlan, reason: string): FetchPlan => {
+        plan.reason = reason
         if (dbg) {
             const summary = plan.kind === "points"
                 ? `points (${plan.shards.length})`

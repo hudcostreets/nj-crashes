@@ -578,8 +578,8 @@ function ControlDrawer({
                     <div><b>{total.toLocaleString()}</b> crashes plotted</div>
                     {manifest?.by_geocode_src && (
                         <div style={{ opacity: 0.75, marginTop: 2 }}>
-                            geocode: {manifest.by_geocode_src.interpolated?.toLocaleString() ?? 0} interpolated,{" "}
-                            {manifest.by_geocode_src.original?.toLocaleString() ?? 0} original
+                            geocode: {manifest.by_geocode_src?.interpolated?.toLocaleString() ?? 0} interpolated,{" "}
+                            {manifest.by_geocode_src?.original?.toLocaleString() ?? 0} original
                         </div>
                     )}
                 </div>

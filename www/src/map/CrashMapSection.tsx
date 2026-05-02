@@ -4,9 +4,8 @@
  *  standalone `/map` route: year-range slider, severity toggle, mode
  *  toggle (hexbin default), outline overlay, fit-bounds on scope.
  */
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react"
-import { useUrlState } from "use-prms"
-import type { Param } from "use-prms"
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { useUrlState, viewStateParam } from "use-prms"
 import { useCrashData } from "@/src/map/useCrashData"
 import type { CrashFilter } from "@/src/map/useCrashData"
 import { MAP_BASE_URL } from "@/src/map/config"
@@ -15,10 +14,12 @@ import type { StackedHex } from "@/src/map/StackedHexLayer"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import type { FeatureCollection } from "geojson"
 import { FiMaximize2 } from "react-icons/fi"
+import useSessionStorageState from "use-session-storage-state"
 import { useToolboxOpen } from "@/src/map/useToolboxOpen"
 import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
 import type { MapManifestV2 } from "@/src/map/v2"
-import { fitBoundsToView } from "@/src/map/CrashMap"
+import { fitBoundsToView, pickHexResolutionForPixels } from "@/src/map/CrashMap"
+import { DebugOverlay } from "@/src/map/DebugOverlay"
 
 const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m.CrashMap })))
 
@@ -44,28 +45,15 @@ const LLZ_OVERRIDES: Record<number, { mobile: ViewState; desktop: ViewState }> =
     },
 }
 
-/** `llz` URL param: "lat_lon_zoom_pitch_bearing" (pitch/bearing optional).
- *  Overrides the auto-fit. Intended for tuning default embed views. */
-const llzParam: Param<ViewState | null> = {
-    // `undefined` means "param absent" per use-prms 2-way binding contract
-    // (default value ↔ param omitted). Avoid emitting `?llz=` or `?llz` for
-    // the default / cleared state.
-    encode: (v) => v
-        ? [v.latitude.toFixed(4), v.longitude.toFixed(4), v.zoom.toFixed(2), Math.round(v.pitch), Math.round(v.bearing)].join("_")
-        : undefined,
-    decode: (s) => {
-        if (!s) return null
-        const parts = s.split(/[_\s]/).map(Number)
-        if (parts.length < 3 || parts.some(isNaN)) return null
-        return {
-            latitude: parts[0],
-            longitude: parts[1],
-            zoom: parts[2],
-            pitch: parts[3] ?? 45,
-            bearing: parts[4] ?? 0,
-        }
-    },
-}
+/** `llz` URL param: "lat lng zoom pitch bearing" (signed-delim — `+` or
+ *  `-` separates instead of `_`, so URLs read like `40.71-74.09+10.84+45+0`).
+ *  Pitch/bearing optional; missing pitch falls back to 45 (the deck.gl 3D
+ *  tilt default we use for crash-map embeds). Overrides the auto-fit. */
+const llzParam = viewStateParam({
+    default: null,
+    signedDelim: true,
+    pitchFallback: 45,
+})
 
 export type Props = {
     /** County code (1-21) or null for statewide. */
@@ -86,9 +74,15 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
     const [mode, setMode] = useState<MapMode>("hexbin")
     const [yearRange, setYearRange] = useState<[number, number]>([2019, 2023])
     const [severities, setSeverities] = useState<Set<"f" | "i" | "p">>(() => new Set(["f", "i"]))
-    const [hexPxTarget, setHexPxTarget] = useState(1.2)
+    const [hexPxTarget, setHexPxTarget] = useSessionStorageState<number>("hccs.crashmap.hexPxTarget", { defaultValue: 1.2 })
     const [elevationPerCount, setElevationPerCount] = useState(60)
     const [drawerOpen, setDrawerOpen] = useToolboxOpen(false)
+    const [debugOpen, setDebugOpen] = useSessionStorageState<boolean>("hccs.crashmap.debugOpen", { defaultValue: false })
+    // Picker-threshold knobs (debug section). SS-persisted so a debugging
+    // session survives page reloads. Defaults match `pickFetchPlanV2`.
+    const [pointZoomThreshold, setPointZoomThreshold] = useSessionStorageState<number>("hccs.crashmap.pointZoomThreshold", { defaultValue: 11 })
+    const [maxPointShards, setMaxPointShards] = useSessionStorageState<number>("hccs.crashmap.maxPointShards", { defaultValue: 10 })
+    const [maxHexShards, setMaxHexShards] = useSessionStorageState<number>("hccs.crashmap.maxHexShards", { defaultValue: 30 })
     const [llz, setLlz] = useUrlState("llz", llzParam)
 
     // Pre-fetch the v2 manifest so we can derive a sensible initial
@@ -105,31 +99,41 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
     //   2. synthetic viewState derived from county/muni bbox via
     //      `fitBoundsToView` (so the initial fetch picks fine prebins
     //      matching the county-zoomed view, not the statewide-coarse r6)
-    //   3. no viewport → picker falls back to r6 single-file
+    //   3. null (unknown — picker falls back to r6 single-file; overlay
+    //      shows "—")
+    const effectiveView: ViewState | null = useMemo(() => {
+        if (llz) return llz
+        if (!v2Manifest || cc === null) return null
+        const w = typeof window !== "undefined" ? Math.min(window.innerWidth, 1280) : 1280
+        const h = 480
+        const bbox = (mc !== null ? v2Manifest.muni_bboxes?.[`${cc}-${mc}`] : null)
+            ?? v2Manifest.county_bboxes?.[cc]
+        if (!bbox) return null
+        return fitBoundsToView(bbox, w, h, mode === "hexbin" ? 45 : 0)
+    }, [llz, cc, mc, mode, v2Manifest])
+
+
     const filter: CrashFilter = useMemo(() => {
         const base: CrashFilter = {
             yearRange,
             ccs: cc !== null ? [cc] : undefined,
             mc: mc ?? undefined,
             severities,
+            pointZoomThreshold,
+            maxPointShards,
+            maxHexShards,
         }
+        if (!effectiveView) return base
         const w = typeof window !== "undefined" ? Math.min(window.innerWidth, 1280) : 1280
         const h = 480
-        let view = llz
-        if (!view && v2Manifest && cc !== null) {
-            const bbox = (mc !== null ? v2Manifest.muni_bboxes?.[`${cc}-${mc}`] : null)
-                ?? v2Manifest.county_bboxes?.[cc]
-            if (bbox) view = fitBoundsToView(bbox, w, h, mode === "hexbin" ? 45 : 0)
-        }
-        if (!view) return base
         return {
             ...base,
-            viewport: bboxFromViewport(view.latitude, view.longitude, view.zoom, w, h, view.pitch),
-            viewportLat: view.latitude,
-            zoom: view.zoom,
+            viewport: bboxFromViewport(effectiveView.latitude, effectiveView.longitude, effectiveView.zoom, w, h, effectiveView.pitch),
+            viewportLat: effectiveView.latitude,
+            zoom: effectiveView.zoom,
             hexPxTarget,
         }
-    }, [yearRange, cc, mc, severities, llz, hexPxTarget, mode, v2Manifest])
+    }, [yearRange, cc, mc, severities, effectiveView, hexPxTarget, pointZoomThreshold, maxPointShards, maxHexShards])
 
     const result = useCrashData(filter)
     const [outline, setOutline] = useState<FeatureCollection | null>(null)
@@ -317,6 +321,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
                 position: "absolute", top: 8, right: 8, background: bg, color: fg,
                 padding: "0.4em 0.6em", borderRadius: 4, zIndex: 1000, fontSize: "0.82em",
                 display: "flex", flexDirection: "column", gap: 6, minWidth: 210, maxWidth: 260,
+                maxHeight: "calc(100% - 16px)", overflowY: "auto",
             }}>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 4, alignItems: "center", marginBottom: -4 }}>
                     {llz && (
@@ -360,25 +365,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
                 </div>
                 {mode === "hexbin" && (
                     <>
-                        {(() => {
-                            const sliderValue = Math.round(100 * (1 - Math.log2(hexPxTarget) / Math.log2(60)))
-                            return (
-                                <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
-                                    <span style={{ fontSize: "0.78em" }}>Hex density: <b>{sliderValue}</b></span>
-                                    <input
-                                        type="range" min={0} max={120} step={1}
-                                        value={sliderValue}
-                                        onChange={e => {
-                                            const v = Number(e.target.value)
-                                            const px = Math.pow(60, 1 - v / 100)
-                                            const rounded = px < 5 ? Math.round(px * 10) / 10 : Math.round(px)
-                                            setHexPxTarget(Math.max(0.5, rounded))
-                                        }}
-                                        style={{ width: 100 }}
-                                    />
-                                </label>
-                            )
-                        })()}
+                        <HexPxTargetSlider value={hexPxTarget} onChange={setHexPxTarget} />
                         <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
                             <span style={{ fontSize: "0.78em" }}>Bar height: <b>{elevationPerCount}×</b></span>
                             <input
@@ -390,6 +377,47 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
                         </label>
                     </>
                 )}
+                <DebugSection
+                    open={debugOpen}
+                    onToggle={() => setDebugOpen(!debugOpen)}
+                    theme={actualTheme}
+                    fg={fg}
+                >
+                    {effectiveView && (() => {
+                        const renderRes = pickHexResolutionForPixels(hexPxTarget, effectiveView.zoom, effectiveView.latitude)
+                        const planRes = result.plan?.kind === "hex" ? result.plan.res : null
+                        const effectiveRes = result.plan?.kind === "points"
+                            ? renderRes
+                            : (planRes !== null ? Math.max(renderRes, planRes) : renderRes)
+                        return (
+                            <DebugOverlay
+                                viewState={effectiveView}
+                                plan={result.plan ?? null}
+                                renderRes={renderRes}
+                                effectiveRes={effectiveRes}
+                                hexPxTarget={hexPxTarget}
+                                rowCount={result.status === "ready" ? result.data.length : undefined}
+                                theme={actualTheme}
+                            />
+                        )
+                    })()}
+                    <div style={{ marginTop: 6, color: actualTheme === "dark" ? "#888" : "#666", fontSize: "0.78em" }}>picker knobs</div>
+                    <NumberSlider
+                        label="point z-thresh" min={8} max={15} step={0.5}
+                        value={pointZoomThreshold} onChange={setPointZoomThreshold}
+                        defaultValue={11} reset={() => setPointZoomThreshold(11)}
+                    />
+                    <NumberSlider
+                        label="max pt shards" min={1} max={50} step={1}
+                        value={maxPointShards} onChange={setMaxPointShards}
+                        defaultValue={10} reset={() => setMaxPointShards(10)}
+                    />
+                    <NumberSlider
+                        label="max hex shards" min={1} max={200} step={1}
+                        value={maxHexShards} onChange={setMaxHexShards}
+                        defaultValue={30} reset={() => setMaxHexShards(30)}
+                    />
+                </DebugSection>
             </div>
             )}
             {fullScreenHref && (
@@ -540,6 +568,104 @@ function Legend({
                     </button>
                 )
             })}
+        </div>
+    )
+}
+
+/** Direct-px slider for `hexPxTarget`. Log-spaced on a 0-100 abstract
+ *  scale (so each tick is a constant log-px ratio), but always shows the
+ *  actual px value alongside. Defaults to 1.2 px on first session use. */
+function HexPxTargetSlider({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+    const MIN = 0.5, MAX = 30
+    const toScale = (v: number) => 100 * (Math.log2(v / MIN) / Math.log2(MAX / MIN))
+    const fromScale = (s: number) => MIN * Math.pow(MAX / MIN, s / 100)
+    const sliderValue = Math.round(toScale(value))
+    return (
+        <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
+            <span style={{ fontSize: "0.78em" }}>Hex px target: <b>{value < 5 ? value.toFixed(1) : Math.round(value)}</b> px</span>
+            <input
+                type="range" min={0} max={100} step={1}
+                value={sliderValue}
+                onChange={e => {
+                    const px = fromScale(Number(e.target.value))
+                    const rounded = px < 5 ? Math.round(px * 10) / 10 : Math.round(px)
+                    onChange(Math.max(MIN, Math.min(MAX, rounded)))
+                }}
+                style={{ width: 100 }}
+            />
+        </label>
+    )
+}
+
+/** Drawer-friendly numeric slider with inline value, min/max, and a
+ *  reset-to-default chip when the user has overridden the default. */
+function NumberSlider({
+    label, value, onChange, min, max, step, defaultValue, reset,
+}: {
+    label: string
+    value: number
+    onChange: (n: number) => void
+    min: number
+    max: number
+    step: number
+    defaultValue: number
+    reset: () => void
+}) {
+    const overridden = value !== defaultValue
+    return (
+        <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
+            <span style={{ fontSize: "0.78em" }}>
+                {label}: <b>{Number.isInteger(step) ? Math.round(value) : value}</b>
+                {overridden && (
+                    <button
+                        type="button" onClick={reset} title={`Reset to ${defaultValue}`}
+                        style={{
+                            marginLeft: 4, padding: "0 4px", fontSize: "0.85em",
+                            background: "transparent", color: "inherit", opacity: 0.6,
+                            border: "1px solid currentColor", borderRadius: 3, cursor: "pointer",
+                        }}
+                    >↺</button>
+                )}
+            </span>
+            <input
+                type="range" min={min} max={max} step={step}
+                value={value}
+                onChange={e => onChange(Number(e.target.value))}
+                style={{ width: 100 }}
+            />
+        </label>
+    )
+}
+
+/** Collapsible "Debug" section in the controls drawer. Click the header to
+ *  expand. Open/closed state persists per session via `useSsBool` in the
+ *  caller. */
+function DebugSection({
+    open, onToggle, theme, fg, children,
+}: {
+    open: boolean
+    onToggle: () => void
+    theme: "light" | "dark"
+    fg: string
+    children: ReactNode
+}) {
+    const dim = theme === "dark" ? "#888" : "#666"
+    return (
+        <div style={{ marginTop: 6, paddingTop: 4, borderTop: `1px solid ${theme === "dark" ? "#333" : "#ddd"}` }}>
+            <button
+                type="button" onClick={onToggle}
+                title={open ? "Collapse debug" : "Expand debug"}
+                aria-expanded={open}
+                style={{
+                    width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+                    background: "transparent", color: fg, border: "none", padding: "2px 0",
+                    cursor: "pointer", font: "inherit", fontSize: "0.82em",
+                }}
+            >
+                <span style={{ color: dim }}>debug</span>
+                <span style={{ color: dim }}>{open ? "▾" : "▸"}</span>
+            </button>
+            {open && <div style={{ marginTop: 4 }}>{children}</div>}
         </div>
     )
 }

@@ -16,6 +16,7 @@ import type { Crash } from "./CrashMap"
 import type { StackedHex } from "./StackedHexLayer"
 import {
     type Bbox,
+    type FetchPlan,
     type MapManifestV2,
     HEX_COLUMNS,
     POINT_COLUMNS,
@@ -49,6 +50,17 @@ export type CrashFilter = {
     /** Target H3 cell pixel size driving prebin resolution choice.
      *  Optional alongside viewport. */
     hexPxTarget?: number
+    /** Optional picker thresholds. Forwarded to `pickFetchPlanV2`; when
+     *  unset, the picker's defaults apply. Lifted out so the debug drawer
+     *  can A/B-test them at runtime. */
+    pointZoomThreshold?: number
+    maxPointShards?: number
+    maxHexShards?: number
+    /** Legacy override carried over from the standalone `/map` route.
+     *  `"detail"` forces raw points, `"r7"`/`"r8"` force a specific hex
+     *  prebin. Currently consulted only by `CrashMapPage`'s manual
+     *  fallback path for statewide PDO views; the picker ignores it. */
+    scale?: "detail" | "r7" | "r8"
 }
 
 // Small in-memory cache of parsed shards for the session, keyed by
@@ -173,9 +185,9 @@ export type DataKind = "points" | "hex"
  *  (`pickFetchPlanV2`) chooses among raw points / hex prebins (r6 single-
  *  file, r7/r8/r9 sharded) based on viewport + shard density. */
 export function useCrashData(filter: CrashFilter | null):
-    | { status: "loading"; data?: undefined; dataKind?: undefined; error?: undefined; manifest?: MapManifest; refetching?: false }
-    | { status: "ready"; data: Crash[] | StackedHex[]; dataKind: DataKind; manifest: MapManifest; error?: undefined; refetching: boolean }
-    | { status: "error"; error: string; data?: undefined; dataKind?: undefined; manifest?: MapManifest; refetching?: false } {
+    | { status: "loading"; data?: undefined; dataKind?: undefined; error?: undefined; manifest?: MapManifest; refetching?: false; plan?: FetchPlan | null }
+    | { status: "ready"; data: Crash[] | StackedHex[]; dataKind: DataKind; manifest: MapManifest; error?: undefined; refetching: boolean; plan: FetchPlan | null }
+    | { status: "error"; error: string; data?: undefined; dataKind?: undefined; manifest?: MapManifest; refetching?: false; plan?: FetchPlan | null } {
     const [manifest, setManifest] = useState<MapManifestV2 | null>(null)
     const [manifestErr, setManifestErr] = useState<string | null>(null)
 
@@ -200,6 +212,9 @@ export function useCrashData(filter: CrashFilter | null):
             severities: filter.severities ?? new Set(["f", "i"]),
             manifest,
             hexPxTarget: filter.hexPxTarget,
+            pointZoomThreshold: filter.pointZoomThreshold,
+            maxPointShards: filter.maxPointShards,
+            maxHexShards: filter.maxHexShards,
         })
     }, [filter, manifest])
 
@@ -262,17 +277,17 @@ export function useCrashData(filter: CrashFilter | null):
         return () => { cancelled = true }
     }, [filterKey])
 
-    if (manifestErr) return { status: "error", error: manifestErr }
-    if (!manifest) return { status: "loading" }
+    if (manifestErr) return { status: "error", error: manifestErr, plan }
+    if (!manifest) return { status: "loading", plan }
     if (state.status === "loading") {
         // If we have a previous successful fetch, keep showing it while the
         // new one runs — set `refetching` so the consumer can render a
         // subtle overlay instead of hiding the map.
         if (state.data.length > 0) {
-            return { status: "ready", data: state.data, dataKind: state.dataKind, manifest, refetching: true }
+            return { status: "ready", data: state.data, dataKind: state.dataKind, manifest, refetching: true, plan }
         }
-        return { status: "loading", manifest }
+        return { status: "loading", manifest, plan }
     }
-    if (state.status === "error") return { status: "error", error: state.error ?? "unknown", manifest }
-    return { status: "ready", data: state.data, dataKind: state.dataKind, manifest, refetching: false }
+    if (state.status === "error") return { status: "error", error: state.error ?? "unknown", manifest, plan }
+    return { status: "ready", data: state.data, dataKind: state.dataKind, manifest, refetching: false, plan }
 }
