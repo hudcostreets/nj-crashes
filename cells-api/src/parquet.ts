@@ -6,6 +6,20 @@
  *  selected reads per request but should not be used in tight loops.
  */
 import { parquetReadObjects } from "hyparquet"
+import { decompress as zstdDecompress } from "fzstd"
+
+/** Codec map passed to hyparquet. The pipeline writes parquet with
+ *  `compression='zstd'`; we use `fzstd` (pure JS, no WASM) for it.
+ *  hyparquet-compressors won't load on CF Workers because it triggers
+ *  runtime `WebAssembly.Module()` instantiation at module-load time,
+ *  which is blocked by the Workers sandbox. */
+const compressors = {
+    ZSTD: (input: Uint8Array, outputLength: number): Uint8Array => {
+        const out = new Uint8Array(outputLength)
+        zstdDecompress(input, out)
+        return out
+    },
+}
 
 /** Minimal AsyncBuffer interface required by hyparquet. */
 export interface AsyncBuffer {
@@ -50,6 +64,7 @@ export async function readParquetFromR2<T>(
         file: file as any,
         columns: opts.columns as string[] | undefined,
         filter: opts.filter as any,
+        compressors,
     })
     return rows as T[]
 }

@@ -6,8 +6,11 @@
  */
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { useUrlState, viewStateParam } from "use-prms"
+import type { Param } from "use-prms"
 import { useCrashData } from "@/src/map/useCrashData"
 import type { CrashFilter } from "@/src/map/useCrashData"
+import { useCellsApi } from "@/src/map/useCellsApi"
+import type { CellsApiFilter } from "@/src/map/useCellsApi"
 import { MAP_BASE_URL } from "@/src/map/config"
 import type { Crash, MapMode, ViewState } from "@/src/map/CrashMap"
 import type { StackedHex } from "@/src/map/StackedHexLayer"
@@ -55,6 +58,15 @@ const llzParam = viewStateParam({
     pitchFallback: 45,
 })
 
+/** `?api=1` flag for parity-testing the new cells-api worker against the
+ *  v2 static-prebin client. Treated as boolean: any non-empty value
+ *  enables; default false. Will go away once the cells API is the
+ *  default. */
+const apiFlagParam: Param<boolean> = {
+    encode: (v) => v ? "1" : "",
+    decode: (s) => !!s,
+}
+
 export type Props = {
     /** County code (1-21) or null for statewide. */
     cc: number | null
@@ -84,6 +96,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
     const [maxPointShards, setMaxPointShards] = useSessionStorageState<number>("hccs.crashmap.maxPointShards", { defaultValue: 10 })
     const [maxHexShards, setMaxHexShards] = useSessionStorageState<number>("hccs.crashmap.maxHexShards", { defaultValue: 30 })
     const [llz, setLlz] = useUrlState("llz", llzParam)
+    const [apiFlag] = useUrlState("api", apiFlagParam)
 
     // Pre-fetch the v2 manifest so we can derive a sensible initial
     // viewport from the county/muni bbox before the user has moved the
@@ -135,7 +148,49 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
         }
     }, [yearRange, cc, mc, severities, effectiveView, hexPxTarget, pointZoomThreshold, maxPointShards, maxHexShards])
 
-    const result = useCrashData(filter)
+    // While `?api=1` is set, route the data fetch through the new
+    // cells-api worker (`useCellsApi`) instead of the v2 static-prebin
+    // client (`useCrashData`). Both hooks always run — we just pass
+    // `null` to the inactive one so it skips its work. We still need
+    // `useCrashData`'s manifest for county/muni bboxes either way.
+    const v2Result = useCrashData(filter)
+    const apiFilter: CellsApiFilter | null = useMemo(() => {
+        if (!apiFlag) return null
+        if (!filter?.viewport || filter.viewportLat == null || filter.zoom == null) return null
+        return {
+            yearRange: filter.yearRange,
+            severities: filter.severities ?? new Set(["f", "i"]),
+            viewport: filter.viewport,
+            viewportLat: filter.viewportLat,
+            zoom: filter.zoom,
+            hexPxTarget: filter.hexPxTarget,
+        }
+    }, [apiFlag, filter])
+    const apiResult = useCellsApi(apiFilter)
+    const result = useMemo(() => {
+        if (!apiFlag) return v2Result
+        // Adapt the cells-api result into useCrashData's return shape so
+        // the consumers below don't need to branch. The cells-api `plan`
+        // shape (`{kind:"hex",res:N,source:...}`) doesn't fit the
+        // FetchPlan union (which has `shards`, plus `res` is constrained
+        // to {6,7,8,9}); leave `plan: null` when in API mode and let the
+        // overlay surface the API-mode indicator separately.
+        const manifest = v2Result.manifest
+        if (apiResult.status === "loading") {
+            return { status: "loading" as const, manifest, plan: null }
+        }
+        if (apiResult.status === "error") {
+            return { status: "error" as const, error: apiResult.error, manifest, plan: null }
+        }
+        return {
+            status: "ready" as const,
+            data: apiResult.data,
+            dataKind: "hex" as const,
+            manifest: manifest!,
+            refetching: false,
+            plan: null,
+        }
+    }, [apiFlag, v2Result, apiResult])
     const [outline, setOutline] = useState<FeatureCollection | null>(null)
     useEffect(() => {
         const url = cc === null
@@ -383,6 +438,20 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
                     theme={actualTheme}
                     fg={fg}
                 >
+                    {apiFlag && (
+                        <div style={{
+                            padding: "4px 8px",
+                            marginBottom: 6,
+                            border: `1px solid ${actualTheme === "dark" ? "#6db3f2" : "#0066cc"}`,
+                            borderRadius: 3,
+                            fontSize: "0.78em",
+                            color: actualTheme === "dark" ? "#6db3f2" : "#0066cc",
+                        }}>
+                            cells-api mode (?api=1) — {apiResult.plan
+                                ? `${apiResult.plan.source} r${apiResult.plan.res}, ${apiResult.plan.cellCount ?? "—"} cells`
+                                : apiResult.status}
+                        </div>
+                    )}
                     {effectiveView && (() => {
                         const renderRes = pickHexResolutionForPixels(hexPxTarget, effectiveView.zoom, effectiveView.latitude)
                         const planRes = result.plan?.kind === "hex" ? result.plan.res : null

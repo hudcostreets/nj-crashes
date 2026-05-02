@@ -18,7 +18,7 @@
  *        cells: [{ h3, n_fatal, n_inj_ped, n_inj_other, n_pdo, n_vehs?, year? }]
  *      }
  */
-import { cellToParent, polygonToCells } from "h3-js"
+import { cellToParent, polygonToCellsExperimental, POLYGON_TO_CELLS_FLAGS } from "h3-js"
 import { rangesForCovering, type CellRange } from "./h3-range"
 import { loadManifest } from "./manifest"
 import { readParquetFromR2 } from "./parquet"
@@ -83,15 +83,17 @@ function bboxToPolygon([w, s, e, n]: Bbox): [number, number][] {
 
 /** Shard cells (`shard_res` parents) that intersect the requested bbox.
  *  Uses the manifest's full shard list — the bbox→shard intersection is
- *  computed via h3 covering at `shard_res` and intersecting with the
- *  shard list (so we never request a shard with no data). */
+ *  computed via h3 *overlap* (not center-containment), so a small bbox
+ *  fully inside a single big r4 cell still picks that shard up. */
 function intersectingShards(
     bbox: Bbox,
     shardRes: number,
     shardCells: string[],
 ): string[] {
     const polygon = bboxToPolygon(bbox)
-    const cover = new Set(polygonToCells(polygon, shardRes))
+    const cover = new Set(
+        polygonToCellsExperimental(polygon, shardRes, POLYGON_TO_CELLS_FLAGS.containmentOverlapping),
+    )
     return shardCells.filter(s => cover.has(s))
 }
 
@@ -181,7 +183,9 @@ async function queryPyramid(
     severities: Set<"f" | "i" | "p"> | undefined,
 ): Promise<CellOut[]> {
     const polygon = bboxToPolygon(bbox)
-    const covering = new Set(polygonToCells(polygon, res))
+    const covering = new Set(
+        polygonToCellsExperimental(polygon, res, POLYGON_TO_CELLS_FLAGS.containmentOverlapping),
+    )
     const h3Col = `h3_r${res}`
 
     const wantF = !severities || severities.has("f")
@@ -192,7 +196,10 @@ async function queryPyramid(
         readParquetFromR2<PyramidRow>(bucket, `${prefix}/pyramid/r${res}/${s}.parquet`, {
             columns: [h3Col, "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"],
             filter: { year: { $gte: yearRange[0], $lte: yearRange[1] } },
-        }).catch(() => [] as PyramidRow[]),
+        }).catch(e => {
+            console.error(`pyramid r${res}/${s} read failed:`, e)
+            return [] as PyramidRow[]
+        }),
     ))
     const partials: { h3: string; n_fatal: number; n_inj_ped: number; n_inj_other: number; n_pdo: number; n_vehs?: number }[] = []
     for (const batch of batches) {
@@ -225,7 +232,9 @@ async function queryRaw(
 ): Promise<CellOut[]> {
     const baseRes = manifest.base_res
     const polygon = bboxToPolygon(bbox)
-    const covering = polygonToCells(polygon, res)
+    const covering = polygonToCellsExperimental(
+        polygon, res, POLYGON_TO_CELLS_FLAGS.containmentOverlapping,
+    )
     const ranges = rangesForCovering(
         covering.map(c => BigInt(`0x${c}`)),
         res,
@@ -242,7 +251,10 @@ async function queryRaw(
         readParquetFromR2<RawRow>(bucket, `${prefix}/raw/h3_r${baseRes}/${s}.parquet`, {
             columns: [h3Col, "year", "severity", "tk", "ti", "pk", "pi", "tv"],
             filter,
-        }).catch(() => [] as RawRow[]),
+        }).catch(e => {
+            console.error(`raw r${baseRes}/${s} read failed:`, e)
+            return [] as RawRow[]
+        }),
     ))
 
     const partials: { h3: string; n_fatal: number; n_inj_ped: number; n_inj_other: number; n_pdo: number; n_vehs: number }[] = []
