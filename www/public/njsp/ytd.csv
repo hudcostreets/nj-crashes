@@ -7264,7 +7264,8 @@ county,cc,mc,year,day_of_year,date_label,fatalities,cumulative
 ,,,2026,116,Apr 26,1,156
 ,,,2026,117,Apr 27,2,158
 ,,,2026,119,Apr 29,1,159
-,,,2026,120,Apr 30,2,161
+,,,2026,120,Apr 30,3,162
+,,,2026,121,May 01,1,163
 Atlantic,1,,2001,20,Jan 20,1,1
 Atlantic,1,,2001,25,Jan 25,1,2
 Atlantic,1,,2001,36,Feb 05,1,3
@@ -15098,6 +15099,7 @@ Mercer,11,,2026,87,Mar 28,1,6
 Mercer,11,,2026,102,Apr 12,2,8
 Mercer,11,,2026,114,Apr 24,1,9
 Mercer,11,,2026,116,Apr 26,1,10
+Mercer,11,,2026,120,Apr 30,1,11
 Middlesex,12,,2001,3,Jan 03,1,1
 Middlesex,12,,2001,40,Feb 09,1,2
 Middlesex,12,,2001,42,Feb 11,1,3
@@ -19471,6 +19473,7 @@ Passaic,16,,2025,327,Nov 23,1,26
 Passaic,16,,2025,334,Nov 30,1,27
 Passaic,16,,2026,5,Jan 05,2,2
 Passaic,16,,2026,35,Feb 04,1,3
+Passaic,16,,2026,121,May 01,1,4
 Salem,17,,2001,2,Jan 02,1,1
 Salem,17,,2001,53,Feb 22,1,2
 Salem,17,,2001,281,Oct 08,1,3
@@ -29403,6 +29406,7 @@ Mercer,11,7,2023,311,Nov 07,1,2
 Mercer,11,7,2024,45,Feb 14,1,1
 Mercer,11,7,2024,88,Mar 29,1,2
 Mercer,11,7,2025,164,Jun 13,1,1
+Mercer,11,7,2026,120,Apr 30,1,1
 Mercer,11,8,2001,354,Dec 20,1,1
 Mercer,11,8,2014,28,Jan 28,1,1
 Mercer,11,8,2021,279,Oct 06,1,1
@@ -33760,6 +33764,7 @@ Passaic,16,2,2025,61,Mar 02,1,1
 Passaic,16,2,2025,71,Mar 12,1,2
 Passaic,16,2,2025,159,Jun 08,1,3
 Passaic,16,2,2025,277,Oct 04,1,4
+Passaic,16,2,2026,121,May 01,1,1
 Passaic,16,3,2006,23,Jan 23,1,1
 Passaic,16,3,2006,283,Oct 10,1,2
 Passaic,16,3,2010,72,Mar 13,1,1
