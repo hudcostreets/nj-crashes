@@ -27,6 +27,10 @@ export type Props = {
     hexPxTarget?: number
     /** Number of rows in the active dataset (Crash[] or StackedHex[]). */
     rowCount?: number
+    /** Fetch state — "loading" before first response, "refetching" when a
+     *  newer fetch is in flight while older data is still on screen,
+     *  "idle" otherwise. */
+    fetchState?: "idle" | "loading" | "refetching"
     /** Light/dark theme toggle. */
     theme: "light" | "dark"
 }
@@ -58,7 +62,7 @@ function planSummary(plan: FetchPlan): string {
     return `r${plan.res} × ${plan.shards.length}`
 }
 
-export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTarget, rowCount, theme }: Props) {
+export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTarget, rowCount, fetchState, theme }: Props) {
     const { latitude, longitude, zoom, pitch, bearing } = viewState
     const mppx = metersPerPixel(zoom, latitude)
     const dark = theme === "dark"
@@ -91,7 +95,14 @@ export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTa
             <div style={{ marginTop: 4, color: dim }}>plan</div>
             {plan ? (
                 <>
-                    <div><b style={{ color: accent }}>{planSummary(plan)}</b></div>
+                    <div>
+                        <b style={{ color: accent }}>{planSummary(plan)}</b>
+                        {fetchState && fetchState !== "idle" && (
+                            <span style={{ marginLeft: 8, color: accent, fontStyle: "italic" }}>
+                                · {fetchState === "loading" ? "fetching…" : "refetching…"}
+                            </span>
+                        )}
+                    </div>
                     {plan.reason && <div style={{ color: dim, fontStyle: "italic" }}>{plan.reason}</div>}
                 </>
             ) : (
@@ -101,7 +112,12 @@ export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTa
             {(rowCount !== undefined || hexPxTarget !== undefined) && (
                 <>
                     <div style={{ marginTop: 4, color: dim }}>render</div>
-                    {rowCount !== undefined && <div>rows: <b style={{ color: fg }}>{fmtRowCount(rowCount)}</b></div>}
+                    {rowCount !== undefined && (
+                        <div>
+                            {plan?.kind === "hex" ? "hexes" : "rows"}:{" "}
+                            <b style={{ color: fg }}>{fmtRowCount(rowCount)}</b>
+                        </div>
+                    )}
                     {hexPxTarget !== undefined && <div>hexPxTarget: <b style={{ color: fg }}>{hexPxTarget}</b> px</div>}
                 </>
             )}

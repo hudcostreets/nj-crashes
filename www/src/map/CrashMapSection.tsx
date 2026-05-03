@@ -591,6 +591,11 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                                 effectiveRes={effectiveRes}
                                 hexPxTarget={hexPxTarget}
                                 rowCount={result.status === "ready" ? result.data.length : undefined}
+                                fetchState={
+                                    result.status === "loading" ? "loading"
+                                    : result.status === "ready" && result.refetching ? "refetching"
+                                    : "idle"
+                                }
                                 theme={actualTheme}
                             />
                         )
