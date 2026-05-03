@@ -155,7 +155,6 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                         key={`map-${cc}-${mc}`}
                         cc={cc}
                         mc={mc}
-                        height={500}
                         fullScreenHref={`/map${cc !== null ? `/c/${countyName?.toLowerCase().replace(/\s+/g, "-")}${mc !== null && municipalityName ? `/${municipalityName.toLowerCase().replace(/\s+/g, "-")}` : ""}` : ""}`}
                         scopeLabel={
                             mc !== null && municipalityName ? `${municipalityName}, ${countyName} County`

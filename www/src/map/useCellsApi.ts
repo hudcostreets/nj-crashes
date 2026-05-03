@@ -115,12 +115,13 @@ const MIN_PYRAMID_RES = 6
 const DEBOUNCE_MS = 250
 
 /** Soft cap on cells-per-response. Picker chooses the finest res where
- *  `area / hex_area ≤ CELLS_CAP`. Per-shard responses each respect
- *  this implicitly because shards are smaller than NJ; the cap is
- *  enforced against the *full visible area*. 50k stacked-hex cells
- *  renders fine on a modern GPU and keeps r11 viable for the largest
- *  munis (JC ≈ 54 km² → 25k cells at r11). */
-const CELLS_CAP = 50000
+ *  `area / hex_area ≤ CELLS_CAP`. The cap is a *theoretical* upper bound
+ *  (every hex non-empty); actual responses are usually much smaller
+ *  because we drop empty cells. 100k allows r11 across all NJ counties
+ *  including the largest (Hudson ≈ 120 km² → 56k theoretical cells at
+ *  r11) while still capping statewide before r9 (NJ ≈ 22000 km², r9 ≈
+ *  210k cells). */
+const CELLS_CAP = 100000
 
 function bboxAreaKm2([w, s, e, n]: Bbox): number {
     const lat = (s + n) / 2

@@ -100,8 +100,10 @@ export type Props = {
     cc: number | null
     /** Municipality code (within cc) or null. */
     mc: number | null
-    /** Embed height. Default 500px. */
-    height?: number | string
+    /** Initial / default embed height in px. User can drag-resize the
+     *  bottom edge; the choice persists in SS, with a reset button to
+     *  restore this default. Defaults to 600px. */
+    height?: number
     /** Optional `href` for the full-screen icon (bottom-right). Omit to hide. */
     fullScreenHref?: string
     /** Geographic scope label rendered in the subtitle (e.g.
@@ -109,7 +111,7 @@ export type Props = {
     scopeLabel?: string
 }
 
-export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLabel }: Props) {
+export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScreenHref, scopeLabel }: Props) {
     const { actualTheme } = useTheme()
     const [mode, setMode] = useState<MapMode>("hexbin")
     const [yearRange, setYearRange] = useState<[number, number]>([2019, 2023])
@@ -123,6 +125,10 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
     const [pointZoomThreshold, setPointZoomThreshold] = useSessionStorageState<number>("hccs.crashmap.pointZoomThreshold", { defaultValue: 11 })
     const [maxPointShards, setMaxPointShards] = useSessionStorageState<number>("hccs.crashmap.maxPointShards", { defaultValue: 10 })
     const [maxHexShards, setMaxHexShards] = useSessionStorageState<number>("hccs.crashmap.maxHexShards", { defaultValue: 30 })
+    // User-resizable map height (drag bottom edge of the wrapper; CSS
+    // `resize: vertical`). Persisted per session. Reset (↺) restores the
+    // caller-provided default.
+    const [mapHeight, setMapHeight] = useSessionStorageState<number>("hccs.crashmap.height", { defaultValue: defaultHeight })
     // Debounce URL writes during drag — without it, every per-frame
     // `setLlz` calls `history.replaceState` + dispatches a synthetic
     // `popstate`, which forces every `useUrlState` hook (and the router)
@@ -326,6 +332,31 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
     // threshold, treat it as a click and close. Otherwise it was a pan
     // and we leave the drawer open.
     const wrapRef = useRef<HTMLDivElement | null>(null)
+
+    // Persist user-driven height changes from CSS `resize: vertical`.
+    // ResizeObserver fires after the DOM commit; debounce a tick so we
+    // don't thrash SS during the drag. Bail when the height matches our
+    // controlled value (avoid feedback when *we* set it).
+    useEffect(() => {
+        const el = wrapRef.current
+        if (!el) return
+        let t: number | null = null
+        const ro = new ResizeObserver(entries => {
+            const h = Math.round(entries[0].contentRect.height)
+            if (h === mapHeight || h <= 0) return
+            if (t !== null) window.clearTimeout(t)
+            t = window.setTimeout(() => setMapHeight(h), 80)
+        })
+        ro.observe(el)
+        return () => { ro.disconnect(); if (t !== null) window.clearTimeout(t) }
+    }, [mapHeight, setMapHeight])
+
+    const heightOverridden = mapHeight !== defaultHeight
+    const showResetButton = !!llz || heightOverridden
+    const resetView = () => {
+        if (llz) setLlz(null)
+        if (heightOverridden) setMapHeight(defaultHeight)
+    }
     useEffect(() => {
         if (!drawerOpen) return
         let downAt: { x: number; y: number; target: Element | null } | null = null
@@ -379,7 +410,11 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
             )}
         <div
             ref={wrapRef}
-            style={{ position: "relative", height, width: "100%", borderRadius: 4, overflow: "hidden" }}
+            style={{
+                position: "relative", height: mapHeight, width: "100%",
+                borderRadius: 4, overflow: "hidden",
+                resize: "vertical", minHeight: 240, maxHeight: 1200,
+            }}
         >
             {result.status === "error" && (
                 <div style={{ padding: "1em", color: "red" }}>Error: {result.error}</div>
@@ -398,7 +433,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
                             onViewStateChange={setLlz}
                             mode={mode}
                             theme={actualTheme}
-                            height={height}
+                            height={mapHeight}
                             showInternalControls={false}
                             hexPxTarget={hexPxTarget}
                             onHexPxTargetChange={setHexPxTarget}
@@ -417,7 +452,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
                             onViewStateChange={setLlz}
                             mode="hexbin"
                             theme={actualTheme}
-                            height={height}
+                            height={mapHeight}
                             showInternalControls={false}
                             hexPxTarget={hexPxTarget}
                             onHexPxTargetChange={setHexPxTarget}
@@ -442,10 +477,10 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
                             cursor: "pointer", fontSize: "1em", lineHeight: 1,
                         }}
                     >⚙</button>
-                    {llz && (
+                    {showResetButton && (
                         <button
-                            onClick={() => setLlz(null)}
-                            title="Reset view"
+                            onClick={resetView}
+                            title={llz && heightOverridden ? "Reset view + height" : llz ? "Reset view" : "Reset height"}
                             aria-label="Reset map view"
                             style={{
                                 position: "absolute", top: 8, right: 40, background: bg, color: fg,
@@ -466,10 +501,10 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
                 maxHeight: "calc(100% - 16px)", overflowY: "auto",
             }}>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 4, alignItems: "center", marginBottom: -4 }}>
-                    {llz && (
+                    {showResetButton && (
                         <button
-                            onClick={() => setLlz(null)}
-                            title="Reset view"
+                            onClick={resetView}
+                            title={llz && heightOverridden ? "Reset view + height" : llz ? "Reset view" : "Reset height"}
                             aria-label="Reset map view"
                             style={{
                                 background: "transparent", color: fg, border: "none",
