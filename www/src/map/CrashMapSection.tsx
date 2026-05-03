@@ -123,7 +123,14 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
     const [pointZoomThreshold, setPointZoomThreshold] = useSessionStorageState<number>("hccs.crashmap.pointZoomThreshold", { defaultValue: 11 })
     const [maxPointShards, setMaxPointShards] = useSessionStorageState<number>("hccs.crashmap.maxPointShards", { defaultValue: 10 })
     const [maxHexShards, setMaxHexShards] = useSessionStorageState<number>("hccs.crashmap.maxHexShards", { defaultValue: 30 })
-    const [llz, setLlz] = useUrlState("llz", llzParam)
+    // Debounce URL writes during drag — without it, every per-frame
+    // `setLlz` calls `history.replaceState` + dispatches a synthetic
+    // `popstate`, which forces every `useUrlState` hook (and the router)
+    // to re-evaluate. At ~60fps that's enough sub-50ms work to make the
+    // basemap tile-render visibly stutter behind the (GPU-driven) deck.gl
+    // polygon layer. State updates still apply immediately via use-prms's
+    // `pendingRef`, so the map keeps tracking the cursor.
+    const [llz, setLlz] = useUrlState("llz", llzParam, { debounce: 100 })
     const [apiFlag] = useUrlState("api", apiFlagParam)
 
     // Pre-fetch the v2 manifest so we can derive a sensible initial
