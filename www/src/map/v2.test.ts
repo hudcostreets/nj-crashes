@@ -21,12 +21,14 @@ function metersPerPixel(zoom: number, lat: number): number {
 }
 
 /** Render-side resolution choice (mirrors `pickHexResolutionForPixels` in
- *  CrashMap.tsx). Considers all H3 levels we know edges for. */
+ *  CrashMap.tsx). Considers all H3 levels we know edges for. Compares
+ *  on-screen vertex-to-vertex diameter (= 2× edge) against the px target. */
 function pickRenderRes(pxTarget: number, zoom: number, lat: number): number {
     const target = pxTarget * metersPerPixel(zoom, lat)
     let best = 9, bestDiff = Infinity
     for (const r of Object.keys(H3_EDGE_METERS).map(Number)) {
-        const diff = Math.abs(Math.log2(H3_EDGE_METERS[r] / target))
+        const diaMeters = 2 * H3_EDGE_METERS[r]
+        const diff = Math.abs(Math.log2(diaMeters / target))
         if (diff < bestDiff) { bestDiff = diff; best = r }
     }
     return best
@@ -37,7 +39,7 @@ function pickRenderRes(pxTarget: number, zoom: number, lat: number): number {
  *  coarsen, not refine). For raw-points plans, render res is unconstrained. */
 function effectiveRes(plan: ReturnType<typeof pickFetchPlanV2>, renderRes: number): number {
     if (plan.kind === "points") return renderRes
-    return Math.max(renderRes, plan.res)
+    return Math.min(renderRes, plan.res)
 }
 
 /** Cell width in pixels at a given zoom + lat for resolution `r`. */
@@ -220,6 +222,12 @@ describe("cell-pixel-size invariant — no-chunky-surprise sweep", () => {
         // here are the BUG SIGNATURE — they should shrink toward 1.7× as we
         // land r10..r14 prebins + tune the picker. If they shrink, update
         // this test (lower the bound). If they grow, something regressed.
+        // After the diameter-semantics picker fix the worst jump grew
+        // (~6.5×) because the picker now picks finer render-res past r10
+        // but v2 prebins still cap at r10 → effective res stays at r10
+        // while renderer expects r11+, widening the cellPx gap at the
+        // points/prebin boundary. This is exactly the case the cells-api
+        // (?api=1) path resolves.
         const samples: { z: number, ratio: number }[] = []
         let prev: number | null = null
         for (let z = 10; z <= 12; z += 0.1) {
@@ -236,10 +244,8 @@ describe("cell-pixel-size invariant — no-chunky-surprise sweep", () => {
             prev = cellPx
         }
         const maxRatio = Math.max(...samples.map(s => Math.max(s.ratio, 1 / s.ratio)))
-        // Current code: jumps approach ~2.6× at the points/prebin boundary.
-        // This bound documents that. Tighten as we ship fixes.
-        expect(maxRatio).toBeGreaterThan(2.0)
-        expect(maxRatio).toBeLessThan(3.0)
+        expect(maxRatio).toBeGreaterThan(5.0)
+        expect(maxRatio).toBeLessThan(8.0)
     })
 })
 

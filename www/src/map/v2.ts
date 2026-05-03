@@ -156,7 +156,8 @@ function pickHexRes(pxTarget: number, zoom: number, lat: number): number {
     let best = 8
     let bestDiff = Infinity
     for (const r of [6, 7, 8, 9, 10]) {
-        const diff = Math.abs(Math.log2(H3_EDGE_METERS[r] / targetMeters))
+        const diaMeters = 2 * H3_EDGE_METERS[r]
+        const diff = Math.abs(Math.log2(diaMeters / targetMeters))
         if (diff < bestDiff) {
             bestDiff = diff
             best = r

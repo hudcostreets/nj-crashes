@@ -248,12 +248,20 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
     const result = useMemo(() => {
         if (!apiFlag) return v2Result
         // Adapt the cells-api result into useCrashData's return shape so
-        // the consumers below don't need to branch. The cells-api `plan`
-        // shape (`{kind:"hex",res:N,source:...}`) doesn't fit the
-        // FetchPlan union (which has `shards`, plus `res` is constrained
-        // to {6,7,8,9}); leave `plan: null` when in API mode and let the
-        // overlay surface the API-mode indicator separately.
+        // the consumers below don't need to branch. Synthesize a FetchPlan
+        // with `kind:"hex"` + the API's actual res, so the debug overlay
+        // can highlight the row that's truly being rendered (avoids the
+        // mismatch where renderRes picked a finer res than the API was
+        // able to deliver under the cells cap).
         const manifest = v2Result.manifest
+        const apiPlan = apiResult.plan
+            ? ({
+                kind: "hex" as const,
+                res: apiResult.plan.res,
+                shards: null,
+                reason: apiResult.plan.reason,
+            })
+            : null
         // While refetching (debounced pan/zoom), keep showing the
         // prior cells if we have them — only flash through "loading"
         // when there's truly nothing to render. Same pattern v2 uses
@@ -266,13 +274,13 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
                     dataKind: "hex" as const,
                     manifest: manifest!,
                     refetching: true,
-                    plan: null,
+                    plan: apiPlan,
                 }
             }
-            return { status: "loading" as const, manifest, plan: null }
+            return { status: "loading" as const, manifest, plan: apiPlan }
         }
         if (apiResult.status === "error") {
-            return { status: "error" as const, error: apiResult.error, manifest, plan: null }
+            return { status: "error" as const, error: apiResult.error, manifest, plan: apiPlan }
         }
         return {
             status: "ready" as const,
@@ -280,7 +288,7 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
             dataKind: "hex" as const,
             manifest: manifest!,
             refetching: false,
-            plan: null,
+            plan: apiPlan,
         }
     }, [apiFlag, v2Result, apiResult])
 
@@ -534,9 +542,12 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
                     {effectiveView && (() => {
                         const renderRes = pickHexResolutionForPixels(hexPxTarget, effectiveView.zoom, effectiveView.latitude)
                         const planRes = result.plan?.kind === "hex" ? result.plan.res : null
+                        // `coarsenHexes` no-ops when target ≥ source (can't
+                        // refine), so what we actually display is `min` of
+                        // the two — never finer than what the data provides.
                         const effectiveRes = result.plan?.kind === "points"
                             ? renderRes
-                            : (planRes !== null ? Math.max(renderRes, planRes) : renderRes)
+                            : (planRes !== null ? Math.min(renderRes, planRes) : renderRes)
                         return (
                             <DebugOverlay
                                 viewState={effectiveView}
