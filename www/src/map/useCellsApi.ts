@@ -12,7 +12,8 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
-    cellToBoundary, polygonToCellsExperimental, POLYGON_TO_CELLS_FLAGS,
+    cellToBoundary, cellToParent, getResolution,
+    polygonToCellsExperimental, POLYGON_TO_CELLS_FLAGS,
 } from "h3-js"
 import type { StackedHex } from "./StackedHexLayer"
 import { CELLS_API_BASE } from "./config"
@@ -121,6 +122,30 @@ const DEBOUNCE_MS = 250
  *  renderer handles 25k+ smoothly (verified at z=10 statewide). */
 export const CELLS_BUDGET = 30000
 
+/** Per-shard cap sent to the worker as `?maxCells=`. Worker walks
+ *  coarser if a shard's cells would exceed this — only triggers
+ *  adaptation for genuinely dense shards (e.g. urban Hudson at r10+).
+ *  Splitting CELLS_BUDGET / N_shards is too tight: at N=31 every shard
+ *  gets ~1k budget and most adapt unnecessarily. A flat 5k means
+ *  sparse shards keep requested res; total cells across all shards is
+ *  bounded by N × 5000 worst-case but realistically much less. The
+ *  client coarsens the union if total still exceeds CELLS_BUDGET. */
+const SHARD_MAX_CELLS = 5000
+
+/** Statewide clip polygon — sent as the worker `polygon=` arg for
+ *  views without a county/muni scope. Without it, each r4 shard returns
+ *  its full ~5000 km² contents (NJ + offshore Atlantic + slices of NY/PA),
+ *  ~5× more cells than the visible NJ data. NJ outline ≈ 22k km² inside a
+ *  ~53k km² envelope; this is the envelope rectangle, good enough to drop
+ *  most off-state shard area while staying cache-stable (it's a constant).
+ *  An accurate NJ polygon would clip a few % more but isn't worth the
+ *  extra polygon bytes per request. */
+// CW outer ring (h3 convention; CCW is treated as a hole and explodes
+// the cover at fine res).
+const NJ_CLIP_POLYGON: [number, number][] = [
+    [-75.6, 41.4], [-73.9, 41.4], [-73.9, 38.9], [-75.6, 38.9], [-75.6, 41.4],
+]
+
 function clamp(res: number): number {
     return Math.max(MIN_PYRAMID_RES, Math.min(MAX_PYRAMID_RES, Math.round(res)))
 }
@@ -209,6 +234,7 @@ function encodePolygon(poly: [number, number][]): string {
 
 function buildShardUrl(
     shard: string, res: number, filter: CellsApiFilter, polygonStr: string | null,
+    maxCells: number,
 ): string {
     const sevs = ["f", "i", "p"].filter(c => filter.severities.has(c as "f" | "i" | "p")).join("")
     const params = new URLSearchParams({
@@ -216,9 +242,34 @@ function buildShardUrl(
         res: String(res),
         years: `${filter.yearRange[0]}-${filter.yearRange[1]}`,
         severities: sevs,
+        maxCells: String(maxCells),
     })
     if (polygonStr) params.set("polygon", polygonStr)
     return `${CELLS_API_BASE}/v1/cells?${params}`
+}
+
+/** Aggregate finer-res cells into their res-`targetRes` parents. Used
+ *  to normalize cross-shard responses when the worker's adaptive res
+ *  picked different levels per shard (rare — only when shard data
+ *  densities diverge enough to straddle a budget boundary). */
+function rollupCellsToRes(cells: CellRow[], targetRes: number): CellRow[] {
+    const out = new Map<string, CellRow>()
+    for (const c of cells) {
+        const sr = getResolution(c.h3)
+        if (sr <= targetRes) { out.set(c.h3, c); continue }
+        const ph = cellToParent(c.h3, targetRes)
+        let p = out.get(ph)
+        if (!p) {
+            p = { h3: ph, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
+            out.set(ph, p)
+        }
+        p.n_fatal += c.n_fatal
+        p.n_inj_ped += c.n_inj_ped
+        p.n_inj_other += c.n_inj_other
+        p.n_pdo += c.n_pdo
+        p.n_vehs += c.n_vehs
+    }
+    return [...out.values()]
 }
 
 function cellsToStackedHex(cells: CellRow[]): StackedHex[] {
@@ -303,7 +354,7 @@ export function useCellsApi(filter: CellsApiFilter | null):
             shardRegion = bboxToLonLatRing(snappedBbox)
         }
         const shards = shardsForRegion(lonLatToLatLng(shardRegion), manifest.shard_res, known)
-        const polygonStr = usingPoly ? encodePolygon(filter.clipPolygon!) : null
+        const polygonStr = encodePolygon(usingPoly ? filter.clipPolygon! : NJ_CLIP_POLYGON)
         return { shards, polygonStr }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [manifest, usingPoly, filter?.clipPolygon, bboxKey])
@@ -312,7 +363,14 @@ export function useCellsApi(filter: CellsApiFilter | null):
         if (!filter || !shardSet || !pick) return null
         const { shards, polygonStr } = shardSet
         if (shards.length === 0) return { shards: [], urls: [] as string[], polygonStr: null as string | null }
-        const urls = shards.map(s => buildShardUrl(s, pick.res, filter, polygonStr))
+        // Per-shard cap: trigger worker adaptation only for genuinely
+        // dense shards. Splitting CELLS_BUDGET / N_shards is too tight —
+        // sparse shards should stay at the requested res; only dense
+        // ones (e.g. urban Hudson at r10+) drop one level. Total cells
+        // across all shards may still exceed CELLS_BUDGET; the client
+        // coarsens the union losslessly via cellToParent if so.
+        const perShardCap = SHARD_MAX_CELLS
+        const urls = shards.map(s => buildShardUrl(s, pick.res, filter, polygonStr, perShardCap))
         return { shards, urls, polygonStr }
         // `pick.res` is the only field of `pick` that affects URLs; using
         // the primitive avoids re-running on every drag frame (where `pick`
@@ -356,22 +414,39 @@ export function useCellsApi(filter: CellsApiFilter | null):
             try {
                 const responses = await Promise.all(urls.map(u => fetchShard(u)))
                 if (cancelled) return
-                // Concat per-shard cells; shards partition the cell
-                // space at `shard_res`, so descendant cells at finer
-                // res are unique per shard — no merge needed.
-                const allCells: CellRow[] = []
+                // Worker walks coarser when a shard's count would overflow
+                // its budget, so different shards may return at different
+                // res. Pick the coarsest returned res; any finer shards
+                // get coarsened locally to match (lossless: parent count =
+                // sum of children).
                 let source: "pyramid" | "raw" = "pyramid"
+                let minRes = Infinity
                 for (const r of responses) {
                     if (r.source === "raw") source = "raw"
-                    for (const c of r.cells) allCells.push(c)
+                    if (r.res < minRes) minRes = r.res
+                }
+                const finalRes = minRes === Infinity ? pickAtFire.res : minRes
+                const allCells: CellRow[] = []
+                for (const r of responses) {
+                    if (r.res === finalRes) {
+                        for (const c of r.cells) allCells.push(c)
+                    } else {
+                        // Aggregate finer cells up to finalRes via parent-cell rollup.
+                        const rolled = rollupCellsToRes(r.cells, finalRes)
+                        for (const c of rolled) allCells.push(c)
+                    }
                 }
                 const data = cellsToStackedHex(allCells)
-                const p = pickRef.current ?? pickAtFire
+                const requestedRes = pickAtFire.res
+                const adapted = finalRes !== requestedRes
+                const reason = adapted
+                    ? `${source} · ${pickAtFire.reason} · adapted r${requestedRes}→r${finalRes} · ${urls.length} shard${urls.length > 1 ? "s" : ""}`
+                    : `${source} · ${pickAtFire.reason} · ${urls.length} shard${urls.length > 1 ? "s" : ""}`
                 setState({
                     urls, data, status: "ready",
                     plan: {
-                        kind: "hex", res: p.res, source,
-                        reason: `${source} · ${p.reason} · ${urls.length} shard${urls.length > 1 ? "s" : ""}`,
+                        kind: "hex", res: finalRes, source,
+                        reason,
                         cellCount: data.length, shardCount: urls.length,
                     },
                 })

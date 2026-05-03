@@ -95,6 +95,12 @@ export type CellsRequest = {
      *  the embed for `/c/hudson` doesn't show neighboring hexes that
      *  happen to fall in a requested r4 shard. */
     clipPolygon?: LonLatPolygon
+    /** Optional max cell count. If the response at the requested `res`
+     *  would exceed this, the worker walks coarser (drops the fetched
+     *  pyramid, reads the next-coarser one) until it fits or hits MIN.
+     *  Result includes `res: actualRes` so the client knows what
+     *  resolution was actually returned. */
+    maxCells?: number
 }
 
 function bigintToHex(b: bigint | number): string {
@@ -123,12 +129,12 @@ export async function handleCellsRequest(
     req: CellsRequest,
 ): Promise<CellsResponse> {
     const manifest = await loadManifest(bucket, prefix)
-    const { cells: requestedShards, res } = req
+    const { cells: requestedShards, res: requestedRes, maxCells } = req
     const yearRange = req.yearRange ?? manifest.year_range
     const sevSet = req.severities  // undefined ⇒ all
 
-    if (res < 0 || res > manifest.base_res) {
-        throw new HttpError(400, `res ${res} out of range [0, ${manifest.base_res}]`)
+    if (requestedRes < 0 || requestedRes > manifest.base_res) {
+        throw new HttpError(400, `res ${requestedRes} out of range [0, ${manifest.base_res}]`)
     }
     if (requestedShards.length === 0) {
         throw new HttpError(400, "cells must list ≥1 shard")
@@ -139,27 +145,31 @@ export async function handleCellsRequest(
     const known = new Set(manifest.shard_cells)
     const shards = requestedShards.filter(s => known.has(s))
 
-    const usePyramid = res < manifest.base_res && manifest.pyramid_levels.includes(res)
-    const clip = clipCovering(req.clipPolygon, res)
-
-    if (usePyramid) {
-        const cells = await queryPyramid(bucket, prefix, res, shards, yearRange, sevSet, clip)
-        return {
-            res,
-            year_range: yearRange,
-            data_version: manifest.data_version,
-            source: "pyramid",
-            cells,
+    // Adaptive res: start at requested, walk coarser if cells.length
+    // exceeds `maxCells`. Each step is a fresh parquet read (lossless,
+    // since each pyramid level is independently aggregated). When
+    // `maxCells` is omitted, we always return at the requested res.
+    const MIN_RES = 5
+    let res = requestedRes
+    while (res >= MIN_RES) {
+        const usePyramid = res < manifest.base_res && manifest.pyramid_levels.includes(res)
+        const clip = clipCovering(req.clipPolygon, res)
+        const cells = usePyramid
+            ? await queryPyramid(bucket, prefix, res, shards, yearRange, sevSet, clip)
+            : await queryRaw(bucket, prefix, manifest, res, shards, yearRange, sevSet, clip)
+        if (maxCells == null || cells.length <= maxCells || res === MIN_RES) {
+            return {
+                res,
+                year_range: yearRange,
+                data_version: manifest.data_version,
+                source: usePyramid ? "pyramid" : "raw",
+                cells,
+            }
         }
+        res--
     }
-    const cells = await queryRaw(bucket, prefix, manifest, res, shards, yearRange, sevSet, clip)
-    return {
-        res,
-        year_range: yearRange,
-        data_version: manifest.data_version,
-        source: "raw",
-        cells,
-    }
+    // Unreachable — loop returns at res === MIN_RES.
+    throw new Error("unreachable")
 }
 
 async function queryPyramid(
@@ -335,5 +345,13 @@ export function parseCellsRequest(url: URL): CellsRequest {
         clipPolygon = ring
     }
 
-    return { cells, res, yearRange, severities, clipPolygon }
+    let maxCells: number | undefined
+    const mc = url.searchParams.get("maxCells")
+    if (mc) {
+        const n = parseInt(mc, 10)
+        if (!Number.isFinite(n) || n <= 0) throw new HttpError(400, "maxCells must be a positive integer")
+        maxCells = n
+    }
+
+    return { cells, res, yearRange, severities, clipPolygon, maxCells }
 }

@@ -300,11 +300,10 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
         }
     }, [apiFlag, v2Result, apiResult])
 
-    // Budget-aware coarsening for hex data. The picker (useCellsApi) is now
-    // zoom-only — no theoretical cap — so the API may return more cells than
-    // we want to render. Walk coarser via h3 cellToParent (lossless) until
-    // the rendered count fits CELLS_BUDGET. Result is what feeds the map +
-    // what the debug overlay reports as "hexes:".
+    // Worker handles budget enforcement via `?maxCells=`: dense shards
+    // come back at a coarser res than requested. Client-side fallback
+    // here is just a safety net (cumulative across shards may still
+    // overshoot if shard splits + adaptive don't converge perfectly).
     const renderHexes = useMemo<{ hexes: StackedHex[]; res: number; coarsenedFrom: number | null } | null>(() => {
         if (result.status !== "ready" || result.dataKind !== "hex") return null
         const data = result.data as StackedHex[]
