@@ -231,6 +231,9 @@ async function queryRaw(
     // but the only one available without a bounding region.
     const filter = { year: { $gte: yearRange[0], $lte: yearRange[1] } }
 
+    // r14 fast path: rows are already at the target res, so each row's
+    // h3_r{base} IS the output cell — no `cellToParent` per row.
+    const fastPath = res === baseRes
     const wantF = !severities || severities.has("f")
     const wantI = !severities || severities.has("i")
     const wantP = !severities || severities.has("p")
@@ -253,7 +256,7 @@ async function queryRaw(
         for (const row of rows) {
             const cellId = (row as any)[h3Col] ?? row.h3_r14
             const baseHex = bigintToHex(cellId)
-            const ancHex = cellToParent(baseHex, res)
+            const ancHex = fastPath ? baseHex : cellToParent(baseHex, res)
             if (clip && !clip.has(ancHex)) continue
             const sev = row.severity
             let c = out.get(ancHex)

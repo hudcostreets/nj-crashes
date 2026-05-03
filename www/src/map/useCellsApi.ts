@@ -105,7 +105,7 @@ async function fetchShard(url: string): Promise<CellsResponse> {
     return p
 }
 
-const MAX_PYRAMID_RES = 11
+const MAX_PYRAMID_RES = 14
 const MIN_PYRAMID_RES = 6
 
 /** Refetch debounce in ms. The viewport debounce coalesces a drag's

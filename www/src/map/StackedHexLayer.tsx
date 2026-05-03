@@ -176,6 +176,7 @@ export const H3_RADIUS_METERS: Record<number, number> = {
     11: 25,
     12: 9.4,
     13: 3.6,
+    14: 1.4,
 }
 
 export function buildStackedHexLayer({
