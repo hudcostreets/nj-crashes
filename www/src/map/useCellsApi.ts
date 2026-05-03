@@ -255,19 +255,44 @@ export function useCellsApi(filter: CellsApiFilter | null):
     // counties' shards, all of which would return zero polygon-clipped
     // cells. The polygon is the actual data we want, so pick shards
     // from its outline. Without a polygon, fall back to the viewport.
-    const shardsKey = useMemo(() => {
-        if (!filter || !manifest || !pick) return null
+    // Shard-set computation is expensive — `polygonToCellsExperimental` on
+    // a 600-vertex county outline blocks the main thread for a few ms, and
+    // we'd run it every drag frame if naively memoized on the live viewport.
+    // Split the slow (shard set + polygon string) from the fast (URLs at the
+    // current res). Shards depend on:
+    //   - manifest.shard_cells / shard_res
+    //   - clipPolygon (ref-stable across drags at one scope), OR
+    //   - viewport bbox snapped to a 0.25° grid (≪ shard_res cell size, so
+    //     the shard set is stable across small pans)
+    const usingPoly = !!(filter?.clipPolygon && filter.clipPolygon.length >= 3)
+    const bboxKey = filter && !usingPoly
+        ? filter.viewport.map(n => Math.round(n * 4) / 4).join(",")
+        : null
+    const shardSet = useMemo(() => {
+        if (!filter || !manifest) return null
         const known = new Set(manifest.shard_cells)
-        const usingPoly = !!(filter.clipPolygon && filter.clipPolygon.length >= 3)
         const ring = usingPoly
             ? lonLatToLatLng(filter.clipPolygon!)
             : bboxToLatLngRing(filter.viewport)
         const shards = shardsForRegion(ring, manifest.shard_res, known)
-        if (shards.length === 0) return { shards: [], urls: [] as string[], polygonStr: null as string | null }
         const polygonStr = usingPoly ? encodePolygon(filter.clipPolygon!) : null
+        return { shards, polygonStr }
+        // `bboxKey` collapses small pans to a stable string; `clipPolygon`
+        // ref is stable while scope is unchanged.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [manifest, usingPoly, filter?.clipPolygon, bboxKey])
+
+    const shardsKey = useMemo(() => {
+        if (!filter || !shardSet || !pick) return null
+        const { shards, polygonStr } = shardSet
+        if (shards.length === 0) return { shards: [], urls: [] as string[], polygonStr: null as string | null }
         const urls = shards.map(s => buildShardUrl(s, pick.res, filter, polygonStr))
         return { shards, urls, polygonStr }
-    }, [filter, manifest, pick])
+        // `pick.res` is the only field of `pick` that affects URLs; using
+        // the primitive avoids re-running on every drag frame (where `pick`
+        // gets a new object ref but the same `res`).
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [shardSet, pick?.res, filter?.yearRange, filter?.severities])
 
     const [state, setState] = useState<{
         urls: string[]
