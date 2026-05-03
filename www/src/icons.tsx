@@ -1,7 +1,7 @@
 import React, { CSSProperties, ReactNode, SVGProps } from "react"
 import css from "./icons.module.scss"
 import { Tooltip } from "@/src/tooltip"
-import { InfoOutlined as MuiInfo } from "@mui/icons-material";
+import MuiInfo from "@mui/icons-material/InfoOutlined";
 import A from "@/src/lib/a"
 import { NjdotRawData, NjspFatalAcc } from "@/src/urls";
 

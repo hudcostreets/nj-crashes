@@ -10,9 +10,11 @@ import LastPageIcon from '@mui/icons-material/LastPage';
 import { floor, min } from "@rdub/base/math";
 import useSessionStorageState from "use-session-storage-state";
 import strftime from "strftime";
-import { ArrowForward, ArrowForwardIos, SvgIconComponent } from "@mui/icons-material";
-import SvgIcon from "@mui/material/SvgIcon/SvgIcon";
-import { Tooltip } from "@mui/material";
+import ArrowForward from "@mui/icons-material/ArrowForward";
+import ArrowForwardIos from "@mui/icons-material/ArrowForwardIos";
+import type { SvgIconComponent } from "@mui/icons-material";
+import SvgIcon from "@mui/material/SvgIcon";
+import Tooltip from "@mui/material/Tooltip";
 
 export const PageSizes = [ 10, 20, 50 ]
 export const DefaultPageSize = PageSizes[0]

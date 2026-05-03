@@ -10,7 +10,7 @@ import TableBody from "@mui/material/TableBody";
 import * as React from "react";
 import { keys, o2a } from "@rdub/base/objs";
 import { fold } from "fp-ts/Either";
-import { TableFooter } from "@mui/material";
+import TableFooter from "@mui/material/TableFooter";
 import { DatePagination, Pagination } from "@/src/pagination";
 import { Tooltip } from "./tooltip";
 
