@@ -28,6 +28,34 @@ const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m
 
 const STATE_BBOX: [number, number, number, number] = [-75.7, 38.9, -73.9, 41.4]
 
+/** Extract a polygon's outer ring (`[lon, lat][]`) from the first
+ *  Polygon/MultiPolygon feature in a FeatureCollection. For
+ *  MultiPolygon, takes the largest sub-polygon by vertex count (good
+ *  proxy for a county's mainland vs. small islands). Returns undefined
+ *  when nothing usable is found.
+ *
+ *  Used to send the active scope's admin boundary to the cells-api
+ *  worker as a `polygon=` clip — drops cells whose center isn't in the
+ *  county/muni so the embedded map doesn't show neighboring areas
+ *  spilling out around the admin boundary. */
+function extractOuterRing(fc: FeatureCollection): [number, number][] | undefined {
+    const feat = fc.features[0]
+    if (!feat) return undefined
+    const g = feat.geometry as any
+    if (g?.type === "Polygon" && Array.isArray(g.coordinates?.[0])) {
+        return g.coordinates[0] as [number, number][]
+    }
+    if (g?.type === "MultiPolygon" && Array.isArray(g.coordinates)) {
+        let largest: [number, number][] | undefined
+        for (const poly of g.coordinates) {
+            const ring = poly?.[0] as [number, number][] | undefined
+            if (ring && (!largest || ring.length > largest.length)) largest = ring
+        }
+        return largest
+    }
+    return undefined
+}
+
 /** Per-county initial view overrides (mobile + desktop pairs, lerped by width).
  *  Keys are numeric county codes (cc). Captured from user-tuned `?llz=` URLs
  *  and used instead of `initialBounds` auto-fit for these scopes. Add entries
@@ -148,49 +176,6 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
         }
     }, [yearRange, cc, mc, severities, effectiveView, hexPxTarget, pointZoomThreshold, maxPointShards, maxHexShards])
 
-    // While `?api=1` is set, route the data fetch through the new
-    // cells-api worker (`useCellsApi`) instead of the v2 static-prebin
-    // client (`useCrashData`). Both hooks always run — we just pass
-    // `null` to the inactive one so it skips its work. We still need
-    // `useCrashData`'s manifest for county/muni bboxes either way.
-    const v2Result = useCrashData(filter)
-    const apiFilter: CellsApiFilter | null = useMemo(() => {
-        if (!apiFlag) return null
-        if (!filter?.viewport || filter.viewportLat == null || filter.zoom == null) return null
-        return {
-            yearRange: filter.yearRange,
-            severities: filter.severities ?? new Set(["f", "i"]),
-            viewport: filter.viewport,
-            viewportLat: filter.viewportLat,
-            zoom: filter.zoom,
-            hexPxTarget: filter.hexPxTarget,
-        }
-    }, [apiFlag, filter])
-    const apiResult = useCellsApi(apiFilter)
-    const result = useMemo(() => {
-        if (!apiFlag) return v2Result
-        // Adapt the cells-api result into useCrashData's return shape so
-        // the consumers below don't need to branch. The cells-api `plan`
-        // shape (`{kind:"hex",res:N,source:...}`) doesn't fit the
-        // FetchPlan union (which has `shards`, plus `res` is constrained
-        // to {6,7,8,9}); leave `plan: null` when in API mode and let the
-        // overlay surface the API-mode indicator separately.
-        const manifest = v2Result.manifest
-        if (apiResult.status === "loading") {
-            return { status: "loading" as const, manifest, plan: null }
-        }
-        if (apiResult.status === "error") {
-            return { status: "error" as const, error: apiResult.error, manifest, plan: null }
-        }
-        return {
-            status: "ready" as const,
-            data: apiResult.data,
-            dataKind: "hex" as const,
-            manifest: manifest!,
-            refetching: false,
-            plan: null,
-        }
-    }, [apiFlag, v2Result, apiResult])
     const [outline, setOutline] = useState<FeatureCollection | null>(null)
     useEffect(() => {
         const url = cc === null
@@ -215,6 +200,81 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
             .catch(() => { if (!cancelled) setMuniOutline(null) })
         return () => { cancelled = true }
     }, [cc, mc])
+
+    // While `?api=1` is set, route the data fetch through the new
+    // cells-api worker (`useCellsApi`) instead of the v2 static-prebin
+    // client (`useCrashData`). Both hooks always run — we just pass
+    // `null` to the inactive one so it skips its work. We still need
+    // `useCrashData`'s manifest for county/muni bboxes either way.
+    const v2Result = useCrashData(filter)
+    const apiFilter: CellsApiFilter | null = useMemo(() => {
+        if (!apiFlag) return null
+        if (!filter?.viewport || filter.viewportLat == null || filter.zoom == null) return null
+        // Pull a polygon for clipping when on county/muni scope. Prefer
+        // the muni outline (tightest), then the county outline. Skip
+        // statewide (no admin-boundary scope to clip to). The worker
+        // drops cells whose center isn't in the polygon — eliminates
+        // the visible spillover into NYC/Bergen and shrinks response
+        // size enough to make r10/r11 viable for county views.
+        // Wait for the outline GeoJSON to load before firing — otherwise
+        // we'd fetch once unclipped (pulling in NYC etc.) and refetch
+        // once it lands, doubling the round trips on first paint.
+        if (mc !== null && !muniOutline) return null
+        if (mc === null && cc !== null && !outline) return null
+        const clipPolygon = mc !== null && muniOutline
+            ? extractOuterRing(muniOutline)
+            : cc !== null && outline
+              ? extractOuterRing(outline)
+              : undefined
+        return {
+            yearRange: filter.yearRange,
+            severities: filter.severities ?? new Set(["f", "i"]),
+            viewport: filter.viewport,
+            viewportLat: filter.viewportLat,
+            zoom: filter.zoom,
+            hexPxTarget: filter.hexPxTarget,
+            clipPolygon,
+        }
+    }, [apiFlag, filter, cc, mc, outline, muniOutline])
+    const apiResult = useCellsApi(apiFilter)
+    const result = useMemo(() => {
+        if (!apiFlag) return v2Result
+        // Adapt the cells-api result into useCrashData's return shape so
+        // the consumers below don't need to branch. The cells-api `plan`
+        // shape (`{kind:"hex",res:N,source:...}`) doesn't fit the
+        // FetchPlan union (which has `shards`, plus `res` is constrained
+        // to {6,7,8,9}); leave `plan: null` when in API mode and let the
+        // overlay surface the API-mode indicator separately.
+        const manifest = v2Result.manifest
+        // While refetching (debounced pan/zoom), keep showing the
+        // prior cells if we have them — only flash through "loading"
+        // when there's truly nothing to render. Same pattern v2 uses
+        // via its `refetching` flag.
+        if (apiResult.status === "loading") {
+            if (apiResult.data && apiResult.data.length > 0) {
+                return {
+                    status: "ready" as const,
+                    data: apiResult.data,
+                    dataKind: "hex" as const,
+                    manifest: manifest!,
+                    refetching: true,
+                    plan: null,
+                }
+            }
+            return { status: "loading" as const, manifest, plan: null }
+        }
+        if (apiResult.status === "error") {
+            return { status: "error" as const, error: apiResult.error, manifest, plan: null }
+        }
+        return {
+            status: "ready" as const,
+            data: apiResult.data,
+            dataKind: "hex" as const,
+            manifest: manifest!,
+            refetching: false,
+            plan: null,
+        }
+    }, [apiFlag, v2Result, apiResult])
 
     const initialBounds: [number, number, number, number] = useMemo(() => {
         const m = result.manifest
@@ -245,24 +305,35 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
     }
     const severityPhrase = formatSeverityPhrase(severities)
 
-    // Close drawer on map click. Listen at window-capture phase for
-    // pointerdown — fires before deck.gl's pointer manager processes it.
-    // The click target is usually deck.gl's `#view-default-view` div (not
-    // the underlying canvas), so we identify "map clicks" as anything
-    // inside the wrap that isn't a form control / link / button.
+    // Close drawer on map click — but not on map drag/pan. Track the
+    // pointerdown position; if pointerup happens within a small movement
+    // threshold, treat it as a click and close. Otherwise it was a pan
+    // and we leave the drawer open.
     const wrapRef = useRef<HTMLDivElement | null>(null)
     useEffect(() => {
         if (!drawerOpen) return
-        const handler = (e: Event) => {
+        let downAt: { x: number; y: number; target: Element | null } | null = null
+        const onDown = (e: PointerEvent) => {
             const target = e.target as Element | null
             const wrap = wrapRef.current
-            if (!target || !wrap || !wrap.contains(target)) return
-            // Don't close if click was on one of our overlays/controls.
-            if (target.closest("button, a, label, input, select, textarea")) return
+            if (!target || !wrap || !wrap.contains(target)) { downAt = null; return }
+            if (target.closest("button, a, label, input, select, textarea")) { downAt = null; return }
+            downAt = { x: e.clientX, y: e.clientY, target }
+        }
+        const onUp = (e: PointerEvent) => {
+            if (!downAt) return
+            const dx = e.clientX - downAt.x
+            const dy = e.clientY - downAt.y
+            downAt = null
+            if (dx * dx + dy * dy > 25) return  // moved >5px → pan, not click
             setDrawerOpen(false)
         }
-        window.addEventListener("pointerdown", handler, true)
-        return () => window.removeEventListener("pointerdown", handler, true)
+        window.addEventListener("pointerdown", onDown, true)
+        window.addEventListener("pointerup", onUp, true)
+        return () => {
+            window.removeEventListener("pointerdown", onDown, true)
+            window.removeEventListener("pointerup", onUp, true)
+        }
     }, [drawerOpen, setDrawerOpen])
 
     return (
