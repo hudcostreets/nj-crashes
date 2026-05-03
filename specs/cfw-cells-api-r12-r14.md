@@ -18,13 +18,25 @@ This is a straightforward extension of the existing pipeline (`njdot/cli/cells.p
 
 Existing r14 raw layer: ~70 MB across 31 r4 shards (3.98M geocoded crashes).
 
-| Level | Cells (rough) | File size |
+Initial estimate (way off — counted hex cells, missed the year × topK multiplier):
+
+| Level | Cells (predicted) | File size (predicted) |
 |---|---|---|
 | r12 | r14 / 49 ≈ 80k | ~1.5 MB |
 | r13 | r14 / 7 ≈ 570k | ~10 MB |
 | r14 | (raw) | (existing 70 MB) |
 
-Total addition: ~12 MB. Negligible.
+Actual (built 2026-05-03):
+
+| Level | Cell-years | File size |
+|---|---|---|
+| r12 | 1,877,714 | 54 MB |
+| r13 | 1,937,747 | 54 MB |
+| r14 | (raw, 3.98M rows) | 70 MB |
+
+Total addition: ~108 MB. Pyramid total now 266 MB (was 160 MB). Still acceptable.
+
+Why the estimate missed: `cell-years = N_cells × ~23` and each row carries ~10-element `topK` list (~150 B), not just count columns (~20 B). At r12+ the diminishing-returns plateau on cell count is reached well before the row-multiplier washes out.
 
 ## Changes required
 
@@ -120,9 +132,16 @@ curl https://crashes-cells-api.<account>.workers.dev/v1/manifest | jq .pyramid_l
 
 ## Done when
 
-- [ ] Pipeline produces r12, r13 parquets locally and they pass DVX `status` clean
-- [ ] R2 sync uploads ~12 MB new objects
-- [ ] Worker `/v1/manifest` lists `pyramid_levels: [6..13]`
+Pipeline (this spec — done 2026-05-03):
+- [x] Pipeline produces r12, r13 parquets locally and they pass DVX `status` clean
+- [x] R2 sync uploads new objects (actually re-uploaded all, since `pyramid -f` rewrote r6–r11 mtimes; data byte-identical for old levels)
+- [x] Sum-parity check: r12 and r13 each total to 3,978,856 crashes (matches raw)
+- [x] DVX-tracked at `data/cells/pyramid.dvc` (new dir hash `b059da05`, size 278 MB)
+- [x] Manifest regenerated: `pyramid_levels: [6,7,8,9,10,11,12,13]`, `data_version: 2026-05-03T13:56:20Z-fffcdf36bd5`
+
+Worker + client (m3's slice):
+- [ ] Worker r14 fast-path: when `res === manifest.base_res`, filter raw layer with no groupby
+- [ ] Worker `/v1/manifest` returns `pyramid_levels: [6..13]` (just by virtue of the new manifest)
 - [ ] Worker `/v1/cells?res=12` and `?res=13` return data (sample one shard)
 - [ ] Worker `/v1/cells?res=14` returns data (raw fast-path)
 - [ ] Client `MAX_PYRAMID_RES=14`; picker walks to r12/r13/r14 at deep zoom
