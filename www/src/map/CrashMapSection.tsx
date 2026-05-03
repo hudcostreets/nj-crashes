@@ -9,8 +9,10 @@ import { useUrlState, viewStateParam } from "use-prms"
 import type { Param } from "use-prms"
 import { useCrashData } from "@/src/map/useCrashData"
 import type { CrashFilter } from "@/src/map/useCrashData"
-import { useCellsApi } from "@/src/map/useCellsApi"
+import { useCellsApi, CELLS_BUDGET } from "@/src/map/useCellsApi"
 import type { CellsApiFilter } from "@/src/map/useCellsApi"
+import { coarsenHexes } from "@/src/map/StackedHexLayer"
+import { getResolution } from "h3-js"
 import { MAP_BASE_URL } from "@/src/map/config"
 import type { Crash, MapMode, ViewState } from "@/src/map/CrashMap"
 import type { StackedHex } from "@/src/map/StackedHexLayer"
@@ -298,6 +300,26 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
         }
     }, [apiFlag, v2Result, apiResult])
 
+    // Budget-aware coarsening for hex data. The picker (useCellsApi) is now
+    // zoom-only — no theoretical cap — so the API may return more cells than
+    // we want to render. Walk coarser via h3 cellToParent (lossless) until
+    // the rendered count fits CELLS_BUDGET. Result is what feeds the map +
+    // what the debug overlay reports as "hexes:".
+    const renderHexes = useMemo<{ hexes: StackedHex[]; res: number; coarsenedFrom: number | null } | null>(() => {
+        if (result.status !== "ready" || result.dataKind !== "hex") return null
+        const data = result.data as StackedHex[]
+        if (data.length === 0) return { hexes: data, res: result.plan?.kind === "hex" ? result.plan.res : 9, coarsenedFrom: null }
+        const sourceRes = getResolution(data[0].h3)
+        if (data.length <= CELLS_BUDGET) return { hexes: data, res: sourceRes, coarsenedFrom: null }
+        let res = sourceRes
+        let out = data
+        while (out.length > CELLS_BUDGET && res > 5) {
+            res--
+            out = coarsenHexes(data, res)
+        }
+        return { hexes: out, res, coarsenedFrom: sourceRes }
+    }, [result])
+
     const initialBounds: [number, number, number, number] = useMemo(() => {
         const m = result.manifest
         if (cc !== null && mc !== null) {
@@ -443,7 +465,7 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                         />
                     ) : (
                         <CrashMap
-                            prebinnedHexes={result.data as StackedHex[]}
+                            prebinnedHexes={renderHexes?.hexes ?? (result.data as StackedHex[])}
                             outline={outline ?? undefined}
                             muniOutline={muniOutline ?? undefined}
                             initialBounds={initialBounds}
@@ -586,11 +608,21 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                         return (
                             <DebugOverlay
                                 viewState={effectiveView}
-                                plan={result.plan ?? null}
+                                plan={(() => {
+                                    if (!result.plan) return null
+                                    if (result.plan.kind !== "hex" || !renderHexes?.coarsenedFrom) return result.plan
+                                    return {
+                                        ...result.plan,
+                                        reason: `${result.plan.reason ?? `r${result.plan.res}`} · coarsened r${renderHexes.coarsenedFrom}→r${renderHexes.res} (budget ${CELLS_BUDGET / 1000}k)`,
+                                    }
+                                })()}
                                 renderRes={renderRes}
-                                effectiveRes={effectiveRes}
+                                effectiveRes={renderHexes?.res ?? effectiveRes}
                                 hexPxTarget={hexPxTarget}
-                                rowCount={result.status === "ready" ? result.data.length : undefined}
+                                rowCount={
+                                    renderHexes?.hexes.length
+                                    ?? (result.status === "ready" ? result.data.length : undefined)
+                                }
                                 fetchState={
                                     result.status === "loading" ? "loading"
                                     : result.status === "ready" && result.refetching ? "refetching"

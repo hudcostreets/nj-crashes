@@ -12,8 +12,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
-    cellToBoundary, getHexagonAreaAvg, polygonToCellsExperimental,
-    POLYGON_TO_CELLS_FLAGS, UNITS,
+    cellToBoundary, polygonToCellsExperimental, POLYGON_TO_CELLS_FLAGS,
 } from "h3-js"
 import type { StackedHex } from "./StackedHexLayer"
 import { CELLS_API_BASE } from "./config"
@@ -114,66 +113,13 @@ const MIN_PYRAMID_RES = 6
  *  shard boundary only pays for the new shard. */
 const DEBOUNCE_MS = 250
 
-/** Soft cap on cells-per-response. Picker chooses the finest res where
- *  `area / hex_area ≤ CELLS_CAP`. The cap is a *theoretical* upper bound
- *  (every hex non-empty); actual responses are usually much smaller
- *  because we drop empty cells. 100k allows r11 across all NJ counties
- *  including the largest (Hudson ≈ 120 km² → 56k theoretical cells at
- *  r11) while still capping statewide before r9 (NJ ≈ 22000 km², r9 ≈
- *  210k cells). */
-const CELLS_CAP = 100000
-
-/** Bounding box of NJ data — used to clamp the picker's "area" estimate
- *  for statewide views. Without this, a pitch=45 statewide viewport bbox
- *  inflates to ~570k km² (NJ is ~22k km² inside a ~53k km² envelope),
- *  forcing the picker to r6 even at z≈7.5 where r8 is appropriate. */
-const NJ_DATA_BBOX: Bbox = [-75.6, 38.9, -73.9, 41.4]
-
-function bboxAreaKm2([w, s, e, n]: Bbox): number {
-    const lat = (s + n) / 2
-    const dLat = (n - s) * 111
-    const dLon = (e - w) * 111 * Math.cos((lat * Math.PI) / 180)
-    return Math.max(0, dLat * dLon)
-}
-
-function bboxIntersect(a: Bbox, b: Bbox): Bbox | null {
-    const w = Math.max(a[0], b[0])
-    const s = Math.max(a[1], b[1])
-    const e = Math.min(a[2], b[2])
-    const n = Math.min(a[3], b[3])
-    return e > w && n > s ? [w, s, e, n] : null
-}
-
-function polygonAreaKm2(ring: [number, number][]): number {
-    if (ring.length < 3) return 0
-    const lat0 = ring.reduce((s, [, la]) => s + la, 0) / ring.length
-    const k = Math.cos((lat0 * Math.PI) / 180)
-    let a = 0
-    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-        const [xi, yi] = ring[i]
-        const [xj, yj] = ring[j]
-        a += (xj * k - xi * k) * (yi + yj)
-    }
-    return Math.abs(a / 2) * 111 * 111
-}
-
-function pickResForArea(areaKm2: number, targetRes: number): { res: number; reason: string } {
-    if (areaKm2 <= 0) return { res: clamp(targetRes), reason: "fallback (area=0)" }
-    let best = MIN_PYRAMID_RES
-    for (let r = MIN_PYRAMID_RES; r <= MAX_PYRAMID_RES; r++) {
-        const hexKm2 = getHexagonAreaAvg(r, UNITS.km2)
-        const maxCells = areaKm2 / hexKm2
-        if (maxCells <= CELLS_CAP) best = r
-        else break
-    }
-    const targetClamped = clamp(targetRes)
-    const capped = Math.min(best, targetClamped)
-    let reason: string
-    if (best < targetClamped) reason = `area cap r${best} (zoom wanted r${targetRes})`
-    else if (best > targetClamped) reason = `zoom r${targetClamped} (area allows r${best})`
-    else reason = `r${capped} ${areaKm2.toFixed(0)}km² ≤ ${CELLS_CAP}-cell cap`
-    return { res: capped, reason }
-}
+/** Render budget — max hex bins shown on screen. The picker no longer
+ *  caps based on theoretical max (`area / hex_area`); it picks res
+ *  purely from zoom. The consumer (CrashMapSection) coarsens
+ *  client-side via `h3 cellToParent` if a fetch comes back over budget
+ *  (lossless: parent count = sum of children). 30k chosen because the
+ *  renderer handles 25k+ smoothly (verified at z=10 statewide). */
+export const CELLS_BUDGET = 30000
 
 function clamp(res: number): number {
     return Math.max(MIN_PYRAMID_RES, Math.min(MAX_PYRAMID_RES, Math.round(res)))
@@ -190,10 +136,6 @@ function shardsForRegion(
 ): string[] {
     const cover = polygonToCellsExperimental(ring, shardRes, POLYGON_TO_CELLS_FLAGS.containmentOverlapping)
     return cover.filter(c => knownShards.has(c))
-}
-
-function bboxToLatLngRing([w, s, e, n]: Bbox): [number, number][] {
-    return [[s, w], [s, e], [n, e], [n, w], [s, w]]
 }
 
 function bboxToLonLatRing([w, s, e, n]: Bbox): [number, number][] {
@@ -317,24 +259,12 @@ export function useCellsApi(filter: CellsApiFilter | null):
         if (filter.resOverride != null) {
             return { res: clamp(filter.resOverride), reason: `override r${filter.resOverride}` }
         }
+        // Pick purely from zoom — the consumer coarsens post-fetch if
+        // the actual cell count exceeds CELLS_BUDGET.
         const targetRes = pickHexResolutionForPixels(filter.hexPxTarget ?? 1.2, filter.zoom, filter.viewportLat)
-        // Visible area = data envelope ∩ viewport.
-        //   - Scoped (county/muni): `clipPolygon ∩ viewport`. Shrinks as
-        //     the user zooms into part of the polygon, letting picker
-        //     refine res past what scope-area alone would allow.
-        //   - Statewide: `viewport ∩ NJ_DATA_BBOX`. Without the NJ clamp,
-        //     pitch=45 inflates the viewport bbox 25× past NJ, forcing
-        //     the picker to r6 even at z≈7.5 where r8 should win.
-        let visibleArea: number
-        if (filter.clipPolygon && filter.clipPolygon.length >= 3) {
-            const clipped = clipPolygonToBbox(filter.clipPolygon, filter.viewport)
-            visibleArea = clipped.length >= 3 ? polygonAreaKm2(clipped) : 0
-        } else {
-            const clamped = bboxIntersect(filter.viewport, NJ_DATA_BBOX)
-            visibleArea = clamped ? bboxAreaKm2(clamped) : 0
-        }
-        return pickResForArea(visibleArea, targetRes)
-    }, [filter?.zoom, filter?.viewportLat, filter?.hexPxTarget, filter?.resOverride, filter?.clipPolygon, filter?.viewport])
+        const res = clamp(targetRes)
+        return { res, reason: `zoom r${targetRes}` }
+    }, [filter?.zoom, filter?.viewportLat, filter?.hexPxTarget, filter?.resOverride])
 
     // Shard set (which r4 cells to fetch) and worker `polygon=` arg are
     // computed separately so that small pans don't thrash the per-shard
