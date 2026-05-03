@@ -182,8 +182,67 @@ function bboxToLatLngRing([w, s, e, n]: Bbox): [number, number][] {
     return [[s, w], [s, e], [n, e], [n, w], [s, w]]
 }
 
+function bboxToLonLatRing([w, s, e, n]: Bbox): [number, number][] {
+    return [[w, s], [e, s], [e, n], [w, n], [w, s]]
+}
+
 function lonLatToLatLng(ring: [number, number][]): [number, number][] {
     return ring.map(([lon, lat]) => [lat, lon])
+}
+
+/** Sutherland-Hodgman polygon-vs-axis-aligned-rectangle clip. Input ring
+ *  is `[lon, lat]`, bbox is `[w, s, e, n]`. Output is the polygon clipped
+ *  to the rectangle (CCW or CW, same as input; possibly empty if the
+ *  polygon doesn't overlap the rectangle). The polygon is assumed to be
+ *  a simple ring (no holes); the input may be open (last !== first) or
+ *  closed — output is open (no implicit closing vertex).
+ *
+ *  Used to compute `polygon ∩ viewport_bbox`: shrinks the clip used for
+ *  shard selection and the cells-api `polygon=` param when the user has
+ *  zoomed into part of a county/muni, so we fetch only the visible
+ *  region instead of the full scope. */
+function clipPolygonToBbox(
+    poly: [number, number][],
+    [w, s, e, n]: Bbox,
+): [number, number][] {
+    if (poly.length < 3) return []
+    type Edge = { axis: 0 | 1; inside: (v: number) => boolean; intersect: (a: [number, number], b: [number, number]) => [number, number] }
+    const edges: Edge[] = [
+        { axis: 0, inside: v => v >= w, intersect: (a, b) => intersectAt(a, b, 0, w) },
+        { axis: 0, inside: v => v <= e, intersect: (a, b) => intersectAt(a, b, 0, e) },
+        { axis: 1, inside: v => v >= s, intersect: (a, b) => intersectAt(a, b, 1, s) },
+        { axis: 1, inside: v => v <= n, intersect: (a, b) => intersectAt(a, b, 1, n) },
+    ]
+    let output = poly
+    for (const { axis, inside, intersect } of edges) {
+        if (output.length === 0) return []
+        const input = output
+        output = []
+        for (let i = 0; i < input.length; i++) {
+            const cur = input[i]
+            const prev = input[(i - 1 + input.length) % input.length]
+            const curIn = inside(cur[axis])
+            const prevIn = inside(prev[axis])
+            if (curIn) {
+                if (!prevIn) output.push(intersect(prev, cur))
+                output.push(cur)
+            } else if (prevIn) {
+                output.push(intersect(prev, cur))
+            }
+        }
+    }
+    return output
+}
+
+function intersectAt(
+    a: [number, number], b: [number, number], axis: 0 | 1, val: number,
+): [number, number] {
+    const denom = b[axis] - a[axis]
+    if (denom === 0) return [a[0], a[1]]
+    const t = (val - a[axis]) / denom
+    return axis === 0
+        ? [val, a[1] + t * (b[1] - a[1])]
+        : [a[0] + t * (b[0] - a[0]), val]
 }
 
 /** Encode a polygon (`[lon, lat][]`) as flat `lon,lat,...` rounded to
@@ -245,43 +304,60 @@ export function useCellsApi(filter: CellsApiFilter | null):
             return { res: clamp(filter.resOverride), reason: `override r${filter.resOverride}` }
         }
         const targetRes = pickHexResolutionForPixels(filter.hexPxTarget ?? 1.2, filter.zoom, filter.viewportLat)
+        // Visible area = polygon ∩ viewport. For statewide (no scope
+        // polygon), it's just bboxArea. For scoped views, this naturally
+        // shrinks as the user zooms into part of the polygon — picker
+        // can refine res past what scope-area alone would allow.
         const bboxArea = bboxAreaKm2(filter.viewport)
-        const polyArea = filter.clipPolygon && filter.clipPolygon.length >= 3
-            ? polygonAreaKm2(filter.clipPolygon)
-            : Infinity
-        return pickResForArea(Math.min(bboxArea, polyArea), targetRes)
+        let visibleArea: number
+        if (filter.clipPolygon && filter.clipPolygon.length >= 3) {
+            const clipped = clipPolygonToBbox(filter.clipPolygon, filter.viewport)
+            visibleArea = clipped.length >= 3 ? polygonAreaKm2(clipped) : 0
+        } else {
+            visibleArea = bboxArea
+        }
+        return pickResForArea(visibleArea, targetRes)
     }, [filter?.zoom, filter?.viewportLat, filter?.hexPxTarget, filter?.resOverride, filter?.clipPolygon, filter?.viewport])
 
-    // Compute the shard list to fetch. When a clipPolygon is set
-    // (county/muni scope), use it as the shard-selection region —
-    // pitch=45 inflates the viewport bbox by 2-3× into neighboring
-    // counties' shards, all of which would return zero polygon-clipped
-    // cells. The polygon is the actual data we want, so pick shards
-    // from its outline. Without a polygon, fall back to the viewport.
-    // Shard-set computation is expensive — `polygonToCellsExperimental` on
-    // a 600-vertex county outline blocks the main thread for a few ms, and
-    // we'd run it every drag frame if naively memoized on the live viewport.
-    // Split the slow (shard set + polygon string) from the fast (URLs at the
-    // current res). Shards depend on:
-    //   - manifest.shard_cells / shard_res
-    //   - clipPolygon (ref-stable across drags at one scope), OR
-    //   - viewport bbox snapped to a 0.25° grid (≪ shard_res cell size, so
-    //     the shard set is stable across small pans)
+    // Shard set (slow) + polygonStr sent to worker — both keyed off the
+    // *snapped* viewport so small pans collapse to a stable cache entry.
+    // Snap granularity (0.25°) is much coarser than `shard_res` cell size,
+    // so we don't lose precision on the shard cover.
+    //
+    // When a scope polygon is set (county/muni), shards come from
+    // `polygon ∩ snappedBbox` — fewer shards when the user zooms into
+    // part of the scope (was the full polygon before, regardless of zoom).
+    // When statewide, shards come from the bbox itself.
     const usingPoly = !!(filter?.clipPolygon && filter.clipPolygon.length >= 3)
-    const bboxKey = filter && !usingPoly
-        ? filter.viewport.map(n => Math.round(n * 4) / 4).join(",")
-        : null
+    // Snap the viewport outward to a 0.25° grid so small pans collapse to
+    // a stable cache entry. Floor the SW corner, ceil the NE — never
+    // shrinks the bbox below the user's actual viewport, and always pins
+    // to one of finitely many possible bboxes per scope (cache-friendly).
+    const snappedBbox = useMemo<Bbox | null>(() => {
+        if (!filter) return null
+        const [w, s, e, n] = filter.viewport
+        const G = 4  // 0.25° grid
+        return [
+            Math.floor(w * G) / G,
+            Math.floor(s * G) / G,
+            Math.ceil(e * G) / G,
+            Math.ceil(n * G) / G,
+        ] as Bbox
+    }, [filter?.viewport])
+    const bboxKey = snappedBbox ? snappedBbox.join(",") : null
     const shardSet = useMemo(() => {
-        if (!filter || !manifest) return null
+        if (!filter || !manifest || !snappedBbox) return null
         const known = new Set(manifest.shard_cells)
-        const ring = usingPoly
-            ? lonLatToLatLng(filter.clipPolygon!)
-            : bboxToLatLngRing(filter.viewport)
-        const shards = shardsForRegion(ring, manifest.shard_res, known)
-        const polygonStr = usingPoly ? encodePolygon(filter.clipPolygon!) : null
+        let regionLonLat: [number, number][]  // closed or open ring, [lon, lat]
+        if (usingPoly) {
+            regionLonLat = clipPolygonToBbox(filter.clipPolygon!, snappedBbox)
+            if (regionLonLat.length < 3) return { shards: [], polygonStr: null as string | null }
+        } else {
+            regionLonLat = bboxToLonLatRing(snappedBbox)
+        }
+        const shards = shardsForRegion(lonLatToLatLng(regionLonLat), manifest.shard_res, known)
+        const polygonStr = encodePolygon(regionLonLat)
         return { shards, polygonStr }
-        // `bboxKey` collapses small pans to a stable string; `clipPolygon`
-        // ref is stable while scope is unchanged.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [manifest, usingPoly, filter?.clipPolygon, bboxKey])
 
