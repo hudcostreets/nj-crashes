@@ -123,11 +123,25 @@ const DEBOUNCE_MS = 250
  *  210k cells). */
 const CELLS_CAP = 100000
 
+/** Bounding box of NJ data — used to clamp the picker's "area" estimate
+ *  for statewide views. Without this, a pitch=45 statewide viewport bbox
+ *  inflates to ~570k km² (NJ is ~22k km² inside a ~53k km² envelope),
+ *  forcing the picker to r6 even at z≈7.5 where r8 is appropriate. */
+const NJ_DATA_BBOX: Bbox = [-75.6, 38.9, -73.9, 41.4]
+
 function bboxAreaKm2([w, s, e, n]: Bbox): number {
     const lat = (s + n) / 2
     const dLat = (n - s) * 111
     const dLon = (e - w) * 111 * Math.cos((lat * Math.PI) / 180)
     return Math.max(0, dLat * dLon)
+}
+
+function bboxIntersect(a: Bbox, b: Bbox): Bbox | null {
+    const w = Math.max(a[0], b[0])
+    const s = Math.max(a[1], b[1])
+    const e = Math.min(a[2], b[2])
+    const n = Math.min(a[3], b[3])
+    return e > w && n > s ? [w, s, e, n] : null
 }
 
 function polygonAreaKm2(ring: [number, number][]): number {
@@ -304,35 +318,38 @@ export function useCellsApi(filter: CellsApiFilter | null):
             return { res: clamp(filter.resOverride), reason: `override r${filter.resOverride}` }
         }
         const targetRes = pickHexResolutionForPixels(filter.hexPxTarget ?? 1.2, filter.zoom, filter.viewportLat)
-        // Visible area = polygon ∩ viewport. For statewide (no scope
-        // polygon), it's just bboxArea. For scoped views, this naturally
-        // shrinks as the user zooms into part of the polygon — picker
-        // can refine res past what scope-area alone would allow.
-        const bboxArea = bboxAreaKm2(filter.viewport)
+        // Visible area = data envelope ∩ viewport.
+        //   - Scoped (county/muni): `clipPolygon ∩ viewport`. Shrinks as
+        //     the user zooms into part of the polygon, letting picker
+        //     refine res past what scope-area alone would allow.
+        //   - Statewide: `viewport ∩ NJ_DATA_BBOX`. Without the NJ clamp,
+        //     pitch=45 inflates the viewport bbox 25× past NJ, forcing
+        //     the picker to r6 even at z≈7.5 where r8 should win.
         let visibleArea: number
         if (filter.clipPolygon && filter.clipPolygon.length >= 3) {
             const clipped = clipPolygonToBbox(filter.clipPolygon, filter.viewport)
             visibleArea = clipped.length >= 3 ? polygonAreaKm2(clipped) : 0
         } else {
-            visibleArea = bboxArea
+            const clamped = bboxIntersect(filter.viewport, NJ_DATA_BBOX)
+            visibleArea = clamped ? bboxAreaKm2(clamped) : 0
         }
         return pickResForArea(visibleArea, targetRes)
     }, [filter?.zoom, filter?.viewportLat, filter?.hexPxTarget, filter?.resOverride, filter?.clipPolygon, filter?.viewport])
 
-    // Shard set (slow) + polygonStr sent to worker — both keyed off the
-    // *snapped* viewport so small pans collapse to a stable cache entry.
-    // Snap granularity (0.25°) is much coarser than `shard_res` cell size,
-    // so we don't lose precision on the shard cover.
-    //
-    // When a scope polygon is set (county/muni), shards come from
-    // `polygon ∩ snappedBbox` — fewer shards when the user zooms into
-    // part of the scope (was the full polygon before, regardless of zoom).
-    // When statewide, shards come from the bbox itself.
+    // Shard set (which r4 cells to fetch) and worker `polygon=` arg are
+    // computed separately so that small pans don't thrash the per-shard
+    // URL cache.
+    //   - Shard *selection* uses `clipPolygon ∩ snappedBbox` (scoped)
+    //     or just `snappedBbox` (statewide), so we don't fetch shards
+    //     far outside the visible region. Snapped to a 0.25° grid so
+    //     sub-grid pans don't change the shard set.
+    //   - Worker `polygon=` arg is *scope-stable*: full clipPolygon for
+    //     scoped views, omitted for statewide. URL is invariant across
+    //     all pans within a scope, so per-shard cache hits ~always once
+    //     warmed. Cost: worker may return a few extra cells per shard
+    //     just outside the viewport (still bounded by the shard's own
+    //     extent ≈ 5000 km²), but these are tiny vs. an 8-9s cold fetch.
     const usingPoly = !!(filter?.clipPolygon && filter.clipPolygon.length >= 3)
-    // Snap the viewport outward to a 0.25° grid so small pans collapse to
-    // a stable cache entry. Floor the SW corner, ceil the NE — never
-    // shrinks the bbox below the user's actual viewport, and always pins
-    // to one of finitely many possible bboxes per scope (cache-friendly).
     const snappedBbox = useMemo<Bbox | null>(() => {
         if (!filter) return null
         const [w, s, e, n] = filter.viewport
@@ -348,15 +365,15 @@ export function useCellsApi(filter: CellsApiFilter | null):
     const shardSet = useMemo(() => {
         if (!filter || !manifest || !snappedBbox) return null
         const known = new Set(manifest.shard_cells)
-        let regionLonLat: [number, number][]  // closed or open ring, [lon, lat]
+        let shardRegion: [number, number][]  // [lon, lat], used only for shard selection
         if (usingPoly) {
-            regionLonLat = clipPolygonToBbox(filter.clipPolygon!, snappedBbox)
-            if (regionLonLat.length < 3) return { shards: [], polygonStr: null as string | null }
+            shardRegion = clipPolygonToBbox(filter.clipPolygon!, snappedBbox)
+            if (shardRegion.length < 3) return { shards: [], polygonStr: null as string | null }
         } else {
-            regionLonLat = bboxToLonLatRing(snappedBbox)
+            shardRegion = bboxToLonLatRing(snappedBbox)
         }
-        const shards = shardsForRegion(lonLatToLatLng(regionLonLat), manifest.shard_res, known)
-        const polygonStr = encodePolygon(regionLonLat)
+        const shards = shardsForRegion(lonLatToLatLng(shardRegion), manifest.shard_res, known)
+        const polygonStr = usingPoly ? encodePolygon(filter.clipPolygon!) : null
         return { shards, polygonStr }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [manifest, usingPoly, filter?.clipPolygon, bboxKey])
