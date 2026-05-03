@@ -1,10 +1,14 @@
 /** Cloudflare Worker entrypoint for `crashes-cells-api`.
  *
  *  Endpoints:
- *    GET /v1/cells?bbox=w,s,e,n&res=N[&years=Y0-Y1][&severities=fip]
+ *    GET /v1/cells?cells=h3a,h3b,...&res=N[&years=Y0-Y1][&severities=fip][&polygon=lon,lat,...]
  *    GET /v1/manifest                   # the cached manifest, for debug
  *    GET /healthz
  *
+ *  The `cells` param is the list of `shard_res` parent cells the client
+ *  wants. Client computes that set from its viewport bbox via
+ *  `polygonToCellsExperimental`. Per-shard responses are cached on the
+ *  client by URL — pan over already-fetched shards = no worker calls.
  *  Caching: the response carries an ETag derived from the request params
  *  + the manifest's `data_version`. Pipeline pushes new data → bumps
  *  `data_version` → invalidates. Edge cache TTL = 1h unconditional, 24h

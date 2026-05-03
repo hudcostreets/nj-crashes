@@ -144,11 +144,12 @@ export function CrashMapSection({ cc, mc, height = 500, fullScreenHref, scopeLab
     //      shows "—")
     const effectiveView: ViewState | null = useMemo(() => {
         if (llz) return llz
-        if (!v2Manifest || cc === null) return null
         const w = typeof window !== "undefined" ? Math.min(window.innerWidth, 1280) : 1280
         const h = 480
-        const bbox = (mc !== null ? v2Manifest.muni_bboxes?.[`${cc}-${mc}`] : null)
-            ?? v2Manifest.county_bboxes?.[cc]
+        const bbox: [number, number, number, number] | undefined =
+            cc !== null && mc !== null ? v2Manifest?.muni_bboxes?.[`${cc}-${mc}`]
+            : cc !== null ? v2Manifest?.county_bboxes?.[cc]
+            : STATE_BBOX
         if (!bbox) return null
         return fitBoundsToView(bbox, w, h, mode === "hexbin" ? 45 : 0)
     }, [llz, cc, mc, mode, v2Manifest])

@@ -1,36 +1,41 @@
 /** `/v1/cells` request handler.
  *
- *  Two query paths:
- *  - **Pyramid**: `res < base_res` and a pyramid for `res` exists. Fetch
- *    the small per-resolution rollup parquets for the shards intersecting
- *    `bbox`, filter to the h3 covering + year range + severities, group
- *    by h3 cell.
+ *  **Shard-keyed.** The client computes which `shard_res` parent cells
+ *  intersect its viewport (via `polygonToCellsExperimental` against the
+ *  manifest's `shard_cells`) and fires one request per shard. The
+ *  worker just dumps that shard's pyramid (or aggregates raw → res).
+ *  Each (shard, res, years, sevs, polygon_hash) is independently
+ *  cacheable on the client; panning over already-fetched shards = zero
+ *  worker invocations.
+ *
+ *  Two query paths (per shard):
+ *  - **Pyramid**: `res < base_res` and a pyramid for `res` exists.
+ *    Read the shard's per-resolution rollup, filter to year + severity,
+ *    group by cell, optionally clip to polygon. Returns one row per
+ *    non-empty cell.
  *  - **Raw fallback**: requested resolution >= base_res, or pyramid
- *    missing for `res`. Fetch raw shards under `raw/h3_r{base}/`,
- *    filter by base-res descendant ranges (parquet RG pruning), then
- *    aggregate up to `res` via `cellToParent`.
+ *    missing for `res`. Read the raw r{base} shard (with year
+ *    pushdown), aggregate up to `res` via `cellToParent`, optionally
+ *    clip.
  *
- *  Memory shape: shards are processed **sequentially**, one parquet
- *  parse at a time. Per shard we filter rows + fold into the running
- *  cell-map, then drop the parsed rows. Peak memory ≈ one shard's
- *  parsed batch + the output Map. Workers' 128MB cap is the constraint.
- *  An earlier `Promise.all`-everything approach blew that on r10/r11
- *  multi-county queries.
+ *  Memory shape: shards are processed **sequentially**. Per shard we
+ *  filter + fold rows into the running cell-map then drop the parsed
+ *  batch. Peak memory ≈ one shard's parsed batch + the output Map.
  *
- *  Both paths return the same JSON shape:
+ *  Response shape:
  *
  *      {
  *        res: number,
  *        year_range: [number, number],
+ *        data_version: string,
+ *        source: "pyramid" | "raw",
  *        cells: [{ h3, n_fatal, n_inj_ped, n_inj_other, n_pdo, n_vehs }]
  *      }
  */
 import { cellToParent, polygonToCellsExperimental, POLYGON_TO_CELLS_FLAGS } from "h3-js"
-import { rangesForCovering, type CellRange } from "./h3-range"
 import { loadManifest } from "./manifest"
 import { readParquetFromR2 } from "./parquet"
 
-type Bbox = [number, number, number, number]
 /** GeoJSON-like polygon: outer ring as `[lon, lat][]`. We keep just one
  *  ring; multi-ring (holes) doesn't show up for our use cases. */
 type LonLatPolygon = [number, number][]
@@ -76,14 +81,19 @@ export type CellsResponse = {
 }
 
 export type CellsRequest = {
-    bbox: Bbox
+    /** `shard_res` parent cells (h3 hex strings) the client wants data
+     *  for. Client computes these from its viewport bbox via
+     *  `polygonToCellsExperimental` against the manifest's
+     *  `shard_cells`; worker iterates them in order. Unknown shards
+     *  (no parquet at that key) are silently skipped. */
+    cells: string[]
     res: number
     yearRange?: [number, number]
     severities?: Set<"f" | "i" | "p">
     /** Optional polygon to clip the response to. Cells whose center is
-     *  not in the polygon are dropped. Use case: a county/muni admin
-     *  boundary so the embedded map for `/c/hudson` doesn't show NYC
-     *  hexes spilling out of the bbox. */
+     *  not in the polygon are dropped. Used for county/muni scopes so
+     *  the embed for `/c/hudson` doesn't show neighboring hexes that
+     *  happen to fall in a requested r4 shard. */
     clipPolygon?: LonLatPolygon
 }
 
@@ -91,46 +101,9 @@ function bigintToHex(b: bigint | number): string {
     return (typeof b === "bigint" ? b : BigInt(b)).toString(16).padStart(15, "0")
 }
 
-/** Polygon ring (counter-clockwise) for an axis-aligned bbox `[w,s,e,n]`,
- *  in `[lat, lng]` order (h3-js's non-GeoJSON convention). */
-function bboxToLatLngRing([w, s, e, n]: Bbox): [number, number][] {
-    return [[s, w], [s, e], [n, e], [n, w], [s, w]]
-}
-
 /** Convert a GeoJSON-style `[lon, lat]` ring to h3-js's `[lat, lon]`. */
 function lonLatToLatLng(ring: LonLatPolygon): [number, number][] {
     return ring.map(([lon, lat]) => [lat, lon])
-}
-
-/** Shard cells (`shard_res` parents) that intersect the requested bbox. */
-function intersectingShards(
-    bbox: Bbox,
-    shardRes: number,
-    shardCells: string[],
-): string[] {
-    const polygon = bboxToLatLngRing(bbox)
-    const cover = new Set(
-        polygonToCellsExperimental(polygon, shardRes, POLYGON_TO_CELLS_FLAGS.containmentOverlapping),
-    )
-    return shardCells.filter(s => cover.has(s))
-}
-
-/** Build a hyparquet filter for `(h3_r{base} BETWEEN lo AND hi) OR ...`
- *  AND year ∈ year_range. */
-function buildRawFilter(
-    h3Col: string,
-    ranges: CellRange[],
-    yearRange?: [number, number],
-): object {
-    const orClauses = ranges.map(r => ({
-        [h3Col]: { $gte: r.lo, $lte: r.hi },
-    }))
-    const f: any = orClauses.length === 1 ? orClauses[0] : { $or: orClauses }
-    if (yearRange) {
-        const [y0, y1] = yearRange
-        return { $and: [f, { year: { $gte: y0, $lte: y1 } }] }
-    }
-    return f
 }
 
 /** Compute the set of cells at `res` whose CENTER lies inside the polygon,
@@ -150,20 +123,27 @@ export async function handleCellsRequest(
     req: CellsRequest,
 ): Promise<CellsResponse> {
     const manifest = await loadManifest(bucket, prefix)
-    const { bbox, res } = req
+    const { cells: requestedShards, res } = req
     const yearRange = req.yearRange ?? manifest.year_range
     const sevSet = req.severities  // undefined ⇒ all
 
     if (res < 0 || res > manifest.base_res) {
         throw new HttpError(400, `res ${res} out of range [0, ${manifest.base_res}]`)
     }
+    if (requestedShards.length === 0) {
+        throw new HttpError(400, "cells must list ≥1 shard")
+    }
+    // Intersect with the manifest's known shard set so an unknown cell
+    // (typo, stale client, off-NJ shard) becomes a silent skip rather
+    // than a 404 on the parquet read.
+    const known = new Set(manifest.shard_cells)
+    const shards = requestedShards.filter(s => known.has(s))
 
     const usePyramid = res < manifest.base_res && manifest.pyramid_levels.includes(res)
-    const shards = intersectingShards(bbox, manifest.shard_res, manifest.shard_cells)
     const clip = clipCovering(req.clipPolygon, res)
 
     if (usePyramid) {
-        const cells = await queryPyramid(bucket, prefix, res, shards, bbox, yearRange, sevSet, clip)
+        const cells = await queryPyramid(bucket, prefix, res, shards, yearRange, sevSet, clip)
         return {
             res,
             year_range: yearRange,
@@ -172,7 +152,7 @@ export async function handleCellsRequest(
             cells,
         }
     }
-    const cells = await queryRaw(bucket, prefix, manifest, res, shards, bbox, yearRange, sevSet, clip)
+    const cells = await queryRaw(bucket, prefix, manifest, res, shards, yearRange, sevSet, clip)
     return {
         res,
         year_range: yearRange,
@@ -187,26 +167,14 @@ async function queryPyramid(
     prefix: string,
     res: number,
     shards: string[],
-    bbox: Bbox,
     yearRange: [number, number],
     severities: Set<"f" | "i" | "p"> | undefined,
     clip: Set<string> | null,
 ): Promise<CellOut[]> {
-    const polygon = bboxToLatLngRing(bbox)
-    const bboxCovering = new Set(
-        polygonToCellsExperimental(polygon, res, POLYGON_TO_CELLS_FLAGS.containmentOverlapping),
-    )
-    // Pre-intersect bbox covering with the clip polygon (if any) so the
-    // per-row filter does a single Set lookup instead of two.
-    const allowed: Set<string> = clip
-        ? new Set([...bboxCovering].filter(c => clip.has(c)))
-        : bboxCovering
     const h3Col = `h3_r${res}`
-
     const wantF = !severities || severities.has("f")
     const wantI = !severities || severities.has("i")
     const wantP = !severities || severities.has("p")
-
     const out = new Map<string, CellOut>()
 
     for (const s of shards) {
@@ -226,7 +194,7 @@ async function queryPyramid(
         for (const row of rows) {
             const cellId = (row as any)[h3Col] ?? row.h3
             const hex = bigintToHex(cellId)
-            if (!allowed.has(hex)) continue
+            if (clip && !clip.has(hex)) continue
             let c = out.get(hex)
             if (!c) {
                 c = { h3: hex, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
@@ -237,9 +205,6 @@ async function queryPyramid(
             if (wantP) c.n_pdo += row.n_pdo
             c.n_vehs += row.n_vehs ?? 0
         }
-        // `rows` falls out of scope at next loop iter; the parsed batch
-        // is collectible. Holding `out` (one entry per visible cell) is
-        // the only carryover.
     }
     return [...out.values()]
 }
@@ -250,28 +215,25 @@ async function queryRaw(
     manifest: { base_res: number },
     res: number,
     shards: string[],
-    bbox: Bbox,
     yearRange: [number, number],
     severities: Set<"f" | "i" | "p"> | undefined,
     clip: Set<string> | null,
 ): Promise<CellOut[]> {
     const baseRes = manifest.base_res
-    const polygon = bboxToLatLngRing(bbox)
-    const covering = polygonToCellsExperimental(
-        polygon, res, POLYGON_TO_CELLS_FLAGS.containmentOverlapping,
-    )
-    const ranges = rangesForCovering(
-        covering.map(c => BigInt(`0x${c}`)),
-        res,
-        baseRes,
-    )
     const h3Col = `h3_r${baseRes}`
-    const filter = buildRawFilter(h3Col, ranges, yearRange)
+    // Without a bbox, the spatial filter degenerates: read the whole
+    // shard's r{base} rows (year + clip do the work). Each shard is one
+    // r4 cell ≈ 5000 km² which keeps the read bounded — the pyramid
+    // path is preferred for typical queries.
+    // Without a bbox-derived covering, year is the only parquet
+    // pushdown filter. Each shard's raw r{base} file holds ≈250k–1M
+    // rows over 5y; reading the year-filtered slice is the slow path,
+    // but the only one available without a bounding region.
+    const filter = { year: { $gte: yearRange[0], $lte: yearRange[1] } }
 
     const wantF = !severities || severities.has("f")
     const wantI = !severities || severities.has("i")
     const wantP = !severities || severities.has("p")
-
     const out = new Map<string, CellOut>()
 
     for (const s of shards) {
@@ -318,14 +280,17 @@ export class HttpError extends Error {
 
 /** Parse + validate query string into a CellsRequest. */
 export function parseCellsRequest(url: URL): CellsRequest {
-    const bboxStr = url.searchParams.get("bbox")
-    if (!bboxStr) throw new HttpError(400, "bbox is required")
-    const parts = bboxStr.split(",").map(Number)
-    if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) {
-        throw new HttpError(400, "bbox must be 4 comma-separated numbers")
+    const cellsStr = url.searchParams.get("cells")
+    if (!cellsStr) throw new HttpError(400, "cells is required (comma-separated h3 hex strings)")
+    const cells = cellsStr.split(",").map(c => c.trim()).filter(c => c.length > 0)
+    if (cells.length === 0) throw new HttpError(400, "cells must list ≥1 shard")
+    // Validate hex string shape (h3 cells are 15-char lowercase hex, but
+    // shard parents at coarser res may have trailing "fffffff" padding —
+    // accept anything that looks like a 15-char [0-9a-f] string.
+    if (cells.some(c => !/^[0-9a-f]{15}$/.test(c))) {
+        throw new HttpError(400, "cells must be 15-char lowercase hex h3 IDs")
     }
-    const [w, s, e, n] = parts
-    if (e <= w || n <= s) throw new HttpError(400, "bbox must satisfy e>w, n>s")
+
     const resStr = url.searchParams.get("res")
     if (!resStr) throw new HttpError(400, "res is required")
     const res = parseInt(resStr, 10)
@@ -367,5 +332,5 @@ export function parseCellsRequest(url: URL): CellsRequest {
         clipPolygon = ring
     }
 
-    return { bbox: [w, s, e, n], res, yearRange, severities, clipPolygon }
+    return { cells, res, yearRange, severities, clipPolygon }
 }

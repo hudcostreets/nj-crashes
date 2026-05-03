@@ -1,15 +1,20 @@
 /** Client hook for the dynamic cells API (`crashes-cells-api`).
  *
- *  Replaces the static-prebin ladder + manifest + per-shard fetcher with
- *  a single endpoint hit. The worker handles pyramid vs. raw selection
- *  internally, so the client just picks an integer resolution from
- *  `hexPxTarget` + `zoom` and asks for it.
+ *  **Shard-keyed.** The client computes which `shard_res` parent cells
+ *  intersect the viewport (`polygonToCellsExperimental` against the
+ *  manifest's `shard_cells`) and fires one request per shard in
+ *  parallel. Each shard's response is cached by URL. Panning over
+ *  already-fetched shards = zero new requests; you only pay for the
+ *  shards newly entering the viewport.
  *
- *  Spec: `specs/cfw-cells-api.md`. Gated behind `?api=1` until parity is
- *  verified against the v2 client (`useCrashData`).
+ *  Spec: `specs/cfw-cells-api.md`. Gated behind `?api=1` until the
+ *  worker is deployed and parity is verified at scale.
  */
 import { useEffect, useMemo, useState } from "react"
-import { cellToBoundary, getHexagonAreaAvg, UNITS } from "h3-js"
+import {
+    cellToBoundary, getHexagonAreaAvg, polygonToCellsExperimental,
+    POLYGON_TO_CELLS_FLAGS, UNITS,
+} from "h3-js"
 import type { StackedHex } from "./StackedHexLayer"
 import { CELLS_API_BASE } from "./config"
 import type { Bbox } from "./v2"
@@ -49,72 +54,79 @@ type CellsResponse = {
     cells: CellRow[]
 }
 
+type Manifest = {
+    schema_version: number
+    data_version: string
+    base_res: number
+    shard_res: number
+    pyramid_levels: number[]
+    year_range: [number, number]
+    shard_cells: string[]
+}
+
 export type CellsApiPlan = {
     kind: "hex"
     res: number
     source: "pyramid" | "raw"
     reason: string
     cellCount?: number
-    bytes?: number
+    /** Number of shards that contributed to this response. */
+    shardCount?: number
 }
 
-const responseCache = new Map<string, Promise<CellsResponse>>()
+/** Per-shard response cache. Keyed by full URL — same shard with
+ *  different (res, years, sevs, polygon) is a distinct entry. Pan over
+ *  already-fetched shards = zero new requests. */
+const shardCache = new Map<string, Promise<CellsResponse>>()
 
-function cacheKey(url: string): string {
-    return url
+/** Manifest is fetched once (cells-api version is stable across a
+ *  page lifetime; redeploys flip `data_version` but not `shard_*`). */
+let manifestPromise: Promise<Manifest> | null = null
+function loadManifest(): Promise<Manifest> {
+    if (manifestPromise) return manifestPromise
+    manifestPromise = fetch(`${CELLS_API_BASE}/v1/manifest`).then(async r => {
+        if (!r.ok) throw new Error(`manifest fetch ${r.status}`)
+        return await r.json() as Manifest
+    })
+    manifestPromise.catch(() => { manifestPromise = null })
+    return manifestPromise
 }
 
-async function fetchCells(url: string): Promise<CellsResponse> {
-    const key = cacheKey(url)
-    const hit = responseCache.get(key)
+async function fetchShard(url: string): Promise<CellsResponse> {
+    const hit = shardCache.get(url)
     if (hit) return hit
     const p = (async () => {
         const r = await fetch(url)
         if (!r.ok) throw new Error(`cells api ${r.status}: ${await r.text().catch(() => "")}`)
         return (await r.json()) as CellsResponse
     })()
-    // Evict the cached promise on failure so retries actually retry instead
-    // of returning the same rejection forever.
-    p.catch(() => { if (responseCache.get(key) === p) responseCache.delete(key) })
-    responseCache.set(key, p)
+    p.catch(() => { if (shardCache.get(url) === p) shardCache.delete(url) })
+    shardCache.set(url, p)
     return p
 }
 
-/** Worker pyramid range. Pyramid covers r6-r11 (raw fallback at r12+ is
- *  unreliable and OOMs). MIN bounds the floor for very low zoom; MAX
- *  bounds raw fallback. The actual ceiling is set adaptively by
- *  `pickResForArea` below — too-fine res for a large bbox blows up
- *  cell counts, response size, and worker memory. */
 const MAX_PYRAMID_RES = 11
 const MIN_PYRAMID_RES = 6
 
-/** Refetch debounce in ms. Pan/zoom emits many filter changes per
- *  second; we only want to fire once after the user settles. 300ms is
- *  a typical debounce for map-drag UIs (long enough to coalesce a
- *  drag, short enough to feel responsive once the user lets go). */
-const DEBOUNCE_MS = 300
+/** Refetch debounce in ms. The viewport debounce coalesces a drag's
+ *  worth of changes into one shard-set computation. Per-shard fetches
+ *  are still independently cached, so a small pan that crosses a
+ *  shard boundary only pays for the new shard. */
+const DEBOUNCE_MS = 250
 
-/** Soft cap on cells-per-response. Drives the bbox-aware res picker:
- *  pick the finest res where (area / hex_area) stays under this. This
- *  is the *bbox-coverage* upper bound; *non-empty* cells (what we
- *  actually return) are typically 40-50% of this at r10 and lower at
- *  finer res (more empty cells). 12k bound → ~4-6k actual at r10,
- *  well within renderer + Workers 128MB envelope. */
+/** Soft cap on cells-per-response. Picker chooses the finest res where
+ *  `area / hex_area ≤ CELLS_CAP`. Per-shard responses each respect
+ *  this implicitly because shards are smaller than NJ; the cap is
+ *  enforced against the *full visible area*. */
 const CELLS_CAP = 12000
 
-/** Geodesic area (km²) of an axis-aligned bbox at NJ-ish latitudes.
- *  Uses average lat for the cosine correction; a flat-earth approx
- *  good to <1% over a county-sized window. */
 function bboxAreaKm2([w, s, e, n]: Bbox): number {
     const lat = (s + n) / 2
-    const dLat = (n - s) * 111  // 1° lat ≈ 111 km
+    const dLat = (n - s) * 111
     const dLon = (e - w) * 111 * Math.cos((lat * Math.PI) / 180)
     return Math.max(0, dLat * dLon)
 }
 
-/** Polygon ring area (km²) via the spherical-shoelace formula, projected
- *  with a flat-earth lat-cosine correction. Same precision regime as
- *  `bboxAreaKm2`. */
 function polygonAreaKm2(ring: [number, number][]): number {
     if (ring.length < 3) return 0
     const lat0 = ring.reduce((s, [, la]) => s + la, 0) / ring.length
@@ -128,10 +140,6 @@ function polygonAreaKm2(ring: [number, number][]): number {
     return Math.abs(a / 2) * 111 * 111
 }
 
-/** Pick the finest h3 resolution where bbox-max-cells stays under
- *  `CELLS_CAP`. Falls within [MIN_PYRAMID_RES, MAX_PYRAMID_RES].
- *  `targetRes` is the zoom-driven ideal; we don't pick finer than it
- *  even if the area allows. */
 function pickResForArea(areaKm2: number, targetRes: number): { res: number; reason: string } {
     if (areaKm2 <= 0) return { res: clamp(targetRes), reason: "fallback (area=0)" }
     let best = MIN_PYRAMID_RES
@@ -154,26 +162,44 @@ function clamp(res: number): number {
     return Math.max(MIN_PYRAMID_RES, Math.min(MAX_PYRAMID_RES, Math.round(res)))
 }
 
-/** Encode a polygon (`[lon, lat][]`) as a flat `lon,lat,lon,lat,...`
- *  string. Polygon vertex coords are rounded to 4 decimal places (~10m
- *  precision) to keep URLs short. County-outline polygons typically
- *  have ~50–500 vertices → ~1–5 KB encoded. */
+/** Compute the shard cells (`shard_res` parents) that intersect the
+ *  given region. h3-js wants `[lat, lng]` rings and the `Overlapping`
+ *  flag so a small region fully inside one big shard still picks it up.
+ *  Filters down to cells the manifest actually has data for. */
+function shardsForRegion(
+    ring: [number, number][],  // [lat, lng] order
+    shardRes: number,
+    knownShards: Set<string>,
+): string[] {
+    const cover = polygonToCellsExperimental(ring, shardRes, POLYGON_TO_CELLS_FLAGS.containmentOverlapping)
+    return cover.filter(c => knownShards.has(c))
+}
+
+function bboxToLatLngRing([w, s, e, n]: Bbox): [number, number][] {
+    return [[s, w], [s, e], [n, e], [n, w], [s, w]]
+}
+
+function lonLatToLatLng(ring: [number, number][]): [number, number][] {
+    return ring.map(([lon, lat]) => [lat, lon])
+}
+
+/** Encode a polygon (`[lon, lat][]`) as flat `lon,lat,...` rounded to
+ *  4 decimals (~10m). County outlines are 50–500 verts → 1–5KB. */
 function encodePolygon(poly: [number, number][]): string {
     return poly.flatMap(([lon, lat]) => [lon.toFixed(4), lat.toFixed(4)]).join(",")
 }
 
-function buildUrl(filter: CellsApiFilter, res: number): string {
-    const [w, s, e, n] = filter.viewport
+function buildShardUrl(
+    shard: string, res: number, filter: CellsApiFilter, polygonStr: string | null,
+): string {
     const sevs = ["f", "i", "p"].filter(c => filter.severities.has(c as "f" | "i" | "p")).join("")
     const params = new URLSearchParams({
-        bbox: [w, s, e, n].map(x => x.toFixed(5)).join(","),
+        cells: shard,
         res: String(res),
         years: `${filter.yearRange[0]}-${filter.yearRange[1]}`,
         severities: sevs,
     })
-    if (filter.clipPolygon && filter.clipPolygon.length >= 3) {
-        params.set("polygon", encodePolygon(filter.clipPolygon))
-    }
+    if (polygonStr) params.set("polygon", polygonStr)
     return `${CELLS_API_BASE}/v1/cells?${params}`
 }
 
@@ -202,17 +228,20 @@ export function useCellsApi(filter: CellsApiFilter | null):
     | { status: "loading"; data?: StackedHex[]; plan?: CellsApiPlan; error?: undefined }
     | { status: "ready"; data: StackedHex[]; plan: CellsApiPlan; error?: undefined; refetching?: boolean }
     | { status: "error"; error: string; data?: StackedHex[]; plan?: CellsApiPlan } {
+
+    const [manifest, setManifest] = useState<Manifest | null>(null)
+    useEffect(() => {
+        let cancelled = false
+        loadManifest().then(m => { if (!cancelled) setManifest(m) }).catch(() => {})
+        return () => { cancelled = true }
+    }, [])
+
     const pick = useMemo(() => {
         if (!filter) return null
         if (filter.resOverride != null) {
             return { res: clamp(filter.resOverride), reason: `override r${filter.resOverride}` }
         }
         const targetRes = pickHexResolutionForPixels(filter.hexPxTarget ?? 1.2, filter.zoom, filter.viewportLat)
-        // Visible cells are bounded by min(viewport bbox, clip polygon).
-        // When zoomed into a corner of a county, the bbox is much
-        // smaller than the polygon — using bbox lets us pick a finer
-        // res. When the viewport encompasses the polygon, the polygon
-        // is tighter (drops out-of-poly cells server-side).
         const bboxArea = bboxAreaKm2(filter.viewport)
         const polyArea = filter.clipPolygon && filter.clipPolygon.length >= 3
             ? polygonAreaKm2(filter.clipPolygon)
@@ -220,78 +249,84 @@ export function useCellsApi(filter: CellsApiFilter | null):
         return pickResForArea(Math.min(bboxArea, polyArea), targetRes)
     }, [filter?.zoom, filter?.viewportLat, filter?.hexPxTarget, filter?.resOverride, filter?.clipPolygon, filter?.viewport])
 
-    const url = useMemo(() => {
-        if (!filter || pick == null) return null
-        return buildUrl(filter, pick.res)
-    }, [filter, pick])
+    // Compute the shard list to fetch. When a clipPolygon is set
+    // (county/muni scope), use it as the shard-selection region —
+    // pitch=45 inflates the viewport bbox by 2-3× into neighboring
+    // counties' shards, all of which would return zero polygon-clipped
+    // cells. The polygon is the actual data we want, so pick shards
+    // from its outline. Without a polygon, fall back to the viewport.
+    const shardsKey = useMemo(() => {
+        if (!filter || !manifest || !pick) return null
+        const known = new Set(manifest.shard_cells)
+        const usingPoly = !!(filter.clipPolygon && filter.clipPolygon.length >= 3)
+        const ring = usingPoly
+            ? lonLatToLatLng(filter.clipPolygon!)
+            : bboxToLatLngRing(filter.viewport)
+        const shards = shardsForRegion(ring, manifest.shard_res, known)
+        if (shards.length === 0) return { shards: [], urls: [] as string[], polygonStr: null as string | null }
+        const polygonStr = usingPoly ? encodePolygon(filter.clipPolygon!) : null
+        const urls = shards.map(s => buildShardUrl(s, pick.res, filter, polygonStr))
+        return { shards, urls, polygonStr }
+    }, [filter, manifest, pick])
 
     const [state, setState] = useState<{
-        url: string | null
+        urls: string[]
         data: StackedHex[]
         status: "loading" | "ready" | "error"
         plan?: CellsApiPlan
         error?: string
-    }>({ url: null, data: [], status: "loading" })
+    }>({ urls: [], data: [], status: "loading" })
 
-    // Debounce viewport-driven refetches: while the user pans/zooms,
-    // `url` updates many times per second. Wait `DEBOUNCE_MS` of
-    // stability before firing — coalesces a drag's worth of viewport
-    // changes into a single request once the user releases.
     useEffect(() => {
-        if (!url || !pick) return
+        if (!shardsKey || !pick) return
+        const { urls } = shardsKey
+        if (urls.length === 0) {
+            setState({ urls, data: [], status: "ready", plan: {
+                kind: "hex", res: pick.res, source: "pyramid",
+                reason: `${pick.reason} · 0 shards`, cellCount: 0, shardCount: 0,
+            } })
+            return
+        }
         let cancelled = false
         const reason = pick.reason
-        // Don't flicker the data layer empty during pan — keep the
-        // last-rendered cells visible. The status flips to "loading"
-        // only when we actually fire the request after the debounce.
-        const cached = responseCache.get(url)
-        if (cached) {
-            // URL already cached (revisited viewport, or quick pan that
-            // returned to a prior bbox) — no debounce, return immediately.
-            ;(async () => {
-                try {
-                    const resp = await cached
-                    if (cancelled) return
-                    const data = cellsToStackedHex(resp.cells)
-                    setState({
-                        url, data, status: "ready",
-                        plan: {
-                            kind: "hex", res: resp.res, source: resp.source,
-                            reason: `${resp.source} · ${reason}`,
-                            cellCount: resp.cells.length,
-                        },
-                    })
-                } catch (e) {
-                    if (!cancelled) setState({ url, data: [], status: "error", error: String(e) })
+
+        // Hot path: every URL already cached → resolve synchronously
+        // (microtask), no debounce, no loading flicker.
+        const allCached = urls.every(u => shardCache.has(u))
+        const fire = async () => {
+            try {
+                const responses = await Promise.all(urls.map(u => fetchShard(u)))
+                if (cancelled) return
+                // Concat per-shard cells; shards partition the cell
+                // space at `shard_res`, so descendant cells at finer
+                // res are unique per shard — no merge needed.
+                const allCells: CellRow[] = []
+                let source: "pyramid" | "raw" = "pyramid"
+                for (const r of responses) {
+                    if (r.source === "raw") source = "raw"
+                    for (const c of r.cells) allCells.push(c)
                 }
-            })()
-            return () => { cancelled = true }
+                const data = cellsToStackedHex(allCells)
+                setState({
+                    urls, data, status: "ready",
+                    plan: {
+                        kind: "hex", res: pick.res, source,
+                        reason: `${source} · ${reason} · ${urls.length} shard${urls.length > 1 ? "s" : ""}`,
+                        cellCount: data.length, shardCount: urls.length,
+                    },
+                })
+            } catch (e) {
+                if (!cancelled) setState(s => ({ ...s, urls, status: "error", error: String(e) }))
+            }
         }
+        if (allCached) { fire(); return () => { cancelled = true } }
         const t = setTimeout(() => {
             if (cancelled) return
-            // Don't drop prior data when refetching — keeps the map
-            // populated with the last view's cells while we wait.
-            setState(s => ({ ...s, url, status: "loading" }))
-            ;(async () => {
-                try {
-                    const resp = await fetchCells(url)
-                    if (cancelled) return
-                    const data = cellsToStackedHex(resp.cells)
-                    setState({
-                        url, data, status: "ready",
-                        plan: {
-                            kind: "hex", res: resp.res, source: resp.source,
-                            reason: `${resp.source} · ${reason}`,
-                            cellCount: resp.cells.length,
-                        },
-                    })
-                } catch (e) {
-                    if (!cancelled) setState({ url, data: [], status: "error", error: String(e) })
-                }
-            })()
+            setState(s => ({ ...s, urls, status: "loading" }))
+            fire()
         }, DEBOUNCE_MS)
         return () => { cancelled = true; clearTimeout(t) }
-    }, [url, pick])
+    }, [shardsKey, pick])
 
     if (state.status === "ready") return { status: "ready", data: state.data, plan: state.plan! }
     if (state.status === "error") return { status: "error", error: state.error ?? "unknown", data: state.data, plan: state.plan }
