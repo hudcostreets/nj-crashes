@@ -10,7 +10,7 @@
  *  Spec: `specs/cfw-cells-api.md`. Gated behind `?api=1` until the
  *  worker is deployed and parity is verified at scale.
  */
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
     cellToBoundary, getHexagonAreaAvg, polygonToCellsExperimental,
     POLYGON_TO_CELLS_FLAGS, UNITS,
@@ -302,18 +302,26 @@ export function useCellsApi(filter: CellsApiFilter | null):
         error?: string
     }>({ urls: [], data: [], status: "loading" })
 
+    // `pick` gets a new object ref every drag frame (its `reason` string
+    // includes `bboxArea`, which changes on every viewport update), but
+    // `pick.res` is stable across small pans and is the only field of
+    // `pick` that affects URL building. Read via ref inside the effect so
+    // a fresh `pick.reason` doesn't re-trigger fetches every frame.
+    const pickRef = useRef(pick)
+    pickRef.current = pick
+
     useEffect(() => {
-        if (!shardsKey || !pick) return
+        if (!shardsKey || !pickRef.current) return
         const { urls } = shardsKey
+        const pickAtFire = pickRef.current
         if (urls.length === 0) {
             setState({ urls, data: [], status: "ready", plan: {
-                kind: "hex", res: pick.res, source: "pyramid",
-                reason: `${pick.reason} · 0 shards`, cellCount: 0, shardCount: 0,
+                kind: "hex", res: pickAtFire.res, source: "pyramid",
+                reason: `${pickAtFire.reason} · 0 shards`, cellCount: 0, shardCount: 0,
             } })
             return
         }
         let cancelled = false
-        const reason = pick.reason
 
         // Hot path: every URL already cached → resolve synchronously
         // (microtask), no debounce, no loading flicker.
@@ -332,11 +340,12 @@ export function useCellsApi(filter: CellsApiFilter | null):
                     for (const c of r.cells) allCells.push(c)
                 }
                 const data = cellsToStackedHex(allCells)
+                const p = pickRef.current ?? pickAtFire
                 setState({
                     urls, data, status: "ready",
                     plan: {
-                        kind: "hex", res: pick.res, source,
-                        reason: `${source} · ${reason} · ${urls.length} shard${urls.length > 1 ? "s" : ""}`,
+                        kind: "hex", res: p.res, source,
+                        reason: `${source} · ${p.reason} · ${urls.length} shard${urls.length > 1 ? "s" : ""}`,
                         cellCount: data.length, shardCount: urls.length,
                     },
                 })
@@ -351,7 +360,7 @@ export function useCellsApi(filter: CellsApiFilter | null):
             fire()
         }, DEBOUNCE_MS)
         return () => { cancelled = true; clearTimeout(t) }
-    }, [shardsKey, pick])
+    }, [shardsKey])
 
     if (state.status === "ready") return { status: "ready", data: state.data, plan: state.plan! }
     if (state.status === "error") return { status: "error", error: state.error ?? "unknown", data: state.data, plan: state.plan }
