@@ -32,7 +32,7 @@
  *        cells: [{ h3, n_fatal, n_inj_ped, n_inj_other, n_pdo, n_vehs }]
  *      }
  */
-import { cellToParent, polygonToCellsExperimental, POLYGON_TO_CELLS_FLAGS } from "h3-js"
+import { cellToLatLng, cellToParent } from "h3-js"
 import { loadManifest } from "./manifest"
 import { readParquetFromR2 } from "./parquet"
 
@@ -107,20 +107,29 @@ function bigintToHex(b: bigint | number): string {
     return (typeof b === "bigint" ? b : BigInt(b)).toString(16).padStart(15, "0")
 }
 
-/** Convert a GeoJSON-style `[lon, lat]` ring to h3-js's `[lat, lon]`. */
-function lonLatToLatLng(ring: LonLatPolygon): [number, number][] {
-    return ring.map(([lon, lat]) => [lat, lon])
+/** Standard ray-casting point-in-polygon. Polygon as `[lon, lat][]`,
+ *  point as `[lon, lat]`. */
+function pointInPolygon(pt: [number, number], poly: LonLatPolygon): boolean {
+    const [x, y] = pt
+    let inside = false
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const [xi, yi] = poly[i]
+        const [xj, yj] = poly[j]
+        const intersect = ((yi > y) !== (yj > y)) &&
+            (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi)
+        if (intersect) inside = !inside
+    }
+    return inside
 }
 
-/** Compute the set of cells at `res` whose CENTER lies inside the polygon,
- *  for use as a final clip pass. Returns null when no clip is requested. */
-function clipCovering(
-    clipPolygon: LonLatPolygon | undefined,
-    res: number,
-): Set<string> | null {
-    if (!clipPolygon || clipPolygon.length < 3) return null
-    const ring = lonLatToLatLng(clipPolygon)
-    return new Set(polygonToCellsExperimental(ring, res, POLYGON_TO_CELLS_FLAGS.containmentCenter))
+/** Test whether a cell's centroid lies inside the clip polygon. Cheap
+ *  per-row (5–500 polygon verts × O(1) per row), avoids the
+ *  `polygonToCellsExperimental` blowup on large statewide polygons at
+ *  fine res (NJ envelope at r11 ≈ 500k cells → OOM). */
+function cellInPolygon(hex: string, poly: LonLatPolygon | null): boolean {
+    if (!poly) return true
+    const [lat, lng] = cellToLatLng(hex)
+    return pointInPolygon([lng, lat], poly)
 }
 
 export async function handleCellsRequest(
@@ -150,13 +159,13 @@ export async function handleCellsRequest(
     // since each pyramid level is independently aggregated). When
     // `maxCells` is omitted, we always return at the requested res.
     const MIN_RES = 5
+    const clipPoly = req.clipPolygon && req.clipPolygon.length >= 3 ? req.clipPolygon : null
     let res = requestedRes
     while (res >= MIN_RES) {
         const usePyramid = res < manifest.base_res && manifest.pyramid_levels.includes(res)
-        const clip = clipCovering(req.clipPolygon, res)
         const cells = usePyramid
-            ? await queryPyramid(bucket, prefix, res, shards, yearRange, sevSet, clip)
-            : await queryRaw(bucket, prefix, manifest, res, shards, yearRange, sevSet, clip)
+            ? await queryPyramid(bucket, prefix, res, shards, yearRange, sevSet, clipPoly)
+            : await queryRaw(bucket, prefix, manifest, res, shards, yearRange, sevSet, clipPoly)
         if (maxCells == null || cells.length <= maxCells || res === MIN_RES) {
             return {
                 res,
@@ -179,7 +188,7 @@ async function queryPyramid(
     shards: string[],
     yearRange: [number, number],
     severities: Set<"f" | "i" | "p"> | undefined,
-    clip: Set<string> | null,
+    clipPoly: LonLatPolygon | null,
 ): Promise<CellOut[]> {
     const h3Col = `h3_r${res}`
     const wantF = !severities || severities.has("f")
@@ -204,7 +213,7 @@ async function queryPyramid(
         for (const row of rows) {
             const cellId = (row as any)[h3Col] ?? row.h3
             const hex = bigintToHex(cellId)
-            if (clip && !clip.has(hex)) continue
+            if (!cellInPolygon(hex, clipPoly)) continue
             let c = out.get(hex)
             if (!c) {
                 c = { h3: hex, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
@@ -227,7 +236,7 @@ async function queryRaw(
     shards: string[],
     yearRange: [number, number],
     severities: Set<"f" | "i" | "p"> | undefined,
-    clip: Set<string> | null,
+    clipPoly: LonLatPolygon | null,
 ): Promise<CellOut[]> {
     const baseRes = manifest.base_res
     const h3Col = `h3_r${baseRes}`
@@ -267,7 +276,7 @@ async function queryRaw(
             const cellId = (row as any)[h3Col] ?? row.h3_r14
             const baseHex = bigintToHex(cellId)
             const ancHex = fastPath ? baseHex : cellToParent(baseHex, res)
-            if (clip && !clip.has(ancHex)) continue
+            if (!cellInPolygon(ancHex, clipPoly)) continue
             const sev = row.severity
             let c = out.get(ancHex)
             if (!c) {
