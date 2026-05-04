@@ -353,6 +353,10 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
     // threshold, treat it as a click and close. Otherwise it was a pan
     // and we leave the drawer open.
     const wrapRef = useRef<HTMLDivElement | null>(null)
+    const drawerRef = useRef<HTMLDivElement | null>(null)
+    // Hovered res from the debug drawer's h3-cells table; shows an
+    // outline-only hex grid at that res on the map.
+    const [gridOverlayRes, setGridOverlayRes] = useState<number | null>(null)
 
     // Persist user-driven height changes from CSS `resize: vertical`.
     // ResizeObserver fires after the DOM commit; debounce a tick so we
@@ -384,7 +388,10 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
         const onDown = (e: PointerEvent) => {
             const target = e.target as Element | null
             const wrap = wrapRef.current
+            const drawer = drawerRef.current
             if (!target || !wrap || !wrap.contains(target)) { downAt = null; return }
+            // Click was inside the drawer itself — don't close.
+            if (drawer && drawer.contains(target)) { downAt = null; return }
             if (target.closest("button, a, label, input, select, textarea")) { downAt = null; return }
             downAt = { x: e.clientX, y: e.clientY, target }
         }
@@ -461,6 +468,7 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                             elevationPerCount={elevationPerCount}
                             onElevationPerCountChange={setElevationPerCount}
                             yearSpan={yearRange[1] - yearRange[0] + 1}
+                            gridOverlayRes={gridOverlayRes}
                         />
                     ) : (
                         <CrashMap
@@ -480,6 +488,7 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                             elevationPerCount={elevationPerCount}
                             onElevationPerCountChange={setElevationPerCount}
                             yearSpan={yearRange[1] - yearRange[0] + 1}
+                            gridOverlayRes={gridOverlayRes}
                         />
                     )}
                 </Suspense>
@@ -515,7 +524,7 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                 </>
             )}
             {drawerOpen && (
-            <div style={{
+            <div ref={drawerRef} style={{
                 position: "absolute", top: 8, right: 8, background: bg, color: fg,
                 padding: "0.4em 0.6em", borderRadius: 4, zIndex: 1000, fontSize: "0.82em",
                 display: "flex", flexDirection: "column", gap: 6, minWidth: 210, maxWidth: 260,
@@ -627,6 +636,7 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                                     : result.status === "ready" && result.refetching ? "refetching"
                                     : "idle"
                                 }
+                                onHoverRes={setGridOverlayRes}
                                 theme={actualTheme}
                             />
                         )

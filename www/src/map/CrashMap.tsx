@@ -14,7 +14,7 @@ import type { PickingInfo } from "@deck.gl/core/typed"
 import type { FeatureCollection } from "geojson"
 import { useTouchPitch } from "./hooks/useTouchPitch"
 import { binIntoHexes, coarsenHexes, hexesToSegments, buildStackedHexLayer, Segment, StackedHex, H3_RADIUS_METERS } from "./StackedHexLayer"
-import { getResolution } from "h3-js"
+import { getResolution, cellToBoundary, polygonToCellsExperimental, POLYGON_TO_CELLS_FLAGS } from "h3-js"
 
 export type MapMode = "scatter" | "heatmap" | "hexbin"
 
@@ -92,6 +92,10 @@ export type Props = {
     /** Number of years in the selected range, for per-year rate display in
      *  hex tooltips. When ≥ 2, tooltips show "N crashes (≈N/yr)". */
     yearSpan?: number
+    /** When set, draw an outline-only h3 grid at this resolution covering
+     *  the current viewport. Used by the debug drawer's "hover an `rL`
+     *  row" feature for visual reference. */
+    gridOverlayRes?: number | null
 }
 
 const MAX_PITCH = 85
@@ -306,6 +310,7 @@ export function CrashMap({
     theme = "dark",
     height = "100%",
     yearSpan,
+    gridOverlayRes,
 }: Props) {
     const effectiveCrashes = crashes ?? []
     const containerRef = React.useRef<HTMLDivElement | null>(null)
@@ -506,6 +511,52 @@ export function CrashMap({
         return () => { cancelled = true; if (handle) cic(handle) }
     }, [mode, prebinnedHexes, effectiveCrashes])
 
+    // Hex-grid overlay (debug feature): outline-only h3 cells at the
+    // hovered res, covering the current viewport.
+    const gridOverlayLayer = useMemo(() => {
+        if (gridOverlayRes == null) return null
+        const { latitude, longitude, zoom } = viewState
+        const mppx = 156543.03 * Math.cos((latitude * Math.PI) / 180) / Math.pow(2, zoom)
+        const halfW = (mppx * 600) / 111000 / Math.cos((latitude * Math.PI) / 180)
+        const halfH = (mppx * 400) / 111000
+        const ring: [number, number][] = [
+            [latitude + halfH, longitude - halfW],
+            [latitude + halfH, longitude + halfW],
+            [latitude - halfH, longitude + halfW],
+            [latitude - halfH, longitude - halfW],
+            [latitude + halfH, longitude - halfW],
+        ]
+        let cellIds: string[]
+        try {
+            cellIds = polygonToCellsExperimental(ring, gridOverlayRes, POLYGON_TO_CELLS_FLAGS.containmentOverlapping) as unknown as string[]
+        } catch {
+            return null
+        }
+        // Cap at 50k cells to avoid pathological cases (too-fine res at too-wide bbox).
+        if (cellIds.length > 50000) cellIds = cellIds.slice(0, 50000)
+        const features = cellIds.map(h3 => {
+            const boundary = cellToBoundary(h3, true)  // [lng, lat]
+            return {
+                type: "Feature" as const,
+                geometry: {
+                    type: "Polygon" as const,
+                    coordinates: [boundary],
+                },
+                properties: { h3 },
+            }
+        })
+        const fc = { type: "FeatureCollection" as const, features }
+        const lineRgb: [number, number, number] = theme === "dark" ? [220, 220, 220] : [60, 60, 60]
+        return new GeoJsonLayer({
+            id: `hex-grid-r${gridOverlayRes}`,
+            data: fc,
+            getFillColor: [0, 0, 0, 0] as any,
+            getLineColor: [...lineRgb, 160] as any,
+            lineWidthMinPixels: 0.6,
+            pickable: false,
+        })
+    }, [gridOverlayRes, viewState.latitude, viewState.longitude, viewState.zoom, theme])
+
     const outlineLayers = useMemo(() => {
         const layers: any[] = []
         const lineRgb: [number, number, number] = theme === "dark" ? [109, 179, 242] : [0, 102, 204]
@@ -549,6 +600,7 @@ export function CrashMap({
     const layers = useMemo(() => {
         const t0 = perfEnabled() ? performance.now() : 0
         const base: any[] = [...outlineLayers]
+        if (gridOverlayLayer) base.push(gridOverlayLayer)
         if (mode === "scatter") {
             return [...base,
                 new ScatterplotLayer<Crash>({
@@ -627,7 +679,7 @@ export function CrashMap({
             console.log(`[perf] layers: ${ms.toFixed(1)}ms (mode=${mode}, segments=${segments.length})`)
         }
         return result
-    }, [hexes, effectiveCrashes, mode, effectiveHexRes, elevationPerCount, outlineLayers])
+    }, [hexes, effectiveCrashes, mode, effectiveHexRes, elevationPerCount, outlineLayers, gridOverlayLayer])
 
     // Only bubble user-driven changes. DeckGL also echoes back programmatic
     // viewState updates (from the fit effect, mode-switch tilt, etc.) via

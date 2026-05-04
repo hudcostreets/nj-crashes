@@ -31,6 +31,9 @@ export type Props = {
      *  newer fetch is in flight while older data is still on screen,
      *  "idle" otherwise. */
     fetchState?: "idle" | "loading" | "refetching"
+    /** Hovered res from the h3-cells table. Caller renders an outline-only
+     *  hex grid at this resolution on the map for visual reference. */
+    onHoverRes?: (res: number | null) => void
     /** Light/dark theme toggle. */
     theme: "light" | "dark"
 }
@@ -62,7 +65,7 @@ function planSummary(plan: FetchPlan): string {
     return `r${plan.res} × ${plan.shards.length}`
 }
 
-export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTarget, rowCount, fetchState, theme }: Props) {
+export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTarget, rowCount, fetchState, onHoverRes, theme }: Props) {
     const { latitude, longitude, zoom, pitch, bearing } = viewState
     const mppx = metersPerPixel(zoom, latitude)
     const dark = theme === "dark"
@@ -141,7 +144,13 @@ export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTa
                                 const diaPx = (2 * edgeM) / mppx
                                 const isShown = r === showRes
                                 return (
-                                    <tr key={r} style={{ color: isShown ? fg : dim }}>
+                                    <tr
+                                        key={r}
+                                        style={{ color: isShown ? fg : dim, cursor: onHoverRes ? "crosshair" : undefined }}
+                                        onMouseEnter={onHoverRes ? () => onHoverRes(r) : undefined}
+                                        onMouseLeave={onHoverRes ? () => onHoverRes(null) : undefined}
+                                        title={onHoverRes ? `Show r${r} hex grid on map` : undefined}
+                                    >
                                         <td style={{ paddingRight: 6 }}>{isShown ? <b>r{r}</b> : `r${r}`}</td>
                                         <td style={{ textAlign: "right", paddingRight: 6 }}>{fmtMeters(edgeM)}</td>
                                         <td style={{ textAlign: "right", paddingRight: 6 }}>{fmtArea(areaM2)}</td>

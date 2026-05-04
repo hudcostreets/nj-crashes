@@ -51,7 +51,7 @@ export type MapManifestV2 = {
  *  `reason` is a short human-readable phrase describing which decision
  *  branch produced the plan (consumed by the debug overlay). */
 export type FetchPlan =
-    | { kind: "hex"; res: 6 | 7 | 8 | 9; shards: string[] | null; reason?: string }
+    | { kind: "hex"; res: number; shards: string[] | null; reason?: string }
     | { kind: "points"; shards: string[]; reason?: string }
 
 const MANIFEST_V2_URL = `${MAP_BASE_URL}/v2/manifest.v2.json`
