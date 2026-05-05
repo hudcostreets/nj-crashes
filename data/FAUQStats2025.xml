@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon May 04 10:00:06 EDT 2026</RUNDATE>
+  <RUNDATE>Tue May 05 10:00:10 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1561,6 +1561,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4553,8 +4554,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2012" MNAME="Plainfield City">
       <ACCIDENT ACCID="13942" DATE="06/07/2025" TIME="2011">
-        <STREET>Watching Ave</STREET>
-        <LOCATION>Watching Ave</LOCATION>
+        <STREET>Watchung Ave.</STREET>
+        <LOCATION>Watchung Ave.</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4796,8 +4797,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1214" MNAME="New Brunswick City">
       <ACCIDENT ACCID="13925" DATE="05/24/2025" TIME="2242">
-        <STREET>Suydam Street</STREET>
-        <LOCATION>Suydam Street</LOCATION>
+        <STREET>Suydam St.</STREET>
+        <LOCATION>Suydam St.</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7418,5 +7419,5 @@
   </COUNTY>
   <TOTACCIDENTS>547</TOTACCIDENTS>
   <TOTFATALITIES>582</TOTFATALITIES>
-  <TOTINJURIES>268</TOTINJURIES>
+  <TOTINJURIES>269</TOTINJURIES>
 </FAUQSTATS>
