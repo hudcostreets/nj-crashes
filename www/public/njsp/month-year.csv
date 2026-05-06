@@ -302,8 +302,8 @@ county,cc,mc,year,month,fatalities
 ,,,2026,1,39
 ,,,2026,2,32
 ,,,2026,3,53
-,,,2026,4,38
-,,,2026,5,5
+,,,2026,4,39
+,,,2026,5,7
 Atlantic,1,,2001,1,2
 Atlantic,1,,2001,2,8
 Atlantic,1,,2001,3,2
@@ -1170,6 +1170,7 @@ Burlington,3,,2026,1,1
 Burlington,3,,2026,2,3
 Burlington,3,,2026,3,4
 Burlington,3,,2026,4,3
+Burlington,3,,2026,5,1
 Camden,4,,2001,1,1
 Camden,4,,2001,2,3
 Camden,4,,2001,3,9
@@ -1909,7 +1910,7 @@ Cumberland,6,,2025,11,2
 Cumberland,6,,2025,12,3
 Cumberland,6,,2026,2,1
 Cumberland,6,,2026,3,1
-Cumberland,6,,2026,4,2
+Cumberland,6,,2026,4,3
 Essex,7,,2001,1,6
 Essex,7,,2001,2,2
 Essex,7,,2001,3,6
@@ -4573,7 +4574,7 @@ Passaic,16,,2025,10,4
 Passaic,16,,2025,11,3
 Passaic,16,,2026,1,2
 Passaic,16,,2026,2,1
-Passaic,16,,2026,5,2
+Passaic,16,,2026,5,3
 Salem,17,,2001,1,1
 Salem,17,,2001,2,1
 Salem,17,,2001,10,1
@@ -7865,6 +7866,7 @@ Burlington,3,24,2025,12,3
 Burlington,3,24,2026,1,1
 Burlington,3,24,2026,3,1
 Burlington,3,24,2026,4,1
+Burlington,3,24,2026,5,1
 Burlington,3,25,2003,6,1
 Burlington,3,25,2005,10,1
 Burlington,3,25,2007,1,1
@@ -9528,6 +9530,7 @@ Cumberland,6,5,2024,4,1
 Cumberland,6,5,2024,5,1
 Cumberland,6,5,2024,8,1
 Cumberland,6,5,2024,12,2
+Cumberland,6,5,2026,4,1
 Cumberland,6,6,2019,12,1
 Cumberland,6,6,2023,9,1
 Cumberland,6,7,2002,7,1
@@ -16667,6 +16670,7 @@ Passaic,16,16,2022,8,1
 Passaic,16,16,2023,7,1
 Passaic,16,16,2023,10,1
 Passaic,16,16,2025,3,1
+Passaic,16,16,2026,5,1
 Salem,17,1,2002,3,1
 Salem,17,1,2004,4,1
 Salem,17,1,2004,12,1
