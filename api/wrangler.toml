@@ -30,7 +30,7 @@ database_id = "5e10adf8-9503-4ec9-8b1f-9e7b532d07b9"
 [[d1_databases]]
 binding = "NJSP_CRASHES_DB"
 database_name = "njsp-crashes"
-database_id = "f0ff5e40-0bd2-49d2-9de4-7039728494dc"
+database_id = "dc1d62db-15b8-4c03-844f-bb7256e6cce4"
 
 [dev]
 port = 51894
