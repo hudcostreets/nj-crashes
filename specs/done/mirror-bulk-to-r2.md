@@ -147,6 +147,35 @@ itself stays in `scripts/` as documentation + re-runnable in case we
 want to expand the subset later (just rerun with `--years 2024,2025`
 once those `.dvc` files exist; `--force` to refresh).
 
+## Actuals (2026-05-07)
+
+Implemented as `scripts/mirror_bulk_to_r2.py` (`uv run` shebang, inline
+deps `boto3 click pyyaml tqdm utz`). End-to-end run on `e`:
+
+- 125 files, 172,696,697 bytes (164.7 MiB).
+- Upload: 66.0 s wall clock (≈2.5 MB/s S3 us-east-1 → R2 from `e`).
+- Re-run idempotent: 6.4 s, 125 skipped, 0 uploaded.
+- R2 ETag for each `put_object` matches the source `.dvc` md5
+  (single-PUT preserves md5 as ETag), so content integrity is verified
+  end-to-end without a separate checksum step. Spot-checked
+  `NewJersey2022Drivers.zip`: ETag = `b7ebe70b58aece6943e572b443c43c68`,
+  `ContentLength` = 7,060,495 — matches `.dvc` exactly.
+
+CLI ended up alphabetical-by-short-flag per project style:
+`-a/--all`, `-b/--bucket`, `-f/--force`, `-i/--include-glob`,
+`-n/--dry-run`, `-p/--prefix`, `-P/--profile`, `-y/--years`. Added
+`-P/--profile` to read the R2 endpoint URL from `~/.aws/config`'s
+`[profile cf]` block (boto3 ≥ 1.28 picks up `endpoint_url` natively),
+so the R2 endpoint isn't duplicated in the script.
+
+Kept the in-memory `body.read()` → `Body=bytes` upload path: largest
+file is the 2023 statewide `NewJersey2023Vehicles.pqt` at ~18 MB, so
+peak memory per file is bounded; passing a `StreamingBody` directly to
+`put_object` is supported by boto3 but doesn't preserve md5 ETag (it
+becomes a multipart-style hash even on small files in some paths).
+The bytes-buffered path keeps ETag = md5, which is the verification
+trick we want.
+
 ## Cost notes
 
 - S3 egress: 165 MB × $0.09/GB ≈ $0.015. (Negligible.)
