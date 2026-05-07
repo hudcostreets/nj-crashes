@@ -2,6 +2,7 @@
 set -euo pipefail
 
 VITE_API_URL=https://crashes-api.ryan-0dc.workers.dev \
+VITE_CELLS_API_BASE=https://crashes-cells-api.ryan-0dc.workers.dev \
 VITE_MAP_BASE_URL=https://nj-crashes.s3.amazonaws.com/njdot/map \
     pnpm build
 cp dist/index.html dist/404.html
