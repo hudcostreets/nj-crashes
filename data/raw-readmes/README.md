@@ -7,13 +7,17 @@ themselves.
 
 ## What's here
 
-- [`njdot/data/`](njdot/data/) — NJ DOT bulk crash dumps, 2001–2023.
+- [`njdot/data/`](njdot/data/) — **NJ DOT bulk crash dumps**, 2001–2023.
   Five tables per year (Accidents, Drivers, Occupants, Pedestrians,
   Vehicles) that join on a crash case key. Per-year statewide files
   through 2022; per-county files for 2023+.
 - [`njdot/data/fields/`](njdot/data/fields/) — column schemas (JSON +
   original NJDOT PDF data dictionaries) for the fixed-width `.txt` files
   inside each `.zip`.
+- [`njsp/data/annual-summaries/`](njsp/data/annual-summaries/) — **NJ
+  State Police annual fatal-crash report PDFs**, 2010–2023. Two reports
+  per year (`ptccr_YY.pdf`, `swfcs2_YY.pdf`); used to backfill the
+  pre-2008 NJSP data the live XML feed doesn't cover.
 
 ## What's *not* here
 
