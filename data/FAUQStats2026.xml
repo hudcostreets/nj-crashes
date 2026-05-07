@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed May 06 10:00:05 EDT 2026</RUNDATE>
+  <RUNDATE>Thu May 07 10:00:02 EDT 2026</RUNDATE>
   <STATSYEAR>2026</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -89,6 +89,17 @@
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="16" CNAME="Passaic">
+    <MUNICIPALITY MCODE="1613" MNAME="Wanaque Boro">
+      <ACCIDENT ACCID="14561" DATE="05/03/2026" TIME="0413">
+        <HIGHWAY>511</HIGHWAY>
+        <LOCATION>County 511</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
     <MUNICIPALITY MCODE="1607" MNAME="Passaic City">
       <ACCIDENT ACCID="14555" DATE="05/02/2026" TIME="1257">
         <STREET>Main Ave</STREET>
@@ -1974,19 +1985,6 @@
       <ACCIDENT ACCID="14367" DATE="01/09/2026" TIME="2029">
         <HIGHWAY>22</HIGHWAY>
         <LOCATION>State Highway 22</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="09" CNAME="Hudson">
-    <MUNICIPALITY MCODE="0904" MNAME="Harrison Town">
-      <ACCIDENT ACCID="14380" DATE="01/08/2026" TIME="1533">
-        <HIGHWAY>507</HIGHWAY>
-        <LOCATION>County 507</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>

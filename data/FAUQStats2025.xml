@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed May 06 10:00:07 EDT 2026</RUNDATE>
+  <RUNDATE>Thu May 07 10:00:04 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -438,6 +438,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4108,7 +4109,7 @@
     <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
       <ACCIDENT ACCID="13983" DATE="06/25/2025" TIME="2147">
         <HIGHWAY>27</HIGHWAY>
-        <LOCATION>State Highway 27 MP 19.5</LOCATION>
+        <LOCATION>State Highway 27 MP 19.52</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4340,8 +4341,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1214" MNAME="New Brunswick City">
       <ACCIDENT ACCID="13959" DATE="06/14/2025" TIME="2052">
-        <STREET>Joyce Kilmer Ave.</STREET>
-        <LOCATION>Joyce Kilmer Ave.</LOCATION>
+        <STREET>Joyce Kilmer Ave</STREET>
+        <LOCATION>Joyce Kilmer Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4388,6 +4389,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4555,8 +4557,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2012" MNAME="Plainfield City">
       <ACCIDENT ACCID="13942" DATE="06/07/2025" TIME="2011">
-        <STREET>Watchung Ave.</STREET>
-        <LOCATION>Watchung Ave.</LOCATION>
+        <STREET>Watchung Ave</STREET>
+        <LOCATION>Watchung Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5203,8 +5205,8 @@
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="0422" MNAME="Lindenwold Boro">
       <ACCIDENT ACCID="13892" DATE="05/02/2025" TIME="2128">
-        <STREET>E. Gibbsboro Rd</STREET>
-        <LOCATION>E. Gibbsboro Rd</LOCATION>
+        <HIGHWAY>686</HIGHWAY>
+        <LOCATION>County 686 MP 1.23</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5422,7 +5424,7 @@
     <MUNICIPALITY MCODE="1710" MNAME="Pittsgrove Twsp">
       <ACCIDENT ACCID="13873" DATE="04/23/2025" TIME="1941">
         <HIGHWAY>639</HIGHWAY>
-        <LOCATION>County 639</LOCATION>
+        <LOCATION>County 639 MP 5.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -7420,5 +7422,5 @@
   </COUNTY>
   <TOTACCIDENTS>547</TOTACCIDENTS>
   <TOTFATALITIES>582</TOTFATALITIES>
-  <TOTINJURIES>269</TOTINJURIES>
+  <TOTINJURIES>271</TOTINJURIES>
 </FAUQSTATS>
