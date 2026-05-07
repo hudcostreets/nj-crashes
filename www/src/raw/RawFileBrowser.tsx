@@ -131,17 +131,23 @@ function Body({ parsed }: { parsed: Parsed }) {
     }
 }
 
-/** Inline preview cap for zip entries. The current zip-entry endpoint
- *  inflates the whole entry into memory worker-side and ships it; for
- *  the 153 MB NJDOT entry tables that overruns the CFW heap. Entries
- *  above this threshold show a download link + a pointer to the .pqt
- *  sibling (which has range-based pagination via parquet metadata). */
-const ZIP_ENTRY_PREVIEW_MAX_BYTES = 8 * 1024 * 1024  // 8 MB uncompressed
+/** Streaming-preview output cap for zip entries. The worker accepts
+ *  `?max=N` and stops inflate once N output bytes are produced —
+ *  bounded CPU/memory regardless of the entry's true size. 256 KB is
+ *  ~1000 lines of NJDOT fixed-width text, plenty to show the structure. */
+const ZIP_ENTRY_STREAMING_PREVIEW_BYTES = 256 * 1024
+/** Threshold above which we engage streaming-preview mode (and show
+ *  a "previewing first 256 KB of N MB" hint). Below this we fetch the
+ *  whole entry (no `max` param) since it's small enough to download
+ *  and slice in JS. */
+const ZIP_ENTRY_FULL_FETCH_BYTES = 4 * 1024 * 1024  // 4 MB uncompressed
 
 /** Resolve a zip entry's offset/csize via `/v1/raw/zip-entries`, then
- *  hand off to the appropriate renderer for the entry's extension. */
+ *  hand off to the appropriate renderer for the entry's extension.
+ *  Large entries get a streaming-preview (first 256 KB inflated
+ *  worker-side) with a banner indicating truncation. */
 function ZipEntryPreview({ path, entry }: { path: string; entry: string }) {
-    const [resolved, setResolved] = useState<{ url: string; total: number } | null>(null)
+    const [resolved, setResolved] = useState<{ url: string; total: number; truncated: boolean } | null>(null)
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
@@ -151,7 +157,14 @@ function ZipEntryPreview({ path, entry }: { path: string; entry: string }) {
             if (cancelled) return
             const e = r.entries.find(x => x.name === entry)
             if (!e) { setError(`entry not found: ${entry}`); return }
-            setResolved({ url: rawZipEntryUrl(path, e), total: e.size })
+            const truncated = e.size > ZIP_ENTRY_FULL_FETCH_BYTES
+            const max = truncated ? ZIP_ENTRY_STREAMING_PREVIEW_BYTES : undefined
+            const url = rawZipEntryUrl(path, e, max)
+            // For the streaming-preview case the response body length
+            // is `max` (or less), not `e.size` — the TextViewer needs
+            // to know the actual fetched bytes.
+            const total = truncated ? Math.min(e.size, ZIP_ENTRY_STREAMING_PREVIEW_BYTES) : e.size
+            setResolved({ url, total, truncated })
         }).catch(e => {
             if (!cancelled) setError(String(e))
         })
@@ -162,31 +175,39 @@ function ZipEntryPreview({ path, entry }: { path: string; entry: string }) {
     if (!resolved) return <div style={{ opacity: 0.6 }}>locating {entry} in {path}…</div>
 
     const ext = extOf(entry)
-    const tooBig = resolved.total > ZIP_ENTRY_PREVIEW_MAX_BYTES
-    if (tooBig) {
-        // Suggest the .pqt sibling if one exists at the same dir.
-        const dir = path.replace(/\/[^/]+$/, "/")
-        const stem = path.split("/").pop()!.replace(/\.zip$/, "")
-        const pqtPath = `${dir}${stem}.pqt`
-        const pqtUrl = `/raw/${pqtPath}`
-        return (
-            <div style={{ opacity: 0.85, lineHeight: 1.6 }}>
-                <p><b>{entry}</b> is {(resolved.total / 1024 / 1024).toFixed(1)} MB uncompressed —
-                too large to preview inline.</p>
-                <p>Try the parquet sibling instead (range-based pagination, no full
-                decompression): <a href={pqtUrl}>{pqtPath}</a>.</p>
-                <p>Or <a href={resolved.url}>download the raw entry</a>.</p>
-            </div>
-        )
-    }
     if (TEXTY.has(ext)) {
         const source: TextSource = { kind: "url", url: resolved.url, total: resolved.total }
-        return <TextViewer source={source} />
+        return (
+            <>
+                {resolved.truncated && <TruncationBanner path={path} entry={entry} previewBytes={resolved.total} />}
+                <TextViewer source={source} />
+            </>
+        )
     }
     return (
         <div style={{ opacity: 0.7 }}>
             Inline preview not supported for entries of type <code>.{ext}</code>.{" "}
             <a href={resolved.url}>download</a>
+        </div>
+    )
+}
+
+function TruncationBanner({ path, entry, previewBytes }: { path: string; entry: string; previewBytes: number }) {
+    // Suggest the .pqt sibling if one exists at the same dir.
+    const dir = path.replace(/\/[^/]+$/, "/")
+    const stem = path.split("/").pop()!.replace(/\.zip$/, "")
+    const pqtPath = `${dir}${stem}.pqt`
+    return (
+        <div style={{
+            background: "rgba(220, 165, 60, 0.12)",
+            border: "1px solid rgba(220, 165, 60, 0.4)",
+            padding: "0.5em 0.8em", borderRadius: 4,
+            marginBottom: "0.6em", fontSize: "0.9em",
+        }}>
+            <b>Streaming preview:</b> showing the first{" "}
+            {(previewBytes / 1024).toFixed(0)} KB of <code>{entry}</code>.
+            For paginated access, use the parquet sibling{" "}
+            <a href={`/raw/${pqtPath.replace(/^raw\//, "")}`}><code>{pqtPath}</code></a>.
         </div>
     )
 }

@@ -11,7 +11,7 @@
  *  `raw/`. Other prefixes on the bucket (`cells/`, future siblings) are
  *  off-limits.
  */
-import { inflateSync } from "fflate"
+import { inflateSync, Inflate } from "fflate"
 import { HttpError } from "./cells"
 
 const RAW_PREFIX = "raw/"
@@ -331,6 +331,53 @@ const LFH_SIG = 0x04034b50
  *  data start (LFH has its own name+extra lengths, possibly different
  *  from the central directory's), then range-fetches the compressed
  *  bytes and decompresses. */
+/** Streaming inflate with an output cap. Pushes compressed input in
+ *  64 KB slices; for each ondata chunk, accumulates only up to `max`
+ *  bytes total, then short-circuits further pushes. Bounded CPU/memory:
+ *  for a 23× compression ratio (NJDOT zips), capping output at 256 KB
+ *  inflates only ~11 KB compressed → <100ms.
+ *
+ *  Returns `{ body, truncated }` — `truncated` is true when the entry
+ *  is larger than `max` and the response is a prefix only. */
+function inflateUpTo(compressed: Uint8Array, max: number): { body: Uint8Array; truncated: boolean } {
+    const chunks: Uint8Array[] = []
+    let total = 0
+    let truncated = false
+    const inflate = new Inflate()
+    inflate.ondata = (out: Uint8Array) => {
+        if (truncated) return
+        const need = max - total
+        if (out.length <= need) {
+            chunks.push(out.slice())  // copy: fflate may reuse internal buffers
+            total += out.length
+        } else {
+            chunks.push(out.subarray(0, need).slice())
+            total = max
+            truncated = true
+        }
+    }
+    const CHUNK = 64 * 1024
+    let p = 0
+    while (p < compressed.length) {
+        const end = Math.min(p + CHUNK, compressed.length)
+        const final = end >= compressed.length
+        try {
+            inflate.push(compressed.subarray(p, end), final)
+        } catch (e) {
+            // fflate may throw on later chunks once we stop accepting output.
+            // If we've already hit the cap, that's expected — swallow.
+            if (!truncated) throw e
+            break
+        }
+        p = end
+        if (truncated) break
+    }
+    const body = new Uint8Array(total)
+    let off = 0
+    for (const c of chunks) { body.set(c, off); off += c.length }
+    return { body, truncated }
+}
+
 export async function handleZipEntry(
     bucket: R2Bucket, url: URL,
 ): Promise<Response> {
@@ -339,6 +386,7 @@ export async function handleZipEntry(
     const offsetStr = url.searchParams.get("offset")
     const csizeStr = url.searchParams.get("csize")
     const methodStr = url.searchParams.get("method") ?? "8"
+    const maxStr = url.searchParams.get("max")
     if (!entry) throw new HttpError(400, "entry is required")
     if (!offsetStr || !csizeStr) throw new HttpError(400, "offset and csize are required")
     const offset = parseInt(offsetStr, 10)
@@ -346,6 +394,10 @@ export async function handleZipEntry(
     const method = parseInt(methodStr, 10)
     if (!Number.isFinite(offset) || !Number.isFinite(csize)) {
         throw new HttpError(400, "offset and csize must be integers")
+    }
+    const max = maxStr ? parseInt(maxStr, 10) : null
+    if (max !== null && (!Number.isFinite(max) || max <= 0)) {
+        throw new HttpError(400, "max must be a positive integer")
     }
 
     // Read 30-byte LFH to get name/extra lengths.
@@ -366,12 +418,22 @@ export async function handleZipEntry(
     const compressed = new Uint8Array(await dataObj.arrayBuffer())
 
     let body: Uint8Array
+    let truncated = false
     if (method === 0) {
-        body = compressed
+        if (max != null && compressed.length > max) {
+            body = compressed.subarray(0, max)
+            truncated = true
+        } else {
+            body = compressed
+        }
     } else if (method === 8) {
-        // Synchronous inflate (fflate is small and fast). Workers
-        // limits us to ~128 MB heap; NJDOT zips are ≤50 MB, fine.
-        body = inflateSync(compressed)
+        if (max != null) {
+            const r = inflateUpTo(compressed, max)
+            body = r.body
+            truncated = r.truncated
+        } else {
+            body = inflateSync(compressed)
+        }
     } else {
         throw new HttpError(400, `unsupported compression method: ${method}`)
     }
@@ -382,6 +444,7 @@ export async function handleZipEntry(
         "Cache-Control": "public, max-age=86400, immutable",
         "X-Zip-Source": path,
         "X-Zip-Entry": entry,
+        "X-Zip-Truncated": String(truncated),
     }
     return new Response(body, { status: 200, headers })
 }

@@ -50,7 +50,7 @@ export function rawGetUrl(path: string): string {
     return `${CELLS_API_BASE}/v1/raw/get?path=${encodeURIComponent(path)}`
 }
 
-export function rawZipEntryUrl(path: string, e: ZipEntry): string {
+export function rawZipEntryUrl(path: string, e: ZipEntry, max?: number): string {
     const params = new URLSearchParams({
         path,
         entry: e.name,
@@ -58,6 +58,7 @@ export function rawZipEntryUrl(path: string, e: ZipEntry): string {
         csize: String(e.compressedSize),
         method: String(e.method),
     })
+    if (max != null) params.set("max", String(max))
     return `${CELLS_API_BASE}/v1/raw/zip-entry?${params}`
 }
 
