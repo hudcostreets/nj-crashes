@@ -20,7 +20,7 @@ import { DirListing } from "./DirListing"
 import { ZipEntryList } from "./ZipEntryList"
 import { TextViewer, type TextSource } from "./TextViewer"
 import { ParquetTable } from "./ParquetTable"
-import { extOf, rawZipEntryUrl, fetchZipEntries } from "./api"
+import { extOf, rawZipEntryUrl, rawGetUrl, fetchZipEntries } from "./api"
 import { useEffect, useState } from "react"
 
 const RAW_PREFIX = "raw/"
@@ -34,9 +34,18 @@ type Parsed =
     | { kind: "parquet"; path: string }
     | { kind: "binary"; path: string }
 
-/** Parse URL splat → R2 key + view kind. */
+/** Parse URL splat → R2 key + view kind. The splat comes from
+ *  `location.pathname` so it's percent-encoded; decode it before
+ *  building the R2 key so that entry names with spaces (e.g. "Cape
+ *  May2023Pedestrians.txt") round-trip correctly. */
 function parsePath(splat: string): Parsed {
-    const stripped = splat.replace(/^\/+/, "")  // drop leading slash
+    let decoded: string
+    try {
+        decoded = decodeURIComponent(splat)
+    } catch {
+        decoded = splat  // malformed escape — fall back rather than throw
+    }
+    const stripped = decoded.replace(/^\/+/, "")  // drop leading slash
     const r2key = RAW_PREFIX + stripped
 
     // Zip entry: "<zip>!/<entry>"
@@ -106,7 +115,7 @@ function Body({ parsed }: { parsed: Parsed }) {
             return (
                 <div style={{ opacity: 0.7 }}>
                     Preview not supported for this file type.{" "}
-                    <a href={`/v1/raw/get?path=${encodeURIComponent(parsed.path)}`}>download</a>
+                    <a href={rawGetUrl(parsed.path)}>download</a>
                 </div>
             )
     }

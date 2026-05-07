@@ -30,13 +30,17 @@ export function TextViewer({ source }: { source: TextSource }) {
 
     // Reset on source change.
     useEffect(() => {
+        let cancelled = false
         setPage(0)
         setText(null)
         setError(null)
         setTotal(source.kind === "url" ? source.total : null)
         if (source.kind === "raw") {
-            fetchSize(source.path).then(setTotal).catch(e => setError(String(e)))
+            fetchSize(source.path)
+                .then(s => { if (!cancelled) setTotal(s) })
+                .catch(e => { if (!cancelled) setError(String(e)) })
         }
+        return () => { cancelled = true }
     }, [source.kind === "raw" ? source.path : source.url])
 
     useEffect(() => {

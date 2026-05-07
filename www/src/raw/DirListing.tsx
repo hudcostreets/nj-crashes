@@ -54,8 +54,8 @@ export function DirListing({ prefix }: { prefix: string }) {
                 <tbody>
                     {entries.map(e => {
                         const name = basename(e.key)
-                        // Dirs come back with trailing `/`; files don't.
-                        const href = `/raw/${e.key}`
+                        // R2 keys carry the `raw/` prefix; URL splat is the part *after* `/raw/`.
+                        const href = `/raw/${e.key.replace(/^raw\//, "")}`
                         return (
                             <tr key={e.key} style={{ borderTop: "1px solid rgba(127,127,127,0.2)" }}>
                                 <td style={{ padding: "0.3em 0.6em 0.3em 0", fontFamily: "ui-monospace, monospace" }}>

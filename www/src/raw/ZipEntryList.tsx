@@ -40,7 +40,7 @@ export function ZipEntryList({ path }: { path: string }) {
                 </thead>
                 <tbody>
                     {resp.entries.map(e => {
-                        const href = `/raw/${path}!/${e.name}`
+                        const href = `/raw/${path.replace(/^raw\//, "")}!/${e.name}`
                         const methodLabel = e.method === 0 ? "store" : e.method === 8 ? "deflate" : `m${e.method}`
                         return (
                             <tr key={e.name} style={{ borderTop: "1px solid rgba(127,127,127,0.2)" }}>
