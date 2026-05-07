@@ -28,10 +28,22 @@ function corsHeaders(env: Env, extra: HeadersInit = {}): HeadersInit {
     return {
         "Access-Control-Allow-Origin": env.CORS_ORIGIN ?? "*",
         "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, If-None-Match",
+        "Access-Control-Allow-Headers": "Content-Type, If-None-Match, Range",
+        // Browsers strip non-safelisted response headers from JS
+        // unless explicitly exposed. The text/CSV viewers parse
+        // `Content-Range` to learn total file size from a 1-byte
+        // range probe; without this, `fetchSize` throws.
+        "Access-Control-Expose-Headers": "Content-Range, Content-Length, ETag",
         "Content-Type": "application/json",
         ...extra,
     }
+}
+
+/** Merge CORS headers onto a response that already has its own
+ *  Content-Type / Content-Range / etc. from `handleGet`/`handleZipEntry`. */
+function applyCors(headers: Headers, env: Env): void {
+    headers.set("Access-Control-Allow-Origin", env.CORS_ORIGIN ?? "*")
+    headers.set("Access-Control-Expose-Headers", "Content-Range, Content-Length, ETag")
 }
 
 async function etagFor(req: Request, dataVersion: string): Promise<string> {
@@ -72,7 +84,7 @@ export default {
                 }
                 const resp = await handleGet(env.CELLS_BUCKET, url, request)
                 const headers = new Headers(resp.headers)
-                headers.set("Access-Control-Allow-Origin", env.CORS_ORIGIN ?? "*")
+                applyCors(headers, env)
                 return new Response(null, { status: resp.status, headers })
             }
             if (pathname === "/healthz") {
@@ -118,13 +130,13 @@ export default {
                 const resp = await handleGet(env.CELLS_BUCKET, url, request)
                 // handleGet sets its own Content-Type; merge CORS only.
                 const headers = new Headers(resp.headers)
-                headers.set("Access-Control-Allow-Origin", env.CORS_ORIGIN ?? "*")
+                applyCors(headers, env)
                 return new Response(resp.body, { status: resp.status, headers })
             }
             if (pathname === "/v1/raw/zip-entry") {
                 const resp = await handleZipEntry(env.CELLS_BUCKET, url)
                 const headers = new Headers(resp.headers)
-                headers.set("Access-Control-Allow-Origin", env.CORS_ORIGIN ?? "*")
+                applyCors(headers, env)
                 return new Response(resp.body, { status: resp.status, headers })
             }
             return new Response("not found", { status: 404, headers: corsHeaders(env) })

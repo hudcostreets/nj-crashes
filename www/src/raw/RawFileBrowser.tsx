@@ -20,9 +20,11 @@ import { DirListing } from "./DirListing"
 import { ZipEntryList } from "./ZipEntryList"
 import { TextViewer, type TextSource } from "./TextViewer"
 import { ParquetTable } from "./ParquetTable"
+import { CsvTable } from "./CsvTable"
 import { extOf, rawZipEntryUrl, rawGetUrl, fetchZipEntries } from "./api"
 import { parsePath, RAW_PREFIX, TEXTY, type Parsed } from "./parsePath"
 import { useEffect, useState } from "react"
+import { useUrlState, defStringParam } from "use-prms"
 
 export default function RawFileBrowser() {
     const location = useLocation()
@@ -60,6 +62,8 @@ function Body({ parsed }: { parsed: Parsed }) {
             const source: TextSource = { kind: "raw", path: parsed.path }
             return <TextViewer source={source} />
         }
+        case "csv":
+            return <CsvOrText path={parsed.path} />
         case "parquet":
             return <ParquetTable path={parsed.path} />
         case "pdf":
@@ -161,6 +165,28 @@ function TruncationBanner({ path, entry, previewBytes }: { path: string; entry: 
     )
 }
 
+/** CSV files default to the table renderer, with a `?view=text`
+ *  escape hatch back to the raw byte-paginated text viewer. The CSV
+ *  view is more useful for column-aligned NJDOT data; the text view
+ *  is useful when the file isn't really comma-delimited or you want
+ *  to see exact bytes on the wire. */
+function CsvOrText({ path }: { path: string }) {
+    const [view, setView] = useUrlState("view", defStringParam(""))
+    if (view === "text") {
+        const source: TextSource = { kind: "raw", path }
+        return (
+            <>
+                <p style={{ opacity: 0.7, fontSize: "0.95em", margin: "0 0 0.6em" }}>
+                    text view ·{" "}
+                    <a href="#" onClick={e => { e.preventDefault(); setView("") }}>view as table</a>
+                </p>
+                <TextViewer source={source} />
+            </>
+        )
+    }
+    return <CsvTable path={path} />
+}
+
 function buildCrumbs(p: Parsed): Crumb[] {
     let parts: string[] = []
     let entry: string | null = null
@@ -195,13 +221,14 @@ function Footnote() {
             fontSize: "0.85em", opacity: 0.7,
         }}>
             <p>
-                Browser over the <code>raw/</code> prefix of an R2 mirror of the
-                pre-2024 NJDOT bulk crash dumps. Each year has separate
-                Accidents / Drivers / Occupants / Pedestrians / Vehicles
-                tables that join on a crash case key. The current AASHTO
-                dashboard CSV is a single denormalized table —{" "}
-                <a href="/raw/njdot/data/2024/" style={{ pointerEvents: "none", opacity: 0.4 }}>not yet
-                available in this format for 2024+</a>.
+                Browser over the <code>raw/</code> prefix of an R2 mirror of NJDOT's
+                bulk crash dumps. Three format eras:{" "}
+                <a href="/raw/njdot/data/2001/">2001–2022</a>{" "}(per-table, statewide),{" "}
+                <a href="/raw/njdot/data/2023/">2023</a>{" "}(per-table + per-county),{" "}
+                <a href="/raw/njdot/data/2024/">2024+</a>{" "}(denormalized
+                {" "}<a href="/raw/njdot/data/2024/Crash.csv"><code>Crash.csv</code></a>{" "}
+                only — losing the natural Accidents / Drivers / Occupants /
+                Pedestrians / Vehicles tables that join on a crash case key).
             </p>
         </div>
     )

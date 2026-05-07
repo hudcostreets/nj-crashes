@@ -38,9 +38,15 @@ describe("parsePath", () => {
     })
 
     it("text-y extensions → text kind", () => {
-        for (const ext of ["txt", "csv", "tsv", "json", "md", "log"]) {
+        for (const ext of ["txt", "tsv", "json", "md", "log"]) {
             expect(parsePath(`x.${ext}`)).toEqual({ kind: "text", path: `raw/x.${ext}` })
         }
+    })
+
+    it("csv → csv kind (table renderer)", () => {
+        expect(parsePath("njdot/data/2024/Crash.csv")).toEqual({
+            kind: "csv", path: "raw/njdot/data/2024/Crash.csv", ext: "csv",
+        })
     })
 
     it("pdf → pdf kind", () => {
