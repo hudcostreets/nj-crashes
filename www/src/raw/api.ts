@@ -8,6 +8,17 @@
  */
 import { CELLS_API_BASE } from "../map/config"
 
+/** Per-deploy cache-buster appended to worker URLs. Increment when
+ *  a worker-side change touches cached headers (e.g. CORS) — the CF
+ *  edge cache otherwise serves stale responses with old headers
+ *  until `Cache-Control: max-age=86400, immutable` expires (24 h).
+ *
+ *  Bump history:
+ *    1 — initial
+ *    2 — 2026-05-07: `Access-Control-Expose-Headers: Content-Range, …`
+ */
+const RAW_CACHE_VERSION = "2"
+
 export type ListEntry = {
     key: string
     size?: number
@@ -47,7 +58,7 @@ export async function fetchZipEntries(path: string): Promise<ZipEntriesResponse>
 }
 
 export function rawGetUrl(path: string): string {
-    return `${CELLS_API_BASE}/v1/raw/get?path=${encodeURIComponent(path)}`
+    return `${CELLS_API_BASE}/v1/raw/get?path=${encodeURIComponent(path)}&_v=${RAW_CACHE_VERSION}`
 }
 
 export function rawZipEntryUrl(path: string, e: ZipEntry, max?: number): string {
@@ -59,6 +70,7 @@ export function rawZipEntryUrl(path: string, e: ZipEntry, max?: number): string 
         method: String(e.method),
     })
     if (max != null) params.set("max", String(max))
+    params.set("_v", RAW_CACHE_VERSION)
     return `${CELLS_API_BASE}/v1/raw/zip-entry?${params}`
 }
 
