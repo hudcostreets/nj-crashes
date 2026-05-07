@@ -27,7 +27,7 @@ interface Env {
 function corsHeaders(env: Env, extra: HeadersInit = {}): HeadersInit {
     return {
         "Access-Control-Allow-Origin": env.CORS_ORIGIN ?? "*",
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, If-None-Match",
         "Content-Type": "application/json",
         ...extra,
@@ -55,11 +55,26 @@ export default {
         if (request.method === "OPTIONS") {
             return new Response(null, { status: 204, headers: corsHeaders(env) })
         }
-        if (request.method !== "GET") {
+        if (request.method !== "GET" && request.method !== "HEAD") {
             return new Response("method not allowed", { status: 405, headers: corsHeaders(env) })
         }
 
         try {
+            // HEAD is allowed for `/v1/raw/get` (hyparquet's
+            // asyncBufferFromUrl probes file size via HEAD before
+            // issuing range reads). For other endpoints HEAD is
+            // rejected — callers should issue GETs.
+            if (request.method === "HEAD") {
+                if (pathname !== "/v1/raw/get") {
+                    return new Response("HEAD not supported on this endpoint", {
+                        status: 405, headers: corsHeaders(env),
+                    })
+                }
+                const resp = await handleGet(env.CELLS_BUCKET, url, request)
+                const headers = new Headers(resp.headers)
+                headers.set("Access-Control-Allow-Origin", env.CORS_ORIGIN ?? "*")
+                return new Response(null, { status: resp.status, headers })
+            }
             if (pathname === "/healthz") {
                 return new Response("ok", { headers: corsHeaders(env, { "Content-Type": "text/plain" }) })
             }

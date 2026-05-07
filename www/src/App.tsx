@@ -11,6 +11,7 @@ import OgImage from './routes/OgImage'
 import MatchReview from './routes/MatchReview'
 import CrashMapPage from './routes/CrashMapPage'
 import CrashDetailPage from './routes/CrashDetailPage'
+import RawFileBrowser from './raw/RawFileBrowser'
 import { ThemeToggle } from './components/ThemeToggle'
 import { GeoFilterProvider } from './GeoFilterContext'
 import { DuckDbProvider } from './lib/DuckDbContext'
@@ -62,6 +63,8 @@ export default function App() {
                 <Route path="/map/c/:county" element={<CrashMapPage />} />
                 <Route path="/map/c/:county/:muni" element={<CrashMapPage />} />
                 <Route path="/crash/:year/:cc/:mc/:case" element={<CrashDetailPage />} />
+                <Route path="/raw" element={<RawFileBrowser />} />
+                <Route path="/raw/*" element={<RawFileBrowser />} />
                 <Route path="*" element={<NotFound />} />
             </Routes>
             <Omnibar />
