@@ -339,7 +339,7 @@ const LFH_SIG = 0x04034b50
  *
  *  Returns `{ body, truncated }` — `truncated` is true when the entry
  *  is larger than `max` and the response is a prefix only. */
-function inflateUpTo(compressed: Uint8Array, max: number): { body: Uint8Array; truncated: boolean } {
+export function inflateUpTo(compressed: Uint8Array, max: number): { body: Uint8Array; truncated: boolean } {
     const chunks: Uint8Array[] = []
     let total = 0
     let truncated = false

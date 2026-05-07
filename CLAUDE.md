@@ -51,6 +51,8 @@ Other types reference crashes via denormalized PK fields:
 - `www/src/njdot/CrashPlot.tsx`: "NJ DOT Crash Data" — parquet-powered stacked bars with severity/county/municipality stacking, severity filters, time granularity toggle.
 - `www/src/routes/Home.tsx`: Main page, passes geo filter (`cc`/`mc`/`countyName`) to all plots.
 - `www/src/icons.tsx`: SVG casualty icons (Driver, Passenger, Pedestrian, Cyclist) used in crash table and plot legends.
+- `www/src/raw/`: `/raw/*` file browser over the R2 mirror of NJDOT/NJSP bulk archives (zip / txt / parquet / pdf / dir listings with READMEs and `?q=` glob filter). Backed by `cells-api`'s `/v1/raw/*` endpoints. Demo surface for the DOT-BTDS conversation about restoring the per-table layout for 2024+.
+- `www/src/routes/SqlPage.tsx`: `/sql` — DuckDB-WASM REPL. `?path=raw/...` deeplinks pre-fill `SELECT * FROM read_parquet('<worker-url>')`; reachable via "open in SQL ↗" from each `<ParquetTable>`.
 
 ### Frontend data files (`www/public/njsp/`)
 - `monthly.csv`: Per-month fatality counts with type breakdown. Has statewide (`county=''`), county (`mc IS NULL`), and municipality rows. Pre-2020 type breakdown only exists at statewide level.

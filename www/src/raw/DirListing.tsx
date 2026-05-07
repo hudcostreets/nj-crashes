@@ -3,29 +3,7 @@ import { Link } from "react-router-dom"
 import { useUrlState, defStringParam } from "use-prms"
 import { fetchList, fmtSize, basename, type ListEntry } from "./api"
 import { DirReadme } from "./DirReadme"
-
-/** Convert a glob with `*` and `?` into a case-insensitive RegExp. All
- *  other regex metacharacters are escaped so e.g. `(2023)` won't blow
- *  up. Anchored — `NewJersey` does not match `Atlantic2023` (use
- *  `NewJersey*` for prefix). */
-function globToRegex(pattern: string): RegExp {
-    const esc = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    const wild = esc.replace(/\*/g, ".*").replace(/\?/g, ".")
-    return new RegExp(`^${wild}$`, "i")
-}
-
-/** Permissive default match: substring (case-insensitive). If the
- *  user includes any glob char (`*` or `?`), switch to anchored
- *  glob mode. */
-function makeMatcher(q: string): (s: string) => boolean {
-    if (!q) return () => true
-    if (/[*?]/.test(q)) {
-        const re = globToRegex(q)
-        return (s) => re.test(s)
-    }
-    const lc = q.toLowerCase()
-    return (s) => s.toLowerCase().includes(lc)
-}
+import { makeMatcher } from "./match"
 
 /** Directory listing under the given R2 prefix (must start with
  *  `raw/`). Renders as a simple table; clicking an entry navigates to

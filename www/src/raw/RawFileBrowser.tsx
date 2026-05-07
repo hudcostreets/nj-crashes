@@ -21,59 +21,8 @@ import { ZipEntryList } from "./ZipEntryList"
 import { TextViewer, type TextSource } from "./TextViewer"
 import { ParquetTable } from "./ParquetTable"
 import { extOf, rawZipEntryUrl, rawGetUrl, fetchZipEntries } from "./api"
+import { parsePath, RAW_PREFIX, TEXTY, type Parsed } from "./parsePath"
 import { useEffect, useState } from "react"
-
-const RAW_PREFIX = "raw/"
-const TEXTY = new Set(["txt", "csv", "tsv", "json", "md", "log"])
-
-type Parsed =
-    | { kind: "dir"; prefix: string }
-    | { kind: "zip"; path: string }
-    | { kind: "zipEntry"; path: string; entry: string }
-    | { kind: "text"; path: string }
-    | { kind: "parquet"; path: string }
-    | { kind: "pdf"; path: string }
-    | { kind: "binary"; path: string }
-
-/** Parse URL splat → R2 key + view kind. The splat comes from
- *  `location.pathname` so it's percent-encoded; decode it before
- *  building the R2 key so that entry names with spaces (e.g. "Cape
- *  May2023Pedestrians.txt") round-trip correctly. */
-function parsePath(splat: string): Parsed {
-    let decoded: string
-    try {
-        decoded = decodeURIComponent(splat)
-    } catch {
-        decoded = splat  // malformed escape — fall back rather than throw
-    }
-    const stripped = decoded.replace(/^\/+/, "")  // drop leading slash
-    const r2key = RAW_PREFIX + stripped
-
-    // Zip entry: "<zip>!/<entry>"
-    const bangIdx = r2key.indexOf("!/")
-    if (bangIdx >= 0) {
-        return {
-            kind: "zipEntry",
-            path: r2key.slice(0, bangIdx),
-            entry: r2key.slice(bangIdx + 2),
-        }
-    }
-
-    // Trailing slash → directory (always)
-    if (r2key.endsWith("/")) return { kind: "dir", prefix: r2key }
-
-    const ext = extOf(r2key)
-    if (ext === "zip") return { kind: "zip", path: r2key }
-    if (ext === "pqt" || ext === "parquet") return { kind: "parquet", path: r2key }
-    if (ext === "pdf") return { kind: "pdf", path: r2key }
-    if (TEXTY.has(ext)) return { kind: "text", path: r2key }
-
-    // No extension and no trailing slash: assume directory (DOT users
-    // often type `/raw/njdot/data/2023` without the slash).
-    if (!ext) return { kind: "dir", prefix: r2key + "/" }
-
-    return { kind: "binary", path: r2key }
-}
 
 export default function RawFileBrowser() {
     const location = useLocation()
