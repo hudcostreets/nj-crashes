@@ -25,6 +25,8 @@ import click
 import h3
 import numpy as np
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 from h3.api import numpy_int as h3i
 
 from nj_crashes.utils.log import err
@@ -221,10 +223,29 @@ def _build_pyramid_level(
     level_dir.mkdir(parents=True, exist_ok=True)
     counts: dict[str, int] = {}
     cols_out = [h3_col, 'year', 'n_crashes', 'n_fatal', 'n_inj', 'n_pdo', 'n_killed', 'n_killed_ped', 'n_injured', 'n_inj_ped', 'n_inj_other', 'n_vehs', 'topK']
+    # Pin topK's nested `year` to int16; pyarrow's default inference picks
+    # int64 from list-of-dicts (Python int), which inflates each cell-year
+    # row by ~6 bytes per topK element.
+    topk_struct = pa.struct([
+        ('case', pa.string()),
+        ('dt', pa.int64()),
+        ('severity', pa.string()),
+        ('year', pa.int16()),
+    ])
+    schema = pa.schema([
+        (h3_col, pa.int64()),
+        ('year', pa.int16()),
+        *((c, pa.int32()) for c in (
+            'n_crashes', 'n_fatal', 'n_inj', 'n_pdo', 'n_killed', 'n_killed_ped',
+            'n_injured', 'n_inj_ped', 'n_inj_other', 'n_vehs',
+        )),
+        ('topK', pa.list_(topk_struct)),
+    ])
     for shard, sub in out.groupby('__shard', sort=False):
         shard_hex = h3.int_to_str(int(shard))
         path = level_dir / f'{shard_hex}.parquet'
-        sub[cols_out].to_parquet(path, row_group_size=20_000, index=False, compression='zstd')
+        table = pa.Table.from_pandas(sub[cols_out], schema=schema, preserve_index=False)
+        pq.write_table(table, path, row_group_size=20_000, compression='zstd')
         counts[shard_hex] = len(sub)
     err(f'    {time() - t0:.1f}s, {len(counts)} shards, {sum(counts.values()):,} rows')
     return counts
