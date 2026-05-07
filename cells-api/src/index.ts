@@ -16,6 +16,7 @@
  */
 import { handleCellsRequest, HttpError, parseCellsRequest } from "./cells"
 import { loadManifest } from "./manifest"
+import { handleGet, handleList, handleZipEntries, handleZipEntry } from "./raw"
 
 interface Env {
     CELLS_BUCKET: R2Bucket
@@ -81,6 +82,35 @@ export default {
                         "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
                     }),
                 })
+            }
+            if (pathname === "/v1/raw/list") {
+                const body = await handleList(env.CELLS_BUCKET, url)
+                return new Response(JSON.stringify(body), {
+                    headers: corsHeaders(env, {
+                        "Cache-Control": "public, max-age=300, stale-while-revalidate=3600",
+                    }),
+                })
+            }
+            if (pathname === "/v1/raw/zip-entries") {
+                const body = await handleZipEntries(env.CELLS_BUCKET, url)
+                return new Response(JSON.stringify(body), {
+                    headers: corsHeaders(env, {
+                        "Cache-Control": "public, max-age=86400, immutable",
+                    }),
+                })
+            }
+            if (pathname === "/v1/raw/get") {
+                const resp = await handleGet(env.CELLS_BUCKET, url, request)
+                // handleGet sets its own Content-Type; merge CORS only.
+                const headers = new Headers(resp.headers)
+                headers.set("Access-Control-Allow-Origin", env.CORS_ORIGIN ?? "*")
+                return new Response(resp.body, { status: resp.status, headers })
+            }
+            if (pathname === "/v1/raw/zip-entry") {
+                const resp = await handleZipEntry(env.CELLS_BUCKET, url)
+                const headers = new Headers(resp.headers)
+                headers.set("Access-Control-Allow-Origin", env.CORS_ORIGIN ?? "*")
+                return new Response(resp.body, { status: resp.status, headers })
             }
             return new Response("not found", { status: 404, headers: corsHeaders(env) })
         } catch (e) {
