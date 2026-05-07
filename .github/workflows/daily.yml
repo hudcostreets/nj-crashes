@@ -90,6 +90,12 @@ jobs:
       - name: Post to Slack
         if: ${{ !inputs.targets }}
         run: $DVX njsp/data/slack_post.dvc
+      - name: Install api dependencies
+        if: ${{ !inputs.targets }}
+        run: cd api && pnpm install
+      - name: Sync NJSP crashes.db → D1
+        if: ${{ !inputs.targets }}
+        run: $DVX api/d1-import.dvc
       - name: Deploy www to CF Pages
         if: ${{ !inputs.targets }}
         run: $DVX www/deploy.dvc

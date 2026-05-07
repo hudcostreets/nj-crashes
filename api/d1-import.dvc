@@ -1,8 +1,7 @@
 meta:
   computation:
-    cmd: ./scripts/d1-import.sh
+    cmd: bash scripts/d1-import.sh --inplace njsp-crashes
     git_deps:
-      scripts/d1-import.sh: b73376e637a1b6d293070c447741a6848e1adf6b
+      scripts/d1-import.sh: aef2e481ec52f0034f5c230423b621265342a8b5
     deps:
-      /www/public/njsp/crashes.db: c41605984996c16df73bccaf2e3d6982
-      /www/public/njdot/crashes.db: 3e90ac771fb610caa64043998ddf5aff
+      /www/public/njsp/crashes.db: a534ea7b4290fdee8c61b86a95670165

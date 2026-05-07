@@ -1,21 +1,30 @@
 #!/usr/bin/env bash
-# Import local SQLite databases into D1 via staging databases.
+# Import local SQLite databases into D1.
 #
-# For remote imports (production), this creates fresh staging D1 databases,
-# imports data, verifies row counts, updates wrangler.toml bindings, and
-# deploys the worker — so the swap is atomic from readers' perspective.
-#
-# For local imports (wrangler dev), it imports directly (no staging needed).
+# Three modes:
+#   remote   — staging-swap workflow (default): create fresh staging D1,
+#              import, verify, atomic binding swap via `wrangler.toml`
+#              edit + `wrangler deploy`. Zero-downtime; mutates
+#              `wrangler.toml` (must be committed).
+#   local    — `wrangler dev` local D1; direct DROP+CREATE+INSERT.
+#   inplace  — remote, but DROP+CREATE+INSERT on the existing binding.
+#              No `wrangler.toml` change, no deploy. Brief inconsistency
+#              window (~seconds) during import. Suitable for daily CI
+#              where traffic is low.
 #
 # Usage:
-#   bash scripts/d1-import.sh --local [db_name ...]
-#   bash scripts/d1-import.sh [db_name ...]        # remote, staging workflow
+#   bash scripts/d1-import.sh --local   [db_name ...]
+#   bash scripts/d1-import.sh --inplace [db_name ...]
+#   bash scripts/d1-import.sh           [db_name ...]   # remote, staging
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 MODE="remote"
 if [[ "${1:-}" == "--local" ]]; then
     MODE="local"
+    shift
+elif [[ "${1:-}" == "--inplace" ]]; then
+    MODE="inplace"
     shift
 fi
 
@@ -225,8 +234,12 @@ if [[ ${#import_dbs[@]} -eq 0 ]]; then
     exit 0
 fi
 
-if [[ "$MODE" == "local" ]]; then
-    echo "Importing into LOCAL D1 databases"
+if [[ "$MODE" == "local" || "$MODE" == "inplace" ]]; then
+    if [[ "$MODE" == "local" ]]; then
+        echo "Importing into LOCAL D1 databases"
+    else
+        echo "Importing into REMOTE D1 databases (in-place — brief inconsistency window)"
+    fi
     echo
     for db_name in "${import_dbs[@]}"; do
         local_path="${DB_MAP[$db_name]}"
@@ -235,6 +248,9 @@ if [[ "$MODE" == "local" ]]; then
         drop_tables "$db_name" "$local_path"
         import_data "$db_name" "$local_path"
         write_metadata "$db_name" "$local_path"
+        if [[ "$MODE" == "inplace" ]]; then
+            verify_import "$db_name" "$local_path"
+        fi
         echo "  Done: $db_name"
         echo
     done
