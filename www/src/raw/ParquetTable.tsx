@@ -81,11 +81,15 @@ export function ParquetTable({ path }: { path: string }) {
     const rowStart = page * ROWS_PER_PAGE
     const rowEnd = Math.min(totalRows, rowStart + ROWS_PER_PAGE)
 
+    const sqlHref = `/sql?path=${encodeURIComponent(path)}`
+
     return (
         <>
             <p style={{ opacity: 0.7, fontSize: "0.95em" }}>
                 <b>{totalRows.toLocaleString()}</b> rows · <b>{schema.length}</b> columns
                 {byteSize ? <> · {fmtSize(byteSize)}</> : null}
+                {" · "}
+                <a href={sqlHref} style={{ fontSize: "0.95em" }}>open in SQL ↗</a>
             </p>
 
             <details style={{ marginBottom: "0.5em" }}>
