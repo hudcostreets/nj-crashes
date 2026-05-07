@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { useUrlState, defStringParam } from "use-prms"
 import { fetchList, fmtSize, basename, type ListEntry } from "./api"
+import { DirReadme } from "./DirReadme"
 
 /** Convert a glob with `*` and `?` into a case-insensitive RegExp. All
  *  other regex metacharacters are escaped so e.g. `(2023)` won't blow
@@ -101,6 +102,7 @@ export function DirListing({ prefix }: { prefix: string }) {
     if (filtered.length === 0) {
         return (
             <>
+                <DirReadme prefix={prefix} />
                 {filterUI}
                 <div style={{ opacity: 0.6 }}>
                     {q ? <>no entries match <code>{q}</code></> : <>empty: <code>{prefix}</code></>}
@@ -111,6 +113,7 @@ export function DirListing({ prefix }: { prefix: string }) {
 
     return (
         <>
+            <DirReadme prefix={prefix} />
             {filterUI}
             <table style={{ borderCollapse: "collapse", width: "100%" }}>
                 <thead>

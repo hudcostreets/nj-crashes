@@ -88,6 +88,7 @@ const CONTENT_TYPES: Record<string, string> = {
     pqt: "application/octet-stream",
     parquet: "application/octet-stream",
     zip: "application/zip",
+    pdf: "application/pdf",
 }
 
 function contentTypeFor(key: string): string {

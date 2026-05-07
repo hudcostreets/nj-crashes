@@ -32,6 +32,7 @@ type Parsed =
     | { kind: "zipEntry"; path: string; entry: string }
     | { kind: "text"; path: string }
     | { kind: "parquet"; path: string }
+    | { kind: "pdf"; path: string }
     | { kind: "binary"; path: string }
 
 /** Parse URL splat → R2 key + view kind. The splat comes from
@@ -64,6 +65,7 @@ function parsePath(splat: string): Parsed {
     const ext = extOf(r2key)
     if (ext === "zip") return { kind: "zip", path: r2key }
     if (ext === "pqt" || ext === "parquet") return { kind: "parquet", path: r2key }
+    if (ext === "pdf") return { kind: "pdf", path: r2key }
     if (TEXTY.has(ext)) return { kind: "text", path: r2key }
 
     // No extension and no trailing slash: assume directory (DOT users
@@ -111,6 +113,14 @@ function Body({ parsed }: { parsed: Parsed }) {
         }
         case "parquet":
             return <ParquetTable path={parsed.path} />
+        case "pdf":
+            return (
+                <iframe
+                    src={rawGetUrl(parsed.path)}
+                    title={parsed.path}
+                    style={{ width: "100%", height: "85vh", border: "1px solid rgba(127,127,127,0.3)", borderRadius: 4 }}
+                />
+            )
         case "binary":
             return (
                 <div style={{ opacity: 0.7 }}>
