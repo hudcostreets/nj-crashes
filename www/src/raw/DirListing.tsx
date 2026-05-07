@@ -1,14 +1,43 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
+import { useUrlState, defStringParam } from "use-prms"
 import { fetchList, fmtSize, basename, type ListEntry } from "./api"
+
+/** Convert a glob with `*` and `?` into a case-insensitive RegExp. All
+ *  other regex metacharacters are escaped so e.g. `(2023)` won't blow
+ *  up. Anchored — `NewJersey` does not match `Atlantic2023` (use
+ *  `NewJersey*` for prefix). */
+function globToRegex(pattern: string): RegExp {
+    const esc = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&")
+    const wild = esc.replace(/\*/g, ".*").replace(/\?/g, ".")
+    return new RegExp(`^${wild}$`, "i")
+}
+
+/** Permissive default match: substring (case-insensitive). If the
+ *  user includes any glob char (`*` or `?`), switch to anchored
+ *  glob mode. */
+function makeMatcher(q: string): (s: string) => boolean {
+    if (!q) return () => true
+    if (/[*?]/.test(q)) {
+        const re = globToRegex(q)
+        return (s) => re.test(s)
+    }
+    const lc = q.toLowerCase()
+    return (s) => s.toLowerCase().includes(lc)
+}
 
 /** Directory listing under the given R2 prefix (must start with
  *  `raw/`). Renders as a simple table; clicking an entry navigates to
- *  `/raw/<key>` (or `/raw/<key>/` for dirs). */
+ *  `/raw/<key>` (or `/raw/<key>/` for dirs).
+ *
+ *  Filter: `?q=` applies a substring match (case-insensitive) by
+ *  default; if the value contains `*` or `?`, treats it as an
+ *  anchored glob (`NewJersey*` matches `NewJersey2022Drivers.zip`). */
 export function DirListing({ prefix }: { prefix: string }) {
     const [entries, setEntries] = useState<ListEntry[] | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [cursor, setCursor] = useState<string | undefined>(undefined)
+    const [q, setQ] = useUrlState("q", defStringParam(""))
 
     useEffect(() => {
         let cancelled = false
@@ -31,18 +60,58 @@ export function DirListing({ prefix }: { prefix: string }) {
         setCursor(r.cursor)
     }
 
+    const matcher = useMemo(() => makeMatcher(q), [q])
+    const filtered = useMemo(() => {
+        if (!entries) return null
+        if (!q) return entries
+        return entries.filter(e => matcher(basename(e.key)))
+    }, [entries, q, matcher])
+
     if (error) return <div style={{ color: "salmon" }}>error: {error}</div>
-    if (!entries) return <div style={{ opacity: 0.6 }}>loading {prefix}…</div>
-    if (entries.length === 0) {
+    if (!entries || !filtered) return <div style={{ opacity: 0.6 }}>loading {prefix}…</div>
+
+    const filterUI = (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5em", marginBottom: "0.5em", fontSize: "0.9em" }}>
+            <input
+                type="search"
+                value={q}
+                onChange={e => setQ(e.target.value)}
+                placeholder="filter (e.g. NewJersey* or pedestr)"
+                style={{
+                    padding: "0.3em 0.6em",
+                    borderRadius: 4,
+                    border: "1px solid rgba(127,127,127,0.4)",
+                    background: "rgba(127,127,127,0.08)",
+                    color: "inherit",
+                    fontFamily: "ui-monospace, monospace",
+                    minWidth: "20em",
+                }}
+            />
+            <span style={{ opacity: 0.6, fontVariantNumeric: "tabular-nums" }}>
+                {q ? <>{filtered.length} / {entries.length}</> : <>{entries.length} entries</>}
+            </span>
+            {q && (
+                <button onClick={() => setQ("")} style={{ fontSize: "0.85em", padding: "0.2em 0.6em" }}>
+                    clear
+                </button>
+            )}
+        </div>
+    )
+
+    if (filtered.length === 0) {
         return (
-            <div style={{ opacity: 0.6 }}>
-                empty: <code>{prefix}</code>
-            </div>
+            <>
+                {filterUI}
+                <div style={{ opacity: 0.6 }}>
+                    {q ? <>no entries match <code>{q}</code></> : <>empty: <code>{prefix}</code></>}
+                </div>
+            </>
         )
     }
 
     return (
         <>
+            {filterUI}
             <table style={{ borderCollapse: "collapse", width: "100%" }}>
                 <thead>
                     <tr style={{ textAlign: "left", opacity: 0.7 }}>
@@ -52,7 +121,7 @@ export function DirListing({ prefix }: { prefix: string }) {
                     </tr>
                 </thead>
                 <tbody>
-                    {entries.map(e => {
+                    {filtered.map(e => {
                         const name = basename(e.key)
                         // R2 keys carry the `raw/` prefix; URL splat is the part *after* `/raw/`.
                         const href = `/raw/${e.key.replace(/^raw\//, "")}`

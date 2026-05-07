@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { parquetRead, parquetMetadataAsync, parquetSchema, asyncBufferFromUrl } from "hyparquet"
 import { rawGetUrl, fmtSize } from "./api"
+import { Pager } from "./Pager"
 
 type Schema = { name: string; type?: string }[]
 
@@ -101,15 +102,11 @@ export function ParquetTable({ path }: { path: string }) {
                 </table>
             </details>
 
-            <div style={{ display: "flex", gap: "0.5em", alignItems: "center", marginBottom: "0.5em", fontSize: "0.9em", opacity: 0.85 }}>
-                <button disabled={page === 0} onClick={() => setPage(0)}>« first</button>
-                <button disabled={page === 0} onClick={() => setPage(page - 1)}>‹ prev</button>
-                <span style={{ fontVariantNumeric: "tabular-nums" }}>
-                    page <b>{page + 1}</b> / {pages} · rows {rowStart.toLocaleString()}–{rowEnd.toLocaleString()} / {totalRows.toLocaleString()}
-                </span>
-                <button disabled={page >= pages - 1} onClick={() => setPage(page + 1)}>next ›</button>
-                <button disabled={page >= pages - 1} onClick={() => setPage(pages - 1)}>last »</button>
-            </div>
+            <Pager
+                page={page} pages={pages} setPage={setPage}
+                label={<>page <b>{page + 1}</b> / {pages} · rows {rowStart.toLocaleString()}–{rowEnd.toLocaleString()} / {totalRows.toLocaleString()}</>}
+                jump={false}
+            />
 
             <div style={{ overflowX: "auto", maxHeight: "70vh", overflowY: "auto", border: "1px solid rgba(127,127,127,0.3)", borderRadius: 4 }}>
                 <table style={{ borderCollapse: "collapse", fontSize: "0.82em", fontFamily: "ui-monospace, monospace" }}>

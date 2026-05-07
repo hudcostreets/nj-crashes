@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { fmtSize, fetchSize, rangeFetch } from "./api"
+import { Pager } from "./Pager"
 
 const PAGE_BYTES = 256 * 1024  // 256 KB per page — typical NJDOT .txt has ~250-byte rows so ~1000 lines/page
 
@@ -83,24 +84,10 @@ export function TextViewer({ source }: { source: TextSource }) {
 
     return (
         <>
-            <div style={{ display: "flex", gap: "0.5em", alignItems: "center", marginBottom: "0.5em", fontSize: "0.9em", opacity: 0.85 }}>
-                <button disabled={page === 0} onClick={() => setPage(0)}>« first</button>
-                <button disabled={page === 0} onClick={() => setPage(page - 1)}>‹ prev</button>
-                <span style={{ fontVariantNumeric: "tabular-nums" }}>
-                    page <b>{page + 1}</b> / {pages} · bytes {fmtSize(offset)}–{fmtSize(end)} / {fmtSize(total)}
-                </span>
-                <button disabled={page >= pages - 1} onClick={() => setPage(page + 1)}>next ›</button>
-                <button disabled={page >= pages - 1} onClick={() => setPage(pages - 1)}>last »</button>
-                <input
-                    type="number" min={1} max={pages}
-                    value={page + 1}
-                    onChange={e => {
-                        const v = parseInt(e.target.value, 10)
-                        if (Number.isFinite(v) && v >= 1 && v <= pages) setPage(v - 1)
-                    }}
-                    style={{ width: "5em", marginLeft: "auto" }}
-                />
-            </div>
+            <Pager
+                page={page} pages={pages} setPage={setPage}
+                label={<>page <b>{page + 1}</b> / {pages} · bytes {fmtSize(offset)}–{fmtSize(end)} / {fmtSize(total)}</>}
+            />
             <pre style={{
                 fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
                 fontSize: "0.82em",
