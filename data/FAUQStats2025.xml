@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu May 07 10:00:04 EDT 2026</RUNDATE>
+  <RUNDATE>Fri May 08 10:00:03 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -3656,8 +3656,8 @@
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0213" MNAME="Edgewater Boro">
       <ACCIDENT ACCID="14019" DATE="07/13/2025" TIME="0337">
-        <STREET>County Route 505</STREET>
-        <LOCATION>County Route 505</LOCATION>
+        <HIGHWAY>505</HIGHWAY>
+        <LOCATION>County 505 MP 4.9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3843,14 +3843,15 @@
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
-      <ACCIDENT ACCID="14003" DATE="07/06/2025" TIME="0005">
+      <ACCIDENT ACCID="14003" DATE="07/06/2025" TIME="0006">
         <HIGHWAY>611</HIGHWAY>
-        <LOCATION>County 611</LOCATION>
+        <LOCATION>County 611 MP 2.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5212,6 +5213,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5430,6 +5432,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
