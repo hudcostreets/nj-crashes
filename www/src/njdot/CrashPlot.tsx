@@ -58,9 +58,11 @@ export default function CrashPlot({
     showControls = true,
     controlsOpen: initialControlsOpen = false,
 }: CrashPlotProps) {
-    // Hard-coded to count crashes (not victims) for now
-    // TODO: Add proper victim counting as a separate feature
-    const measure = 'n' as const
+    // Measure: 'n' = crashes, 'tk' = deaths, 'ti' = injuries.
+    // The aggregate parquets (`ys`/`yms`/`yccs`/`ymccs`/`ymccmcs`)
+    // include all three columns; choice is a UI-level pivot.
+    type Measure = 'n' | 'tk' | 'ti'
+    const [measure, setMeasure] = useSessionStorage<Measure>('crashplot-measure', 'n')
     const [stackBy, setStackBy] = useSessionStorage<StackBy>('crashplot-stackBy', initialStackBy)
     const [severities, setSeverities] = useSessionStorage<Severity[]>('crashplot-severities', initialSeverities)
     const [counties, setCounties] = useSessionStorage<number[]>('crashplot-counties', initialCounties)
@@ -143,9 +145,10 @@ export default function CrashPlot({
     const { data, loading, error, timing } = useParquet<AnyRow>(url)
 
     // Helpers to get numeric values from rows (handles BigInt from parquet)
-    const getVal = (row: AnyRow, key: 'n'): number => {
-        const val = row[key]
-        return typeof val === 'bigint' ? Number(val) : val
+    const getVal = (row: AnyRow, key: Measure): number => {
+        const val = (row as Record<string, unknown>)[key]
+        if (val == null) return 0
+        return typeof val === 'bigint' ? Number(val) : (val as number)
     }
     const getYear = (row: AnyRow): number => {
         const val = row.y
@@ -593,6 +596,17 @@ export default function CrashPlot({
                     inlineWithLegend
                     extra={<AnnotationTrigger annotations={plotAnnotations} state={annOpen} />}
                 >
+                    <Radios
+                        label="Measure"
+                        name="measure"
+                        options={[
+                            { label: 'Crashes', data: 'n' as Measure },
+                            { label: 'Deaths', data: 'tk' as Measure },
+                            { label: 'Injuries', data: 'ti' as Measure },
+                        ]}
+                        choice={measure}
+                        cb={setMeasure}
+                    />
                     <Radios
                         label="Stack By"
                         name="stackBy"
