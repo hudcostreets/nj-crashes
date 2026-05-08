@@ -1,0 +1,16 @@
+outs:
+- md5: fd7cdf13806203af5ddce84ca94d3e23
+  size: 38973792
+  hash: md5
+  path: crashes.parquet
+meta:
+  computation:
+    cmd: njdot/aashto/normalize.py -y 2024 njdot/data/2024/Crash.csv
+    git_deps:
+      /njdot/aashto/normalize.py: 7343465980748692c469c4f119c5268204c69837
+    deps:
+      Crash.csv: 5dba02a6dcf980f5215499f7a32da89b
+    note: |
+      `normalize.py` writes 4 parquets in this dir. Only `crashes.parquet`
+      is `.dvc`-tracked here; `vehicles.parquet` / `persons.parquet` /
+      `issues.parquet` are generated as side-effects of the same cmd.

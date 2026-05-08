@@ -136,17 +136,34 @@ AGG_CONFIGS = {
 
 
 @click.command()
-@click.option('-i', '--input', 'input_path', default='njdot/data/crashes.parquet', help='Input crashes parquet')
+@click.option('-i', '--input', 'input_path', default='njdot/data/crashes.parquet', help='Input crashes parquet (per-table 2001–2023)')
+@click.option('-A', '--aashto-input', default='njdot/data/aashto_combined_crashes.parquet', help='AASHTO crashes parquet (2024+, optional)')
 @click.option('-o', '--output-dir', default='www/public/data/njdot', help='Output directory')
 @click.option('-a', '--aggs', default='ys,yms,yccs,ymccs,ymccmc,ymccmcs', help='Comma-separated list of aggregations to generate')
-def main(input_path: str, output_dir: str, aggs: str):
+def main(input_path: str, aashto_input: str, output_dir: str, aggs: str):
     """Generate aggregated parquet files for NJDOT crash data."""
     input_path = Path(input_path)
+    aashto_input = Path(aashto_input)
     output_dir = Path(output_dir)
 
     print(f"Loading {input_path}...")
     df = load_crashes(input_path)
-    print(f"  {len(df):,} crashes loaded")
+    print(f"  {len(df):,} crashes loaded ({df['year'].min()}-{df['year'].max()})")
+
+    if aashto_input.exists():
+        print(f"Loading {aashto_input}...")
+        aashto_df = load_crashes(aashto_input)
+        print(f"  {len(aashto_df):,} crashes loaded ({aashto_df['year'].min()}-{aashto_df['year'].max()})")
+        # Drop rows with cc/mc unresolved (small percentage; can't be
+        # bucketed into per-county/per-muni aggregates).
+        n_drop = aashto_df['cc'].isna().sum()
+        if n_drop:
+            print(f"  dropping {n_drop:,} AASHTO rows with unresolved (cc, mc)")
+            aashto_df = aashto_df.dropna(subset=['cc'])
+        df = pd.concat([df, aashto_df], ignore_index=True)
+        print(f"  combined: {len(df):,} crashes ({df['year'].min()}-{df['year'].max()})")
+    else:
+        print(f"  (no AASHTO input at {aashto_input}; skipping 2024+)")
 
     agg_list = [a.strip() for a in aggs.split(',')]
 
