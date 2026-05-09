@@ -209,6 +209,22 @@ export default function CrashPlot({
             return String(Math.round(n))
         }
 
+        // Contrast-aware text color for inside-bar labels: pick black or white
+        // based on the bar fill's perceptual luminance (WCAG-style).
+        const contrastTextFor = (fill: string | undefined): string => {
+            if (!fill) return plotColors.textColor
+            const m = /^#?([0-9a-f]{6})$/i.exec(fill.replace('#', ''))
+            if (!m) return plotColors.textColor
+            const hex = m[1]
+            const r = parseInt(hex.slice(0, 2), 16) / 255
+            const g = parseInt(hex.slice(2, 4), 16) / 255
+            const b = parseInt(hex.slice(4, 6), 16) / 255
+            // Relative luminance (sRGB)
+            const lin = (c: number) => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+            const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+            return L > 0.5 ? '#111' : '#fff'
+        }
+
         // Helper to build a trace from grouped data
         const isPercentMode = stackPercent && effectiveStackBy !== 'none'
         const buildTrace = (
@@ -227,16 +243,22 @@ export default function CrashPlot({
             const originalCounts = originalGrouped
                 ? sorted.map(([k]) => originalGrouped.get(k) || 0)
                 : undefined
+            const isStacking = effectiveStackBy !== 'none'
+            // Inside-bar labels need contrast vs the bar fill; outside labels
+            // sit on the plot bg so they use the theme font color.
+            const labelColor = isStacking ? contrastTextFor(color) : plotColors.textColor
             return {
                 x: sorted.map(([k]) => timeGranularity === 'month' ? k : parseInt(k)),
                 y: ys,
                 type: 'bar',
                 name,
-                // Only show inner-bar text when stacking (not for 'none' which has outer annotations)
-                text: timeGranularity === 'year' && effectiveStackBy !== 'none' ? textLabels : undefined,
-                textposition: 'inside',
+                // Inside-segment labels when stacking; outside-bar labels when single-series
+                // (Plotly auto-extends y-axis to fit outside text, avoiding the dark-on-red
+                // legibility problem when annotations get clipped onto the bar top.)
+                text: timeGranularity === 'year' ? textLabels : undefined,
+                textposition: isStacking ? 'inside' : 'outside',
                 textangle: 0,
-                textfont: { size: 9 },
+                textfont: { size: 9, color: labelColor },
                 // Store original counts in customdata for hover display
                 ...(originalCounts ? { customdata: originalCounts } : {}),
                 hovertemplate: isPercentMode
@@ -435,7 +457,9 @@ export default function CrashPlot({
         const annotations: Layout['annotations'] = [...annTextEls]
         // Count unique x values to determine if we should annotate
         const uniqueXValues = new Set(traces.flatMap(t => t.x as (string | number)[] || []))
-        const shouldAnnotate = !stackPercent && activeTrace === null && uniqueXValues.size <= 30
+        // Outer annotations show stacked-bar TOTALS (single-series labels are
+        // handled via trace.text 'outside' position above).
+        const shouldAnnotate = !stackPercent && activeTrace === null && uniqueXValues.size <= 30 && effectiveStackBy !== 'none'
         if (shouldAnnotate) {
             // Sum across all traces for each x value
             const periodTotals = new Map<string | number, number>()
