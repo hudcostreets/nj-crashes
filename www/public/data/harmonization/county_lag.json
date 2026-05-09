@@ -1,0 +1,197 @@
+{
+  "years": [
+    2024,
+    2025
+  ],
+  "counties": [
+    {
+      "cc": 1,
+      "f_prev": 55,
+      "f_cur": 31,
+      "i_prev": 2254,
+      "i_cur": 2183,
+      "p_prev": 5726,
+      "p_cur": 5361
+    },
+    {
+      "cc": 2,
+      "f_prev": 40,
+      "f_cur": 32,
+      "i_prev": 5815,
+      "i_cur": 5662,
+      "p_prev": 22723,
+      "p_cur": 22799
+    },
+    {
+      "cc": 3,
+      "f_prev": 45,
+      "f_cur": 38,
+      "i_prev": 2612,
+      "i_cur": 2918,
+      "p_prev": 8679,
+      "p_cur": 9211
+    },
+    {
+      "cc": 4,
+      "f_prev": 37,
+      "f_cur": 35,
+      "i_prev": 4038,
+      "i_cur": 4286,
+      "p_prev": 11503,
+      "p_cur": 12388
+    },
+    {
+      "cc": 5,
+      "f_prev": 9,
+      "f_cur": 12,
+      "i_prev": 529,
+      "i_cur": 530,
+      "p_prev": 1921,
+      "p_cur": 2006
+    },
+    {
+      "cc": 6,
+      "f_prev": 25,
+      "f_cur": 21,
+      "i_prev": 1267,
+      "i_cur": 1309,
+      "p_prev": 2953,
+      "p_cur": 3091
+    },
+    {
+      "cc": 7,
+      "f_prev": 49,
+      "f_cur": 19,
+      "i_prev": 5711,
+      "i_cur": 4437,
+      "p_prev": 18661,
+      "p_cur": 16690
+    },
+    {
+      "cc": 8,
+      "f_prev": 29,
+      "f_cur": 24,
+      "i_prev": 1803,
+      "i_cur": 1802,
+      "p_prev": 5400,
+      "p_cur": 5700
+    },
+    {
+      "cc": 9,
+      "f_prev": 18,
+      "f_cur": 11,
+      "i_prev": 3391,
+      "i_cur": 3121,
+      "p_prev": 14071,
+      "p_cur": 12279
+    },
+    {
+      "cc": 10,
+      "f_prev": 9,
+      "f_cur": 7,
+      "i_prev": 677,
+      "i_cur": 684,
+      "p_prev": 3099,
+      "p_cur": 2972
+    },
+    {
+      "cc": 11,
+      "f_prev": 37,
+      "f_cur": 14,
+      "i_prev": 2353,
+      "i_cur": 2537,
+      "p_prev": 8421,
+      "p_cur": 9015
+    },
+    {
+      "cc": 12,
+      "f_prev": 55,
+      "f_cur": 33,
+      "i_prev": 6688,
+      "i_cur": 6515,
+      "p_prev": 22776,
+      "p_cur": 21845
+    },
+    {
+      "cc": 13,
+      "f_prev": 52,
+      "f_cur": 16,
+      "i_prev": 3457,
+      "i_cur": 3497,
+      "p_prev": 12716,
+      "p_cur": 11852
+    },
+    {
+      "cc": 14,
+      "f_prev": 21,
+      "f_cur": 17,
+      "i_prev": 2789,
+      "i_cur": 2831,
+      "p_prev": 11393,
+      "p_cur": 12008
+    },
+    {
+      "cc": 15,
+      "f_prev": 44,
+      "f_cur": 40,
+      "i_prev": 2717,
+      "i_cur": 3569,
+      "p_prev": 11624,
+      "p_cur": 11912
+    },
+    {
+      "cc": 16,
+      "f_prev": 30,
+      "f_cur": 18,
+      "i_prev": 4168,
+      "i_cur": 3421,
+      "p_prev": 13979,
+      "p_cur": 12265
+    },
+    {
+      "cc": 17,
+      "f_prev": 14,
+      "f_cur": 17,
+      "i_prev": 451,
+      "i_cur": 444,
+      "p_prev": 1170,
+      "p_cur": 1231
+    },
+    {
+      "cc": 18,
+      "f_prev": 17,
+      "f_cur": 14,
+      "i_prev": 2161,
+      "i_cur": 2049,
+      "p_prev": 8026,
+      "p_cur": 8163
+    },
+    {
+      "cc": 19,
+      "f_prev": 12,
+      "f_cur": 10,
+      "i_prev": 609,
+      "i_cur": 584,
+      "p_prev": 2426,
+      "p_cur": 2279
+    },
+    {
+      "cc": 20,
+      "f_prev": 35,
+      "f_cur": 22,
+      "i_prev": 4665,
+      "i_cur": 4912,
+      "p_prev": 16492,
+      "p_cur": 17186
+    },
+    {
+      "cc": 21,
+      "f_prev": 14,
+      "f_cur": 10,
+      "i_prev": 652,
+      "i_cur": 628,
+      "p_prev": 2427,
+      "p_cur": 2520
+    }
+  ]
+}

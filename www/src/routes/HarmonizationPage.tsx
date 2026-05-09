@@ -2,13 +2,14 @@
  *  between NJSP (SP), NJDOT per-table archive (DOTr), and NJDOT AASHTO
  *  Crash.csv (DOTa). Backed by `three_way_fatals.parquet`.
  */
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import type { Layout, PlotData } from "plotly.js"
 import { Head } from "@/src/lib/head"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { useParquet } from "@/src/lib/useParquet"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
+import { Counties } from "@/src/njdot/data"
 
 type ThreeWayRow = {
     src: string  // S, R, A, SR, SA, RA, SRA
@@ -163,8 +164,116 @@ export default function HarmonizationPage() {
 
             <h3 style={{ fontSize: "1em", margin: "1em 0 0.3em" }}>3. AASHTO 2025 fatal-classification lag</h3>
             <p style={{ fontSize: "0.92em", lineHeight: 1.55, margin: "0 0 0.6em" }}>
-                The <strong>red "SP only"</strong> band on 2025 is 111 NJSP fatals AASHTO hasn't ingested yet. It's <em>not</em> a uniform ingestion lag — AASHTO's 2025 PDO and injury counts are at ~2024 levels. It's specifically a <strong>fatal-reclassification lag</strong> concentrated in Middlesex, Hudson, and Essex (these counties show 31-39% of 2024 fatal counts while their injury/PDO counts are ~normal). Fatal status requires death-cert / 30-day-rule confirmation; certain agencies are slower to upgrade. The homepage NJDOT plot supplements these into AASHTO so the bar reflects the true count.
+                The <strong>red "SP only"</strong> band on 2025 is 111 NJSP fatals AASHTO hasn't ingested yet. It's <em>not</em> a uniform ingestion lag — AASHTO's 2025 PDO and injury counts are at ~2024 levels. It's specifically a <strong>fatal-reclassification lag</strong> concentrated in a handful of counties: fatal counts dropped to 30-60% of 2024 while their injury/PDO counts came in normal. The chart below shows per-county 2025/2024 ratios for each severity. Fatal status requires death-cert / 30-day-rule confirmation; certain agencies are slower to upgrade. The homepage NJDOT plot supplements these into AASHTO so the bar reflects the true count.
             </p>
+            <CountyLagChart />
         </div>
     )
+}
+
+type CountyLagRow = {
+    cc: number
+    f_prev: number
+    f_cur: number
+    i_prev: number
+    i_cur: number
+    p_prev: number
+    p_cur: number
+}
+
+type CountyLagJson = {
+    years: [number, number]
+    counties: CountyLagRow[]
+}
+
+function CountyLagChart() {
+    const plotColors = usePlotColors()
+    const [data, setData] = useState<CountyLagJson | null>(null)
+    const [error, setError] = useState<string | null>(null)
+    useEffect(() => {
+        fetch("/data/harmonization/county_lag.json")
+            .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json() })
+            .then(j => setData(j as CountyLagJson))
+            .catch(e => setError(String(e)))
+    }, [])
+
+    const { traces, layout } = useMemo(() => {
+        if (!data) return { traces: [] as Partial<PlotData>[], layout: {} as Partial<Layout> }
+        const [yPrev, yCur] = data.years
+        const ratio = (cur: number, prev: number) => (prev > 0 ? cur / prev : 0)
+        // Sort counties by fatal-ratio ascending (most-laggy at top of horizontal bar chart).
+        const rows = [...data.counties].sort((a, b) => ratio(a.f_cur, a.f_prev) - ratio(b.f_cur, b.f_prev))
+        const labels = rows.map(r => Counties[r.cc] ?? `cc=${r.cc}`)
+        const fRatio = rows.map(r => ratio(r.f_cur, r.f_prev))
+        const iRatio = rows.map(r => ratio(r.i_cur, r.i_prev))
+        const pRatio = rows.map(r => ratio(r.p_cur, r.p_prev))
+        const fCounts = rows.map(r => `${r.f_cur}/${r.f_prev}`)
+        const iCounts = rows.map(r => `${r.i_cur}/${r.i_prev}`)
+        const pCounts = rows.map(r => `${r.p_cur}/${r.p_prev}`)
+
+        const traces: Partial<PlotData>[] = [
+            {
+                type: "bar", orientation: "h", name: "Fatal",
+                y: labels, x: fRatio, customdata: fCounts,
+                marker: { color: "#d9534f" },
+                hovertemplate: `<b>%{x:.0%}</b> · %{customdata}<extra>Fatal</extra>`,
+            },
+            {
+                type: "bar", orientation: "h", name: "Injury",
+                y: labels, x: iRatio, customdata: iCounts,
+                marker: { color: "#f0ad4e" },
+                hovertemplate: `<b>%{x:.0%}</b> · %{customdata}<extra>Injury</extra>`,
+            },
+            {
+                type: "bar", orientation: "h", name: "PDO",
+                y: labels, x: pRatio, customdata: pCounts,
+                marker: { color: "#5bc0de" },
+                hovertemplate: `<b>%{x:.0%}</b> · %{customdata}<extra>PDO</extra>`,
+            },
+        ]
+
+        const layout: Partial<Layout> = {
+            barmode: "group",
+            height: 560,
+            margin: { l: 110, r: 20, t: 30, b: 40 },
+            paper_bgcolor: plotColors.paperBg,
+            plot_bgcolor: plotColors.plotBg,
+            font: { color: plotColors.textColor },
+            hovermode: "y unified",
+            hoverlabel: {
+                bgcolor: "#1a1a2e",
+                bordercolor: plotColors.gridColor,
+                font: { color: "#ffffff" },
+            },
+            xaxis: {
+                title: { text: `${yCur} / ${yPrev} count ratio` },
+                tickformat: ".0%",
+                tickfont: { color: plotColors.textColor },
+                gridcolor: plotColors.gridColor,
+                zeroline: true,
+                range: [0, 1.5],
+            },
+            yaxis: {
+                tickfont: { color: plotColors.textColor, size: 11 },
+                automargin: true,
+            },
+            shapes: [
+                {
+                    type: "line", xref: "x", yref: "paper",
+                    x0: 1, x1: 1, y0: 0, y1: 1,
+                    line: { color: plotColors.gridColor, width: 1, dash: "dot" },
+                },
+            ],
+            legend: {
+                orientation: "h", y: -0.08, x: 0.5, xanchor: "center",
+                font: { color: plotColors.textColor, size: 11 },
+            },
+            showlegend: true,
+        }
+        return { traces, layout }
+    }, [data, plotColors])
+
+    if (error) return <p style={{ color: "salmon" }}>Error loading county lag: {error}</p>
+    if (!data) return <p style={{ opacity: 0.7 }}>Loading county lag…</p>
+    return <PlotWrapper data={traces as PlotData[]} layout={layout} />
 }
