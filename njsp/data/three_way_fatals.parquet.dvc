@@ -1,0 +1,20 @@
+outs:
+- md5: 04204d4576e3229fadc837ff23e832b6
+  size: 484184
+  hash: md5
+  path: three_way_fatals.parquet
+meta:
+  computation:
+    cmd: python njsp/three_way_match.py
+    git_deps:
+      /njsp/three_way_match.py: 46a1a4af9c735bcf600506e2b12d12f2ece88f0b
+      /njsp/match_njdot.py: 2850afad5efe63641d87dad99a183cc667a41d84
+    deps:
+      /njsp/data/crashes.parquet: 8e24c545be191978e0fd785da1f33d63
+      /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
+      /njdot/data/aashto_combined_crashes.parquet: 0ae2595cd33ce71d47ab2d022a22b60e
+    note: |
+      3-way fatal-crash table: NJSP (SP) ↔ NJDOT per-table (DOTr) ↔
+      NJDOT AASHTO (DOTa). Each row is one canonical fatal-crash event
+      with `src` ∈ {S,R,A,SR,SA,RA,SRA} indicating which of the three
+      sources contain it. See `njsp/three_way_match.py`.

@@ -12,6 +12,7 @@ import MatchReview from './routes/MatchReview'
 import CrashMapPage from './routes/CrashMapPage'
 import CrashDetailPage from './routes/CrashDetailPage'
 import RawFileBrowser from './raw/RawFileBrowser'
+import HarmonizationPage from './routes/HarmonizationPage'
 import { ThemeToggle } from './components/ThemeToggle'
 import { GeoFilterProvider } from './GeoFilterContext'
 import { DuckDbProvider } from './lib/DuckDbContext'
@@ -65,6 +66,8 @@ export default function App() {
                 <Route path="/crash/:year/:cc/:mc/:case" element={<CrashDetailPage />} />
                 <Route path="/raw" element={<RawFileBrowser />} />
                 <Route path="/raw/*" element={<RawFileBrowser />} />
+                <Route path="/harmonization" element={<HarmonizationPage />} />
+                <Route path="/h11n" element={<HarmonizationPage />} />
                 <Route path="*" element={<NotFound />} />
             </Routes>
             <Omnibar />
