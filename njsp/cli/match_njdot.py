@@ -27,13 +27,17 @@ def match_njdot(top_k, suggest, date_window, years, no_aashto, matches_out, resi
     actual coverage is the intersection of NJSP + NJDOT data ranges.
     """
     njsp = pd.read_parquet('njsp/data/crashes.parquet')
-    njdot_parts = [pd.read_parquet('njdot/data/crashes.parquet')]
+    pertable = pd.read_parquet('njdot/data/crashes.parquet')
+    njdot_parts = [pertable]
     aashto_path = Path('njdot/data/aashto_combined_crashes.parquet')
     if aashto_path.exists() and not no_aashto:
         aashto = pd.read_parquet(aashto_path)
         # Drop AASHTO rows with unresolved (cc, mc) — can't be bucketed.
         aashto = aashto.dropna(subset=['cc'])
-        njdot_parts.append(aashto)
+        # AASHTO supersedes per-table for overlapping years (per-table
+        # 2023 has the broad-fatal-flag bug — see agg.py).
+        aashto_years = set(aashto['year'].dropna().astype(int))
+        njdot_parts = [pertable[~pertable['year'].isin(aashto_years)], aashto]
     njdot = pd.concat(njdot_parts, ignore_index=True)
     yrs = list(years) if years else range(2008, 2026)
     matches, residuals = match(njsp, njdot, years=yrs)

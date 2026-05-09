@@ -137,7 +137,7 @@ AGG_CONFIGS = {
 
 @click.command()
 @click.option('-i', '--input', 'input_path', default='njdot/data/crashes.parquet', help='Input crashes parquet (per-table 2001–2023)')
-@click.option('-A', '--aashto-input', default='njdot/data/aashto_combined_crashes.parquet', help='AASHTO crashes parquet (2024+, optional)')
+@click.option('-A', '--aashto-input', default='njdot/data/aashto_supplemented_crashes.parquet', help='AASHTO crashes parquet (with NJSP-only fatals supplemented in)')
 @click.option('-o', '--output-dir', default='www/public/data/njdot', help='Output directory')
 @click.option('-a', '--aggs', default='ys,yms,yccs,ymccs,ymccmc,ymccmcs', help='Comma-separated list of aggregations to generate')
 def main(input_path: str, aashto_input: str, output_dir: str, aggs: str):
@@ -160,6 +160,16 @@ def main(input_path: str, aashto_input: str, output_dir: str, aggs: str):
         if n_drop:
             print(f"  dropping {n_drop:,} AASHTO rows with unresolved (cc, mc)")
             aashto_df = aashto_df.dropna(subset=['cc'])
+        # Prefer AASHTO over per-table for any overlapping year — per-table
+        # 2023 has a broad-vs-strict-fatal mismatch (severity='f' uses
+        # broad def, tk uses strict), producing an impossible 0.93
+        # deaths/fatal-crash ratio. AASHTO uses Fatal Crash Indicator
+        # (NJSP-aligned).
+        aashto_years = set(aashto_df['year'].dropna().astype(int))
+        overlap = sorted(set(df['year'].dropna().astype(int)) & aashto_years)
+        if overlap:
+            print(f"  AASHTO supersedes per-table for: {overlap}")
+            df = df[~df['year'].isin(aashto_years)]
         df = pd.concat([df, aashto_df], ignore_index=True)
         print(f"  combined: {len(df):,} crashes ({df['year'].min()}-{df['year'].max()})")
     else:

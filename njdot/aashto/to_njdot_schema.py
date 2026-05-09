@@ -103,8 +103,17 @@ def lookup_cc_mc(lookup: dict, county, muni):
     return (None, None)
 
 
-def infer_severity(tk: int, ti: int) -> str:
-    if tk > 0:
+def infer_severity(fatal_indicator: str, ti: int) -> str:
+    """Strict-fatal severity, aligned to NJSP / federal MMUCC reporting.
+
+    Uses AASHTO's `Fatal Crash Indicator` ('Y'/'N') rather than `Total
+    Killed > 0`, because AASHTO's `Total Killed` is broader: it
+    includes ~10%/yr extra deaths where the crash didn't *cause* the
+    fatality (medical-event drivers etc.) — these have `Fatal Crash
+    Indicator='N'` and `Crash Fatality Count=0`. NJSP's count tracks
+    the strict definition.
+    """
+    if fatal_indicator == "Y":
         return "f"
     if ti > 0:
         return "i"
@@ -139,14 +148,22 @@ def to_njdot_schema(df: pd.DataFrame, year: int, lookup: dict) -> pd.DataFrame:
     # `Date & Time of Crash` is ISO 8601 e.g. "2024-02-04T12:20:00.000"
     out["dt"] = pd.to_datetime(df["Date & Time of Crash"], errors="coerce")
 
-    # Severity — derive from Total Killed / Total Injured
-    tk = df["Total Killed"].apply(to_int)
+    # Severity — strict-fatal flag from AASHTO `Fatal Crash Indicator`
+    # (NJSP/MMUCC-aligned). `tk` mirrors `Crash Fatality Count`, the
+    # strict death count (=Total Killed for Indicator=Y rows, 0 for
+    # Indicator=N rows even if Total Killed>0). `tk_broad` retains the
+    # raw `Total Killed`, which includes ~10% extra deaths where the
+    # crash didn't *cause* the fatality (medical-event drivers etc.).
+    fatal_indicator = df["Fatal Crash Indicator"].astype("string").fillna("")
     ti = df["Total Injured"].apply(to_int)
     pk = df["Total Pedestrians Killed"].apply(to_int)
     pi = df["Total Injured Pedestrians"].apply(to_int)
     tv = df["Total Vehicles"].apply(to_int)
-    out["severity"] = pd.Series([infer_severity(t, i) for t, i in zip(tk, ti)], index=df.index, dtype="string")
-    out["tk"] = tk.astype("int8")
+    tk_strict = df["Crash Fatality Count"].apply(to_int)
+    tk_broad = df["Total Killed"].apply(to_int)
+    out["severity"] = pd.Series([infer_severity(f, i) for f, i in zip(fatal_indicator, ti)], index=df.index, dtype="string")
+    out["tk"] = tk_strict.astype("int8")
+    out["tk_broad"] = tk_broad.astype("int8")
     out["ti"] = ti.astype("int8")
     out["pk"] = pk.astype("int8")
     out["pi"] = pi.astype("int8")

@@ -1,14 +1,15 @@
 outs:
-- md5: 57b275dab5a8c5e1df3e4b8c8141402d
-  size: 22526398
+- md5: 0ae2595cd33ce71d47ab2d022a22b60e
+  size: 36106786
   hash: md5
   path: aashto_combined_crashes.parquet
 meta:
   computation:
-    cmd: njdot/aashto/to_njdot_schema.py
+    cmd: njdot/aashto/to_njdot_schema.py -y 2023,2024,2025
     git_deps:
-      /njdot/aashto/to_njdot_schema.py: ad44fa2e651d22c9f866cbb2365157903b21c0a4
+      /njdot/aashto/to_njdot_schema.py: 0ad39efb3151ef4b58b4fd0d4c9bd8900074fce6
     deps:
+      /njdot/data/2023/crashes.parquet: 23abc6794e13d6d8b035dfe866de86b9
       /njdot/data/2024/crashes.parquet: fd7cdf13806203af5ddce84ca94d3e23
       /njdot/data/2025/crashes.parquet: 26e6bc7f841bbaa6b5878e57771869dd
       /www/public/njdot/cc2mc2mn.json: 2c12563c5ea3a3fdd443fc14610822e8
