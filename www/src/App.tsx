@@ -12,6 +12,7 @@ import MatchReview from './routes/MatchReview'
 import CrashMapPage from './routes/CrashMapPage'
 import CrashDetailPage from './routes/CrashDetailPage'
 import RawFileBrowser from './raw/RawFileBrowser'
+import FilesPage from './routes/FilesPage'
 import HarmonizationPage from './routes/HarmonizationPage'
 import { ThemeToggle } from './components/ThemeToggle'
 import { GeoFilterProvider } from './GeoFilterContext'
@@ -68,6 +69,8 @@ export default function App() {
                 <Route path="/raw/*" element={<RawFileBrowser />} />
                 <Route path="/harmonization" element={<HarmonizationPage />} />
                 <Route path="/h11n" element={<HarmonizationPage />} />
+                <Route path="/files" element={<FilesPage />} />
+                <Route path="/files/*" element={<FilesPage />} />
                 <Route path="*" element={<NotFound />} />
             </Routes>
             <Omnibar />

@@ -22,6 +22,11 @@
       "github": "runsascoded/plotly.js",
       "npm": "plotly.js",
       "distBranch": "dist"
+    },
+    "@rdub/file-tree": {
+      "localPath": "../../../js/file-tree",
+      "github": "runsascoded/file-tree",
+      "distBranch": "dist"
     }
   }
 }

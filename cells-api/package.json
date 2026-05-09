@@ -10,6 +10,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@rdub/file-tree": "https://github.com/runsascoded/file-tree#272a09296aaef6f4d1ad9d8497dd2523db29412c",
     "fflate": "^0.8.2",
     "fzstd": "^0.1.1",
     "h3-js": "^4.2.1",

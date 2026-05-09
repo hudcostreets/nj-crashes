@@ -14,6 +14,8 @@
  *  `data_version` → invalidates. Edge cache TTL = 1h unconditional, 24h
  *  conditional revalidation.
  */
+import { R2Store } from "@rdub/file-tree/stores/r2"
+import { createHandlers } from "@rdub/file-tree/server"
 import { handleCellsRequest, HttpError, parseCellsRequest } from "./cells"
 import { loadManifest } from "./manifest"
 import { handleGet, handleList, handleZipEntries, handleZipEntry } from "./raw"
@@ -138,6 +140,21 @@ export default {
                 const headers = new Headers(resp.headers)
                 applyCors(headers, env)
                 return new Response(resp.body, { status: resp.status, headers })
+            }
+            // `/v1/files/*` — generic file-tree endpoints via @rdub/file-tree.
+            // Parallel to `/v1/raw/*` for now; once @rdub/file-tree gains
+            // zip/parquet support, `/v1/raw/*` can fold into this.
+            if (pathname.startsWith("/v1/files/")) {
+                const handlers = createHandlers(
+                    R2Store(env.CELLS_BUCKET, { prefixes: ["raw/"] }),
+                    { basePath: "/v1/files", corsOrigin: env.CORS_ORIGIN ?? "*" },
+                )
+                const resp = await handlers.handle(request)
+                if (resp) {
+                    const headers = new Headers(resp.headers)
+                    applyCors(headers, env)
+                    return new Response(resp.body, { status: resp.status, headers })
+                }
             }
             return new Response("not found", { status: 404, headers: corsHeaders(env) })
         } catch (e) {

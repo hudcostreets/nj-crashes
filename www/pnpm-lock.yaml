@@ -56,6 +56,9 @@ importers:
       '@rdub/duckdb':
         specifier: 0.0.2
         version: 0.0.2(@duckdb/duckdb-wasm@1.28.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      '@rdub/file-tree':
+        specifier: https://github.com/runsascoded/file-tree#272a09296aaef6f4d1ad9d8497dd2523db29412c
+        version: https://codeload.github.com/runsascoded/file-tree/tar.gz/272a09296aaef6f4d1ad9d8497dd2523db29412c(react-dom@18.2.0(react@18.2.0))(react-router-dom@6.30.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)
       '@react-leaflet/core':
         specifier: ^2.1.0
         version: 2.1.0(leaflet@1.9.4)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -1024,6 +1027,21 @@ packages:
       '@duckdb/duckdb-wasm': ^1.28.0
       react: ^18
       react-dom: ^18
+
+  '@rdub/file-tree@https://codeload.github.com/runsascoded/file-tree/tar.gz/272a09296aaef6f4d1ad9d8497dd2523db29412c':
+    resolution: {tarball: https://codeload.github.com/runsascoded/file-tree/tar.gz/272a09296aaef6f4d1ad9d8497dd2523db29412c}
+    version: 0.0.1-dist.76284c9
+    peerDependencies:
+      react: ^18 || ^19
+      react-dom: ^18 || ^19
+      react-router-dom: ^6 || ^7
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      react-router-dom:
+        optional: true
 
   '@react-leaflet/core@2.1.0':
     resolution: {integrity: sha512-Qk7Pfu8BSarKGqILj4x7bCSZ1pjuAPZ+qmRwH5S7mDS91VSbVVsJSrW4qA+GPrro8t69gFYVMWb1Zc4yFmPiVg==}
@@ -4310,6 +4328,12 @@ snapshots:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
       web-worker: 1.3.0
+
+  '@rdub/file-tree@https://codeload.github.com/runsascoded/file-tree/tar.gz/272a09296aaef6f4d1ad9d8497dd2523db29412c(react-dom@18.2.0(react@18.2.0))(react-router-dom@6.30.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)':
+    optionalDependencies:
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+      react-router-dom: 6.30.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
 
   '@react-leaflet/core@2.1.0(leaflet@1.9.4)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
