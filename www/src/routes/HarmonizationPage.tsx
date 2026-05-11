@@ -17,12 +17,16 @@ type ThreeWayRow = {
     in_r: boolean
     in_a: boolean
     year: number
+    dt: string | Date | null
     cc: number | null
     mc: number | null
     tk_sp: number | null
     tk_r: number | null
     tk_a: number | null
     tk_a_broad: number | null
+    road?: string | null
+    route?: string | null
+    mp?: number | null
 }
 
 // Source-set categories in stacking order (bottom → top).
@@ -167,6 +171,12 @@ export default function HarmonizationPage() {
                 The <strong>red "SP only"</strong> band on 2025 is 111 NJSP fatals AASHTO hasn't ingested yet. It's <em>not</em> a uniform ingestion lag — AASHTO's 2025 PDO and injury counts are at ~2024 levels. It's specifically a <strong>fatal-reclassification lag</strong> concentrated in a handful of counties: fatal counts dropped to 30-60% of 2024 while their injury/PDO counts came in normal. The chart below shows per-county 2025/2024 ratios for each severity. Fatal status requires death-cert / 30-day-rule confirmation; certain agencies are slower to upgrade. The homepage NJDOT plot supplements these into AASHTO so the bar reflects the true count.
             </p>
             <CountyLagChart />
+
+            <h2 style={{ fontSize: "1.15em", margin: "2em 0 0.4em" }}>Disagreement table</h2>
+            <p style={{ fontSize: "0.92em", lineHeight: 1.55, margin: "0 0 0.6em" }}>
+                Per-record drill-down for fatals where the sources don't fully agree (any <code>src</code> except <code>SRA</code>). Useful for spot-checking the matcher's edge cases. <strong>{data?.filter(r => r.src !== "SRA").length.toLocaleString() ?? "…"}</strong> rows across all years.
+            </p>
+            <DisagreementTable data={data} />
         </div>
     )
 }
@@ -276,4 +286,187 @@ function CountyLagChart() {
     if (error) return <p style={{ color: "salmon" }}>Error loading county lag: {error}</p>
     if (!data) return <p style={{ opacity: 0.7 }}>Loading county lag…</p>
     return <PlotWrapper data={traces as PlotData[]} layout={layout} />
+}
+
+// Per-source-set color for the `src` cell badge.
+const SRC_BADGE_BG: Record<string, string> = {
+    SRA: "#3a8c3a",
+    SR:  "#7ab87a",
+    SA:  "#9bd09b",
+    RA:  "#c3e0c3",
+    S:   "#d9534f",
+    R:   "#f0ad4e",
+    A:   "#5bc0de",
+}
+
+function fmtDt(dt: string | Date | null | undefined): string {
+    if (!dt) return ""
+    const d = typeof dt === "string" ? new Date(dt) : dt
+    if (isNaN(d.getTime())) return ""
+    return d.toISOString().slice(0, 16).replace("T", " ")
+}
+
+function DisagreementTable({ data }: { data: ThreeWayRow[] | null }) {
+    const plotColors = usePlotColors()
+    const [page, setPage] = useState(0)
+    const [pageSize] = useState(25)
+    const [srcFilter, setSrcFilter] = useState<Set<string>>(new Set())  // empty = all
+
+    const rows = useMemo(() => {
+        if (!data) return []
+        let filtered = data.filter(r => r.src !== "SRA")  // only disagreements
+        if (srcFilter.size > 0) filtered = filtered.filter(r => srcFilter.has(r.src))
+        return [...filtered].sort((a, b) => {
+            // newest first
+            const ay = a.year || 0, by = b.year || 0
+            if (ay !== by) return by - ay
+            return (b.cc ?? 0) - (a.cc ?? 0)
+        })
+    }, [data, srcFilter])
+
+    const total = rows.length
+    const pageCount = Math.max(1, Math.ceil(total / pageSize))
+    const start = page * pageSize
+    const visible = rows.slice(start, start + pageSize)
+
+    const allSrcs = useMemo(() => {
+        if (!data) return [] as string[]
+        const set = new Set(data.filter(r => r.src !== "SRA").map(r => r.src))
+        return SRC_ORDER.filter(s => set.has(s) && s !== "SRA")
+    }, [data])
+
+    if (!data) return <p style={{ opacity: 0.7 }}>Loading…</p>
+
+    const toggleSrc = (src: string) => {
+        const next = new Set(srcFilter)
+        if (next.has(src)) next.delete(src)
+        else next.add(src)
+        setSrcFilter(next)
+        setPage(0)
+    }
+
+    const cellStyle: React.CSSProperties = {
+        padding: "4px 8px",
+        borderBottom: `1px solid ${plotColors.gridColor}`,
+        fontSize: "0.85em",
+        textAlign: "left",
+        whiteSpace: "nowrap",
+    }
+    const headerStyle: React.CSSProperties = {
+        ...cellStyle,
+        fontWeight: "bold",
+        background: "rgba(127,127,127,0.08)",
+        position: "sticky",
+        top: 0,
+    }
+
+    return (
+        <div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5em", margin: "0.4em 0 0.8em", alignItems: "center", fontSize: "0.88em" }}>
+                <span style={{ opacity: 0.7 }}>Filter by src:</span>
+                {allSrcs.map(src => {
+                    const active = srcFilter.has(src)
+                    return (
+                        <button
+                            key={src}
+                            onClick={() => toggleSrc(src)}
+                            title={SRC_LABEL[src as Src]}
+                            style={{
+                                background: active ? SRC_BADGE_BG[src] : "transparent",
+                                color: active ? "#fff" : plotColors.textColor,
+                                border: `1px solid ${SRC_BADGE_BG[src]}`,
+                                borderRadius: 4,
+                                padding: "2px 8px",
+                                cursor: "pointer",
+                                fontWeight: active ? "bold" : "normal",
+                                fontFamily: "inherit",
+                                fontSize: "0.9em",
+                            }}
+                        >{src}</button>
+                    )
+                })}
+                {srcFilter.size > 0 && (
+                    <button
+                        onClick={() => { setSrcFilter(new Set()); setPage(0) }}
+                        style={{
+                            background: "transparent", color: plotColors.textColor,
+                            border: `1px dotted ${plotColors.gridColor}`, borderRadius: 4,
+                            padding: "2px 8px", cursor: "pointer",
+                            fontFamily: "inherit", fontSize: "0.9em",
+                        }}
+                    >clear</button>
+                )}
+            </div>
+            <div style={{ overflowX: "auto", border: `1px solid ${plotColors.gridColor}`, borderRadius: 4 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                        <tr>
+                            <th style={headerStyle}>src</th>
+                            <th style={headerStyle}>year</th>
+                            <th style={headerStyle}>dt</th>
+                            <th style={headerStyle}>cc·mc</th>
+                            <th style={headerStyle}>tk SP / R / A</th>
+                            <th style={{ ...headerStyle, width: "100%" }}>road / route</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {visible.map((r, i) => (
+                            <tr key={start + i}>
+                                <td style={cellStyle}>
+                                    <span style={{
+                                        background: SRC_BADGE_BG[r.src],
+                                        color: "#fff",
+                                        padding: "1px 6px",
+                                        borderRadius: 3,
+                                        fontSize: "0.85em",
+                                        fontWeight: "bold",
+                                    }}>{r.src}</span>
+                                </td>
+                                <td style={cellStyle}>{r.year}</td>
+                                <td style={cellStyle}>{fmtDt(r.dt)}</td>
+                                <td style={cellStyle}>{r.cc ?? "-"}·{r.mc ?? "-"}</td>
+                                <td style={cellStyle}>
+                                    {r.tk_sp ?? "-"} / {r.tk_r ?? "-"} / {r.tk_a ?? "-"}
+                                </td>
+                                <td style={cellStyle}>{r.road || r.route || "—"}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+            <div style={{ display: "flex", gap: "0.5em", margin: "0.6em 0", alignItems: "center", fontSize: "0.88em" }}>
+                <button
+                    onClick={() => setPage(Math.max(0, page - 1))}
+                    disabled={page === 0}
+                    style={{
+                        padding: "2px 10px",
+                        background: page === 0 ? "rgba(127,127,127,0.1)" : "rgba(127,127,127,0.2)",
+                        color: page === 0 ? plotColors.textColor : "inherit",
+                        opacity: page === 0 ? 0.5 : 1,
+                        border: `1px solid ${plotColors.gridColor}`,
+                        borderRadius: 4,
+                        cursor: page === 0 ? "default" : "pointer",
+                        fontFamily: "inherit",
+                    }}
+                >‹ prev</button>
+                <span style={{ fontVariantNumeric: "tabular-nums", opacity: 0.7 }}>
+                    {start + 1}–{Math.min(start + pageSize, total)} of {total.toLocaleString()}
+                </span>
+                <button
+                    onClick={() => setPage(Math.min(pageCount - 1, page + 1))}
+                    disabled={page >= pageCount - 1}
+                    style={{
+                        padding: "2px 10px",
+                        background: page >= pageCount - 1 ? "rgba(127,127,127,0.1)" : "rgba(127,127,127,0.2)",
+                        color: page >= pageCount - 1 ? plotColors.textColor : "inherit",
+                        opacity: page >= pageCount - 1 ? 0.5 : 1,
+                        border: `1px solid ${plotColors.gridColor}`,
+                        borderRadius: 4,
+                        cursor: page >= pageCount - 1 ? "default" : "pointer",
+                        fontFamily: "inherit",
+                    }}
+                >next ›</button>
+            </div>
+        </div>
+    )
 }

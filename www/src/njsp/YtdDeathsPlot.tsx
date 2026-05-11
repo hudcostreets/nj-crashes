@@ -385,10 +385,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
             },
             legend: {
                 font: { color: plotColors.textColor },
-                // Reverse so the current (and most-recently-prior) years appear at
-                // the top of the legend — otherwise the user has to scroll the
-                // legend to see them. (Plotly has no API to set scroll position.)
-                traceorder: 'reversed',
+                traceorder: 'normal',
                 ...(legendPosition === 'right' ? {
                     orientation: 'v' as const,
                     x: 1.02,
@@ -459,6 +456,34 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
             try { plotDiv.removeAllListeners?.('plotly_afterplot') } catch {}
         }
     }, [data])
+
+    // Scroll the legend to bottom on initial render so the current year is
+    // visible without manual scrolling. Plotly has no public API for this;
+    // we dispatch a synthetic wheel event on the legend SVG, which goes
+    // through Plotly's own scroll handler so internal state stays consistent.
+    const legendScrolledRef = useRef(false)
+    useEffect(() => {
+        if (legendScrolledRef.current) return
+        if (!data.length) return
+        if (legendPosition !== 'right') return  // only vertical legend scrolls
+        const wrap = wrapRef.current
+        if (!wrap) return
+        const timer = window.setTimeout(() => {
+            const legend = wrap.querySelector('.legend') as SVGGElement | null
+            if (!legend) return
+            // Confirm legend is actually scrollable (only fires when items overflow)
+            const scrollbox = legend.querySelector('.scrollbox')
+            if (!scrollbox) { legendScrolledRef.current = true; return }
+            const evt = new WheelEvent('wheel', {
+                deltaY: 10000,
+                bubbles: true,
+                cancelable: true,
+            })
+            legend.dispatchEvent(evt)
+            legendScrolledRef.current = true
+        }, 200)
+        return () => window.clearTimeout(timer)
+    }, [data.length, legendPosition])
 
     const isFadedMode = viewMode === 'full-faded' || viewMode === 'full'
     const customHover = useCustomHover({
