@@ -1,0 +1,27 @@
+outs:
+- md5: d3d913d7d0716ee4b5588e8380bb456a
+  size: 255402
+  hash: md5
+  path: aashto_supplemented_pedestrians.parquet
+meta:
+  computation:
+    cmd: python njdot/aashto/to_njdot_persons.py -y 2023,2024,2025
+    git_deps:
+      /njdot/aashto/to_njdot_persons.py: fecfc0545896518b3047c8ffb0c1d4c054fbd596
+      /njdot/aashto/to_njdot_schema.py: 0ad39efb3151ef4b58b4fd0d4c9bd8900074fce6
+    deps:
+      /njdot/data/2023/persons.parquet: 72625f5a685ceb7489789e886f4f3171
+      /njdot/data/2023/crashes.parquet: 23abc6794e13d6d8b035dfe866de86b9
+      /njdot/data/2024/persons.parquet: e9abd0dc2fcb7fccc2a57e099caba6b6
+      /njdot/data/2024/crashes.parquet: fd7cdf13806203af5ddce84ca94d3e23
+      /njdot/data/2025/persons.parquet: 2c311b054ff1f7fbb27c0c099ae0486b
+      /njdot/data/2025/crashes.parquet: 26e6bc7f841bbaa6b5878e57771869dd
+      /www/public/njdot/cc2mc2mn.json: 2c12563c5ea3a3fdd443fc14610822e8
+    note: |
+      AASHTO persons → DOTr-style pedestrians supplement for 2023-2025.
+      Both pedestrians and cyclists are co-tracked here (`cyclist` bool
+      distinguishes). Fatal counts here are *under*-reported vs.
+      crash-level pk in `aashto_supplemented_crashes.parquet` due to
+      AASHTO data-quality issues (see `to_njdot_persons.py` docs).
+      Produced alongside `aashto_supplemented_occupants.parquet` from
+      the same adapter run.

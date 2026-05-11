@@ -1,13 +1,25 @@
 outs:
-- md5: f20b57bf5fd3fe2bde970631882a3c7a
-  size: 59834368
+- md5: 10d56dd9bd6ca0340a8820e23ca66d42
+  size: 63635456
   hash: md5
   path: cmymc.db
 meta:
   computation:
-    cmd: njsp update_cmymc
+    cmd: cd ../../.. && python njdot/cmymc.py --skip-upload
+    git_deps:
+      /njdot/cmymc.py: 4787f2ac892c11b3bc97ac8e7fd78892607ade40
     deps:
-      njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
-      njdot/data/vehicles.parquet: f556fa6424ee67986f1b8f69b0ab7eab
-      njdot/data/occupants.parquet: a2879e533e566c4c1b8be11ee403d59e
-      njdot/data/pedestrians.parquet: 7f1dc043bbc22ed522115e4adbc911fd
+      /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
+      /njdot/data/vehicles.parquet: f556fa6424ee67986f1b8f69b0ab7eab
+      /njdot/data/occupants.parquet: a2879e533e566c4c1b8be11ee403d59e
+      /njdot/data/pedestrians.parquet: 7f1dc043bbc22ed522115e4adbc911fd
+      /njdot/data/aashto_supplemented_crashes.parquet: 2cd7616a654b357444d08aa05c41b311
+      /njdot/data/aashto_supplemented_occupants.parquet: 6957204e8f53b2fbde29b0f9775cf33f
+      /njdot/data/aashto_supplemented_pedestrians.parquet: d3d913d7d0716ee4b5588e8380bb456a
+    note: |
+      Built by `njdot/cmymc.py` (ported from `njdot/cmymc.ipynb`).
+      Two legs of input:
+        - Legacy master parquets (2001-2022, crash_id-joined)
+        - AASHTO supplements (2023-2025, PK-joined; supersede legacy 2023)
+      Vehicles supplement not yet built \u2014 `cmymv*` tables are legacy-only
+      for now (no AASHTO vehicle-disposition adapter).

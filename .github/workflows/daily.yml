@@ -91,6 +91,12 @@ jobs:
       - name: Supplement AASHTO with NJSP-only residuals
         if: ${{ !inputs.targets }}
         run: $DVX njdot/data/aashto_supplemented_crashes.parquet.dvc
+      - name: Supplement AASHTO persons (occupants + pedestrians)
+        if: ${{ !inputs.targets }}
+        run: $DVX njdot/data/aashto_supplemented_occupants.parquet.dvc njdot/data/aashto_supplemented_pedestrians.parquet.dvc
+      - name: Rebuild cmymc.db (year-stats, victim-severity)
+        if: ${{ !inputs.targets }}
+        run: $DVX www/public/njdot/cmymc.db.dvc
       - name: Aggregate NJDOT crashes for FE
         if: ${{ !inputs.targets }}
         run: $DVX www/public/data/njdot/ymccmc.dvc www/public/data/njdot/ymccmcs.dvc
