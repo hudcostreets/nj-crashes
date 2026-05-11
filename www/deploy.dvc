@@ -3,7 +3,7 @@ meta:
     cmd: ./deploy.sh
     git_deps:
       deploy.sh: 3e4cddf4c95000d72e72013123b7b917008981dd
-      src: b8af195b3e2d980131d1f11c48662ccd1a0f3b80
-      public: ab90f0c33b281a838c395dc6495abed795d02e08
-      package.json: 67dc2e074a823985e068967e608d97fcf1bd1635
+      src: ffe4430d8c311803bcbf160ea19c1b3812ef7479
+      public: bad8d93d4472ff7a1964c34f86c9883e9b3fb045
+      package.json: baaeb595956b752e1db365a2b50a68f271468324
       functions: d45da0aa448a9be329f954bccdc77cf1d675f5de
