@@ -11,6 +11,9 @@ on:
       targets:
         type: string
         description: "Specific DVX targets to run (space-separated .dvc paths, empty = all)"
+concurrency:
+  group: daily
+  cancel-in-progress: false
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
