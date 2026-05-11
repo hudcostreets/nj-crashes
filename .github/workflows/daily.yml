@@ -55,8 +55,13 @@ jobs:
       - name: Pull DVC-tracked deps from S3
         run: |
           dvx pull njdot/data/crashes.parquet
+          dvx pull njdot/data/vehicles.parquet.dvc
+          dvx pull njdot/data/occupants.parquet.dvc
+          dvx pull njdot/data/pedestrians.parquet.dvc
           dvx pull njdot/data/*/NewJersey*Accidents.pqt.dvc
           dvx pull njdot/data/aashto_combined_crashes.parquet.dvc
+          dvx pull njdot/data/aashto_supplemented_occupants.parquet.dvc
+          dvx pull njdot/data/aashto_supplemented_pedestrians.parquet.dvc
           dvx pull njsp/data/crash-log.parquet.dvc
           dvx pull www/public/Municipal_Boundaries_of_NJ.geojson
       - name: DVX status
@@ -91,9 +96,11 @@ jobs:
       - name: Supplement AASHTO with NJSP-only residuals
         if: ${{ !inputs.targets }}
         run: $DVX njdot/data/aashto_supplemented_crashes.parquet.dvc
-      - name: Supplement AASHTO persons (occupants + pedestrians)
-        if: ${{ !inputs.targets }}
-        run: $DVX njdot/data/aashto_supplemented_occupants.parquet.dvc njdot/data/aashto_supplemented_pedestrians.parquet.dvc
+      # Person supplements (occupants/pedestrians) are NOT rebuilt in CI:
+      # their deps are per-year `persons.parquet` side-effects of
+      # `normalize.py`, which only runs locally after a manual `Crash.csv`
+      # download. CI pulls these from S3 above (`dvx pull`) and feeds
+      # them to the VTC enrichment + cmymc stages.
       - name: Rebuild cmymc.db (year-stats, victim-severity)
         if: ${{ !inputs.targets }}
         run: $DVX www/public/njdot/cmymc.db.dvc
