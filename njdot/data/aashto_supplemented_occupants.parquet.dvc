@@ -1,13 +1,13 @@
 outs:
-- md5: 6957204e8f53b2fbde29b0f9775cf33f
-  size: 13286278
+- md5: 806dd7a46ebafbe426faeb05373359b9
+  size: 14335377
   hash: md5
   path: aashto_supplemented_occupants.parquet
 meta:
   computation:
     cmd: python njdot/aashto/to_njdot_persons.py -y 2023,2024,2025
     git_deps:
-      /njdot/aashto/to_njdot_persons.py: fecfc0545896518b3047c8ffb0c1d4c054fbd596
+      /njdot/aashto/to_njdot_persons.py: 2f0d9eb2505089b276cd82eff4d3d2b77f34f615
       /njdot/aashto/to_njdot_schema.py: 0ad39efb3151ef4b58b4fd0d4c9bd8900074fce6
     deps:
       /njdot/data/2023/persons.parquet: 72625f5a685ceb7489789e886f4f3171
@@ -18,10 +18,11 @@ meta:
       /njdot/data/2025/crashes.parquet: 26e6bc7f841bbaa6b5878e57771869dd
       /www/public/njdot/cc2mc2mn.json: 2c12563c5ea3a3fdd443fc14610822e8
     note: |
-      AASHTO persons → DOTr-style occupants supplement for 2023-2025.
-      Drops "ghost-Driver" placeholder rows (Person Type=Driver +
-      blank Position in Vehicle). Pedestrian/cyclist fatals are
-      under-reported here; crash-level pk in
-      `aashto_supplemented_crashes.parquet` remains authoritative.
-      Produced alongside `aashto_supplemented_pedestrians.parquet`
-      from the same adapter run.
+      AASHTO persons -> DOTr-style occupants supplement for 2023-2025.
+      "Ghost-Driver" placeholder rows (Person Type=Driver + blank
+      Position) get `pos=0` so VTC aggregation routes them to the
+      'u' (unknown-VT) bucket. Ped/cyclist fatals remain
+      *under*-reported at person-level (those mostly land in 'u');
+      crash-level `pk` in `aashto_supplemented_crashes.parquet`
+      remains authoritative. Produced alongside
+      `aashto_supplemented_pedestrians.parquet` from the same run.

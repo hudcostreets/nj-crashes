@@ -1,19 +1,27 @@
 outs:
-- md5: 2cd7616a654b357444d08aa05c41b311
-  size: 36111389
+- md5: 92ac7e301eab0f949748c6061317cf9f
+  size: 37286075
   hash: md5
   path: aashto_supplemented_crashes.parquet
 meta:
   computation:
     cmd: njdot/aashto/supplement_with_sp.py
     git_deps:
-      /njdot/aashto/supplement_with_sp.py: 4f25ec341452526bf5181ed876069da555e3a863
+      /njdot/aashto/supplement_with_sp.py: e88a1d8b0d3f43c460f23f76c97df7e557da19f5
     deps:
       /njdot/data/aashto_combined_crashes.parquet: 0ae2595cd33ce71d47ab2d022a22b60e
       /njsp/data/njsp_njdot_residuals.parquet: e50b477c45576b6357ed94060e7b669e
+      /njdot/data/aashto_supplemented_occupants.parquet: 806dd7a46ebafbe426faeb05373359b9
+      /njdot/data/aashto_supplemented_pedestrians.parquet: d3d913d7d0716ee4b5588e8380bb456a
     note: |
-      AASHTO + NJSP-only-fatal supplement. Backfills the NJSP fatals
-      that AASHTO hasn't ingested yet (concentrated in Middlesex /
-      Hudson / Essex 2025 — fatal-classification lag while
-      injury/PDO records are on schedule). Removable when a fresh
-      `Crash.csv` shows AASHTO in sync with NJSP.
+      AASHTO + NJSP-only-fatal supplement + per-crash VTC matrix
+      (5 victim types x 5 conditions). Backfills the NJSP fatals
+      that AASHTO hasn't ingested yet (concentrated in Monmouth /
+      Mercer / Essex 2025 - fatal-classification lag while
+      injury/PDO records are on schedule). NJSP-supplement rows
+      land in the `uf` bucket. Ghost-Driver rows from AASHTO also
+      land in `u*` buckets (Person Type=Driver with blank Position,
+      ~45K/yr, mostly mis-tagged ped/cyclist victims). VTC fatal
+      sum is ~5% over crash-level `tk` due to AASHTO data quality
+      (fatal-tagged persons in non-fatal-crash records).
+      Removable when a fresh `Crash.csv` shows AASHTO in sync with NJSP.

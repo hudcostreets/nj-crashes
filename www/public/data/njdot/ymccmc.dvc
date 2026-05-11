@@ -1,6 +1,6 @@
 outs:
-- md5: 103160954b4356002b8c445dd18402e2.dir
-  size: 810803
+- md5: c9627d129e88f4c9f48b48f692ccd2e8.dir
+  size: 1247206
   hash: md5
   path: ymccmc
 meta:
@@ -10,11 +10,11 @@ meta:
       /njdot/agg.py: ab9ab62177e15b118d5b80bef44e192ffb1bc7c2
     deps:
       /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
-      /njdot/data/aashto_supplemented_crashes.parquet: 2cd7616a654b357444d08aa05c41b311
+      /njdot/data/aashto_supplemented_crashes.parquet: 92ac7e301eab0f949748c6061317cf9f
     note: |
       `agg.py` produces multiple outputs in `www/public/data/njdot/`:
       smaller state/county aggregates (`ys`/`yms`/`yccs`/`ymccs`) live
-      in git; the larger muni-level dirs (`ymccmc/`, `ymccmcs/` —
+      in git; the larger muni-level dirs (`ymccmc/`, `ymccmcs/` -
       ~2.4MB across 42 files) are DVX-tracked here. `ymccmcs.dvc` is
       a co-output of the same `agg.py` invocation; dvx runs the cmd
       twice when both are stale (~10s, fine).

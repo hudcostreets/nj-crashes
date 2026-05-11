@@ -31,11 +31,15 @@ Known AASHTO data-quality issue (2024+):
     Vehicle` blank. ~45K/yr; ~240/yr carry `Fatal Injury (K)`. These
     are placeholder rows — for fatal-ped crashes the actual victim is
     on a separate row with `Person Type='Pedestrian'` and
-    `Severity Rating='No Apparent Injury (O)'`. We drop ghost-Drivers
-    from the occupants supplement entirely. Net effect: 2024+ ped/
-    cyclist fatal counts are *under*-reported in the person-level
-    breakdown (~19/yr instead of ~228/yr). Crash-level `pk` in
-    `aashto_supplemented_crashes.parquet` remains authoritative.
+    `Severity Rating='No Apparent Injury (O)'`. We reclassify these
+    rows with `pos=0` so VTC aggregation routes them to the 'u'
+    (unknown) bucket — preserves the death count while not inflating
+    driver totals. Net effect: 2024+ ped/cyclist breakdown remains
+    *under*-reported by ~228/yr at the person-level (those land in
+    `u` bucket), but the strict total killed (`tk`/`uf`+`df`+...)
+    matches crash-level. Crash-level `pk` in
+    `aashto_supplemented_crashes.parquet` remains the authoritative
+    pedestrian count.
 """
 import sys
 from functools import partial
@@ -116,15 +120,16 @@ def normalize_age(age_series: pd.Series) -> pd.Series:
 def to_occupants(joined: pd.DataFrame, year: int) -> pd.DataFrame:
     """Convert AASHTO Driver/Passenger rows to DOTr-style occupants frame.
 
-    Drops "ghost-Driver" rows (Driver Person Type + blank Position in
-    Vehicle) — see module docstring."""
+    "Ghost-Driver" rows (Driver Person Type + blank Position in Vehicle)
+    get `pos=0` so they aggregate to the 'u' (unknown-VT) bucket — see
+    module docstring."""
     occ_mask = joined['Person Type'].isin(['Driver', 'Passenger'])
-    pos_blank = joined['Position in Vehicle'].isna() | (joined['Position in Vehicle'] == 'None')
-    ghost_drivers = (joined['Person Type'] == 'Driver') & pos_blank
+    o = joined[occ_mask].copy()
+    pos_blank = o['Position in Vehicle'].isna() | (o['Position in Vehicle'] == 'None')
+    ghost_drivers = (o['Person Type'] == 'Driver') & pos_blank
     n_ghost = ghost_drivers.sum()
     if n_ghost:
-        err(f'        dropping {n_ghost:,} ghost-Driver rows (blank Position)')
-    o = joined[occ_mask & ~ghost_drivers].copy()
+        err(f'        flagging {n_ghost:,} ghost-Driver rows as pos=0 (unknown VT)')
 
     o['year'] = pd.Series(year, index=o.index, dtype='int32')
     # vehicle_index is 0-based in AASHTO; vn is 1-based in DOTr
@@ -135,8 +140,12 @@ def to_occupants(joined: pd.DataFrame, year: int) -> pd.DataFrame:
 
     o['condition'] = o['Severity Rating (Person)'].map(SEVERITY_MAP).astype('Int8')
     o['pos'] = o['Position in Vehicle'].map(POSITION_MAP).astype('Int8')
-    # Driver Person Type forces pos=1 (covers AASHTO 'Driver' position field being blank for some rows)
-    o.loc[o['Person Type'] == 'Driver', 'pos'] = 1
+    # Driver Person Type with a *real* Position field gets pos=1 (handles
+    # cases where AASHTO Position='Driver' string vs Person Type field
+    # disagree). Ghost-Drivers (blank Position) stay at pos=0 → 'u' bucket.
+    real_driver = (o['Person Type'] == 'Driver') & ~ghost_drivers
+    o.loc[real_driver, 'pos'] = 1
+    o.loc[ghost_drivers, 'pos'] = 0
     o['eject'] = o['Ejection'].map(EJECTION_MAP).astype('Int8')
     o['age'] = normalize_age(o['Age'])
     o['sex'] = o['Sex'].map(SEX_MAP).fillna('')
