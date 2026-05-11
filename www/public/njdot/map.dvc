@@ -1,14 +1,16 @@
 outs:
-- md5: 6966715c37d6ad017b0edc1c64351630.dir
-  size: 140731713
+- md5: ba65fab13f11c6cd73fc23a5c7062b2d.dir
+  size: 161521300
   hash: md5
-  nfiles: 663
   path: map
 meta:
   computation:
     cmd: cd ../../.. && rm -rf www/public/njdot/map/by-year www/public/njdot/map/by-year-county
       www/public/njdot/map/hex-r7 www/public/njdot/map/hex-r8 www/public/njdot/map/manifest.json
       && njdot export_map_v2 && njdot gen_county_outlines && njdot gen_muni_outlines
+    git_deps:
+      /njdot/cli/export_map_v2.py: 962c064561d180fbcdb2aad09c5c2d965c8fb0e0
     deps:
       /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
+      /njdot/data/aashto_supplemented_crashes.parquet: 2cd7616a654b357444d08aa05c41b311
       /www/public/Municipal_Boundaries_of_NJ.geojson: 54a252d859eea2207da0fb933661dca0
