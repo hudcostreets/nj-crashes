@@ -18,7 +18,6 @@ for now.
 """
 import sys
 from functools import partial
-from pathlib import Path
 
 import click
 import pandas as pd
@@ -27,7 +26,12 @@ from utz import sxs
 
 from nj_crashes.utils import sql
 from njdot import crashes, occupants, pedestrians, vehicles
-from njdot.paths import CMYMC_DB
+from njdot.paths import (
+    AASHTO_SUPPLEMENTED_CRASHES,
+    AASHTO_SUPPLEMENTED_OCCUPANTS,
+    AASHTO_SUPPLEMENTED_PEDESTRIANS,
+    CMYMC_DB,
+)
 
 err = partial(print, file=sys.stderr)
 
@@ -79,8 +83,8 @@ def load_legacy_persons_legs(c_legacy: pd.DataFrame) -> tuple[pd.DataFrame, pd.D
 
 
 def load_aashto_legs(c_aashto: pd.DataFrame,
-                     occupants_path: Path,
-                     pedestrians_path: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+                     occupants_path: str,
+                     pedestrians_path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Load 2023+ supplements, merge with aashto_supplemented_crashes."""
     err(f'Loading AASHTO occupants supplement from {occupants_path}…')
     o = pd.read_parquet(occupants_path)
@@ -194,17 +198,15 @@ def sum_idx_col(df0, col, db_path, tbl_suffix='', page_size=None):
     return df1
 
 
-@click.command()
-@click.option('-O', '--occupants-supplement', type=click.Path(path_type=Path),
-              default=Path('njdot/data/aashto_supplemented_occupants.parquet'))
-@click.option('-P', '--pedestrians-supplement', type=click.Path(path_type=Path),
-              default=Path('njdot/data/aashto_supplemented_pedestrians.parquet'))
-@click.option('-C', '--crashes-supplement', type=click.Path(path_type=Path),
-              default=Path('njdot/data/aashto_supplemented_crashes.parquet'))
-@click.option('-o', '--out', type=click.Path(path_type=Path), default=Path(CMYMC_DB))
+@click.command('cmymc')
+@click.option('-O', '--occupants-supplement', default=AASHTO_SUPPLEMENTED_OCCUPANTS, help='Occupants supplement input')
+@click.option('-P', '--pedestrians-supplement', default=AASHTO_SUPPLEMENTED_PEDESTRIANS, help='Pedestrians supplement input')
+@click.option('-C', '--crashes-supplement', default=AASHTO_SUPPLEMENTED_CRASHES, help='AASHTO supplemented crashes input')
+@click.option('-o', '--out', default=CMYMC_DB, help='Output SQLite path')
 @click.option('-S', '--skip-upload', is_flag=True, help='Skip S3 upload')
-def main(occupants_supplement: Path, pedestrians_supplement: Path,
-         crashes_supplement: Path, out: Path, skip_upload: bool):
+def cmymc(occupants_supplement: str, pedestrians_supplement: str,
+          crashes_supplement: str, out: str, skip_upload: bool):
+    """Build cmymc.db: {County, Muni, Year, Month} crash + victim aggregations."""
     # Legacy leg
     c_legacy = load_legacy_crashes(drop_years=AASHTO_YEARS)
     om_legacy, pm_legacy = load_legacy_persons_legs(c_legacy)
@@ -276,11 +278,7 @@ def main(occupants_supplement: Path, pedestrians_supplement: Path,
     if not skip_upload:
         import boto3
         from os.path import basename
-        err(f'Uploading {out} to s3://nj-crashes/njdot/data/{basename(str(out))}…')
+        err(f'Uploading {out} to s3://nj-crashes/njdot/data/{basename(out)}…')
         s3 = boto3.client('s3')
-        s3.upload_file(str(out), Bucket='nj-crashes', Key=f'njdot/data/{basename(str(out))}')
+        s3.upload_file(out, Bucket='nj-crashes', Key=f'njdot/data/{basename(out)}')
         err('Upload complete.')
-
-
-if __name__ == '__main__':
-    main()

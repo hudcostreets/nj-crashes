@@ -203,3 +203,11 @@ try:
     njdot.add_command(rawdata)
 except ImportError:
     pass  # rawdata available as standalone CLI if dependencies missing
+
+from njdot.aashto import aashto
+from njdot.agg import agg
+from njdot.cmymc import cmymc
+
+njdot.add_command(aashto)
+njdot.add_command(agg)
+njdot.add_command(cmymc)

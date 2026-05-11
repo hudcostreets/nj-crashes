@@ -5,7 +5,9 @@ outs:
   path: cmymc.db
 meta:
   computation:
-    cmd: cd ../../.. && python njdot/cmymc.py --skip-upload
+    cmd: njdot cmymc --skip-upload
+    git_deps:
+      /njdot/cmymc.py: 73f12d1a5cf4d20a83c4f7e1e20da71211b9ab37
     deps:
       /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
       /njdot/data/vehicles.parquet: f556fa6424ee67986f1b8f69b0ab7eab
@@ -14,5 +16,10 @@ meta:
       /njdot/data/aashto_supplemented_crashes.parquet: 3995b2c9134086fe89372c215d95e158
       /njdot/data/aashto_supplemented_occupants.parquet: 806dd7a46ebafbe426faeb05373359b9
       /njdot/data/aashto_supplemented_pedestrians.parquet: d3d913d7d0716ee4b5588e8380bb456a
-    git_deps:
-      /njdot/cmymc.py: 4787f2ac892c11b3bc97ac8e7fd78892607ade40
+    note: |
+      Built by `njdot/cmymc.py` (ported from `njdot/cmymc.ipynb`).
+      Two legs of input:
+        - Legacy master parquets (2001-2022, crash_id-joined)
+        - AASHTO supplements (2023-2025, PK-joined; supersede legacy 2023)
+      Vehicles supplement not yet built - `cmymv*` tables are legacy-only
+      for now (no AASHTO vehicle-disposition adapter).

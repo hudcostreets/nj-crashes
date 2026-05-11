@@ -5,9 +5,9 @@ outs:
   path: ymccmc
 meta:
   computation:
-    cmd: env -u PYTHONPATH python njdot/agg.py
+    cmd: env -u PYTHONPATH njdot agg
     git_deps:
-      /njdot/agg.py: ab9ab62177e15b118d5b80bef44e192ffb1bc7c2
+      /njdot/agg.py: 653b496f7bf68d59f398ab4a14beed410c8e45e4
     deps:
       /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
       /njdot/data/aashto_supplemented_crashes.parquet: 92ac7e301eab0f949748c6061317cf9f

@@ -1,8 +1,3 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.11"
-# dependencies = ["click", "pandas", "pyarrow", "tqdm"]
-# ///
 """Convert AASHTO-schema `persons.parquet` (output of `normalize.py`) to
 final NJDOT-shape `occupants` + `pedestrians` frames for 2024+.
 
@@ -43,12 +38,16 @@ Known AASHTO data-quality issue (2024+):
 """
 import sys
 from functools import partial
-from pathlib import Path
 
 import click
 import pandas as pd
 
 from njdot.aashto.to_njdot_schema import load_cc2mc2mn, lookup_cc_mc
+from njdot.paths import (
+    AASHTO_SUPPLEMENTED_OCCUPANTS,
+    AASHTO_SUPPLEMENTED_PEDESTRIANS,
+    aashto_year_path,
+)
 
 err = partial(print, file=sys.stderr)
 
@@ -172,10 +171,11 @@ def to_pedestrians(joined: pd.DataFrame, year: int) -> pd.DataFrame:
     return p[cols].reset_index(drop=True)
 
 
-def process_year(year: int, in_dir: Path, lookup: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
-    crashes_path = in_dir / str(year) / 'crashes.parquet'
-    persons_path = in_dir / str(year) / 'persons.parquet'
-    if not crashes_path.exists() or not persons_path.exists():
+def process_year(year: int, lookup: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
+    from os.path import exists
+    crashes_path = aashto_year_path(year, 'crashes.parquet')
+    persons_path = aashto_year_path(year, 'persons.parquet')
+    if not exists(crashes_path) or not exists(persons_path):
         err(f'  skip {year}: missing {crashes_path} or {persons_path}')
         return None, None
 
@@ -196,14 +196,13 @@ def process_year(year: int, in_dir: Path, lookup: dict) -> tuple[pd.DataFrame, p
     return occupants, pedestrians
 
 
-@click.command()
-@click.option('-y', '--years', default='2024,2025', help='Comma-separated years to process')
-@click.option('-i', '--in-dir', type=click.Path(path_type=Path), default=Path('njdot/data'))
-@click.option('-o', '--occupants-out', type=click.Path(path_type=Path),
-              default=Path('njdot/data/aashto_supplemented_occupants.parquet'))
-@click.option('-p', '--pedestrians-out', type=click.Path(path_type=Path),
-              default=Path('njdot/data/aashto_supplemented_pedestrians.parquet'))
-def main(years: str, in_dir: Path, occupants_out: Path, pedestrians_out: Path):
+@click.command('persons')
+@click.option('-y', '--years', default='2023,2024,2025', help='Comma-separated years to process')
+@click.option('-o', '--occupants-out', default=AASHTO_SUPPLEMENTED_OCCUPANTS, help='Output path for occupants supplement')
+@click.option('-p', '--pedestrians-out', default=AASHTO_SUPPLEMENTED_PEDESTRIANS, help='Output path for pedestrians supplement')
+def persons(years: str, occupants_out: str, pedestrians_out: str):
+    """AASHTO persons → DOTr-style occupants + pedestrians supplements."""
+    from pathlib import Path
     lookup = load_cc2mc2mn()
     err(f'Loaded cc2mc2mn lookup: {len(lookup):,} (cn, mn) pairs')
 
@@ -211,7 +210,7 @@ def main(years: str, in_dir: Path, occupants_out: Path, pedestrians_out: Path):
     occ_parts = []
     ped_parts = []
     for y in year_list:
-        o, p = process_year(y, in_dir, lookup)
+        o, p = process_year(y, lookup)
         if o is not None:
             occ_parts.append(o)
             ped_parts.append(p)
@@ -224,14 +223,10 @@ def main(years: str, in_dir: Path, occupants_out: Path, pedestrians_out: Path):
     pedestrians = pd.concat(ped_parts, ignore_index=True)
     err(f'\nCombined: {len(occupants):,} occupants, {len(pedestrians):,} pedestrians')
 
-    occupants_out.parent.mkdir(parents=True, exist_ok=True)
+    Path(occupants_out).parent.mkdir(parents=True, exist_ok=True)
     occupants.to_parquet(occupants_out, index=False)
     err(f'Wrote {occupants_out}')
 
-    pedestrians_out.parent.mkdir(parents=True, exist_ok=True)
+    Path(pedestrians_out).parent.mkdir(parents=True, exist_ok=True)
     pedestrians.to_parquet(pedestrians_out, index=False)
     err(f'Wrote {pedestrians_out}')
-
-
-if __name__ == '__main__':
-    main()

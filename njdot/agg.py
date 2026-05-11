@@ -1,12 +1,3 @@
-#!/usr/bin/env -S uv run
-# /// script
-# requires-python = ">=3.11"
-# dependencies = [
-#     "click",
-#     "pandas",
-#     "pyarrow",
-# ]
-# ///
 """
 Aggregate NJDOT crash data into small parquet files for frontend visualization.
 
@@ -15,7 +6,7 @@ Generates aggregations like:
 - yms: year, month, severity → state-level totals
 - etc.
 
-Output files go to www/public/data/njdot/ for hyparquet to load.
+Output files go to `www/public/data/njdot/` for hyparquet to load.
 """
 
 from functools import reduce
@@ -23,6 +14,8 @@ from pathlib import Path
 
 import click
 import pandas as pd
+
+from njdot.paths import AASHTO_SUPPLEMENTED_CRASHES, CRASHES_PQT, WWW_DATA_DOT
 
 
 # Dimension columns
@@ -135,12 +128,12 @@ AGG_CONFIGS = {
 }
 
 
-@click.command()
-@click.option('-i', '--input', 'input_path', default='njdot/data/crashes.parquet', help='Input crashes parquet (per-table 2001–2023)')
-@click.option('-A', '--aashto-input', default='njdot/data/aashto_supplemented_crashes.parquet', help='AASHTO crashes parquet (with NJSP-only fatals supplemented in)')
-@click.option('-o', '--output-dir', default='www/public/data/njdot', help='Output directory')
+@click.command('agg')
+@click.option('-i', '--input', 'input_path', default=CRASHES_PQT, help='Input crashes parquet (per-table 2001–2023)')
+@click.option('-A', '--aashto-input', default=AASHTO_SUPPLEMENTED_CRASHES, help='AASHTO crashes parquet (with NJSP-only fatals supplemented in)')
+@click.option('-o', '--output-dir', default=WWW_DATA_DOT, help='Output directory (default: `www/public/data/njdot`)')
 @click.option('-a', '--aggs', default='ys,yms,yccs,ymccs,ymccmc,ymccmcs', help='Comma-separated list of aggregations to generate')
-def main(input_path: str, aashto_input: str, output_dir: str, aggs: str):
+def agg(input_path: str, aashto_input: str, output_dir: str, aggs: str):
     """Generate aggregated parquet files for NJDOT crash data."""
     input_path = Path(input_path)
     aashto_input = Path(aashto_input)
@@ -200,7 +193,3 @@ def main(input_path: str, aashto_input: str, output_dir: str, aggs: str):
             print(f"  {agg_name}: error {e}")
 
     print("\nDone!")
-
-
-if __name__ == '__main__':
-    main()

@@ -1,8 +1,3 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.11"
-# dependencies = ["click", "pandas", "pyarrow"]
-# ///
 """Supplement AASHTO crashes with NJSP-only fatals (AASHTO ingestion lag)
 and per-crash VTC (victim-type × condition) counts.
 
@@ -37,6 +32,14 @@ from pathlib import Path
 
 import click
 import pandas as pd
+
+from njdot.paths import (
+    AASHTO_COMBINED_CRASHES,
+    AASHTO_SUPPLEMENTED_CRASHES,
+    AASHTO_SUPPLEMENTED_OCCUPANTS,
+    AASHTO_SUPPLEMENTED_PEDESTRIANS,
+)
+from njsp.paths import NJSP_NJDOT_RESIDUALS
 
 err = partial(print, file=sys.stderr)
 
@@ -90,19 +93,15 @@ def compute_vtc(occupants: pd.DataFrame, pedestrians: pd.DataFrame) -> pd.DataFr
     return combined
 
 
-@click.command()
-@click.option("-a", "--aashto", type=click.Path(path_type=Path),
-              default=Path("njdot/data/aashto_combined_crashes.parquet"))
-@click.option("-r", "--residuals", type=click.Path(path_type=Path),
-              default=Path("njsp/data/njsp_njdot_residuals.parquet"))
-@click.option("-O", "--occupants-supplement", type=click.Path(path_type=Path),
-              default=Path("njdot/data/aashto_supplemented_occupants.parquet"))
-@click.option("-P", "--pedestrians-supplement", type=click.Path(path_type=Path),
-              default=Path("njdot/data/aashto_supplemented_pedestrians.parquet"))
-@click.option("-o", "--out", type=click.Path(path_type=Path),
-              default=Path("njdot/data/aashto_supplemented_crashes.parquet"))
-def main(aashto: Path, residuals: Path, occupants_supplement: Path,
-         pedestrians_supplement: Path, out: Path):
+@click.command('supplement')
+@click.option("-a", "--aashto", default=AASHTO_COMBINED_CRASHES, help='AASHTO combined crashes input')
+@click.option("-r", "--residuals", default=NJSP_NJDOT_RESIDUALS, help='NJSP residuals input')
+@click.option("-O", "--occupants-supplement", default=AASHTO_SUPPLEMENTED_OCCUPANTS, help='Occupants supplement input')
+@click.option("-P", "--pedestrians-supplement", default=AASHTO_SUPPLEMENTED_PEDESTRIANS, help='Pedestrians supplement input')
+@click.option("-o", "--out", default=AASHTO_SUPPLEMENTED_CRASHES, help='Output path')
+def supplement(aashto: str, residuals: str, occupants_supplement: str,
+               pedestrians_supplement: str, out: str):
+    """Supplement AASHTO crashes with NJSP-only fatals + compute per-crash VTC matrix."""
     a = pd.read_parquet(aashto)
     aashto_years = sorted(a["year"].dropna().astype(int).unique())
     err(f"AASHTO: {len(a):,} crashes, years {aashto_years[0]}–{aashto_years[-1]}")
@@ -144,8 +143,9 @@ def main(aashto: Path, residuals: Path, occupants_supplement: Path,
         n_supplemented = 0
 
     # VTC enrichment from person supplements
-    if occupants_supplement.exists() and pedestrians_supplement.exists():
-        err(f"\nComputing VTC from {occupants_supplement.name} + {pedestrians_supplement.name}…")
+    from os.path import exists, basename
+    if exists(occupants_supplement) and exists(pedestrians_supplement):
+        err(f"\nComputing VTC from {basename(occupants_supplement)} + {basename(pedestrians_supplement)}…")
         occ = pd.read_parquet(occupants_supplement)
         ped = pd.read_parquet(pedestrians_supplement)
         err(f"  loaded {len(occ):,} occupants + {len(ped):,} pedestrians")
@@ -164,9 +164,9 @@ def main(aashto: Path, residuals: Path, occupants_supplement: Path,
             f"{int(out_df[['df','of','pf','bf','uf']].sum().sum()):,}")
     else:
         err(f"  Person supplements not found; VTC columns omitted "
-            f"({occupants_supplement.name}, {pedestrians_supplement.name})")
+            f"({basename(occupants_supplement)}, {basename(pedestrians_supplement)})")
 
-    out.parent.mkdir(parents=True, exist_ok=True)
+    Path(out).parent.mkdir(parents=True, exist_ok=True)
     out_df.to_parquet(out, index=False)
     err(f"Wrote {out} ({len(out_df):,} crashes; +{n_supplemented} from NJSP)")
 
@@ -176,7 +176,3 @@ def main(aashto: Path, residuals: Path, occupants_supplement: Path,
     for y in sorted(fa["year"].dropna().astype(int).unique()):
         sub = fa[fa["year"] == y]
         err(f"  {y}: {len(sub):4d} fatal-crashes, {int(sub['tk'].sum()):4d} deaths")
-
-
-if __name__ == "__main__":
-    main()

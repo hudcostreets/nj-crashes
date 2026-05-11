@@ -1,8 +1,3 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.11"
-# dependencies = ["click", "pandas", "pyarrow", "tqdm"]
-# ///
 """Convert AASHTO-schema `crashes.parquet` (output of `normalize.py`)
 to the NJDOT-schema used by `njdot/data/crashes.parquet` (2001-2023).
 
@@ -38,11 +33,12 @@ from pathlib import Path
 
 import click
 import pandas as pd
-from tqdm import tqdm
+
+from njdot.paths import AASHTO_COMBINED_CRASHES, CC2MC2MN, aashto_year_path
 
 err = partial(print, file=sys.stderr)
 
-CC2MC2MN_PATH = Path("www/public/njdot/cc2mc2mn.json")
+CC2MC2MN_PATH = Path(CC2MC2MN)
 SUFFIXES = ("Boro", "City", "Village", "Twp", "Town")
 
 # Aliases for known typos / spelling variants in AASHTO. Mirrors the
@@ -225,19 +221,20 @@ def to_njdot_schema(df: pd.DataFrame, year: int, lookup: dict) -> pd.DataFrame:
     return out
 
 
-@click.command()
-@click.option("-y", "--years", default="2024,2025", help="Comma-separated years to process")
-@click.option("-i", "--in-dir", type=click.Path(path_type=Path), default=Path("njdot/data"))
-@click.option("-o", "--out", type=click.Path(path_type=Path), default=Path("njdot/data/aashto_combined_crashes.parquet"))
-def main(years: str, in_dir: Path, out: Path):
+@click.command('schema')
+@click.option("-y", "--years", default="2023,2024,2025", help="Comma-separated years to process")
+@click.option("-o", "--out", default=AASHTO_COMBINED_CRASHES, help='Output path')
+def schema(years: str, out: str):
+    """AASHTO crashes.parquet → NJDOT-schema combined parquet (per-year concat)."""
+    from os.path import exists
     lookup = load_cc2mc2mn()
     err(f"Loaded cc2mc2mn lookup: {len(lookup):,} (cn, mn) pairs")
 
     year_list = [int(y) for y in years.split(",")]
     parts = []
     for y in year_list:
-        path = in_dir / str(y) / "crashes.parquet"
-        if not path.exists():
+        path = aashto_year_path(y, "crashes.parquet")
+        if not exists(path):
             err(f"  skip {y}: {path} not present")
             continue
         df = pd.read_parquet(path)
@@ -256,10 +253,6 @@ def main(years: str, in_dir: Path, out: Path):
 
     combined = pd.concat(parts, ignore_index=True)
     err(f"\nCombined: {len(combined):,} crashes across {len(parts)} years")
-    out.parent.mkdir(parents=True, exist_ok=True)
+    Path(out).parent.mkdir(parents=True, exist_ok=True)
     combined.to_parquet(out, index=False)
     err(f"Wrote {out}")
-
-
-if __name__ == "__main__":
-    main()

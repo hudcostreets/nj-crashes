@@ -5,10 +5,10 @@ outs:
   path: aashto_supplemented_pedestrians.parquet
 meta:
   computation:
-    cmd: cd ../.. && python njdot/aashto/to_njdot_persons.py -y 2023,2024,2025
+    cmd: njdot aashto persons -y 2023,2024,2025
     git_deps:
-      /njdot/aashto/to_njdot_persons.py: 2f0d9eb2505089b276cd82eff4d3d2b77f34f615
-      /njdot/aashto/to_njdot_schema.py: 0ad39efb3151ef4b58b4fd0d4c9bd8900074fce6
+      /njdot/aashto/to_njdot_persons.py: 21b6405b82bcf6c362c6f73052168a11f5896d48
+      /njdot/aashto/to_njdot_schema.py: 358a48b822f7e461f9d2ebef97eac0bbff04958f
     deps:
       /njdot/data/2023/persons.parquet: 72625f5a685ceb7489789e886f4f3171
       /njdot/data/2023/crashes.parquet: 23abc6794e13d6d8b035dfe866de86b9

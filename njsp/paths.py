@@ -46,6 +46,9 @@ YTC_PQT = path.join(NJSP_DATA, 'year-type-county.pqt')
 YTC_DB = path.join(WWW_NJSP, 'year-type-county.db')
 YTC_DB_URI = f'sqlite:///{YTC_DB}'
 
+NJSP_NJDOT_MATCH = join(NJSP_DATA, 'njsp_njdot_match.parquet')
+NJSP_NJDOT_RESIDUALS = join(NJSP_DATA, 'njsp_njdot_residuals.parquet')
+
 S3_CRASH_LOG_PQT = f'{S3_NJSP_DATA}/crash-log.parquet'
 S3_CRASH_LOG_DB = f'{S3_NJSP_DATA}/crash-log.db'
 
