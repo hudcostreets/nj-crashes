@@ -1,0 +1,18 @@
+outs:
+- md5: d7367905681d0a1ea6f932804446dd1f
+  size: 2412544
+  hash: md5
+  path: crashes.db
+meta:
+  computation:
+    cmd: njsp update_pqts --s3
+    git_deps:
+      /data/FAUQStats2024.xml: e6ece47084bc6d58e8d8aa5a40d0d85f028c1ac3
+      /data/FAUQStats2025.xml: 010c0f3783630587427f57d56f0e5792e04a1641
+      /data/FAUQStats2026.xml: 9bc2e80af4ea1d4595af8db362b9e02894c8a656
+    note: |
+      SQLite mirror of NJSP fatal-crash records, consumed by the
+      `crashes-api` Cloudflare Worker (D1-imported via
+      `api/d1-import.dvc`). Co-output of `njsp update_pqts`
+      alongside `njsp/data/crashes.parquet` (see that file's note
+      for the full picture).

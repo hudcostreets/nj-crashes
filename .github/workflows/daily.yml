@@ -72,6 +72,10 @@ jobs:
           dvx pull njdot/data/2024/persons.parquet.dvc
           dvx pull njdot/data/2025/persons.parquet.dvc
           dvx pull njsp/data/crash-log.parquet.dvc
+          # NJSP outputs of `njsp update_pqts` (consumed by harmonize, csvs,
+          # projections, match, three-way-match, d1-import).
+          dvx pull njsp/data/crashes.parquet.dvc
+          dvx pull www/public/njsp/crashes.db.dvc
           # Side-effect output of `njsp match_njdot`; needed by supplement_with_sp
           dvx pull njsp/data/njsp_njdot_residuals.parquet.dvc
           dvx pull www/public/Municipal_Boundaries_of_NJ.geojson
@@ -83,7 +87,7 @@ jobs:
         run: $DVX njsp/data/refresh.dvc
       - name: Update NJSP parquets
         if: ${{ !inputs.targets }}
-        run: $DVX njsp/data/update_pqts.dvc
+        run: $DVX njsp/data/crashes.parquet.dvc www/public/njsp/crashes.db.dvc
       - name: Harmonize county/muni codes
         if: ${{ !inputs.targets }}
         run: $DVX njsp/data/harmonize.dvc
