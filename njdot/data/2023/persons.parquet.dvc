@@ -1,0 +1,5 @@
+outs:
+- md5: 72625f5a685ceb7489789e886f4f3171
+  size: 16773872
+  hash: md5
+  path: persons.parquet
