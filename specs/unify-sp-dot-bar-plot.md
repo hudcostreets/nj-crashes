@@ -2,6 +2,8 @@
 
 First incremental step from `specs/plot-architecture.md` Phase A: collapse `FatalitiesPerYearPlot` (NJSP) and `CrashPlot` (NJDOT) into a single `<CrashPlot>` with a Source toggle.
 
+> **2026-05-10 update**: scope partly superseded by `specs/page-architecture-rethink.md`. The bigger direction is to merge SP fatals + DOT inj/PDO into one *dataset* (no user-facing source toggle), make VT + geo filters page-global, and have tables "brush" with plot selection. This spec still captures the FE refactor inside one plot component, but the "Source toggle" UI may not survive. Re-read both before implementing.
+
 ## Final shape (target)
 
 One bar plot. Controls:
@@ -19,7 +21,7 @@ One bar plot. Controls:
 ### Conditional rules
 
 - **Source = SP** ⇒ Severity coerces to Fatal-only (controls hidden). Severity-stack option hidden. Victim-type controls visible.
-- **Source = DOT** ⇒ Victim-type controls hidden. Severity controls visible. Severity-stack option visible.
+- **Source = DOT** ⇒ Severity controls visible. Severity-stack option visible. Victim-type controls *would also be visible if NJDOT VT data were exposed in the FE aggregates* — NJDOT raw has Driver/Occupant/Pedestrian/Vehicle tables, but today's `ys`/`yms`/`yccs`/`ymccs`/`ymccmcs` parquets only carry `pk`/`pi` (pedestrian killed/injured), not the Driver/Passenger split. Extending `agg.py` to emit per-VT counts is a separate prerequisite — see "Pipeline prereqs" below.
 - **Stack-by = Muni** requires single-county selection (current rule, retained).
 - **Measure = Per 100K** divides count by population for the relevant geo at each (year, geo) cell. State-level when no geo filter; county-level when stack-by-county; muni-level when stack-by-muni.
 
@@ -66,9 +68,23 @@ Refactor today's `CrashPlot` data loading into `useCrashData({ source: 'dot', ..
 
 Add the Source radio. SP path: load NJSP `monthly.csv` via DuckDB, project to the uniform row shape. Coerce severity to fatal-only (hide Severity controls). For Stack-by = `Severity`, gracefully fall back to `None` when source=SP. No victim-type stack yet.
 
-### Step 3 — Victim-type controls (SP only)
+### Step 3 — Victim-type controls
 
-When source=SP, show Victim-type checklist (Driver / Passenger / Pedestrian / Cyclist). Wire to filter + stack-by.
+When source=SP: show Victim-type checklist (Driver / Passenger / Pedestrian / Cyclist) from the existing NJSP type-stack data. Wire to filter + stack-by.
+
+When source=DOT: same controls, *iff* the pipeline prereq has landed. Otherwise show with reduced granularity (only Pedestrian-vs-Other available from `pk`/`pi`).
+
+#### Pipeline prereq (for full DOT VT support)
+
+Extend `njdot/agg.py` to compute per-victim-type counts from the per-table Drivers / Occupants / Pedestrians tables. Output schema additions:
+- `dk` / `di` — drivers killed/injured (need to derive from `Occupants.OccupantType='Driver'` rows)
+- `ok` / `oi` — passengers killed/injured (`Occupants.OccupantType='Passenger'`)
+- Existing `pk` / `pi` — pedestrians (already present)
+- New `bk` / `bi` — bicyclists (need to derive — NJSP has them as a type; NJDOT classifies via pedestrian flags or person-type=bike. TBD where in NJDOT raw)
+
+For AASHTO 2024-2025: `persons.parquet` (from `normalize.py`) has per-person rows with severity rating; can aggregate same way.
+
+This is non-trivial — separate task. Step 3 first ships with VT-controls-only-on-SP and DOT-gets-degraded-granularity, with a TODO comment.
 
 ### Step 4 — Measure radio: Victims / Crashes / Per 100K
 

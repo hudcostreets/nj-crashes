@@ -64,7 +64,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
 
     const [avgYears, setAvgYears] = useSessionStorage<number>('homicides-avg-years', 5)
     // Only show source toggle for statewide (county data is NJSP-only)
-    const [crashSource, setCrashSource] = useSessionStorage<CrashSource>('homicides-crash-source', 'njsp')
+    const [crashSource] = useSessionStorage<CrashSource>('homicides-crash-source', 'njsp')
     // Force NJSP for county views
     const effectiveSource = county ? 'njsp' as CrashSource : crashSource
 
@@ -266,18 +266,6 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
                     <LegendItem color={HOMICIDE_COLOR} label="Homicides" />
                     <LegendItem type="line" color="#fff" label="Ratio" />
                 </>}
-                right={!county ? (
-                    <div className={css.buttonBar}>
-                        <button
-                            className={crashSource === 'njsp' ? css.active : ''}
-                            onClick={() => setCrashSource('njsp')}
-                        >NJSP ('01–'24)</button>
-                        <button
-                            className={crashSource === 'njdot' ? css.active : ''}
-                            onClick={() => setCrashSource('njdot')}
-                        >DOT ('01–'23)</button>
-                    </div>
-                ) : undefined}
             />
             <AnnotationBody annotations={plotAnnotations} state={annOpen} />
             {highlightRow && (

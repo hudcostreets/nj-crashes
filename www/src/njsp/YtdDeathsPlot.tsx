@@ -385,7 +385,10 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
             },
             legend: {
                 font: { color: plotColors.textColor },
-                traceorder: 'normal',
+                // Reverse so the current (and most-recently-prior) years appear at
+                // the top of the legend — otherwise the user has to scroll the
+                // legend to see them. (Plotly has no API to set scroll position.)
+                traceorder: 'reversed',
                 ...(legendPosition === 'right' ? {
                     orientation: 'v' as const,
                     x: 1.02,
