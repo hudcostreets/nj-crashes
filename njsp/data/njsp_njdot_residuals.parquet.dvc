@@ -1,0 +1,5 @@
+outs:
+- md5: e50b477c45576b6357ed94060e7b669e
+  size: 46992
+  hash: md5
+  path: njsp_njdot_residuals.parquet

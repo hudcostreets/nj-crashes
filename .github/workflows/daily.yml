@@ -72,6 +72,8 @@ jobs:
           dvx pull njdot/data/2024/persons.parquet.dvc
           dvx pull njdot/data/2025/persons.parquet.dvc
           dvx pull njsp/data/crash-log.parquet.dvc
+          # Side-effect output of `njsp match_njdot`; needed by supplement_with_sp
+          dvx pull njsp/data/njsp_njdot_residuals.parquet.dvc
           dvx pull www/public/Municipal_Boundaries_of_NJ.geojson
       - name: DVX status
         run: dvx status
