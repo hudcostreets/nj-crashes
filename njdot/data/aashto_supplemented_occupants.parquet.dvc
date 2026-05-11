@@ -5,7 +5,7 @@ outs:
   path: aashto_supplemented_occupants.parquet
 meta:
   computation:
-    cmd: python njdot/aashto/to_njdot_persons.py -y 2023,2024,2025
+    cmd: cd ../.. && python njdot/aashto/to_njdot_persons.py -y 2023,2024,2025
     git_deps:
       /njdot/aashto/to_njdot_persons.py: 2f0d9eb2505089b276cd82eff4d3d2b77f34f615
       /njdot/aashto/to_njdot_schema.py: 0ad39efb3151ef4b58b4fd0d4c9bd8900074fce6

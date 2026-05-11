@@ -5,7 +5,7 @@ outs:
   path: three_way_fatals.parquet
 meta:
   computation:
-    cmd: python njsp/three_way_match.py
+    cmd: cd ../.. && python njsp/three_way_match.py
     git_deps:
       /njsp/three_way_match.py: 46a1a4af9c735bcf600506e2b12d12f2ece88f0b
       /njsp/match_njdot.py: 2850afad5efe63641d87dad99a183cc667a41d84

@@ -5,7 +5,7 @@ outs:
   path: aashto_combined_crashes.parquet
 meta:
   computation:
-    cmd: njdot/aashto/to_njdot_schema.py -y 2023,2024,2025
+    cmd: cd ../.. && njdot/aashto/to_njdot_schema.py -y 2023,2024,2025
     git_deps:
       /njdot/aashto/to_njdot_schema.py: 0ad39efb3151ef4b58b4fd0d4c9bd8900074fce6
     deps:
