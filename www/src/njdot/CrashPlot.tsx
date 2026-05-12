@@ -125,13 +125,20 @@ export default function CrashPlot({
             setSelectedMunis(allMunis)
         }
     }, [allMunis.join(',')])
-    // Municipality filter: disable county/muni stacking; single-county: disable
-    // county stacking. Condition/Victim-Type only apply for measure='people';
-    // fall back to 'none' otherwise.
+    // Stack-by validity by measure:
+    //   - 'severity' (crash-level f/i/p) is ambiguous for measure='people'
+    //     (it'd count people in fatal-severity *crashes*, including survivors,
+    //     not people killed) and for measure='vehicles' (we'd rather stack by
+    //     vehicle disposition/damage — see specs/vehicle-facets.md).
+    //   - 'condition' (person-level KABCO) + 'victim_type' apply only to People.
+    //   - 'county' / 'municipality' work for any measure (subject to the geo-
+    //     scope guards above).
     const peopleOnlyStack = stackBy === 'condition' || stackBy === 'victim_type'
+    const severityStackInvalid = stackBy === 'severity' && measure !== 'crashes'
     const effectiveStackBy = hasMuniFilter && (stackBy === 'county' || stackBy === 'municipality') ? 'none'
         : !isSingleCounty && stackBy === 'municipality' ? 'none'
         : peopleOnlyStack && measure !== 'people' ? 'none'
+        : severityStackInvalid ? 'none'
         : stackBy
 
     // Reset active trace when stacking mode changes
@@ -719,7 +726,12 @@ export default function CrashPlot({
                         name="stackBy"
                         options={[
                             { label: 'None', data: 'none' as StackBy },
-                            { label: 'Severity', data: 'severity' as StackBy },
+                            // Crash-level Severity only makes sense for the Crashes measure.
+                            // For People it'd mean "people in fatal/injury/PDO crashes" (incl.
+                            // survivors), which is more confusing than useful; for Vehicles
+                            // we'll add a per-vehicle Damage facet instead (see
+                            // specs/vehicle-facets.md).
+                            { label: 'Severity', data: 'severity' as StackBy, disabled: measure !== 'crashes' },
                             { label: 'Condition', data: 'condition' as StackBy, disabled: measure !== 'people' },
                             { label: 'Victim Type', data: 'victim_type' as StackBy, disabled: measure !== 'people' },
                             ...(!hasMuniFilter ? [{ label: 'County', data: 'county' as StackBy }] : []),
