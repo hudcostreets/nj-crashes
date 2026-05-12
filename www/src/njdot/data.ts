@@ -7,6 +7,12 @@ export const SeverityLabels: Record<Severity, string> = {
     i: 'Injury',
     p: 'Other',
 }
+// NJTR-1 crash-level severity definitions
+export const SeverityDefs: Record<Severity, string> = {
+    f: 'Fatal Crash: at least one person died within 30 days of the crash as a direct result of injuries (per AASHTO Fatal Crash Indicator = "Y").',
+    i: 'Injury Crash: at least one person sustained a non-fatal injury (serious, minor, or possible).',
+    p: 'Property Damage Only: no injuries were reported; vehicles or property were damaged.',
+}
 export const SeverityColorsLight: Record<Severity, string> = {
     p: '#E0C830',  // gold
     i: '#F09030',  // orange
@@ -28,6 +34,13 @@ export const VictimTypeLabels: Record<VictimType, string> = {
     b: 'Cyclist',
     u: 'Unknown',
 }
+export const VictimTypeDefs: Record<VictimType, string> = {
+    d: 'Driver: operator of a motor vehicle involved in the crash.',
+    o: 'Passenger: occupant of a motor vehicle other than the driver.',
+    p: 'Pedestrian: person on foot involved in the crash.',
+    b: 'Cyclist: person on a bicycle or similar non-motorized vehicle involved in the crash.',
+    u: 'Unknown: person type could not be determined (often AASHTO records with blank Position; common for mis-tagged pedestrian/cyclist victims).',
+}
 export const VictimTypeColors: Record<VictimType, string> = {
     d: '#636EFA',  // blue
     o: '#00CC96',  // green
@@ -36,7 +49,7 @@ export const VictimTypeColors: Record<VictimType, string> = {
     u: '#7F7F7F',  // gray
 }
 
-// Physical conditions (injury severity)
+// Physical conditions (person-level injury severity, KABCO scale)
 export type Condition = 'f' | 's' | 'm' | 'p' | 'n'
 export const Conditions: Condition[] = ['f', 's', 'm', 'p', 'n']
 export const ConditionLabels: Record<Condition, string> = {
@@ -45,6 +58,14 @@ export const ConditionLabels: Record<Condition, string> = {
     m: 'Minor Injury',
     p: 'Possible Injury',
     n: 'No Apparent Injury',
+}
+// NJTR-1 person-level injury definitions
+export const ConditionDefs: Record<Condition, string> = {
+    f: 'Fatal injury: death within 30 days of the crash as a direct result of injuries sustained.',
+    s: 'Serious (incapacitating) injury, including:\n• Severe laceration exposing tissues/muscle/organs or causing significant blood loss\n• Broken or distorted extremity (arm or leg)\n• Crush injuries\n• Suspected skull, chest, or abdominal injury (other than bruises/minor lacerations)\n• Significant burns (2nd/3rd degree over ≥10% of body)\n• Unconsciousness when removed from the crash scene\n• Paralysis',
+    m: 'Minor (non-incapacitating evident) injury: evident injury other than fatal or serious. Examples: lump on the head, abrasions, bruises, minor lacerations (cuts with minimal bleeding, no exposed tissue).',
+    p: 'Possible injury: reported injury not fatal/serious/minor. Examples: momentary loss of consciousness, claim of injury, limping, complaint of pain or nausea. Person reports or behavior indicates injury, but no wounds are readily evident.',
+    n: 'No apparent injury: no visible injury reported (property damage only on the person level).',
 }
 export const ConditionColors: Record<Condition, string> = {
     f: '#EF553B',  // red
@@ -106,6 +127,22 @@ export const MeasureLabels: Record<Measure, string> = {
     pk: 'Pedestrian Fatalities',
     pi: 'Pedestrian Injuries',
     tv: 'Vehicles',
+}
+
+// User-facing measure choices for CrashPlot. `people` sums the 25-cell VTC
+// matrix (victim type × condition) filtered by current Condition/VictimType
+// selections; `crashes` and `vehicles` map directly to `n` and `tv` columns.
+export type MeasureKind = 'crashes' | 'people' | 'vehicles'
+export const MeasureKinds: MeasureKind[] = ['crashes', 'people', 'vehicles']
+export const MeasureKindLabels: Record<MeasureKind, string> = {
+    crashes: 'Crashes',
+    people: 'People',
+    vehicles: 'Vehicles',
+}
+export const MeasureKindDefs: Record<MeasureKind, string> = {
+    crashes: 'Number of crash events (each row in the NJDOT crash table is one event, regardless of how many people or vehicles were involved).',
+    people: 'Number of people involved (drivers + passengers + pedestrians + cyclists + unknown), summed from the 25-cell victim-type × condition matrix. Filter by Condition (injury severity) and/or Victim Type below.',
+    vehicles: 'Number of vehicles involved across all crashes in the bucket.',
 }
 
 // Time granularity

@@ -9,7 +9,11 @@ import { useGeoFilter } from "@/src/GeoFilterContext"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import {
     YmsRow, YmccsRow, YmccmcsRow,
-    Severity, Severities, SeverityLabels, SeverityColorsLight, SeverityColorsDark,
+    Severity, Severities, SeverityLabels, SeverityDefs, SeverityColorsLight, SeverityColorsDark,
+    Condition, Conditions, ConditionLabels, ConditionDefs, ConditionColors,
+    VictimType, VictimTypes, VictimTypeLabels, VictimTypeDefs, VictimTypeColors,
+    MeasureKind, MeasureKinds, MeasureKindLabels, MeasureKindDefs,
+    vtcCol,
     Counties,
     StackBy,
     toYM,
@@ -58,13 +62,14 @@ export default function CrashPlot({
     showControls = true,
     controlsOpen: initialControlsOpen = false,
 }: CrashPlotProps) {
-    // Measure: 'n' = crashes, 'tk' = deaths, 'ti' = injuries.
-    // The aggregate parquets (`ys`/`yms`/`yccs`/`ymccs`/`ymccmcs`)
-    // include all three columns; choice is a UI-level pivot.
-    type Measure = 'n' | 'tk' | 'ti'
-    const [measure, setMeasure] = useSessionStorage<Measure>('crashplot-measure', 'n')
+    // Measure radio: Crashes / People / Vehicles. `crashes` and `vehicles` map
+    // to the `n` / `tv` columns; `people` sums the 25-cell VTC matrix filtered
+    // by the active Condition + Victim Type selections.
+    const [measure, setMeasure] = useSessionStorage<MeasureKind>('crashplot-measure-v2', 'crashes')
     const [stackBy, setStackBy] = useSessionStorage<StackBy>('crashplot-stackBy', initialStackBy)
     const [severities, setSeverities] = useSessionStorage<Severity[]>('crashplot-severities', initialSeverities)
+    const [conditions, setConditions] = useSessionStorage<Condition[]>('crashplot-conditions', [...Conditions])
+    const [victimTypes, setVictimTypes] = useSessionStorage<VictimType[]>('crashplot-victimTypes', [...VictimTypes])
     const [counties, setCounties] = useSessionStorage<number[]>('crashplot-counties', initialCounties)
     // Sync with external counties prop (geo filter)
     useEffect(() => { setCounties(initialCounties) }, [initialCounties.join(',')])
@@ -120,9 +125,13 @@ export default function CrashPlot({
             setSelectedMunis(allMunis)
         }
     }, [allMunis.join(',')])
-    // Municipality filter: disable county/muni stacking; single-county: disable county stacking
+    // Municipality filter: disable county/muni stacking; single-county: disable
+    // county stacking. Condition/Victim-Type only apply for measure='people';
+    // fall back to 'none' otherwise.
+    const peopleOnlyStack = stackBy === 'condition' || stackBy === 'victim_type'
     const effectiveStackBy = hasMuniFilter && (stackBy === 'county' || stackBy === 'municipality') ? 'none'
         : !isSingleCounty && stackBy === 'municipality' ? 'none'
+        : peopleOnlyStack && measure !== 'people' ? 'none'
         : stackBy
 
     // Reset active trace when stacking mode changes
@@ -145,10 +154,41 @@ export default function CrashPlot({
     const { data, loading, error, timing } = useParquet<AnyRow>(url)
 
     // Helpers to get numeric values from rows (handles BigInt from parquet)
-    const getVal = (row: AnyRow, key: Measure): number => {
+    const getCol = (row: AnyRow, key: string): number => {
         const val = (row as Record<string, unknown>)[key]
         if (val == null) return 0
         return typeof val === 'bigint' ? Number(val) : (val as number)
+    }
+    // `crashes` → `n`; `vehicles` → `tv`; `people` → sum of VTC cells filtered
+    // by current Condition/VictimType selections. Severity (crash-level) is
+    // applied at the row-filter stage (above), not here.
+    const getVal = (row: AnyRow): number => {
+        if (measure === 'crashes') return getCol(row, 'n')
+        if (measure === 'vehicles') return getCol(row, 'tv')
+        // people: sum vtcCol(vt, c) cells for selected types × conditions
+        let total = 0
+        for (const vt of victimTypes) {
+            for (const c of conditions) {
+                total += getCol(row, vtcCol(vt, c))
+            }
+        }
+        return total
+    }
+    // For Stack By = Condition: pick only one Condition's cells per trace.
+    const getValByCondition = (row: AnyRow, c: Condition): number => {
+        let total = 0
+        for (const vt of victimTypes) {
+            total += getCol(row, vtcCol(vt, c))
+        }
+        return total
+    }
+    // For Stack By = Victim Type: pick only one VictimType's cells per trace.
+    const getValByVictimType = (row: AnyRow, vt: VictimType): number => {
+        let total = 0
+        for (const c of conditions) {
+            total += getCol(row, vtcCol(vt, c))
+        }
+        return total
     }
     const getYear = (row: AnyRow): number => {
         const val = row.y
@@ -275,7 +315,7 @@ export default function CrashPlot({
                 const key = timeGranularity === 'month'
                     ? toYM(getYear(row), getMonth(row))
                     : String(getYear(row))
-                const val = getVal(row, measure)
+                const val = getVal(row)
                 totalsPerPeriod.set(key, (totalsPerPeriod.get(key) || 0) + val)
             }
         }
@@ -287,7 +327,7 @@ export default function CrashPlot({
                 const key = timeGranularity === 'month'
                     ? toYM(getYear(row), getMonth(row))
                     : String(getYear(row))
-                grouped.set(key, (grouped.get(key) || 0) + getVal(row, measure))
+                grouped.set(key, (grouped.get(key) || 0) + getVal(row))
             }
             traces.push(buildTrace(grouped, 'Total', '#636EFA'))
         } else if (effectiveStackBy === 'severity') {
@@ -301,7 +341,7 @@ export default function CrashPlot({
                     const key = timeGranularity === 'month'
                         ? toYM(getYear(row), getMonth(row))
                         : String(getYear(row))
-                    grouped.set(key, (grouped.get(key) || 0) + getVal(row, measure))
+                    grouped.set(key, (grouped.get(key) || 0) + getVal(row))
                 }
                 // Save original counts for hover display before converting to percentages
                 const originalGrouped = stackPercent ? new Map(grouped) : undefined
@@ -323,7 +363,7 @@ export default function CrashPlot({
                     const ccNum = typeof cc === 'bigint' ? Number(cc) : cc
                     // Only include selected counties
                     if (counties.includes(ccNum)) {
-                        countyTotals.set(ccNum, (countyTotals.get(ccNum) || 0) + getVal(row, measure))
+                        countyTotals.set(ccNum, (countyTotals.get(ccNum) || 0) + getVal(row))
                     }
                 }
             }
@@ -343,7 +383,7 @@ export default function CrashPlot({
                     const key = timeGranularity === 'month'
                         ? toYM(getYear(row), getMonth(row))
                         : String(getYear(row))
-                    grouped.set(key, (grouped.get(key) || 0) + getVal(row, measure))
+                    grouped.set(key, (grouped.get(key) || 0) + getVal(row))
                 }
                 // Save original counts for hover display before converting to percentages
                 const originalGrouped = stackPercent ? new Map(grouped) : undefined
@@ -361,7 +401,7 @@ export default function CrashPlot({
             const muniTotals = new Map<number, number>()
             for (const row of filtered) {
                 const mcVal = getMc(row as YmccmcsRow)
-                muniTotals.set(mcVal, (muniTotals.get(mcVal) || 0) + getVal(row, measure))
+                muniTotals.set(mcVal, (muniTotals.get(mcVal) || 0) + getVal(row))
             }
             const sortedMunis = [...muniTotals.entries()]
                 .sort((a, b) => b[1] - a[1])
@@ -374,7 +414,7 @@ export default function CrashPlot({
                     const key = timeGranularity === 'month'
                         ? toYM(getYear(row), getMonth(row))
                         : String(getYear(row))
-                    grouped.set(key, (grouped.get(key) || 0) + getVal(row, measure))
+                    grouped.set(key, (grouped.get(key) || 0) + getVal(row))
                 }
                 const originalGrouped = stackPercent ? new Map(grouped) : undefined
                 if (stackPercent) {
@@ -385,6 +425,50 @@ export default function CrashPlot({
                 }
                 const muniName = mc2mn[mcVal] || `Muni ${mcVal}`
                 traces.push(buildTrace(grouped, muniName, undefined, originalGrouped))
+            }
+        } else if (effectiveStackBy === 'condition') {
+            // Stack by person-level injury condition (5 levels). Only valid
+            // for measure='people'; the trace value sums VTC cells across
+            // selected Victim Types for one Condition at a time.
+            for (const c of Conditions) {
+                if (!conditions.includes(c)) continue
+                const grouped = new Map<string, number>()
+                for (const row of filtered) {
+                    const key = timeGranularity === 'month'
+                        ? toYM(getYear(row), getMonth(row))
+                        : String(getYear(row))
+                    grouped.set(key, (grouped.get(key) || 0) + getValByCondition(row, c))
+                }
+                const originalGrouped = stackPercent ? new Map(grouped) : undefined
+                if (stackPercent) {
+                    for (const [key, val] of grouped) {
+                        const total = totalsPerPeriod.get(key) || 1
+                        grouped.set(key, (val / total) * 100)
+                    }
+                }
+                traces.push(buildTrace(grouped, ConditionLabels[c], ConditionColors[c], originalGrouped))
+            }
+        } else if (effectiveStackBy === 'victim_type') {
+            // Stack by Victim Type (5 categories). Only valid for
+            // measure='people'; the trace value sums VTC cells across
+            // selected Conditions for one Victim Type at a time.
+            for (const vt of VictimTypes) {
+                if (!victimTypes.includes(vt)) continue
+                const grouped = new Map<string, number>()
+                for (const row of filtered) {
+                    const key = timeGranularity === 'month'
+                        ? toYM(getYear(row), getMonth(row))
+                        : String(getYear(row))
+                    grouped.set(key, (grouped.get(key) || 0) + getValByVictimType(row, vt))
+                }
+                const originalGrouped = stackPercent ? new Map(grouped) : undefined
+                if (stackPercent) {
+                    for (const [key, val] of grouped) {
+                        const total = totalsPerPeriod.get(key) || 1
+                        grouped.set(key, (val / total) * 100)
+                    }
+                }
+                traces.push(buildTrace(grouped, VictimTypeLabels[vt], VictimTypeColors[vt], originalGrouped))
             }
         }
 
@@ -552,7 +636,7 @@ export default function CrashPlot({
         }
 
         return { traces, layout }
-    }, [data, effectiveStackBy, severities, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors, isDark, cc2mc2mn, plotAnnotations])
+    }, [data, effectiveStackBy, severities, conditions, victimTypes, measure, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors, isDark, cc2mc2mn, plotAnnotations])
 
     // Check if we're waiting for county data (need ymccs but have yms)
     const waitingForCountyData = needsCountyData && data && data.length > 0 && !('cc' in data[0])
@@ -623,11 +707,10 @@ export default function CrashPlot({
                     <Radios
                         label="Measure"
                         name="measure"
-                        options={[
-                            { label: 'Crashes', data: 'n' as Measure },
-                            { label: 'Deaths', data: 'tk' as Measure },
-                            { label: 'Injuries', data: 'ti' as Measure },
-                        ]}
+                        options={MeasureKinds.map(m => ({
+                            label: <Tooltip title={MeasureKindDefs[m]}><span>{MeasureKindLabels[m]}</span></Tooltip>,
+                            data: m,
+                        }))}
                         choice={measure}
                         cb={setMeasure}
                     />
@@ -637,6 +720,8 @@ export default function CrashPlot({
                         options={[
                             { label: 'None', data: 'none' as StackBy },
                             { label: 'Severity', data: 'severity' as StackBy },
+                            { label: 'Condition', data: 'condition' as StackBy, disabled: measure !== 'people' },
+                            { label: 'Victim Type', data: 'victim_type' as StackBy, disabled: measure !== 'people' },
                             ...(!hasMuniFilter ? [{ label: 'County', data: 'county' as StackBy }] : []),
                             ...(isSingleCounty && !hasMuniFilter ? [{ label: 'Municipality', data: 'municipality' as StackBy }] : []),
                         ]}
@@ -654,10 +739,10 @@ export default function CrashPlot({
                         cb={setTimeGranularity}
                     />
                     <Checklist
-                        label="Severity"
+                        label={<Tooltip title="Crash-level severity (NJTR-1 / AASHTO). Filters which crash rows are included for every measure."><span>Severity</span></Tooltip>}
                         data={Severities.map(s => ({
                             name: s,
-                            label: SeverityLabels[s],
+                            label: <Tooltip title={SeverityDefs[s]}><span>{SeverityLabels[s]}</span></Tooltip>,
                             data: s,
                             checked: severities.includes(s),
                             // Only show color swatches when stacking by severity
@@ -665,6 +750,32 @@ export default function CrashPlot({
                         }))}
                         cb={setSeverities}
                     />
+                    {measure === 'people' && (
+                        <Checklist
+                            label={<Tooltip title="Person-level injury severity (KABCO scale, per NJTR-1). Filters which cells of the victim-type × condition matrix are summed."><span>Condition</span></Tooltip>}
+                            data={Conditions.map(c => ({
+                                name: c,
+                                label: <Tooltip title={ConditionDefs[c]}><span>{ConditionLabels[c]}</span></Tooltip>,
+                                data: c,
+                                checked: conditions.includes(c),
+                                ...(stackBy === 'condition' && { color: ConditionColors[c] }),
+                            }))}
+                            cb={setConditions}
+                        />
+                    )}
+                    {measure === 'people' && (
+                        <Checklist
+                            label={<Tooltip title="Who was involved. Filters the victim-type × condition matrix."><span>Victim Type</span></Tooltip>}
+                            data={VictimTypes.map(vt => ({
+                                name: vt,
+                                label: <Tooltip title={VictimTypeDefs[vt]}><span>{VictimTypeLabels[vt]}</span></Tooltip>,
+                                data: vt,
+                                checked: victimTypes.includes(vt),
+                                ...(stackBy === 'victim_type' && { color: VictimTypeColors[vt] }),
+                            }))}
+                            cb={setVictimTypes}
+                        />
+                    )}
                     {!hasMuniFilter && !isSingleCounty && (
                         <CountyDropdown
                             selected={counties}
