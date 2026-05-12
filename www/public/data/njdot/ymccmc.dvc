@@ -1,16 +1,19 @@
 outs:
-- md5: c9627d129e88f4c9f48b48f692ccd2e8.dir
-  size: 1247206
+- md5: 8fb6866bed0168da65365e81d3e71a52.dir
+  size: 2301008
   hash: md5
+  nfiles: 22
   path: ymccmc
 meta:
   computation:
     cmd: env -u PYTHONPATH njdot agg
     git_deps:
-      /njdot/agg.py: 653b496f7bf68d59f398ab4a14beed410c8e45e4
+      /njdot/agg.py: 56d15311a7ed1a95cb8a2b1d94989042d109ab6d
     deps:
       /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
       /njdot/data/aashto_supplemented_crashes.parquet: 92ac7e301eab0f949748c6061317cf9f
+      /njdot/data/occupants.parquet: a2879e533e566c4c1b8be11ee403d59e
+      /njdot/data/pedestrians.parquet: 7f1dc043bbc22ed522115e4adbc911fd
     note: |
       `agg.py` produces multiple outputs in `www/public/data/njdot/`:
       smaller state/county aggregates (`ys`/`yms`/`yccs`/`ymccs`) live
@@ -18,3 +21,8 @@ meta:
       ~2.4MB across 42 files) are DVX-tracked here. `ymccmcs.dvc` is
       a co-output of the same `agg.py` invocation; dvx runs the cmd
       twice when both are stale (~10s, fine).
+
+      Legacy crashes (pre-2023) get their VTC matrix populated by
+      joining `occupants.parquet` + `pedestrians.parquet` via
+      `crash_id` (== crashes parquet row-index); AASHTO years
+      (2023+) already carry VTC in `aashto_supplemented_crashes`.

@@ -15,7 +15,10 @@ from pathlib import Path
 import click
 import pandas as pd
 
-from njdot.paths import AASHTO_SUPPLEMENTED_CRASHES, CRASHES_PQT, WWW_DATA_DOT
+from njdot.paths import (
+    AASHTO_SUPPLEMENTED_CRASHES, CRASHES_PQT, WWW_DATA_DOT,
+    OCCUPANTS_PQT, PEDESTRIANS_PQT,
+)
 
 
 # Dimension columns
@@ -31,14 +34,66 @@ DIMS = {
 VICTIM_TYPES = ['d', 'o', 'p', 'b', 'u']  # driver, passenger, pedestrian, bicyclist, unknown
 CONDITIONS = ['f', 's', 'm', 'p', 'n']     # fatal, serious, minor, possible, none
 VTC_COLS = [f'{vt}{c}' for vt in VICTIM_TYPES for c in CONDITIONS]
+CONDITION_MAP = {1: 'f', 2: 's', 3: 'm', 4: 'p', 5: 'n', 0: 'n'}
 
 # Measure columns (aggregations)
 # Include victim type × condition matrix (25 columns) for frontend filtering/stacking
 MEASURES = ['n', 'tk', 'ti', 'pk', 'pi', 'tv'] + VTC_COLS
 
 
-def load_crashes(path: Path) -> pd.DataFrame:
-    """Load crashes parquet and add month column."""
+def _pos_to_vt(pos):
+    """Driver / passenger / unknown classification from `pos` field."""
+    if pd.isna(pos) or pos == 0:
+        return 'u'
+    return 'd' if pos == 1 else 'o'
+
+
+def compute_legacy_vtc(occupants_path: Path, pedestrians_path: Path) -> pd.DataFrame:
+    """Compute per-crash 25-col VTC matrix from legacy O/P master parquets.
+
+    The legacy O/P parquets reference crashes by `crash_id` (== crashes
+    parquet's row index, NOT (year, cc, mc, case)). This function aggregates
+    person-level rows into 25 columns per `crash_id`.
+
+    Filters person-level `condition` to the 1-5 range (1=Fatal, 5=No Apparent
+    Injury); 0/null are dropped. Occupant `pos`: 1=driver, >1=passenger,
+    0/null → unknown (`u`-prefixed cells). Pedestrian `cyclist` bool splits
+    `p` vs `b` cells.
+    """
+    print(f"  Computing legacy VTC from {occupants_path.name} + {pedestrians_path.name}...")
+    # Legacy O/P pre-2019: ~76% of occupant rows have `condition=NA` (DOTr
+    # coding improved over time). Treat NA / 0 / out-of-range as 'n' (no
+    # apparent injury) so those people still count as crash participants;
+    # otherwise pre-2019 People bars would be artificially ~85% lower than
+    # later years.
+    o = pd.read_parquet(occupants_path, columns=['crash_id', 'pos', 'condition'])
+    o['cond'] = o['condition'].map(CONDITION_MAP).fillna('n')
+    o['vt'] = o['pos'].apply(_pos_to_vt)
+    o['vtc'] = o['vt'] + o['cond']
+    o_agg = o.groupby(['crash_id', 'vtc']).size().unstack(fill_value=0)
+
+    p = pd.read_parquet(pedestrians_path, columns=['crash_id', 'cyclist', 'condition'])
+    p['cond'] = p['condition'].map(CONDITION_MAP).fillna('n')
+    p['vt'] = p['cyclist'].apply(lambda b: 'b' if b else 'p')
+    p['vtc'] = p['vt'] + p['cond']
+    p_agg = p.groupby(['crash_id', 'vtc']).size().unstack(fill_value=0)
+
+    combined = o_agg.add(p_agg, fill_value=0)
+    for col in VTC_COLS:
+        if col not in combined.columns:
+            combined[col] = 0
+    combined = combined[VTC_COLS].fillna(0).astype('int32')
+    print(f"    {len(combined):,} crashes with VTC; total cells = {combined.values.sum():,}")
+    return combined
+
+
+def load_crashes(path: Path, enrich_legacy_vtc: bool = False) -> pd.DataFrame:
+    """Load crashes parquet and add month column.
+
+    `enrich_legacy_vtc=True` merges VTC columns from legacy O/P masters via
+    `crash_id` ↔ crashes index (only applies when the loaded parquet has no
+    VTC of its own — pre-2023 master `crashes.parquet`).
+    """
     import pyarrow.parquet as pq
     schema_cols = set(pq.read_schema(path).names)
     base_cols = ['year', 'cc', 'mc', 'dt', 'severity', 'tk', 'ti', 'pk', 'pi', 'tv']
@@ -53,6 +108,19 @@ def load_crashes(path: Path) -> pd.DataFrame:
     for c in VTC_COLS:
         if c not in df.columns:
             df[c] = 0
+
+    # Enrich legacy crashes with VTC by joining O/P masters via crash_id
+    # (== crashes.parquet row-index). No-op if VTC cols were already present.
+    if enrich_legacy_vtc and not vtc_present:
+        vtc = compute_legacy_vtc(Path(OCCUPANTS_PQT), Path(PEDESTRIANS_PQT))
+        # crashes.parquet's RangeIndex is the crash_id used by O/P
+        merged = df.join(vtc, how='left', rsuffix='_vtc')
+        for c in VTC_COLS:
+            vtc_col = f'{c}_vtc'
+            if vtc_col in merged.columns:
+                merged[c] = merged[vtc_col].fillna(0).astype('int32')
+                merged = merged.drop(columns=[vtc_col])
+        df = merged
     return df
 
 
@@ -140,7 +208,9 @@ def agg(input_path: str, aashto_input: str, output_dir: str, aggs: str):
     output_dir = Path(output_dir)
 
     print(f"Loading {input_path}...")
-    df = load_crashes(input_path)
+    # Legacy crashes.parquet has no VTC cols — enrich from O/P masters via
+    # crash_id join, so pre-2023 years populate the 25-cell matrix.
+    df = load_crashes(input_path, enrich_legacy_vtc=True)
     print(f"  {len(df):,} crashes loaded ({df['year'].min()}-{df['year'].max()})")
 
     if aashto_input.exists():
