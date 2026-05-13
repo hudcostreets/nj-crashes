@@ -570,6 +570,17 @@ export default function CrashPlot({
             }
         }
 
+        // Single-trace promotion: when filters collapse the stack to one bar
+        // trace, move its labels above the bars and bump the font. (Inside-bar
+        // labels at 9px are designed for stacked segments — they look cramped
+        // and lose the dimensional cue when there's only one segment per bar.)
+        const barTraces = traces.filter(t => t.type === 'bar')
+        if (barTraces.length === 1) {
+            const t = barTraces[0]
+            t.textposition = 'outside'
+            t.textfont = { size: 12, color: plotColors.textColor }
+        }
+
         // Add 12month moving average lines for monthly view (when stack is none or severity)
         if (show12moAvg && timeGranularity === 'month' && (effectiveStackBy === 'none' || effectiveStackBy === 'severity')) {
             const firstTrace = traces[0]
@@ -722,10 +733,11 @@ export default function CrashPlot({
             shapes: annShapes,
         }
 
-        // Solo mode: when a trace is click-pinned as active, hide others. This
-        // is the "solo" behavior — only fires on click (hover uses pltly's
-        // built-in opacity fade; the no-flicker fix is `boldWeight="normal"`
-        // passed to PlotWrapper, which stops legend text from reflowing).
+        // Solo mode: when a trace is click-pinned, hide others. `activeTrace`
+        // is updated via `onSoloTrace` (pin only) — NOT `onActiveTrace` (which
+        // fires on hover too). With the hover wiring, every legend-item hover
+        // would rebuild traces and flip `visible: 'legendonly'` for the other
+        // bars, producing a "nothing drawn" flicker mid-hover-sweep.
         if (activeTrace) {
             for (const trace of traces) {
                 const isActive = trace.name === activeTrace || trace.legendgroup === activeTrace
@@ -739,7 +751,21 @@ export default function CrashPlot({
     // Check if we're waiting for county data (need ymccs but have yms)
     const waitingForCountyData = needsCountyData && data && data.length > 0 && !('cc' in data[0])
 
-    if (loading || waitingForCountyData) {
+    // Keep the most recent {traces, layout} so transitions that trigger a
+    // parquet re-fetch (e.g. Stack By → County switches the source from yms
+    // to yccs) don't blank the chart out for ~500ms. We render the stale
+    // chart underneath with a small "loading" badge overlay, instead of
+    // replacing the whole plot area with text. Only kicks in while loading
+    // — if filters collapse to an empty trace set without a fetch in flight,
+    // we render empty (correct behavior, not a stale carry-over).
+    const lastChartRef = useRef<{ traces: Partial<PlotData>[], layout: Partial<Layout> }>({ traces: [], layout: {} })
+    if (traces.length > 0) lastChartRef.current = { traces, layout }
+    const isLoading = loading || waitingForCountyData
+    const useStale = isLoading && traces.length === 0 && lastChartRef.current.traces.length > 0
+    const renderTraces = useStale ? lastChartRef.current.traces : traces
+    const renderLayout = useStale ? lastChartRef.current.layout : layout
+    const showInitialLoading = isLoading && lastChartRef.current.traces.length === 0
+    if (showInitialLoading) {
         return <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             Loading crash data...
         </div>
@@ -760,19 +786,23 @@ export default function CrashPlot({
         ? `Select one or more ${emptyFacets.join(" and ")} to view data.`
         : null
 
-    // Key forces remount when data source changes (include data length to wait for load)
-    // Include `effectiveStackBy` so switching Stack By forces a full remount
-    // of the Plotly chart. Without this, Plotly's trace-index-keyed renderer
-    // can leave stale `marker.color` from the previous stack on the new
-    // trace set — e.g. switching Crashes/Severity (3 traces: red/orange/
-    // yellow) → People/VictimType (5 traces: blue/green/purple/orange/gray)
-    // ends up rendering the People bars with the Severity color palette
-    // while the legend (correctly) shows the new VictimType swatches.
-    const plotKey = `${source}-${data?.length || 0}-${effectiveStackBy}-${measure}`
+    // Plotly remount key: ONLY on `measure`/`effectiveStackBy` change. The
+    // trace palette can change wholesale across those transitions (e.g.
+    // Crashes/Severity 3-tone → People/VictimType 5-tone) and Plotly's
+    // react renderer keys traces by index, so without a remount the new
+    // bars render with the old `marker.color` while the legend (correctly)
+    // shows the new swatches.
+    //
+    // Deliberately NOT keying on `source` / data length / etc. — those
+    // change during routine parquet refetches (Stack By → County switches
+    // from yms.parquet to yccs.parquet) and remounting on every fetch is
+    // exactly the loading flicker the stable-traces ref above is fighting
+    // against. Plotly handles a same-shape `data` prop update smoothly.
+    const plotKey = `${measure}-${effectiveStackBy}`
 
     return (
         <div>
-            <div style={{ minHeight: height }}>
+            <div style={{ minHeight: height, position: 'relative' }}>
                 {emptySelection ? (
                     <div style={{
                         height,
@@ -788,9 +818,9 @@ export default function CrashPlot({
                 ) : (
                     <PlotWrapper
                         key={plotKey}
-                        data={traces as PlotData[]}
-                        layout={layout}
-                        onActiveTrace={setActiveTrace}
+                        data={renderTraces as PlotData[]}
+                        layout={renderLayout}
+                        onSoloTrace={setActiveTrace}
                         onHover={handleHover}
                         onUnhover={handleUnhover}
                         onClickAnnotation={() => annOpen.setPinned(!annOpen.pinned)}
@@ -799,6 +829,20 @@ export default function CrashPlot({
                         disableFade
                         boldWeight="normal"
                     />
+                )}
+                {isLoading && !emptySelection && (
+                    <div style={{
+                        position: 'absolute',
+                        top: 8, right: 8,
+                        padding: '2px 8px',
+                        fontSize: '0.8em',
+                        background: 'rgba(127,127,127,0.2)',
+                        color: plotColors.textColor,
+                        borderRadius: 4,
+                        pointerEvents: 'none',
+                    }}>
+                        loading…
+                    </div>
                 )}
             </div>
             {showControls && (

@@ -11,6 +11,8 @@ export type LegendHandlers = {
     onActiveTrace?: (name: string | null) => void
     /** Called when hover trace changes (transient). null = not hovering. */
     onHoverTrace?: (name: string | null) => void
+    /** Called when solo/pin changes (click only, not hover). null = unpinned. */
+    onSoloTrace?: (name: string | null) => void
     onResetSolo?: () => void
 }
 
@@ -56,6 +58,7 @@ export default function PlotWrapper({
     onLegendDoubleClick,
     onActiveTrace,
     onHoverTrace,
+    onSoloTrace,
     onResetSolo,
     onRelayout,
     onHover,
@@ -87,6 +90,7 @@ export default function PlotWrapper({
             onRelayout={onRelayout as any}
             onActiveTraceChange={onActiveTrace}
             onHoverTraceChange={onHoverTrace}
+            onSoloTraceChange={onSoloTrace}
             onHover={onHover}
             onUnhover={onUnhover}
             onResetSolo={onResetSolo}
