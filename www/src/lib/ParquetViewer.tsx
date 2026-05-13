@@ -1,61 +1,64 @@
-import { useEffect, useState } from "react"
-import { parquetRead, parquetMetadataAsync, parquetSchema, asyncBufferFromUrl } from "hyparquet"
-import { rawGetUrl, fmtSize } from "./api"
-import { Pager } from "./Pager"
-
-type Schema = { name: string; type?: string }[]
+/** Hyparquet-backed parquet preview. Reads metadata via Range requests
+ *  (parquet footer at end of file) so the schema renders before any
+ *  row groups load; then fetches `ROWS_PER_PAGE` rows at a time.
+ *
+ *  Wired into the `@rdub/file-tree` `parquetRenderer` slot via `(store,
+ *  path)`. Same component used by both routes:
+ *    - `/files/*` (FileTree-driven, no extras)
+ *    - `/raw/*`   (custom browser, passes `extraHeader` with the SQL link) */
+import { useEffect, useState, type ReactNode } from "react"
+import { parquetMetadataAsync, parquetRead, parquetSchema } from "hyparquet"
+import { asyncBufferFromStore, fmtSize } from "@rdub/file-tree/react"
+import type { Store } from "@rdub/file-tree"
 
 const ROWS_PER_PAGE = 200
 
-/** Hyparquet-backed table viewer. Reads metadata via Range requests
- *  (parquet footer at end of file) so we can show the schema before
- *  loading any row groups. Then loads `ROWS_PER_PAGE` rows at a time.
- *
- *  Note: hyparquet's `parquetRead` reads a contiguous row range; we
- *  pass `rowStart`/`rowEnd` to fetch only the visible page. Each page
- *  is a fresh read (no cross-page caching beyond the browser's HTTP
- *  cache on the worker's range responses). */
-export function ParquetTable({ path }: { path: string }) {
-    const [schema, setSchema] = useState<Schema | null>(null)
+interface SchemaCol { name: string; type?: string }
+
+export function ParquetViewer({ store, path, extraHeader }: {
+    store: Store
+    path: string
+    /** Optional ReactNode rendered into the header line next to the row/col counts.
+     *  Used by `/raw/*` to surface the "open in SQL ↗" link. */
+    extraHeader?: ReactNode
+}) {
+    const [schema, setSchema] = useState<SchemaCol[] | null>(null)
     const [totalRows, setTotalRows] = useState<number | null>(null)
     const [byteSize, setByteSize] = useState<number | null>(null)
     const [page, setPage] = useState(0)
     const [rows, setRows] = useState<Record<string, unknown>[] | null>(null)
     const [error, setError] = useState<string | null>(null)
 
-    const url = rawGetUrl(path)
-
     useEffect(() => {
         let cancelled = false
         setSchema(null); setTotalRows(null); setByteSize(null); setPage(0); setRows(null); setError(null)
-        async function load() {
+        ;(async () => {
             try {
-                const file = await asyncBufferFromUrl({ url })
+                const file = await asyncBufferFromStore(store, path)
                 const meta = await parquetMetadataAsync(file)
                 if (cancelled) return
-                const sch = parquetSchema(meta).children.map((c: { element: { name: string; type?: string } }) => ({
+                const sch: SchemaCol[] = parquetSchema(meta).children.map((c: { element: { name: string; type?: unknown } }) => ({
                     name: c.element.name,
-                    type: c.element.type ? String(c.element.type) : undefined,
+                    ...(c.element.type ? { type: String(c.element.type) } : {}),
                 }))
                 setSchema(sch)
                 setTotalRows(Number(meta.num_rows))
-                if ("byteLength" in file) setByteSize(Number((file as { byteLength: number }).byteLength))
+                setByteSize(file.byteLength)
             } catch (e) {
                 if (!cancelled) setError(String(e))
             }
-        }
-        load()
+        })()
         return () => { cancelled = true }
-    }, [url])
+    }, [store, path])
 
     useEffect(() => {
         if (totalRows === null) return
         let cancelled = false
         const rowStart = page * ROWS_PER_PAGE
         const rowEnd = Math.min(totalRows, rowStart + ROWS_PER_PAGE)
-        async function loadPage() {
+        ;(async () => {
             try {
-                const file = await asyncBufferFromUrl({ url })
+                const file = await asyncBufferFromStore(store, path)
                 const out: Record<string, unknown>[] = []
                 await parquetRead({
                     file,
@@ -69,10 +72,9 @@ export function ParquetTable({ path }: { path: string }) {
             } catch (e) {
                 if (!cancelled) setError(String(e))
             }
-        }
-        loadPage()
+        })()
         return () => { cancelled = true }
-    }, [url, page, totalRows])
+    }, [store, path, page, totalRows])
 
     if (error) return <div style={{ color: "salmon" }}>error: {error}</div>
     if (!schema || totalRows === null) return <div style={{ opacity: 0.6 }}>reading parquet metadata…</div>
@@ -81,17 +83,13 @@ export function ParquetTable({ path }: { path: string }) {
     const rowStart = page * ROWS_PER_PAGE
     const rowEnd = Math.min(totalRows, rowStart + ROWS_PER_PAGE)
 
-    const sqlHref = `/sql?path=${encodeURIComponent(path)}`
-
     return (
         <>
             <p style={{ opacity: 0.7, fontSize: "0.95em" }}>
                 <b>{totalRows.toLocaleString()}</b> rows · <b>{schema.length}</b> columns
                 {byteSize ? <> · {fmtSize(byteSize)}</> : null}
-                {" · "}
-                <a href={sqlHref} style={{ fontSize: "0.95em" }}>open in SQL ↗</a>
+                {extraHeader ? <> · {extraHeader}</> : null}
             </p>
-
             <details style={{ marginBottom: "0.5em" }}>
                 <summary style={{ cursor: "pointer", fontSize: "0.9em", opacity: 0.8 }}>schema</summary>
                 <table style={{ borderCollapse: "collapse", marginTop: "0.3em", fontSize: "0.85em" }}>
@@ -105,17 +103,21 @@ export function ParquetTable({ path }: { path: string }) {
                     </tbody>
                 </table>
             </details>
-
-            <Pager
-                page={page} pages={pages} setPage={setPage}
-                label={<>page <b>{page + 1}</b> / {pages} · rows {rowStart.toLocaleString()}–{rowEnd.toLocaleString()} / {totalRows.toLocaleString()}</>}
-                jump={false}
-            />
-
+            {pages > 1 && (
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5em", margin: "0.4em 0", fontSize: "0.9em" }}>
+                    <button disabled={page === 0} onClick={() => setPage(0)}>«</button>
+                    <button disabled={page === 0} onClick={() => setPage(page - 1)}>‹</button>
+                    <span style={{ opacity: 0.8 }}>
+                        page <b>{page + 1}</b> / {pages} · rows {rowStart.toLocaleString()}–{rowEnd.toLocaleString()} / {totalRows.toLocaleString()}
+                    </span>
+                    <button disabled={page === pages - 1} onClick={() => setPage(page + 1)}>›</button>
+                    <button disabled={page === pages - 1} onClick={() => setPage(pages - 1)}>»</button>
+                </div>
+            )}
             <div style={{ overflowX: "auto", maxHeight: "70vh", overflowY: "auto", border: "1px solid rgba(127,127,127,0.3)", borderRadius: 4 }}>
                 <table style={{ borderCollapse: "collapse", fontSize: "0.82em", fontFamily: "ui-monospace, monospace" }}>
                     <thead>
-                        <tr style={{ position: "sticky", top: 0, background: "var(--bg, #181818)" }}>
+                        <tr style={{ position: "sticky", top: 0, background: "var(--bg, rgba(127,127,127,0.15))" }}>
                             {schema.map(c => (
                                 <th key={c.name} style={{ padding: "0.3em 0.6em", textAlign: "left", borderBottom: "1px solid rgba(127,127,127,0.4)", fontWeight: 500 }}>
                                     {c.name}
@@ -125,13 +127,13 @@ export function ParquetTable({ path }: { path: string }) {
                     </thead>
                     <tbody>
                         {rows === null ? (
-                            <tr><td colSpan={schema.length} style={{ padding: "0.5em", opacity: 0.6 }}>loading…</td></tr>
+                            <tr><td colSpan={schema.length} style={{ padding: "0.5em", opacity: 0.6 }}>loading rows…</td></tr>
                         ) : (
                             rows.map((r, i) => (
                                 <tr key={i} style={{ borderTop: "1px solid rgba(127,127,127,0.15)" }}>
                                     {schema.map(c => (
                                         <td key={c.name} style={{ padding: "0.2em 0.6em", whiteSpace: "nowrap", maxWidth: "30em", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                            {fmt(r[c.name])}
+                                            {fmtCell(r[c.name])}
                                         </td>
                                     ))}
                                 </tr>
@@ -144,7 +146,7 @@ export function ParquetTable({ path }: { path: string }) {
     )
 }
 
-function fmt(v: unknown): string {
+function fmtCell(v: unknown): string {
     if (v === null || v === undefined) return ""
     if (typeof v === "bigint") return v.toString()
     if (v instanceof Date) return v.toISOString()

@@ -4,8 +4,8 @@
  *    ?path=raw/njdot/...   — pre-fill with `SELECT * FROM read_parquet('<worker-url>') LIMIT 100`
  *    ?q=<sql>              — pre-fill with arbitrary SQL (URL-encoded)
  *
- *  Both params are bookmarkable / shareable; `?path` is what
- *  `<ParquetTable>` deeplinks to from `/raw/...`.
+ *  Both params are bookmarkable / shareable; `?path` is what the
+ *  parquet preview in `/raw/...` deeplinks to.
  */
 import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"

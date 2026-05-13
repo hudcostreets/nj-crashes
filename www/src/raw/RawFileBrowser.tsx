@@ -14,17 +14,19 @@
  */
 import { useMemo } from "react"
 import { useLocation } from "react-router-dom"
+import { HttpStore } from "@rdub/file-tree/stores/http"
 import { Head } from "../lib/head"
+import { ParquetViewer } from "../lib/ParquetViewer"
 import { Breadcrumb, type Crumb } from "./Breadcrumb"
 import { DirListing } from "./DirListing"
 import { ZipEntryList } from "./ZipEntryList"
 import { TextViewer, type TextSource } from "./TextViewer"
-import { ParquetTable } from "./ParquetTable"
 import { CsvTable } from "./CsvTable"
 import { extOf, rawZipEntryUrl, rawGetUrl, fetchZipEntries } from "./api"
 import { parsePath, RAW_PREFIX, TEXTY, type Parsed } from "./parsePath"
 import { useEffect, useState } from "react"
 import { useUrlState, defStringParam } from "use-prms"
+import { CELLS_API_BASE } from "../map/config"
 
 export default function RawFileBrowser() {
     const location = useLocation()
@@ -65,7 +67,7 @@ function Body({ parsed }: { parsed: Parsed }) {
         case "csv":
             return <CsvOrText path={parsed.path} />
         case "parquet":
-            return <ParquetTable path={parsed.path} />
+            return <RawParquet path={parsed.path} />
         case "pdf":
             return (
                 <iframe
@@ -82,6 +84,22 @@ function Body({ parsed }: { parsed: Parsed }) {
                 </div>
             )
     }
+}
+
+/** Module-scope so `useMemo` keys are stable across re-renders. */
+const rawStore = HttpStore(`${CELLS_API_BASE}/v1/raw`)
+
+/** Parquet preview for `/raw/*` — shared `<ParquetViewer>` plus the
+ *  "open in SQL ↗" link that `/raw/*` surfaces (and `/files/*` doesn't). */
+function RawParquet({ path }: { path: string }) {
+    const sqlHref = `/sql?path=${encodeURIComponent(path)}`
+    return (
+        <ParquetViewer
+            store={rawStore}
+            path={path}
+            extraHeader={<a href={sqlHref}>open in SQL ↗</a>}
+        />
+    )
 }
 
 /** Streaming-preview output cap for zip entries. The worker accepts

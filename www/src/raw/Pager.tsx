@@ -1,5 +1,5 @@
 /** Theme-aware pagination buttons + jump-to-page input. Used by both
- *  `<TextViewer>` and `<ParquetTable>`. Native <button> with `disabled`
+ *  `<TextViewer>` and `<CsvTable>`. Native <button> with `disabled`
  *  was rendering with browser-default chrome that didn't fit the dark
  *  theme. */
 
