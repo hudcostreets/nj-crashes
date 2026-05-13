@@ -14,6 +14,7 @@ export function Tooltip(
         arrow={arrow}
         slotProps={{
             popper: {
+                sx: { pointerEvents: 'none' },
                 modifiers: [
                     {
                         name: 'offset',
