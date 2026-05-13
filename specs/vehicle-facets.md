@@ -22,10 +22,10 @@ vehicles that *participated in* fatal crashes — including the undamaged ones
 
 | Column      | Schema     | NJTR-1 source              | Coverage             |
 |-------------|------------|----------------------------|----------------------|
-| `damage`    | Int8 (1-4) | "Extent of Damage"         | ~24% (9.2M / 12.3M NA pre-2019) |
-| `departure` | Int8 (1-6) | "Driven/Left/Towed"        | ~99% (very low NA)   |
-| `make`      | string     | Free text                  | ~99% (215K uniques)  |
-| `model`     | string     | Free text                  | ~99%, even noisier   |
+| `damage`    | Int8 (1-4) | "Extent of Damage"         | **0% pre-2017, 93%+ 2017-2022** (NOT a partial-coverage gradient — NJDOT only started capturing this field in 2017) |
+| `departure` | Int8 (1-6) | "Driven/Left/Towed"        | 87-95% across all years 2001-2022 |
+| `make`      | string     | Free text                  | ~95% (215K uniques)  |
+| `model`     | string     | Free text                  | ~95%, even noisier   |
 | `vy`        | Int16      | Vehicle Year               | varies               |
 | `type`      | Int8       | Vehicle Type code          | varies               |
 
@@ -129,37 +129,52 @@ njdot/data/crashes.parquet   ─┼─► njdot agg ─► yms/yccs/ymccs/ymccmc
 
 ## Implementation phases
 
-1. **Phase 1 (this PR + follow-up)** — UI pivot: drop crash-level Severity
-   from the Stack By menu for People/Vehicles. *(already landed in
-   `CrashPlot.tsx`; no agg change.)*
-2. **Phase 2** — Damage facet:
-   - Extend `agg.py` to compute `vdn/vdm/vdo/vdx/vdu` for legacy years (join
-     `vehicles.parquet` via `crash_id` ↔ crashes index, same pattern as the
-     legacy VTC enrichment).
-   - 2024+ columns are 0 (option B above).
-   - UI: Damage filter (5-checkbox multi-select, like Condition) +
-     Damage stack option, only enabled for `measure=Vehicles`.
-   - NJTR-1 tooltips: pull from `extent_of_damage` mapping in `codes.py`.
+1. **Phase 1 (landed)** — UI pivot: drop crash-level Severity from the Stack
+   By menu for People/Vehicles. `CrashPlot.tsx`, no agg change.
+2. **Phase 2 (landed)** — Damage *and* Departure facets:
+   - `agg.py` joins `vehicles.parquet` via `crash_id` ↔ crashes index (same
+     pattern as the legacy VTC enrichment), produces:
+     - 5 damage cols: `vdx/vdo/vdm/vdn/vdu` (Disabling/Moderate/Minor/None/
+       Unknown). Pre-2017 + AASHTO 2023+ all land in `vdu`.
+     - 4 departure buckets: `vepd/vepl/vept/vepu` (Driven/Left/Towed-any/
+       Unknown). 87-95% coverage 2001-2022; AASHTO 2023+ in `vepu`.
+     - The 6 fine-grained Departure codes (Towed-Disabled / -Impounded /
+       -Both / -legacy) collapse to one `vept` bucket — fine-grained
+       distinctions don't survive the pre-2017 "Towed-legacy" gap anyway.
+   - UI: Damage + Departure both available as Stack By options (only
+     enabled when `measure=Vehicles`); each has its own filter checklist.
+     Defaulting Vehicles to `damage` stack on first switch.
+   - NJTR-1 tooltips wire to `extent_of_damage` + `vehicle_departure` in
+     `codes.py`.
 3. **Phase 3** — Make facet:
    - New stage `njdot/agg_makes.py` → `www/public/data/njdot/ymak.parquet`.
    - Normalize free-text: title-case, common-typo map, top-30 + OTHER.
-   - UI: Make-only stack option (high-cardinality stacks don't render well
-     as filters; show a top-N legend).
-4. **Phase 4** — AASHTO vehicles supplement (option A) — unlock 2024+ for
-   all facets.
+     Strip model leakage when first token is a known make ("HONDA ACCORD" →
+     "HONDA"). After this: top-30 covers **86%** of vehicles (vs 73% raw).
+     Add a fuzzy-match pass (edit-distance ≤ 1 to a top-30 make) for
+     "TOYTA"-class typos, expected to lift coverage another 2-4 pp.
+   - UI: filter+stack (like Damage / Departure / Condition / VictimType) —
+     filter checklist of top-30 + OTHER, plus a searchable subset UI when
+     more than 10 makes are checked.
+4. **Phase 4 (landed)** — AASHTO vehicles supplement:
+   - `njdot aashto vehicles` produces `aashto_supplemented_vehicles.parquet`
+     (1.5M rows across 2023-2025).
+   - Damage coverage 94-98% (AASHTO "Extent of Damage" → legacy codes 1-4).
+   - Departure coverage low (~18%) because AASHTO's "Removed To" is mostly
+     free-text placeholder ("None" most common).
+   - `agg.py` joins on `(year, cc, mc, case)` for AASHTO years; legacy
+     `vehicles.parquet` still drives 2017-2022.
 5. **Phase 5** — Make → fatalities page (separate from CrashPlot).
 
-## Open questions
+## Decisions
 
-- **`damage` vs `departure`** — which makes a better default facet? Damage
-  is the natural severity axis (None → Disabling) and parallels person
-  Condition, but pre-2019 coverage is poor (~24%). Departure is well-coded
-  but is post-crash disposition (drove away vs towed) rather than damage
-  severity per se. I lean Damage for the first pass; revisit if it looks
-  bad.
-- **Make normalization rules** — strict whitelist (only the 30 top makes
-  count; everything else → OTHER) or fuzzy match (handle "TOYTA" / "TOYOTO"
-  typos)? Strict is simpler and probably sufficient.
-- **Make facet UI for high-cardinality**: stack option only (no filter), or
-  also a filter that lets users pick 5-10 makes to compare? Filter could
-  use a search-style dropdown rather than a long checklist.
+- **Damage vs Departure**: ship both, default Vehicles → Damage stack. The
+  2001-2016 Damage gap is too large to use Damage alone (16 of 25 years all
+  in Unknown), so Departure stays available as the cross-era alternative.
+- **Make normalization**: top-30 whitelist + OTHER bucket, with both a
+  prefix-strip pass ("HONDA ACCORD" → "HONDA") and a fuzzy/edit-distance
+  pass for typos. Cumulative top-30 coverage: 73% raw → 86% after prefix-
+  strip → ~88-90% after fuzzy.
+- **Make UI**: filter+stack, same shape as Damage / Departure / Condition /
+  Victim Type. Top-30 + OTHER as a single 31-row checklist; if the list
+  feels long in practice, add a search input above.

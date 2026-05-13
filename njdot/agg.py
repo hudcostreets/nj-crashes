@@ -16,8 +16,8 @@ import click
 import pandas as pd
 
 from njdot.paths import (
-    AASHTO_SUPPLEMENTED_CRASHES, CRASHES_PQT, WWW_DATA_DOT,
-    OCCUPANTS_PQT, PEDESTRIANS_PQT,
+    AASHTO_SUPPLEMENTED_CRASHES, AASHTO_SUPPLEMENTED_VEHICLES, CRASHES_PQT,
+    WWW_DATA_DOT, OCCUPANTS_PQT, PEDESTRIANS_PQT, VEHICLES_PQT,
 )
 
 
@@ -36,9 +36,22 @@ CONDITIONS = ['f', 's', 'm', 'p', 'n']     # fatal, serious, minor, possible, no
 VTC_COLS = [f'{vt}{c}' for vt in VICTIM_TYPES for c in CONDITIONS]
 CONDITION_MAP = {1: 'f', 2: 's', 3: 'm', 4: 'p', 5: 'n', 0: 'n'}
 
+# Vehicle damage tiers (NJTR-1 "Extent of Damage"). Source codes: 1=None,
+# 2=Minor, 3=Moderate, 4=Disabling. Data only exists 2017+; pre-2017 all NA →
+# `vdu` (unknown).
+VD_COLS = ['vdn', 'vdm', 'vdo', 'vdx', 'vdu']
+DAMAGE_MAP = {1: 'vdn', 2: 'vdm', 3: 'vdo', 4: 'vdx'}
+
+# Vehicle departure (NJTR-1 "Driven/Left/Towed"). Collapsed from 6 source
+# codes to 3 buckets: 1=Driven (vepd), 2=Left at Scene (vepl),
+# 3/4/5/6=Towed/any variant (vept). Unknown → `vepu`. Well-coded 2001+.
+VEP_COLS = ['vepd', 'vepl', 'vept', 'vepu']
+DEPARTURE_MAP = {1: 'vepd', 2: 'vepl', 3: 'vept', 4: 'vept', 5: 'vept', 6: 'vept'}
+
 # Measure columns (aggregations)
-# Include victim type × condition matrix (25 columns) for frontend filtering/stacking
-MEASURES = ['n', 'tk', 'ti', 'pk', 'pi', 'tv'] + VTC_COLS
+# Include victim type × condition matrix (25 columns) + per-vehicle damage
+# tiers (5) + departure buckets (4) for frontend filtering/stacking.
+MEASURES = ['n', 'tk', 'ti', 'pk', 'pi', 'tv'] + VTC_COLS + VD_COLS + VEP_COLS
 
 
 def _pos_to_vt(pos):
@@ -87,16 +100,74 @@ def compute_legacy_vtc(occupants_path: Path, pedestrians_path: Path) -> pd.DataF
     return combined
 
 
-def load_crashes(path: Path, enrich_legacy_vtc: bool = False) -> pd.DataFrame:
+def compute_legacy_vehicle_facets(vehicles_path: Path) -> pd.DataFrame:
+    """Compute per-crash damage tier + departure bucket counts from legacy
+    `vehicles.parquet`.
+
+    Returns a DataFrame indexed by `crash_id` with 9 columns: `vdn/vdm/vdo/
+    vdx/vdu` (None/Minor/Moderate/Disabling/Unknown) and `vepd/vepl/vept/
+    vepu` (Driven/Left/Towed/Unknown).
+
+    Damage data only exists 2017+ (pre-2017 rows count toward `vdu`). The
+    Departure field is well-coded 2001+ at ~87-95% coverage.
+    """
+    print(f"  Computing legacy vehicle facets from {vehicles_path.name}...")
+    v = pd.read_parquet(vehicles_path, columns=['crash_id', 'damage', 'departure'])
+    v['vd'] = v['damage'].map(DAMAGE_MAP).fillna('vdu')
+    v['vep'] = v['departure'].map(DEPARTURE_MAP).fillna('vepu')
+
+    vd_agg = v.groupby(['crash_id', 'vd']).size().unstack(fill_value=0)
+    vep_agg = v.groupby(['crash_id', 'vep']).size().unstack(fill_value=0)
+    combined = vd_agg.join(vep_agg, how='outer').fillna(0)
+    for col in VD_COLS + VEP_COLS:
+        if col not in combined.columns:
+            combined[col] = 0
+    combined = combined[VD_COLS + VEP_COLS].astype('int32')
+    print(f"    {len(combined):,} crashes with vehicle rows; damage-tier cells: {combined[VD_COLS].sum().sum():,}; departure cells: {combined[VEP_COLS].sum().sum():,}")
+    return combined
+
+
+def compute_aashto_vehicle_facets(vehicles_path: Path) -> pd.DataFrame:
+    """Compute per-crash damage + departure counts from the AASHTO vehicles
+    supplement, keyed by `(year, cc, mc, case)`.
+
+    The supplement uses the same `damage` and `departure` code conventions
+    as legacy (`DAMAGE_MAP` / `DEPARTURE_MAP`); Departure coverage is low
+    (~18%) because AASHTO's "Removed To" is mostly free-text placeholder
+    rather than coded values.
+    """
+    print(f"  Computing AASHTO vehicle facets from {vehicles_path.name}...")
+    v = pd.read_parquet(vehicles_path)
+    v['vd'] = v['damage'].map(DAMAGE_MAP).fillna('vdu')
+    v['vep'] = v['departure'].map(DEPARTURE_MAP).fillna('vepu')
+
+    keys = ['year', 'cc', 'mc', 'case']
+    vd_agg = v.groupby(keys + ['vd']).size().unstack(fill_value=0)
+    vep_agg = v.groupby(keys + ['vep']).size().unstack(fill_value=0)
+    combined = vd_agg.join(vep_agg, how='outer').fillna(0)
+    for col in VD_COLS + VEP_COLS:
+        if col not in combined.columns:
+            combined[col] = 0
+    combined = combined[VD_COLS + VEP_COLS].astype('int32')
+    print(f"    {len(combined):,} crashes; damage cells: {combined[VD_COLS].sum().sum():,}; departure cells: {combined[VEP_COLS].sum().sum():,}")
+    return combined.reset_index()
+
+
+def load_crashes(path: Path, enrich_legacy_vtc: bool = False, enrich_legacy_vehicles: bool = False) -> pd.DataFrame:
     """Load crashes parquet and add month column.
 
     `enrich_legacy_vtc=True` merges VTC columns from legacy O/P masters via
     `crash_id` ↔ crashes index (only applies when the loaded parquet has no
     VTC of its own — pre-2023 master `crashes.parquet`).
+
+    `enrich_legacy_vehicles=True` adds per-crash damage + departure buckets
+    from `vehicles.parquet` (same crash_id join). No AASHTO equivalent for
+    2024+ yet (see specs/vehicle-facets.md Phase 4).
     """
     import pyarrow.parquet as pq
     schema_cols = set(pq.read_schema(path).names)
-    base_cols = ['year', 'cc', 'mc', 'dt', 'severity', 'tk', 'ti', 'pk', 'pi', 'tv']
+    base_cols = ['year', 'cc', 'mc', 'case', 'dt', 'severity', 'tk', 'ti', 'pk', 'pi', 'tv']
+    base_cols = [c for c in base_cols if c in schema_cols]  # 'case' is optional
     vtc_present = [c for c in VTC_COLS if c in schema_cols]
     if vtc_present:
         print(f"  VTC columns found: {len(vtc_present)}/{len(VTC_COLS)}")
@@ -105,7 +176,7 @@ def load_crashes(path: Path, enrich_legacy_vtc: bool = False) -> pd.DataFrame:
     df = pd.read_parquet(path, columns=base_cols + vtc_present)
     df['month'] = pd.to_datetime(df['dt']).dt.month
     df['n'] = 1  # count column
-    for c in VTC_COLS:
+    for c in VTC_COLS + VD_COLS + VEP_COLS:
         if c not in df.columns:
             df[c] = 0
 
@@ -121,6 +192,30 @@ def load_crashes(path: Path, enrich_legacy_vtc: bool = False) -> pd.DataFrame:
                 merged[c] = merged[vtc_col].fillna(0).astype('int32')
                 merged = merged.drop(columns=[vtc_col])
         df = merged
+
+    if enrich_legacy_vehicles:
+        veh = compute_legacy_vehicle_facets(Path(VEHICLES_PQT))
+        merged = df.join(veh, how='left', rsuffix='_veh')
+        for c in VD_COLS + VEP_COLS:
+            veh_col = f'{c}_veh'
+            if veh_col in merged.columns:
+                merged[c] = merged[veh_col].fillna(0).astype('int32')
+                merged = merged.drop(columns=[veh_col])
+        df = merged
+
+    # Backfill: any crash with vehicles (tv > 0) that has no per-vehicle
+    # facet data lands its whole `tv` count in `vdu`/`vepu`. This covers two
+    # cases: AASHTO 2023+ crashes (no vehicles table yet — Phase 4) and the
+    # rare legacy crash whose `crash_id` didn't match anything in
+    # `vehicles.parquet`. Without this, those rows would render as height-0
+    # bars when stacking by Damage/Departure, even though we know how many
+    # vehicles were involved overall.
+    vd_sum = df[VD_COLS].sum(axis=1)
+    vep_sum = df[VEP_COLS].sum(axis=1)
+    missing_vd = (vd_sum == 0) & (df['tv'] > 0)
+    missing_vep = (vep_sum == 0) & (df['tv'] > 0)
+    df.loc[missing_vd, 'vdu'] = df.loc[missing_vd, 'tv'].astype('int32')
+    df.loc[missing_vep, 'vepu'] = df.loc[missing_vep, 'tv'].astype('int32')
     return df
 
 
@@ -209,8 +304,9 @@ def agg(input_path: str, aashto_input: str, output_dir: str, aggs: str):
 
     print(f"Loading {input_path}...")
     # Legacy crashes.parquet has no VTC cols — enrich from O/P masters via
-    # crash_id join, so pre-2023 years populate the 25-cell matrix.
-    df = load_crashes(input_path, enrich_legacy_vtc=True)
+    # crash_id join, so pre-2023 years populate the 25-cell matrix. Also
+    # join vehicles.parquet for per-crash damage/departure facets.
+    df = load_crashes(input_path, enrich_legacy_vtc=True, enrich_legacy_vehicles=True)
     print(f"  {len(df):,} crashes loaded ({df['year'].min()}-{df['year'].max()})")
 
     if aashto_input.exists():
@@ -223,6 +319,38 @@ def agg(input_path: str, aashto_input: str, output_dir: str, aggs: str):
         if n_drop:
             print(f"  dropping {n_drop:,} AASHTO rows with unresolved (cc, mc)")
             aashto_df = aashto_df.dropna(subset=['cc'])
+
+        # Enrich AASHTO with per-vehicle damage + departure facets from the
+        # AASHTO vehicles supplement (`njdot aashto vehicles`). Keyed by
+        # (year, cc, mc, case). Reset vd/vep cols first so we overwrite the
+        # load_crashes backfill (which set vdu=tv for all AASHTO rows).
+        aashto_veh_path = Path(AASHTO_SUPPLEMENTED_VEHICLES)
+        if aashto_veh_path.exists():
+            for c in VD_COLS + VEP_COLS:
+                aashto_df[c] = 0
+            veh_aashto = compute_aashto_vehicle_facets(aashto_veh_path)
+            # Normalize join keys to matching dtypes
+            aashto_df['cc'] = aashto_df['cc'].astype('Int8')
+            aashto_df['mc'] = aashto_df['mc'].astype('Int16')
+            aashto_df['case'] = aashto_df['case'].astype(str)
+            veh_aashto['cc'] = veh_aashto['cc'].astype('Int8')
+            veh_aashto['mc'] = veh_aashto['mc'].astype('Int16')
+            veh_aashto['case'] = veh_aashto['case'].astype(str)
+            merged = aashto_df.merge(
+                veh_aashto, on=['year', 'cc', 'mc', 'case'], how='left', suffixes=('', '_a')
+            )
+            n_matched = 0
+            for c in VD_COLS + VEP_COLS:
+                a_col = f'{c}_a'
+                if a_col in merged.columns:
+                    if c == VD_COLS[0]:
+                        n_matched = merged[a_col].notna().sum()
+                    merged[c] = merged[a_col].fillna(0).astype('int32')
+                    merged = merged.drop(columns=[a_col])
+            print(f"  AASHTO vehicles supplement: matched {n_matched:,}/{len(merged):,} crashes")
+            aashto_df = merged
+        else:
+            print(f"  (no AASHTO vehicles supplement at {aashto_veh_path}; skipping)")
         # Prefer AASHTO over per-table for any overlapping year — per-table
         # 2023 has a broad-vs-strict-fatal mismatch (severity='f' uses
         # broad def, tk uses strict), producing an impossible 0.93
@@ -232,8 +360,20 @@ def agg(input_path: str, aashto_input: str, output_dir: str, aggs: str):
         overlap = sorted(set(df['year'].dropna().astype(int)) & aashto_years)
         if overlap:
             print(f"  AASHTO supersedes per-table for: {overlap}")
+            # AASHTO vehicles supplement (above) already populates vd/vep for
+            # all AASHTO years including 2023. No need to transplant from
+            # legacy.
             df = df[~df['year'].isin(aashto_years)]
         df = pd.concat([df, aashto_df], ignore_index=True)
+        # Re-run the tv→vdu/vepu backfill across the concat'd df so any AASHTO
+        # crash that didn't get a legacy match (e.g. 2024-2025, plus the ~1%
+        # of 2023 with PK mismatches) still has its tv reflected in Unknown.
+        vd_sum = df[VD_COLS].sum(axis=1)
+        vep_sum = df[VEP_COLS].sum(axis=1)
+        missing_vd = (vd_sum == 0) & (df['tv'] > 0)
+        missing_vep = (vep_sum == 0) & (df['tv'] > 0)
+        df.loc[missing_vd, 'vdu'] = df.loc[missing_vd, 'tv'].astype('int32')
+        df.loc[missing_vep, 'vepu'] = df.loc[missing_vep, 'tv'].astype('int32')
         print(f"  combined: {len(df):,} crashes ({df['year'].min()}-{df['year'].max()})")
     else:
         print(f"  (no AASHTO input at {aashto_input}; skipping 2024+)")

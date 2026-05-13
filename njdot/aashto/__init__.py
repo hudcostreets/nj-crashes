@@ -3,6 +3,7 @@
 Subcommands exposed via `njdot aashto`:
   - `schema`     — AASHTO crashes → NJDOT-schema combined parquet
   - `persons`    — AASHTO persons → DOTr-style occupants + pedestrians supplements
+  - `vehicles`   — AASHTO vehicles → DOTr-style vehicles supplement (damage + departure)
   - `supplement` — combine AASHTO + NJSP-only fatals + per-crash VTC matrix
 
 The lower-level `normalize.py` (Crash.csv → AASHTO per-table parquets) is
@@ -20,8 +21,10 @@ def aashto():
 
 from njdot.aashto.to_njdot_schema import schema
 from njdot.aashto.to_njdot_persons import persons
+from njdot.aashto.to_njdot_vehicles import vehicles
 from njdot.aashto.supplement_with_sp import supplement
 
 aashto.add_command(schema)
 aashto.add_command(persons)
+aashto.add_command(vehicles)
 aashto.add_command(supplement)

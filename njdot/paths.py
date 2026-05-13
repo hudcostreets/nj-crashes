@@ -28,6 +28,7 @@ AASHTO_COMBINED_CRASHES = f'{DOT_DATA}/aashto_combined_crashes.parquet'
 AASHTO_SUPPLEMENTED_CRASHES = f'{DOT_DATA}/aashto_supplemented_crashes.parquet'
 AASHTO_SUPPLEMENTED_OCCUPANTS = f'{DOT_DATA}/aashto_supplemented_occupants.parquet'
 AASHTO_SUPPLEMENTED_PEDESTRIANS = f'{DOT_DATA}/aashto_supplemented_pedestrians.parquet'
+AASHTO_SUPPLEMENTED_VEHICLES = f'{DOT_DATA}/aashto_supplemented_vehicles.parquet'
 
 
 def aashto_year_path(year: int, name: str) -> str:

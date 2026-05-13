@@ -1,0 +1,25 @@
+outs:
+- md5: 5196f03b05efaa6650987704cd333822
+  size: 10376144
+  hash: md5
+  path: aashto_supplemented_vehicles.parquet
+meta:
+  computation:
+    cmd: njdot aashto vehicles -y 2023,2024,2025
+    git_deps:
+      /njdot/aashto/to_njdot_vehicles.py: c6f8d7120d086425b02cae9e5e9f3a6b4391a593
+      /njdot/aashto/to_njdot_schema.py: 358a48b822f7e461f9d2ebef97eac0bbff04958f
+    deps:
+      /njdot/data/2023/vehicles.parquet: 0203a9b9496e90c31c82fd1940bdfd3e
+      /njdot/data/2023/crashes.parquet: 23abc6794e13d6d8b035dfe866de86b9
+      /njdot/data/2024/vehicles.parquet: 10bd447c2631abc8029b5224a1ed9997
+      /njdot/data/2024/crashes.parquet: fd7cdf13806203af5ddce84ca94d3e23
+      /njdot/data/2025/vehicles.parquet: b2e6d80ce5275d8165494af61733eeef
+      /njdot/data/2025/crashes.parquet: 26e6bc7f841bbaa6b5878e57771869dd
+      /www/public/njdot/cc2mc2mn.json: 2c12563c5ea3a3fdd443fc14610822e8
+    note: |
+      AASHTO vehicles -> DOTr-style vehicles supplement for 2023-2025.
+      Provides per-vehicle Damage (`vdn/vdm/vdo/vdx/vdu`) for AASHTO
+      years; Departure coverage is low (~18%) because AASHTO's
+      "Removed To" field is mostly free-text placeholder rather than
+      coded values.

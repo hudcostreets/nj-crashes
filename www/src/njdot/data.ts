@@ -85,6 +85,61 @@ export type VTCMeasures = {
     [K in VTCCol]: number
 }
 
+// Vehicle damage tiers (NJTR-1 "Extent of Damage"). Data starts 2017 — all
+// pre-2017 vehicles land in `vdu` (Unknown). No coverage for 2023+ either
+// (AASHTO has no vehicles supplement yet — see specs/vehicle-facets.md).
+export type Damage = 'vdx' | 'vdo' | 'vdm' | 'vdn' | 'vdu'
+export const Damages: Damage[] = ['vdx', 'vdo', 'vdm', 'vdn', 'vdu']  // stack order: disabling → unknown
+export const DamageLabels: Record<Damage, string> = {
+    vdx: 'Disabling',
+    vdo: 'Moderate',
+    vdm: 'Minor',
+    vdn: 'None',
+    vdu: 'Unknown',
+}
+export const DamageDefs: Record<Damage, string> = {
+    vdx: 'Disabling damage (NJTR-1 code 4): vehicle must be towed or carried from the scene; cannot depart under its own power.',
+    vdo: 'Moderate / Functional damage (code 3): vehicle is damaged in a way that affects operation, but is not disabling.',
+    vdm: 'Minor damage (code 2): cosmetic / superficial damage that does not affect operation.',
+    vdn: 'No damage (code 1): no visible damage reported.',
+    vdu: 'Unknown: damage tier missing (NJDOT only started reporting per-vehicle damage in 2017; all earlier vehicles land here. AASHTO 2023+ has no vehicles table yet, so those years are also entirely Unknown).',
+}
+export const DamageColors: Record<Damage, string> = {
+    vdx: '#EF553B',  // red — totaled
+    vdo: '#FFA15A',  // orange
+    vdm: '#FECB52',  // yellow
+    vdn: '#00CC96',  // green
+    vdu: '#7F7F7F',  // gray
+}
+
+// Vehicle departure (NJTR-1 "Driven/Left/Towed"). Collapsed 6 source codes
+// to 3 buckets + Unknown; well-coded across all years (87-95%).
+export type Departure = 'vepd' | 'vepl' | 'vept' | 'vepu'
+export const Departures: Departure[] = ['vept', 'vepl', 'vepd', 'vepu']  // stack order: towed (worst) → unknown
+export const DepartureLabels: Record<Departure, string> = {
+    vepd: 'Driven',
+    vepl: 'Left at Scene',
+    vept: 'Towed',
+    vepu: 'Unknown',
+}
+export const DepartureDefs: Record<Departure, string> = {
+    vepd: 'Driven away (NJTR-1 code 1): vehicle departed the scene under its own power.',
+    vepl: 'Left at Scene (code 2): vehicle was left at the crash scene (e.g. abandoned, unattended, owner returning later).',
+    vept: 'Towed (codes 3-6): vehicle was towed from the scene — disabled, impounded, both, or pre-2017 "Towed" without further detail.',
+    vepu: 'Unknown: departure missing from the record (~5-15% of vehicles depending on year).',
+}
+export const DepartureColors: Record<Departure, string> = {
+    vept: '#EF553B',  // red — towed
+    vepl: '#FFA15A',  // orange — abandoned
+    vepd: '#00CC96',  // green — drove off
+    vepu: '#7F7F7F',  // gray — unknown
+}
+
+// Vehicle Damage record type (5 columns)
+export type VDMeasures = { [K in Damage]: number }
+// Vehicle Departure record type (4 columns)
+export type VEPMeasures = { [K in Departure]: number }
+
 // Base measures for all aggregations
 export type CrashMeasures = {
     n: number      // crash count
@@ -93,7 +148,7 @@ export type CrashMeasures = {
     pk: number     // pedestrians killed
     pi: number     // pedestrians injured
     tv: number     // total vehicles
-} & VTCMeasures
+} & VTCMeasures & VDMeasures & VEPMeasures
 
 // Aggregation row types (only keeping the ones we use)
 export type YmsRow = CrashMeasures & {
@@ -149,8 +204,8 @@ export const MeasureKindDefs: Record<MeasureKind, string> = {
 export type TimeGranularity = 'year' | 'month'
 
 // Stacking options
-export type StackBy = 'none' | 'severity' | 'county' | 'municipality' | 'victim_type' | 'condition'
-export const StackBys: StackBy[] = ['none', 'severity', 'county', 'municipality', 'victim_type', 'condition']
+export type StackBy = 'none' | 'severity' | 'county' | 'municipality' | 'victim_type' | 'condition' | 'damage' | 'departure'
+export const StackBys: StackBy[] = ['none', 'severity', 'county', 'municipality', 'victim_type', 'condition', 'damage', 'departure']
 export const StackByLabels: Record<StackBy, string> = {
     none: 'None',
     severity: 'Severity',
@@ -158,6 +213,8 @@ export const StackByLabels: Record<StackBy, string> = {
     municipality: 'Municipality',
     victim_type: 'Victim Type',
     condition: 'Condition',
+    damage: 'Damage',
+    departure: 'Departure',
 }
 
 // County codes and names (21 NJ counties)

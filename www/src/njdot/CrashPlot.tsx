@@ -12,6 +12,8 @@ import {
     Severity, Severities, SeverityLabels, SeverityDefs, SeverityColorsLight, SeverityColorsDark,
     Condition, Conditions, ConditionLabels, ConditionDefs, ConditionColors,
     VictimType, VictimTypes, VictimTypeLabels, VictimTypeDefs, VictimTypeColors,
+    Damage, Damages, DamageLabels, DamageDefs, DamageColors,
+    Departure, Departures, DepartureLabels, DepartureDefs, DepartureColors,
     MeasureKind, MeasureKinds, MeasureKindLabels, MeasureKindDefs,
     vtcCol,
     Counties,
@@ -68,8 +70,12 @@ export default function CrashPlot({
     const [measure, setMeasure] = useSessionStorage<MeasureKind>('crashplot-measure-v2', 'crashes')
     const [stackBy, setStackBy] = useSessionStorage<StackBy>('crashplot-stackBy', initialStackBy)
     const [severities, setSeverities] = useSessionStorage<Severity[]>('crashplot-severities', initialSeverities)
-    const [conditions, setConditions] = useSessionStorage<Condition[]>('crashplot-conditions', [...Conditions])
+    // Default: all conditions except "No Apparent Injury" (the long tail dwarfs
+    // the meaningful injury tiers).
+    const [conditions, setConditions] = useSessionStorage<Condition[]>('crashplot-conditions-v2', Conditions.filter(c => c !== 'n'))
     const [victimTypes, setVictimTypes] = useSessionStorage<VictimType[]>('crashplot-victimTypes', [...VictimTypes])
+    const [damages, setDamages] = useSessionStorage<Damage[]>('crashplot-damages', [...Damages])
+    const [departures, setDepartures] = useSessionStorage<Departure[]>('crashplot-departures', [...Departures])
     const [counties, setCounties] = useSessionStorage<number[]>('crashplot-counties', initialCounties)
     // Sync with external counties prop (geo filter)
     useEffect(() => { setCounties(initialCounties) }, [initialCounties.join(',')])
@@ -131,18 +137,36 @@ export default function CrashPlot({
     //     not people killed) and for measure='vehicles' (we'd rather stack by
     //     vehicle disposition/damage — see specs/vehicle-facets.md).
     //   - 'condition' (person-level KABCO) + 'victim_type' apply only to People.
+    //   - 'damage' (per-vehicle Extent of Damage) + 'departure' (Driven/Left/
+    //     Towed) apply only to Vehicles.
     //   - 'county' / 'municipality' work for any measure (subject to the geo-
     //     scope guards above).
     const peopleOnlyStack = stackBy === 'condition' || stackBy === 'victim_type'
+    const vehicleOnlyStack = stackBy === 'damage' || stackBy === 'departure'
     const severityStackInvalid = stackBy === 'severity' && measure !== 'crashes'
     const effectiveStackBy = hasMuniFilter && (stackBy === 'county' || stackBy === 'municipality') ? 'none'
         : !isSingleCounty && stackBy === 'municipality' ? 'none'
         : peopleOnlyStack && measure !== 'people' ? 'none'
+        : vehicleOnlyStack && measure !== 'vehicles' ? 'none'
         : severityStackInvalid ? 'none'
         : stackBy
 
     // Reset active trace when stacking mode changes
     useEffect(() => { setActiveTrace(null) }, [stackBy])
+
+    // Auto-switch stackBy when measure changes and current stackBy is invalid
+    // for the new measure: pick a sensible default per measure so the plot
+    // doesn't drop to an undifferentiated "Total" bar.
+    useEffect(() => {
+        const isInvalid =
+            (peopleOnlyStack && measure !== 'people') ||
+            (vehicleOnlyStack && measure !== 'vehicles') ||
+            (stackBy === 'severity' && measure !== 'crashes')
+        if (!isInvalid) return
+        if (measure === 'crashes') setStackBy('severity')
+        else if (measure === 'people') setStackBy('condition')
+        else if (measure === 'vehicles') setStackBy('damage')
+    }, [measure])
 
     // Municipality-level or muni stacking: use ymccmcs (per-county, has mc + severity)
     // County-level: use ymccs when filtering/stacking by county
@@ -166,12 +190,33 @@ export default function CrashPlot({
         if (val == null) return 0
         return typeof val === 'bigint' ? Number(val) : (val as number)
     }
-    // `crashes` → `n`; `vehicles` → `tv`; `people` → sum of VTC cells filtered
-    // by current Condition/VictimType selections. Severity (crash-level) is
-    // applied at the row-filter stage (above), not here.
+    // Which vehicle facet drives the per-bar value for measure=Vehicles. We
+    // sum either the Damage or Departure 4-5 cells depending on which facet's
+    // filter / stack is currently active; both partitions sum to `tv`.
+    // Damage-stack ⇒ use damage cells. Departure-stack ⇒ use departure
+    // cells. With Stack=None/County/Muni we default to Damage (Departure if
+    // the Damage filter is empty); the totals match either way.
+    const activeVehicleFacet: 'damage' | 'departure' =
+        stackBy === 'departure' ? 'departure'
+        : stackBy === 'damage' ? 'damage'
+        : damages.length === 0 && departures.length > 0 ? 'departure'
+        : 'damage'
+
+    // `crashes` → `n`; `vehicles` → sum of damage-tier (or departure-bucket)
+    // cells filtered by the active selection; `people` → sum of VTC cells
+    // filtered by current Condition/VictimType selections. Severity (crash-
+    // level) is applied at the row-filter stage (above), not here.
     const getVal = (row: AnyRow): number => {
         if (measure === 'crashes') return getCol(row, 'n')
-        if (measure === 'vehicles') return getCol(row, 'tv')
+        if (measure === 'vehicles') {
+            let total = 0
+            if (activeVehicleFacet === 'damage') {
+                for (const d of damages) total += getCol(row, d)
+            } else {
+                for (const d of departures) total += getCol(row, d)
+            }
+            return total
+        }
         // people: sum vtcCol(vt, c) cells for selected types × conditions
         let total = 0
         for (const vt of victimTypes) {
@@ -477,6 +522,52 @@ export default function CrashPlot({
                 }
                 traces.push(buildTrace(grouped, VictimTypeLabels[vt], VictimTypeColors[vt], originalGrouped))
             }
+        } else if (effectiveStackBy === 'damage') {
+            // Stack by per-vehicle Damage tier (5 levels, code 1-4 + Unknown).
+            // Only valid for measure='vehicles'. Pre-2017 vehicles all land in
+            // `vdu` since NJDOT didn't capture this field; 2023+ AASHTO years
+            // have no vehicles table at all (see specs/vehicle-facets.md).
+            for (const d of Damages) {
+                if (!damages.includes(d)) continue
+                const grouped = new Map<string, number>()
+                for (const row of filtered) {
+                    const key = timeGranularity === 'month'
+                        ? toYM(getYear(row), getMonth(row))
+                        : String(getYear(row))
+                    grouped.set(key, (grouped.get(key) || 0) + getCol(row, d))
+                }
+                const originalGrouped = stackPercent ? new Map(grouped) : undefined
+                if (stackPercent) {
+                    for (const [key, val] of grouped) {
+                        const total = totalsPerPeriod.get(key) || 1
+                        grouped.set(key, (val / total) * 100)
+                    }
+                }
+                traces.push(buildTrace(grouped, DamageLabels[d], DamageColors[d], originalGrouped))
+            }
+        } else if (effectiveStackBy === 'departure') {
+            // Stack by per-vehicle Departure bucket (Driven / Left / Towed /
+            // Unknown). Only valid for measure='vehicles'. Well-coded across
+            // all years 2001-2022 (~87-95% coverage); 2023+ AASHTO years
+            // have no vehicles table yet.
+            for (const dep of Departures) {
+                if (!departures.includes(dep)) continue
+                const grouped = new Map<string, number>()
+                for (const row of filtered) {
+                    const key = timeGranularity === 'month'
+                        ? toYM(getYear(row), getMonth(row))
+                        : String(getYear(row))
+                    grouped.set(key, (grouped.get(key) || 0) + getCol(row, dep))
+                }
+                const originalGrouped = stackPercent ? new Map(grouped) : undefined
+                if (stackPercent) {
+                    for (const [key, val] of grouped) {
+                        const total = totalsPerPeriod.get(key) || 1
+                        grouped.set(key, (val / total) * 100)
+                    }
+                }
+                traces.push(buildTrace(grouped, DepartureLabels[dep], DepartureColors[dep], originalGrouped))
+            }
         }
 
         // Add 12month moving average lines for monthly view (when stack is none or severity)
@@ -643,7 +734,7 @@ export default function CrashPlot({
         }
 
         return { traces, layout }
-    }, [data, effectiveStackBy, severities, conditions, victimTypes, measure, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors, isDark, cc2mc2mn, plotAnnotations])
+    }, [data, effectiveStackBy, severities, conditions, victimTypes, damages, departures, activeVehicleFacet, measure, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors, isDark, cc2mc2mn, plotAnnotations])
 
     // Check if we're waiting for county data (need ymccs but have yms)
     const waitingForCountyData = needsCountyData && data && data.length > 0 && !('cc' in data[0])
@@ -734,6 +825,8 @@ export default function CrashPlot({
                             { label: 'Severity', data: 'severity' as StackBy, disabled: measure !== 'crashes' },
                             { label: 'Condition', data: 'condition' as StackBy, disabled: measure !== 'people' },
                             { label: 'Victim Type', data: 'victim_type' as StackBy, disabled: measure !== 'people' },
+                            { label: 'Damage', data: 'damage' as StackBy, disabled: measure !== 'vehicles' },
+                            { label: 'Departure', data: 'departure' as StackBy, disabled: measure !== 'vehicles' },
                             ...(!hasMuniFilter ? [{ label: 'County', data: 'county' as StackBy }] : []),
                             ...(isSingleCounty && !hasMuniFilter ? [{ label: 'Municipality', data: 'municipality' as StackBy }] : []),
                         ]}
@@ -786,6 +879,32 @@ export default function CrashPlot({
                                 ...(stackBy === 'victim_type' && { color: VictimTypeColors[vt] }),
                             }))}
                             cb={setVictimTypes}
+                        />
+                    )}
+                    {measure === 'vehicles' && (
+                        <Checklist
+                            label={<Tooltip title="Per-vehicle Extent of Damage (NJTR-1). Only captured 2017+; pre-2017 (and AASHTO 2023+) vehicles all land in Unknown."><span>Damage</span></Tooltip>}
+                            data={Damages.map(d => ({
+                                name: d,
+                                label: <Tooltip title={DamageDefs[d]}><span>{DamageLabels[d]}</span></Tooltip>,
+                                data: d,
+                                checked: damages.includes(d),
+                                ...(stackBy === 'damage' && { color: DamageColors[d] }),
+                            }))}
+                            cb={setDamages}
+                        />
+                    )}
+                    {measure === 'vehicles' && (
+                        <Checklist
+                            label={<Tooltip title="Per-vehicle post-crash disposition (Driven / Left / Towed). Well-coded across all years 2001-2022; AASHTO 2023+ has no vehicles table yet."><span>Departure</span></Tooltip>}
+                            data={Departures.map(dep => ({
+                                name: dep,
+                                label: <Tooltip title={DepartureDefs[dep]}><span>{DepartureLabels[dep]}</span></Tooltip>,
+                                data: dep,
+                                checked: departures.includes(dep),
+                                ...(stackBy === 'departure' && { color: DepartureColors[dep] }),
+                            }))}
+                            cb={setDepartures}
                         />
                     )}
                     {!hasMuniFilter && !isSingleCounty && (
