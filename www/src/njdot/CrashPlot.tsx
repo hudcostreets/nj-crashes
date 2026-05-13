@@ -733,11 +733,12 @@ export default function CrashPlot({
             shapes: annShapes,
         }
 
-        // Solo mode: when a trace is click-pinned, hide others. `activeTrace`
-        // is updated via `onSoloTrace` (pin only) — NOT `onActiveTrace` (which
-        // fires on hover too). With the hover wiring, every legend-item hover
-        // would rebuild traces and flip `visible: 'legendonly'` for the other
-        // bars, producing a "nothing drawn" flicker mid-hover-sweep.
+        // Solo mode: when a trace is active (hover or click-pin), hide others.
+        // `onActiveTrace` fires for both hover and pin — this gives hover-to-
+        // solo UX (which is what the user wants). Tradeoff: every legend-item
+        // sweep triggers a useMemo rebuild + Plotly redraw, which is the
+        // source of the LI-hover flicker. Cleaner fix is in-place restyle via
+        // Plotly.restyle() rather than React re-render — TODO.
         if (activeTrace) {
             for (const trace of traces) {
                 const isActive = trace.name === activeTrace || trace.legendgroup === activeTrace
@@ -820,7 +821,7 @@ export default function CrashPlot({
                         key={plotKey}
                         data={renderTraces as PlotData[]}
                         layout={renderLayout}
-                        onSoloTrace={setActiveTrace}
+                        onActiveTrace={setActiveTrace}
                         onHover={handleHover}
                         onUnhover={handleUnhover}
                         onClickAnnotation={() => annOpen.setPinned(!annOpen.pinned)}
