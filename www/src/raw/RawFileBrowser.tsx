@@ -35,6 +35,12 @@ export default function RawFileBrowser() {
     const parsed = useMemo(() => parsePath(splat), [splat])
     const crumbs = useMemo(() => buildCrumbs(parsed), [parsed])
     const title = crumbs.length > 0 ? crumbs[crumbs.length - 1].label : "raw"
+    // Surface a download icon for any leaf file (not directories or zip
+    // entries — those would need a different URL anyway). Matches the
+    // affordance `@rdub/file-tree` surfaces on `/files/*`.
+    const downloadUrl = parsed.kind === "dir" || parsed.kind === "zipEntry"
+        ? undefined
+        : rawGetUrl((parsed as { path: string }).path)
 
     return (
         <div style={{
@@ -45,7 +51,7 @@ export default function RawFileBrowser() {
         }}>
             <Head title={`raw / ${title} — NJ Crashes`} description="Browser over the raw NJDOT bulk crash data archive (Accidents, Drivers, Occupants, Pedestrians, Vehicles)." />
             <h1 style={{ fontSize: "1.4em", margin: "0 0 0.3em" }}>Raw NJDOT data archive</h1>
-            <Breadcrumb crumbs={crumbs} />
+            <Breadcrumb crumbs={crumbs} downloadUrl={downloadUrl} />
             <Body parsed={parsed} />
             <Footnote />
         </div>

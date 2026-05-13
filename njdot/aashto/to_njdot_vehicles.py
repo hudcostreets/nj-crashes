@@ -44,21 +44,35 @@ DAMAGE_MAP = {
 
 
 def map_departure(s: str | None) -> int | None:
-    """Best-effort: AASHTO 'Removed To' free-text → 3-bucket departure
-    code. Returns None for genuinely unknown/missing values."""
-    if s is None or s == '' or s == 'None' or s == 'Unknown':
+    """AASHTO 'Removed To' free-text → 3-bucket departure code.
+
+    Key insight: the literal string ``"None"`` is the dominant value (~73% of
+    rows) and despite the name does *not* mean "missing" — its damage
+    profile (8% Disabling vs 81% Disabling for explicit tow-company rows)
+    matches Driven vehicles. Treat ``"None"`` as "drove away under own
+    power" (vepd / Driven). The remaining free-text values are
+    overwhelmingly tow-company names (~77% Disabling), so anything not
+    matching one of the obvious keyword buckets gets bucketed to Towed
+    (vept). Only ``None``/blank/``"Unknown"`` → vepu.
+
+    With this mapping, coverage jumps from ~18% to ~99%; the alternative
+    (treating ``"None"`` as missing) puts 73% of every AASHTO year in the
+    Unknown bucket, which doesn't match the legacy 87-95% coverage profile
+    and washes out the chart.
+    """
+    if s is None or s == '' or s == 'Unknown':
         return None
+    if s == 'None':
+        return 1  # Driven away (sentinel — no removal needed)
     s_low = s.lower()
-    # Towed: any string mentioning a tow company, "tow", "impound"
-    if 'tow' in s_low or 'impound' in s_low:
-        return 3
     # Left / abandoned
     if any(k in s_low for k in ('left', 'fled', 'abandoned')):
         return 2
     # Driven away (under own power, by driver/owner/etc.)
     if any(k in s_low for k in ('driven', 'destination', 'driver', 'owner', 'spouse', 'parent', 'friend', 'home', 'work', 'family')):
         return 1
-    return None
+    # Tow-company name (explicit "tow"/"impound" or anything else free-text)
+    return 3
 
 
 def process_year(year: int, lookup: dict) -> pd.DataFrame | None:

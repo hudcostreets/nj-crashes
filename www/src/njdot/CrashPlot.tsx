@@ -761,7 +761,14 @@ export default function CrashPlot({
         : null
 
     // Key forces remount when data source changes (include data length to wait for load)
-    const plotKey = `${source}-${data?.length || 0}`
+    // Include `effectiveStackBy` so switching Stack By forces a full remount
+    // of the Plotly chart. Without this, Plotly's trace-index-keyed renderer
+    // can leave stale `marker.color` from the previous stack on the new
+    // trace set — e.g. switching Crashes/Severity (3 traces: red/orange/
+    // yellow) → People/VictimType (5 traces: blue/green/purple/orange/gray)
+    // ends up rendering the People bars with the Severity color palette
+    // while the legend (correctly) shows the new VictimType swatches.
+    const plotKey = `${source}-${data?.length || 0}-${effectiveStackBy}-${measure}`
 
     return (
         <div>
@@ -817,16 +824,20 @@ export default function CrashPlot({
                         name="stackBy"
                         options={[
                             { label: 'None', data: 'none' as StackBy },
-                            // Crash-level Severity only makes sense for the Crashes measure.
-                            // For People it'd mean "people in fatal/injury/PDO crashes" (incl.
-                            // survivors), which is more confusing than useful; for Vehicles
-                            // we'll add a per-vehicle Damage facet instead (see
-                            // specs/vehicle-facets.md).
-                            { label: 'Severity', data: 'severity' as StackBy, disabled: measure !== 'crashes' },
-                            { label: 'Condition', data: 'condition' as StackBy, disabled: measure !== 'people' },
-                            { label: 'Victim Type', data: 'victim_type' as StackBy, disabled: measure !== 'people' },
-                            { label: 'Damage', data: 'damage' as StackBy, disabled: measure !== 'vehicles' },
-                            { label: 'Departure', data: 'departure' as StackBy, disabled: measure !== 'vehicles' },
+                            // Hide stack options that don't match the current measure rather
+                            // than greying them out — fewer dead rows in the panel. Severity
+                            // (crash-level) is Crashes-only; Condition / Victim Type only make
+                            // sense for People (would conflate "people in fatal crashes"
+                            // including survivors); Damage / Departure are per-vehicle.
+                            ...(measure === 'crashes' ? [{ label: 'Severity', data: 'severity' as StackBy }] : []),
+                            ...(measure === 'people' ? [
+                                { label: 'Condition', data: 'condition' as StackBy },
+                                { label: 'Victim Type', data: 'victim_type' as StackBy },
+                            ] : []),
+                            ...(measure === 'vehicles' ? [
+                                { label: 'Damage', data: 'damage' as StackBy },
+                                { label: 'Departure', data: 'departure' as StackBy },
+                            ] : []),
                             ...(!hasMuniFilter ? [{ label: 'County', data: 'county' as StackBy }] : []),
                             ...(isSingleCounty && !hasMuniFilter ? [{ label: 'Municipality', data: 'municipality' as StackBy }] : []),
                         ]}

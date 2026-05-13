@@ -1,13 +1,13 @@
 outs:
-- md5: 5196f03b05efaa6650987704cd333822
-  size: 10376144
+- md5: ebefcf842124ee67c8b0ddcd0c51043d
+  size: 10439922
   hash: md5
   path: aashto_supplemented_vehicles.parquet
 meta:
   computation:
     cmd: njdot aashto vehicles -y 2023,2024,2025
     git_deps:
-      /njdot/aashto/to_njdot_vehicles.py: c6f8d7120d086425b02cae9e5e9f3a6b4391a593
+      /njdot/aashto/to_njdot_vehicles.py: 6dbcc982eafe7f2d1bbdbbe2ee8391d96a1bba12
       /njdot/aashto/to_njdot_schema.py: 358a48b822f7e461f9d2ebef97eac0bbff04958f
     deps:
       /njdot/data/2023/vehicles.parquet: 0203a9b9496e90c31c82fd1940bdfd3e
@@ -20,6 +20,8 @@ meta:
     note: |
       AASHTO vehicles -> DOTr-style vehicles supplement for 2023-2025.
       Provides per-vehicle Damage (`vdn/vdm/vdo/vdx/vdu`) for AASHTO
-      years; Departure coverage is low (~18%) because AASHTO's
-      "Removed To" field is mostly free-text placeholder rather than
-      coded values.
+      years; Departure coverage was previously low (~18%) when the
+      AASHTO "Removed To" sentinel value "None" was mapped to Unknown,
+      but it actually means "no removal needed = drove away" (damage
+      profile: 8% Disabling vs 81% for known tow-companies). With that
+      sentinel + free-text-defaults-to-Towed fix, coverage is ~99%.
