@@ -1,5 +1,5 @@
 outs:
-- md5: 763551004dff2d8ba89c64f5fa9f2b89
+- md5: 943b00ebb5b9b80391212224531af0aa
   size: 2412544
   hash: md5
   path: crashes.db
@@ -8,14 +8,5 @@ meta:
     cmd: njsp update_pqts --s3
     git_deps:
       /data/FAUQStats2024.xml: e6ece47084bc6d58e8d8aa5a40d0d85f028c1ac3
-      /data/FAUQStats2025.xml: b5d98cff60f0001609b94e7f42bedde2eed5f9cd
-      /data/FAUQStats2026.xml: 51e85bf1deea8d71ef335d0c4dad219ecb2b6b71
-    note: |
-      SQLite mirror of NJSP fatal-crash records, consumed by the
-      `crashes-api` Cloudflare Worker (D1-imported via
-      `api/d1-import.dvc`). Co-output of `njsp update_pqts`
-      alongside `njsp/data/crashes.parquet` (see that file's note
-      for the full picture). SQLite output is not byte-IDP for
-      same inputs (likely SQLite insertion order or page-layout
-      drift), so each run produces a fresh md5 even when XML deps
-      are unchanged.
+      /data/FAUQStats2025.xml: 6965e83e0dcf72b48fee98f40b9664d1a3f5434d
+      /data/FAUQStats2026.xml: 051acb0f9c98943317f46e8f0b52d0beae5cd5b2

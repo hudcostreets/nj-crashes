@@ -1,6 +1,6 @@
 outs:
-- md5: 5e52b723deca1906dc16c4edf9aa08ab
-  size: 422382
+- md5: dadcc2e2cf975d7f59b45850204c6a72
+  size: 422405
   hash: md5
   path: crashes.parquet
 meta:
@@ -8,11 +8,5 @@ meta:
     cmd: njsp update_pqts --s3
     git_deps:
       /data/FAUQStats2024.xml: e6ece47084bc6d58e8d8aa5a40d0d85f028c1ac3
-      /data/FAUQStats2025.xml: b5d98cff60f0001609b94e7f42bedde2eed5f9cd
-      /data/FAUQStats2026.xml: 51e85bf1deea8d71ef335d0c4dad219ecb2b6b71
-    note: |
-      Co-output of `njsp update_pqts` alongside
-      `www/public/njsp/crashes.db`. Produces the canonical NJSP
-      fatal-crash parquet (XML-derived 2008+, PDF-backfilled 2001-
-      2007). DVX runs the cmd twice when both outputs are stale
-      (~2s, fine; idempotent).
+      /data/FAUQStats2025.xml: 6965e83e0dcf72b48fee98f40b9664d1a3f5434d
+      /data/FAUQStats2026.xml: 051acb0f9c98943317f46e8f0b52d0beae5cd5b2
