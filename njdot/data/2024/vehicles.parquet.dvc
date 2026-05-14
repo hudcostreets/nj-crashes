@@ -1,0 +1,5 @@
+outs:
+- md5: 10bd447c2631abc8029b5224a1ed9997
+  size: 11223631
+  hash: md5
+  path: vehicles.parquet

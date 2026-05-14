@@ -65,12 +65,18 @@ jobs:
           dvx pull njdot/data/aashto_combined_crashes.parquet.dvc
           dvx pull njdot/data/aashto_supplemented_occupants.parquet.dvc
           dvx pull njdot/data/aashto_supplemented_pedestrians.parquet.dvc
-          # Per-year AASHTO `persons.parquet` are referenced as file deps in
-          # the person supplements; without them on disk, DVX reports
-          # "dep missing" and `dvx run` re-tries the (uncrunched) cmd.
+          # Per-year AASHTO `persons.parquet` + `vehicles.parquet` are
+          # referenced as file deps in the person / vehicle supplements;
+          # without them on disk, DVX reports "dep missing" and `dvx run`
+          # re-tries the (uncrunched) cmd. `vehicles.parquet` is a side-
+          # output of the same `normalize.py` invocation that produces
+          # `crashes.parquet` for these years.
           dvx pull njdot/data/2023/persons.parquet.dvc
           dvx pull njdot/data/2024/persons.parquet.dvc
           dvx pull njdot/data/2025/persons.parquet.dvc
+          dvx pull njdot/data/2023/vehicles.parquet.dvc
+          dvx pull njdot/data/2024/vehicles.parquet.dvc
+          dvx pull njdot/data/2025/vehicles.parquet.dvc
           dvx pull njsp/data/crash-log.parquet.dvc
           # NJSP outputs of `njsp update_pqts` (consumed by harmonize, csvs,
           # projections, match, three-way-match, d1-import).
