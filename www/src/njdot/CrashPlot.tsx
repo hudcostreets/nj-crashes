@@ -54,6 +54,15 @@ type CrashPlotProps = {
 const DEFAULT_HEIGHT = 550
 const ALL_COUNTIES = Object.keys(Counties).map(Number)
 
+// Plotly's default qualitative palette. Used explicitly for county /
+// municipality stack-by traces so Plotly's react renderer doesn't
+// reuse old `marker.color` by trace index when the trace set changes
+// shape (see the `plotKey` discussion further down).
+const PLOTLY_COLORWAY = [
+    '#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A',
+    '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52',
+]
+
 export default function CrashPlot({
     stackBy: initialStackBy = 'severity',
     severities: initialSeverities = [...Severities],
@@ -62,7 +71,7 @@ export default function CrashPlot({
     timeGranularity: initialTimeGranularity = 'year',
     height = DEFAULT_HEIGHT,
     showControls = true,
-    controlsOpen: initialControlsOpen = false,
+    controlsOpen: initialControlsOpen = true,
 }: CrashPlotProps) {
     // Measure radio: Crashes / People / Vehicles. `crashes` and `vehicles` map
     // to the `n` / `tv` columns; `people` sums the 25-cell VTC matrix filtered
@@ -445,7 +454,11 @@ export default function CrashPlot({
                         grouped.set(key, (val / total) * 100)
                     }
                 }
-                traces.push(buildTrace(grouped, Counties[cc] || `County ${cc}`, undefined, originalGrouped))
+                // Explicit color (round-robin Plotly default palette) so trace-
+                // index color-carryover can't bite us when the stack-by changes
+                // — see the `plotKey` discussion below for why this matters.
+                const color = PLOTLY_COLORWAY[sortedCounties.indexOf(cc) % PLOTLY_COLORWAY.length]
+                traces.push(buildTrace(grouped, Counties[cc] || `County ${cc}`, color, originalGrouped))
             }
         } else if (effectiveStackBy === 'municipality') {
             // Stack by municipality (single county, sorted by total)
@@ -476,7 +489,8 @@ export default function CrashPlot({
                     }
                 }
                 const muniName = mc2mn[mcVal] || `Muni ${mcVal}`
-                traces.push(buildTrace(grouped, muniName, undefined, originalGrouped))
+                const color = PLOTLY_COLORWAY[sortedMunis.indexOf(mcVal) % PLOTLY_COLORWAY.length]
+                traces.push(buildTrace(grouped, muniName, color, originalGrouped))
             }
         } else if (effectiveStackBy === 'condition') {
             // Stack by person-level injury condition (5 levels). Only valid
@@ -787,19 +801,12 @@ export default function CrashPlot({
         ? `Select one or more ${emptyFacets.join(" and ")} to view data.`
         : null
 
-    // Plotly remount key: ONLY on `measure`/`effectiveStackBy` change. The
-    // trace palette can change wholesale across those transitions (e.g.
-    // Crashes/Severity 3-tone → People/VictimType 5-tone) and Plotly's
-    // react renderer keys traces by index, so without a remount the new
-    // bars render with the old `marker.color` while the legend (correctly)
-    // shows the new swatches.
-    //
-    // Deliberately NOT keying on `source` / data length / etc. — those
-    // change during routine parquet refetches (Stack By → County switches
-    // from yms.parquet to yccs.parquet) and remounting on every fetch is
-    // exactly the loading flicker the stable-traces ref above is fighting
-    // against. Plotly handles a same-shape `data` prop update smoothly.
-    const plotKey = `${measure}-${effectiveStackBy}`
+    // Stable Plotly instance: every trace builder above now passes an
+    // explicit `marker.color`, so there's no path that lets Plotly's
+    // react renderer keep an old palette-index color on a new trace.
+    // No `key` change means radio clicks update the chart in place
+    // (smooth restyle) instead of unmounting → remounting (black-flash
+    // while Plotly re-initializes).
 
     return (
         <div>
@@ -818,7 +825,6 @@ export default function CrashPlot({
                     </div>
                 ) : (
                     <PlotWrapper
-                        key={plotKey}
                         data={renderTraces as PlotData[]}
                         layout={renderLayout}
                         onActiveTrace={setActiveTrace}
