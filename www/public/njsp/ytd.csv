@@ -7270,8 +7270,9 @@ county,cc,mc,year,day_of_year,date_label,fatalities,cumulative
 ,,,2026,124,May 04,2,172
 ,,,2026,125,May 05,1,173
 ,,,2026,127,May 07,2,175
-,,,2026,128,May 08,1,176
-,,,2026,130,May 10,1,177
+,,,2026,128,May 08,2,177
+,,,2026,130,May 10,1,178
+,,,2026,133,May 13,1,179
 Atlantic,1,,2001,20,Jan 20,1,1
 Atlantic,1,,2001,25,Jan 25,1,2
 Atlantic,1,,2001,36,Feb 05,1,3
@@ -13724,6 +13725,7 @@ Gloucester,8,,2026,63,Mar 04,1,5
 Gloucester,8,,2026,69,Mar 10,1,6
 Gloucester,8,,2026,79,Mar 20,1,7
 Gloucester,8,,2026,89,Mar 30,1,8
+Gloucester,8,,2026,128,May 08,1,9
 Hudson,9,,2001,28,Jan 28,3,3
 Hudson,9,,2001,66,Mar 07,1,4
 Hudson,9,,2001,76,Mar 17,1,5
@@ -21261,6 +21263,7 @@ Union,20,,2026,88,Mar 29,1,10
 Union,20,,2026,111,Apr 21,1,11
 Union,20,,2026,114,Apr 24,1,12
 Union,20,,2026,130,May 10,1,13
+Union,20,,2026,133,May 13,1,14
 Warren,21,,2001,49,Feb 18,1,1
 Warren,21,,2001,236,Aug 24,1,2
 Warren,21,,2001,253,Sep 10,2,4
@@ -27800,6 +27803,7 @@ Gloucester,8,7,2012,359,Dec 25,1,1
 Gloucester,8,7,2014,316,Nov 12,1,1
 Gloucester,8,7,2023,80,Mar 21,1,1
 Gloucester,8,7,2023,180,Jun 29,1,2
+Gloucester,8,7,2026,128,May 08,1,1
 Gloucester,8,8,2001,97,Apr 07,1,1
 Gloucester,8,8,2001,142,May 22,1,2
 Gloucester,8,8,2001,228,Aug 16,1,3
@@ -35608,6 +35612,7 @@ Union,20,4,2025,330,Nov 26,1,7
 Union,20,4,2026,52,Feb 21,1,1
 Union,20,4,2026,74,Mar 15,1,2
 Union,20,4,2026,111,Apr 21,1,3
+Union,20,4,2026,133,May 13,1,4
 Union,20,5,2003,340,Dec 06,1,1
 Union,20,5,2011,305,Nov 01,1,1
 Union,20,6,2005,352,Dec 18,1,1
