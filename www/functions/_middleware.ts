@@ -18,10 +18,13 @@ interface OgMeta {
 }
 
 const SITE_URL = 'https://crashes.hudcostreets.org'
+// Daily-regenerated homepage mosaic — see `www/og-image.dvc` (uploads
+// to `s3://nj-crashes/og.jpg` after every daily CI run).
+const OG_IMAGE = 'https://nj-crashes.s3.amazonaws.com/og.jpg'
 const DEFAULT_OG: OgMeta = {
     title: 'NJ Car Crash Data',
     description: 'Analysis & Visualization of car crash data published by NJ State Police and NJ DOT',
-    image: `${SITE_URL}/og.png`,
+    image: OG_IMAGE,
     url: SITE_URL,
 }
 
@@ -40,7 +43,7 @@ function resolveOgMeta(pathname: string): OgMeta {
         return {
             title: `${region} — NJ Car Crash Data`,
             description: `Car crash data for ${region}, NJ`,
-            image: `${SITE_URL}/og.png`, // TODO: per-county OGI from R2
+            image: OG_IMAGE, // TODO: per-county OGI from R2
             url: `${SITE_URL}${pathname}`,
         }
     }
@@ -51,7 +54,7 @@ function resolveOgMeta(pathname: string): OgMeta {
         return {
             title: `Fatal Crash — NJ Car Crash Data`,
             description: 'Fatal crash details from NJ State Police data',
-            image: `${SITE_URL}/og.png`, // TODO: per-crash OGI
+            image: OG_IMAGE, // TODO: per-crash OGI
             url: `${SITE_URL}${pathname}`,
         }
     }
