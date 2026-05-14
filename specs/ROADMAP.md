@@ -114,13 +114,14 @@ warm-up.
   the structured PK — human-readable, no migration surprises if
   source PKs already collide. Bluesky posts can encode the PK in
   the URL.
-- (j) **Hex stack → readable location name**: snap to nearest SRI
-  MP; ideal output includes street name + cross-streets ("Route 9
-  between Main St and 3rd Ave"). Cross-streets need MP intersection
-  routing (find two crossing roads near the centroid, name both).
-  Blocked on `njdot-mp-shapefile-bulk-download.md` (task #49) —
-  per-SRI ArcGIS scrape is too slow / brittle for the lookup table.
-  Fall-back for v0: bare street name from nearest MP, no cross-st.
+- (j) **Hex stack → readable location name**: ✅ v0 landed
+  (`njdot export_hex_sld` → `hex-sld.parquet`, ~1.7 MB sidecar
+  keyed by H3 cell; `useHexSld` hook → `CrashTooltip`). Snaps each
+  hex centroid to nearest tenth-mile MP point in
+  `nj_mp_tenths.parquet` (KD-tree) and surfaces `SLD_NAME`. Next:
+  cross-streets via MP intersection routing (find two crossing
+  roads near the centroid, name both) for "Route 9 between Main St
+  and 3rd Ave"-style labels.
 - (k) **Vehicle stack/aggregation by manufacturer** — extend
   CrashPlot StackBy with a `manufacturer` option for
   `measure='vehicles'`. Parallel to (e)–(g), not blocked by them.

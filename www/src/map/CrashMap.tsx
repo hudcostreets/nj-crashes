@@ -15,6 +15,7 @@ import type { FeatureCollection } from "geojson"
 import { useTouchPitch } from "./hooks/useTouchPitch"
 import { binIntoHexes, coarsenHexes, hexesToSegments, buildStackedHexLayer, Segment, StackedHex, H3_RADIUS_METERS } from "./StackedHexLayer"
 import { getResolution, cellToBoundary, polygonToCellsExperimental, POLYGON_TO_CELLS_FLAGS } from "h3-js"
+import { useHexSld, type HexSldMap } from "./useHexSld"
 
 export type MapMode = "scatter" | "heatmap" | "hexbin"
 
@@ -313,6 +314,7 @@ export function CrashMap({
     gridOverlayRes,
 }: Props) {
     const effectiveCrashes = crashes ?? []
+    const sldMap = useHexSld()
     const containerRef = React.useRef<HTMLDivElement | null>(null)
     const [localViewState, setLocalViewState] = useState<ViewState>(() => defaultView(initialBounds, initialCenter, initialView, mode))
     const viewState = controlledView ?? localViewState
@@ -732,7 +734,7 @@ export function CrashMap({
                     theme={theme}
                 />
             )}
-            {hoverInfo?.object && mode !== "heatmap" && <CrashTooltip info={hoverInfo} yearSpan={yearSpan} />}
+            {hoverInfo?.object && mode !== "heatmap" && <CrashTooltip info={hoverInfo} yearSpan={yearSpan} sldMap={sldMap} />}
             <AttributionPopover theme={theme} />
         </div>
     )
@@ -890,7 +892,7 @@ function fmtRate(n: number, yearSpan: number | undefined): string {
     return ` · ${formatted}/yr`
 }
 
-function CrashTooltip({ info, yearSpan }: { info: PickingInfo; yearSpan?: number }) {
+function CrashTooltip({ info, yearSpan, sldMap }: { info: PickingInfo; yearSpan?: number; sldMap?: HexSldMap | null }) {
     const obj = info.object
     if (!obj) return null
     const isHex = Array.isArray(obj.points)
@@ -899,9 +901,15 @@ function CrashTooltip({ info, yearSpan }: { info: PickingInfo; yearSpan?: number
         const seg = obj as Segment
         const h = seg.hex
         const injury = h.pedInj + h.otherInj
+        const sld = sldMap?.get(h.h3)
+        const sldLabel = sld?.sld_name
         return (
             <div style={tooltipStyle(info)}>
-                {h.topRoute && (
+                {sldLabel ? (
+                    <div style={{ fontSize: "0.85em", opacity: 0.85, marginBottom: 2 }}>
+                        near <b>{sldLabel}</b>
+                    </div>
+                ) : h.topRoute && (
                     <div style={{ fontSize: "0.85em", opacity: 0.85, marginBottom: 2 }}>
                         near <b>{h.topRoute}</b>
                     </div>

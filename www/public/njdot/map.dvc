@@ -7,7 +7,7 @@ meta:
   computation:
     cmd: cd ../../.. && rm -rf www/public/njdot/map/by-year www/public/njdot/map/by-year-county
       www/public/njdot/map/hex-r7 www/public/njdot/map/hex-r8 www/public/njdot/map/manifest.json
-      && njdot export_map_v2 && njdot gen_county_outlines && njdot gen_muni_outlines
+      && njdot export_map_v2 && njdot export_hex_sld && njdot gen_county_outlines && njdot gen_muni_outlines
     git_deps:
       /njdot/cli/export_map_v2.py: 962c064561d180fbcdb2aad09c5c2d965c8fb0e0
     deps:
