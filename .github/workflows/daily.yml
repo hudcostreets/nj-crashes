@@ -141,6 +141,9 @@ jobs:
       - name: Sync NJSP crashes.db → D1
         if: ${{ !inputs.targets }}
         run: $DVX api/d1-import.dvc
+      - name: Regenerate homepage OG mosaic (→ S3)
+        if: ${{ !inputs.targets }}
+        run: $DVX www/og-image.dvc
       - name: Deploy www to CF Pages
         if: ${{ !inputs.targets }}
         run: $DVX www/deploy.dvc

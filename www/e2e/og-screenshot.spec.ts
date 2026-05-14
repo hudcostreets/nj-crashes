@@ -1,4 +1,11 @@
-import { test, expect } from '@playwright/test'
+import { test } from '@playwright/test'
+
+// Output path is overridable via $OG_OUT_PATH (the og-image.sh script
+// points it at a tmp jpg before uploading to S3). Default keeps the
+// legacy public/og.png target so a bare `npx playwright test` still
+// regenerates the local fallback.
+const outPath = process.env.OG_OUT_PATH ?? 'public/og.png'
+const isJpeg = /\.jpe?g$/i.test(outPath)
 
 test('capture OG image', async ({ page }) => {
     await page.setViewportSize({ width: 1200, height: 630 })
@@ -22,5 +29,9 @@ test('capture OG image', async ({ page }) => {
     })
     console.log('OG overflow check:', JSON.stringify(overflow))
 
-    await page.screenshot({ path: 'public/og.png' })
+    await page.screenshot({
+        path: outPath,
+        type: isJpeg ? 'jpeg' : 'png',
+        ...(isJpeg ? { quality: 85 } : {}),
+    })
 })

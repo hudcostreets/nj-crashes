@@ -102,7 +102,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                 title={title}
                 description={description}
                 url={pageUrl}
-                thumbnail={`${url}/og.png`}
+                thumbnail="https://nj-crashes.s3.amazonaws.com/og.jpg"
             />
 
             <main className={css.index}>

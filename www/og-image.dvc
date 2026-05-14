@@ -1,0 +1,16 @@
+meta:
+  computation:
+    cmd: ./og-image.sh
+    deps:
+      /njsp/data/crash-log.parquet: 4047cae51de4c5a7b0b20e064afc3142
+    git_deps:
+      og-image.sh: bc73466d828a21cb911478e5c2faa78a0c05964d
+      e2e/og-screenshot.spec.ts: c6bfc7754499509987ffb34bff647bfbd4592942
+      src/routes/OgImage.tsx: 8d2e9097d3d16b15c71b8ee3beea1bf9b062907f
+    note: |
+      Side-effect stage: regenerates the homepage OG mosaic (Plot1 +
+      Recent Fatal Crashes table) and uploads to
+      s3://nj-crashes/og.jpg. No local `outs:` — the S3 object is the
+      source of truth; <meta og:image> in index.html points there.
+      Re-fires when crash-log refreshes (new NJSP fatal) or any of the
+      tracked source files change.
