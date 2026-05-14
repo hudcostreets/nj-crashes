@@ -145,8 +145,15 @@ export async function handleGet(
         : await bucket.get(path)
     if (!obj) throw new HttpError(404, `not found: ${path}`)
 
+    // Browsers ignore `<a download="...">` on cross-origin anchors. Without
+    // this header the saved file gets the URL path basename ("get"). Setting
+    // `Content-Disposition: attachment` is fine for inline `fetch()` callers
+    // (hyparquet, text viewer) — they consume the body regardless; the
+    // header only triggers download on top-level navigations / anchor clicks.
+    const basename = path.split("/").pop() || path
     const headers: Record<string, string> = {
         "Content-Type": contentTypeFor(path),
+        "Content-Disposition": `attachment; filename="${basename.replace(/"/g, '\\"')}"`,
         "ETag": `"${head.etag}"`,
         "Cache-Control": "public, max-age=86400, immutable",
         "Accept-Ranges": "bytes",

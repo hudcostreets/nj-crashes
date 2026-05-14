@@ -35,7 +35,7 @@ function corsHeaders(env: Env, extra: HeadersInit = {}): HeadersInit {
         // unless explicitly exposed. The text/CSV viewers parse
         // `Content-Range` to learn total file size from a 1-byte
         // range probe; without this, `fetchSize` throws.
-        "Access-Control-Expose-Headers": "Content-Range, Content-Length, ETag",
+        "Access-Control-Expose-Headers": "Content-Range, Content-Length, ETag, Content-Disposition",
         "Content-Type": "application/json",
         ...extra,
     }
@@ -45,7 +45,7 @@ function corsHeaders(env: Env, extra: HeadersInit = {}): HeadersInit {
  *  Content-Type / Content-Range / etc. from `handleGet`/`handleZipEntry`. */
 function applyCors(headers: Headers, env: Env): void {
     headers.set("Access-Control-Allow-Origin", env.CORS_ORIGIN ?? "*")
-    headers.set("Access-Control-Expose-Headers", "Content-Range, Content-Length, ETag")
+    headers.set("Access-Control-Expose-Headers", "Content-Range, Content-Length, ETag, Content-Disposition")
 }
 
 async function etagFor(req: Request, dataVersion: string): Promise<string> {

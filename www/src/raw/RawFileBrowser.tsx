@@ -22,7 +22,7 @@ import { DirListing } from "./DirListing"
 import { ZipEntryList } from "./ZipEntryList"
 import { TextViewer, type TextSource } from "./TextViewer"
 import { CsvTable } from "./CsvTable"
-import { extOf, rawZipEntryUrl, rawGetUrl, fetchZipEntries } from "./api"
+import { extOf, rawZipEntryUrl, rawDownloadUrl, rawGetUrl, fetchZipEntries } from "./api"
 import { parsePath, RAW_PREFIX, TEXTY, type Parsed } from "./parsePath"
 import { useEffect, useState } from "react"
 import { useUrlState, defStringParam } from "use-prms"
@@ -36,11 +36,15 @@ export default function RawFileBrowser() {
     const crumbs = useMemo(() => buildCrumbs(parsed), [parsed])
     const title = crumbs.length > 0 ? crumbs[crumbs.length - 1].label : "raw"
     // Surface a download icon for any leaf file (not directories or zip
-    // entries — those would need a different URL anyway). Matches the
-    // affordance `@rdub/file-tree` surfaces on `/files/*`.
+    // entries — those would need a different URL anyway). Direct r2.dev
+    // URL: browser-from-R2, no worker proxy. `<a download>` is ignored on
+    // cross-origin, so the URL basename becomes the saved filename — fine
+    // for .zip / .parquet (the dominant types under /raw/), inline-preview
+    // for .pdf / .csv / .txt until we move to a custom CF zone with
+    // Transform Rules.
     const downloadUrl = parsed.kind === "dir" || parsed.kind === "zipEntry"
         ? undefined
-        : rawGetUrl((parsed as { path: string }).path)
+        : rawDownloadUrl((parsed as { path: string }).path)
 
     return (
         <div style={{
@@ -86,7 +90,7 @@ function Body({ parsed }: { parsed: Parsed }) {
             return (
                 <div style={{ opacity: 0.7 }}>
                     Preview not supported for this file type.{" "}
-                    <a href={rawGetUrl(parsed.path)}>download</a>
+                    <a href={rawDownloadUrl(parsed.path)}>download</a>
                 </div>
             )
     }

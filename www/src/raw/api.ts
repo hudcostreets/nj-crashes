@@ -16,8 +16,9 @@ import { CELLS_API_BASE } from "../map/config"
  *  Bump history:
  *    1 — initial
  *    2 — 2026-05-07: `Access-Control-Expose-Headers: Content-Range, …`
+ *    3 — 2026-05-14: `Content-Disposition: attachment; filename="…"` on /v1/raw/get
  */
-const RAW_CACHE_VERSION = "2"
+const RAW_CACHE_VERSION = "3"
 
 export type ListEntry = {
     key: string
@@ -59,6 +60,25 @@ export async function fetchZipEntries(path: string): Promise<ZipEntriesResponse>
 
 export function rawGetUrl(path: string): string {
     return `${CELLS_API_BASE}/v1/raw/get?path=${encodeURIComponent(path)}&_v=${RAW_CACHE_VERSION}`
+}
+
+/** Public R2.dev base URL for the `nj-crashes` bucket. Direct downloads
+ *  bypass the worker entirely, saving CFW request/CPU budget. r2.dev
+ *  ignores `<a download="...">` on cross-origin anchors and won't add
+ *  `Content-Disposition` unless the object's `httpMetadata` had it baked
+ *  in at upload time — for typical bulk types (`.zip`, `.parquet`) that's
+ *  fine since the URL basename matches the desired filename, but
+ *  `.pdf` / `.csv` / `.txt` will inline-preview rather than save. Switch
+ *  to a custom CF zone + Transform Rules later for consistent download
+ *  behavior across all MIMEs. */
+export const RAW_PUBLIC_BASE_URL = (
+    (import.meta.env.VITE_RAW_PUBLIC_BASE_URL as string | undefined) ??
+    "https://pub-170b5acc466a4aba88831a1f5971177b.r2.dev"
+)
+
+/** Direct download URL — bypasses the worker, R2.dev → browser. */
+export function rawDownloadUrl(path: string): string {
+    return `${RAW_PUBLIC_BASE_URL}/${path}`
 }
 
 export function rawZipEntryUrl(path: string, e: ZipEntry, max?: number): string {
