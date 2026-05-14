@@ -1,9 +1,31 @@
 .geoNav {
     display: flex;
     align-items: center;
-    padding: 0.4em 0;
+    padding: 0.4em 0.6em;
     margin-bottom: 0.5em;
     border-bottom: 1px solid var(--grid-color, #333);
+    // Sticky: anchored to viewport top while the user scrolls the page.
+    // `backdrop-filter` keeps the underlying chart/text legible behind a
+    // semi-transparent bg without forcing a fully opaque bar.
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: color-mix(in srgb, var(--paper-bg, #0d1117) 88%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: transform 0.18s ease, opacity 0.18s ease;
+    will-change: transform;
+}
+
+// On mobile, auto-hide when the user is scrolling down (gain content
+// height while reading); slide back in on scroll-up. Desktop ignores
+// the toggle — bar stays visible.
+@media (max-width: 768px) {
+    .geoNav.hideMobile {
+        transform: translateY(-100%);
+        opacity: 0;
+        pointer-events: none;
+    }
 }
 
 .breadcrumb {

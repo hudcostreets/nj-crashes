@@ -1,5 +1,6 @@
-import { useMemo, useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useGeoFilter } from "@/src/GeoFilterContext"
+import { useScrollDirection } from "@/src/lib/useScrollDirection"
 import { CountyPicker } from "./CountyPicker"
 import { MuniPicker } from "./MuniPicker"
 import css from "./GeoNavBar.module.scss"
@@ -11,6 +12,12 @@ export function GeoNavBar() {
     const [openPicker, setOpenPicker] = useState<PickerOpen>(null)
     const countyRef = useRef<HTMLDivElement>(null)
     const muniRef = useRef<HTMLDivElement>(null)
+    // Mobile: auto-hide nav on scroll-down (recover content height when
+    // reading), restore on scroll-up (the moment the user looks back for
+    // navigation). At scroll-top it stays visible regardless. Desktop CSS
+    // overrides this back to always-visible.
+    const scrollDir = useScrollDirection()
+    const hideOnMobile = scrollDir === "down" && openPicker === null
 
     useEffect(() => {
         if (!openPicker) return
@@ -25,7 +32,7 @@ export function GeoNavBar() {
     }, [openPicker])
 
     return (
-        <nav className={css.geoNav}>
+        <nav className={`${css.geoNav} ${hideOnMobile ? css.hideMobile : ''}`}>
             <div className={css.breadcrumb}>
                 <button
                     className={`${css.crumb} ${!countyName ? css.current : ''}`}
