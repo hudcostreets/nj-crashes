@@ -116,7 +116,7 @@ export type Props = {
 export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScreenHref, scopeLabel }: Props) {
     const { actualTheme } = useTheme()
     const [mode, setMode] = useState<MapMode>("hexbin")
-    const [yearRange, setYearRange] = useState<[number, number]>([2019, 2023])
+    const [yearRange, setYearRange] = useState<[number, number]>([2019, 2025])
     const [severities, setSeverities] = useState<Set<"f" | "i" | "p">>(() => new Set(["f", "i"]))
     const [hexPxTarget, setHexPxTarget] = useSessionStorageState<number>("hccs.crashmap.hexPxTarget", { defaultValue: 1.2 })
     const [elevationPerCount, setElevationPerCount] = useState(60)

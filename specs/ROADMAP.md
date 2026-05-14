@@ -58,6 +58,82 @@ gating the other today.
 Annotations explicitly deprioritized — they only surface on
 random sub-pages most users won't encounter.
 
+## Home-page rework (2026-05-14)
+
+Cluster of UX work surfaced in a single session; some small, some
+significant. Order is roughly small→large; (a)/(b) land first as a
+warm-up.
+
+- (a) **Intro paragraph: add AASHTO data source link** — third link
+  alongside NJSP + NJDOT, pointing at `https://njdot.aashtowaresafety.net/njdot-crash-data-dashboard`.
+  Trivial.
+- (b) **Map default year range** — current `[2019, 2023]` in
+  `CrashMapSection.tsx:119`. Bumped to `[2019, 2025]` (7 years).
+  Year range is roughly free at fixed zoom — hex parquets are pre-
+  aggregated per cell; year filtering changes counts per cell, not
+  the fetched cell count. (And year-range row-group pushdown
+  doesn't currently shrink bytes anyway, so we fetch the full file
+  regardless.)
+- (c) **Section reorder**: Map first (visual hook), then unified
+  NJSP plot+table, then unified NJDOT plot+table. Annotations etc.
+  below.
+- (d) **Sticky geo nav** (state → county → muni) accessible on every
+  page. Desktop = always-visible compact breadcrumb bar under main
+  nav, county/muni dropdowns inline. Mobile = collapsed pill (`📍
+  Hudson > Jersey City`); tap → slide-up sheet; auto-hide on
+  scroll-down, show on scroll-up. Single React component, container
+  queries (or vw breakpoint) to switch render. Existing
+  `GeoNavBar` is the starting point.
+- (e) **Unify NJSP plot + Recent Fatal Crashes table** into one
+  `NjspSection` component. Geo filter, year range, type filters all
+  drive both halves. Same factoring as (f).
+- (f) **Unify NJDOT plot + crash table** into one `NjdotSection`.
+  Today `CrashPlot` (`/njdot`) and `NjdotCrashesSection` (annual
+  stats + per-crash table) are siblings; merge so filters cascade.
+  Annual Statistics table is then conceptually a tabular view of
+  the same plot bins (see (h)).
+- (g) **Map click-through to crash list**: clicking a hex stack
+  sets URL params (cell ID + year range) that filter a table below
+  the map. Table reuses the existing `NjdotCrashesSection`
+  component, scoped to the cell. Brushing (hover-highlight) is
+  nice-to-have; click-pin is the core. Tooltip stays for quick
+  numbers.
+- (h) **Plot ↔ tabular view contract**: every plot gets a
+  collapsible companion table. Two tabs: *raw rows* (the crashes in
+  scope, paginated; reuses crash tables) and *aggregated bins*
+  (the plot's underlying x/y, downloadable as CSV/parquet). Annual
+  Statistics table becomes the (aggregated) view of CrashPlot bins
+  by year + condition. Pattern generalizes to every plot on the
+  page.
+- (i) **Crash detail pages** — per-crash routes (NJSP and NJDOT,
+  with harmonized cross-links where matched). Blocker for restored
+  Bluesky posting. Partially specced in
+  `crash-detail-pages.md` already. **PK question** (open): use
+  `(source, year, cc, mc, case|accid)` as PK string, or assign
+  separate auto-inc IDs per source + a mapping table. Lean toward
+  the structured PK — human-readable, no migration surprises if
+  source PKs already collide. Bluesky posts can encode the PK in
+  the URL.
+- (j) **Hex stack → readable location name**: snap to nearest SRI
+  MP; ideal output includes street name + cross-streets ("Route 9
+  between Main St and 3rd Ave"). Cross-streets need MP intersection
+  routing (find two crossing roads near the centroid, name both).
+  Blocked on `njdot-mp-shapefile-bulk-download.md` (task #49) —
+  per-SRI ArcGIS scrape is too slow / brittle for the lookup table.
+  Fall-back for v0: bare street name from nearest MP, no cross-st.
+- (k) **Vehicle stack/aggregation by manufacturer** — extend
+  CrashPlot StackBy with a `manufacturer` option for
+  `measure='vehicles'`. Parallel to (e)–(g), not blocked by them.
+  Data prereq: normalize free-text AASHTO `Vehicle Make` (similar
+  messiness to `Removed To`); legacy NJDOT has a structured field
+  already. Top-N + "Other" bucket on the FE.
+
+Dependency notes: (g) wants (e)+(f) done first (otherwise the
+"table below" doesn't have a clean home). (j) depends on the
+shapefile bulk download. (i) is independent and unblocks the
+Bluesky restore. (k) only depends on the vehicle-make
+normalization pipeline; no UI deps.
+
 ## Other queued work
 
 - `slack-sync-lookback.md` — small win, but coordinate with

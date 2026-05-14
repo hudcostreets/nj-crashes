@@ -1,7 +1,7 @@
 import { Head } from "@/src/lib/head"
 import { url } from "@/src/site"
 import { getBasePath } from "@/src/lib/basePath"
-import { NjdotRawData, NjspFatalAcc } from "@/src/urls"
+import { AashtoDashboard, NjdotRawData, NjspFatalAcc } from "@/src/urls"
 import { GitHub } from "@/src/socials"
 import Footer from "@/src/footer"
 import A from "@/src/lib/a"
@@ -110,9 +110,10 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                 <h1 className={css.title}>{regionLabel ? `${regionLabel} Crash Data` : "NJ Car Crash Data"}</h1>
                 {!regionLabel && (
                     <p>
-                        Data analysis and visualization from two NJ sources:{" "}
-                        <A title="NJ State Police fatal crash data" href={NjspFatalAcc}>NJ State Police</A> (fatal crashes, 2001-present, updated daily) and{" "}
-                        <A title="NJ DOT raw crash data" href={NjdotRawData}>NJ DOT</A> (all crashes including property-damage and injury, 2001-{EndYear}).
+                        Data analysis and visualization from three NJ sources:{" "}
+                        <A title="NJ State Police fatal crash data" href={NjspFatalAcc}>NJ State Police</A> (fatal crashes, 2001-present, updated daily),{" "}
+                        <A title="NJ DOT raw crash data" href={NjdotRawData}>NJ DOT raw</A> (all crashes including property-damage and injury, 2001-{EndYear}), and the{" "}
+                        <A title="NJDOT AASHTOWare crash dashboard" href={AashtoDashboard}>AASHTOWare dashboard</A> (fatal + injury crashes, 2023-{EndYear}).
                     </p>
                 )}
                 {!regionLabel && (
