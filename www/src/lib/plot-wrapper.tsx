@@ -44,6 +44,9 @@ export type Props = {
     activeStyle?: StyleFn
     /** Style override for non-active traces while a trace is active. */
     inactiveStyle?: StyleFn
+    /** Content shown while Plotly is initializing (after mount, before first paint).
+     *  Defaults to pltly's centered "Loading..." text; pass `null` to hide entirely. */
+    fallback?: React.ReactNode
 } & LegendHandlers & OtherHandlers
 
 export const DEFAULT_MARGIN: Partial<Margin> = { t: 0, r: 15, b: 0, l: 0 }
@@ -72,6 +75,7 @@ export default function PlotWrapper({
     boldWeight,
     activeStyle,
     inactiveStyle,
+    fallback,
 }: Props) {
     const height = layout.height ?? DEFAULT_HEIGHT
 
@@ -103,7 +107,7 @@ export default function PlotWrapper({
             boldWeight={boldWeight}
             activeStyle={activeStyle}
             inactiveStyle={inactiveStyle}
-            fallback={
+            fallback={fallback !== undefined ? fallback : (
                 <div style={{
                     height: `${height}px`,
                     display: 'flex',
@@ -111,7 +115,7 @@ export default function PlotWrapper({
                     justifyContent: 'center',
                     opacity: 0.5,
                 }}>Loading...</div>
-            }
+            )}
         />
     )
 }

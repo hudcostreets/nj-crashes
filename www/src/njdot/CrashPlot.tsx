@@ -585,14 +585,14 @@ export default function CrashPlot({
         }
 
         // Single-trace promotion: when filters collapse the stack to one bar
-        // trace, move its labels above the bars and bump the font. (Inside-bar
-        // labels at 9px are designed for stacked segments — they look cramped
-        // and lose the dimensional cue when there's only one segment per bar.)
+        // trace, replace the inside-bar labels with annotations above each
+        // bar. Plotly's `textposition: 'outside'` for bars is broken under
+        // `barmode: 'stack'` (anchors at bar top with no offset → text sits
+        // visually inside near the top edge); annotations give us reliable
+        // above-bar placement at a readable size.
         const barTraces = traces.filter(t => t.type === 'bar')
         if (barTraces.length === 1) {
-            const t = barTraces[0]
-            t.textposition = 'outside'
-            t.textfont = { size: 12, color: plotColors.textColor }
+            barTraces[0].text = undefined
         }
 
         // Add 12month moving average lines for monthly view (when stack is none or severity)
@@ -664,9 +664,11 @@ export default function CrashPlot({
         const annotations: Layout['annotations'] = [...annTextEls]
         // Count unique x values to determine if we should annotate
         const uniqueXValues = new Set(traces.flatMap(t => t.x as (string | number)[] || []))
-        // Outer annotations show stacked-bar TOTALS (single-series labels are
-        // handled via trace.text 'outside' position above).
-        const shouldAnnotate = !stackPercent && activeTrace === null && uniqueXValues.size <= 30 && effectiveStackBy !== 'none'
+        // Outer annotations show stacked-bar TOTALS, or single-trace bar
+        // values (since `trace.text` with `textposition: 'outside'` is
+        // broken under `barmode: 'stack'`). The annotation path is also
+        // what we use for the unstacked single-series Total trace.
+        const shouldAnnotate = !stackPercent && activeTrace === null && uniqueXValues.size <= 30 && (effectiveStackBy !== 'none' || barTraces.length === 1)
         if (shouldAnnotate) {
             // Sum across all traces for each x value
             const periodTotals = new Map<string | number, number>()
@@ -692,8 +694,12 @@ export default function CrashPlot({
             }
         }
 
+        // When filters collapse to one bar trace, drop `barmode: 'stack'`
+        // so Plotly honors `textposition: 'outside'` (stacked-bar mode
+        // forces inside placement, regardless of the trace-level setting).
+        const isSingleBarTrace = traces.filter(t => t.type === 'bar').length === 1
         const layout: Partial<Layout> = {
-            barmode: effectiveStackBy !== 'none' ? 'stack' : undefined,
+            barmode: effectiveStackBy !== 'none' && !isSingleBarTrace ? 'stack' : undefined,
             barnorm: stackPercent && effectiveStackBy !== 'none' ? 'percent' : undefined,
             height,
             margin: { t: 20, b: 40, l: 60, r: 20 },
@@ -779,12 +785,9 @@ export default function CrashPlot({
     const useStale = isLoading && traces.length === 0 && lastChartRef.current.traces.length > 0
     const renderTraces = useStale ? lastChartRef.current.traces : traces
     const renderLayout = useStale ? lastChartRef.current.layout : layout
-    const showInitialLoading = isLoading && lastChartRef.current.traces.length === 0
-    if (showInitialLoading) {
-        return <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            Loading crash data...
-        </div>
-    }
+    // No initial-loading interstitial: the area below is preserved (same
+    // `minHeight`) and the small "loading…" badge in the corner signals
+    // activity without a centered black-text block flashing in/out.
 
     if (error) {
         return <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'red' }}>
@@ -801,12 +804,17 @@ export default function CrashPlot({
         ? `Select one or more ${emptyFacets.join(" and ")} to view data.`
         : null
 
-    // Stable Plotly instance: every trace builder above now passes an
-    // explicit `marker.color`, so there's no path that lets Plotly's
-    // react renderer keep an old palette-index color on a new trace.
-    // No `key` change means radio clicks update the chart in place
-    // (smooth restyle) instead of unmounting → remounting (black-flash
-    // while Plotly re-initializes).
+    // Force a Plotly remount when `measure` or `effectiveStackBy` changes.
+    // Carries a brief black-flash flicker (Plotly re-initializes a fresh
+    // SVG), but the alternative is worse: Plotly's `react()` diff keys
+    // traces by index and reuses the previous SVG path's fill color even
+    // when the new trace data has an explicit `marker.color`. The SVG
+    // ends up showing the previous stack's palette under the current
+    // legend's swatches — confirmed via CIC after both adding explicit
+    // colors + uids to traces; neither bypasses the diff. Worth filing
+    // an upstream Plotly bug (or chasing the bypass in pltly), but for
+    // now the flicker is the lesser evil vs. visibly-wrong colors.
+    const plotKey = `${measure}-${effectiveStackBy}`
 
     return (
         <div>
@@ -825,6 +833,7 @@ export default function CrashPlot({
                     </div>
                 ) : (
                     <PlotWrapper
+                        key={plotKey}
                         data={renderTraces as PlotData[]}
                         layout={renderLayout}
                         onActiveTrace={setActiveTrace}
@@ -835,6 +844,12 @@ export default function CrashPlot({
                         onUnhoverAnnotation={() => annOpen.setHovered(false)}
                         disableFade
                         boldWeight="normal"
+                        // Empty (vs pltly's default centered "Loading…") so the
+                        // remount on Stack-By / Measure transitions doesn't
+                        // flash text mid-click. Still reserves the chart's
+                        // vertical space so the surrounding layout doesn't
+                        // jump.
+                        fallback={<div style={{ height }} />}
                     />
                 )}
                 {isLoading && !emptySelection && (

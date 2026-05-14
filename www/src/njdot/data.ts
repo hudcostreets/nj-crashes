@@ -41,12 +41,15 @@ export const VictimTypeDefs: Record<VictimType, string> = {
     b: 'Cyclist: person on a bicycle or similar non-motorized vehicle involved in the crash.',
     u: 'Unknown: person type could not be determined (often AASHTO records with blank Position; common for mis-tagged pedestrian/cyclist victims).',
 }
+// Aligned with NJSP `FatalitiesPerYearPlot` palette so the two stacks
+// on the homepage read as the "same thing" across plots. Unknown has
+// no NJSP analog; keep neutral grey.
 export const VictimTypeColors: Record<VictimType, string> = {
-    d: '#636EFA',  // blue
-    o: '#00CC96',  // green
-    p: '#AB63FA',  // purple
-    b: '#FFA15A',  // orange
-    u: '#7F7F7F',  // gray
+    d: '#a94c9a',  // Driver — magenta
+    o: '#f08030',  // Passenger — orange
+    p: '#d85a6a',  // Pedestrian — red-pink
+    b: '#7c5295',  // Cyclist — purple
+    u: '#7F7F7F',  // Unknown — grey
 }
 
 // Physical conditions (person-level injury severity, KABCO scale)
