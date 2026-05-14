@@ -584,13 +584,26 @@ export default function CrashPlot({
             }
         }
 
-        // Single-trace promotion: when filters collapse the stack to one bar
-        // trace, replace the inside-bar labels with annotations above each
-        // bar. Plotly's `textposition: 'outside'` for bars is broken under
-        // `barmode: 'stack'` (anchors at bar top with no offset → text sits
-        // visually inside near the top edge); annotations give us reliable
-        // above-bar placement at a readable size.
-        const barTraces = traces.filter(t => t.type === 'bar')
+        // Apply solo (hide non-active) BEFORE single-trace promo + the
+        // annotation pass below — otherwise visibility-aware checks
+        // (visibleBarTraces, periodTotals filter) see the un-soloed
+        // state and produce labels for the stacked total instead of the
+        // active trace.
+        if (activeTrace) {
+            for (const trace of traces) {
+                const isActive = trace.name === activeTrace || trace.legendgroup === activeTrace
+                trace.visible = isActive ? true : 'legendonly'
+            }
+        }
+
+        // Single-trace promotion: when filters OR hover-solo collapse the
+        // stack to one visible bar trace, drop the inside-segment labels
+        // and let the annotation pass below render above-bar totals.
+        // Plotly's `textposition: 'outside'` for bars is broken under
+        // `barmode: 'stack'` (anchors at bar top with no offset → text
+        // sits visually inside near the top edge); annotations give us
+        // reliable above-bar placement at a readable size.
+        const barTraces = traces.filter(t => t.type === 'bar' && t.visible !== 'legendonly')
         if (barTraces.length === 1) {
             barTraces[0].text = undefined
         }
@@ -664,16 +677,18 @@ export default function CrashPlot({
         const annotations: Layout['annotations'] = [...annTextEls]
         // Count unique x values to determine if we should annotate
         const uniqueXValues = new Set(traces.flatMap(t => t.x as (string | number)[] || []))
-        // Outer annotations show stacked-bar TOTALS, or single-trace bar
-        // values (since `trace.text` with `textposition: 'outside'` is
-        // broken under `barmode: 'stack'`). The annotation path is also
-        // what we use for the unstacked single-series Total trace.
-        const shouldAnnotate = !stackPercent && activeTrace === null && uniqueXValues.size <= 30 && (effectiveStackBy !== 'none' || barTraces.length === 1)
+        // Outer annotations show stacked-bar TOTALS or single-trace bar
+        // values. The "single trace" case includes both filter-collapsed
+        // (only one stack-by value checked) AND hover-solo'd (one trace
+        // visible, others `visible: 'legendonly'`) — `barTraces` is the
+        // visible set, so the same path covers both.
+        const shouldAnnotate = !stackPercent && uniqueXValues.size <= 30 && (effectiveStackBy !== 'none' || barTraces.length === 1)
         if (shouldAnnotate) {
-            // Sum across all traces for each x value
+            // Sum across VISIBLE traces only (hidden / solo'd-out traces
+            // shouldn't contribute to the displayed total).
             const periodTotals = new Map<string | number, number>()
             for (const trace of traces) {
-                if (!trace.x || !trace.y) continue
+                if (!trace.x || !trace.y || trace.visible === 'legendonly') continue
                 const xs = trace.x as (string | number)[]
                 const ys = trace.y as number[]
                 for (let i = 0; i < xs.length; i++) {
@@ -765,15 +780,6 @@ export default function CrashPlot({
             shapes: annShapes,
         }
 
-        // Solo (hide-others on hover/pin) is delegated to pltly via the
-        // `inactiveStyle` prop on `PlotWrapper` (one `Plotly.restyle` call,
-        // no React re-render). Previously we mutated `trace.visible` here
-        // off the `activeTrace` state, which produced two visible states
-        // per legend-item hover: pltly's opacity fade firing first, then a
-        // React re-render + Plotly.react with `visible: 'legendonly'`.
-        // `activeTrace` is still used below to gate stacked-total
-        // annotations (suppressed while a trace is solo'd).
-
         return { traces, layout }
     }, [data, effectiveStackBy, severities, conditions, victimTypes, damages, departures, activeVehicleFacet, measure, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors, isDark, cc2mc2mn, plotAnnotations])
 
@@ -850,12 +856,18 @@ export default function CrashPlot({
                         onClickAnnotation={() => annOpen.setPinned(!annOpen.pinned)}
                         onHoverAnnotation={() => annOpen.setHovered(true)}
                         onUnhoverAnnotation={() => annOpen.setHovered(false)}
+                        // Both `disableFade` AND `disableSolo` are needed —
+                        // pltly's `applyFadeSolo` only short-circuits when
+                        // BOTH `disableLegendHover` and `disableSoloTrace`
+                        // are true (see pltly Plot.tsx:435). With just
+                        // `disableFade`, pltly still fires a
+                        // `Plotly.restyle` on hover BEFORE our React render
+                        // lands, producing the two-frame transition where
+                        // axes recalibrate for the soloed view while the
+                        // old stacked bars are still rendered. We own
+                        // visibility entirely from the useMemo above.
                         disableFade
-                        // Solo via Plotly.restyle (no React re-render): pltly
-                        // hides inactive traces directly when one is hovered
-                        // or pinned. Replaces the old `if (activeTrace) {
-                        // visible: 'legendonly' }` block in the useMemo.
-                        inactiveStyle={() => ({ visible: 'legendonly' })}
+                        disableSolo
                         boldWeight="normal"
                         // Empty (vs pltly's default centered "Loading…") so the
                         // remount on Stack-By / Measure transitions doesn't
