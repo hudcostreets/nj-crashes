@@ -39,7 +39,7 @@ BASE_RES_DEFAULT = 14
 SHARD_RES_DEFAULT = 4
 PYRAMID_LEVELS_DEFAULT = (6, 7, 8, 9, 10, 11, 12, 13)
 TOPK_DEFAULT = 10
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 OUT_DIR_DEFAULT = Path('data/cells')
 R2_BUCKET_DEFAULT = 'nj-crashes'
@@ -219,8 +219,8 @@ def _build_pyramid_level(
     err(f'  sort + write...')
     t0 = time()
     out = out.sort_values(['__shard', h3_col, 'year'], kind='mergesort')
-    level_dir = out_dir / f'r{level}'
-    level_dir.mkdir(parents=True, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    level_dir = out_dir
     counts: dict[str, int] = {}
     cols_out = [h3_col, 'year', 'n_crashes', 'n_fatal', 'n_inj', 'n_pdo', 'n_killed', 'n_killed_ped', 'n_injured', 'n_inj_ped', 'n_inj_other', 'n_vehs', 'topK']
     # Pin topK's nested `year` to int16; pyarrow's default inference picks
@@ -291,7 +291,73 @@ def cells_pyramid(base_res: int, force: bool, topk: int, levels: str, out_dir: P
     h3_base_col = f'h3_r{base_res}'
     for level in level_ints:
         err(f'\n=== Pyramid r{level} ===')
-        _build_pyramid_level(base, h3_base_col, level, shard_res, topk, pyramid_dir)
+        _build_pyramid_level(base, h3_base_col, level, shard_res, topk, pyramid_dir / f'r{level}')
+
+
+def _parse_combos(spec: str) -> list[tuple[int, int]]:
+    """Parse `--combos s5:r9,s6:r10,...` → [(shard_res, data_res), ...]."""
+    out: list[tuple[int, int]] = []
+    for tok in spec.split(','):
+        tok = tok.strip()
+        if not tok:
+            continue
+        if ':' not in tok:
+            raise click.BadParameter(f'expected "s{{N}}:r{{M}}" or "{{N}}:{{M}}", got {tok!r}')
+        s, r = tok.split(':', 1)
+        s = s.lstrip('s')
+        r = r.lstrip('r')
+        s_i, r_i = int(s), int(r)
+        if s_i >= r_i:
+            raise click.BadParameter(f'combo {tok}: shard_res {s_i} must be < data_res {r_i}')
+        if not (0 <= s_i <= 15) or not (0 <= r_i <= 15):
+            raise click.BadParameter(f'combo {tok}: res must be in [0, 15]')
+        out.append((s_i, r_i))
+    return out
+
+
+@cells.command('pyramid-combos')
+@click.option('-b', '--base-res', type=int, default=BASE_RES_DEFAULT)
+@click.option('-c', '--combos', required=True, help='Comma-sep (shard_res, data_res) pairs, e.g. "s5:r9,s6:r10,s7:r11,s8:r12"')
+@click.option('-f', '--force', is_flag=True, help='Overwrite existing combo output dirs')
+@click.option('-k', '--topk', type=int, default=TOPK_DEFAULT)
+@click.option('-o', '--out-dir', type=click.Path(path_type=Path), default=OUT_DIR_DEFAULT)
+def cells_pyramid_combos(base_res: int, combos: str, force: bool, topk: int, out_dir: Path):
+    """Multi-resolution pyramid: each `(shard_res, data_res)` combo writes
+    to `pyramid/s{shard_res}_r{data_res}/{shard_hex}.parquet`. The
+    client picks the combo whose viewport-shard count is in target
+    range (typically D = data_res - shard_res = 3-5)."""
+    combo_list = _parse_combos(combos)
+    err(f'Generating {len(combo_list)} combos: {combo_list}')
+    pyramid_dir = out_dir / 'pyramid'
+    pyramid_dir.mkdir(parents=True, exist_ok=True)
+    # Pre-check non-empty combo dirs (caller can re-run with -f).
+    existing = [c for c in combo_list if (pyramid_dir / f's{c[0]}_r{c[1]}').exists() and any((pyramid_dir / f's{c[0]}_r{c[1]}').glob('*.parquet'))]
+    if existing and not force:
+        err(f'combo dirs already populated: {existing}; use -f/--force to overwrite')
+        return
+    for s_res, d_res in existing:
+        if force:
+            for p in (pyramid_dir / f's{s_res}_r{d_res}').glob('*.parquet'):
+                p.unlink()
+
+    raw_dir = out_dir / 'raw' / f'h3_r{base_res}'
+    raw_paths = sorted(raw_dir.glob('*.parquet'))
+    if not raw_paths:
+        err(f'No raw shards in {raw_dir}; run `compute cells raw` first')
+        raise SystemExit(1)
+    err(f'Loading {len(raw_paths)} raw shards from {raw_dir}...')
+    t0 = time()
+    base = pd.concat([pd.read_parquet(p) for p in raw_paths], ignore_index=True)
+    err(f'  {len(base):,} rows in {time() - t0:.1f}s')
+    err('Sorting by dt desc (once, for topK head() correctness)...')
+    t0 = time()
+    base = base.sort_values('dt', ascending=False, kind='mergesort')
+    err(f'  {time() - t0:.1f}s')
+
+    h3_base_col = f'h3_r{base_res}'
+    for s_res, d_res in combo_list:
+        err(f'\n=== Combo s{s_res} / r{d_res} (D={d_res - s_res}) ===')
+        _build_pyramid_level(base, h3_base_col, d_res, s_res, topk, pyramid_dir / f's{s_res}_r{d_res}')
 
 
 @cells.command('manifest')
@@ -340,6 +406,39 @@ def cells_manifest(base_res: int, pyramid_levels: str, out_dir: Path, shard_res:
             n += pq.ParquetFile(p).metadata.num_rows
         row_counts[f'pyramid_r{level}'] = n
 
+    # Multi-resolution combo dirs: `pyramid/s{S}_r{R}/...parquet`.
+    # Glob the pyramid root for s*_r* subdirs the combos run produced.
+    import re
+    pyramid_combos: list[dict] = []
+    pyramid_root = out_dir / 'pyramid'
+    if pyramid_root.exists():
+        combo_re = re.compile(r'^s(\d+)_r(\d+)$')
+        combo_dirs = sorted(
+            (p for p in pyramid_root.iterdir() if p.is_dir() and combo_re.match(p.name)),
+            key=lambda p: tuple(int(x) for x in combo_re.match(p.name).groups()),
+        )
+        for cdir in combo_dirs:
+            m = combo_re.match(cdir.name)
+            s_res, d_res = int(m.group(1)), int(m.group(2))
+            shards = sorted(p.stem for p in cdir.glob('*.parquet'))
+            if not shards:
+                continue
+            n_rows = 0
+            n_bytes = 0
+            import pyarrow.parquet as pq
+            for sh in shards:
+                p = cdir / f'{sh}.parquet'
+                n_rows += pq.ParquetFile(p).metadata.num_rows
+                n_bytes += p.stat().st_size
+            pyramid_combos.append({
+                'shard_res': s_res,
+                'data_res': d_res,
+                'shard_cells': shards,
+                'row_count': n_rows,
+                'byte_size': n_bytes,
+            })
+            row_counts[f'pyramid_s{s_res}_r{d_res}'] = n_rows
+
     sha = _git_sha()
     ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     manifest = {
@@ -348,6 +447,7 @@ def cells_manifest(base_res: int, pyramid_levels: str, out_dir: Path, shard_res:
         'base_res': base_res,
         'shard_res': shard_res,
         'pyramid_levels': levels,
+        'pyramid_combos': pyramid_combos,
         'year_range': [min(years_seen), max(years_seen)] if years_seen else None,
         'shard_cells': raw_shards,
         'row_counts': row_counts,
@@ -356,23 +456,29 @@ def cells_manifest(base_res: int, pyramid_levels: str, out_dir: Path, shard_res:
     out_path.write_text(json.dumps(manifest, indent=2) + '\n')
     err(f'Wrote {out_path}')
     err(f'  raw rows: {raw_total:,}, shards: {len(raw_shards)}, year_range: {manifest["year_range"]}')
+    if pyramid_combos:
+        err(f'  combos: {len(pyramid_combos)}')
+        for c in pyramid_combos:
+            err(f'    s{c["shard_res"]}/r{c["data_res"]}: {len(c["shard_cells"]):,} shards, {c["row_count"]:,} rows, {c["byte_size"]/1024/1024:.1f} MB')
 
 
 @cells.command('push')
 @click.option('-b', '--bucket', default=R2_BUCKET_DEFAULT, help=f'R2 bucket (default: {R2_BUCKET_DEFAULT})')
+@click.option('-D', '--no-delete', is_flag=True, help='Additive push (skip `--delete`). Use when local lacks legacy data still needed in R2.')
 @click.option('-n', '--dry-run', is_flag=True, help='Show what would be uploaded without uploading')
 @click.option('-o', '--out-dir', type=click.Path(path_type=Path), default=OUT_DIR_DEFAULT)
 @click.option('-p', '--prefix', default=R2_PREFIX_DEFAULT, help=f'Bucket prefix (default: {R2_PREFIX_DEFAULT})')
 @click.option('--profile', default=R2_PROFILE_DEFAULT, help=f'AWS profile for R2 (default: {R2_PROFILE_DEFAULT})')
-def cells_push(bucket: str, dry_run: bool, out_dir: Path, prefix: str, profile: str):
+def cells_push(bucket: str, no_delete: bool, dry_run: bool, out_dir: Path, prefix: str, profile: str):
     """Mirror `out_dir` to s3://{bucket}/{prefix}/ for the worker (excludes .dvc artifacts)."""
     s3_uri = f's3://{bucket}/{prefix}/'
     cmd = [
         'aws', 's3', 'sync', f'{out_dir}/', s3_uri,
         '--exclude', '*.dvc',
         '--exclude', '.gitignore',
-        '--delete',
     ]
+    if not no_delete:
+        cmd.append('--delete')
     if dry_run:
         cmd.append('--dryrun')
     env = {**os.environ, 'AWS_PROFILE': profile}

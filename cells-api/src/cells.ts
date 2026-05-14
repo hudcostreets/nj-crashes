@@ -101,6 +101,13 @@ export type CellsRequest = {
      *  Result includes `res: actualRes` so the client knows what
      *  resolution was actually returned. */
     maxCells?: number
+    /** Optional shard resolution for the multi-res pyramid combos. When
+     *  set, the worker reads `pyramid/s{shardRes}_r{res}/{shard}.parquet`
+     *  instead of the legacy `pyramid/r{res}/{shard}.parquet` (which is
+     *  implicitly sharded at `manifest.shard_res`). The manifest enumerates
+     *  available `(shard_res, data_res)` combos in `pyramid_combos`; the
+     *  client picks one whose viewport-shard-count is in a target range. */
+    shardRes?: number
 }
 
 function bigintToHex(b: bigint | number): string {
@@ -138,7 +145,7 @@ export async function handleCellsRequest(
     req: CellsRequest,
 ): Promise<CellsResponse> {
     const manifest = await loadManifest(bucket, prefix)
-    const { cells: requestedShards, res: requestedRes, maxCells } = req
+    const { cells: requestedShards, res: requestedRes, maxCells, shardRes } = req
     const yearRange = req.yearRange ?? manifest.year_range
     const sevSet = req.severities  // undefined ⇒ all
 
@@ -148,6 +155,33 @@ export async function handleCellsRequest(
     if (requestedShards.length === 0) {
         throw new HttpError(400, "cells must list ≥1 shard")
     }
+
+    // Multi-resolution combo path: client specifies `(shard_res, data_res)`.
+    // Worker reads `pyramid/s{shard_res}_r{data_res}/{shard}.parquet`
+    // directly, no coarsening (the client picks a combo whose cell count
+    // is already in budget). `maxCells` is ignored on the combo path.
+    if (shardRes != null) {
+        const combos = manifest.pyramid_combos ?? []
+        const combo = combos.find(c => c.shard_res === shardRes && c.data_res === requestedRes)
+        if (!combo) {
+            const avail = combos.map(c => `s${c.shard_res}/r${c.data_res}`).join(", ")
+            throw new HttpError(404, `no combo (shard_res=${shardRes}, data_res=${requestedRes}); have: [${avail}]`)
+        }
+        const known = new Set(combo.shard_cells)
+        const shards = requestedShards.filter(s => known.has(s))
+        const clipPoly = req.clipPolygon && req.clipPolygon.length >= 3 ? req.clipPolygon : null
+        const cells = await queryPyramid(bucket, prefix, requestedRes, shards, yearRange, sevSet, clipPoly, shardRes)
+        return {
+            res: requestedRes,
+            year_range: yearRange,
+            data_version: manifest.data_version,
+            source: "pyramid",
+            cells,
+        }
+    }
+
+    // Legacy path: shards keyed at `manifest.shard_res`, pyramid levels are
+    // single-shard-res. Adaptive coarsening when `maxCells` exceeded.
     // Intersect with the manifest's known shard set so an unknown cell
     // (typo, stale client, off-NJ shard) becomes a silent skip rather
     // than a 404 on the parquet read.
@@ -189,25 +223,29 @@ async function queryPyramid(
     yearRange: [number, number],
     severities: Set<"f" | "i" | "p"> | undefined,
     clipPoly: LonLatPolygon | null,
+    shardRes?: number,
 ): Promise<CellOut[]> {
     const h3Col = `h3_r${res}`
     const wantF = !severities || severities.has("f")
     const wantI = !severities || severities.has("i")
     const wantP = !severities || severities.has("p")
     const out = new Map<string, CellOut>()
+    // Multi-res combos live under `pyramid/s{shard_res}_r{data_res}/...`;
+    // legacy single-shard-res pyramid lives under `pyramid/r{res}/...`.
+    const subdir = shardRes != null ? `s${shardRes}_r${res}` : `r${res}`
 
     for (const s of shards) {
         let rows: PyramidRow[]
         try {
             rows = await readParquetFromR2<PyramidRow>(
-                bucket, `${prefix}/pyramid/r${res}/${s}.parquet`,
+                bucket, `${prefix}/pyramid/${subdir}/${s}.parquet`,
                 {
                     columns: [h3Col, "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"],
                     filter: { year: { $gte: yearRange[0], $lte: yearRange[1] } },
                 },
             )
         } catch (e) {
-            console.error(`pyramid r${res}/${s} read failed:`, e)
+            console.error(`pyramid ${subdir}/${s} read failed:`, e)
             continue
         }
         for (const row of rows) {
@@ -362,5 +400,13 @@ export function parseCellsRequest(url: URL): CellsRequest {
         maxCells = n
     }
 
-    return { cells, res, yearRange, severities, clipPolygon, maxCells }
+    let shardRes: number | undefined
+    const sr = url.searchParams.get("shard_res")
+    if (sr) {
+        const n = parseInt(sr, 10)
+        if (!Number.isFinite(n) || n < 0 || n > 15) throw new HttpError(400, "shard_res must be in [0, 15]")
+        shardRes = n
+    }
+
+    return { cells, res, yearRange, severities, clipPolygon, maxCells, shardRes }
 }

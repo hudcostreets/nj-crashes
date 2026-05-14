@@ -54,14 +54,69 @@ type CellsResponse = {
     cells: CellRow[]
 }
 
+/** A pre-aggregated `(shard_res, data_res)` slice. Mirrors the
+ *  worker-side `PyramidCombo`. */
+export type PyramidCombo = {
+    shard_res: number
+    data_res: number
+    shard_cells: string[]
+    row_count?: number
+    byte_size?: number
+}
+
 type Manifest = {
     schema_version: number
     data_version: string
     base_res: number
     shard_res: number
     pyramid_levels: number[]
+    /** Multi-resolution combos (schema_version >= 4). Empty/missing on older
+     *  manifests; client falls back to single shard_res. */
+    pyramid_combos?: PyramidCombo[]
     year_range: [number, number]
     shard_cells: string[]
+}
+
+/** H3 cell area in km², res 0-15. Used to pick the combo whose
+ *  viewport-shard-count is in target range. (Vertex-to-vertex
+ *  diameter would be ~2× the edge, area = 3√3/2 × edge²). */
+const H3_AREA_KM2: Record<number, number> = {
+    0: 4.25e6, 1: 6.07e5, 2: 8.68e4, 3: 1.24e4, 4: 1.77e3,
+    5: 2.53e2, 6: 36.13, 7: 5.16, 8: 0.737, 9: 0.105,
+    10: 0.015, 11: 2.15e-3, 12: 3.07e-4, 13: 4.39e-5,
+}
+
+/** Compute viewport area in km² from a (lon, lat) bbox. */
+function bboxAreaKm2([w, s, e, n]: Bbox): number {
+    const midLat = (s + n) / 2
+    const lonKm = (e - w) * 111.32 * Math.cos((midLat * Math.PI) / 180)
+    const latKm = (n - s) * 110.54
+    return Math.max(0, lonKm) * Math.max(0, latKm)
+}
+
+/** Target viewport-shard count for combo picking. Too few = each shard
+ *  is huge (worker reads & aggregates a lot); too many = HTTP/2 stream
+ *  contention. ~25 sits comfortably under most browsers' practical
+ *  concurrent-stream cap while keeping per-shard reads small. */
+const COMBO_TARGET_SHARDS = 25
+
+/** Pick the best `(shard_res, data_res=dataRes)` combo for the given
+ *  viewport. Returns null if no combo with this `data_res` exists (caller
+ *  falls back to the legacy single-shard-res path). */
+function pickCombo(combos: PyramidCombo[], dataRes: number, vpAreaKm2: number): PyramidCombo | null {
+    const candidates = combos.filter(c => c.data_res === dataRes)
+    if (candidates.length === 0) return null
+    let best: PyramidCombo | null = null
+    let bestDiff = Infinity
+    for (const c of candidates) {
+        const area = H3_AREA_KM2[c.shard_res]
+        if (!area) continue
+        const nShards = vpAreaKm2 / area
+        // log-distance from target; symmetric in over/under.
+        const diff = Math.abs(Math.log2(Math.max(nShards, 1) / COMBO_TARGET_SHARDS))
+        if (diff < bestDiff) { bestDiff = diff; best = c }
+    }
+    return best
 }
 
 export type CellsApiPlan = {
@@ -118,9 +173,13 @@ const DEBOUNCE_MS = 250
  *  caps based on theoretical max (`area / hex_area`); it picks res
  *  purely from zoom. The consumer (CrashMapSection) coarsens
  *  client-side via `h3 cellToParent` if a fetch comes back over budget
- *  (lossless: parent count = sum of children). 30k chosen because the
- *  renderer handles 25k+ smoothly (verified at z=10 statewide). */
-export const CELLS_BUDGET = 30000
+ *  (lossless: parent count = sum of children).
+ *
+ *  Bumped 30k → 60k after multi-res sharding landed: at z~10 over urban
+ *  NJ the actual in-viewport r10 cell count is ~42k. 30k forced a coarsen
+ *  to r9 (defeating the point of finer sharding). Deck.gl's
+ *  HexagonLayer-style instanced rendering handles 100k+ smoothly. */
+export const CELLS_BUDGET = 60000
 
 /** Per-shard cap sent to the worker as `?maxCells=`. Worker walks
  *  coarser if a shard's cells would exceed this — only triggers
@@ -234,7 +293,7 @@ function encodePolygon(poly: [number, number][]): string {
 
 function buildShardUrl(
     shard: string, res: number, filter: CellsApiFilter, polygonStr: string | null,
-    maxCells: number,
+    maxCells: number, shardRes?: number,
 ): string {
     const sevs = ["f", "i", "p"].filter(c => filter.severities.has(c as "f" | "i" | "p")).join("")
     const params = new URLSearchParams({
@@ -242,8 +301,11 @@ function buildShardUrl(
         res: String(res),
         years: `${filter.yearRange[0]}-${filter.yearRange[1]}`,
         severities: sevs,
-        maxCells: String(maxCells),
     })
+    // Combo path skips `maxCells` (combo was pre-picked to fit budget);
+    // legacy path needs it for worker-side adaptive coarsening.
+    if (shardRes != null) params.set("shard_res", String(shardRes))
+    else params.set("maxCells", String(maxCells))
     if (polygonStr) params.set("polygon", polygonStr)
     return `${CELLS_API_BASE}/v1/cells?${params}`
 }
@@ -305,17 +367,22 @@ export function useCellsApi(filter: CellsApiFilter | null):
         return () => { cancelled = true }
     }, [])
 
-    const pick = useMemo(() => {
+    const pick = useMemo<{ res: number; combo: PyramidCombo | null; reason: string } | null>(() => {
         if (!filter) return null
-        if (filter.resOverride != null) {
-            return { res: clamp(filter.resOverride), reason: `override r${filter.resOverride}` }
-        }
-        // Pick purely from zoom — the consumer coarsens post-fetch if
-        // the actual cell count exceeds CELLS_BUDGET.
-        const targetRes = pickHexResolutionForPixels(filter.hexPxTarget ?? 1.2, filter.zoom, filter.viewportLat)
-        const res = clamp(targetRes)
-        return { res, reason: `zoom r${targetRes}` }
-    }, [filter?.zoom, filter?.viewportLat, filter?.hexPxTarget, filter?.resOverride])
+        const res = filter.resOverride != null
+            ? clamp(filter.resOverride)
+            : clamp(pickHexResolutionForPixels(filter.hexPxTarget ?? 1.2, filter.zoom, filter.viewportLat))
+        const combos = manifest?.pyramid_combos ?? []
+        const vpArea = bboxAreaKm2(filter.viewport)
+        const combo = pickCombo(combos, res, vpArea)
+        const reason = combo
+            ? `r${res} · combo s${combo.shard_res}/r${combo.data_res} (D=${combo.data_res - combo.shard_res})`
+            : `r${res} · legacy (no combo for r${res})`
+        return { res, combo, reason }
+        // viewport changes drive area-based combo selection; throttle via
+        // bbox-key downstream so we don't re-pick every drag frame.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filter?.zoom, filter?.viewportLat, filter?.hexPxTarget, filter?.resOverride, filter?.viewport, manifest])
 
     // Shard set (which r4 cells to fetch) and worker `polygon=` arg are
     // computed separately so that small pans don't thrash the per-shard
@@ -344,8 +411,11 @@ export function useCellsApi(filter: CellsApiFilter | null):
     }, [filter?.viewport])
     const bboxKey = snappedBbox ? snappedBbox.join(",") : null
     const shardSet = useMemo(() => {
-        if (!filter || !manifest || !snappedBbox) return null
-        const known = new Set(manifest.shard_cells)
+        if (!filter || !manifest || !snappedBbox || !pick) return null
+        // Combo path uses the combo's `shard_res` + shard_cells; legacy
+        // path uses manifest.shard_res + manifest.shard_cells.
+        const shardRes = pick.combo?.shard_res ?? manifest.shard_res
+        const known = new Set(pick.combo?.shard_cells ?? manifest.shard_cells)
         let shardRegion: [number, number][]  // [lon, lat], used only for shard selection
         if (usingPoly) {
             shardRegion = clipPolygonToBbox(filter.clipPolygon!, snappedBbox)
@@ -353,11 +423,11 @@ export function useCellsApi(filter: CellsApiFilter | null):
         } else {
             shardRegion = bboxToLonLatRing(snappedBbox)
         }
-        const shards = shardsForRegion(lonLatToLatLng(shardRegion), manifest.shard_res, known)
+        const shards = shardsForRegion(lonLatToLatLng(shardRegion), shardRes, known)
         const polygonStr = encodePolygon(usingPoly ? filter.clipPolygon! : NJ_CLIP_POLYGON)
         return { shards, polygonStr }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [manifest, usingPoly, filter?.clipPolygon, bboxKey])
+    }, [manifest, usingPoly, filter?.clipPolygon, bboxKey, pick?.combo?.shard_res])
 
     const shardsKey = useMemo(() => {
         if (!filter || !shardSet || !pick) return null
@@ -370,13 +440,14 @@ export function useCellsApi(filter: CellsApiFilter | null):
         // across all shards may still exceed CELLS_BUDGET; the client
         // coarsens the union losslessly via cellToParent if so.
         const perShardCap = SHARD_MAX_CELLS
-        const urls = shards.map(s => buildShardUrl(s, pick.res, filter, polygonStr, perShardCap))
+        const shardRes = pick.combo?.shard_res
+        const urls = shards.map(s => buildShardUrl(s, pick.res, filter, polygonStr, perShardCap, shardRes))
         return { shards, urls, polygonStr }
-        // `pick.res` is the only field of `pick` that affects URLs; using
-        // the primitive avoids re-running on every drag frame (where `pick`
-        // gets a new object ref but the same `res`).
+        // `pick.res` / combo.shard_res are the URL-relevant fields; using
+        // primitives avoids re-running on every drag frame (where `pick`
+        // gets a new object ref but the same values).
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [shardSet, pick?.res, filter?.yearRange, filter?.severities])
+    }, [shardSet, pick?.res, pick?.combo?.shard_res, filter?.yearRange, filter?.severities])
 
     const [state, setState] = useState<{
         urls: string[]
