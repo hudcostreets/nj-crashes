@@ -1,8 +1,17 @@
 20*/*.txt
 20*/*.zip
+20*/crashes.parquet
+20*/issues.parquet
+20*/persons.parquet
+20*/vehicles.parquet
 /vehicles.parquet
 /crashes.parquet
 /occupants.parquet
 /pedestrians.parquet
 /drivers.parquet
 /crash_pk_mappings.parquet
+/aashto_combined_crashes.parquet
+/aashto_supplemented_crashes.parquet
+/aashto_supplemented_occupants.parquet
+/aashto_supplemented_pedestrians.parquet
+/aashto_supplemented_vehicles.parquet
