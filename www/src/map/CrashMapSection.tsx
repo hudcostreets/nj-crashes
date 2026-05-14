@@ -304,20 +304,40 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
     // come back at a coarser res than requested. Client-side fallback
     // here is just a safety net (cumulative across shards may still
     // overshoot if shard splits + adaptive don't converge perfectly).
+    //
+    // Budget check is on the viewport-clipped set, not the full fetched
+    // set: when the picker single-file-falls-back to statewide r9 (51
+    // shards > maxHexShards), most of the 77k cells are off-screen.
+    // Counting only in-viewport cells keeps r9 visible at z~9.5+ where
+    // the viewport really only sees ~25k of them. We also hand the
+    // viewport-clipped slice (with a small padding margin to avoid
+    // edge pop-in mid-pan) to the renderer so it doesn't iterate the
+    // statewide tail each frame.
     const renderHexes = useMemo<{ hexes: StackedHex[]; res: number; coarsenedFrom: number | null } | null>(() => {
         if (result.status !== "ready" || result.dataKind !== "hex") return null
         const data = result.data as StackedHex[]
         if (data.length === 0) return { hexes: data, res: result.plan?.kind === "hex" ? result.plan.res : 9, coarsenedFrom: null }
         const sourceRes = getResolution(data[0].h3)
-        if (data.length <= CELLS_BUDGET) return { hexes: data, res: sourceRes, coarsenedFrom: null }
+        const vp = filter.viewport
+        const clip = (xs: StackedHex[]) => {
+            if (!vp) return xs
+            const padLon = (vp[2] - vp[0]) * 0.25
+            const padLat = (vp[3] - vp[1]) * 0.25
+            const lo0 = vp[0] - padLon, hi0 = vp[2] + padLon
+            const lo1 = vp[1] - padLat, hi1 = vp[3] + padLat
+            return xs.filter(h => h.center[0] >= lo0 && h.center[0] <= hi0 && h.center[1] >= lo1 && h.center[1] <= hi1)
+        }
+        let inViewport = clip(data)
+        if (inViewport.length <= CELLS_BUDGET) return { hexes: inViewport, res: sourceRes, coarsenedFrom: null }
         let res = sourceRes
         let out = data
-        while (out.length > CELLS_BUDGET && res > 5) {
+        while (inViewport.length > CELLS_BUDGET && res > 5) {
             res--
             out = coarsenHexes(data, res)
+            inViewport = clip(out)
         }
-        return { hexes: out, res, coarsenedFrom: sourceRes }
-    }, [result])
+        return { hexes: inViewport, res, coarsenedFrom: sourceRes }
+    }, [result, filter.viewport])
 
     const initialBounds: [number, number, number, number] = useMemo(() => {
         const m = result.manifest
