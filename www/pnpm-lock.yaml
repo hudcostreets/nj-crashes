@@ -57,8 +57,8 @@ importers:
         specifier: 0.0.2
         version: 0.0.2(@duckdb/duckdb-wasm@1.28.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@rdub/file-tree':
-        specifier: https://github.com/runsascoded/file-tree#d3269c86b4f807ce9a99f336f5a9a703468fbc95
-        version: https://codeload.github.com/runsascoded/file-tree/tar.gz/d3269c86b4f807ce9a99f336f5a9a703468fbc95(react-dom@18.2.0(react@18.2.0))(react-router-dom@6.30.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)
+        specifier: https://github.com/runsascoded/file-tree#d3476b0d2cb398197f3a1383f41fe3b0216be39f
+        version: https://codeload.github.com/runsascoded/file-tree/tar.gz/d3476b0d2cb398197f3a1383f41fe3b0216be39f(react-dom@18.2.0(react@18.2.0))(react-router-dom@6.30.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)
       '@react-leaflet/core':
         specifier: ^2.1.0
         version: 2.1.0(leaflet@1.9.4)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -1028,9 +1028,9 @@ packages:
       react: ^18
       react-dom: ^18
 
-  '@rdub/file-tree@https://codeload.github.com/runsascoded/file-tree/tar.gz/d3269c86b4f807ce9a99f336f5a9a703468fbc95':
-    resolution: {tarball: https://codeload.github.com/runsascoded/file-tree/tar.gz/d3269c86b4f807ce9a99f336f5a9a703468fbc95}
-    version: 0.0.1-dist.3500327
+  '@rdub/file-tree@https://codeload.github.com/runsascoded/file-tree/tar.gz/d3476b0d2cb398197f3a1383f41fe3b0216be39f':
+    resolution: {tarball: https://codeload.github.com/runsascoded/file-tree/tar.gz/d3476b0d2cb398197f3a1383f41fe3b0216be39f}
+    version: 0.0.1-dist.ccec625
     peerDependencies:
       react: ^18 || ^19
       react-dom: ^18 || ^19
@@ -4332,7 +4332,7 @@ snapshots:
       react-dom: 18.2.0(react@18.2.0)
       web-worker: 1.3.0
 
-  '@rdub/file-tree@https://codeload.github.com/runsascoded/file-tree/tar.gz/d3269c86b4f807ce9a99f336f5a9a703468fbc95(react-dom@18.2.0(react@18.2.0))(react-router-dom@6.30.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)':
+  '@rdub/file-tree@https://codeload.github.com/runsascoded/file-tree/tar.gz/d3476b0d2cb398197f3a1383f41fe3b0216be39f(react-dom@18.2.0(react@18.2.0))(react-router-dom@6.30.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)':
     dependencies:
       aws4fetch: 1.0.20
     optionalDependencies:

@@ -34,7 +34,7 @@
     "@mui/material": "^5.15.10",
     "@rdub/base": "0.3.0",
     "@rdub/duckdb": "0.0.2",
-    "@rdub/file-tree": "https://github.com/runsascoded/file-tree#d3269c86b4f807ce9a99f336f5a9a703468fbc95",
+    "@rdub/file-tree": "https://github.com/runsascoded/file-tree#d3476b0d2cb398197f3a1383f41fe3b0216be39f",
     "@react-leaflet/core": "^2.1.0",
     "@vanilla-extract/css": "^1.14.0",
     "fp-ts": "^2.16.2",
