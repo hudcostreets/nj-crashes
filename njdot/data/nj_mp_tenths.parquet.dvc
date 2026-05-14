@@ -1,0 +1,19 @@
+outs:
+- md5: 7f409f4625279b8ce87791748d28017c
+  size: 22646320
+  hash: md5
+  path: nj_mp_tenths.parquet
+meta:
+  computation:
+    cmd: nj_crashes/sri/bulk_dl.py
+    git_deps:
+      /nj_crashes/sri/bulk_dl.py: 7ef4306c02958c0a7f1686b876ebd5cbbf1e832e
+    note: |
+      Bulk download of NJDOT's "New Jersey Standard Route Id. And
+      Mile Post" ArcGIS FeatureServer (896,077 tenth-mile points).
+      Replaces the per-SRI scrape in `nj_crashes/sri/cli.py` —
+      single bulk pull (~2 min @ concurrency=8) vs per-SRI request
+      with sleep+jitter (hours). Columns: SRI, MP, SLD_NAME (human
+      street name, often with "FR X to Y" cross-street context),
+      Second_Name, ROUTE_SUBT, lon, lat. Source last updated
+      2024-04-30 per the FeatureServer's `Last-Modified` header.
