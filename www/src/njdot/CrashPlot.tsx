@@ -682,14 +682,22 @@ export default function CrashPlot({
                     periodTotals.set(x, (periodTotals.get(x) || 0) + y)
                 }
             }
+            // Single-trace labels: `yanchor: 'bottom'` puts the annotation's
+            // bottom edge at the bar top, then `yshift` adds breathing room
+            // above. Stacked totals use auto anchor (defaults to middle) +
+            // smaller font + smaller shift to keep busy plots readable.
+            const isSingleTrace = barTraces.length === 1
+            const yshift = isSingleTrace ? 6 : 10
+            const fontSize = isSingleTrace ? 13 : 10
             for (const [x, total] of periodTotals) {
                 annotations.push({
                     x,
                     y: total,
                     text: formatK(total),
                     showarrow: false,
-                    yshift: 10,
-                    font: { color: plotColors.textColor, size: 10 },
+                    yshift,
+                    ...(isSingleTrace ? { yanchor: 'bottom' as const } : {}),
+                    font: { color: plotColors.textColor, size: fontSize },
                 })
             }
         }
@@ -733,7 +741,11 @@ export default function CrashPlot({
             showlegend: true,
             legend: {
                 orientation: 'h' as const,
-                traceorder: 'reversed' as const,
+                // L→R legend order matches bottom→top stack order: the first
+                // trace is at the bottom of the stack and shows leftmost in the
+                // legend. Plotly's default for a horizontal legend would be
+                // 'reversed' (top-of-stack first); we override to 'normal'.
+                traceorder: 'normal' as const,
                 y: -0.08,
                 x: 0.5,
                 xanchor: 'center' as const,
@@ -753,18 +765,14 @@ export default function CrashPlot({
             shapes: annShapes,
         }
 
-        // Solo mode: when a trace is active (hover or click-pin), hide others.
-        // `onActiveTrace` fires for both hover and pin — this gives hover-to-
-        // solo UX (which is what the user wants). Tradeoff: every legend-item
-        // sweep triggers a useMemo rebuild + Plotly redraw, which is the
-        // source of the LI-hover flicker. Cleaner fix is in-place restyle via
-        // Plotly.restyle() rather than React re-render — TODO.
-        if (activeTrace) {
-            for (const trace of traces) {
-                const isActive = trace.name === activeTrace || trace.legendgroup === activeTrace
-                trace.visible = isActive ? true : 'legendonly'
-            }
-        }
+        // Solo (hide-others on hover/pin) is delegated to pltly via the
+        // `inactiveStyle` prop on `PlotWrapper` (one `Plotly.restyle` call,
+        // no React re-render). Previously we mutated `trace.visible` here
+        // off the `activeTrace` state, which produced two visible states
+        // per legend-item hover: pltly's opacity fade firing first, then a
+        // React re-render + Plotly.react with `visible: 'legendonly'`.
+        // `activeTrace` is still used below to gate stacked-total
+        // annotations (suppressed while a trace is solo'd).
 
         return { traces, layout }
     }, [data, effectiveStackBy, severities, conditions, victimTypes, damages, departures, activeVehicleFacet, measure, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors, isDark, cc2mc2mn, plotAnnotations])
@@ -843,6 +851,11 @@ export default function CrashPlot({
                         onHoverAnnotation={() => annOpen.setHovered(true)}
                         onUnhoverAnnotation={() => annOpen.setHovered(false)}
                         disableFade
+                        // Solo via Plotly.restyle (no React re-render): pltly
+                        // hides inactive traces directly when one is hovered
+                        // or pinned. Replaces the old `if (activeTrace) {
+                        // visible: 'legendonly' }` block in the useMemo.
+                        inactiveStyle={() => ({ visible: 'legendonly' })}
                         boldWeight="normal"
                         // Empty (vs pltly's default centered "Loading…") so the
                         // remount on Stack-By / Measure transitions doesn't
