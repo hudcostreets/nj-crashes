@@ -90,9 +90,6 @@ export type Props = {
     mode?: MapMode
     theme?: "light" | "dark"
     height?: number | string
-    /** Number of years in the selected range, for per-year rate display in
-     *  hex tooltips. When ≥ 2, tooltips show "N crashes (≈N/yr)". */
-    yearSpan?: number
     /** When set, draw an outline-only h3 grid at this resolution covering
      *  the current viewport. Used by the debug drawer's "hover an `rL`
      *  row" feature for visual reference. */
@@ -310,7 +307,6 @@ export function CrashMap({
     mode = "scatter",
     theme = "dark",
     height = "100%",
-    yearSpan,
     gridOverlayRes,
 }: Props) {
     const effectiveCrashes = crashes ?? []
@@ -734,7 +730,7 @@ export function CrashMap({
                     theme={theme}
                 />
             )}
-            {hoverInfo?.object && mode !== "heatmap" && <CrashTooltip info={hoverInfo} yearSpan={yearSpan} sldMap={sldMap} />}
+            {hoverInfo?.object && mode !== "heatmap" && <CrashTooltip info={hoverInfo} sldMap={sldMap} />}
             <AttributionPopover theme={theme} />
         </div>
     )
@@ -885,14 +881,7 @@ function tooltipStyle(info: PickingInfo): React.CSSProperties {
     }
 }
 
-function fmtRate(n: number, yearSpan: number | undefined): string {
-    if (!yearSpan || yearSpan < 2) return ""
-    const rate = n / yearSpan
-    const formatted = rate >= 10 ? Math.round(rate).toString() : rate.toFixed(1)
-    return ` · ${formatted}/yr`
-}
-
-function CrashTooltip({ info, yearSpan, sldMap }: { info: PickingInfo; yearSpan?: number; sldMap?: HexSldMap | null }) {
+function CrashTooltip({ info, sldMap }: { info: PickingInfo; sldMap?: HexSldMap | null }) {
     const obj = info.object
     if (!obj) return null
     const isHex = Array.isArray(obj.points)
@@ -902,33 +891,36 @@ function CrashTooltip({ info, yearSpan, sldMap }: { info: PickingInfo; yearSpan?
         const h = seg.hex
         const injury = h.pedInj + h.otherInj
         const sld = sldMap?.get(h.h3)
-        const sldLabel = sld?.sld_name
+        // Drop trailing "Borough"/"Township"/"City"/"Town"/"Village"
+        // suffix from MUN_LABEL — keeps the second line compact.
+        const munShort = sld?.mun?.replace(/\s+(Borough|Township|City|Town|Village)$/i, "") ?? ""
+        const sldLabel = sld?.sld_name || h.topRoute
         return (
             <div style={tooltipStyle(info)}>
-                {sldLabel ? (
-                    <div style={{ fontSize: "0.85em", opacity: 0.85, marginBottom: 2 }}>
-                        near <b>{sldLabel}</b>
-                    </div>
-                ) : h.topRoute && (
-                    <div style={{ fontSize: "0.85em", opacity: 0.85, marginBottom: 2 }}>
-                        near <b>{h.topRoute}</b>
+                {sldLabel && (
+                    <div style={{ fontSize: "0.85em", opacity: 0.85, marginBottom: 1 }}>
+                        <b>{sldLabel}</b>
+                        {sld && Number.isFinite(sld.mp) && (
+                            <span style={{ opacity: 0.8 }}> · MP {sld.mp.toFixed(2)}</span>
+                        )}
                     </div>
                 )}
-                <div><b>{h.total}</b> crashes{fmtRate(h.total, yearSpan)}</div>
-                {h.fatal > 0 && (
-                    <div style={{ color: "rgb(210,28,28)" }}>
-                        <b>{h.fatal}</b> fatal{fmtRate(h.fatal, yearSpan)}
+                {munShort && (
+                    <div style={{ fontSize: "0.8em", opacity: 0.7, marginBottom: 4 }}>
+                        {munShort}{sld?.county ? ` (${sld.county})` : ""}
                     </div>
+                )}
+                <div><b>{h.total}</b> crashes</div>
+                {h.fatal > 0 && (
+                    <div style={{ color: "rgb(210,28,28)" }}><b>{h.fatal}</b> fatal</div>
                 )}
                 {injury > 0 && (
                     <div style={{ color: "rgb(245,158,11)" }}>
-                        <b>{injury}</b> injury{h.pedInj > 0 ? ` (incl. ${h.pedInj} ped/cyclist)` : ""}{fmtRate(injury, yearSpan)}
+                        <b>{injury}</b> injury{h.pedInj > 0 ? ` (incl. ${h.pedInj} ped/cyclist)` : ""}
                     </div>
                 )}
                 {h.pdo > 0 && (
-                    <div style={{ color: "rgb(220,200,90)" }}>
-                        <b>{h.pdo}</b> other{fmtRate(h.pdo, yearSpan)}
-                    </div>
+                    <div style={{ color: "rgb(220,200,90)" }}><b>{h.pdo}</b> other</div>
                 )}
             </div>
         )
@@ -937,7 +929,7 @@ function CrashTooltip({ info, yearSpan, sldMap }: { info: PickingInfo; yearSpan?
         <div style={tooltipStyle(info)}>
             {isHex ? (
                 <>
-                    <div><b>{obj.points.length}</b> crashes{fmtRate(obj.points.length, yearSpan)}</div>
+                    <div><b>{obj.points.length}</b> crashes</div>
                     {(() => {
                         let tk = 0, ti = 0
                         for (const p of obj.points) {

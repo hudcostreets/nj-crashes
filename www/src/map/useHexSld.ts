@@ -15,6 +15,8 @@ export type SldEntry = {
     sri: string
     mp: number
     route_subt: number
+    mun: string
+    county: string
 }
 
 export type HexSldMap = ReadonlyMap<string, SldEntry>
@@ -25,11 +27,19 @@ async function loadHexSld(): Promise<HexSldMap> {
     const url = `${MAP_BASE_URL}/v2/hex-sld.parquet`
     const file = await asyncBufferFromUrl({ url })
     const rows = (await parquetReadObjects({ file })) as Array<{
-        h3: string; sld_name: string; sri: string; mp: number; route_subt: number
+        h3: string; sld_name: string; sri: string; mp: number; route_subt: number;
+        mun: string; county: string
     }>
     const m = new Map<string, SldEntry>()
     for (const r of rows) {
-        m.set(r.h3, { sld_name: r.sld_name, sri: r.sri, mp: r.mp, route_subt: r.route_subt })
+        m.set(r.h3, {
+            sld_name: r.sld_name,
+            sri: r.sri,
+            mp: r.mp,
+            route_subt: r.route_subt,
+            mun: r.mun ?? "",
+            county: r.county ?? "",
+        })
     }
     return m
 }

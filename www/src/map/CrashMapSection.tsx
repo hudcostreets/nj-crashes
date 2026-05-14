@@ -467,7 +467,6 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                             onHexPxTargetChange={setHexPxTarget}
                             elevationPerCount={elevationPerCount}
                             onElevationPerCountChange={setElevationPerCount}
-                            yearSpan={yearRange[1] - yearRange[0] + 1}
                             gridOverlayRes={gridOverlayRes}
                         />
                     ) : (
@@ -487,7 +486,6 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                             onHexPxTargetChange={setHexPxTarget}
                             elevationPerCount={elevationPerCount}
                             onElevationPerCountChange={setElevationPerCount}
-                            yearSpan={yearRange[1] - yearRange[0] + 1}
                             gridOverlayRes={gridOverlayRes}
                         />
                     )}

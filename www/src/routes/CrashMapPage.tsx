@@ -332,7 +332,6 @@ export default function CrashMapPage() {
                             onHexPxTargetChange={setHexPxTarget}
                             elevationPerCount={elevationPerCount}
                             onElevationPerCountChange={setElevationPerCount}
-                            yearSpan={yearRange[1] - yearRange[0] + 1}
                             onOutlineClick={cc === undefined ? onOutlineClick : undefined}
                             showInternalControls={false}
                             mode={mode}
@@ -350,7 +349,6 @@ export default function CrashMapPage() {
                             onHexPxTargetChange={setHexPxTarget}
                             elevationPerCount={elevationPerCount}
                             onElevationPerCountChange={setElevationPerCount}
-                            yearSpan={yearRange[1] - yearRange[0] + 1}
                             onOutlineClick={cc === undefined ? onOutlineClick : undefined}
                             showInternalControls={false}
                             mode="hexbin"
