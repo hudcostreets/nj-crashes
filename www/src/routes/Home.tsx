@@ -122,6 +122,23 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                     </p>
                 )}
 
+                {/* Crash map — visual hook, lifted above the plot+table sections per
+                    the home-rework plan (specs/ROADMAP.md item (c)). */}
+                <h2 id="map"><a href="#map">Crash Map</a></h2>
+                <PlotContainer showHr={false}>
+                    <CrashMapSection
+                        key={`map-${cc}-${mc}`}
+                        cc={cc}
+                        mc={mc}
+                        fullScreenHref={`/map${cc !== null ? `/c/${countyName?.toLowerCase().replace(/\s+/g, "-")}${mc !== null && municipalityName ? `/${municipalityName.toLowerCase().replace(/\s+/g, "-")}` : ""}` : ""}`}
+                        scopeLabel={
+                            mc !== null && municipalityName ? `${municipalityName}, ${countyName} County`
+                            : cc !== null && countyName ? `${countyName} County`
+                            : undefined
+                        }
+                    />
+                </PlotContainer>
+
                 <PlotContainer><FatalitiesPerYearPlot key={`p1-${cc}-${mc}`} initialCounty={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
 
                 {/* NJSP Fatal Crashes Table */}
@@ -148,22 +165,6 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                     </p>
                 }
                 <PlotContainer showHr={false}><CrashPlot key={`dot-${cc}-${mc}`} counties={countyFilter} mc={mc} /></PlotContainer>
-
-                {/* Crash map */}
-                <h2 id="map"><a href="#map">Crash Map</a></h2>
-                <PlotContainer showHr={false}>
-                    <CrashMapSection
-                        key={`map-${cc}-${mc}`}
-                        cc={cc}
-                        mc={mc}
-                        fullScreenHref={`/map${cc !== null ? `/c/${countyName?.toLowerCase().replace(/\s+/g, "-")}${mc !== null && municipalityName ? `/${municipalityName.toLowerCase().replace(/\s+/g, "-")}` : ""}` : ""}`}
-                        scopeLabel={
-                            mc !== null && municipalityName ? `${municipalityName}, ${countyName} County`
-                            : cc !== null && countyName ? `${countyName} County`
-                            : undefined
-                        }
-                    />
-                </PlotContainer>
 
                 {/* Annual Statistics Table (NJ DOT) */}
                 <h2 id="stats"><a href="#stats">Annual Statistics (NJ DOT)</a></h2>
