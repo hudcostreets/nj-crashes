@@ -2,12 +2,11 @@ outs:
 - md5: 82165048b5cbb2d0dba714cc419f0026.dir
   size: 5272903
   hash: md5
+  nfiles: 21
   path: ymccmcs
 meta:
   computation:
     cmd: env -u PYTHONPATH njdot agg
-    git_deps:
-      /njdot/agg.py: 463c77943c4a9171bb08924c6cccdbebc2997d03
     deps:
       /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
       /njdot/data/aashto_supplemented_crashes.parquet: 92ac7e301eab0f949748c6061317cf9f
@@ -15,6 +14,5 @@ meta:
       /njdot/data/pedestrians.parquet: 7f1dc043bbc22ed522115e4adbc911fd
       /njdot/data/vehicles.parquet: f556fa6424ee67986f1b8f69b0ab7eab
       /njdot/data/aashto_supplemented_vehicles.parquet: ebefcf842124ee67c8b0ddcd0c51043d
-    note: |
-      Co-output of `njdot/agg.py` alongside `ymccmc.dvc` (see that
-      file's note for the full picture).
+    git_deps:
+      /njdot/agg.py: 463c77943c4a9171bb08924c6cccdbebc2997d03
