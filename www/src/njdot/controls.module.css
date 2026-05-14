@@ -133,4 +133,9 @@
     color: var(--text-secondary);
     margin-top: 0.25rem;
     text-align: center;
+    /* Reserve height so the line doesn't shift the page below it when
+       `timing` blanks during a fetch (see useParquet — sets to null on
+       URL change, then back when data lands). */
+    min-height: 1.2em;
+    line-height: 1.2;
 }

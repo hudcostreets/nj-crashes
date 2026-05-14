@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback, useRef } from "react"
+import { type ComponentProps, useEffect, useMemo, useState, useCallback, useRef } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import { EndYear, StartYear } from "@/src/constants"
 import type { Layout, PlotData } from "plotly.js"
@@ -14,7 +14,7 @@ import {
     VictimType, VictimTypes, VictimTypeLabels, VictimTypeDefs, VictimTypeColors,
     Damage, Damages, DamageLabels, DamageDefs, DamageColors,
     Departure, Departures, DepartureLabels, DepartureDefs, DepartureColors,
-    MeasureKind, MeasureKinds, MeasureKindLabels, MeasureKindDefs,
+    MeasureKind, MeasureKinds, MeasureKindLabels,
     vtcCol,
     Counties,
     StackBy,
@@ -25,12 +25,18 @@ import { Radios } from "./Radios"
 import { CountyDropdown } from "./CountyDropdown"
 import { MunicipalityDropdown } from "./MunicipalityDropdown"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
-import { Tooltip } from "@/src/tooltip"
+import { Tooltip as MuiTooltip } from "@/src/tooltip"
 import { ControlsGear } from "@/src/components/ControlsGear"
 import css from "./controls.module.css"
 import { useAnnotations } from "@/src/annotations/useAnnotations"
 import { toPlotLayers, yearInAnyRange } from "@/src/annotations/plot"
 import { AnnotationTrigger, AnnotationBody, useAnnotationOpenState } from "@/src/annotations/AnnotationDetails"
+
+// Local alias: place facet tooltips ABOVE the control so the popup
+// doesn't occlude radios/checklist options below it. The controls live
+// at the bottom of the chart so there's open space above.
+const Tooltip = (props: ComponentProps<typeof MuiTooltip>) =>
+    <MuiTooltip placement="top" {...props} />
 
 type CrashPlotProps = {
     /** Stack by dimension */
@@ -55,9 +61,9 @@ const DEFAULT_HEIGHT = 550
 const ALL_COUNTIES = Object.keys(Counties).map(Number)
 
 // Plotly's default qualitative palette. Used explicitly for county /
-// municipality stack-by traces so Plotly's react renderer doesn't
-// reuse old `marker.color` by trace index when the trace set changes
-// shape (see the `plotKey` discussion further down).
+// municipality stack-by traces; combined with per-trace `uid` (see
+// `buildTrace`) so Plotly.react doesn't reuse old SVG fills when the
+// trace set changes shape.
 const PLOTLY_COLORWAY = [
     '#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A',
     '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52',
@@ -269,8 +275,9 @@ export default function CrashPlot({
     }
 
     // Build traces from data
-    const { traces, layout } = useMemo(() => {
-        if (!data || data.length === 0) return { traces: [], layout: {} }
+    const { traces, layout, computeMs } = useMemo(() => {
+        const t0 = performance.now()
+        if (!data || data.length === 0) return { traces: [], layout: {}, computeMs: 0 }
 
         // Filter data by valid years, severity, county, and municipality
         let filtered: typeof data
@@ -349,6 +356,14 @@ export default function CrashPlot({
             // sit on the plot bg so they use the theme font color.
             const labelColor = isStacking ? contrastTextFor(color) : plotColors.textColor
             return {
+                // `uid` includes `effectiveStackBy` so Plotly.react treats
+                // traces across a Stack-By change as entirely new — otherwise
+                // it diffs the old severity SVG paths into the new county
+                // ones, leaving inline `style="fill: <old-color>"` on some
+                // paths even though `_fullData[i].marker.color` has the new
+                // colorway value. CIC confirms: without this, 2 of 21 county
+                // traces render with stale severity colors.
+                uid: `${effectiveStackBy}-${measure}-${name}`,
                 x: sorted.map(([k]) => timeGranularity === 'month' ? k : parseInt(k)),
                 y: ys,
                 type: 'bar',
@@ -454,9 +469,6 @@ export default function CrashPlot({
                         grouped.set(key, (val / total) * 100)
                     }
                 }
-                // Explicit color (round-robin Plotly default palette) so trace-
-                // index color-carryover can't bite us when the stack-by changes
-                // — see the `plotKey` discussion below for why this matters.
                 const color = PLOTLY_COLORWAY[sortedCounties.indexOf(cc) % PLOTLY_COLORWAY.length]
                 traces.push(buildTrace(grouped, Counties[cc] || `County ${cc}`, color, originalGrouped))
             }
@@ -780,7 +792,7 @@ export default function CrashPlot({
             shapes: annShapes,
         }
 
-        return { traces, layout }
+        return { traces, layout, computeMs: performance.now() - t0 }
     }, [data, effectiveStackBy, severities, conditions, victimTypes, damages, departures, activeVehicleFacet, measure, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors, isDark, cc2mc2mn, plotAnnotations])
 
     // Check if we're waiting for county data (need ymccs but have yms)
@@ -818,16 +830,15 @@ export default function CrashPlot({
         ? `Select one or more ${emptyFacets.join(" and ")} to view data.`
         : null
 
-    // Force a Plotly remount when `measure` or `effectiveStackBy` changes.
-    // Carries a brief black-flash flicker (Plotly re-initializes a fresh
-    // SVG), but the alternative is worse: Plotly's `react()` diff keys
-    // traces by index and reuses the previous SVG path's fill color even
-    // when the new trace data has an explicit `marker.color`. The SVG
-    // ends up showing the previous stack's palette under the current
-    // legend's swatches — confirmed via CIC after both adding explicit
-    // colors + uids to traces; neither bypasses the diff. Worth filing
-    // an upstream Plotly bug (or chasing the bypass in pltly), but for
-    // now the flicker is the lesser evil vs. visibly-wrong colors.
+    // Belt-and-suspenders alongside per-trace `uid` (see `buildTrace`):
+    // `layout.datarevision` forces Plotly to do a full data refresh on
+    // the next `Plotly.react` call instead of the attribute-level diff.
+    // The per-trace `uid` is what actually keeps stale SVG fills from
+    // carrying over (Plotly's diff would otherwise reuse old `<path>`
+    // elements with `style="fill: <old-color>"` even though
+    // `_fullData[i].marker.color` has the new value — CIC-confirmed).
+    // We avoid `key={plotKey}` (React remount) because the fallback
+    // flash would be visible on every Stack-By / Measure change.
     const plotKey = `${measure}-${effectiveStackBy}`
 
     return (
@@ -847,9 +858,8 @@ export default function CrashPlot({
                     </div>
                 ) : (
                     <PlotWrapper
-                        key={plotKey}
                         data={renderTraces as PlotData[]}
-                        layout={renderLayout}
+                        layout={{ ...renderLayout, datarevision: plotKey } as Partial<Layout>}
                         onActiveTrace={setActiveTrace}
                         onHover={handleHover}
                         onUnhover={handleUnhover}
@@ -869,27 +879,12 @@ export default function CrashPlot({
                         disableFade
                         disableSolo
                         boldWeight="normal"
-                        // Empty (vs pltly's default centered "Loading…") so the
-                        // remount on Stack-By / Measure transitions doesn't
-                        // flash text mid-click. Still reserves the chart's
-                        // vertical space so the surrounding layout doesn't
-                        // jump.
+                        // Empty (vs pltly's default centered "Loading…") so
+                        // any brief fallback window is invisible — just
+                        // reserves the chart's vertical space so the
+                        // surrounding layout doesn't jump.
                         fallback={<div style={{ height }} />}
                     />
-                )}
-                {isLoading && !emptySelection && (
-                    <div style={{
-                        position: 'absolute',
-                        top: 8, right: 8,
-                        padding: '2px 8px',
-                        fontSize: '0.8em',
-                        background: 'rgba(127,127,127,0.2)',
-                        color: plotColors.textColor,
-                        borderRadius: 4,
-                        pointerEvents: 'none',
-                    }}>
-                        loading…
-                    </div>
                 )}
             </div>
             {showControls && (
@@ -904,7 +899,7 @@ export default function CrashPlot({
                         label="Measure"
                         name="measure"
                         options={MeasureKinds.map(m => ({
-                            label: <Tooltip title={MeasureKindDefs[m]}><span>{MeasureKindLabels[m]}</span></Tooltip>,
+                            label: MeasureKindLabels[m],
                             data: m,
                         }))}
                         choice={measure}
@@ -1048,12 +1043,11 @@ export default function CrashPlot({
                 </ControlsGear>
             )}
             <AnnotationBody annotations={plotAnnotations} state={annOpen} />
-            {timing && (
-                <div className={css.plotInfo}>
-                    Loaded {data?.length.toLocaleString()} rows in {timing.totalMs.toFixed(0)}ms
-                    ({(timing.bytes / 1024).toFixed(1)} KB)
-                </div>
-            )}
+            <div className={css.plotInfo}>
+                {traces.length > 0 && timing && (
+                    <>{traces.length} trace{traces.length === 1 ? '' : 's'} computed in {computeMs.toFixed(0)}ms (from {data?.length.toLocaleString()} rows, fetched in {timing.totalMs.toFixed(0)}ms / {(timing.bytes / 1024).toFixed(1)} KB)</>
+                )}
+            </div>
         </div>
     )
 }
