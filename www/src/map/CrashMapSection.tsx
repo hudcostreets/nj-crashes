@@ -221,8 +221,9 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
     // cells-api worker (`useCellsApi`) instead of the v2 static-prebin
     // client (`useCrashData`). Both hooks always run — we just pass
     // `null` to the inactive one so it skips its work. We still need
-    // `useCrashData`'s manifest for county/muni bboxes either way.
-    const v2Result = useCrashData(filter)
+    // `useCrashData`'s manifest for county/muni bboxes either way
+    // (it loads independently of the filter arg).
+    const v2Result = useCrashData(apiFlag ? null : filter)
     const apiFilter: CellsApiFilter | null = useMemo(() => {
         if (!apiFlag) return null
         if (!filter?.viewport || filter.viewportLat == null || filter.zoom == null) return null
