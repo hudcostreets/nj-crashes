@@ -6,6 +6,7 @@
  */
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { useUrlState, viewStateParam } from "use-prms"
+import type { Param } from "use-prms"
 import type { CrashFilter } from "@/src/map/useCrashData"
 import { useCellsApi, CELLS_BUDGET } from "@/src/map/useCellsApi"
 import type { CellsApiFilter } from "@/src/map/useCellsApi"
@@ -86,6 +87,20 @@ const llzParam = viewStateParam({
     pitchFallback: 45,
 })
 
+/** `y` URL param: `"<a>-<b>"` (e.g. `2019-2025`). Out-of-order pairs are
+ *  swapped silently. */
+const YEAR_RANGE_DEFAULT: [number, number] = [2019, 2025]
+const yearRangeParam: Param<[number, number]> = {
+    encode: ([a, b]) => a === YEAR_RANGE_DEFAULT[0] && b === YEAR_RANGE_DEFAULT[1] ? "" : `${a}-${b}`,
+    decode: (s) => {
+        if (!s) return YEAR_RANGE_DEFAULT
+        const m = s.match(/^(\d{4})-(\d{4})$/)
+        if (!m) return YEAR_RANGE_DEFAULT
+        const a = +m[1], b = +m[2]
+        return a <= b ? [a, b] : [b, a]
+    },
+}
+
 export type Props = {
     /** County code (1-21) or null for statewide. */
     cc: number | null
@@ -105,7 +120,7 @@ export type Props = {
 export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScreenHref, scopeLabel }: Props) {
     const { actualTheme } = useTheme()
     const [mode, setMode] = useState<MapMode>("hexbin")
-    const [yearRange, setYearRange] = useState<[number, number]>([2019, 2025])
+    const [yearRange, setYearRange] = useUrlState("y", yearRangeParam)
     const [severities, setSeverities] = useState<Set<"f" | "i" | "p">>(() => new Set(["f", "i"]))
     const [hexPxTarget, setHexPxTarget] = useSessionStorageState<number>("hccs.crashmap.hexPxTarget", { defaultValue: 1.7 })
     const [elevationPerCount, setElevationPerCount] = useState(60)

@@ -271,8 +271,11 @@ const MIN_PYRAMID_RES = 6
 /** Refetch debounce in ms. The viewport debounce coalesces a drag's
  *  worth of changes into one shard-set computation. Per-shard fetches
  *  are still independently cached, so a small pan that crosses a
- *  shard boundary only pays for the new shard. */
-const DEBOUNCE_MS = 250
+ *  shard boundary only pays for the new shard. 500ms (was 250ms): each
+ *  worker request can take seconds on a cold start, so the cost of
+ *  firing during a mid-drag pause is high — better to wait for a
+ *  longer settle. */
+const DEBOUNCE_MS = 500
 
 /** Render budget — max hex bins shown on screen. The picker no longer
  *  caps based on theoretical max (`area / hex_area`); it picks res
