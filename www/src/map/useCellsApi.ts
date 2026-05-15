@@ -12,7 +12,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
-    cellToBoundary, cellToParent, getResolution,
+    cellToBoundary, cellToChildren, cellToParent, getResolution,
     polygonToCellsExperimental, POLYGON_TO_CELLS_FLAGS,
 } from "h3-js"
 import type { StackedHex } from "./StackedHexLayer"
@@ -94,29 +94,126 @@ function bboxAreaKm2([w, s, e, n]: Bbox): number {
     return Math.max(0, lonKm) * Math.max(0, latKm)
 }
 
-/** Target viewport-shard count for combo picking. Too few = each shard
- *  is huge (worker reads & aggregates a lot); too many = HTTP/2 stream
- *  contention. ~25 sits comfortably under most browsers' practical
- *  concurrent-stream cap while keeping per-shard reads small. */
-const COMBO_TARGET_SHARDS = 25
+/** Max shards in a heterogeneous cover. HTTP/2 keeps ~100 concurrent
+ *  streams happy; ~25 is comfortably under that with cache hits on pan. */
+const COVER_MAX_SHARDS = 30
 
-/** Pick the best `(shard_res, data_res=dataRes)` combo for the given
- *  viewport. Returns null if no combo with this `data_res` exists (caller
- *  falls back to the legacy single-shard-res path). */
-function pickCombo(combos: PyramidCombo[], dataRes: number, vpAreaKm2: number): PyramidCombo | null {
-    const candidates = combos.filter(c => c.data_res === dataRes)
-    if (candidates.length === 0) return null
-    let best: PyramidCombo | null = null
-    let bestDiff = Infinity
-    for (const c of candidates) {
-        const area = H3_AREA_KM2[c.shard_res]
-        if (!area) continue
-        const nShards = vpAreaKm2 / area
-        // log-distance from target; symmetric in over/under.
-        const diff = Math.abs(Math.log2(Math.max(nShards, 1) / COMBO_TARGET_SHARDS))
-        if (diff < bestDiff) { bestDiff = diff; best = c }
+/** Overhang threshold above which a cell is worth splitting. A cell with
+ *  ≥30% of its bbox outside the viewport gets refined to children that
+ *  intersect the viewport (smaller cells fit the boundary better). */
+const OVERHANG_REFINE_THRESHOLD = 0.30
+
+/** One cell of a multi-resolution cover. The pair `(shard_res, h3)`
+ *  identifies a specific parquet under `pyramid/s{shard_res}_r{data_res}/`. */
+export type CoverCell = {
+    shard_res: number
+    h3: string
+}
+
+/** Axis-aligned bbox of an H3 cell's vertex set (lon/lat). Approximate
+ *  for picker math; we only need fractional overhang vs viewport, not
+ *  exact area. */
+function cellBbox(h3: string): Bbox {
+    const boundary = cellToBoundary(h3, true)  // [lon, lat]
+    let w = Infinity, e = -Infinity, s = Infinity, n = -Infinity
+    for (const [lon, lat] of boundary) {
+        if (lon < w) w = lon
+        if (lon > e) e = lon
+        if (lat < s) s = lat
+        if (lat > n) n = lat
     }
-    return best
+    return [w, s, e, n]
+}
+
+function bboxIntersect(a: Bbox, b: Bbox): Bbox | null {
+    const w = Math.max(a[0], b[0]), s = Math.max(a[1], b[1])
+    const e = Math.min(a[2], b[2]), n = Math.min(a[3], b[3])
+    if (w >= e || s >= n) return null
+    return [w, s, e, n]
+}
+
+function bboxArea(b: Bbox): number {
+    return (b[2] - b[0]) * (b[3] - b[1])
+}
+
+/** Fraction of a cell's bbox area outside the viewport bbox. 0 ⇒ cell
+ *  is fully inside; 1 ⇒ fully outside (caller drops it). */
+function cellOverhang(h3: string, vp: Bbox): number {
+    const cb = cellBbox(h3)
+    const total = bboxArea(cb)
+    if (total === 0) return 0
+    const ix = bboxIntersect(cb, vp)
+    if (!ix) return 1
+    return 1 - bboxArea(ix) / total
+}
+
+/** Greedy mixed-resolution cover: start from the coarsest available
+ *  `shard_res` published for this `dataRes`, then iteratively split the
+ *  cell with the worst viewport overhang into its 7 children (dropping
+ *  those fully outside the viewport). Stops when the next split would
+ *  exceed `maxShards`, no cell exceeds the overhang threshold, or the
+ *  finest published `shard_res` is reached.
+ *
+ *  Returns an array of `{shard_res, h3}` entries. The caller fires one
+ *  parquet fetch per entry, each addressed to
+ *  `pyramid/s{shard_res}_r{dataRes}/{h3}.parquet`. */
+function pickCover(
+    combos: PyramidCombo[],
+    dataRes: number,
+    viewport: Bbox,
+    maxShards: number,
+): CoverCell[] {
+    const candidates = combos
+        .filter(c => c.data_res === dataRes)
+        .sort((a, b) => a.shard_res - b.shard_res)  // coarsest first
+    if (candidates.length === 0) return []
+    const knownByRes = new Map<number, Set<string>>()
+    for (const c of candidates) knownByRes.set(c.shard_res, new Set(c.shard_cells))
+    const minRes = candidates[0].shard_res
+    const maxRes = candidates[candidates.length - 1].shard_res
+
+    // polygonToCells wants [lat, lng] ring; viewport is [w, s, e, n].
+    const ring: [number, number][] = [
+        [viewport[1], viewport[0]],
+        [viewport[1], viewport[2]],
+        [viewport[3], viewport[2]],
+        [viewport[3], viewport[0]],
+        [viewport[1], viewport[0]],
+    ]
+    let initial: string[]
+    try {
+        initial = polygonToCellsExperimental(ring, minRes, POLYGON_TO_CELLS_FLAGS.containmentOverlapping) as unknown as string[]
+    } catch {
+        return []
+    }
+    const knownMin = knownByRes.get(minRes)!
+    const cover: CoverCell[] = initial.filter(h => knownMin.has(h)).map(h => ({ shard_res: minRes, h3: h }))
+
+    // Greedy refinement.
+    while (cover.length + 6 <= maxShards) {
+        let worstIdx = -1
+        let worstOverhang = OVERHANG_REFINE_THRESHOLD
+        for (let i = 0; i < cover.length; i++) {
+            if (cover[i].shard_res >= maxRes) continue
+            const o = cellOverhang(cover[i].h3, viewport)
+            if (o > worstOverhang) { worstOverhang = o; worstIdx = i }
+        }
+        if (worstIdx < 0) break
+        const cell = cover[worstIdx]
+        const childRes = cell.shard_res + 1
+        const knownChildren = knownByRes.get(childRes)
+        if (!knownChildren) break
+        const children = (cellToChildren(cell.h3, childRes) as unknown as string[])
+            .filter(h => knownChildren.has(h))
+            .filter(h => cellOverhang(h, viewport) < 1)  // drop fully-outside
+        if (children.length === 0) {
+            // No useful children: parent stays. Avoid infinite loop by not retrying.
+            cover[worstIdx] = { shard_res: maxRes, h3: cell.h3 }  // mark as un-refineable
+            continue
+        }
+        cover.splice(worstIdx, 1, ...children.map(h => ({ shard_res: childRes, h3: h })))
+    }
+    return cover
 }
 
 export type CellsApiPlan = {
@@ -127,6 +224,9 @@ export type CellsApiPlan = {
     cellCount?: number
     /** Number of shards that contributed to this response. */
     shardCount?: number
+    /** Heterogeneous cover the client picked for this view. The debug
+     *  overlay outlines these to make the cover visible. */
+    cover?: CoverCell[]
 }
 
 /** Per-shard response cache. Keyed by full URL — same shard with
@@ -367,36 +467,8 @@ export function useCellsApi(filter: CellsApiFilter | null):
         return () => { cancelled = true }
     }, [])
 
-    const pick = useMemo<{ res: number; combo: PyramidCombo | null; reason: string } | null>(() => {
-        if (!filter) return null
-        const res = filter.resOverride != null
-            ? clamp(filter.resOverride)
-            : clamp(pickHexResolutionForPixels(filter.hexPxTarget ?? 1.2, filter.zoom, filter.viewportLat))
-        const combos = manifest?.pyramid_combos ?? []
-        const vpArea = bboxAreaKm2(filter.viewport)
-        const combo = pickCombo(combos, res, vpArea)
-        const reason = combo
-            ? `r${res} · combo s${combo.shard_res}/r${combo.data_res} (D=${combo.data_res - combo.shard_res})`
-            : `r${res} · legacy (no combo for r${res})`
-        return { res, combo, reason }
-        // viewport changes drive area-based combo selection; throttle via
-        // bbox-key downstream so we don't re-pick every drag frame.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filter?.zoom, filter?.viewportLat, filter?.hexPxTarget, filter?.resOverride, filter?.viewport, manifest])
-
-    // Shard set (which r4 cells to fetch) and worker `polygon=` arg are
-    // computed separately so that small pans don't thrash the per-shard
-    // URL cache.
-    //   - Shard *selection* uses `clipPolygon ∩ snappedBbox` (scoped)
-    //     or just `snappedBbox` (statewide), so we don't fetch shards
-    //     far outside the visible region. Snapped to a 0.25° grid so
-    //     sub-grid pans don't change the shard set.
-    //   - Worker `polygon=` arg is *scope-stable*: full clipPolygon for
-    //     scoped views, omitted for statewide. URL is invariant across
-    //     all pans within a scope, so per-shard cache hits ~always once
-    //     warmed. Cost: worker may return a few extra cells per shard
-    //     just outside the viewport (still bounded by the shard's own
-    //     extent ≈ 5000 km²), but these are tiny vs. an 8-9s cold fetch.
+    // Snap viewport to a 0.25° grid before picking the cover. Sub-grid
+    // pans don't change the cover → per-shard URL cache hits stay warm.
     const usingPoly = !!(filter?.clipPolygon && filter.clipPolygon.length >= 3)
     const snappedBbox = useMemo<Bbox | null>(() => {
         if (!filter) return null
@@ -410,44 +482,65 @@ export function useCellsApi(filter: CellsApiFilter | null):
         ] as Bbox
     }, [filter?.viewport])
     const bboxKey = snappedBbox ? snappedBbox.join(",") : null
-    const shardSet = useMemo(() => {
-        if (!filter || !manifest || !snappedBbox || !pick) return null
-        // Combo path uses the combo's `shard_res` + shard_cells; legacy
-        // path uses manifest.shard_res + manifest.shard_cells.
-        const shardRes = pick.combo?.shard_res ?? manifest.shard_res
-        const known = new Set(pick.combo?.shard_cells ?? manifest.shard_cells)
-        let shardRegion: [number, number][]  // [lon, lat], used only for shard selection
-        if (usingPoly) {
-            shardRegion = clipPolygonToBbox(filter.clipPolygon!, snappedBbox)
-            if (shardRegion.length < 3) return { shards: [], polygonStr: null as string | null }
-        } else {
-            shardRegion = bboxToLonLatRing(snappedBbox)
+
+    const pick = useMemo<{ res: number; cover: CoverCell[]; reason: string } | null>(() => {
+        if (!filter || !manifest || !snappedBbox) return null
+        const res = filter.resOverride != null
+            ? clamp(filter.resOverride)
+            : clamp(pickHexResolutionForPixels(filter.hexPxTarget ?? 1.2, filter.zoom, filter.viewportLat))
+        const combos = manifest.pyramid_combos ?? []
+        // For county/muni scopes, clip the cover region to the admin polygon
+        // ∩ snappedBbox so we don't fetch shards far outside the visible area.
+        // For statewide, use the snapped bbox directly.
+        let coverBbox = snappedBbox
+        if (usingPoly && filter.clipPolygon) {
+            const clipped = clipPolygonToBbox(filter.clipPolygon, snappedBbox)
+            if (clipped.length >= 3) {
+                let w = Infinity, e = -Infinity, s = Infinity, n = -Infinity
+                for (const [lon, lat] of clipped) {
+                    if (lon < w) w = lon
+                    if (lon > e) e = lon
+                    if (lat < s) s = lat
+                    if (lat > n) n = lat
+                }
+                coverBbox = [w, s, e, n]
+            }
         }
-        const shards = shardsForRegion(lonLatToLatLng(shardRegion), shardRes, known)
-        const polygonStr = encodePolygon(usingPoly ? filter.clipPolygon! : NJ_CLIP_POLYGON)
-        return { shards, polygonStr }
+        const cover = pickCover(combos, res, coverBbox, COVER_MAX_SHARDS)
+        if (cover.length === 0) {
+            return { res, cover: [], reason: `r${res} · no combo for r${res}` }
+        }
+        // Compact reason: cells per shard_res tier.
+        const tiers = new Map<number, number>()
+        for (const c of cover) tiers.set(c.shard_res, (tiers.get(c.shard_res) ?? 0) + 1)
+        const tierStr = [...tiers.entries()].sort((a, b) => a[0] - b[0]).map(([sr, n]) => `s${sr}×${n}`).join(" + ")
+        return { res, cover, reason: `r${res} · ${tierStr}` }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [manifest, usingPoly, filter?.clipPolygon, bboxKey, pick?.combo?.shard_res])
+    }, [filter?.zoom, filter?.viewportLat, filter?.hexPxTarget, filter?.resOverride, manifest, bboxKey, usingPoly, filter?.clipPolygon])
+
+    // `polygonStr` for the worker `polygon=` arg is scope-stable
+    // (statewide vs. county/muni outline) — invariant across pans within
+    // a scope, so per-shard cache hits ~always once warmed.
+    const polygonStr = useMemo<string | null>(() => {
+        if (!filter) return null
+        return encodePolygon(usingPoly ? filter.clipPolygon! : NJ_CLIP_POLYGON)
+    }, [usingPoly, filter?.clipPolygon])
 
     const shardsKey = useMemo(() => {
-        if (!filter || !shardSet || !pick) return null
-        const { shards, polygonStr } = shardSet
-        if (shards.length === 0) return { shards: [], urls: [] as string[], polygonStr: null as string | null }
-        // Per-shard cap: trigger worker adaptation only for genuinely
-        // dense shards. Splitting CELLS_BUDGET / N_shards is too tight —
-        // sparse shards should stay at the requested res; only dense
-        // ones (e.g. urban Hudson at r10+) drop one level. Total cells
-        // across all shards may still exceed CELLS_BUDGET; the client
-        // coarsens the union losslessly via cellToParent if so.
+        if (!filter || !pick || pick.cover.length === 0) {
+            return { shards: [] as string[], urls: [] as string[], polygonStr: null as string | null }
+        }
+        // One URL per cover cell. Each cell carries its own shard_res
+        // (heterogeneous cover ⇒ different parquet subdirs per cell).
         const perShardCap = SHARD_MAX_CELLS
-        const shardRes = pick.combo?.shard_res
-        const urls = shards.map(s => buildShardUrl(s, pick.res, filter, polygonStr, perShardCap, shardRes))
+        const urls = pick.cover.map(c => buildShardUrl(c.h3, pick.res, filter, polygonStr, perShardCap, c.shard_res))
+        const shards = pick.cover.map(c => c.h3)
         return { shards, urls, polygonStr }
-        // `pick.res` / combo.shard_res are the URL-relevant fields; using
-        // primitives avoids re-running on every drag frame (where `pick`
-        // gets a new object ref but the same values).
+        // The covers themselves are stable across small pans thanks to
+        // snappedBbox. Listing each primitive separately avoids drag-frame
+        // churn on the array refs.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [shardSet, pick?.res, pick?.combo?.shard_res, filter?.yearRange, filter?.severities])
+    }, [pick?.res, pick?.cover, polygonStr, filter?.yearRange, filter?.severities])
 
     const [state, setState] = useState<{
         urls: string[]
@@ -473,6 +566,7 @@ export function useCellsApi(filter: CellsApiFilter | null):
             setState({ urls, data: [], status: "ready", plan: {
                 kind: "hex", res: pickAtFire.res, source: "pyramid",
                 reason: `${pickAtFire.reason} · 0 shards`, cellCount: 0, shardCount: 0,
+                cover: pickAtFire.cover,
             } })
             return
         }
@@ -519,6 +613,7 @@ export function useCellsApi(filter: CellsApiFilter | null):
                         kind: "hex", res: finalRes, source,
                         reason,
                         cellCount: data.length, shardCount: urls.length,
+                        cover: pickAtFire.cover,
                     },
                 })
             } catch (e) {

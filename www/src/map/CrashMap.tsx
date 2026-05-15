@@ -94,6 +94,10 @@ export type Props = {
      *  the current viewport. Used by the debug drawer's "hover an `rL`
      *  row" feature for visual reference. */
     gridOverlayRes?: number | null
+    /** When set (debug toggle on), draw an outline for each cell in the
+     *  cells-api cover. Color-coded by `shard_res` so a heterogeneous
+     *  cover reads at a glance — coarser cells one hue, finer another. */
+    coverCells?: Array<{ h3: string; shard_res: number }> | null
 }
 
 const MAX_PITCH = 85
@@ -308,6 +312,7 @@ export function CrashMap({
     theme = "dark",
     height = "100%",
     gridOverlayRes,
+    coverCells,
 }: Props) {
     const effectiveCrashes = crashes ?? []
     const sldMap = useHexSld()
@@ -555,6 +560,43 @@ export function CrashMap({
         })
     }, [gridOverlayRes, viewState.latitude, viewState.longitude, viewState.zoom, theme])
 
+    // Cover overlay: outlines the cells the cells-api picker chose for
+    // this viewport. Hue ramps by shard_res so a heterogeneous cover
+    // (mixed s5/s6/s7) reads as nested rings at a glance. Stronger line
+    // than the generic hex-grid overlay; this is the *actual* set of
+    // parquet shards being fetched, not just a reference grid.
+    const coverOverlayLayer = useMemo(() => {
+        if (!coverCells || coverCells.length === 0) return null
+        // Hue per shard_res, dark or light depending on theme.
+        const HUES = theme === "dark"
+            ? [[255, 100, 100], [255, 180, 80], [180, 230, 100], [80, 220, 200], [120, 160, 255], [220, 140, 255]]
+            : [[200, 30, 30], [200, 130, 30], [100, 160, 30], [30, 160, 140], [40, 90, 200], [160, 60, 200]]
+        const minSr = Math.min(...coverCells.map(c => c.shard_res))
+        const features = coverCells.map(({ h3, shard_res }) => {
+            const boundary = cellToBoundary(h3, true)  // [lon, lat]
+            return {
+                type: "Feature" as const,
+                geometry: { type: "Polygon" as const, coordinates: [boundary] },
+                properties: { h3, shard_res },
+            }
+        })
+        const fc = { type: "FeatureCollection" as const, features }
+        return new GeoJsonLayer({
+            id: `cover-overlay`,
+            data: fc,
+            getFillColor: [0, 0, 0, 0] as any,
+            getLineColor: (f: any): [number, number, number, number] => {
+                const sr = f.properties.shard_res as number
+                const idx = Math.min(Math.max(0, sr - minSr), HUES.length - 1)
+                const [r, g, b] = HUES[idx]
+                return [r, g, b, 220]
+            },
+            lineWidthMinPixels: 1.4,
+            updateTriggers: { getLineColor: [minSr] },
+            pickable: false,
+        })
+    }, [coverCells, theme])
+
     const outlineLayers = useMemo(() => {
         const layers: any[] = []
         const lineRgb: [number, number, number] = theme === "dark" ? [109, 179, 242] : [0, 102, 204]
@@ -599,6 +641,7 @@ export function CrashMap({
         const t0 = perfEnabled() ? performance.now() : 0
         const base: any[] = [...outlineLayers]
         if (gridOverlayLayer) base.push(gridOverlayLayer)
+        if (coverOverlayLayer) base.push(coverOverlayLayer)
         if (mode === "scatter") {
             return [...base,
                 new ScatterplotLayer<Crash>({
@@ -677,7 +720,7 @@ export function CrashMap({
             console.log(`[perf] layers: ${ms.toFixed(1)}ms (mode=${mode}, segments=${segments.length})`)
         }
         return result
-    }, [hexes, effectiveCrashes, mode, effectiveHexRes, elevationPerCount, outlineLayers, gridOverlayLayer])
+    }, [hexes, effectiveCrashes, mode, effectiveHexRes, elevationPerCount, outlineLayers, gridOverlayLayer, coverOverlayLayer])
 
     // Only bubble user-driven changes. DeckGL also echoes back programmatic
     // viewState updates (from the fit effect, mode-switch tilt, etc.) via

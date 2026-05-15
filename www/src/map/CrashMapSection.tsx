@@ -488,6 +488,7 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                             elevationPerCount={elevationPerCount}
                             onElevationPerCountChange={setElevationPerCount}
                             gridOverlayRes={gridOverlayRes}
+                            coverCells={debugOpen && apiFlag ? apiResult.plan?.cover ?? null : null}
                         />
                     ) : (
                         <CrashMap
@@ -507,6 +508,7 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                             elevationPerCount={elevationPerCount}
                             onElevationPerCountChange={setElevationPerCount}
                             gridOverlayRes={gridOverlayRes}
+                            coverCells={debugOpen && apiFlag ? apiResult.plan?.cover ?? null : null}
                         />
                     )}
                 </Suspense>
