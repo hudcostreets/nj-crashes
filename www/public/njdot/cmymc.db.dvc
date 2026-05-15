@@ -1,5 +1,5 @@
 outs:
-- md5: e81c848f062bd67d3701d0b3f528905a
+- md5: 6b579d2c266b8b25b8329f9ac45f7701
   size: 63635456
   hash: md5
   path: cmymc.db
