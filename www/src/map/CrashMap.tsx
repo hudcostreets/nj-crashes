@@ -15,7 +15,7 @@ import type { FeatureCollection } from "geojson"
 import { useTouchPitch } from "./hooks/useTouchPitch"
 import { binIntoHexes, coarsenHexes, hexesToSegments, buildStackedHexLayer, Segment, StackedHex, H3_RADIUS_METERS } from "./StackedHexLayer"
 import { getResolution, cellToBoundary, polygonToCellsExperimental, POLYGON_TO_CELLS_FLAGS } from "h3-js"
-import { useHexSld, type HexSldMap } from "./useHexSld"
+import { useHexSld, type HexSldLookup } from "./useHexSld"
 
 export type MapMode = "scatter" | "heatmap" | "hexbin"
 
@@ -924,7 +924,7 @@ function tooltipStyle(info: PickingInfo): React.CSSProperties {
     }
 }
 
-function CrashTooltip({ info, sldMap }: { info: PickingInfo; sldMap?: HexSldMap | null }) {
+function CrashTooltip({ info, sldMap }: { info: PickingInfo; sldMap?: HexSldLookup | null }) {
     const obj = info.object
     if (!obj) return null
     const isHex = Array.isArray(obj.points)
