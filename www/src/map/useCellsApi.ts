@@ -94,13 +94,16 @@ function bboxAreaKm2([w, s, e, n]: Bbox): number {
     return Math.max(0, lonKm) * Math.max(0, latKm)
 }
 
-/** Max shards in a heterogeneous cover. HTTP/2 keeps ~100 concurrent
- *  streams happy; ~25 is comfortably under that with cache hits on pan. */
-const COVER_MAX_SHARDS = 30
+/** Hard cap on shards in a heterogeneous cover. HTTP/2 keeps ~100
+ *  concurrent streams happy; this is the stop-refining ceiling, not a
+ *  start-coarse target. Initial covers can exceed it (refinement just
+ *  won't kick in then), but explicit boundary-refines stop here. */
+const COVER_MAX_SHARDS = 80
 
 /** Overhang threshold above which a cell is worth splitting. A cell with
- *  ≥30% of its bbox outside the viewport gets refined to children that
- *  intersect the viewport (smaller cells fit the boundary better). */
+ *  ≥30% of its bbox outside the viewport gets refined to its children
+ *  that intersect the viewport (smaller cells fit the boundary better,
+ *  cutting wasted off-viewport bytes per shard). */
 const OVERHANG_REFINE_THRESHOLD = 0.30
 
 /** One cell of a multi-resolution cover. The pair `(shard_res, h3)`
@@ -189,12 +192,18 @@ function pickCover(
     const knownMin = knownByRes.get(minRes)!
     const cover: CoverCell[] = initial.filter(h => knownMin.has(h)).map(h => ({ shard_res: minRes, h3: h }))
 
-    // Greedy refinement.
+    // Greedy refinement. Splice the worst-overhang cell with its
+    // viewport-overlapping children. Each iteration is +(children-1)
+    // cells; cap at `maxShards`. Cells whose children are all
+    // off-viewport or missing from the manifest go in `noRefine` so
+    // we don't retry them.
+    const noRefine = new Set<string>()
     while (cover.length + 6 <= maxShards) {
         let worstIdx = -1
         let worstOverhang = OVERHANG_REFINE_THRESHOLD
         for (let i = 0; i < cover.length; i++) {
             if (cover[i].shard_res >= maxRes) continue
+            if (noRefine.has(cover[i].h3)) continue
             const o = cellOverhang(cover[i].h3, viewport)
             if (o > worstOverhang) { worstOverhang = o; worstIdx = i }
         }
@@ -202,15 +211,11 @@ function pickCover(
         const cell = cover[worstIdx]
         const childRes = cell.shard_res + 1
         const knownChildren = knownByRes.get(childRes)
-        if (!knownChildren) break
+        if (!knownChildren) { noRefine.add(cell.h3); continue }
         const children = (cellToChildren(cell.h3, childRes) as unknown as string[])
             .filter(h => knownChildren.has(h))
             .filter(h => cellOverhang(h, viewport) < 1)  // drop fully-outside
-        if (children.length === 0) {
-            // No useful children: parent stays. Avoid infinite loop by not retrying.
-            cover[worstIdx] = { shard_res: maxRes, h3: cell.h3 }  // mark as un-refineable
-            continue
-        }
+        if (children.length === 0) { noRefine.add(cell.h3); continue }
         cover.splice(worstIdx, 1, ...children.map(h => ({ shard_res: childRes, h3: h })))
     }
     return cover
@@ -467,13 +472,26 @@ export function useCellsApi(filter: CellsApiFilter | null):
         return () => { cancelled = true }
     }, [])
 
-    // Snap viewport to a 0.25° grid before picking the cover. Sub-grid
-    // pans don't change the cover → per-shard URL cache hits stay warm.
+    // Snap viewport to a power-of-2 grid before picking the cover.
+    // Adaptive: grid step ≈ viewport span / 4, so the snapped bbox is at
+    // most ~1.5× the visible area at any zoom (vs. ~10× for a fixed
+    // 0.25° grid at z≥11, which inflated the initial cover past the
+    // refinement cap). Power-of-2 keeps grid lines nested across zooms
+    // — zoom-out includes zoom-in cells, so panning across zooms still
+    // hits parent-bbox cache entries.
+    //
+    // Trade-off: tighter grid means fewer cache hits on big pans. At
+    // z=10 the grid is ~7km, at z=12 ~1.7km — small but real, and
+    // the refinement gain outweighs cache friction.
     const usingPoly = !!(filter?.clipPolygon && filter.clipPolygon.length >= 3)
     const snappedBbox = useMemo<Bbox | null>(() => {
         if (!filter) return null
         const [w, s, e, n] = filter.viewport
-        const G = 4  // 0.25° grid
+        const span = Math.max(e - w, n - s)
+        // G = 2^ceil(log2(4 / span)), clamped ≥ 4 (0.25° floor at low
+        // zoom keeps statewide panning cache-stable).
+        const k = Math.max(2, Math.ceil(Math.log2(4 / Math.max(span, 1e-6))))
+        const G = Math.pow(2, k)
         return [
             Math.floor(w * G) / G,
             Math.floor(s * G) / G,
