@@ -6,15 +6,13 @@
  */
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { useUrlState, viewStateParam } from "use-prms"
-import type { Param } from "use-prms"
-import { useCrashData } from "@/src/map/useCrashData"
 import type { CrashFilter } from "@/src/map/useCrashData"
 import { useCellsApi, CELLS_BUDGET } from "@/src/map/useCellsApi"
 import type { CellsApiFilter } from "@/src/map/useCellsApi"
 import { coarsenHexes } from "@/src/map/StackedHexLayer"
 import { getResolution } from "h3-js"
 import { MAP_BASE_URL } from "@/src/map/config"
-import type { Crash, MapMode, ViewState } from "@/src/map/CrashMap"
+import type { MapMode, ViewState } from "@/src/map/CrashMap"
 import type { StackedHex } from "@/src/map/StackedHexLayer"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import type { FeatureCollection } from "geojson"
@@ -88,15 +86,6 @@ const llzParam = viewStateParam({
     pitchFallback: 45,
 })
 
-/** `?api=1` flag for parity-testing the new cells-api worker against the
- *  v2 static-prebin client. Treated as boolean: any non-empty value
- *  enables; default false. Will go away once the cells API is the
- *  default. */
-const apiFlagParam: Param<boolean> = {
-    encode: (v) => v ? "1" : "",
-    decode: (s) => !!s,
-}
-
 export type Props = {
     /** County code (1-21) or null for statewide. */
     cc: number | null
@@ -139,7 +128,6 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
     // polygon layer. State updates still apply immediately via use-prms's
     // `pendingRef`, so the map keeps tracking the cursor.
     const [llz, setLlz] = useUrlState("llz", llzParam, { debounce: 100 })
-    const [apiFlag] = useUrlState("api", apiFlagParam)
 
     // Pre-fetch the v2 manifest so we can derive a sensible initial
     // viewport from the county/muni bbox before the user has moved the
@@ -217,15 +205,10 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
         return () => { cancelled = true }
     }, [cc, mc])
 
-    // While `?api=1` is set, route the data fetch through the new
-    // cells-api worker (`useCellsApi`) instead of the v2 static-prebin
-    // client (`useCrashData`). Both hooks always run — we just pass
-    // `null` to the inactive one so it skips its work. We still need
-    // `useCrashData`'s manifest for county/muni bboxes either way
-    // (it loads independently of the filter arg).
-    const v2Result = useCrashData(apiFlag ? null : filter)
+    // Data fetch goes through the cells-api worker (`useCellsApi`).
+    // `v2Manifest` (loaded separately above) carries the county/muni
+    // bboxes the rest of the section needs.
     const apiFilter: CellsApiFilter | null = useMemo(() => {
-        if (!apiFlag) return null
         if (!filter?.viewport || filter.viewportLat == null || filter.zoom == null) return null
         // Pull a polygon for clipping when on county/muni scope. Prefer
         // the muni outline (tightest), then the county outline. Skip
@@ -252,17 +235,17 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
             hexPxTarget: filter.hexPxTarget,
             clipPolygon,
         }
-    }, [apiFlag, filter, cc, mc, outline, muniOutline])
+    }, [filter, cc, mc, outline, muniOutline])
     const apiResult = useCellsApi(apiFilter)
     const result = useMemo(() => {
-        if (!apiFlag) return v2Result
-        // Adapt the cells-api result into useCrashData's return shape so
-        // the consumers below don't need to branch. Synthesize a FetchPlan
-        // with `kind:"hex"` + the API's actual res, so the debug overlay
-        // can highlight the row that's truly being rendered (avoids the
-        // mismatch where renderRes picked a finer res than the API was
-        // able to deliver under the cells cap).
-        const manifest = v2Result.manifest
+        // Adapt the cells-api result into the shape consumers below expect.
+        // `manifest` is the standalone v2-manifest state (loaded above for
+        // bboxes/year_range); cells-api owns its own manifest internally.
+        // Synthesize a FetchPlan with `kind:"hex"` + the API's actual res
+        // so the debug overlay can highlight the row truly being rendered
+        // (avoids the mismatch where renderRes picked finer than what the
+        // API delivered under the cells cap).
+        const manifest = v2Manifest
         const apiPlan = apiResult.plan
             ? ({
                 kind: "hex" as const,
@@ -271,10 +254,9 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                 reason: apiResult.plan.reason,
             })
             : null
-        // While refetching (debounced pan/zoom), keep showing the
-        // prior cells if we have them — only flash through "loading"
-        // when there's truly nothing to render. Same pattern v2 uses
-        // via its `refetching` flag.
+        // While refetching (debounced pan/zoom), keep showing the prior
+        // cells if we have them — only flash through "loading" when there
+        // is truly nothing to render.
         if (apiResult.status === "loading") {
             if (apiResult.data && apiResult.data.length > 0) {
                 return {
@@ -299,7 +281,7 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
             refetching: false,
             plan: apiPlan,
         }
-    }, [apiFlag, v2Result, apiResult])
+    }, [apiResult, v2Manifest])
 
     // Worker handles budget enforcement via `?maxCells=`: dense shards
     // come back at a coarser res than requested. Client-side fallback
@@ -471,47 +453,25 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
             {result.status === "loading" && <LoadingOverlay theme={actualTheme} />}
             {result.status === "ready" && (
                 <Suspense fallback={<LoadingOverlay theme={actualTheme} />}>
-                    {result.dataKind === "points" ? (
-                        <CrashMap
-                            crashes={result.data as Crash[]}
-                            outline={outline ?? undefined}
-                            muniOutline={muniOutline ?? undefined}
-                            initialBounds={initialBounds}
-                            initialView={initialView}
-                            viewState={llz ?? undefined}
-                            onViewStateChange={setLlz}
-                            mode={mode}
-                            theme={actualTheme}
-                            height={mapHeight}
-                            showInternalControls={false}
-                            hexPxTarget={hexPxTarget}
-                            onHexPxTargetChange={setHexPxTarget}
-                            elevationPerCount={elevationPerCount}
-                            onElevationPerCountChange={setElevationPerCount}
-                            gridOverlayRes={gridOverlayRes}
-                            coverCells={debugOpen && apiFlag ? apiResult.plan?.cover ?? null : null}
-                        />
-                    ) : (
-                        <CrashMap
-                            prebinnedHexes={renderHexes?.hexes ?? (result.data as StackedHex[])}
-                            outline={outline ?? undefined}
-                            muniOutline={muniOutline ?? undefined}
-                            initialBounds={initialBounds}
-                            initialView={initialView}
-                            viewState={llz ?? undefined}
-                            onViewStateChange={setLlz}
-                            mode="hexbin"
-                            theme={actualTheme}
-                            height={mapHeight}
-                            showInternalControls={false}
-                            hexPxTarget={hexPxTarget}
-                            onHexPxTargetChange={setHexPxTarget}
-                            elevationPerCount={elevationPerCount}
-                            onElevationPerCountChange={setElevationPerCount}
-                            gridOverlayRes={gridOverlayRes}
-                            coverCells={debugOpen && apiFlag ? apiResult.plan?.cover ?? null : null}
-                        />
-                    )}
+                    <CrashMap
+                        prebinnedHexes={renderHexes?.hexes ?? (result.data as StackedHex[])}
+                        outline={outline ?? undefined}
+                        muniOutline={muniOutline ?? undefined}
+                        initialBounds={initialBounds}
+                        initialView={initialView}
+                        viewState={llz ?? undefined}
+                        onViewStateChange={setLlz}
+                        mode="hexbin"
+                        theme={actualTheme}
+                        height={mapHeight}
+                        showInternalControls={false}
+                        hexPxTarget={hexPxTarget}
+                        onHexPxTargetChange={setHexPxTarget}
+                        elevationPerCount={elevationPerCount}
+                        onElevationPerCountChange={setElevationPerCount}
+                        gridOverlayRes={gridOverlayRes}
+                        coverCells={debugOpen ? apiResult.plan?.cover ?? null : null}
+                    />
                 </Suspense>
             )}
             {result.status === "ready" && result.refetching && <RefetchSpinner theme={actualTheme} />}
@@ -611,29 +571,25 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                     theme={actualTheme}
                     fg={fg}
                 >
-                    {apiFlag && (
-                        <div style={{
-                            padding: "4px 8px",
-                            marginBottom: 6,
-                            border: `1px solid ${actualTheme === "dark" ? "#6db3f2" : "#0066cc"}`,
-                            borderRadius: 3,
-                            fontSize: "0.78em",
-                            color: actualTheme === "dark" ? "#6db3f2" : "#0066cc",
-                        }}>
-                            cells-api mode (?api=1) — {apiResult.plan
-                                ? `${apiResult.plan.source} r${apiResult.plan.res}, ${apiResult.plan.cellCount ?? "—"} cells`
-                                : apiResult.status}
-                        </div>
-                    )}
+                    <div style={{
+                        padding: "4px 8px",
+                        marginBottom: 6,
+                        border: `1px solid ${actualTheme === "dark" ? "#6db3f2" : "#0066cc"}`,
+                        borderRadius: 3,
+                        fontSize: "0.78em",
+                        color: actualTheme === "dark" ? "#6db3f2" : "#0066cc",
+                    }}>
+                        cells-api — {apiResult.plan
+                            ? `${apiResult.plan.source} r${apiResult.plan.res}, ${apiResult.plan.cellCount ?? "—"} cells`
+                            : apiResult.status}
+                    </div>
                     {effectiveView && (() => {
                         const renderRes = pickHexResolutionForPixels(hexPxTarget, effectiveView.zoom, effectiveView.latitude)
-                        const planRes = result.plan?.kind === "hex" ? result.plan.res : null
+                        const planRes = result.plan?.res ?? null
                         // `coarsenHexes` no-ops when target ≥ source (can't
                         // refine), so what we actually display is `min` of
                         // the two — never finer than what the data provides.
-                        const effectiveRes = result.plan?.kind === "points"
-                            ? renderRes
-                            : (planRes !== null ? Math.min(renderRes, planRes) : renderRes)
+                        const effectiveRes = planRes !== null ? Math.min(renderRes, planRes) : renderRes
                         return (
                             <DebugOverlay
                                 viewState={effectiveView}
