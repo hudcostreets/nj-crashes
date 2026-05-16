@@ -252,17 +252,71 @@ function loadManifest(): Promise<Manifest> {
     return manifestPromise
 }
 
-async function fetchShard(url: string): Promise<CellsResponse> {
-    const hit = shardCache.get(url)
-    if (hit) return hit
-    const p = (async () => {
-        const r = await fetch(url)
-        if (!r.ok) throw new Error(`cells api ${r.status}: ${await r.text().catch(() => "")}`)
-        return (await r.json()) as CellsResponse
-    })()
-    p.catch(() => { if (shardCache.get(url) === p) shardCache.delete(url) })
-    shardCache.set(url, p)
-    return p
+/** Max shards bundled into one batched `/v1/cells` request. Per-shard
+ *  URLs maximize CF edge-cache reuse (one canonical URL per shard ×
+ *  filter), but small shards still pay the worker cold-start (~100–500ms)
+ *  per request. Batching ≤25 shards amortizes cold-start over many
+ *  parquet reads. The batch URL stays well under the 16KB header cap
+ *  (25 × 15-char h3 + commas ≈ 400 bytes). Per-shard `shardCache`
+ *  entries are seeded from the batch response so future single-shard
+ *  re-requests still hit memory without re-fetching. */
+const BATCH_SIZE = 25
+
+function buildBatchUrl(
+    shards: string[], res: number, filter: CellsApiFilter, polygonStr: string | null,
+    shardRes: number,
+): string {
+    const sevs = ["f", "i", "p"].filter(c => filter.severities.has(c as "f" | "i" | "p")).join("")
+    const params = new URLSearchParams({
+        cells: shards.join(","),
+        res: String(res),
+        years: `${filter.yearRange[0]}-${filter.yearRange[1]}`,
+        severities: sevs,
+        shard_res: String(shardRes),
+    })
+    if (polygonStr) params.set("polygon", polygonStr)
+    return `${CELLS_API_BASE}/v1/cells?${params}`
+}
+
+/** Ensure each per-shard URL has a `shardCache` entry. Cache misses get
+ *  batched: group by `shard_res` tier (the worker URL needs one tier per
+ *  request), chunk into ≤BATCH_SIZE batches, fire one fetch per batch.
+ *  Per-shard cache entries are sub-promises that filter the batch result
+ *  down to cells whose parent at `tier` matches the shard. */
+function ensureShardsCached(
+    cover: CoverCell[],
+    perShardUrls: string[],
+    res: number,
+    filter: CellsApiFilter,
+    polygonStr: string | null,
+): void {
+    const missingByTier = new Map<number, { url: string; h3: string }[]>()
+    for (let i = 0; i < cover.length; i++) {
+        if (shardCache.has(perShardUrls[i])) continue
+        const tier = cover[i].shard_res
+        let arr = missingByTier.get(tier)
+        if (!arr) { arr = []; missingByTier.set(tier, arr) }
+        arr.push({ url: perShardUrls[i], h3: cover[i].h3 })
+    }
+    for (const [tier, entries] of missingByTier) {
+        for (let i = 0; i < entries.length; i += BATCH_SIZE) {
+            const batch = entries.slice(i, i + BATCH_SIZE)
+            const batchUrl = buildBatchUrl(batch.map(e => e.h3), res, filter, polygonStr, tier)
+            const batchPromise: Promise<CellsResponse> = (async () => {
+                const r = await fetch(batchUrl)
+                if (!r.ok) throw new Error(`cells api ${r.status}: ${await r.text().catch(() => "")}`)
+                return await r.json() as CellsResponse
+            })()
+            for (const entry of batch) {
+                const shardPromise = batchPromise.then(resp => ({
+                    ...resp,
+                    cells: resp.cells.filter(c => cellToParent(c.h3, tier) === entry.h3),
+                }))
+                shardPromise.catch(() => { if (shardCache.get(entry.url) === shardPromise) shardCache.delete(entry.url) })
+                shardCache.set(entry.url, shardPromise)
+            }
+        }
+    }
 }
 
 const MAX_PYRAMID_RES = 14
@@ -580,7 +634,7 @@ export function useCellsApi(filter: CellsApiFilter | null):
     pickRef.current = pick
 
     useEffect(() => {
-        if (!shardsKey || !pickRef.current) return
+        if (!shardsKey || !pickRef.current || !filter) return
         const { urls } = shardsKey
         const pickAtFire = pickRef.current
         if (urls.length === 0) {
@@ -598,7 +652,8 @@ export function useCellsApi(filter: CellsApiFilter | null):
         const allCached = urls.every(u => shardCache.has(u))
         const fire = async () => {
             try {
-                const responses = await Promise.all(urls.map(u => fetchShard(u)))
+                ensureShardsCached(pickAtFire.cover, urls, pickAtFire.res, filter, polygonStr)
+                const responses = await Promise.all(urls.map(u => shardCache.get(u)!))
                 if (cancelled) return
                 // Worker walks coarser when a shard's count would overflow
                 // its budget, so different shards may return at different
