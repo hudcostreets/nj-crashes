@@ -141,8 +141,46 @@ After the deploy, open `https://crashes.hudcostreets.org/` and confirm:
 ## Step 9 — Update this spec + commit
 
 Move this spec to `specs/done/cells-api-2024-25-data.md` alongside
-the data + CLI commits. Note any deltas from the plan in a
-"Notes" section if the EC2 run hit anything unexpected.
+the data + CLI commits.
+
+## Notes from the EC2 run (2026-05-16)
+
+- **`export_map_v2` was already inline-merging AASHTO** (its
+  `if aashto_path.exists(): ...` block from when 2023 supersession
+  landed). The spec's original Step 2 (CLI `--source` flag on both
+  `cells_raw` and `export_map_v2`) was overscoped — only `cells_raw`
+  was missing AASHTO. Extracted the merge into `njdot/load.py`
+  `load_crashes_with_aashto()` and made both callers one-liners.
+  Spec rewritten to reflect this (commit `6cc460448fd`).
+- **`pyramid-combos` file count came in at 312k (vs spec's ~160k
+  estimate)** because the 23-combo layout has multiple shard-tier
+  options per data-res (s5/r10 + s6/r10 + s7/r10, etc.). The s9 tier
+  alone is 235k files (78k cells × 3 data-res). Push to R2 took
+  76 min (vs spec's 30 min estimate). For incremental daily refreshes
+  `aws s3 sync`'s size+mtime skip will keep this fast.
+- **`dvx run -f map.dvc` doesn't work** for refreshing the v2 prebins
+  in this setup — dvx tried to recompute upstream `crashes.parquet`
+  (short-circuited on the local file existing) and
+  `aashto_supplemented_crashes.parquet` (failed because its upstream
+  `aashto_combined_crashes.parquet` isn't local). Workaround: run
+  the `cmd` body directly from the repo root and update the .dvc
+  out hash via `dvx add -f`. Spec's Step 5 reflects the direct
+  invocations.
+- **cwd-leakage gotcha**: `rm -rf` step in `map.dvc`'s cmd cd's into
+  `www/public/njdot`, but if a subsequent command in the same shell
+  runs `njdot export_map_v2`, the relative `www/public/njdot/map/v2`
+  output path resolves wrong. Always invoke the export commands from
+  the repo root, not from inside `www/public/njdot/`.
+- **No worker code changes**: the cells-api worker reads the manifest
+  fresh per request, so the new `year_range: [2001, 2025]` and 23
+  combos were live the moment `manifest.json` reached R2 (which was
+  in the first batch of the cells-push sync).
+- **Did NOT `dvx push`** the regenerated `data/cells/raw/h3_r14/` and
+  `data/cells/pyramid/` to the DVC content-addressed store this run.
+  The actual prod data lives at human-readable R2 paths (already
+  pushed); the DVC-cache copy would be a ~5 GB / 312k-file second
+  upload only useful for `dvx pull` on a fresh clone. Deferred to
+  the next run that's gated on it.
 
 ## Related context
 
