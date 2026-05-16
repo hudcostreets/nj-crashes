@@ -32,7 +32,18 @@ from h3.api import numpy_int as h3i
 from nj_crashes.utils.log import err
 from njdot.cli.base import compute
 from njdot.cli.export_map_data import _build_base
-from njdot.paths import CRASHES_PQT
+from njdot.load import load_crashes_with_aashto
+
+
+# Subset of crashes.parquet that `_build_base` needs (mirrors export_map_v2).
+# Reading a column subset avoids a pyarrow "Unknown error: Wrapping" exception
+# when the full per-table schema round-trips through pandas.
+MAP_INPUT_COLS = [
+    'year', 'dt', 'cc', 'mc', 'case', 'severity',
+    'tk', 'ti', 'pk', 'pi', 'tv',
+    'olat', 'olon', 'ilat', 'ilon',
+    'road', 'cross_street', 'route', 'sri', 'mp',
+]
 
 
 BASE_RES_DEFAULT = 14
@@ -96,10 +107,8 @@ def cells_raw(base_res: int, force: bool, out_dir: Path, shard_res: int):
             p.unlink()
     raw_dir.mkdir(parents=True, exist_ok=True)
 
-    err(f'Loading {CRASHES_PQT}...')
-    df = pd.read_parquet(CRASHES_PQT)
+    df = load_crashes_with_aashto(columns=MAP_INPUT_COLS)
     n_total = len(df)
-    err(f'  {n_total:,} rows')
 
     err('Computing effective lat/lon (via _build_base)...')
     base = _build_base(df, keep_severities=set())

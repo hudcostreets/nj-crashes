@@ -12,7 +12,7 @@ from utz import err, sxs
 
 from njdot import NJDOT_DIR
 from njdot.data import YEARS, cn2cc
-from njdot.paths import DOT_DATA
+from njdot.paths import AASHTO_SUPPLEMENTED_CRASHES, CRASHES_PQT, DOT_DATA
 from njdot.tbls import Tbl, TBL_TO_TYPE, Type
 
 Year = int
@@ -347,3 +347,29 @@ CRASH_IDXS = [
     ('severity', 'icc', 'dt'),
     ('dt', 'severity'),  # enables ORDER BY dt DESC with severity filter, avoids TEMP B-TREE
 ]
+
+
+def load_crashes_with_aashto(columns: Optional[list[str]] = None) -> pd.DataFrame:
+    """NJDOT 2001-2022 + AASHTO 2023+ (when present), columns normalized to NJDOT.
+
+    AASHTO supersedes per-table for any year it covers — the per-table 2023
+    fatal-flag bug surfaced this need (per-table over-counts fatals when broad-
+    matched and under-counts when strict-matched; AASHTO has authoritative
+    counts). Change this function to change the policy in every caller.
+    """
+    err(f'Loading {CRASHES_PQT}...')
+    df = read_parquet(CRASHES_PQT, columns=columns)
+    err(f'  per-table: {len(df):,} crashes ({df["year"].min()}–{df["year"].max()})')
+    if not exists(AASHTO_SUPPLEMENTED_CRASHES):
+        err(f'  (no AASHTO at {AASHTO_SUPPLEMENTED_CRASHES}; per-table only)')
+        return df
+    aashto = read_parquet(AASHTO_SUPPLEMENTED_CRASHES, columns=columns)
+    err(f'  AASHTO:    {len(aashto):,} crashes ({int(aashto["year"].min())}–{int(aashto["year"].max())})')
+    aashto_years = set(aashto['year'].dropna().astype(int))
+    overlap = sorted(set(df['year'].dropna().astype(int)) & aashto_years)
+    if overlap:
+        err(f'  AASHTO supersedes per-table for: {overlap}')
+        df = df[~df['year'].isin(aashto_years)]
+    out = pd.concat([df, aashto], ignore_index=True)
+    err(f'  combined: {len(out):,} crashes ({out["year"].min()}–{out["year"].max()})')
+    return out

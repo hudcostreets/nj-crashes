@@ -22,6 +22,8 @@ import h3
 import numpy as np
 import pandas as pd
 
+from njdot.load import load_crashes_with_aashto
+
 from .base import njdot
 from .export_map_data import _build_base
 
@@ -202,26 +204,7 @@ def export_map_v2(outdir, severities, hex_severities, years):
         "olat", "olon", "ilat", "ilon",
         "road", "cross_street", "route", "sri", "mp",
     ]
-    print("Loading crashes.parquet...")
-    pertable = pd.read_parquet("njdot/data/crashes.parquet", columns=MAP_INPUT_COLS)
-    print(f"  per-table: {len(pertable):,} crashes ({pertable['year'].min()}–{pertable['year'].max()})")
-
-    aashto_path = Path("njdot/data/aashto_supplemented_crashes.parquet")
-    if aashto_path.exists():
-        aashto = pd.read_parquet(aashto_path, columns=MAP_INPUT_COLS)
-        print(f"  AASHTO:    {len(aashto):,} crashes ({int(aashto['year'].min())}–{int(aashto['year'].max())})")
-        # Drop per-table years that AASHTO covers (per-table 2023 has the
-        # broad/strict fatal-flag bug — AASHTO supersedes; mirrors `agg.py`).
-        aashto_years = set(aashto["year"].dropna().astype(int))
-        overlap = sorted(set(pertable["year"].dropna().astype(int)) & aashto_years)
-        if overlap:
-            print(f"  AASHTO supersedes per-table for: {overlap}")
-            pertable = pertable[~pertable["year"].isin(aashto_years)]
-        df = pd.concat([pertable, aashto], ignore_index=True)
-    else:
-        print(f"  (no AASHTO at {aashto_path}; per-table only)")
-        df = pertable
-    print(f"  combined: {len(df):,} crashes ({df['year'].min()}–{df['year'].max()})")
+    df = load_crashes_with_aashto(columns=MAP_INPUT_COLS)
 
     if years:
         y0, y1 = [int(x) for x in years.split(":")]
