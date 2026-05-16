@@ -1,4 +1,4 @@
-import { test } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 
 // Output path is overridable via $OG_OUT_PATH (the og-image.sh script
 // points it at a tmp jpg before uploading to S3). Default keeps the
@@ -13,10 +13,21 @@ test('capture OG image', async ({ page }) => {
 
     // Wait for plot to render
     await page.locator('.js-plotly-plot').first().waitFor({ timeout: 15000 })
-    // Wait for table to load (from D1 API)
-    await page.locator('table').first().waitFor({ timeout: 15000 }).catch(() => {
-        console.log('Table did not load (API may be unavailable)')
-    })
+
+    // Wait for the crashes table — race against any ResultTable error
+    // panel (rendered when the D1 API fails). If the error wins, fail
+    // the test so og-image.sh aborts before uploading a broken image.
+    const tableLoc = page.locator('table').first()
+    const errorLoc = page.locator('[class*="sqlError"]').first()
+    await Promise.race([
+        tableLoc.waitFor({ timeout: 15000 }),
+        errorLoc.waitFor({ timeout: 15000 }),
+    ]).catch(() => {})
+    if (await errorLoc.isVisible()) {
+        const msg = await errorLoc.innerText()
+        throw new Error(`OG image table errored — refusing to publish broken image:\n${msg}`)
+    }
+    await expect(tableLoc).toBeVisible({ timeout: 1000 })
     await page.waitForTimeout(3000)
 
     // Verify nothing is visibly truncated: check the #og container
