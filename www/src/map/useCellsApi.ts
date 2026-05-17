@@ -44,6 +44,7 @@ type CellRow = {
     n_inj_other: number
     n_pdo: number
     n_vehs: number
+    fatal_years?: number[]
 }
 
 type CellsResponse = {
@@ -492,6 +493,13 @@ function rollupCellsToRes(cells: CellRow[], targetRes: number): CellRow[] {
         p.n_inj_other += c.n_inj_other
         p.n_pdo += c.n_pdo
         p.n_vehs += c.n_vehs
+        if (c.fatal_years && c.fatal_years.length > 0) {
+            // Merge child year-sets into the parent; dedupe + sort at end.
+            (p.fatal_years ??= []).push(...c.fatal_years)
+        }
+    }
+    for (const p of out.values()) {
+        if (p.fatal_years) p.fatal_years = [...new Set(p.fatal_years)].sort((a, b) => a - b)
     }
     return [...out.values()]
 }
@@ -512,6 +520,7 @@ function cellsToStackedHex(cells: CellRow[]): StackedHex[] {
             otherInj: c.n_inj_other,
             pdo: c.n_pdo,
             total,
+            fatalYears: c.fatal_years,
         })
     }
     return out

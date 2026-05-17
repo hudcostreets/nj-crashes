@@ -70,6 +70,10 @@ export type CellOut = {
     n_inj_other: number
     n_pdo: number
     n_vehs: number
+    /** Years (ascending) in which this cell had ≥1 fatal crash. Omitted
+     *  when n_fatal === 0. Used by the hex tooltip to show "Fatal: 2018,
+     *  2020, 2022" instead of just a bare count. */
+    fatal_years?: number[]
 }
 
 export type CellsResponse = {
@@ -257,12 +261,21 @@ async function queryPyramid(
                 c = { h3: hex, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
                 out.set(hex, c)
             }
-            if (wantF) c.n_fatal += row.n_fatal
+            if (wantF) {
+                c.n_fatal += row.n_fatal
+                if (row.n_fatal > 0) {
+                    // Pyramid rows are unique per (h3, year), so we never push
+                    // a duplicate year for the same cell. Sorted at the end
+                    // before returning so the tooltip renders ascending.
+                    ;(c.fatal_years ??= []).push(row.year)
+                }
+            }
             if (wantI) { c.n_inj_ped += row.n_inj_ped; c.n_inj_other += row.n_inj_other }
             if (wantP) c.n_pdo += row.n_pdo
             c.n_vehs += row.n_vehs ?? 0
         }
     }
+    for (const c of out.values()) c.fatal_years?.sort((a, b) => a - b)
     return [...out.values()]
 }
 
@@ -321,11 +334,20 @@ async function queryRaw(
                 c = { h3: ancHex, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
                 out.set(ancHex, c)
             }
-            if (wantF && sev === "f") c.n_fatal += 1
+            if (wantF && sev === "f") {
+                c.n_fatal += 1
+                // Raw rows are per-crash; dedupe-sort happens after the loop.
+                ;(c.fatal_years ??= []).push(row.year)
+            }
             if (wantI && sev === "i") { c.n_inj_ped += row.pi; c.n_inj_other += row.ti - row.pi }
             if (wantP && sev === "p") c.n_pdo += 1
             c.n_vehs += row.tv ?? 0
         }
+    }
+    // Raw rows are per-crash, so the same year may appear N≥1 times in a cell.
+    // Dedupe + sort once at the end.
+    for (const c of out.values()) {
+        if (c.fatal_years) c.fatal_years = [...new Set(c.fatal_years)].sort((a, b) => a - b)
     }
     return [...out.values()]
 }

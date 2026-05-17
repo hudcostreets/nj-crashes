@@ -955,7 +955,12 @@ function CrashTooltip({ info, sldMap }: { info: PickingInfo; sldMap?: HexSldLook
                 )}
                 <div><b>{h.total}</b> crashes</div>
                 {h.fatal > 0 && (
-                    <div style={{ color: "rgb(210,28,28)" }}><b>{h.fatal}</b> fatal</div>
+                    <div style={{ color: "rgb(210,28,28)" }}>
+                        <b>{h.fatal}</b> fatal
+                        {h.fatalYears && h.fatalYears.length > 0 && (
+                            <span style={{ opacity: 0.85, fontSize: "0.9em" }}> · {h.fatalYears.join(", ")}</span>
+                        )}
+                    </div>
                 )}
                 {injury > 0 && (
                     <div style={{ color: "rgb(245,158,11)" }}>

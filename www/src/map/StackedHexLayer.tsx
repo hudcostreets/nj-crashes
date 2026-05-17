@@ -44,6 +44,10 @@ export type StackedHex = {
      *  string when no crash had a route value (or the dataset doesn't
      *  carry it). */
     topRoute?: string
+    /** Years (ascending) in which this bin had ≥1 fatal crash. Sourced
+     *  from the cells-api per-cell breakdown. Used by the tooltip to
+     *  show "Fatal: 2018, 2020" instead of just a bare count. */
+    fatalYears?: number[]
 }
 
 export type Segment = {
@@ -124,6 +128,9 @@ export function coarsenHexes(hexes: StackedHex[], targetRes: number): StackedHex
             if (!m) { m = new Map(); routeVotes.set(ph3, m) }
             m.set(h.topRoute, (m.get(h.topRoute) ?? 0) + h.total)
         }
+        if (h.fatalYears && h.fatalYears.length > 0) {
+            (p.fatalYears ??= []).push(...h.fatalYears)
+        }
     }
     for (const p of parents.values()) {
         const boundary = cellToBoundary(p.h3, true)
@@ -136,6 +143,7 @@ export function coarsenHexes(hexes: StackedHex[], targetRes: number): StackedHex
             for (const [r, n] of m) { if (n > topN) { topR = r; topN = n } }
             p.topRoute = topR
         }
+        if (p.fatalYears) p.fatalYears = [...new Set(p.fatalYears)].sort((a, b) => a - b)
     }
     return [...parents.values()]
 }
