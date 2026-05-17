@@ -30,6 +30,11 @@ AASHTO_SUPPLEMENTED_OCCUPANTS = f'{DOT_DATA}/aashto_supplemented_occupants.parqu
 AASHTO_SUPPLEMENTED_PEDESTRIANS = f'{DOT_DATA}/aashto_supplemented_pedestrians.parquet'
 AASHTO_SUPPLEMENTED_VEHICLES = f'{DOT_DATA}/aashto_supplemented_vehicles.parquet'
 
+# NJSP-derived geocode backfill for NJDOT fatals missing both
+# `(olat, olon)` and `(sri, mp)`. Sidecar parquet keyed by
+# `(year, cc, mc, case)`; merged in by `load_crashes_with_aashto`.
+CRASHES_GEOCODE_BACKFILL = f'{DOT_DATA}/crashes_geocode_backfill.parquet'
+
 
 def aashto_year_path(year: int, name: str) -> str:
     return f'{DOT_DATA}/{year}/{name}'

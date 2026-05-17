@@ -12,7 +12,7 @@ from utz import err, sxs
 
 from njdot import NJDOT_DIR
 from njdot.data import YEARS, cn2cc
-from njdot.paths import AASHTO_SUPPLEMENTED_CRASHES, CRASHES_PQT, DOT_DATA
+from njdot.paths import AASHTO_SUPPLEMENTED_CRASHES, CRASHES_GEOCODE_BACKFILL, CRASHES_PQT, DOT_DATA
 from njdot.tbls import Tbl, TBL_TO_TYPE, Type
 
 Year = int
@@ -356,20 +356,58 @@ def load_crashes_with_aashto(columns: Optional[list[str]] = None) -> pd.DataFram
     fatal-flag bug surfaced this need (per-table over-counts fatals when broad-
     matched and under-counts when strict-matched; AASHTO has authoritative
     counts). Change this function to change the policy in every caller.
+
+    If `crashes_geocode_backfill.parquet` exists, NJSP-recovered
+    `(sri, mp, ilat, ilon)` rows are merged in (filling NaNs only) so
+    fatals without an original geocode still get placed on the map.
     """
     err(f'Loading {CRASHES_PQT}...')
     df = read_parquet(CRASHES_PQT, columns=columns)
     err(f'  per-table: {len(df):,} crashes ({df["year"].min()}–{df["year"].max()})')
-    if not exists(AASHTO_SUPPLEMENTED_CRASHES):
+    if exists(AASHTO_SUPPLEMENTED_CRASHES):
+        aashto = read_parquet(AASHTO_SUPPLEMENTED_CRASHES, columns=columns)
+        err(f'  AASHTO:    {len(aashto):,} crashes ({int(aashto["year"].min())}–{int(aashto["year"].max())})')
+        aashto_years = set(aashto['year'].dropna().astype(int))
+        overlap = sorted(set(df['year'].dropna().astype(int)) & aashto_years)
+        if overlap:
+            err(f'  AASHTO supersedes per-table for: {overlap}')
+            df = df[~df['year'].isin(aashto_years)]
+        df = pd.concat([df, aashto], ignore_index=True)
+        err(f'  combined: {len(df):,} crashes ({df["year"].min()}–{df["year"].max()})')
+    else:
         err(f'  (no AASHTO at {AASHTO_SUPPLEMENTED_CRASHES}; per-table only)')
+    # Backfill geocodes via NJSP MP-table lookup for rows that lack both
+    # `(olat, olon)` and `(ilat, ilon)`. Sidecar produced by
+    # `njdot backfill_geocodes`. Only sets columns the caller requested.
+    if exists(CRASHES_GEOCODE_BACKFILL):
+        backfill = read_parquet(CRASHES_GEOCODE_BACKFILL)
+        df = _apply_geocode_backfill(df, backfill)
+    return df
+
+
+def _apply_geocode_backfill(df: pd.DataFrame, backfill: pd.DataFrame) -> pd.DataFrame:
+    """Fillna `(sri, mp, ilat, ilon)` on `df` from `backfill`, joining on
+    `(year, cc, mc, case)`. Columns missing from `df` (because the caller
+    didn't request them) are skipped silently."""
+    join_keys = ['year', 'cc', 'mc', 'case']
+    if not all(k in df.columns for k in join_keys):
         return df
-    aashto = read_parquet(AASHTO_SUPPLEMENTED_CRASHES, columns=columns)
-    err(f'  AASHTO:    {len(aashto):,} crashes ({int(aashto["year"].min())}–{int(aashto["year"].max())})')
-    aashto_years = set(aashto['year'].dropna().astype(int))
-    overlap = sorted(set(df['year'].dropna().astype(int)) & aashto_years)
-    if overlap:
-        err(f'  AASHTO supersedes per-table for: {overlap}')
-        df = df[~df['year'].isin(aashto_years)]
-    out = pd.concat([df, aashto], ignore_index=True)
-    err(f'  combined: {len(out):,} crashes ({out["year"].min()}–{out["year"].max()})')
-    return out
+    fill_cols = [c for c in ('sri', 'mp', 'ilat', 'ilon') if c in df.columns]
+    if not fill_cols:
+        return df
+    bf = backfill[join_keys + fill_cols].rename(columns={c: f'{c}_bf' for c in fill_cols})
+    # Align dtypes on join keys; backfill writes Python ints, df may use Int8/Int16.
+    for k in ('year', 'cc', 'mc'):
+        if k in df.columns:
+            bf[k] = bf[k].astype(df[k].dtype)
+    merged = df.merge(bf, on=join_keys, how='left')
+    n_applied = 0
+    for c in fill_cols:
+        bf_col = f'{c}_bf'
+        # Only fill where original is NaN; otherwise preserve.
+        mask = merged[c].isna() & merged[bf_col].notna()
+        n_applied = max(n_applied, int(mask.sum()))
+        merged.loc[mask, c] = merged.loc[mask, bf_col]
+        merged = merged.drop(columns=[bf_col])
+    err(f'  geocode backfill: applied to {n_applied:,} rows')
+    return merged
