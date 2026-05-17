@@ -5,5 +5,5 @@ meta:
       /njsp/data/crash-log.parquet: 3ffe9382c5b41df1674e504cccd4760f
     git_deps:
       og-image.sh: bc73466d828a21cb911478e5c2faa78a0c05964d
-      e2e/og-screenshot.spec.ts: c6bfc7754499509987ffb34bff647bfbd4592942
+      e2e/og-screenshot.spec.ts: 22b45497b0b2bba89d7e14655dc2bc9ec07bc478
       src/routes/OgImage.tsx: 8d2e9097d3d16b15c71b8ee3beea1bf9b062907f
