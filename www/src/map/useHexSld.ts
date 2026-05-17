@@ -19,6 +19,12 @@ export type SldEntry = {
     sri: string
     mp: number
     route_subt: number
+    /** Nearest road on a different SRI within ~80m of the cell centroid.
+     *  Empty when no qualifying neighbor exists (mid-block cells). Used
+     *  in the tooltip as a cross-street hint. */
+    cross_sld_name: string
+    cross_sri: string
+    cross_mp: number
     mun: string
     county: string
 }
@@ -42,6 +48,7 @@ async function loadHexSld(): Promise<HexSldLookup> {
     const file = await asyncBufferFromUrl({ url })
     const rows = (await parquetReadObjects({ file })) as Array<{
         h3: string; sld_name: string; sri: string; mp: number; route_subt: number;
+        cross_sld_name: string | null; cross_sri: string | null; cross_mp: number | null;
         mun: string; county: string
     }>
     const m = new Map<string, SldEntry>()
@@ -51,6 +58,9 @@ async function loadHexSld(): Promise<HexSldLookup> {
             sri: r.sri,
             mp: r.mp,
             route_subt: r.route_subt,
+            cross_sld_name: r.cross_sld_name ?? "",
+            cross_sri: r.cross_sri ?? "",
+            cross_mp: r.cross_mp ?? NaN,
             mun: r.mun ?? "",
             county: r.county ?? "",
         })

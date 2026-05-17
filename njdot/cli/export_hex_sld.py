@@ -69,20 +69,62 @@ def _hex_centroids(h3s: pd.Series) -> pd.DataFrame:
     })
 
 
+"""Distance threshold (in deg, Euclidean on lon/lat) for considering a
+2nd-nearest MP a "cross-street". ~80m at NJ latitudes — generous enough
+to catch a corner cell's adjacent cross-road but tight enough to skip
+distant unrelated roads for mid-block cells. Cells with no qualifying
+neighbor get null cross_sld_name (left blank in the tooltip)."""
+CROSS_DIST_THRESHOLD = 0.001
+
+
 def _nearest_mp(centroids: pd.DataFrame, mp: pd.DataFrame) -> pd.DataFrame:
     """For each centroid, find the nearest MP row by Euclidean distance on
     (lon, lat). Approximate but fine at NJ latitudes for the few-hundred-
-    foot precision we need. Returns centroids enriched with MP fields."""
+    foot precision we need.
+
+    Also find the nearest MP on a *different* SRI within
+    `CROSS_DIST_THRESHOLD` — that's the cell's cross-street, used in the
+    hex tooltip as "PRIMARY @ CROSS". Null when no other-SRI MP exists
+    within threshold (typical for mid-block cells).
+
+    Returns centroids enriched with primary + cross MP fields."""
     mp = mp.dropna(subset=["lat", "lon"]).reset_index(drop=True)
-    tree = cKDTree(mp[["lon", "lat"]].values)
+    pts = mp[["lon", "lat"]].values
+    sris = mp["SRI"].values
+    tree = cKDTree(pts)
     _, idx = tree.query(centroids[["lon", "lat"]].values, k=1)
     nearest = mp.iloc[idx].reset_index(drop=True)
+    # Find cross-street by querying k≥20 neighbors and picking the first
+    # with a different SRI inside the threshold. k=20 covers the dense
+    # urban case where each road has many MP rows; we exit at the first
+    # qualifying neighbor.
+    K = 20
+    dists, idxs = tree.query(centroids[["lon", "lat"]].values, k=K)
+    primary_sri_arr = sris[idx]
+    cross_idx = pd.Series([-1] * len(centroids), dtype="int64")
+    for i in range(len(centroids)):
+        for j in range(K):
+            d = dists[i, j]
+            if d > CROSS_DIST_THRESHOLD:
+                break
+            cand_idx = idxs[i, j]
+            if sris[cand_idx] != primary_sri_arr[i]:
+                cross_idx.iloc[i] = cand_idx
+                break
+    has_cross = cross_idx >= 0
+    cross_idx_safe = cross_idx.where(has_cross, 0).astype("int64")
+    cross = mp.iloc[cross_idx_safe.values].reset_index(drop=True)
+    n_with_cross = int(has_cross.sum())
+    err(f"  {n_with_cross:,} cells with cross-street (within {CROSS_DIST_THRESHOLD}° ≈ 80m)")
     out = pd.DataFrame({
         "h3": centroids["h3"].values,
         "sld_name": nearest["SLD_NAME"].values,
         "sri": nearest["SRI"].values,
         "mp": nearest["MP"].values,
         "route_subt": nearest["ROUTE_SUBT"].astype("int8").values,
+        "cross_sld_name": cross["SLD_NAME"].where(has_cross.values, None).values,
+        "cross_sri": cross["SRI"].where(has_cross.values, None).values,
+        "cross_mp": cross["MP"].where(has_cross.values, pd.NA).values,
     })
     return out
 

@@ -943,6 +943,9 @@ function CrashTooltip({ info, sldMap }: { info: PickingInfo; sldMap?: HexSldLook
                 {sldLabel && (
                     <div style={{ fontSize: "0.85em", opacity: 0.85, marginBottom: 1 }}>
                         <b>{sldLabel}</b>
+                        {sld?.cross_sld_name && (
+                            <span style={{ opacity: 0.8 }}> @ <b>{sld.cross_sld_name}</b></span>
+                        )}
                         {sld && Number.isFinite(sld.mp) && (
                             <span style={{ opacity: 0.8 }}> · MP {sld.mp.toFixed(2)}</span>
                         )}

@@ -1,7 +1,8 @@
 outs:
-- md5: d2341fa75d4efaada6553dc06a323975.dir
-  size: 172612591
+- md5: ca15632a1b794aae08bcfae83c61d17f.dir
+  size: 176636960
   hash: md5
+  nfiles: 696
   path: map
 meta:
   computation:
@@ -14,6 +15,6 @@ meta:
       /njdot/data/aashto_supplemented_crashes.parquet: 92ac7e301eab0f949748c6061317cf9f
       /www/public/Municipal_Boundaries_of_NJ.geojson: 54a252d859eea2207da0fb933661dca0
     git_deps:
-      /njdot/cli/export_hex_sld.py: 5336c4340c92aea5acf0e93e0c2a4261dea666b6
+      /njdot/cli/export_hex_sld.py: 7b51e7d87b01803cef6be0793ae46438e67c54ef
       /njdot/cli/export_map_v2.py: 8b557e023ee2134bb4dff93d585f8152e9f95b25
       /njdot/load.py: 8631c1995b4badf1856395b9b87ddc334ba68893
