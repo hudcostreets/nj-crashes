@@ -484,8 +484,8 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                         onHexPxTargetChange={setHexPxTarget}
                         elevationPerCount={elevationPerCount}
                         onElevationPerCountChange={setElevationPerCount}
-                        gridOverlayRes={gridOverlayRes}
-                        coverCells={debugOpen ? apiResult.plan?.cover ?? null : null}
+                        gridOverlayRes={drawerOpen ? gridOverlayRes : null}
+                        coverCells={drawerOpen && debugOpen ? apiResult.plan?.cover ?? null : null}
                     />
                 </Suspense>
             )}
