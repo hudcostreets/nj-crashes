@@ -538,6 +538,6 @@ year,county,driver,passenger,cyclist,pedestrian,crashes
 2026,Passaic,3,2,0,2,6
 2026,Salem,4,0,0,0,4
 2026,Somerset,3,0,0,1,4
-2026,Sussex,1,0,0,1,2
-2026,Union,7,0,0,7,14
+2026,Sussex,2,0,0,1,3
+2026,Union,7,0,0,8,15
 2026,Warren,1,0,0,1,2
