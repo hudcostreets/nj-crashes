@@ -89,7 +89,7 @@ const llzParam = viewStateParam({
 
 /** `y` URL param: `"<a>-<b>"` (e.g. `2019-2025`). Out-of-order pairs are
  *  swapped silently. */
-const YEAR_RANGE_DEFAULT: [number, number] = [2019, 2025]
+const YEAR_RANGE_DEFAULT: [number, number] = [2016, 2025]
 const yearRangeParam: Param<[number, number]> = {
     encode: ([a, b]) => a === YEAR_RANGE_DEFAULT[0] && b === YEAR_RANGE_DEFAULT[1] ? "" : `${a}-${b}`,
     decode: (s) => {
