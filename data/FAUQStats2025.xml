@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sat May 16 10:00:04 EDT 2026</RUNDATE>
+  <RUNDATE>Sun May 17 10:00:05 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -3037,12 +3037,13 @@
     <MUNICIPALITY MCODE="0720" MNAME="Verona Boro">
       <ACCIDENT ACCID="14078" DATE="08/08/2025" TIME="0921">
         <HIGHWAY>506</HIGHWAY>
-        <LOCATION>County 506</LOCATION>
+        <LOCATION>County 506 MP 4.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
