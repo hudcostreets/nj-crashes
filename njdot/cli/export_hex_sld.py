@@ -1,8 +1,8 @@
 """Build the hex → nearest-MP-name + muni/county sidecar for the crash map.
 
-For each unique H3 cell across the v2 hex parquets (r6-r9), compute the
-cell centroid (h3.cell_to_latlng), find the nearest tenth-mile MP point
-in `njdot/data/nj_mp_tenths.parquet` (KD-tree on lon/lat), and the
+For each unique H3 cell at r6-r11 that contains a geocoded crash, compute
+the cell centroid (h3.cell_to_latlng), find the nearest tenth-mile MP
+point in `njdot/data/nj_mp_tenths.parquet` (KD-tree on lon/lat), and the
 containing municipality / county via point-in-polygon against
 `Municipal_Boundaries_of_NJ.geojson`. Emit a single dedup'd parquet:
 
@@ -11,7 +11,10 @@ containing municipality / county via point-in-polygon against
 
 Used by `<CrashMap>`'s tooltip to surface a human-readable road name
 ("FR RIVER RD TO NJ 3 EB", "DELAWARE AV") alongside muni context
-("Wall (Monmouth)"). ROADMAP item (j).
+("Wall (Monmouth)"). The client `useHexSld` walks parents to find the
+finest available entry, so r12-r14 hexes inherit their r11 ancestor's
+road. Source is `load_crashes_with_aashto()` (decoupled from the
+local v2 pyramid, which only goes to r9). ROADMAP item (j).
 """
 import json
 import sys
@@ -23,26 +26,34 @@ import pandas as pd
 from scipy.spatial import cKDTree
 
 from .base import njdot
+from njdot.load import load_crashes_with_aashto
 
 err = partial(print, file=sys.stderr)
 
-DEFAULT_HEX_DIR = "www/public/njdot/map/v2"
 DEFAULT_MP_PATH = "njdot/data/nj_mp_tenths.parquet"
 DEFAULT_MUNI_PATH = "www/public/Municipal_Boundaries_of_NJ.geojson"
 DEFAULT_OUT = "www/public/njdot/map/v2/hex-sld.parquet"
-RESOLUTIONS = [6, 7, 8, 9]
+RESOLUTIONS = [6, 7, 8, 9, 10, 11]
 
 
-def _unique_h3s(hex_dir: str) -> pd.Series:
-    """Collect distinct H3 cell IDs across all per-res parquets."""
-    from os.path import join
-    all_h3s: list[str] = []
+def _unique_h3s() -> pd.Series:
+    """Compute distinct H3 cell IDs per resolution from geocoded crashes,
+    then union across all resolutions. Each crash contributes one cell
+    per resolution; the union is the set of cells the client may ever
+    look up."""
+    # `year` is required by the loader's logging; selected here so we
+    # avoid loading the full schema.
+    crashes = load_crashes_with_aashto(columns=["year", "olat", "olon"])
+    crashes = crashes.dropna(subset=["olat", "olon"]).reset_index(drop=True)
+    err(f"  {len(crashes):,} crashes with lat/lon")
+    lat = crashes["olat"].to_numpy()
+    lon = crashes["olon"].to_numpy()
+    all_h3s: list[pd.Series] = []
     for res in RESOLUTIONS:
-        path = join(hex_dir, f"hex-r{res}.parquet")
-        df = pd.read_parquet(path, columns=["h3"])
-        n_unique = df["h3"].nunique()
-        err(f"  r{res}: {len(df):,} rows, {n_unique:,} unique cells from {path}")
-        all_h3s.append(df["h3"])
+        cells = pd.Series([h3.latlng_to_cell(la, lo, res) for la, lo in zip(lat, lon)])
+        n_unique = cells.nunique()
+        err(f"  r{res}: {n_unique:,} unique cells")
+        all_h3s.append(cells.drop_duplicates())
     s = pd.concat(all_h3s).drop_duplicates().reset_index(drop=True)
     err(f"Total: {len(s):,} unique cells across r{RESOLUTIONS}")
     return s
@@ -111,13 +122,12 @@ def _muni_county(centroids: pd.DataFrame, muni_path: str) -> pd.DataFrame:
 
 
 @njdot.command("export_hex_sld")
-@click.option("--hex-dir", default=DEFAULT_HEX_DIR, show_default=True)
 @click.option("--mp-path", default=DEFAULT_MP_PATH, show_default=True)
 @click.option("--muni-path", default=DEFAULT_MUNI_PATH, show_default=True)
 @click.option("-o", "--output", default=DEFAULT_OUT, show_default=True)
-def export_hex_sld(hex_dir: str, mp_path: str, muni_path: str, output: str):
-    err(f"Loading unique H3 cells from {hex_dir}/hex-r*.parquet")
-    h3s = _unique_h3s(hex_dir)
+def export_hex_sld(mp_path: str, muni_path: str, output: str):
+    err(f"Enumerating unique H3 cells from canonical crashes (r{RESOLUTIONS})")
+    h3s = _unique_h3s()
 
     err(f"Computing H3 centroids ({len(h3s):,} cells)")
     centroids = _hex_centroids(h3s)
