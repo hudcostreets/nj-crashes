@@ -238,10 +238,14 @@ async function queryPyramid(
     // legacy single-shard-res pyramid lives under `pyramid/r{res}/...`.
     const subdir = shardRes != null ? `s${shardRes}_r${res}` : `r${res}`
 
-    for (const s of shards) {
-        let rows: PyramidRow[]
+    // Parallel R2 reads — each shard's parquet was sequential before, which
+    // made a 25-shard batch take ~4s (25 × ~150ms). With `Promise.all` the
+    // I/O happens concurrently; total latency drops to roughly the slowest
+    // single shard plus small overhead. Memory is fine — peak is N shards'
+    // row arrays held briefly before folding (~6MB for typical urban N=25).
+    const results = await Promise.all(shards.map(async s => {
         try {
-            rows = await readParquetFromR2<PyramidRow>(
+            return await readParquetFromR2<PyramidRow>(
                 bucket, `${prefix}/pyramid/${subdir}/${s}.parquet`,
                 {
                     columns: [h3Col, "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"],
@@ -250,8 +254,11 @@ async function queryPyramid(
             )
         } catch (e) {
             console.error(`pyramid ${subdir}/${s} read failed:`, e)
-            continue
+            return null
         }
+    }))
+    for (const rows of results) {
+        if (!rows) continue
         for (const row of rows) {
             const cellId = (row as any)[h3Col] ?? row.h3
             const hex = bigintToHex(cellId)
@@ -309,10 +316,10 @@ async function queryRaw(
     const wantP = !severities || severities.has("p")
     const out = new Map<string, CellOut>()
 
-    for (const s of shards) {
-        let rows: RawRow[]
+    // Parallel R2 reads (same rationale as queryPyramid).
+    const results = await Promise.all(shards.map(async s => {
         try {
-            rows = await readParquetFromR2<RawRow>(
+            return await readParquetFromR2<RawRow>(
                 bucket, `${prefix}/raw/h3_r${baseRes}/${s}.parquet`,
                 {
                     columns: [h3Col, "year", "severity", "tk", "ti", "pk", "pi", "tv"],
@@ -321,8 +328,11 @@ async function queryRaw(
             )
         } catch (e) {
             console.error(`raw r${baseRes}/${s} read failed:`, e)
-            continue
+            return null
         }
+    }))
+    for (const rows of results) {
+        if (!rows) continue
         for (const row of rows) {
             const cellId = (row as any)[h3Col] ?? row.h3_r14
             const baseHex = bigintToHex(cellId)
