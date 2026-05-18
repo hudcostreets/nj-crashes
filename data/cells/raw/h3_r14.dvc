@@ -1,14 +1,15 @@
 outs:
-- md5: a303fef40795d23f7d69f84474edfc95.dir
-  size: 89250084
+- md5: ddf55085584185128cbf662b2a215d25.dir
+  size: 89270242
   hash: md5
+  nfiles: 34
   path: h3_r14
 meta:
   computation:
     cmd: cd ../../.. && njdot compute cells raw -f
-    git_deps:
-      /njdot/cli/cells.py: 6cc460448fdae157739fb4f4b66ffb3e297df4f9
-      /njdot/load.py: 6cc460448fdae157739fb4f4b66ffb3e297df4f9
     deps:
       /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
       /njdot/data/aashto_supplemented_crashes.parquet: 92ac7e301eab0f949748c6061317cf9f
+    git_deps:
+      /njdot/cli/cells.py: fb348706eb6a9ab24e59c514d10d11ca396e7263
+      /njdot/load.py: 04e81d5e2acd331dea5496d084b37d79f54aa5e2
