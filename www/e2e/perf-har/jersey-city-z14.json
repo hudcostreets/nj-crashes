@@ -85,34 +85,9 @@
     "body_size": 12320
   },
   {
-    "url": "http://localhost:4006/njsp/crash-homicide.csv",
-    "status": 200,
-    "body_size": 12320
-  },
-  {
     "url": "http://localhost:4006/njsp/monthly.csv",
     "status": 200,
     "body_size": 836708
-  },
-  {
-    "url": "http://localhost:4006/njsp/monthly.csv",
-    "status": 200,
-    "body_size": 836708
-  },
-  {
-    "url": "http://localhost:4006/njsp/monthly.csv",
-    "status": 200,
-    "body_size": 836708
-  },
-  {
-    "url": "http://localhost:4006/njsp/monthly.csv",
-    "status": 200,
-    "body_size": 836708
-  },
-  {
-    "url": "http://localhost:4006/njsp/projected.csv",
-    "status": 200,
-    "body_size": 477
   },
   {
     "url": "http://localhost:4006/njsp/projected.csv",
@@ -133,16 +108,6 @@
     "url": "http://localhost:4006/njsp/year-type-county.csv",
     "status": 200,
     "body_size": 13708
-  },
-  {
-    "url": "http://localhost:4006/njsp/year-type-county.csv",
-    "status": 200,
-    "body_size": 13708
-  },
-  {
-    "url": "http://localhost:4006/njsp/ytd.csv",
-    "status": 200,
-    "body_size": 1126909
   },
   {
     "url": "http://localhost:4006/njsp/ytd.csv",
@@ -155,19 +120,19 @@
     "body_size": 2693
   },
   {
-    "url": "http://localhost:51895/v1/cells?res=13&years=2016-2025&severities=fi&shard_res=8&polygon=-75.6000%2C41.4000%2C-73.9000%2C41.4000%2C-73.9000%2C38.9000%2C-75.6000%2C38.9000%2C-75.6000%2C41.4000&cells=882a107003fffff,882a107009fffff,882a10700bfffff,882a107015fffff,882a107019fffff,882a10701dfffff,882a107041fffff,882a107043fffff,882a107045fffff,882a107047fffff,882a107049fffff,882a10704bfffff,882a107051fffff,882a107053fffff,882a107055fffff,882a107057fffff,882a107059fffff,882a10705bfffff,882a10705dfffff,882a107215fffff,882a107217fffff,882a107231fffff,882a107233fffff,882a107235fffff,882a107237fffff,882a107239fffff,882a10723bfffff,882a10723dfffff,882a1072a5fffff,882a1072a9fffff,882a1072adfffff,882a1072c7fffff,882a1072e1fffff,882a1072e3fffff,882a1072e5fffff,882a1072e7fffff,882a1072e9fffff,882a1072edfffff",
+    "url": "http://localhost:51895/v1/cells?res=13&years=2016-2025&severities=fi&shard_res=8&polygon=-75.6000%2C41.4000%2C-73.9000%2C41.4000%2C-73.9000%2C38.9000%2C-75.6000%2C38.9000%2C-75.6000%2C41.4000&cells=882a107001fffff,882a107003fffff,882a107009fffff,882a10700bfffff,882a10700dfffff,882a107011fffff,882a107015fffff,882a107019fffff,882a10701dfffff,882a107041fffff,882a107043fffff,882a107045fffff,882a107047fffff,882a107049fffff,882a10704bfffff,882a10704dfffff,882a107051fffff,882a107053fffff,882a107055fffff,882a107057fffff,882a107059fffff,882a10705bfffff,882a10705dfffff,882a107203fffff,882a107211fffff,882a107213fffff,882a107215fffff,882a107217fffff,882a10721dfffff,882a107223fffff,882a107231fffff,882a107233fffff,882a107235fffff,882a107237fffff,882a107239fffff,882a10723bfffff,882a10723dfffff,882a107285fffff,882a10728dfffff,882a1072a1fffff,882a1072a5fffff,882a1072a9fffff,882a1072adfffff,882a1072e1fffff,882a1072e3fffff,882a1072e5fffff,882a1072e7fffff,882a1072e9fffff,882a1072ebfffff,882a1072edfffff,882a107313fffff",
     "status": 200,
-    "body_size": 1145179
+    "body_size": 1285259
   },
   {
-    "url": "http://localhost:51895/v1/cells?res=13&years=2016-2025&severities=fi&shard_res=9&polygon=-75.6000%2C41.4000%2C-73.9000%2C41.4000%2C-73.9000%2C38.9000%2C-75.6000%2C38.9000%2C-75.6000%2C41.4000&cells=892a1070003ffff,892a1070007ffff,892a107000bffff,892a107000fffff,892a1070013ffff,892a1070017ffff,892a107001bffff,892a1070077ffff,892a10700c7ffff,892a1070103ffff,892a107010bffff,892a1070113ffff,892a1070117ffff,892a107011bffff,892a1070143ffff,892a1070147ffff,892a107014bffff,892a107014fffff,892a1070153ffff,892a1070157ffff,892a107015bffff,892a10701b3ffff,892a10701bbffff,892a1070387ffff,892a1070393ffff,892a1070397ffff,892a10703b3ffff,892a1070463ffff,892a1070467ffff,892a107046bffff,892a107046fffff,892a1070477ffff,892a10704a7ffff,892a10704afffff,892a1070697ffff,892a10706a7ffff,892a10706b3ffff,892a10706b7ffff,892a1072023ffff,892a1072027ffff,892a107202bffff,892a107202fffff,892a1072037ffff,892a1072067ffff,892a107206fffff,892a1072163ffff,892a107216bffff,892a10721cbffff,892a10721cfffff,892a10721dbffff,892a1072223ffff,892a1072227ffff,892a107222fffff,892a1072237ffff,892a1072363ffff,892a1072367ffff,892a107236bffff,892a107236fffff,892a1072377ffff,892a10723a7ffff,892a10723afffff,892a1072803ffff,892a107312fffff",
+    "url": "http://localhost:51895/v1/cells?res=13&years=2016-2025&severities=fi&shard_res=9&polygon=-75.6000%2C41.4000%2C-73.9000%2C41.4000%2C-73.9000%2C38.9000%2C-75.6000%2C38.9000%2C-75.6000%2C41.4000&cells=892a1070077ffff,892a10700c3ffff,892a10700c7ffff,892a10700d3ffff,892a10700d7ffff,892a1070103ffff,892a107010bffff,892a1070113ffff,892a1070117ffff,892a107011bffff,892a10701b3ffff,892a10701bbffff,892a1070387ffff,892a1070393ffff,892a1070397ffff,892a10703b3ffff,892a10704a7ffff,892a10704afffff,892a1070697ffff,892a10706a7ffff,892a10706b3ffff,892a10706b7ffff,892a1072067ffff,892a107206fffff,892a1072123ffff,892a107212bffff,892a107212fffff,892a107213bffff,892a1072163ffff,892a1072167ffff,892a107216bffff,892a107216fffff,892a1072177ffff,892a1072267ffff,892a107226fffff,892a1072363ffff,892a1072367ffff,892a107236bffff,892a107236fffff,892a1072377ffff,892a10723a7ffff,892a10723afffff,892a1072803ffff,892a1072807ffff,892a107280bffff,892a107280fffff,892a1072813ffff,892a107281bffff,892a1072ab3ffff,892a1072abbffff,892a1072c4bffff,892a1072c4fffff,892a1072c5bffff,892a1072c6bffff",
     "status": 200,
-    "body_size": 299955
+    "body_size": 143994
   },
   {
     "url": "http://localhost:51895/v1/manifest",
     "status": 200,
-    "body_size": 5132875
+    "body_size": 2365
   },
   {
     "url": "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/dist/duckdb-browser-eh.worker.js",

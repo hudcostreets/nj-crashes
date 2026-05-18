@@ -131,7 +131,7 @@ function aggregateCellsApi(entries: Entry[]): Entry[] {
         let b = cellsBuckets.get(key)
         if (!b) { b = { shards: new Set(), bytes: 0, count: 0 }; cellsBuckets.set(key, b) }
         for (const s of cells) b.shards.add(s)
-        b.bytes += e.body_size
+        b.bytes += Number.isFinite(e.body_size) ? e.body_size : 0
         b.count += 1
     }
     for (const [key, b] of cellsBuckets) {
@@ -185,7 +185,7 @@ for (const sc of SCENARIOS) {
                     status: res.status(),
                     // Body size — use `body()` length; fall back to 0 for
                     // resources without a body (304s, redirects).
-                    bodyPromise: res.body().then(b => b.length).catch(() => 0),
+                    bodyPromise: res.body().then(b => b?.length ?? 0).catch(() => 0),
                 })
             })
 

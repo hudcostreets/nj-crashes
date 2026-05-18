@@ -85,34 +85,9 @@
     "body_size": 12320
   },
   {
-    "url": "http://localhost:4006/njsp/crash-homicide.csv",
-    "status": 200,
-    "body_size": 12320
-  },
-  {
     "url": "http://localhost:4006/njsp/monthly.csv",
     "status": 200,
     "body_size": 836708
-  },
-  {
-    "url": "http://localhost:4006/njsp/monthly.csv",
-    "status": 200,
-    "body_size": 836708
-  },
-  {
-    "url": "http://localhost:4006/njsp/monthly.csv",
-    "status": 200,
-    "body_size": 836708
-  },
-  {
-    "url": "http://localhost:4006/njsp/monthly.csv",
-    "status": 200,
-    "body_size": 836708
-  },
-  {
-    "url": "http://localhost:4006/njsp/projected.csv",
-    "status": 200,
-    "body_size": 477
   },
   {
     "url": "http://localhost:4006/njsp/projected.csv",
@@ -133,16 +108,6 @@
     "url": "http://localhost:4006/njsp/year-type-county.csv",
     "status": 200,
     "body_size": 13708
-  },
-  {
-    "url": "http://localhost:4006/njsp/year-type-county.csv",
-    "status": 200,
-    "body_size": 13708
-  },
-  {
-    "url": "http://localhost:4006/njsp/ytd.csv",
-    "status": 200,
-    "body_size": 1126909
   },
   {
     "url": "http://localhost:4006/njsp/ytd.csv",
@@ -155,14 +120,14 @@
     "body_size": 2693
   },
   {
-    "url": "http://localhost:51895/v1/cells?res=14&years=2016-2025&severities=fi&shard_res=9&polygon=-75.6000%2C41.4000%2C-73.9000%2C41.4000%2C-73.9000%2C38.9000%2C-75.6000%2C38.9000%2C-75.6000%2C41.4000&cells=892a1070193ffff,892a107019bffff,892a1070437ffff,892a1070487ffff,892a107048fffff,892a10704a3ffff,892a10704a7ffff,892a10704abffff,892a10704afffff,892a10704b3ffff,892a10704b7ffff,892a10704bbffff,892a1070503ffff,892a1070507ffff,892a107050bffff,892a107050fffff,892a1070513ffff,892a1070517ffff,892a107051bffff,892a1070523ffff,892a1070527ffff,892a107052bffff,892a107052fffff,892a1070533ffff,892a1070537ffff,892a107053bffff,892a1070543ffff,892a1070547ffff,892a1070553ffff,892a1070557ffff,892a1070563ffff,892a1070567ffff,892a107056fffff,892a1070573ffff,892a1070577ffff,892a107057bffff,892a1070583ffff,892a1070587ffff,892a107058bffff,892a107058fffff,892a1070593ffff,892a1070597ffff,892a107059bffff,892a10705a3ffff,892a10705a7ffff,892a10705abffff,892a10705afffff,892a10705b3ffff,892a10705b7ffff,892a10705bbffff,892a10705c3ffff,892a10705c7ffff,892a10705cbffff,892a10705cfffff,892a10705d3ffff,892a10705d7ffff,892a10705dbffff,892a107214bffff,892a107214fffff,892a107216bffff,892a1072303ffff,892a1072307ffff,892a107230bffff,892a107230fffff,892a1072313ffff,892a1072317ffff,892a107231bffff,892a1072323ffff,892a1072327ffff,892a107232bffff,892a107232fffff,892a1072333ffff,892a1072337ffff,892a107233bffff,892a1072343ffff,892a1072347ffff,892a107234bffff,892a107234fffff,892a1072357ffff,892a1072363ffff,892a1072367ffff,892a107236bffff,892a107236fffff,892a1072373ffff,892a1072377ffff,892a107237bffff,892a1072387ffff,892a107238fffff,892a10723a3ffff,892a10723a7ffff,892a10723abffff,892a10723afffff,892a10723b3ffff,892a10723b7ffff,892a10723bbffff,892a1072a93ffff,892a1072a9bffff,892a1072acbffff,892a1072ad3ffff,892a1072adbffff,892a1072e03ffff,892a1072e0bffff,892a1072e0fffff,892a1072e1bffff,892a1072e2bffff,892a1072e3bffff,892a1072e43ffff,892a1072e47ffff,892a1072e4bffff,892a1072e4fffff,892a1072e53ffff,892a1072e57ffff,892a1072e5bffff,892a1072e63ffff,892a1072e67ffff,892a1072e6bffff,892a1072e6fffff,892a1072e73ffff,892a1072e77ffff,892a1072e7bffff,892a1072ec3ffff,892a1072ec7ffff,892a1072ecbffff,892a1072ecfffff,892a1072ed3ffff,892a1072ed7ffff,892a1072edbffff",
+    "url": "http://localhost:51895/v1/cells?res=14&years=2016-2025&severities=fi&shard_res=9&polygon=-75.6000%2C41.4000%2C-73.9000%2C41.4000%2C-73.9000%2C38.9000%2C-75.6000%2C38.9000%2C-75.6000%2C41.4000&cells=892a1070193ffff,892a107019bffff,892a1070437ffff,892a1070487ffff,892a107048fffff,892a10704a3ffff,892a10704a7ffff,892a10704abffff,892a10704afffff,892a10704b3ffff,892a10704b7ffff,892a10704bbffff,892a1070503ffff,892a1070507ffff,892a107050bffff,892a107050fffff,892a1070513ffff,892a1070517ffff,892a107051bffff,892a1070523ffff,892a1070527ffff,892a107052bffff,892a107052fffff,892a1070533ffff,892a1070537ffff,892a107053bffff,892a1070543ffff,892a1070547ffff,892a1070553ffff,892a1070557ffff,892a1070563ffff,892a1070567ffff,892a107056fffff,892a1070573ffff,892a1070577ffff,892a107057bffff,892a1070583ffff,892a1070587ffff,892a107058bffff,892a107058fffff,892a1070593ffff,892a1070597ffff,892a107059bffff,892a10705a3ffff,892a10705a7ffff,892a10705abffff,892a10705afffff,892a10705b3ffff,892a10705b7ffff,892a10705bbffff,892a10705c3ffff,892a10705c7ffff,892a10705cbffff,892a10705cfffff,892a10705d3ffff,892a10705d7ffff,892a10705dbffff,892a107214bffff,892a107214fffff,892a107216bffff,892a1072303ffff,892a1072307ffff,892a107230bffff,892a107230fffff,892a1072313ffff,892a1072317ffff,892a107231bffff,892a1072323ffff,892a1072327ffff,892a107232bffff,892a107232fffff,892a1072333ffff,892a1072337ffff,892a107233bffff,892a1072343ffff,892a1072347ffff,892a107234bffff,892a107234fffff,892a1072357ffff,892a1072363ffff,892a1072367ffff,892a107236bffff,892a107236fffff,892a1072373ffff,892a1072377ffff,892a107237bffff,892a1072387ffff,892a107238fffff,892a10723a3ffff,892a10723a7ffff,892a10723abffff,892a10723afffff,892a10723b3ffff,892a10723b7ffff,892a10723bbffff,892a1072a93ffff,892a1072a9bffff,892a1072ac3ffff,892a1072acbffff,892a1072ad3ffff,892a1072ad7ffff,892a1072adbffff,892a1072e03ffff,892a1072e07ffff,892a1072e0bffff,892a1072e0fffff,892a1072e13ffff,892a1072e1bffff,892a1072e23ffff,892a1072e2bffff,892a1072e2fffff,892a1072e3bffff,892a1072e43ffff,892a1072e47ffff,892a1072e4bffff,892a1072e4fffff,892a1072e53ffff,892a1072e57ffff,892a1072e5bffff,892a1072e63ffff,892a1072e67ffff,892a1072e6bffff,892a1072e6fffff,892a1072e73ffff,892a1072e77ffff,892a1072e7bffff,892a1072ec3ffff,892a1072ec7ffff,892a1072ecbffff,892a1072ecfffff,892a1072ed3ffff,892a1072ed7ffff,892a1072edbffff",
     "status": 200,
     "body_size": 843565
   },
   {
     "url": "http://localhost:51895/v1/manifest",
     "status": 200,
-    "body_size": 5132875
+    "body_size": 2365
   },
   {
     "url": "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/dist/duckdb-browser-eh.worker.js",

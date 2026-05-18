@@ -95,7 +95,26 @@ export default {
             const prefix = env.CELLS_PREFIX || "cells"
             if (pathname === "/v1/manifest") {
                 const m = await loadManifest(env.CELLS_BUCKET, prefix)
-                return new Response(JSON.stringify(m, jsonReplacer), { headers: corsHeaders(env) })
+                // Strip the per-combo `shard_cells` arrays before sending —
+                // they account for 99%+ of the manifest (NJ has hundreds of
+                // thousands of cells at the finest shard_res), and the
+                // client only used them as an exists-check filter. The
+                // worker still validates shard existence server-side; the
+                // few off-NJ shard requests the client may now issue cost
+                // little (empty responses). `?full=1` opts back in for
+                // debug / regen scripts that need the full list.
+                const full = url.searchParams.get("full") === "1"
+                const out = full ? m : {
+                    ...m,
+                    pyramid_combos: (m.pyramid_combos ?? []).map(c => ({
+                        shard_res: c.shard_res,
+                        data_res: c.data_res,
+                        row_count: c.row_count,
+                        byte_size: c.byte_size,
+                    })),
+                    shard_cells: undefined,
+                }
+                return new Response(JSON.stringify(out, jsonReplacer), { headers: corsHeaders(env) })
             }
             if (pathname === "/v1/cells") {
                 const cellsReq = parseCellsRequest(url)

@@ -40,10 +40,28 @@ export type UseProps<T> = Url & MaybeDb & MaybeTable & HasQuery & {
     init: T[]
 }
 
+/** Module-level dedupe so N components rendering plots that share the
+ *  same CSV (e.g. `monthly.csv` is used by `FatalitiesPerYearPlot`,
+ *  `FatalitiesByMonthBarsPlot`, and `FatalitiesPerMonthPlot`) all share
+ *  one fetch. Browser HTTP cache helps cross-page, but in-page each
+ *  component would otherwise fire its own request. */
+const _csvTextCache = new Map<string, Promise<string>>()
+function fetchCsvText(url: string): Promise<string> {
+    let p = _csvTextCache.get(url)
+    if (!p) {
+        p = fetch(url).then(r => r.text())
+        p.catch(() => { if (_csvTextCache.get(url) === p) _csvTextCache.delete(url) })
+        _csvTextCache.set(url, p)
+    }
+    return p
+}
+
 export function useCsvText({ url, }: { url: string }): string | null {
     const [ csvText, setCsvText ] = useState<string | null>(null)
     useEffect(() => {
-        fetch(url).then(r => r.text()).then(setCsvText)
+        let cancelled = false
+        fetchCsvText(url).then(t => { if (!cancelled) setCsvText(t) })
+        return () => { cancelled = true }
     }, [ url, ]);
     return csvText
 }

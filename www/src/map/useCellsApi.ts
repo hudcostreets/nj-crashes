@@ -171,8 +171,12 @@ function pickCover(
         .filter(c => c.data_res === dataRes)
         .sort((a, b) => a.shard_res - b.shard_res)  // coarsest first
     if (candidates.length === 0) return []
-    const knownByRes = new Map<number, Set<string>>()
-    for (const c of candidates) knownByRes.set(c.shard_res, new Set(c.shard_cells))
+    // Set of shard_res values that have a pyramid combo. We used to also
+    // store the *cells* present at each shard_res so we could filter the
+    // cover to known-good shards — but those arrays balloon the manifest
+    // to ~5MB. The worker silently skips unknown shards on its end, so
+    // we just keep the resolution set here and trust the worker.
+    const knownRes = new Set(candidates.map(c => c.shard_res))
     const minRes = candidates[0].shard_res
     const maxRes = candidates[candidates.length - 1].shard_res
 
@@ -190,14 +194,12 @@ function pickCover(
     } catch {
         return []
     }
-    const knownMin = knownByRes.get(minRes)!
-    const cover: CoverCell[] = initial.filter(h => knownMin.has(h)).map(h => ({ shard_res: minRes, h3: h }))
+    const cover: CoverCell[] = initial.map(h => ({ shard_res: minRes, h3: h }))
 
     // Greedy refinement. Splice the worst-overhang cell with its
     // viewport-overlapping children. Each iteration is +(children-1)
     // cells; cap at `maxShards`. Cells whose children are all
-    // off-viewport or missing from the manifest go in `noRefine` so
-    // we don't retry them.
+    // off-viewport go in `noRefine` so we don't retry them.
     const noRefine = new Set<string>()
     while (cover.length + 6 <= maxShards) {
         let worstIdx = -1
@@ -211,10 +213,8 @@ function pickCover(
         if (worstIdx < 0) break
         const cell = cover[worstIdx]
         const childRes = cell.shard_res + 1
-        const knownChildren = knownByRes.get(childRes)
-        if (!knownChildren) { noRefine.add(cell.h3); continue }
+        if (!knownRes.has(childRes)) { noRefine.add(cell.h3); continue }
         const children = (cellToChildren(cell.h3, childRes) as unknown as string[])
-            .filter(h => knownChildren.has(h))
             .filter(h => cellOverhang(h, viewport) < 1)  // drop fully-outside
         if (children.length === 0) { noRefine.add(cell.h3); continue }
         cover.splice(worstIdx, 1, ...children.map(h => ({ shard_res: childRes, h3: h })))
