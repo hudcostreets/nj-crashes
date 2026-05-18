@@ -1,5 +1,17 @@
 # Backfill missing lat/lon for fatal crashes via NJSP `LOCATION` parsing
 
+## Landed
+
+Commit: `Backfill fatal lat/lon via NJSP LOCATION parsing (#78)`.
+
+- New CLI: `njdot backfill_geocodes` writes `crashes_geocode_backfill.parquet`.
+- `load_crashes_with_aashto` merges the sidecar inline (filling NaN
+  `(sri, mp, ilat, ilon)` per `(year, cc, mc, case)`).
+- Coverage: 616 / 2,165 (28%) of map-missing fatals recovered.
+- v2 hex pyramid rebuilt + S3 sync.
+- Cells-api R2 pyramid: rebuild via `dvx run data/cells/{raw,pyramid}.dvc` + `njdot compute cells push`.
+- Test case `18-002062` (Newark Ave & 7th, Jersey City, 2018-01-27) lands at MP 0.75 → (40.726989, -74.053497).
+
 ## What already exists
 
 `Crashes.mp_lls()` (`njdot/crashes.py:459`) interpolates `(ilat, ilon)`
