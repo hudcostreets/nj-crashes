@@ -1,0 +1,242 @@
+[
+  {
+    "url": "blob:<session>",
+    "status": 200,
+    "body_size": 265771
+  },
+  {
+    "url": "http://localhost:4006/",
+    "status": 200,
+    "body_size": 2464
+  },
+  {
+    "url": "http://localhost:4006/annotations.json",
+    "status": 200,
+    "body_size": 1742
+  },
+  {
+    "url": "http://localhost:4006/census/population.parquet",
+    "status": 200,
+    "body_size": 74949
+  },
+  {
+    "url": "http://localhost:4006/census/population.parquet",
+    "status": 200,
+    "body_size": 74949
+  },
+  {
+    "url": "http://localhost:4006/data/njdot/yms.parquet",
+    "status": 200,
+    "body_size": 92567
+  },
+  {
+    "url": "http://localhost:4006/data/njdot/yms.parquet",
+    "status": 200,
+    "body_size": 92567
+  },
+  {
+    "url": "http://localhost:4006/logos/hccs.png",
+    "status": 200,
+    "body_size": 125621
+  },
+  {
+    "url": "http://localhost:4006/njdot/cc2mc2mn.json",
+    "status": 200,
+    "body_size": 15584
+  },
+  {
+    "url": "http://localhost:4006/njdot/cc2mc2mn.json",
+    "status": 200,
+    "body_size": 15584
+  },
+  {
+    "url": "http://localhost:4006/njdot/map/counties.geojson",
+    "status": 200,
+    "body_size": 399483
+  },
+  {
+    "url": "http://localhost:4006/njdot/map/counties.geojson",
+    "status": 200,
+    "body_size": 399483
+  },
+  {
+    "url": "http://localhost:4006/njdot/map/v2/hex-sld.parquet",
+    "status": 200,
+    "body_size": 0
+  },
+  {
+    "url": "http://localhost:4006/njdot/map/v2/hex-sld.parquet",
+    "status": 206,
+    "body_size": 0
+  },
+  {
+    "url": "http://localhost:4006/njdot/map/v2/hex-sld.parquet",
+    "status": 206,
+    "body_size": 524288
+  },
+  {
+    "url": "http://localhost:4006/njdot/map/v2/manifest.v2.json",
+    "status": 200,
+    "body_size": 121508
+  },
+  {
+    "url": "http://localhost:4006/njsp/crash-homicide.csv",
+    "status": 200,
+    "body_size": 12320
+  },
+  {
+    "url": "http://localhost:4006/njsp/crash-homicide.csv",
+    "status": 200,
+    "body_size": 12320
+  },
+  {
+    "url": "http://localhost:4006/njsp/monthly.csv",
+    "status": 200,
+    "body_size": 836708
+  },
+  {
+    "url": "http://localhost:4006/njsp/monthly.csv",
+    "status": 200,
+    "body_size": 836708
+  },
+  {
+    "url": "http://localhost:4006/njsp/monthly.csv",
+    "status": 200,
+    "body_size": 836708
+  },
+  {
+    "url": "http://localhost:4006/njsp/monthly.csv",
+    "status": 200,
+    "body_size": 836708
+  },
+  {
+    "url": "http://localhost:4006/njsp/projected.csv",
+    "status": 200,
+    "body_size": 477
+  },
+  {
+    "url": "http://localhost:4006/njsp/projected.csv",
+    "status": 200,
+    "body_size": 477
+  },
+  {
+    "url": "http://localhost:4006/njsp/rundate.json",
+    "status": 200,
+    "body_size": 99
+  },
+  {
+    "url": "http://localhost:4006/njsp/rundate.json",
+    "status": 200,
+    "body_size": 99
+  },
+  {
+    "url": "http://localhost:4006/njsp/year-type-county.csv",
+    "status": 200,
+    "body_size": 13708
+  },
+  {
+    "url": "http://localhost:4006/njsp/year-type-county.csv",
+    "status": 200,
+    "body_size": 13708
+  },
+  {
+    "url": "http://localhost:4006/njsp/ytd.csv",
+    "status": 200,
+    "body_size": 1126909
+  },
+  {
+    "url": "http://localhost:4006/njsp/ytd.csv",
+    "status": 200,
+    "body_size": 1126909
+  },
+  {
+    "url": "http://localhost:4006/styles/globals.css",
+    "status": 200,
+    "body_size": 2693
+  },
+  {
+    "url": "http://localhost:51895/v1/cells?res=7&years=2016-2025&severities=fi&shard_res=2&polygon=-75.6000%2C41.4000%2C-73.9000%2C41.4000%2C-73.9000%2C38.9000%2C-75.6000%2C38.9000%2C-75.6000%2C41.4000&cells=822a17fffffffff,822a1ffffffffff,822aaffffffffff",
+    "status": 200,
+    "body_size": 424394
+  },
+  {
+    "url": "http://localhost:51895/v1/manifest",
+    "status": 200,
+    "body_size": 5132875
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/dist/duckdb-browser-eh.worker.js",
+    "status": 200,
+    "body_size": 265771
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/dist/duckdb-eh.wasm",
+    "status": 200,
+    "body_size": 0
+  },
+  {
+    "url": "https://crashes-api.ryan-0dc.workers.dev/njdot/crashes/count?before=2026-01-01",
+    "status": 200,
+    "body_size": 19
+  },
+  {
+    "url": "https://crashes-api.ryan-0dc.workers.dev/njdot/crashes/count?before=2026-01-01",
+    "status": 200,
+    "body_size": 19
+  },
+  {
+    "url": "https://crashes-api.ryan-0dc.workers.dev/njdot/crashes?before=2026-01-01&limit=10",
+    "status": 200,
+    "body_size": 10426
+  },
+  {
+    "url": "https://crashes-api.ryan-0dc.workers.dev/njdot/crashes?before=2026-01-01&limit=10",
+    "status": 200,
+    "body_size": 10426
+  },
+  {
+    "url": "https://crashes-api.ryan-0dc.workers.dev/njdot/occupants?crash_ids=6333169%2C6421718%2C6426309%2C6428526%2C6471392%2C6564076%2C6421715%2C6481253%2C6465364%2C6422255",
+    "status": 200,
+    "body_size": 1460
+  },
+  {
+    "url": "https://crashes-api.ryan-0dc.workers.dev/njdot/pedestrians?crash_ids=6333169%2C6421718%2C6426309%2C6428526%2C6471392%2C6564076%2C6421715%2C6481253%2C6465364%2C6422255",
+    "status": 200,
+    "body_size": 184
+  },
+  {
+    "url": "https://crashes-api.ryan-0dc.workers.dev/njdot/vehicles?crash_ids=6333169%2C6421718%2C6426309%2C6428526%2C6471392%2C6564076%2C6421715%2C6481253%2C6465364%2C6422255",
+    "status": 200,
+    "body_size": 1378
+  },
+  {
+    "url": "https://crashes-api.ryan-0dc.workers.dev/njdot/year-stats",
+    "status": 200,
+    "body_size": 7184
+  },
+  {
+    "url": "https://crashes-api.ryan-0dc.workers.dev/njdot/year-stats",
+    "status": 200,
+    "body_size": 7184
+  },
+  {
+    "url": "https://crashes-api.ryan-0dc.workers.dev/njsp/crashes/count",
+    "status": 200,
+    "body_size": 17
+  },
+  {
+    "url": "https://crashes-api.ryan-0dc.workers.dev/njsp/crashes/count",
+    "status": 200,
+    "body_size": 17
+  },
+  {
+    "url": "https://crashes-api.ryan-0dc.workers.dev/njsp/crashes?limit=20&offset=0",
+    "status": 200,
+    "body_size": 3737
+  },
+  {
+    "url": "https://crashes-api.ryan-0dc.workers.dev/njsp/crashes?limit=20&offset=0",
+    "status": 200,
+    "body_size": 3737
+  }
+]
