@@ -1,13 +1,14 @@
 outs:
-- md5: f8f367453b787cf17ca8527c0bb3fdc7.dir
-  size: 3907902129
+- md5: dc775e110cf02afc959894c6bc29b919.dir
+  size: 3630691436
   hash: md5
+  nfiles: 311934
   path: pyramid
 meta:
   computation:
     cmd: cd ../.. && njdot compute cells pyramid-combos -c 's2:r6,s3:r6,s2:r7,s3:r7,s4:r7,s3:r8,s4:r8,s5:r8,s4:r9,s5:r9,s6:r9,s5:r10,s6:r10,s7:r10,s6:r11,s7:r11,s8:r11,s7:r12,s8:r12,s9:r12,s8:r13,s9:r13,s9:r14'
       -f
-    git_deps:
-      /njdot/cli/cells.py: 6cc460448fdae157739fb4f4b66ffb3e297df4f9
     deps:
-      /data/cells/raw/h3_r14: a303fef40795d23f7d69f84474edfc95
+      raw/h3_r14: ddf55085584185128cbf662b2a215d25
+    git_deps:
+      /njdot/cli/cells.py: fb348706eb6a9ab24e59c514d10d11ca396e7263
