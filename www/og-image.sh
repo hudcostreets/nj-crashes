@@ -14,6 +14,12 @@ cd "$(dirname "$0")"
 # already installed).
 npx playwright install chromium >&2
 
+# Point the embedded dev server at the prod CF worker so its `/njsp/*`
+# fetches resolve. Without this, vite's dev proxy targets
+# `localhost:51894` (wrangler dev) which isn't running in CI; the page
+# errors and `og-screenshot.spec.ts` refuses to publish.
+export VITE_API_URL="${VITE_API_URL:-https://crashes-api.ryan-0dc.workers.dev}"
+
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 JPG="$TMPDIR/og.jpg"
