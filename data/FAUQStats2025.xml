@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun May 17 10:00:05 EDT 2026</RUNDATE>
+  <RUNDATE>Tue May 19 10:00:03 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -697,12 +697,13 @@
     <MUNICIPALITY MCODE="0217" MNAME="Fair Lawn Boro">
       <ACCIDENT ACCID="14284" DATE="11/26/2025" TIME="2225">
         <HIGHWAY>208</HIGHWAY>
-        <LOCATION>State Highway 208</LOCATION>
+        <LOCATION>State Highway 208 MP .2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2277,12 +2278,13 @@
     <MUNICIPALITY MCODE="0336" MNAME="Tabernacle Twsp">
       <ACCIDENT ACCID="14124" DATE="09/13/2025" TIME="2026">
         <HIGHWAY>532</HIGHWAY>
-        <LOCATION>County 532 MP 7</LOCATION>
+        <LOCATION>County 532 MP 7.19</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2802,12 +2804,13 @@
     <MUNICIPALITY MCODE="1205" MNAME="Edison Twsp">
       <ACCIDENT ACCID="14090" DATE="08/21/2025" TIME="0147">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 30.57</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2854,13 +2857,14 @@
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0805" MNAME="Franklin Twsp">
       <ACCIDENT ACCID="14084" DATE="08/16/2025" TIME="1949">
-        <HIGHWAY>659</HIGHWAY>
-        <LOCATION>County 659</LOCATION>
+        <STREET>Marshall Mill Road</STREET>
+        <LOCATION>Marshall Mill Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3622,12 +3626,13 @@
     <MUNICIPALITY MCODE="0809" MNAME="Logan Twsp">
       <ACCIDENT ACCID="14026" DATE="07/16/2025" TIME="1430">
         <HIGHWAY>44</HIGHWAY>
-        <LOCATION>State Highway 44</LOCATION>
+        <LOCATION>State Highway 44 MP .9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
