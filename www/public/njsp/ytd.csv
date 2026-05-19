@@ -7274,7 +7274,7 @@ county,cc,mc,year,day_of_year,date_label,fatalities,cumulative
 ,,,2026,130,May 10,1,178
 ,,,2026,133,May 13,1,179
 ,,,2026,136,May 16,1,180
-,,,2026,137,May 17,1,181
+,,,2026,137,May 17,5,185
 Atlantic,1,,2001,20,Jan 20,1,1
 Atlantic,1,,2001,25,Jan 25,1,2
 Atlantic,1,,2001,36,Feb 05,1,3
@@ -8204,6 +8204,7 @@ Atlantic,1,,2026,40,Feb 09,1,6
 Atlantic,1,,2026,59,Feb 28,1,7
 Atlantic,1,,2026,114,Apr 24,1,8
 Atlantic,1,,2026,117,Apr 27,1,9
+Atlantic,1,,2026,137,May 17,1,10
 Bergen,2,,2001,15,Jan 15,1,1
 Bergen,2,,2001,36,Feb 05,1,2
 Bergen,2,,2001,49,Feb 18,1,3
@@ -16259,6 +16260,7 @@ Middlesex,12,,2026,90,Mar 31,1,14
 Middlesex,12,,2026,105,Apr 15,1,15
 Middlesex,12,,2026,109,Apr 19,2,17
 Middlesex,12,,2026,117,Apr 27,1,18
+Middlesex,12,,2026,137,May 17,2,20
 Monmouth,13,,2001,13,Jan 13,1,1
 Monmouth,13,,2001,17,Jan 17,1,2
 Monmouth,13,,2001,20,Jan 20,1,3
@@ -17234,6 +17236,7 @@ Monmouth,13,,2026,87,Mar 28,1,8
 Monmouth,13,,2026,97,Apr 07,1,9
 Monmouth,13,,2026,119,Apr 29,1,10
 Monmouth,13,,2026,121,May 01,1,11
+Monmouth,13,,2026,137,May 17,1,12
 Morris,14,,2001,6,Jan 06,1,1
 Morris,14,,2001,8,Jan 08,1,2
 Morris,14,,2001,14,Jan 14,2,4
@@ -21736,6 +21739,7 @@ Atlantic,1,7,2019,191,Jul 10,2,2
 Atlantic,1,7,2023,244,Sep 01,1,1
 Atlantic,1,7,2024,319,Nov 15,1,1
 Atlantic,1,7,2025,38,Feb 07,1,1
+Atlantic,1,7,2026,137,May 17,1,1
 Atlantic,1,8,2001,20,Jan 20,1,1
 Atlantic,1,8,2001,36,Feb 05,1,2
 Atlantic,1,8,2001,133,May 13,1,3
@@ -30030,6 +30034,7 @@ Middlesex,12,9,2016,107,Apr 17,1,1
 Middlesex,12,9,2016,145,May 25,1,2
 Middlesex,12,9,2019,141,May 21,1,1
 Middlesex,12,9,2020,62,Mar 03,1,1
+Middlesex,12,9,2026,137,May 17,2,2
 Middlesex,12,10,2002,32,Feb 01,1,1
 Middlesex,12,10,2004,91,Apr 01,1,1
 Middlesex,12,10,2005,328,Nov 24,1,1
@@ -31815,6 +31820,7 @@ Monmouth,13,49,2024,202,Jul 21,1,4
 Monmouth,13,49,2024,300,Oct 27,1,5
 Monmouth,13,49,2024,313,Nov 09,1,6
 Monmouth,13,49,2025,187,Jul 06,1,1
+Monmouth,13,49,2026,137,May 17,1,1
 Monmouth,13,50,2001,314,Nov 10,1,1
 Monmouth,13,50,2022,27,Jan 27,1,1
 Monmouth,13,51,2001,348,Dec 14,1,1
