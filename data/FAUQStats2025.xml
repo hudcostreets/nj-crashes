@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue May 19 10:00:03 EDT 2026</RUNDATE>
+  <RUNDATE>Wed May 20 10:00:07 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1822,6 +1822,20 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0706" MNAME="East Orange City">
+      <ACCIDENT ACCID="14183" DATE="10/04/2025" TIME="2207">
+        <HIGHWAY>509</HIGHWAY>
+        <LOCATION>County 509 MP 12.25</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+        <INJURIES>4</INJURIES>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1112" MNAME="Robbinsville Twsp">
       <ACCIDENT ACCID="14179" DATE="10/04/2025" TIME="1215">
@@ -1849,18 +1863,6 @@
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
-    <MUNICIPALITY MCODE="0706" MNAME="East Orange City">
-      <ACCIDENT ACCID="14183" DATE="10/04/2025" TIME="0322">
-        <STREET>S. Grove St</STREET>
-        <LOCATION>S. Grove St</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>0</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>4</INJURIES>
-      </ACCIDENT>
-    </MUNICIPALITY>
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="14181" DATE="10/04/2025" TIME="0304">
         <STREET>Washington Ave</STREET>
@@ -2857,8 +2859,8 @@
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0805" MNAME="Franklin Twsp">
       <ACCIDENT ACCID="14084" DATE="08/16/2025" TIME="1949">
-        <STREET>Marshall Mill Road</STREET>
-        <LOCATION>Marshall Mill Road</LOCATION>
+        <STREET>Marshall Mill Rd</STREET>
+        <LOCATION>Marshall Mill Rd</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3624,7 +3626,7 @@
   </COUNTY>
   <COUNTY CCODE="08" CNAME="Gloucester">
     <MUNICIPALITY MCODE="0809" MNAME="Logan Twsp">
-      <ACCIDENT ACCID="14026" DATE="07/16/2025" TIME="1430">
+      <ACCIDENT ACCID="14026" DATE="07/16/2025" TIME="1432">
         <HIGHWAY>44</HIGHWAY>
         <LOCATION>State Highway 44 MP .9</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -3883,12 +3885,13 @@
     <MUNICIPALITY MCODE="0119" MNAME="Pleasantville City">
       <ACCIDENT ACCID="13998" DATE="07/05/2025" TIME="0427">
         <HIGHWAY>446</HIGHWAY>
-        <LOCATION>Atlantic City Expressway</LOCATION>
+        <LOCATION>Atlantic City Expressway MP 4.1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4748,12 +4751,13 @@
     <MUNICIPALITY MCODE="1022" MNAME="Readington Twsp">
       <ACCIDENT ACCID="13931" DATE="05/26/2025" TIME="2023">
         <HIGHWAY>22</HIGHWAY>
-        <LOCATION>State Highway 22</LOCATION>
+        <LOCATION>State Highway 22 MP 24.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -5142,13 +5146,14 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0408" MNAME="Camden City">
       <ACCIDENT ACCID="13895" DATE="05/07/2025" TIME="2052">
-        <STREET>10th St</STREET>
-        <LOCATION>10th St</LOCATION>
+        <STREET>North 10th St</STREET>
+        <LOCATION>North 10th St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>4</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7442,5 +7447,5 @@
   </COUNTY>
   <TOTACCIDENTS>547</TOTACCIDENTS>
   <TOTFATALITIES>582</TOTFATALITIES>
-  <TOTINJURIES>280</TOTINJURIES>
+  <TOTINJURIES>285</TOTINJURIES>
 </FAUQSTATS>
