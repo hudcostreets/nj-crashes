@@ -282,8 +282,23 @@ async function queryPyramid(
             c.n_vehs += row.n_vehs ?? 0
         }
     }
-    for (const c of out.values()) c.fatal_years?.sort((a, b) => a - b)
-    return [...out.values()]
+    // Drop cells where none of the requested severities had a hit. The
+    // pyramid row-loop pre-allocates a cell entry on the *first* row
+    // visit and then only accumulates `n_vehs` (which is severity-blind),
+    // so urban shards end up shipping ~70% all-zero-count cells. The
+    // client already filters `total === 0` client-side; shipping them
+    // is pure waste.
+    const cells: CellOut[] = []
+    for (const c of out.values()) {
+        const keep =
+            (wantF && c.n_fatal > 0) ||
+            (wantI && (c.n_inj_ped > 0 || c.n_inj_other > 0)) ||
+            (wantP && c.n_pdo > 0)
+        if (!keep) continue
+        c.fatal_years?.sort((a, b) => a - b)
+        cells.push(c)
+    }
+    return cells
 }
 
 async function queryRaw(
@@ -354,12 +369,20 @@ async function queryRaw(
             c.n_vehs += row.tv ?? 0
         }
     }
-    // Raw rows are per-crash, so the same year may appear N≥1 times in a cell.
-    // Dedupe + sort once at the end.
+    // Drop cells with no requested-severity hits (see queryPyramid for
+    // rationale). Plus dedupe + sort fatal_years on the keepers (raw
+    // rows are per-crash; same year may appear N≥1 times in a cell).
+    const cells: CellOut[] = []
     for (const c of out.values()) {
+        const keep =
+            (wantF && c.n_fatal > 0) ||
+            (wantI && (c.n_inj_ped > 0 || c.n_inj_other > 0)) ||
+            (wantP && c.n_pdo > 0)
+        if (!keep) continue
         if (c.fatal_years) c.fatal_years = [...new Set(c.fatal_years)].sort((a, b) => a - b)
+        cells.push(c)
     }
-    return [...out.values()]
+    return cells
 }
 
 export class HttpError extends Error {

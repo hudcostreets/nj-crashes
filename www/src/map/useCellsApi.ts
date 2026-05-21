@@ -166,16 +166,27 @@ function pickCover(
     dataRes: number,
     viewport: Bbox,
     maxShards: number,
+    rootShardCells: Set<string>,
 ): CoverCell[] {
     const candidates = combos
         .filter(c => c.data_res === dataRes)
         .sort((a, b) => a.shard_res - b.shard_res)  // coarsest first
     if (candidates.length === 0) return []
-    // Set of shard_res values that have a pyramid combo. We used to also
-    // store the *cells* present at each shard_res so we could filter the
-    // cover to known-good shards — but those arrays balloon the manifest
-    // to ~5MB. The worker silently skips unknown shards on its end, so
-    // we just keep the resolution set here and trust the worker.
+    // Set of shard_res values that have a pyramid combo. The full
+    // per-combo `shard_cells` lists balloon the manifest to ~5MB, so
+    // they're stripped server-side; we just keep the resolution set.
+    // For "is this candidate cell inside NJ?" filtering we use the
+    // top-level `manifest.shard_cells` (small — 31 r4 cells covering
+    // NJ): a child cell at any res can be checked by walking its r4
+    // parent. Without this, off-NJ cells (ocean / NY / PA edges of the
+    // viewport ring) get added to covers and eat up the maxShards
+    // budget for nothing.
+    const SHARD_ROOT_RES = 4
+    const inNj = (h3: string): boolean => {
+        const res = getResolution(h3)
+        const root = res <= SHARD_ROOT_RES ? h3 : cellToParent(h3, SHARD_ROOT_RES)
+        return rootShardCells.has(root)
+    }
     const knownRes = new Set(candidates.map(c => c.shard_res))
     const minRes = candidates[0].shard_res
     const maxRes = candidates[candidates.length - 1].shard_res
@@ -194,7 +205,7 @@ function pickCover(
     } catch {
         return []
     }
-    const cover: CoverCell[] = initial.map(h => ({ shard_res: minRes, h3: h }))
+    const cover: CoverCell[] = initial.filter(inNj).map(h => ({ shard_res: minRes, h3: h }))
 
     // Greedy refinement. Splice the worst-overhang cell with its
     // viewport-overlapping children. Each iteration is +(children-1)
@@ -216,6 +227,7 @@ function pickCover(
         if (!knownRes.has(childRes)) { noRefine.add(cell.h3); continue }
         const children = (cellToChildren(cell.h3, childRes) as unknown as string[])
             .filter(h => cellOverhang(h, viewport) < 1)  // drop fully-outside
+            .filter(inNj)
         if (children.length === 0) { noRefine.add(cell.h3); continue }
         cover.splice(worstIdx, 1, ...children.map(h => ({ shard_res: childRes, h3: h })))
     }
@@ -590,7 +602,8 @@ export function useCellsApi(filter: CellsApiFilter | null):
                 coverBbox = [w, s, e, n]
             }
         }
-        const cover = pickCover(combos, res, coverBbox, COVER_MAX_SHARDS)
+        const rootShardCells = new Set(manifest.shard_cells ?? [])
+        const cover = pickCover(combos, res, coverBbox, COVER_MAX_SHARDS, rootShardCells)
         if (cover.length === 0) {
             return { res, cover: [], reason: `r${res} · no combo for r${res}` }
         }
@@ -602,13 +615,24 @@ export function useCellsApi(filter: CellsApiFilter | null):
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filter?.zoom, filter?.viewportLat, filter?.hexPxTarget, filter?.resOverride, manifest, bboxKey, usingPoly, filter?.clipPolygon])
 
-    // `polygonStr` for the worker `polygon=` arg is scope-stable
-    // (statewide vs. county/muni outline) — invariant across pans within
-    // a scope, so per-shard cache hits ~always once warmed.
+    // `polygonStr` for the worker `polygon=` arg. Tied to the snap-grid
+    // bbox so per-URL cache hits across users/sessions at the same
+    // viewport remain stable, while shrinking the response from
+    // "everything in the requested r9 shard" to "just the cells inside
+    // the visible bbox". For scoped views the polygon is
+    // `clipPolygon ∩ snappedBbox` so urban hexes outside the county
+    // outline still get filtered out worker-side.
     const polygonStr = useMemo<string | null>(() => {
-        if (!filter) return null
-        return encodePolygon(usingPoly ? filter.clipPolygon! : NJ_CLIP_POLYGON)
-    }, [usingPoly, filter?.clipPolygon])
+        if (!filter || !snappedBbox) return null
+        if (usingPoly) {
+            const clipped = clipPolygonToBbox(filter.clipPolygon!, snappedBbox)
+            if (clipped.length >= 3) return encodePolygon(clipped)
+            return encodePolygon(filter.clipPolygon!)
+        }
+        // Statewide: ship the snapped bbox itself as a 4-vertex polygon.
+        const [w, s, e, n] = snappedBbox
+        return encodePolygon([[w, n], [e, n], [e, s], [w, s], [w, n]])
+    }, [usingPoly, filter?.clipPolygon, bboxKey])
 
     const shardsKey = useMemo(() => {
         if (!filter || !pick || pick.cover.length === 0) {

@@ -104,6 +104,11 @@ export default {
                 // little (empty responses). `?full=1` opts back in for
                 // debug / regen scripts that need the full list.
                 const full = url.searchParams.get("full") === "1"
+                // The top-level `shard_cells` is tiny (31 r4 cells covering
+                // NJ, ~600 bytes) and is used by the client to filter
+                // off-NJ candidates out of `polygonToCells` ring output.
+                // Keep it. Strip only the per-combo `shard_cells` arrays
+                // (the 5MB+ blowup).
                 const out = full ? m : {
                     ...m,
                     pyramid_combos: (m.pyramid_combos ?? []).map(c => ({
@@ -112,7 +117,6 @@ export default {
                         row_count: c.row_count,
                         byte_size: c.byte_size,
                     })),
-                    shard_cells: undefined,
                 }
                 return new Response(JSON.stringify(out, jsonReplacer), { headers: corsHeaders(env) })
             }
