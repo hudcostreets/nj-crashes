@@ -156,6 +156,8 @@ normalization pipeline; no UI deps.
   + plot/table hotkeys still open)
 - `njdot-bubble-plot.md`
 - `njdot-victim-vehicle-plots.md`
+- `page-weight-and-api-perf.md` (hex-sld lazy-load, v2-manifest slim,
+  `api.ts` → TanStack Query, D1 date index)
 - `njsp-historical-pdf-parsing.md`
 - `njsp-muni-level-data.md`
 - `njsp-pdf-data-quality.md` (findings doc, not actionable)
@@ -175,6 +177,15 @@ normalization pipeline; no UI deps.
 ## Done recently
 
 See `specs/done/` for completed work. Highlights:
+- Frontend perf + muni projections (2026-05-21): cells-api map
+  outage fixed (worker/client deploy-skew, then a statewide
+  empty-cover bug); njsp data files CSV → Parquet (~2.4MB → 283KB);
+  route-level bundle splitting; municipality-level fatality
+  projections (`projected.csv` gains `cc,mc` rows via
+  `to_ytmc` + the NJSP→NJGIN muni-code map; `FatalitiesPerYearPlot`
+  projects at all 3 geo levels); footer logo 126KB → 24KB; map
+  refetch spinner un-occluded; perf-har HAR golden tests. Deferred
+  page-weight follow-ups → `page-weight-and-api-perf.md`.
 - Map v2 Phase 1 (`a965131`, `cb688cf1`, `06a5b26`) — H3 r5
   parent-cell sharding pipeline + manifest carry-overs +
   year column / hex year-sort
