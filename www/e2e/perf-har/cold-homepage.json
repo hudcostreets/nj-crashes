@@ -7,7 +7,7 @@
   {
     "url": "http://localhost:4006/",
     "status": 200,
-    "body_size": 2448
+    "body_size": 2464
   },
   {
     "url": "http://localhost:4006/annotations.json",
@@ -37,7 +37,7 @@
   {
     "url": "http://localhost:4006/logos/hccs.png",
     "status": 200,
-    "body_size": 125621
+    "body_size": 23902
   },
   {
     "url": "http://localhost:4006/njdot/cc2mc2mn.json",
