@@ -23,7 +23,7 @@ import css from "./plot.module.scss"
 // denominator (annual pop changes slowly).
 const POP_LAST_YEAR = 2023
 
-const estimationHref = `https://nbviewer.org/github/${repoWithOwner}/blob/main/njsp/update-projections.ipynb`
+const estimationHref = `https://github.com/${repoWithOwner}/blob/main/njsp/cli/update_projections.py`
 
 export type Type = "Cyclists" | "Drivers" | "Pedestrians" | "Passengers"
 const Types: Type[] = ["Cyclists", "Drivers", "Pedestrians", "Passengers"]

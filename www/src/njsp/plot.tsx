@@ -152,7 +152,7 @@ export const DefaultTitle = "Car Crash Deaths"
 export const AllTypes: Type[] = ["Drivers", "Pedestrians", "Cyclists", "Passengers", "Projected"]
 export type Type = "Drivers" | "Pedestrians" | "Cyclists" | "Passengers" | "Projected"
 
-export const estimationHref = `https://nbviewer.org/github/${repoWithOwner}/blob/main/njsp/update-projections.ipynb`
+export const estimationHref = `https://github.com/${repoWithOwner}/blob/main/njsp/cli/update_projections.py`
 
 export type MoreInfoLink = {
     includeMoreInfoLink?: boolean

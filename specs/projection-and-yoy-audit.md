@@ -5,8 +5,8 @@
 Two related concerns:
 
 1. **YoY data fetch is hacky.** We currently fetch ~1yr of previous
-   commits to compute year-over-year info (where? — `update-projections`
-   notebook + maybe `crash-log` walking). This grew organically, never
+   commits to compute year-over-year info (where? — `update_projections`
+   + maybe `crash-log` walking). This grew organically, never
    audited end-to-end.
 
 2. **Projection model is anchored to Jan 1.** "Year-to-date deaths +
@@ -19,16 +19,16 @@ Two related concerns:
 
 ### Phase 1: Audit
 - Map every place we walk git history for crash-log / YoY data.
-  Likely candidates: `update-projections.ipynb`, `crash_log.py`,
+  Likely candidates: `njsp/cli/update_projections.py`, `crash_log.py`,
   `bsky/backfill.py`, anything reading "previous year" data.
 - Document why each one needs historical state vs. just the current
   snapshot. Identify which can be replaced with a static query
   against `crashes.parquet`.
 
 ### Phase 2: Replace Jan-1-anchored projection with 365d-lookback
-- `update-projections` notebook should compute "projected total
-  for next 365 days" from the trailing 365d, instead of "projected
-  total for current calendar year".
+- `update_projections` should compute "projected total for next
+  365 days" from the trailing 365d, instead of "projected total for
+  current calendar year".
 - Or split: keep the calendar-year projection (still useful Aug-Dec)
   but add a new trailing-365d metric that's always meaningful.
 
