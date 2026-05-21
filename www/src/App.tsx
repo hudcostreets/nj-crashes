@@ -1,25 +1,31 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { HotkeysProvider, Omnibar, ShortcutsModal, LookupModal, SpeedDial } from 'use-kbd'
 import 'use-kbd/styles.css'
 import Home from './routes/Home'
-import NotFound from './routes/NotFound'
-import SqlPage from './routes/SqlPage'
-import DuckDbPage from './routes/DuckDbPage'
-import HudsonMap from './routes/HudsonMap'
-import HudsonDiffs from './routes/HudsonDiffs'
-import OgImage from './routes/OgImage'
-import MatchReview from './routes/MatchReview'
-import CrashMapPage from './routes/CrashMapPage'
-import CrashDetailPage from './routes/CrashDetailPage'
-import RawFileBrowser from './raw/RawFileBrowser'
-import FilesPage from './routes/FilesPage'
-import HarmonizationPage from './routes/HarmonizationPage'
 import { ThemeToggle } from './components/ThemeToggle'
 import { GeoFilterProvider } from './GeoFilterContext'
 import { DuckDbProvider } from './lib/DuckDbContext'
 import { useGeoActions } from './components/GeoOmnibar'
 import { useSectionsActions } from './components/SectionsOmnibar'
 import { useScrollAnchor } from './lib/useScrollAnchor'
+
+// Home is eager (the landing page). Everything else lazy — `/sql`,
+// `/duckdb`, `/match-review`, `/map`, `/raw`, `/files`, `/harmonization`
+// each pull in heavy deps (duckdb-wasm, maplibre/deck for the map page,
+// plotly variants) that we don't need on the initial homepage paint.
+const NotFound = lazy(() => import('./routes/NotFound'))
+const SqlPage = lazy(() => import('./routes/SqlPage'))
+const DuckDbPage = lazy(() => import('./routes/DuckDbPage'))
+const HudsonMap = lazy(() => import('./routes/HudsonMap'))
+const HudsonDiffs = lazy(() => import('./routes/HudsonDiffs'))
+const OgImage = lazy(() => import('./routes/OgImage'))
+const MatchReview = lazy(() => import('./routes/MatchReview'))
+const CrashMapPage = lazy(() => import('./routes/CrashMapPage'))
+const CrashDetailPage = lazy(() => import('./routes/CrashDetailPage'))
+const RawFileBrowser = lazy(() => import('./raw/RawFileBrowser'))
+const FilesPage = lazy(() => import('./routes/FilesPage'))
+const HarmonizationPage = lazy(() => import('./routes/HarmonizationPage'))
 
 function GeoHome() {
     return <GeoFilterProvider><GeoActionsRegistrar /><Home /></GeoFilterProvider>
@@ -44,6 +50,7 @@ export default function App() {
         <HotkeysProvider>
         <DuckDbProvider>
             <SectionsRegistrar />
+            <Suspense fallback={null}>
             <Routes>
                 <Route path="/" element={<GeoHome />} />
                 <Route path="/c" element={<GeoHome />} />
@@ -73,6 +80,7 @@ export default function App() {
                 <Route path="/files/*" element={<FilesPage />} />
                 <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
             <Omnibar />
             <ShortcutsModal />
             <LookupModal />
