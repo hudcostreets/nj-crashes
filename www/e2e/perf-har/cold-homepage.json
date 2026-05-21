@@ -80,19 +80,19 @@
     "body_size": 121508
   },
   {
-    "url": "http://localhost:4006/njsp/crash-homicide.csv",
+    "url": "http://localhost:4006/njsp/crash-homicide.parquet",
     "status": 200,
-    "body_size": 12320
+    "body_size": 7459
   },
   {
-    "url": "http://localhost:4006/njsp/monthly.csv",
+    "url": "http://localhost:4006/njsp/monthly.parquet",
     "status": 200,
-    "body_size": 836708
+    "body_size": 99627
   },
   {
     "url": "http://localhost:4006/njsp/projected.csv",
     "status": 200,
-    "body_size": 477
+    "body_size": 474
   },
   {
     "url": "http://localhost:4006/njsp/rundate.json",
@@ -105,14 +105,14 @@
     "body_size": 99
   },
   {
-    "url": "http://localhost:4006/njsp/year-type-county.csv",
+    "url": "http://localhost:4006/njsp/year-type-county.parquet",
     "status": 200,
-    "body_size": 13708
+    "body_size": 7343
   },
   {
-    "url": "http://localhost:4006/njsp/ytd.csv",
+    "url": "http://localhost:4006/njsp/ytd.parquet",
     "status": 200,
-    "body_size": 1126909
+    "body_size": 139523
   },
   {
     "url": "http://localhost:4006/styles/globals.css",
@@ -120,24 +120,9 @@
     "body_size": 2693
   },
   {
-    "url": "http://localhost:51895/v1/cells?res=7&years=2016-2025&severities=fi&shard_res=2&polygon=-75.6000%2C41.4000%2C-73.9000%2C41.4000%2C-73.9000%2C38.9000%2C-75.6000%2C38.9000%2C-75.6000%2C41.4000&cells=822a07fffffffff,822a0ffffffffff,822a17fffffffff,822a1ffffffffff,822a37fffffffff,822a87fffffffff,822a8ffffffffff,822aa7fffffffff,822aaffffffffff,822ab7fffffffff,822ae7fffffffff,822af7fffffffff,822b8ffffffffff",
-    "status": 200,
-    "body_size": 424394
-  },
-  {
-    "url": "http://localhost:51895/v1/cells?res=7&years=2016-2025&severities=fi&shard_res=3&polygon=-75.6000%2C41.4000%2C-73.9000%2C41.4000%2C-73.9000%2C38.9000%2C-75.6000%2C38.9000%2C-75.6000%2C41.4000&cells=832a22fffffffff,832a23fffffffff,832a26fffffffff,832a2afffffffff,832a99fffffffff,832a9dfffffffff,832b1bfffffffff,832b98fffffffff,832b99fffffffff,832b9afffffffff,832b9bfffffffff,832b9dfffffffff,8344dbfffffffff",
-    "status": 200,
-    "body_size": 114
-  },
-  {
-    "url": "http://localhost:51895/v1/cells?res=7&years=2016-2025&severities=fi&shard_res=4&polygon=-75.6000%2C41.4000%2C-73.9000%2C41.4000%2C-73.9000%2C38.9000%2C-75.6000%2C38.9000%2C-75.6000%2C41.4000&cells=8427691ffffffff,8427693ffffffff,8427697ffffffff,8427699ffffffff,842769bffffffff,842a205ffffffff,842a207ffffffff,842a2b1ffffffff,842a2b5ffffffff,842a2b7ffffffff,842a2bdffffffff,842a2e5ffffffff,842a2e7ffffffff,842a541ffffffff,842a545ffffffff,842a549ffffffff,842a54dffffffff,842a561ffffffff,842a565ffffffff,842a569ffffffff,842a56dffffffff,842a721ffffffff,842a723ffffffff,842a725ffffffff,842a727ffffffff,842a72dffffffff,842a959ffffffff,842a95bffffffff,842a98bffffffff,842a9c1ffffffff,842a9c3ffffffff,842a9c9ffffffff,842a9cbffffffff,842ad49ffffffff,842ad4dffffffff,842ad69ffffffff,842ad6dffffffff,842b183ffffffff,842b187ffffffff,842b1a3ffffffff,842b1a7ffffffff,842b1abffffffff,842ba93ffffffff,842ba97ffffffff,842ba9bffffffff,842bab3ffffffff,842bab7ffffffff,842babbffffffff,8444d95ffffffff,8444d97ffffffff,8444d9dffffffff,8444da3ffffffff",
-    "status": 200,
-    "body_size": 342
-  },
-  {
     "url": "http://localhost:51895/v1/manifest",
     "status": 200,
-    "body_size": 2365
+    "body_size": 2939
   },
   {
     "url": "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/dist/duckdb-browser-eh.worker.js",
@@ -207,11 +192,11 @@
   {
     "url": "https://crashes-api.ryan-0dc.workers.dev/njsp/crashes?limit=20&offset=0",
     "status": 200,
-    "body_size": 3737
+    "body_size": 3738
   },
   {
     "url": "https://crashes-api.ryan-0dc.workers.dev/njsp/crashes?limit=20&offset=0",
     "status": 200,
-    "body_size": 3737
+    "body_size": 3738
   }
 ]
