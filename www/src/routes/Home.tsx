@@ -78,6 +78,14 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
 }) {
     const resetAll = useResetAllSolo()
 
+    // Page heading drops the county for muni pages — the breadcrumb
+    // (`NJ / Hudson / Jersey City`) directly above already carries it.
+    const headingLabel = municipalityName
+        ? `${municipalityName} Crash Data`
+        : countyName
+            ? `${countyName} County Crash Data`
+            : "NJ Car Crash Data"
+
     // Document-level click listener so empty page margins (outside the
     // centered `.container`) also reset. Exclude interactive areas.
     useEffect(() => {
@@ -107,7 +115,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
 
             <main className={css.index}>
                 <GeoNavBar />
-                <h1 className={css.title}>{regionLabel ? `${regionLabel} Crash Data` : "NJ Car Crash Data"}</h1>
+                <h1 className={css.title}>{headingLabel}</h1>
                 {!regionLabel && (
                     <p>
                         Data analysis and visualization from three NJ sources:{" "}
