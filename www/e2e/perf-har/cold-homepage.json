@@ -7,7 +7,7 @@
   {
     "url": "http://localhost:4006/",
     "status": 200,
-    "body_size": 2464
+    "body_size": 2448
   },
   {
     "url": "http://localhost:4006/annotations.json",
@@ -118,6 +118,11 @@
     "url": "http://localhost:4006/styles/globals.css",
     "status": 200,
     "body_size": 2693
+  },
+  {
+    "url": "http://localhost:51895/v1/cells?res=7&years=2016-2025&severities=fi&shard_res=2&polygon=-82.0000%2C44.2500%2C-67.7500%2C44.2500%2C-67.7500%2C35.7500%2C-82.0000%2C35.7500%2C-82.0000%2C44.2500&cells=822a17fffffffff,822a1ffffffffff,822aaffffffffff",
+    "status": 200,
+    "body_size": 384412
   },
   {
     "url": "http://localhost:51895/v1/manifest",
