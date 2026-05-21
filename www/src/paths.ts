@@ -1,7 +1,7 @@
 // Public paths for client-side data access
 export const ProjectedCsv = "/njsp/projected.csv"
-export const YtcCsv = "/njsp/year-type-county.csv"
-export const YtdCsv = "/njsp/ytd.csv"
-export const MonthlyCsv = "/njsp/monthly.csv"
-export const MonthYearCsv = "/njsp/month-year.csv"
-export const CrashHomicideCsv = "/njsp/crash-homicide.csv"
+export const YtcParquet = "/njsp/year-type-county.parquet"
+export const YtdParquet = "/njsp/ytd.parquet"
+export const MonthlyParquet = "/njsp/monthly.parquet"
+export const MonthYearParquet = "/njsp/month-year.parquet"
+export const CrashHomicideParquet = "/njsp/crash-homicide.parquet"

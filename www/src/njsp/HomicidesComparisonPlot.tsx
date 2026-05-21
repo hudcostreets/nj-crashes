@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import type { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
-import { useRegisteredDb } from "@/src/tableData"
-import { CrashHomicideCsv } from "@/src/paths"
+import { useRegisteredParquetDb } from "@/src/tableData"
+import { CrashHomicideParquet } from "@/src/paths"
 import { useAlignedDualAxes, LegendRow, LegendItem } from "pltly/react"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo, DataSource } from "@/src/icons"
@@ -48,7 +48,7 @@ type CrashHomicideRow = {
 // Query to get crash-homicide data (filtered by county and source)
 const crashHomicideQueryFn = (county: string | null, source: CrashSource) => `
     SELECT year, traffic_deaths, homicides, ratio
-    FROM read_csv_auto('crash_homicide')
+    FROM read_parquet('crash_homicide')
     WHERE source = '${source}'
       AND ${county ? `county = '${county}'` : `county IS NULL OR county = ''`}
     ORDER BY year
@@ -69,7 +69,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
     const effectiveSource = county ? 'njsp' as CrashSource : crashSource
 
     // Load crash-homicide data
-    const crashHomicideDb = useRegisteredDb({ db, table: "crash_homicide", url: CrashHomicideCsv })
+    const crashHomicideDb = useRegisteredParquetDb({ db, table: "crash_homicide", url: CrashHomicideParquet })
     const crashHomicideQuery = useMemo(() => crashHomicideQueryFn(county ?? null, effectiveSource), [county, effectiveSource])
     const rows = useQuery<CrashHomicideRow>({ db: crashHomicideDb, query: crashHomicideQuery, init: [] })
 

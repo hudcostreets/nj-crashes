@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Generate CSV data files for frontend plots."""
+"""Generate Parquet data files for frontend plots."""
 import json
 from os.path import join
 
@@ -9,6 +9,10 @@ from utz import err
 
 from njsp.cli.base import command
 from njsp.paths import CRASHES_PQT, WWW_NJSP
+
+# `projected.csv` stays CSV — it's tiny (~500B), the FE consumes it via the
+# CSV register hook, and parquet's header overhead would dwarf the payload.
+# Everything else (monthly: 836KB, ytd: 1.1MB, etc.) flips to parquet.
 
 CC2CN = {
     1: 'Atlantic', 2: 'Bergen', 3: 'Burlington', 4: 'Camden', 5: 'Cape May',
@@ -43,7 +47,7 @@ def muni_label(cc, mc, cc2mc2mn):
 @command
 @click.option('-f', '--force', is_flag=True, help="Force regeneration even if files exist")
 def update_www_data(force):
-    """Generate CSV data files for frontend plots."""
+    """Generate Parquet data files for frontend plots."""
     err(f"Loading {CRASHES_PQT}...")
     crashes = pd.read_parquet(CRASHES_PQT)
 
@@ -69,10 +73,10 @@ def update_www_data(force):
     )
 
     # 1. YTD data: cumulative deaths by day of year for each year
-    ytd_path = join(WWW_NJSP, 'ytd.csv')
+    ytd_path = join(WWW_NJSP, 'ytd.parquet')
     err(f"Generating {ytd_path}...")
 
-    def compute_ytd(df, county='', cc='', mc=''):
+    def compute_ytd(df, county=None, cc=None, mc=None):
         ytd = (
             df
             .groupby(['year', 'day_of_year'])['fatalities']
@@ -90,20 +94,22 @@ def update_www_data(force):
     for cn in sorted(CC2CN.values()):
         ytd_parts.append(compute_ytd(crashes[crashes['county'] == cn], cn, cc=CN2CC[cn]))
     for cc_val, mc_val in muni_pairs:
-        cn = CC2CN.get(cc_val, '')
+        cn = CC2CN.get(cc_val, None)
         mn = cc2mc2mn.get(cc_val, {}).get(mc_val, f'Muni {mc_val}')
         muni_data = crashes[(crashes['cc'] == cc_val) & (crashes['mc'] == mc_val)]
         if muni_data['fatalities'].sum() > 0:
             ytd_parts.append(compute_ytd(muni_data, cn, cc_val, mc_val))
     ytd = pd.concat(ytd_parts, ignore_index=True)
-    ytd.to_csv(ytd_path, index=False)
+    ytd['cc'] = ytd['cc'].astype('Int64')
+    ytd['mc'] = ytd['mc'].astype('Int64')
+    ytd.to_parquet(ytd_path, compression='snappy', index=False)
     err(f"  Wrote {len(ytd)} rows")
 
     # 2. Monthly timeseries: deaths per month with 12-mo rolling average
-    monthly_path = join(WWW_NJSP, 'monthly.csv')
+    monthly_path = join(WWW_NJSP, 'monthly.parquet')
     err(f"Generating {monthly_path}...")
 
-    def compute_monthly(df, county='', cc='', mc=''):
+    def compute_monthly(df, county=None, cc=None, mc=None):
         agg_cols = {'fatalities': 'sum', 'driver': 'sum', 'passenger': 'sum', 'pedestrian': 'sum', 'cyclist': 'sum'}
         monthly = (
             df
@@ -123,20 +129,22 @@ def update_www_data(force):
     for cn in sorted(CC2CN.values()):
         monthly_parts.append(compute_monthly(crashes[crashes['county'] == cn], cn, cc=CN2CC[cn]))
     for cc_val, mc_val in muni_pairs:
-        cn = CC2CN.get(cc_val, '')
+        cn = CC2CN.get(cc_val, None)
         muni_data = crashes[(crashes['cc'] == cc_val) & (crashes['mc'] == mc_val)]
         if muni_data['fatalities'].sum() > 0:
             monthly_parts.append(compute_monthly(muni_data, cn, cc_val, mc_val))
     monthly = pd.concat(monthly_parts, ignore_index=True)
+    monthly['cc'] = monthly['cc'].astype('Int64')
+    monthly['mc'] = monthly['mc'].astype('Int64')
 
-    monthly.to_csv(monthly_path, index=False)
+    monthly.to_parquet(monthly_path, compression='snappy', index=False)
     err(f"  Wrote {len(monthly)} rows")
 
     # 3. Month-year data: deaths by year and month
-    month_year_path = join(WWW_NJSP, 'month-year.csv')
+    month_year_path = join(WWW_NJSP, 'month-year.parquet')
     err(f"Generating {month_year_path}...")
 
-    def compute_month_year(df, county='', cc='', mc=''):
+    def compute_month_year(df, county=None, cc=None, mc=None):
         my = (
             df
             .groupby(['year', 'month'])['fatalities']
@@ -152,16 +160,18 @@ def update_www_data(force):
     for cn in sorted(CC2CN.values()):
         my_parts.append(compute_month_year(crashes[crashes['county'] == cn], cn, cc=CN2CC[cn]))
     for cc_val, mc_val in muni_pairs:
-        cn = CC2CN.get(cc_val, '')
+        cn = CC2CN.get(cc_val, None)
         muni_data = crashes[(crashes['cc'] == cc_val) & (crashes['mc'] == mc_val)]
         if muni_data['fatalities'].sum() > 0:
             my_parts.append(compute_month_year(muni_data, cn, cc_val, mc_val))
     month_year = pd.concat(my_parts, ignore_index=True)
-    month_year.to_csv(month_year_path, index=False)
+    month_year['cc'] = month_year['cc'].astype('Int64')
+    month_year['mc'] = month_year['mc'].astype('Int64')
+    month_year.to_parquet(month_year_path, compression='snappy', index=False)
     err(f"  Wrote {len(month_year)} rows")
 
     # 4. year-type-county: per-year, per-county fatality breakdown by victim type
-    ytc_path = join(WWW_NJSP, 'year-type-county.csv')
+    ytc_path = join(WWW_NJSP, 'year-type-county.parquet')
     err(f"Generating {ytc_path}...")
     ytc = (
         crashes[crashes['county'] != '']
@@ -173,11 +183,11 @@ def update_www_data(force):
              crashes=('year', 'size'))
         .reset_index()
     )
-    ytc.to_csv(ytc_path, index=False)
+    ytc.to_parquet(ytc_path, compression='snappy', index=False)
     err(f"  Wrote {len(ytc)} rows")
 
     # 5. Crash-homicide comparison (NJSP + NJDOT traffic deaths vs UCR homicides)
-    crash_homicide_path = join(WWW_NJSP, 'crash-homicide.csv')
+    crash_homicide_path = join(WWW_NJSP, 'crash-homicide.parquet')
     err(f"Generating {crash_homicide_path}...")
     try:
         from nj_crashes.paths import COUNTY_HOMICIDES_PQT, HOMICIDES_PQT
@@ -235,9 +245,9 @@ def update_www_data(force):
 
         result = pd.concat(parts, ignore_index=True)
         result = result[['source', 'county', 'year', 'traffic_deaths', 'homicides', 'ratio']]
-        result.to_csv(crash_homicide_path, index=False)
+        result.to_parquet(crash_homicide_path, compression='snappy', index=False)
         err(f"  Wrote {len(result)} rows")
     except Exception as e:
         err(f"  Warning: Could not generate crash-homicide data: {e}")
 
-    return "Update www data CSVs"
+    return "Update www data Parquets"

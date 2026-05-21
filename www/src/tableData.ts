@@ -85,6 +85,69 @@ export function useRegisteredDb({ db, table, url }: MaybeDb & HasTable & Url): A
     return registeredDb
 }
 
+/** Parquet parallel to {@link useCsvText} — fetch as ArrayBuffer once,
+ *  share the promise across components. Same module-level dedup pattern
+ *  as the CSV cache. */
+const _parquetCache = new Map<string, Promise<ArrayBuffer>>()
+function fetchParquetBuffer(url: string): Promise<ArrayBuffer> {
+    let p = _parquetCache.get(url)
+    if (!p) {
+        p = fetch(url).then(r => r.arrayBuffer())
+        p.catch(() => { if (_parquetCache.get(url) === p) _parquetCache.delete(url) })
+        _parquetCache.set(url, p)
+    }
+    return p
+}
+
+export function useParquetBuffer({ url }: { url: string }): ArrayBuffer | null {
+    const [ buf, setBuf ] = useState<ArrayBuffer | null>(null)
+    useEffect(() => {
+        let cancelled = false
+        fetchParquetBuffer(url).then(b => { if (!cancelled) setBuf(b) })
+        return () => { cancelled = true }
+    }, [ url, ]);
+    return buf
+}
+
+/** Parquet variant of {@link useRegisteredDb}. Registers the buffer at
+ *  path = `table` (no extension), so queries use `read_parquet('<table>')`.
+ *  DuckDB's `read_parquet` function determines format from the function
+ *  call, not the filename extension.
+ *
+ *  Dedup the registration: when N components register the same
+ *  `(db, table)` (e.g. 3 plots all want `monthly`), we register once and
+ *  share the resulting Promise. DuckDB-WASM detaches the underlying
+ *  ArrayBuffer when transferring it to the worker, so a naive shared
+ *  fetch + per-component `new Uint8Array(buf)` throws on the second
+ *  caller. */
+const _parquetRegistrations = new WeakMap<AsyncDuckDB, Map<string, Promise<void>>>()
+function registerParquet(db: AsyncDuckDB, table: string, url: string): Promise<void> {
+    let byTable = _parquetRegistrations.get(db)
+    if (!byTable) { byTable = new Map(); _parquetRegistrations.set(db, byTable) }
+    let p = byTable.get(table)
+    if (!p) {
+        p = (async () => {
+            console.log(`registering parquet table ${table}: ${url}`)
+            const buf = await fetchParquetBuffer(url)
+            await db.registerFileBuffer(table, new Uint8Array(buf))
+        })()
+        p.catch(() => { if (byTable!.get(table) === p) byTable!.delete(table) })
+        byTable.set(table, p)
+    }
+    return p
+}
+
+export function useRegisteredParquetDb({ db, table, url }: MaybeDb & HasTable & Url): AsyncDuckDB | null {
+    const [ registeredDb, setRegisteredDb ] = useState<AsyncDuckDB | null>(null)
+    useEffect(() => {
+        if (!db) return
+        let cancelled = false
+        registerParquet(db, table, url).then(() => { if (!cancelled) setRegisteredDb(db) })
+        return () => { cancelled = true }
+    }, [ db, table, url, ]);
+    return registeredDb
+}
+
 export async function registerTableData({ db, tableData, stem }: {
     db: AsyncDuckDB
     tableData: TableData

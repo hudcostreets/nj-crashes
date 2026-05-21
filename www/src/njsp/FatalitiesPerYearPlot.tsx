@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import type { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
-import { useRegisteredDb } from "@/src/tableData"
-import { MonthlyCsv, ProjectedCsv, YtcCsv } from "@/src/paths"
+import { useRegisteredDb, useRegisteredParquetDb } from "@/src/tableData"
+import { MonthlyParquet, ProjectedCsv, YtcParquet } from "@/src/paths"
 import { fadeColor, lightenColor } from "pltly"
 import { LegendRow, LegendItem, useLegendPin } from "pltly/react"
 import PlotWrapper from "@/src/lib/plot-wrapper"
@@ -98,7 +98,7 @@ const ytcQueryFn = (county: string | null) => `
         CAST(sum(cyclist) as INT) as cyclist,
         CAST(sum(passenger) as INT) as passenger,
         CAST(sum(driver + pedestrian + cyclist + passenger) as INT) as total
-    FROM read_csv_auto('ytc')
+    FROM read_parquet('ytc')
     ${county ? `WHERE county = '${county}'` : ``}
     GROUP BY year
     ORDER BY year
@@ -134,7 +134,7 @@ const monthlyQueryFn = (county: string | null, cc: number | null, mc: number | n
     }
     return `
     SELECT date, year, month, fatalities, driver, passenger, pedestrian, cyclist, avg_12mo
-    FROM read_csv_auto('monthly')
+    FROM read_parquet('monthly')
     ${where}
     ORDER BY date
 `
@@ -158,7 +158,7 @@ const yearlyFromMonthlyQueryForGeo = (county: string | null, cc: number | null, 
         CAST(SUM(cyclist) as INT) as cyclist,
         CAST(SUM(passenger) as INT) as passenger,
         CAST(SUM(fatalities) as INT) as total
-    FROM read_csv_auto('monthly')
+    FROM read_parquet('monthly')
     ${where}
     GROUP BY year
     ORDER BY year
@@ -250,8 +250,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     }, [])
 
     // Load data sources
-    const ytcDb = useRegisteredDb({ db, table: "ytc", url: YtcCsv })
-    const monthlyDb = useRegisteredDb({ db, table: "monthly", url: MonthlyCsv })
+    const ytcDb = useRegisteredParquetDb({ db, table: "ytc", url: YtcParquet })
+    const monthlyDb = useRegisteredParquetDb({ db, table: "monthly", url: MonthlyParquet })
     const projectionsDb = useRegisteredDb({ db, table: "projected", url: ProjectedCsv })
 
     // Yearly data: always aggregate from monthly CSV (always up to date)

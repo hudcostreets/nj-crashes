@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import type { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
-import { useRegisteredDb } from "@/src/tableData"
-import { YtdCsv } from "@/src/paths"
+import { useRegisteredParquetDb } from "@/src/tableData"
+import { YtdParquet } from "@/src/paths"
 import { fadeColor, useCustomHover } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo } from "@/src/icons"
@@ -43,7 +43,7 @@ const ytdQueryFn = (county: string | null, cc: number | null, mc: number | null)
     }
     return `
     SELECT year, day_of_year, date_label, fatalities, cumulative
-    FROM read_csv_auto('ytd')
+    FROM read_parquet('ytd')
     WHERE ${where}
     ORDER BY year, day_of_year
 `
@@ -95,7 +95,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     const colorScale = COLORSCALES[colorScaleName]
 
     // Load YTD data
-    const ytdDb = useRegisteredDb({ db, table: "ytd", url: YtdCsv })
+    const ytdDb = useRegisteredParquetDb({ db, table: "ytd", url: YtdParquet })
     const ytdQueryStr = useMemo(() => ytdQueryFn(county ?? null, cc ?? null, mc ?? null), [county, cc, mc])
     const ytdRows = useQuery<YtdRow>({ db: ytdDb, query: ytdQueryStr, init: [] })
 

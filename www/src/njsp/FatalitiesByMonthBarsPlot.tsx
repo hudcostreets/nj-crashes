@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import type { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
-import { useRegisteredDb } from "@/src/tableData"
-import { MonthlyCsv } from "@/src/paths"
+import { useRegisteredParquetDb } from "@/src/tableData"
+import { MonthlyParquet } from "@/src/paths"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
@@ -129,7 +129,7 @@ const monthlyQueryFn = (county: string | null, cc: number | null, mc: number | n
     }
     return `
     SELECT year, month, fatalities, driver, passenger, pedestrian, cyclist
-    FROM read_csv_auto('monthly')
+    FROM read_parquet('monthly')
     WHERE ${where}
     ORDER BY year, month
 `
@@ -150,7 +150,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
     const colorScale = COLORSCALES[colorScaleName]
 
     // Load monthly data
-    const monthlyDb = useRegisteredDb({ db, table: "monthly", url: MonthlyCsv })
+    const monthlyDb = useRegisteredParquetDb({ db, table: "monthly", url: MonthlyParquet })
     const monthlyQueryStr = useMemo(() => monthlyQueryFn(county ?? null, cc ?? null, mc ?? null), [county, cc, mc])
     const monthlyRows = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
 

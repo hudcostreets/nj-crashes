@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from "react"
 import type { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
-import { useRegisteredDb } from "@/src/tableData"
-import { MonthlyCsv } from "@/src/paths"
+import { useRegisteredParquetDb } from "@/src/tableData"
+import { MonthlyParquet } from "@/src/paths"
 import { fadeColor, useSoloTrace } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo } from "@/src/icons"
@@ -39,7 +39,7 @@ const monthlyQueryFn = (county: string | null, cc: number | null, mc: number | n
     }
     return `
     SELECT date, year, month, fatalities, avg_12mo
-    FROM read_csv_auto('monthly')
+    FROM read_parquet('monthly')
     WHERE ${where}
     ORDER BY date
 `
@@ -55,7 +55,7 @@ export function FatalitiesPerMonthPlot({ id = "per-month", county, cc = null, mc
     const [hoverTrace, setHoverTrace] = useState<string | null>(null)
 
     // Load monthly data
-    const monthlyDb = useRegisteredDb({ db, table: "monthly", url: MonthlyCsv })
+    const monthlyDb = useRegisteredParquetDb({ db, table: "monthly", url: MonthlyParquet })
     const monthlyQueryStr = useMemo(() => monthlyQueryFn(county ?? null, cc ?? null, mc ?? null), [county, cc, mc])
     const monthlyRows = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
 
