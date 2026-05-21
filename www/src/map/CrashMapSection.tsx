@@ -736,7 +736,11 @@ function RefetchSpinner({ theme }: { theme: "light" | "dark" }) {
     const bg = theme === "dark" ? "rgba(30,30,30,0.6)" : "rgba(255,255,255,0.7)"
     return (
         <div style={{
-            position: "absolute", top: 8, right: 8, zIndex: 5,
+            // `right: 72` clears the ⚙ gear (right: 8) and ↺ reset
+            // (right: 40) buttons — at the shared `right: 8` the spinner
+            // rendered behind the gear (zIndex 5 vs 1000) and was never
+            // visible.
+            position: "absolute", top: 8, right: 72, zIndex: 1000,
             width: 24, height: 24, borderRadius: "50%", padding: 4,
             background: bg, pointerEvents: "none",
         }}>
