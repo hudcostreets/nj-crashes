@@ -108,7 +108,9 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 		const mc = intParam(url, "mc")
 		const before = strParam(url, "before")
 		const { clause, params } = njdotWhere(cc, mc, before)
-		const sql = `SELECT count(*) as total FROM crashes WHERE ${clause}`
+		// Force the same index the paginated query uses — without it the
+		// planner can fall back to a full table scan for the count.
+		const sql = `SELECT count(*) as total FROM crashes INDEXED BY dt_severity WHERE ${clause}`
 		const result = await env.CRASHES_DB.prepare(sql).bind(...params).all()
 		return Response.json(result.results, { headers: corsHeaders(env) })
 	}
@@ -271,15 +273,28 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 }
 
 export default {
-	async fetch(request: Request, env: Env): Promise<Response> {
+	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		if (request.method === "OPTIONS") {
 			return new Response(null, { headers: corsHeaders(env) })
 		}
+		// Edge-cache GET responses. Crash data changes at most daily
+		// (njsp-crashes / cmymc imports) or annually (njdot), so a 1h TTL
+		// keeps the homepage's repeated `count` / table queries off D1
+		// entirely after the first request.
+		const cache = caches.default
+		const hit = await cache.match(request)
+		if (hit) return hit
+		let response: Response
 		try {
-			return await handleRequest(request, env)
+			response = await handleRequest(request, env)
 		} catch (e) {
 			const message = e instanceof Error ? e.message : "Internal error"
 			return Response.json({ error: message }, { status: 500, headers: corsHeaders(env) })
 		}
+		if (request.method === "GET" && response.status === 200) {
+			response.headers.set("Cache-Control", "public, max-age=3600")
+			ctx.waitUntil(cache.put(request, response.clone()))
+		}
+		return response
 	},
 }

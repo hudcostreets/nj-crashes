@@ -43,11 +43,20 @@ dev (a prod build fires each once), *not* prod waste. But there's
 also no cross-component dedup and no cross-navigation cache. Migrate
 to TanStack Query (the project default) for request dedup + caching.
 
-## 4. D1 query latency — index the crashes date column
+## 4. D1 query latency — `crashes` count
 
-`count?before=…` (~1s) and `crashes?before=…&limit=10` (~0.9s) are
-the slowest homepage requests — D1 queries on the `crashes-api`
-worker. Confirm the D1 `crashes` table has an index on the date
-column; `count(*)` with a `before=` filter table-scans without one.
-Pagination `count`s are inherently expensive — consider a
-cached/stored count rather than recomputing per request.
+Done 2026-05-21: `api/src/index.ts` now edge-caches all GET responses
+via the Cache API (`Cache-Control: public, max-age=3600`), and
+`/njdot/crashes/count` forces `INDEXED BY dt_severity` (the
+`severity IN (i,f)` index scan beats a full ~13M-row table scan).
+
+Remaining — the NJDOT `count` is fundamentally a big aggregation:
+`count(*)` over `severity IN (i,f) AND dt <= 2026-01-01` reads
+**6.57M rows** (measured ~9.5s cold in D1, ~1s warm). The index
+limits *which* rows but `count` is still O(matches); the Cache API
+amortizes it to one slow run per hour per param-set. Proper fix is
+to **precompute** the counts at D1-import time into a small
+`_counts` table — the figures are static between (annual) NJDOT
+imports. Parameterize by `(cc, mc)`; `before=2026-01-01` is
+effectively "all data", so one row per geo. The worker then reads
+`_counts` instead of running `count(*)`.
