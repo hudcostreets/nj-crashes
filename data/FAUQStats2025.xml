@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed May 20 10:00:07 EDT 2026</RUNDATE>
+  <RUNDATE>Thu May 21 10:00:03 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -879,12 +879,13 @@
     <MUNICIPALITY MCODE="1209" MNAME="Old Bridge Twsp">
       <ACCIDENT ACCID="14262" DATE="11/19/2025" TIME="0428">
         <HIGHWAY>444</HIGHWAY>
-        <LOCATION>Garden State Parkway</LOCATION>
+        <LOCATION>Garden State Parkway MP 121.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2440,7 +2441,7 @@
     <MUNICIPALITY MCODE="0408" MNAME="Camden City">
       <ACCIDENT ACCID="14113" DATE="09/06/2025" TIME="1658">
         <HIGHWAY>30</HIGHWAY>
-        <LOCATION>State Highway 30</LOCATION>
+        <LOCATION>State Highway 30 MP 2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2656,7 +2657,7 @@
     <MUNICIPALITY MCODE="0436" MNAME="Winslow Twsp">
       <ACCIDENT ACCID="14136" DATE="08/28/2025" TIME="2257">
         <HIGHWAY>712</HIGHWAY>
-        <LOCATION>County 712</LOCATION>
+        <LOCATION>County 712 MP .98</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
