@@ -168,6 +168,7 @@ for (const sc of SCENARIOS) {
         const timingPath = join(GOLDEN_DIR, `${sc.name}.timing.json`)
         const latencies: number[] = []
         let lastEntries: Entry[] = []
+        let lastCellsResponses = 0
 
         for (let run = 0; run < RUNS_PER_SCENARIO; run++) {
             const browser = await playwright.chromium.launch()
@@ -175,8 +176,10 @@ for (const sc of SCENARIOS) {
             const page = await context.newPage()
 
             const captured: Array<{ url: string; status: number; bodyPromise: Promise<number> }> = []
+            let cellsResponses = 0
             page.on("response", res => {
                 const url = res.url()
+                if (/\/v1\/cells\b/.test(url)) cellsResponses++
                 if (isDevOnly(url)) return
                 if (url.endsWith(".map")) return
                 if (url.includes("/favicon")) return
@@ -208,6 +211,19 @@ for (const sc of SCENARIOS) {
                 body_size: sizes[i],
             }))
             lastEntries = sortEntries(aggregateCellsApi(entries))
+            lastCellsResponses = cellsResponses
+        }
+
+        // A scenario that declares `minCellsResponses` must actually
+        // fetch that many `/v1/cells` responses. Without this guard a
+        // broken map (empty cover → zero fetches) silently bakes into
+        // the golden under `PERF_UPDATE_GOLDEN=1`.
+        if (lastCellsResponses < sc.minCellsResponses) {
+            throw new Error(
+                `${sc.name}: ${lastCellsResponses} /v1/cells response(s), ` +
+                `expected ≥ ${sc.minCellsResponses} — the map fetched no crash data. ` +
+                `Refusing to ${UPDATE ? "write" : "verify against"} a broken golden.`,
+            )
         }
 
         const p50 = quantile(latencies, 0.5)

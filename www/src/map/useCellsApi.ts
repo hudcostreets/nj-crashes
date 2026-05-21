@@ -15,6 +15,7 @@ import {
     cellToBoundary, cellToChildren, cellToParent, getResolution,
     polygonToCellsExperimental, POLYGON_TO_CELLS_FLAGS,
 } from "h3-js"
+import { isInRootCover } from "./h3cover"
 import type { StackedHex } from "./StackedHexLayer"
 import { CELLS_API_BASE } from "./config"
 import type { Bbox } from "./v2"
@@ -172,21 +173,14 @@ function pickCover(
         .filter(c => c.data_res === dataRes)
         .sort((a, b) => a.shard_res - b.shard_res)  // coarsest first
     if (candidates.length === 0) return []
-    // Set of shard_res values that have a pyramid combo. The full
-    // per-combo `shard_cells` lists balloon the manifest to ~5MB, so
-    // they're stripped server-side; we just keep the resolution set.
-    // For "is this candidate cell inside NJ?" filtering we use the
-    // top-level `manifest.shard_cells` (small — 31 r4 cells covering
-    // NJ): a child cell at any res can be checked by walking its r4
-    // parent. Without this, off-NJ cells (ocean / NY / PA edges of the
-    // viewport ring) get added to covers and eat up the maxShards
-    // budget for nothing.
+    // Off-NJ cover cells (ocean / NY / PA edges of the viewport ring)
+    // waste the maxShards budget, so filter candidates against the
+    // top-level `manifest.shard_cells` (31 r4 cells covering NJ) via
+    // `isInRootCover`. The per-combo `shard_cells` lists that would let
+    // us filter to known-good shards balloon the manifest to ~5MB and
+    // are stripped server-side; we keep only the `shard_res` set below.
     const SHARD_ROOT_RES = 4
-    const inNj = (h3: string): boolean => {
-        const res = getResolution(h3)
-        const root = res <= SHARD_ROOT_RES ? h3 : cellToParent(h3, SHARD_ROOT_RES)
-        return rootShardCells.has(root)
-    }
+    const inNj = (h3: string): boolean => isInRootCover(h3, rootShardCells, SHARD_ROOT_RES)
     const knownRes = new Set(candidates.map(c => c.shard_res))
     const minRes = candidates[0].shard_res
     const maxRes = candidates[candidates.length - 1].shard_res
