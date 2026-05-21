@@ -1,22 +1,291 @@
-county,crashes,cyclist,driver,passenger,pedestrian
-Atlantic,31,2,15,2,10
-Bergen,34,0,20,1,14
-Burlington,36,1,27,6,7
-Camden,27,3,12,2,11
-Cape May,6,0,4,2,0
-Cumberland,19,0,11,2,6
-Essex,44,0,14,5,28
-Gloucester,23,2,14,4,3
-Hudson,29,1,8,0,22
-Hunterdon,5,0,3,1,1
-Mercer,28,1,11,7,10
-Middlesex,58,1,34,9,17
-Monmouth,40,1,14,6,18
-Morris,30,1,16,1,13
-Ocean,48,1,36,5,10
-Passaic,19,0,11,5,7
-Salem,13,0,11,3,1
-Somerset,10,0,7,1,2
-Sussex,21,0,8,0,3
-Union,39,1,23,2,19
-Warren,4,0,2,1,2
+cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
+,,Atlantic,,31,2,15,2,10
+,,Bergen,,34,0,20,1,14
+,,Burlington,,36,1,27,6,7
+,,Camden,,27,3,12,2,11
+,,Cape May,,6,0,4,2,0
+,,Cumberland,,19,0,11,2,6
+,,Essex,,44,0,14,5,28
+,,Gloucester,,23,2,14,4,3
+,,Hudson,,29,1,8,0,22
+,,Hunterdon,,5,0,3,1,1
+,,Mercer,,28,1,11,7,10
+,,Middlesex,,58,1,34,9,17
+,,Monmouth,,40,1,14,6,18
+,,Morris,,30,1,16,1,13
+,,Ocean,,48,1,36,5,10
+,,Passaic,,19,0,11,5,7
+,,Salem,,13,0,11,3,1
+,,Somerset,,10,0,7,1,2
+,,Sussex,,21,0,8,0,3
+,,Union,,39,1,23,2,19
+,,Warren,,4,0,2,1,2
+1,1,Atlantic,Absecon City,1,0,0,0,1
+1,2,Atlantic,Atlantic City,5,2,1,0,2
+1,5,Atlantic,Buena Vista Twsp,1,0,1,1,0
+1,7,Atlantic,Egg Harbor City,1,0,1,0,0
+1,8,Atlantic,Egg Harbor Twsp,1,0,1,0,1
+1,9,Atlantic,Estell Manor City,1,0,1,0,0
+1,10,Atlantic,Folsom Boro,1,0,1,0,0
+1,11,Atlantic,Galloway Twsp,3,0,2,0,1
+1,12,Atlantic,Hamilton Twsp,10,0,6,1,2
+1,13,Atlantic,Hammonton Town,2,0,2,0,0
+1,14,Atlantic,Linwood City,1,0,0,0,1
+1,19,Atlantic,Pleasantville City,2,0,0,1,1
+1,21,Atlantic,Somers Point City,1,0,0,0,1
+2,2,Bergen,Alpine Boro,1,0,2,0,0
+2,7,Bergen,Closter Boro,-1,0,0,0,-1
+2,11,Bergen,Elmwood Park Boro,1,0,1,0,0
+2,12,Bergen,East Rutherford Bor,2,0,1,0,1
+2,13,Bergen,Edgewater Boro,1,0,1,0,0
+2,15,Bergen,Englewood City,1,0,1,0,0
+2,16,Bergen,Englewood Cliffs Bo,0,0,0,0,0
+2,17,Bergen,Fair Lawn Boro,1,0,1,0,0
+2,19,Bergen,Fort Lee Boro,3,0,1,0,2
+2,21,Bergen,Garfield City,2,0,1,0,2
+2,23,Bergen,Hackensack City,4,0,1,0,3
+2,25,Bergen,Hasbrouck Heights B,0,0,0,0,0
+2,29,Bergen,Leonia Boro,1,0,0,0,1
+2,30,Bergen,Little Ferry Boro,1,0,1,0,0
+2,31,Bergen,Lodi Boro,0,0,-1,0,1
+2,32,Bergen,Lyndhurst Twsp,1,0,1,0,1
+2,33,Bergen,Mahwah Twsp,1,0,1,0,0
+2,38,Bergen,New Milford Boro,1,0,0,0,1
+2,40,Bergen,Northvale Boro,2,0,0,0,2
+2,42,Bergen,Oakland Boro,1,0,0,1,1
+2,46,Bergen,Paramus Boro,0,0,0,0,0
+2,48,Bergen,Ramsey Boro,1,0,1,0,0
+2,50,Bergen,Ridgefield Park Tws,3,0,3,0,0
+2,56,Bergen,Rutherford Boro,2,0,2,0,1
+2,57,Bergen,Saddle Brook Twsp,1,0,1,0,0
+2,61,Bergen,Tenafly Boro,1,0,1,0,0
+2,66,Bergen,Washington Twsp,2,0,2,0,0
+2,68,Bergen,Woodcliff Lake Boro,1,0,1,0,0
+3,4,Burlington,Bordentown Twsp,0,0,0,0,0
+3,6,Burlington,Burlington Twsp,1,0,0,0,1
+3,7,Burlington,Chesterfield Twsp,1,0,1,0,0
+3,8,Burlington,Cinnaminson Twsp,1,1,0,0,0
+3,11,Burlington,Easthampton Twsp,1,0,1,0,0
+3,13,Burlington,Evesham Twsp,2,0,2,0,0
+3,15,Burlington,Florence Twsp,0,0,0,0,0
+3,16,Burlington,Hainesport Twsp,2,0,2,0,0
+3,18,Burlington,Mansfield Twsp,1,0,1,0,0
+3,21,Burlington,Medford Lakes Boro,1,0,1,0,0
+3,22,Burlington,Moorestown Twsp,2,0,0,0,2
+3,23,Burlington,Mount Holly Twsp,0,0,0,0,0
+3,24,Burlington,Mount Laurel Twsp,10,0,6,2,2
+3,26,Burlington,North Hanover Twsp,1,0,1,0,0
+3,27,Burlington,Palmyra Boro,1,0,1,0,0
+3,29,Burlington,Pemberton Twsp,1,0,1,1,0
+3,32,Burlington,Shamong Twsp,1,0,1,1,0
+3,33,Burlington,Southampton Twsp,1,0,1,0,0
+3,34,Burlington,Springfield Twsp,2,0,2,0,0
+3,35,Burlington,Tabernacle Twsp,1,0,1,0,0
+3,36,Burlington,Washington Twsp,1,0,1,0,0
+3,37,Burlington,Westampton Twsp,4,0,3,3,1
+3,38,Burlington,Willingboro Twsp,3,0,2,0,1
+4,4,Camden,Bellmawr Boro,1,0,1,0,0
+4,6,Camden,Berlin Twsp,1,0,0,0,1
+4,8,Camden,Camden City,4,1,1,0,2
+4,9,Camden,Cherry Hill Twsp,2,0,1,0,1
+4,12,Camden,Collingswood Boro,0,0,0,0,0
+4,14,Camden,Gloucester City,7,1,5,2,0
+4,15,Camden,Gloucester Twsp,3,0,3,0,-1
+4,16,Camden,Haddon Twsp,1,2,0,0,0
+4,18,Camden,Haddon Heights Boro,0,0,0,0,0
+4,21,Camden,Lawnside Boro,0,0,0,0,0
+4,22,Camden,Lindenwold Boro,0,0,0,0,0
+4,27,Camden,Pennsauken Twsp,2,0,1,0,1
+4,28,Camden,Pine Hill Boro,1,0,0,0,1
+4,30,Camden,Runnemede Boro,0,0,0,0,0
+4,34,Camden,Voorhees Twsp,3,0,0,1,2
+4,35,Camden,Waterford Twsp,2,0,0,0,2
+4,36,Camden,Winslow Twsp,4,0,1,0,3
+5,4,Cape May,Dennis Twsp,1,0,1,0,0
+5,5,Cape May,Lower Twsp,1,0,1,0,0
+5,6,Cape May,Middle Twsp,3,0,2,2,0
+5,7,Cape May,North Wildwood City,1,0,1,0,0
+5,11,Cape May,Upper Twsp,0,0,0,0,0
+5,16,Cape May,Woodbine Boro,1,0,0,1,0
+6,1,Cumberland,Bridgeton City,4,0,2,0,2
+6,3,Cumberland,Deerfield Twsp,1,0,0,1,0
+6,5,Cumberland,Fairfield Twsp,2,0,2,0,0
+6,7,Cumberland,Hopewell Twsp,1,0,1,0,0
+6,9,Cumberland,Maurice River Twsp,1,0,1,0,0
+6,10,Cumberland,Millville City,2,0,1,0,1
+6,13,Cumberland,Upper Deerfield Tws,0,0,0,0,0
+6,14,Cumberland,Vineland City,12,0,4,2,2
+7,1,Essex,Belleville Town,1,0,0,0,1
+7,3,Essex,Caldwell Boro,2,0,0,0,2
+7,5,Essex,East Orange City,6,0,2,0,3
+7,9,Essex,Irvington Town,1,0,1,0,1
+7,10,Essex,Livingston Twsp,0,0,0,0,0
+7,12,Essex,Millburn Twsp,4,0,0,1,3
+7,13,Essex,Montclair Town,1,0,0,1,0
+7,14,Essex,Newark City,26,0,10,3,16
+7,16,Essex,Nutley Town,1,0,0,0,1
+7,17,Essex,Orange City,1,0,-1,0,1
+7,20,Essex,Verona Boro,1,0,1,0,0
+7,22,Essex,West Orange Town,1,0,1,0,0
+8,1,Gloucester,Clayton Boro,2,0,0,2,0
+8,2,Gloucester,Deptford Twsp,2,2,1,0,0
+8,4,Gloucester,Elk Twsp,2,0,2,0,0
+8,5,Gloucester,Franklin Twsp,1,0,1,0,0
+8,6,Gloucester,Glassboro Boro,1,0,1,0,0
+8,7,Gloucester,Greenwich Twsp,2,0,0,0,2
+8,8,Gloucester,Harrison Twsp,2,0,1,2,0
+8,9,Gloucester,Logan Twsp,3,0,3,0,0
+8,11,Gloucester,Monroe Twsp,5,1,3,0,2
+8,13,Gloucester,Newfield Boro,1,0,0,0,1
+8,18,Gloucester,Washington Twsp,1,0,0,1,0
+8,20,Gloucester,West Deptford Twsp,1,0,1,0,0
+8,24,Gloucester,Woolwich Twsp,1,0,1,0,0
+9,3,Hudson,Guttenberg Town,1,0,0,0,1
+9,6,Hudson,Jersey City,4,1,1,0,3
+9,7,Hudson,Kearny Town,3,0,1,0,3
+9,8,Hudson,North Bergen Twsp,3,0,1,0,2
+9,9,Hudson,Secaucus Town,3,0,2,0,2
+9,10,Hudson,Union City,5,0,2,0,3
+9,11,Hudson,Weehawken Twsp,1,0,1,0,0
+9,12,Hudson,West New York Town,2,0,0,0,2
+10,2,Hunterdon,Bethlehem Twsp,0,0,0,0,0
+10,6,Hunterdon,Clinton Twsp,1,0,1,0,0
+10,7,Hunterdon,Delaware Twsp,0,0,0,0,0
+10,8,Hunterdon,East Amwell Tws,0,0,0,0,0
+10,16,Hunterdon,Kingwood Twsp,2,0,2,0,0
+10,19,Hunterdon,Lebanon Twsp,2,0,2,0,0
+10,21,Hunterdon,Raritan Twsp,1,0,0,1,0
+10,22,Hunterdon,Readington Twsp,1,0,0,0,1
+11,1,Mercer,East Windsor Twsp,2,0,1,1,1
+11,2,Mercer,Ewing Twsp,7,0,5,1,1
+11,3,Mercer,Hamilton Twsp,7,0,1,4,3
+11,6,Mercer,Hopewell Twsp,1,0,0,1,0
+11,7,Mercer,Lawrence Twsp,2,0,2,0,0
+11,11,Mercer,Trenton,8,0,1,1,4
+11,12,Mercer,Robbinsville Twsp,1,0,1,0,0
+11,14,Mercer,Princeton,1,2,0,0,0
+12,1,Middlesex,Carteret Boro,1,0,1,0,0
+12,2,Middlesex,Cranbury Twsp,0,0,0,0,0
+12,4,Middlesex,East Brunswick Twsp,0,0,0,0,0
+12,5,Middlesex,Edison Twsp,14,0,6,1,5
+12,8,Middlesex,Jamesburg Boro,2,1,2,0,0
+12,9,Middlesex,Metuchen Boro,2,0,2,2,0
+12,13,Middlesex,New Brunswick City,6,0,4,1,1
+12,14,Middlesex,North Brunswick Tws,0,0,0,0,0
+12,15,Middlesex,Old Bridge Twsp,5,0,2,1,2
+12,16,Middlesex,Perth Amboy City,2,0,0,0,2
+12,17,Middlesex,Piscataway Twsp,1,0,1,0,0
+12,18,Middlesex,Plainsboro Twsp,1,0,1,0,0
+12,19,Middlesex,Sayreville Boro,3,0,2,0,1
+12,20,Middlesex,South Amboy City,1,0,1,0,0
+12,21,Middlesex,South Brunswick Tws,7,0,3,0,3
+12,23,Middlesex,South River Boro,2,0,2,0,1
+12,25,Middlesex,Woodbridge Twsp,12,0,7,2,2
+13,5,Monmouth,Atlantic Highlands,1,1,0,0,0
+13,10,Monmouth,Colts Neck Twsp,1,0,1,0,0
+13,12,Monmouth,Eatontown Boro,2,0,0,0,2
+13,17,Monmouth,Freehold Twsp,2,0,0,2,0
+13,18,Monmouth,Hazlet Boro,1,0,1,0,0
+13,20,Monmouth,Holmdel Twsp,1,0,1,0,0
+13,21,Monmouth,Howell Twsp,1,0,1,0,0
+13,23,Monmouth,Keansburg Boro,1,0,1,0,0
+13,24,Monmouth,Keyport Boro,1,0,1,0,0
+13,27,Monmouth,Long Branch City,3,0,0,1,2
+13,28,Monmouth,Manalapan Twsp,1,0,0,0,2
+13,30,Monmouth,Marlboro Twsp,2,0,1,1,1
+13,31,Monmouth,Matawan Boro,2,0,0,0,2
+13,32,Monmouth,Middletown Twsp,2,0,2,0,0
+13,35,Monmouth,Neptune Twsp,4,1,2,0,2
+13,37,Monmouth,Ocean Twsp,1,0,0,0,1
+13,49,Monmouth,Tinton Falls Boro,2,0,1,2,0
+13,51,Monmouth,Upper Freehold Twsp,0,0,0,0,0
+13,52,Monmouth,Wall Twsp,2,0,1,0,1
+14,4,Morris,Chatham Boro,2,0,0,0,2
+14,7,Morris,Chester Twsp,1,0,1,0,0
+14,8,Morris,Denville Twsp,1,1,0,0,1
+14,9,Morris,Dover Town,2,0,0,0,2
+14,13,Morris,Harding Twsp,1,0,0,0,1
+14,14,Morris,Jefferson Twsp,1,0,1,1,0
+14,21,Morris,Montville Twsp,1,0,1,0,0
+14,24,Morris,Morristown Town,3,0,2,0,2
+14,27,Morris,Mount Olive Twsp,5,0,5,0,0
+14,29,Morris,Parsippany-Troy Hil,3,0,1,0,2
+14,32,Morris,Randolph Twsp,0,0,0,0,0
+14,34,Morris,Rockaway Boro,0,-1,0,0,1
+14,35,Morris,Rockaway Twsp,1,0,1,0,0
+14,36,Morris,Roxbury Twsp,5,1,2,0,2
+14,39,Morris,Wharton Boro,2,0,2,0,0
+15,1,Ocean,Barnegat Twsp,2,0,1,0,1
+15,2,Ocean,Barnegat Light Boro,-1,0,-1,0,0
+15,6,Ocean,Berkeley Twsp,1,0,1,1,0
+15,7,Ocean,Brick Twsp,5,2,2,0,2
+15,8,Ocean,Toms River,11,-1,8,1,4
+15,12,Ocean,Jackson Twsp,7,0,10,3,-1
+15,13,Ocean,Lacey Twsp,3,0,2,0,1
+15,14,Ocean,Lakehurst Boro,0,0,0,0,0
+15,15,Ocean,Lakewood Twsp,5,2,2,1,1
+15,17,Ocean,Little Egg Harbor T,1,0,0,0,1
+15,18,Ocean,Long Beach Twsp,2,0,2,0,0
+15,19,Ocean,Manchester Twsp,5,0,4,1,0
+15,24,Ocean,Plumsted Twsp,1,0,1,0,1
+15,26,Ocean,Point Pleasant Beac,1,0,1,0,0
+15,30,Ocean,South Toms River Bo,2,0,2,0,1
+15,31,Ocean,Stafford Twsp,1,0,1,0,0
+15,33,Ocean,Tuckerton Boro,1,0,1,0,0
+16,2,Passaic,Clifton City,3,0,2,0,1
+16,3,Passaic,Haledon Boro,2,0,0,2,0
+16,4,Passaic,Hawthorne Boro,1,0,1,0,0
+16,7,Passaic,Passaic City,1,0,2,0,0
+16,8,Passaic,Paterson City,4,0,1,1,2
+16,11,Passaic,Ringwood Boro,0,0,0,0,0
+16,12,Passaic,Totowa Boro,2,0,2,2,0
+16,13,Passaic,Wanaque Boro,2,0,1,0,2
+16,14,Passaic,Wayne Twsp,1,0,0,0,1
+16,15,Passaic,West Milford Twsp,2,0,1,1,0
+16,16,Passaic,Woodland Park Boro,1,0,0,0,2
+17,1,Salem,Alloway Twsp,1,0,1,0,0
+17,2,Salem,Carneys Point Twsp,1,0,1,2,0
+17,6,Salem,Mannington Twsp,2,0,2,0,0
+17,7,Salem,Oldmans Twsp,1,0,1,0,0
+17,8,Salem,Penns Grove Bor,1,0,0,0,1
+17,9,Salem,Pennsville Twsp,1,0,1,0,0
+17,10,Salem,Pilesgrove Twsp,3,0,2,1,0
+17,11,Salem,Pittsgrove Twsp,2,0,2,0,0
+17,12,Salem,Quinton Twsp,2,0,2,0,0
+17,14,Salem,Upper Pittsgrove Tw,1,0,1,1,0
+18,2,Somerset,Bernards Twsp,2,0,1,1,1
+18,5,Somerset,Branchburg Twsp,1,0,1,0,0
+18,6,Somerset,Bridgewater Twsp,2,0,0,1,2
+18,8,Somerset,Franklin Twsp,3,0,3,0,0
+18,10,Somerset,Hillsborough Twsp,0,0,0,0,0
+18,13,Somerset,Montgomery Twsp,1,0,1,0,0
+18,14,Somerset,North Plainfield Bo,0,0,0,0,0
+18,21,Somerset,Watchung Boro,2,0,2,0,0
+19,4,Sussex,Byram Twsp,0,0,0,0,0
+19,5,Sussex,Frankford Twsp,1,0,1,0,0
+19,9,Sussex,Hamburg Boro,1,0,1,0,0
+19,11,Sussex,Hardyston Twsp,1,0,0,0,1
+19,14,Sussex,Montague Twsp,3,0,3,0,1
+19,17,Sussex,Sandyston Twsp,1,0,1,0,0
+19,18,Sussex,Sparta Twsp,4,0,2,0,2
+19,24,Sussex,Wantage Twsp,1,0,1,0,0
+20,1,Union,Berkeley Heights Tw,1,0,0,0,1
+20,4,Union,Elizabeth City,10,0,4,0,7
+20,7,Union,Hillside Twsp,2,0,2,1,0
+20,9,Union,Linden City,3,0,1,0,3
+20,10,Union,Mountainside Boro,1,0,0,1,0
+20,12,Union,Plainfield City,8,0,4,1,2
+20,13,Union,Rahway City,1,0,2,0,0
+20,14,Union,Roselle Boro,1,0,1,0,0
+20,16,Union,Scotch Plains Twsp,1,0,0,0,1
+20,17,Union,Springfield Twsp,2,0,2,0,0
+20,19,Union,Union Twsp,8,0,2,0,5
+20,20,Union,Westfield Town,1,1,0,0,0
+21,1,Warren,Allamuchy Twsp,0,0,0,0,0
+21,4,Warren,Blairstown Twsp,0,0,0,0,0
+21,6,Warren,Frelinghuysen Twsp,1,0,0,0,1
+21,8,Warren,Hackettstown Town,0,0,0,0,0
+21,11,Warren,Hope Twsp,2,0,2,0,0
+21,13,Warren,Knowlton Twsp,0,0,0,0,0
+21,19,Warren,Phillipsburg To,2,0,0,0,2
+21,23,Warren,White Twsp,1,0,1,1,0

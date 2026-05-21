@@ -79,15 +79,24 @@ type TypeCounts = {
 const curYear = new Date().getFullYear()
 const prvYear = curYear - 1
 
-const typeCountsQuery = (county: string | null) => `
+// Projected current-year totals. `projected.csv` has county rows (`mc`
+// NULL, keyed by `county` name) and municipality rows (keyed by NJGIN
+// `(cc, mc)`); the statewide projection sums the county rows.
+const typeCountsQuery = (county: string | null, cc: number | null, mc: number | null) => {
+    const where =
+        cc !== null && mc !== null ? `WHERE cc = ${cc} AND mc = ${mc}`
+        : county ? `WHERE county = '${county}' AND mc IS NULL`
+        : `WHERE mc IS NULL`
+    return `
     SELECT
         CAST(sum(driver) as INT) as driver,
         CAST(sum(pedestrian) as INT) as pedestrian,
         CAST(sum(cyclist) as INT) as cyclist,
         CAST(sum(passenger) as INT) as passenger
     FROM read_csv_auto('projected')
-    ${county ? `WHERE county = '${county}'` : ``}
+    ${where}
 `
+}
 
 // Query for ytc data
 const ytcQueryFn = (county: string | null) => `
@@ -180,8 +189,6 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     const db = useDb()
     const plotColors = usePlotColors()
     const county = initialCounty
-    // Municipality-level: use cc/mc from props (no county dropdown when muni-level)
-    const hasMuniFilter = propCc !== null && propMc !== null
     // hoverTrace from pltly (unused — no native Plotly legend on this plot)
     const [showProjected, setShowProjected] = useState(true)
     const [projSolidity, setProjSolidity] = useSessionStorage<number>('njsp-deaths-projSolidity', 0.75)
@@ -266,10 +273,9 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     // Use monthly-aggregated data if available, fall back to ytc
     const ytRows = yearlyFromMonthly.length > 0 ? yearlyFromMonthly : ytcRows
 
-    // Projections (county-level only, not available at muni level)
-    const projectionsQueryStr = useMemo(() => hasMuniFilter ? null : typeCountsQuery(county), [county, hasMuniFilter])
-    const [projectionsRaw] = useQuery<TypeCounts>({ db: projectionsDb, query: projectionsQueryStr, init: [{ driver: 0, pedestrian: 0, cyclist: 0, passenger: 0 }] })
-    const projections = hasMuniFilter ? null : projectionsRaw
+    // Projected current-year totals (statewide / county / municipality).
+    const projectionsQueryStr = useMemo(() => typeCountsQuery(county, propCc ?? null, propMc ?? null), [county, propCc, propMc])
+    const [projections] = useQuery<TypeCounts>({ db: projectionsDb, query: projectionsQueryStr, init: [{ driver: 0, pedestrian: 0, cyclist: 0, passenger: 0 }] })
     const monthlyQueryStr = useMemo(() => monthlyQueryFn(county, propCc ?? null, propMc ?? null), [county, propCc, propMc])
     const monthlyRows = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
 
@@ -894,7 +900,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                     )}
                 </>}
             />
-            {!isMonthly && !hasMuniFilter && (curYearActual > 0 || curYearProjectedTotal > 0) && (
+            {!isMonthly && (curYearActual > 0 || curYearProjectedTotal > 0) && (
                 <p className={css.plotStats}>
                     {asOfShort && (
                         <><A href={refreshSha ? `${GitHub.href}/commit/${refreshSha}` : `${GitHub.href}/commits/main`}>As of {asOfShort}</A>, </>
