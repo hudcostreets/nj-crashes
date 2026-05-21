@@ -92,7 +92,7 @@
   {
     "url": "http://localhost:4006/njsp/projected.csv",
     "status": 200,
-    "body_size": 474
+    "body_size": 10836
   },
   {
     "url": "http://localhost:4006/njsp/rundate.json",
@@ -197,11 +197,11 @@
   {
     "url": "https://crashes-api.ryan-0dc.workers.dev/njsp/crashes?limit=20&offset=0",
     "status": 200,
-    "body_size": 3738
+    "body_size": 3756
   },
   {
     "url": "https://crashes-api.ryan-0dc.workers.dev/njsp/crashes?limit=20&offset=0",
     "status": 200,
-    "body_size": 3738
+    "body_size": 3756
   }
 ]
