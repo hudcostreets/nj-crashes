@@ -1,0 +1,94 @@
+name: CI
+
+# Fast checks on every code push / PR. The daily data pipeline (`daily.yml`)
+# only commits data files, so the `paths` filter keeps those commits from
+# triggering CI. e2e here is just `legend-ux` (hermetic — homepage plots read
+# static parquet from `www/public/`); the API-dependent e2e specs need a local
+# API, tracked in `specs/hermetic-e2e-ci.md`.
+on:
+  push:
+    paths: &code-paths
+      - '.github/workflows/ci.yml'
+      - 'www/src/**'
+      - 'www/e2e/**'
+      - 'www/index.html'
+      - 'www/package.json'
+      - 'www/pnpm-lock.yaml'
+      - 'www/tsconfig*.json'
+      - 'www/vite.config.ts'
+      - 'www/playwright.config.ts'
+      - 'api/src/**'
+      - 'cells-api/src/**'
+      - 'njsp/**/*.py'
+      - 'njdot/**/*.py'
+      - 'nj_crashes/**/*.py'
+      - 'pyproject.toml'
+      - 'uv.lock'
+  pull_request:
+    paths: *code-paths
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: pytest
+        # `nj_crashes/tests/test_crash_lls.py` calls `Crashes.load()` — needs the
+        # full NJDOT dataset, so it's excluded until `specs/hermetic-e2e-ci.md`
+        # lands a fixture. `test_feed_snapshot.py`'s golden skips itself when
+        # `crash-log.parquet` is absent (its synthetic tests still run).
+        run: uv run --with pytest pytest njsp/tests nj_crashes/tests --ignore=nj_crashes/tests/test_crash_lls.py
+
+  www:
+    name: Typecheck, build, unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 10
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: www/pnpm-lock.yaml
+      - name: Install
+        run: cd www && pnpm install
+      - name: Typecheck + build
+        run: cd www && pnpm build
+      - name: Unit tests
+        run: cd www && pnpm test:unit
+
+  e2e:
+    name: e2e (legend-ux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 10
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: www/pnpm-lock.yaml
+      - name: Install
+        run: cd www && pnpm install
+      - name: Install Playwright (chromium)
+        run: cd www && pnpm exec playwright install --with-deps chromium
+      - name: e2e — legend-ux
+        run: cd www && pnpm exec playwright test e2e/legend-ux.spec.ts --reporter=list
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-results
+          path: www/test-results/
+          retention-days: 7
