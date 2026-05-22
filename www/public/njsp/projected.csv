@@ -8,9 +8,9 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Essex,,44,0,14,5,28
 ,,Gloucester,,23,2,14,4,3
 ,,Hudson,,29,1,8,0,22
-,,Hunterdon,,5,0,3,1,1
+,,Hunterdon,,4,0,2,1,1
 ,,Mercer,,28,1,11,7,10
-,,Middlesex,,58,1,34,9,17
+,,Middlesex,,56,1,34,9,15
 ,,Monmouth,,40,1,14,6,18
 ,,Morris,,30,1,16,1,13
 ,,Ocean,,48,1,36,5,10
@@ -18,7 +18,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Salem,,13,0,11,3,1
 ,,Somerset,,10,0,7,1,2
 ,,Sussex,,21,0,8,0,3
-,,Union,,39,1,23,2,19
+,,Union,,39,1,23,2,20
 ,,Warren,,4,0,2,1,2
 1,1,Atlantic,Absecon City,1,0,0,0,1
 1,2,Atlantic,Atlantic City,5,2,1,0,2
@@ -149,7 +149,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 9,11,Hudson,Weehawken Twsp,1,0,1,0,0
 9,12,Hudson,West New York Town,2,0,0,0,2
 10,2,Hunterdon,Bethlehem Twsp,0,0,0,0,0
-10,6,Hunterdon,Clinton Twsp,1,0,1,0,0
+10,6,Hunterdon,Clinton Twsp,0,0,0,0,0
 10,7,Hunterdon,Delaware Twsp,0,0,0,0,0
 10,8,Hunterdon,East Amwell Tws,0,0,0,0,0
 10,16,Hunterdon,Kingwood Twsp,2,0,2,0,0
@@ -176,7 +176,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 12,16,Middlesex,Perth Amboy City,2,0,0,0,2
 12,17,Middlesex,Piscataway Twsp,1,0,1,0,0
 12,18,Middlesex,Plainsboro Twsp,1,0,1,0,0
-12,19,Middlesex,Sayreville Boro,3,0,2,0,1
+12,19,Middlesex,Sayreville Boro,2,0,2,0,0
 12,20,Middlesex,South Amboy City,1,0,1,0,0
 12,21,Middlesex,South Brunswick Tws,7,0,3,0,3
 12,23,Middlesex,South River Boro,2,0,2,0,1
