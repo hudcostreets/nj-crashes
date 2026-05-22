@@ -11,6 +11,7 @@ import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { COLORSCALES, ColorScaleName, getColorAt } from "@/src/lib/colorscales"
 import { ControlsGear } from "@/src/components/ControlsGear"
+import { trailing365Series } from "./trailing365"
 import css from "./plot.module.scss"
 
 const HEIGHT = 450
@@ -73,7 +74,28 @@ function dayToRefDate(dayOfYear: number): string {
     return date.toISOString().split('T')[0]
 }
 
-type ViewMode = 'ytd' | 'full-faded' | 'full'
+// Shared legend layout — extracted so the trailing-365 branch reuses it.
+function legendLayout(position: 'bottom' | 'right', textColor: string) {
+    return {
+        font: { color: textColor },
+        traceorder: 'normal' as const,
+        ...(position === 'right' ? {
+            orientation: 'v' as const,
+            x: 1.02,
+            xanchor: 'left' as const,
+            y: 1,
+            yanchor: 'top' as const,
+        } : {
+            orientation: 'h' as const,
+            x: 0.5,
+            xanchor: 'center' as const,
+            y: -0.08,
+            yanchor: 'top' as const,
+        }),
+    }
+}
+
+type ViewMode = 'ytd' | 'full-faded' | 'full' | 'trailing-365'
 
 export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, regionLabel }: Props) {
     const db = useDb()
@@ -110,6 +132,76 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     const { data, layout } = useMemo(() => {
         if (!ytdRows.length) {
             return { data: [], layout: {} as Partial<Layout> }
+        }
+
+        // Trailing-365 mode: per year, cumulative deaths over the 365 days
+        // ending on today's date. Unlike YTD (which compares partial Jan-1
+        // slices), every line here is a complete, comparable 365-day window.
+        if (viewMode === 'trailing-365') {
+            const curYear = new Date().getFullYear()
+            const { xDates, series } = trailing365Series(ytdRows, new Date())
+
+            const minWin = series[0]?.year ?? curYear
+            const maxWin = (series[series.length - 1]?.year ?? curYear) + 1
+            const traces: PlotData[] = series.map((s, idx) => {
+                const color = getColorAt(colorScale, (s.year - minWin) / (maxWin - minWin))
+                const yearLabel = `'${String(s.year).slice(2)}`
+                return {
+                    type: "scatter",
+                    mode: "lines",
+                    name: yearLabel,
+                    x: xDates,
+                    y: s.cumulative,
+                    customdata: s.daily.map(f => f > 0 ? ` +${f}` : ''),
+                    line: { color, width: s.year === curYear ? 4 : 2 },
+                    legendrank: idx,
+                    hovertemplate: `%{y}%{customdata}<extra>${yearLabel}</extra>`,
+                } as PlotData
+            })
+
+            // Month-boundary ticks across the window.
+            const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+            const tickvals: string[] = []
+            const ticktext: string[] = []
+            for (const iso of xDates) {
+                if (iso.endsWith('-01')) {
+                    tickvals.push(iso)
+                    ticktext.push(MONTHS[parseInt(iso.slice(5, 7), 10) - 1])
+                }
+            }
+
+            const trailingLayout: Partial<Layout> = {
+                showlegend: true,
+                height: HEIGHT,
+                margin: { t: 0, b: legendPosition === 'bottom' ? 80 : 40, l: 35, r: 5 },
+                paper_bgcolor: plotColors.paperBg,
+                plot_bgcolor: plotColors.plotBg,
+                hovermode: "x unified",
+                hoverdistance: -1,
+                hoverlabel: { bgcolor: '#1a1a2e', bordercolor: plotColors.gridColor, font: { color: '#ffffff' } },
+                xaxis: {
+                    tickfont: { color: plotColors.textColor, size: 13 },
+                    gridcolor: plotColors.gridColor,
+                    tickangle: -45,
+                    automargin: true,
+                    tickmode: 'array',
+                    tickvals,
+                    ticktext,
+                    fixedrange: true,
+                    hoverformat: '%b %e',
+                },
+                yaxis: {
+                    automargin: false,
+                    tickfont: { color: plotColors.textColor, size: 11 },
+                    gridcolor: plotColors.gridColor,
+                    fixedrange: true,
+                    rangemode: "tozero",
+                    autorange: true,
+                },
+                legend: legendLayout(legendPosition, plotColors.textColor),
+                dragmode: false,
+            }
+            return { data: traces, layout: trailingLayout }
         }
 
         // Group data by year
@@ -383,23 +475,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                 autorange: !isYtd,
                 ...yRangeOverride,
             },
-            legend: {
-                font: { color: plotColors.textColor },
-                traceorder: 'normal',
-                ...(legendPosition === 'right' ? {
-                    orientation: 'v' as const,
-                    x: 1.02,
-                    xanchor: 'left' as const,
-                    y: 1,
-                    yanchor: 'top' as const,
-                } : {
-                    orientation: 'h' as const,
-                    x: 0.5,
-                    xanchor: 'center' as const,
-                    y: -0.08,
-                    yanchor: 'top' as const,
-                }),
-            },
+            legend: legendLayout(legendPosition, plotColors.textColor),
             shapes,
             dragmode: false,
         }
@@ -574,7 +650,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
                         <p style={{ margin: 0 }}>Some data arrives weeks or months after the fact, so current year numbers are especially subject to change.</p>
                     </PlotInfo>
                     <div className={css.buttonBar}>
-                        {([['ytd', 'YTD'], ['full-faded', 'Faded'], ['full', 'Full']] as const).map(([mode, label]) => (
+                        {([['ytd', 'YTD'], ['full-faded', 'Faded'], ['full', 'Full'], ['trailing-365', 'Trailing']] as const).map(([mode, label]) => (
                             <button
                                 key={mode}
                                 className={viewMode === mode ? css.active : ''}
