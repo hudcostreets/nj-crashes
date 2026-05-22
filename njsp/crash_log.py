@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Literal
 
@@ -13,10 +14,16 @@ from nj_crashes.utils.github import GithubCommit, Blob
 from nj_crashes.utils.log import Log
 from njsp.commit_crashes import get_repo, CommitCrashes, get_rundate, SHORT_SHA_LEN, DEFAULT_ROOT_SHA_PARENT
 from njsp.fauqstats import FAUQStats
-from njsp.paths import CRASHES_RELPATH
+from njsp.paths import CRASH_LOG_PQT, CRASHES_RELPATH
 from njsp.utils import parse_rundate
 
 Kind = Literal['add', 'update', 'del']
+
+# `FAUQStats.crashes` columns — crash-log carries all of them (plus `rundate`/`kind`).
+FAUQSTATS_COLS = [
+    'CCODE', 'CNAME', 'MCODE', 'MNAME', 'STREET', 'HIGHWAY', 'LOCATION',
+    'FATALITIES', 'FATAL_D', 'FATAL_P', 'FATAL_T', 'FATAL_B', 'INJURIES', 'dt',
+]
 
 
 def get_commit_crash_updates(
@@ -146,3 +153,56 @@ def get_crash_log(
         )
 
     return crash_log
+
+
+@dataclass
+class FeedSnapshot:
+    """The NJSP fatal-crash feed's view of one year, as of a point in time."""
+    year: int
+    rundate: Timestamp
+    crashes: DataFrame  # indexed by ACCID; columns match `FAUQStats.crashes`
+
+
+def feed_snapshot(
+    year: int,
+    as_of: str | datetime | Timestamp,
+    crash_log: DataFrame | None = None,
+) -> FeedSnapshot:
+    """Reconstruct the NJSP feed's view of ``year``'s fatal crashes as of
+    ``as_of``, by replaying ``crash-log.parquet`` add/update/del events.
+
+    Equivalent to checking out ``FAUQStats{year}.xml`` from the oldest commit
+    whose rundate is >= ``as_of`` — what ``njsp.ytd`` previously did via a
+    git-history walk — but as a static parquet query. ``as_of`` is snapped
+    forward to the first feed rundate on or after it, matching the walk's
+    "oldest commit with rundate >= target" rule.
+    """
+    if crash_log is None:
+        crash_log = pd.read_parquet(CRASH_LOG_PQT)
+    cl = crash_log.reset_index()
+
+    as_of = to_datetime(as_of)
+    if as_of.tz is None:
+        as_of = as_of.tz_localize(TZ)
+
+    rundates = cl['rundate']
+    earliest = rundates.min()
+    if as_of < earliest:
+        raise ValueError(f"crash-log starts at {earliest}; cannot reconstruct the feed as of {as_of}")
+    on_or_after = rundates[rundates >= as_of]
+    if on_or_after.empty:
+        raise ValueError(f"crash-log has no rundate >= {as_of} (latest is {rundates.max()})")
+    snapped = on_or_after.min()
+
+    # Each accid's state at `snapped` is its latest event at or before it; the
+    # crash is present unless that event is a deletion. Take whole rows (not a
+    # per-column `groupby.last`, which would skip NaNs from an older event).
+    latest = (
+        cl[cl['rundate'] <= snapped]
+        .sort_values('rundate', kind='stable')
+        .drop_duplicates('accid', keep='last')
+    )
+    present = latest[latest['kind'] != 'del']
+    crashes = present[present['dt'].dt.year == year].set_index('accid')[FAUQSTATS_COLS]
+    crashes.index.name = 'ACCID'
+    return FeedSnapshot(year=year, rundate=snapped, crashes=crashes)

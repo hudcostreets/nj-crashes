@@ -1,15 +1,11 @@
-import json
 import pandas as pd
 from dataclasses import dataclass
 from functools import cached_property
-from git import Repo, Commit
 from os.path import exists
-from typing import Tuple
-from utz import err, singleton
+from utz import err
 
-from nj_crashes.utils import TZ, git
-from nj_crashes.utils.git import SHORT_SHA_LEN
-from njsp import rundate
+from nj_crashes.utils import TZ
+from njsp.crash_log import feed_snapshot
 from njsp.crashes import load
 from njsp.fauqstats import FAUQStats
 from njsp.paths import fauqstats_relpath
@@ -46,31 +42,6 @@ def fill_all_days(df, rundate: Rundate):
         df = df[df.index < rundate_ytd_days]
     df['YTD Deaths'] = df['YTD Deaths'].ffill().fillna(0).astype(int)
     return df
-
-
-def oldest_commit_rundate_since(dt: str) -> Tuple[Commit, str]:
-    """Iterate through Git commit history, looking for the oldest commit that's more recent than the given date."""
-    err(f'Searching for oldest commit with rundate ≥{dt}')
-    repo = Repo()
-    prv_commit = None
-    prv_rundate = None
-    commits = repo.iter_commits()
-    shas = []
-    while True:
-        try:
-            commit = next(commits)
-        except StopIteration:
-            raise RuntimeError(f"Ran out of commits after {len(shas)}, looking for {dt}: {','.join(shas)}")
-        short_sha = commit.hexsha[:SHORT_SHA_LEN]
-        shas.append(short_sha)
-        rundate_blob = rundate.blob_from_commit(commit)
-        rundate_object = json.load(rundate_blob.data_stream)
-        commit_rundate = rundate_object["rundate"]
-        if commit_rundate < dt:
-            err(f'Found rundate {commit_rundate} < {dt} at commit {short_sha}; returning commit {prv_commit.hexsha[:7]}')
-            return prv_commit, prv_rundate
-        prv_commit = commit
-        prv_rundate = commit_rundate
 
 
 def projected_roy_deaths(prv_ytd, prv_end, cur_ytd, cur_ytd_frac):
@@ -135,31 +106,26 @@ class Ytd:
         return self.rundate.year
 
     @cached_property
-    def prv_commit_rundate(self) -> Tuple[Commit, str]:
-        prv_rundate_target = f'{self.prv_year}-{self.rundate.cur.strftime("%m-%d")}'
-        return oldest_commit_rundate_since(prv_rundate_target)
-
-    @property
-    def prv_commit(self) -> Commit:
-        return self.prv_commit_rundate[0]
+    def prv_feed_snapshot(self):
+        """Previous year's fatal-crash feed as it stood ~365 days ago,
+        reconstructed from `crash-log.parquet` — see `feed_snapshot`. Used to
+        compare this year's YTD against last year's *equally-incomplete* YTD,
+        cancelling NJSP reporting lag."""
+        target = f'{self.prv_year}-{self.rundate.cur.strftime("%m-%d")}'
+        return feed_snapshot(self.prv_year, target)
 
     @cached_property
     def prv_rundate(self):
-        return self.prv_commit_rundate[1]
-
-    @cached_property
-    def prv_ytd_fauqstats(self):
-        fauqstats_blob = git.blob_from_commit(self.prv_commit, fauqstats_relpath(self.prv_year))
-        return FAUQStats.load(fauqstats_blob)
-
-    @cached_property
-    def prv_ytd_total(self):
-        """Number of deaths reported by NJSP at the closest point in the previous year."""
-        return singleton(self.prv_ytd_fauqstats.totals.fatalities)
+        return self.prv_feed_snapshot.rundate
 
     @cached_property
     def prv_ytd_crashes(self):
-        return self.prv_ytd_fauqstats.crashes
+        return self.prv_feed_snapshot.crashes
+
+    @cached_property
+    def prv_ytd_total(self):
+        """Number of deaths NJSP had reported for the previous year as of ~365 days ago."""
+        return int(self.prv_feed_snapshot.crashes.FATALITIES.sum())
 
     @cached_property
     def cur_ytd_fauqstats(self):
