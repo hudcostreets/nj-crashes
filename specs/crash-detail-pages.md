@@ -127,13 +127,29 @@ pipeline-run lookback). A separate task:
 6. Merge into `crash_refs.parquet`.
 
 ## Implementation Order
-1. Add `/njdot/crash` API endpoint (or use existing endpoints)
-2. Add route + page component for `/crash/:year/:cc/:mc/:case`
-3. Build crash detail page with basic crash info
-4. Add vehicle/occupant/pedestrian sections (data already available via API)
-5. Wire up table row links → detail page
-6. Add NJSP cross-reference for fatal crashes
+1. ✅ Add `/njdot/crash` API endpoint — `api/src/index.ts`, joins V/O/P
+   in one round-trip.
+2. ✅ Add route + page component for `/crash/:year/:cc/:mc/:case`
+   (`f26188d125e`).
+3. ✅ Build crash detail page with basic crash info — Location,
+   Conditions, Casualties sections.
+4. ✅ Add vehicle/occupant/pedestrian sections — Vehicles (with nested
+   occupants) + Pedestrians & cyclists.
+5. ✅ Wire up NJDOT crash-table date cells → detail page
+   (`crashDetailHref` helper in `crash.ts`; `getNjdotCrashRows` `dt`
+   cell is now a `<Link>`). Unit + e2e tests added.
+6. Add NJSP cross-reference for fatal crashes — needs the
+   `njsp_njdot_match.parquet` pairs exposed to the FE (no D1 table for
+   matches yet; small backend ask).
 7. Slack backfill → `crash_refs.parquet`
 8. "References" section on detail pages rendering `crash_refs`
 9. Embed Bluesky thread view
 10. PR-template "Add a reference" affordance
+
+Steps 1–5 are the reachable-detail-page MVP (Phase 1 = 1–4, Phase 2 =
+5). Steps 6–10 (cross-media aggregation) are independent follow-ups;
+6 unblocks the rest with a modest backend addition. Polish noted while
+verifying step 5: `CrashDetailPage` shows "condition 5" verbatim for
+uninjured occupants — `ConditionMap` only labels codes 0–4 (code 5 =
+"no apparent injury"); the page needs its own extended label map since
+the shared `ConditionMap` length gates icon rendering.

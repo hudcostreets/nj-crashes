@@ -1,7 +1,7 @@
 import { ReactNode, useMemo } from "react";
 import { Result } from "@/src/api";
 import { useApi, useApiEager, apiUrl } from "@/src/api";
-import { Crash } from "@/src/crash";
+import { Crash, crashDetailHref } from "@/src/crash";
 import { Row } from "@/src/result-table";
 import { map } from "fp-ts/Either";
 import { CC2MC2MN } from "@/src/county";
@@ -13,6 +13,7 @@ import { CrashesOccupants, Occupant, useCrashOccupants } from "@/src/crash-occup
 import { CrashesPedestrians, Pedestrian, useCrashPedestrians } from "@/src/crash-pedestrians";
 import { CrashesVehicles, useCrashVehicles, Vehicle } from "@/src/crash-vehicles";
 import A from "@/src/lib/a"
+import { Link } from "react-router-dom"
 import { Tooltip } from "@/src/tooltip"
 import moment from "moment-timezone";
 import CityLink from "@/src/city-link";
@@ -185,10 +186,10 @@ export function getNjdotCrashRows({ rows, cols, cc2mc2mn, crashOccupants, crashP
             ...cols.map(col => {
                 let txt: ReactNode = ''
                 if (col == 'dt') {
-                    txt = <Tooltip title={`Crash ID: ${id}`}>
-                        <span>{
+                    txt = <Tooltip title={`View crash ${row.case}`}>
+                        <Link to={crashDetailHref(row)}>{
                             strftime('%-m/%-d/%y %-I:%M%p', new Date(row.dt))
-                        }</span>
+                        }</Link>
                     </Tooltip>
                 } else if (col == 'll') {
                     const { ilat, ilon, olat, olon } = row
