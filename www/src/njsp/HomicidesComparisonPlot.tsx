@@ -4,7 +4,7 @@ import type { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredParquetDb } from "@/src/tableData"
 import { CrashHomicideParquet } from "@/src/paths"
-import { useAlignedDualAxes, LegendRow, LegendItem } from "pltly/react"
+import { useAlignedDualAxes, LegendRow, LegendItem, useLegendPin } from "pltly/react"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo, DataSource } from "@/src/icons"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
@@ -28,6 +28,11 @@ const SOURCES: DataSource[] = [
 // Original colors from the JSON spec
 const TRAFFIC_COLOR = '#e06080'  // Pinkish red
 const HOMICIDE_COLOR = '#60a0e0'  // Light blue
+
+// Legend item keys — also the plot trace names, so `legend.activeItem`
+// matches a trace `name` directly.
+const LEGEND_ITEMS = ['Car crash deaths', 'Homicides', 'Ratio'] as const
+type LegendKey = typeof LEGEND_ITEMS[number]
 
 export type Props = {
     id?: string
@@ -73,8 +78,10 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
     const crashHomicideQuery = useMemo(() => crashHomicideQueryFn(county ?? null, effectiveSource), [county, effectiveSource])
     const rows = useQuery<CrashHomicideRow>({ db: crashHomicideDb, query: crashHomicideQuery, init: [] })
 
-    const [activeTrace, setActiveTrace] = useState<string | null>(null)
-    useResetSolo(() => setActiveTrace(null))
+    // Pin/hover state for the custom legend (`pltly`'s `useLegendPin`),
+    // matching `FatalitiesPerYearPlot`.
+    const legend = useLegendPin<LegendKey>(LEGEND_ITEMS)
+    useResetSolo(legend.clear)
 
     const containerRef = useRef<HTMLDivElement>(null)
     const [containerWidth, setContainerWidth] = useState(800)
@@ -106,7 +113,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
             const v = Number(r.ratio)
             return isFinite(v) ? v : 0
         })
-        const isActive = (name: string) => activeTrace === name
+        const isActive = (name: string) => legend.activeItem === name
 
         // Traces: pltly handles fade, we add extras (width, text, zorder) for active trace
         const barTrace = (
@@ -228,7 +235,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
         }
 
         return { data: traces, layout, highlightRow, avgRatio }
-    }, [rows, activeTrace, plotColors, axisAlignment, avgYears, plotAnnotations])
+    }, [rows, legend.activeItem, plotColors, axisAlignment, avgYears, plotAnnotations])
 
 
     if (!data.length) {
@@ -249,7 +256,7 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
                 id={id}
                 data={data}
                 layout={layout}
-                onActiveTrace={setActiveTrace}
+                onResetSolo={legend.clear}
                 onClickAnnotation={() => annOpen.setPinned(!annOpen.pinned)}
                 onHoverAnnotation={() => annOpen.setHovered(true)}
                 onUnhoverAnnotation={() => annOpen.setHovered(false)}
@@ -262,9 +269,9 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
                     <AnnotationTrigger annotations={plotAnnotations} state={annOpen} />
                 </>}
                 center={<>
-                    <LegendItem color={TRAFFIC_COLOR} label="Car crash deaths" />
-                    <LegendItem color={HOMICIDE_COLOR} label="Homicides" />
-                    <LegendItem type="line" color="#fff" label="Ratio" />
+                    <LegendItem color={TRAFFIC_COLOR} label="Car crash deaths" {...legend.getItemProps('Car crash deaths')} />
+                    <LegendItem color={HOMICIDE_COLOR} label="Homicides" {...legend.getItemProps('Homicides')} />
+                    <LegendItem type="line" color="#fff" label="Ratio" {...legend.getItemProps('Ratio')} />
                 </>}
             />
             <AnnotationBody annotations={plotAnnotations} state={annOpen} />

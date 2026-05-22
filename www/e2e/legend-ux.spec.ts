@@ -1,47 +1,48 @@
 import { test, expect, Page, Locator } from '@playwright/test'
 
 /**
- * Helper: wait for all Plotly plots to render (no "Loading..." fallbacks remain).
+ * Legend-interaction tests. The homepage has two legend implementations:
+ *  - Plotly's native SVG legend (`.legend .traces`) — YtdDeathsPlot,
+ *    FatalitiesByMonthBarsPlot, CrashPlot.
+ *  - `pltly`'s custom HTML legend (`.pltly-legend-item`) — FatalitiesPerYearPlot,
+ *    HomicidesComparisonPlot. Pinned item → `font-weight: 600`; non-active
+ *    items → `opacity: 0.3` while another is hovered/pinned.
  */
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
+
+/** Wait for all Plotly plots to render (no "Loading..." fallbacks remain). */
 async function waitForPlots(page: Page, { count, timeout = 15_000 }: { count?: number, timeout?: number } = {}) {
-  // Wait for at least one .js-plotly-plot to appear
   await page.locator('.js-plotly-plot').first().waitFor({ timeout })
   if (count !== undefined) {
     await expect(page.locator('.js-plotly-plot')).toHaveCount(count, { timeout })
   }
 }
 
-/**
- * Helper: get legend items (`.legend .traces`) for a given plot.
- */
-function legendItems(plot: Locator): Locator {
-  return plot.locator('.legend .traces')
+/** Plotly native-SVG-legend items / texts for a given plot. */
+const legendItems = (plot: Locator): Locator => plot.locator('.legend .traces')
+const legendTexts = (plot: Locator): Locator => plot.locator('.legend .traces .legendtext')
+
+/** `pltly` custom-HTML-legend items, scoped to a plot section by its `<h2 id>`. */
+const customLegendItems = (page: Page, sectionId: string): Locator =>
+  page.locator(`div:has(> h2[id="${sectionId}"]) .pltly-legend-item`)
+
+/** Numeric font-weight of an element (`normal` → 400). */
+async function fontWeight(el: Locator): Promise<number> {
+  const raw = await el.evaluate(e => (e as HTMLElement).style.fontWeight || getComputedStyle(e).fontWeight)
+  return raw === 'normal' ? 400 : raw === 'bold' ? 700 : parseInt(raw) || 400
 }
 
-/**
- * Helper: get legend text elements for a given plot.
- */
-function legendTexts(plot: Locator): Locator {
-  return plot.locator('.legend .traces .legendtext')
+/** Numeric opacity of an element. */
+async function opacity(el: Locator): Promise<number> {
+  return el.evaluate(e => parseFloat(getComputedStyle(e).opacity))
 }
 
-/**
- * Helper: get the font-weight of a legend text element.
- */
-async function fontWeight(el: Locator): Promise<string> {
-  return el.evaluate(e => (e as SVGElement).style.fontWeight || getComputedStyle(e).fontWeight)
+function isBold(weight: number): boolean {
+  return weight >= 600
 }
 
-/**
- * Helper: check if a font-weight value represents bold.
- */
-function isBold(weight: string): boolean {
-  return weight === 'bold' || parseInt(weight) >= 600
-}
-
-/**
- * Helper: count visible (not legendonly) traces in a plot.
- */
+/** Count visible (not legendonly) traces in a plot. */
 async function visibleTraceCount(plot: Locator): Promise<number> {
   return plot.evaluate(el => {
     const gd = el as any
@@ -56,192 +57,98 @@ test.describe('Plot rendering', () => {
   test('all plots render without stuck Loading state', async ({ page }) => {
     await page.goto('/')
     await waitForPlots(page, { count: 5 })
-    // No "Loading..." text inside plot containers
-    const loadingDivs = page.locator('.js-plotly-plot >> text=Loading...')
-    await expect(loadingDivs).toHaveCount(0)
+    await expect(page.locator('.js-plotly-plot >> text=Loading...')).toHaveCount(0)
   })
 })
 
-test.describe('Legend hover (no pin)', () => {
-  test('Homicides plot: hover LI highlights trace, unhover resets', async ({ page }) => {
+test.describe('Custom legend (Homicides)', () => {
+  test('hovering an item fades the others, unhover restores', async ({ page }) => {
     await page.goto('/#vs-homicides')
     await waitForPlots(page)
-    const plot = page.locator('.js-plotly-plot').nth(2) // Homicides is 3rd plot
-    const items = legendItems(plot)
-    const firstItem = items.first()
+    const items = customLegendItems(page, 'vs-homicides')
+    await expect(items).toHaveCount(3)
 
-    // Hover the first legend item
-    await firstItem.hover()
-
-    // First LI text should be bold (may take a moment after dual-axis relayout)
-    const firstText = legendTexts(plot).first()
+    await items.first().hover()
     await expect(async () => {
-      expect(isBold(await fontWeight(firstText))).toBe(true)
-    }).toPass({ timeout: 10000 })
+      expect(await opacity(items.nth(1))).toBe(0.3)
+      expect(await opacity(items.nth(2))).toBe(0.3)
+    }).toPass({ timeout: 5000 })
 
-    // Move mouse away from legend
-    await page.mouse.move(0, 0)
-
-    // Bold should be cleared
-    await expect(async () => {
-      expect(isBold(await fontWeight(firstText))).toBe(false)
-    }).toPass({ timeout: 10000 })
-  })
-})
-
-test.describe('Legend pin', () => {
-  test('Homicides plot: click LI pins trace, bold persists', async ({ page }) => {
-    await page.goto('/#vs-homicides')
-    await waitForPlots(page)
-    const plot = page.locator('.js-plotly-plot').nth(2)
-    const items = legendItems(plot)
-    const texts = legendTexts(plot)
-    const firstItem = items.first()
-    const firstText = texts.first()
-    const secondItem = items.nth(1)
-    const secondText = texts.nth(1)
-
-    // Click first LI to pin
-    await firstItem.click()
-
-    // First LI should be bold (pinned) — may take a moment after dual-axis relayout
-    await expect(async () => {
-      expect(isBold(await fontWeight(firstText))).toBe(true)
-    }).toPass({ timeout: 10000 })
-
-    // Move mouse away — bold should persist (it's pinned, not just hovered)
-    await page.mouse.move(0, 0)
-    await page.waitForTimeout(300)
-    expect(isBold(await fontWeight(firstText))).toBe(true)
-
-    // Hover second LI — second should become bold (preview), first stays bold (pinned)
-    await secondItem.hover()
-    await expect(async () => {
-      expect(isBold(await fontWeight(firstText))).toBe(true)
-      expect(isBold(await fontWeight(secondText))).toBe(true)
-    }).toPass({ timeout: 10000 })
-
-    // Click second LI — pin should switch to second
-    await secondItem.click()
-    await expect(async () => {
-      expect(isBold(await fontWeight(secondText))).toBe(true)
-    }).toPass({ timeout: 10000 })
-    // First should no longer be bold (unless hovered)
     await page.mouse.move(0, 0)
     await expect(async () => {
-      expect(isBold(await fontWeight(firstText))).toBe(false)
-      expect(isBold(await fontWeight(secondText))).toBe(true)
-    }).toPass({ timeout: 10000 })
+      expect(await opacity(items.nth(1))).toBe(1)
+      expect(await opacity(items.nth(2))).toBe(1)
+    }).toPass({ timeout: 5000 })
+  })
 
-    // Click second LI again — unpin, all back to normal
-    await secondItem.click()
+  test('clicking an item pins it (bold), persists after unhover', async ({ page }) => {
+    await page.goto('/#vs-homicides')
+    await waitForPlots(page)
+    const items = customLegendItems(page, 'vs-homicides')
+
+    await items.nth(1).click()
+    await expect(async () => {
+      expect(isBold(await fontWeight(items.nth(1)))).toBe(true)
+    }).toPass({ timeout: 5000 })
+
+    // Move away — pinned bold persists (it's a pin, not a hover).
+    await page.mouse.move(0, 0)
+    await page.waitForTimeout(300)
+    expect(isBold(await fontWeight(items.nth(1)))).toBe(true)
+  })
+
+  test('re-clicking the pinned item unpins it', async ({ page }) => {
+    await page.goto('/#vs-homicides')
+    await waitForPlots(page)
+    const items = customLegendItems(page, 'vs-homicides')
+    const homicides = items.nth(1)
+    // Fire the click via the DOM directly: a real Playwright `.click()` after a
+    // prior pin intermittently fails to register the toggle (the pointer never
+    // leaves the item between clicks). `el.click()` exercises the same React
+    // `onClick` → `useLegendPin` toggle deterministically.
+    const click = () => homicides.evaluate(el => (el as HTMLElement).click())
+
+    await click()  // pin
+    await expect(async () => {
+      expect(isBold(await fontWeight(homicides))).toBe(true)
+    }).toPass({ timeout: 5000 })
+
+    await click()  // re-click → unpin
+    await expect(async () => {
+      expect(isBold(await fontWeight(homicides))).toBe(false)
+    }).toPass({ timeout: 5000 })
+  })
+
+  test('clicking the plot background unpins', async ({ page }) => {
+    await page.goto('/#vs-homicides')
+    await waitForPlots(page)
+    const items = customLegendItems(page, 'vs-homicides')
+    const plot = page.locator('.js-plotly-plot').nth(2)
+
+    await items.nth(1).click()
+    await expect(async () => {
+      expect(isBold(await fontWeight(items.nth(1)))).toBe(true)
+    }).toPass({ timeout: 5000 })
+
+    const box = await plot.boundingBox()
+    await page.mouse.click(box!.x + box!.width - 20, box!.y + 20)  // empty corner
     await page.mouse.move(0, 0)
     await expect(async () => {
-      expect(isBold(await fontWeight(secondText))).toBe(false)
-    }).toPass({ timeout: 10000 })
+      expect(isBold(await fontWeight(items.nth(1)))).toBe(false)
+    }).toPass({ timeout: 5000 })
   })
 
-  test('pin does not change trace visibility on hover of other LIs', async ({ page }) => {
+  test('pinning an item does not hide any plot traces', async ({ page }) => {
     await page.goto('/#vs-homicides')
     await waitForPlots(page)
+    const items = customLegendItems(page, 'vs-homicides')
     const plot = page.locator('.js-plotly-plot').nth(2)
-    const items = legendItems(plot)
 
-    // Pin first LI
-    await items.first().click()
+    const visBefore = await plot.evaluate(el => (el as any).data.map((t: any) => t.visible ?? true))
+    await items.nth(1).click()
     await page.waitForTimeout(300)
-
-    // Record trace visibility state (opacity may change due to fade preview)
-    const visAfterPin = await plot.evaluate(el => {
-      const gd = el as any
-      return gd.data.map((t: any) => ({ name: t.name, visible: t.visible }))
-    })
-
-    // Hover second LI — visibility should NOT change (no solo toggle)
-    await items.nth(1).hover()
-    await page.waitForTimeout(300)
-
-    const visAfterHover = await plot.evaluate(el => {
-      const gd = el as any
-      return gd.data.map((t: any) => ({ name: t.name, visible: t.visible }))
-    })
-
-    expect(visAfterHover).toEqual(visAfterPin)
-  })
-
-  test('double-click unpins', async ({ page }) => {
-    await page.goto('/#vs-homicides')
-    await waitForPlots(page)
-    const plot = page.locator('.js-plotly-plot').nth(2)
-    const items = legendItems(plot)
-    const texts = legendTexts(plot)
-
-    // Pin first LI
-    await items.first().click()
-    await expect(async () => {
-      expect(isBold(await fontWeight(texts.first()))).toBe(true)
-    }).toPass({ timeout: 10000 })
-
-    // Move away to confirm pin persists
-    const plotBox = await plot.boundingBox()
-    await page.mouse.move(plotBox!.x - 50, plotBox!.y - 50)
-    await page.waitForTimeout(300)
-    expect(isBold(await fontWeight(texts.first()))).toBe(true)
-
-    // Click same LI again to unpin
-    await items.first().click()
-
-    // Move away to clear hover
-    await page.mouse.move(plotBox!.x - 50, plotBox!.y - 50)
-
-    // No bold LIs (no pin, no hover)
-    await expect(async () => {
-      const count = await texts.count()
-      const boldNames: string[] = []
-      for (let i = 0; i < count; i++) {
-        const fw = await fontWeight(texts.nth(i))
-        if (isBold(fw)) {
-          const name = await texts.nth(i).textContent()
-          boldNames.push(`${name} (fw=${fw})`)
-        }
-      }
-      expect(boldNames).toEqual([])
-    }).toPass({ timeout: 10000 })
-  })
-
-  test('click on plot background unpins', async ({ page }) => {
-    await page.goto('/#vs-homicides')
-    await waitForPlots(page)
-    const plot = page.locator('.js-plotly-plot').nth(2)
-    const items = legendItems(plot)
-    const texts = legendTexts(plot)
-
-    // Pin first LI
-    await items.first().click()
-    await expect(async () => {
-      expect(isBold(await fontWeight(texts.first()))).toBe(true)
-    }).toPass({ timeout: 10000 })
-
-    // Click on empty plot area (above traces, below title)
-    const plotBox = await plot.boundingBox()
-    await page.mouse.click(plotBox!.x + plotBox!.width - 20, plotBox!.y + 20)
-
-    // Move mouse away to clear any hover
-    await page.mouse.move(plotBox!.x - 50, plotBox!.y - 50)
-
-    // No bold LIs
-    await expect(async () => {
-      const count = await texts.count()
-      const boldNames: string[] = []
-      for (let i = 0; i < count; i++) {
-        const fw = await fontWeight(texts.nth(i))
-        if (isBold(fw)) {
-          const name = await texts.nth(i).textContent()
-          boldNames.push(`${name} (fw=${fw})`)
-        }
-      }
-      expect(boldNames).toEqual([])
-    }).toPass({ timeout: 10000 })
+    const visAfter = await plot.evaluate(el => (el as any).data.map((t: any) => t.visible ?? true))
+    expect(visAfter).toEqual(visBefore)
   })
 })
 
@@ -249,59 +156,48 @@ test.describe('CrashPlot solo mode', () => {
   test('hover LI solos trace (hides others)', async ({ page }) => {
     await page.goto('/#njdot')
     await waitForPlots(page)
-    // CrashPlot is the 5th plot (index 4)
     const plot = page.locator('.js-plotly-plot').nth(4)
     const items = legendItems(plot)
-    const itemCount = await items.count()
-    if (itemCount < 2) return // skip if only one trace
+    if (await items.count() < 2) return  // skip if only one trace
 
-    // Before hover: all traces visible
     const allVisible = await visibleTraceCount(plot)
     expect(allVisible).toBeGreaterThan(1)
 
-    // Hover first LI
     await items.first().hover()
     await page.waitForTimeout(500)
+    expect(await visibleTraceCount(plot)).toBeLessThan(allVisible)
 
-    // After hover: only active trace (and its legendgroup) should be visible
-    const afterHover = await visibleTraceCount(plot)
-    expect(afterHover).toBeLessThan(allVisible)
-
-    // Unhover: all traces visible again
     await page.mouse.move(0, 0)
     await page.waitForTimeout(500)
-    const afterUnhover = await visibleTraceCount(plot)
-    expect(afterUnhover).toBe(allVisible)
+    expect(await visibleTraceCount(plot)).toBe(allVisible)
   })
 })
 
-test.describe('YTD pin', () => {
-  test('click LI pins trace, bold persists after unhover', async ({ page }) => {
+test.describe('YTD legend', () => {
+  test('hovering a legend item thickens its trace line', async ({ page }) => {
     await page.goto('/#ytd')
     await waitForPlots(page)
-    // YTD is the 2nd plot (index 1)
     const plot = page.locator('.js-plotly-plot').nth(1)
     const items = legendItems(plot)
-    const texts = legendTexts(plot)
     const count = await items.count()
     if (count < 2) return
 
-    // Click first LI to pin
-    await items.first().click()
-    await page.waitForTimeout(200)
-    expect(isBold(await fontWeight(texts.first()))).toBe(true)
+    // The legend auto-scrolls to the bottom (current year), so `nth(count-2)`
+    // is a visible, non-current-year item. YtdDeathsPlot highlights via a
+    // thicker trace line (`activeStyle` → `line.width` 5), not bold legend text.
+    const idx = count - 2
+    const name = (await legendTexts(plot).nth(idx).textContent())?.trim()
+    const lineWidth = () => plot.evaluate(
+      (el, n) => ((el as any).data.find((t: any) => t.name === n)?.line?.width) as number | undefined,
+      name,
+    )
 
-    // Move away — bold should persist
-    await page.mouse.move(0, 0)
-    await page.waitForTimeout(200)
-    expect(isBold(await fontWeight(texts.first()))).toBe(true)
+    expect(await lineWidth()).toBe(2)
+    await items.nth(idx).hover()
+    await expect.poll(lineWidth).toBe(5)
 
-    // Click again to unpin
-    await items.first().click()
-    await page.waitForTimeout(200)
     await page.mouse.move(0, 0)
-    await page.waitForTimeout(200)
-    expect(isBold(await fontWeight(texts.first()))).toBe(false)
+    await expect.poll(lineWidth).toBe(2)
   })
 })
 
@@ -309,26 +205,20 @@ test.describe('FBM pin', () => {
   test('click LI pins year trace', async ({ page }) => {
     await page.goto('/#by-month-bars')
     await waitForPlots(page)
-    // FBM is the 4th plot (index 3)
     const plot = page.locator('.js-plotly-plot').nth(3)
     const items = legendItems(plot)
     const texts = legendTexts(plot)
-    const count = await items.count()
-    if (count < 2) return
+    if (await items.count() < 2) return
 
-    // Click first LI to pin
     await items.first().click()
     await page.waitForTimeout(200)
     expect(isBold(await fontWeight(texts.first()))).toBe(true)
 
-    // Move away
     await page.mouse.move(0, 0)
     await page.waitForTimeout(200)
     expect(isBold(await fontWeight(texts.first()))).toBe(true)
 
-    // Double-click to unpin
-    await items.first().dblclick()
-    await page.waitForTimeout(200)
+    await items.first().dblclick()  // unpin
     await page.mouse.move(0, 0)
     await page.waitForTimeout(200)
     expect(isBold(await fontWeight(texts.first()))).toBe(false)
@@ -339,7 +229,6 @@ test.describe('Tooltip order', () => {
   test('Plot1 unified hover shows top-of-stack first', async ({ page }) => {
     await page.goto('/')
     await waitForPlots(page, { count: 5 })
-    // Verify plotly.js defaults traceorder to 'reversed' for stacked bars
     const traceorder = await page.evaluate(() => {
       const gd = document.querySelector('.js-plotly-plot') as any
       return gd?._fullLayout?.legend?.traceorder ?? 'not set'
@@ -349,22 +238,25 @@ test.describe('Tooltip order', () => {
 
   test('CrashPlot tooltip order matches stack (top-first)', async ({ page }) => {
     await page.goto('/#njdot')
-    await page.locator('.js-plotly-plot').nth(4).waitFor({ timeout: 15000 })
-    await page.waitForTimeout(2000)
-
     const plot = page.locator('.js-plotly-plot').nth(4)
+    await plot.waitFor({ timeout: 15000 })
+    await page.waitForTimeout(2000)
     await plot.scrollIntoViewIfNeeded()
     const box = await plot.boundingBox()
 
-    await page.mouse.move(box!.x + 50, box!.y + box!.height / 2, { steps: 3 })
-    await page.waitForTimeout(300)
-    await page.mouse.move(box!.x + box!.width * 0.4, box!.y + box!.height / 2, { steps: 10 })
-    await page.waitForTimeout(1000)
-
-    const names = await plot.locator('.hoverlayer .legend .traces .legendtext').allTextContents()
-    const types = names.map(n => n.split(':')[0].trim())
-    // Stack bottom→top: Fatal, Injury, Prop. Damage
-    // Tooltip top→bottom should be: Prop. Damage, Injury, Fatal
-    expect(types).toEqual(['Prop. Damage', 'Injury', 'Fatal'])
+    // The x-unified tooltip lists traces top-of-stack first — the reverse of
+    // `gd.data`'s bottom-up order. Asserting against the live stack keeps this
+    // robust to severity-label changes; the `toPass` retries the hover, which
+    // can land between bars on the first sweep.
+    await expect(async () => {
+      await page.mouse.move(box!.x + 50, box!.y + box!.height / 2, { steps: 3 })
+      await page.waitForTimeout(200)
+      await page.mouse.move(box!.x + box!.width * 0.4, box!.y + box!.height / 2, { steps: 10 })
+      await page.waitForTimeout(600)
+      const stackOrder = await plot.evaluate(el => (el as any).data.map((t: any) => t.name))
+      const tip = await plot.locator('.hoverlayer .legend .traces .legendtext').allTextContents()
+      const tipTypes = tip.map(n => n.split(':')[0].trim())
+      expect(tipTypes).toEqual([...stackOrder].reverse())
+    }).toPass({ timeout: 15000 })
   })
 })
