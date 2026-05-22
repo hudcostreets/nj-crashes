@@ -41,7 +41,7 @@ Other types reference crashes via denormalized PK fields:
 - `njdot/harmonize_muni_codes.py`: Reconcile municipality codes/names across NJDOT/NJSP/NJGIN via majority voting
 - `njdot/crashes.py`: Main crashes data transformation pipeline
 - `njdot/README.md`: Comprehensive pipeline documentation, including 2023 data quality issues
-- `njsp/cli/update_www_data.py`: Generate frontend CSV data files from NJSP crash records
+- `njsp/cli/update_www_data.py`: Generate frontend Parquet data files from NJSP crash records
 
 ### Frontend (`www/`)
 - `www/src/njsp/FatalitiesPerYearPlot.tsx`: "Car Crash Deaths" — stacked bar by type (By Year) or monthly bars + 12-mo avg (By Month). Supports statewide, county, and municipality levels.
@@ -55,10 +55,13 @@ Other types reference crashes via denormalized PK fields:
 - `www/src/routes/SqlPage.tsx`: `/sql` — DuckDB-WASM REPL. `?path=raw/...` deeplinks pre-fill `SELECT * FROM read_parquet('<worker-url>')`; reachable via "open in SQL ↗" from each `<ParquetTable>`.
 
 ### Frontend data files (`www/public/njsp/`)
-- `monthly.csv`: Per-month fatality counts with type breakdown. Has statewide (`county=''`), county (`mc IS NULL`), and municipality rows. Pre-2020 type breakdown only exists at statewide level.
-- `year-type-county.csv`: Per-year, per-county fatality counts by type. County-level only (no municipality).
-- `ytd.csv`: Year-to-date cumulative fatality data per day-of-year.
-- `crash-homicide.csv`: Traffic deaths vs homicides comparison. Has NJSP (2001–) and NJDOT (2001–) sources, statewide and county levels.
+All Parquet (converted from CSV 2026-05-21, ~2.4MB → 283KB total) and consumed via DuckDB-WASM, except `projected.csv` which stays CSV (tiny, ~500B).
+- `monthly.parquet`: Per-month fatality counts with type breakdown. Has statewide (`county=''`), county (`mc IS NULL`), and municipality rows. Pre-2020 type breakdown only exists at statewide level.
+- `month-year.parquet`: Per-month-of-year fatality counts (drives `FatalitiesByMonthBarsPlot`).
+- `year-type-county.parquet`: Per-year, per-county fatality counts by type. County-level only (no municipality).
+- `ytd.parquet`: Year-to-date cumulative fatality data per day-of-year.
+- `crash-homicide.parquet`: Traffic deaths vs homicides comparison. Has NJSP (2001–) and NJDOT (2001–) sources, statewide and county levels.
+- `projected.csv`: Rest-of-year fatality projections by `(cc, mc)` — county rows (blank cc/mc) + muni rows; written by `njsp/cli/update_projections.py`.
 
 ## DVX (Data Version Control)
 

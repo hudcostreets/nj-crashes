@@ -34,7 +34,7 @@ gating the other today.
    fetch path deleted; `pickFetchPlanV2` viewport optional;
    `?v2=1` flag removed; `CrashMapSection` synthesizes initial
    viewState from county/muni bbox so embeds get fine prebins.
-3. ~~**`map-multi-res-single-files.md`**~~ — done locally
+3. ~~**`done/map-multi-res-single-files.md`**~~ — done locally
    (`6155bea2287`, `335c83cdc9d`, `728128be313`). Per-resolution
    single-file fallbacks (`hex-r{6,7,8,9}.parquet`), picker prefers
    the finest single-file ≤ chosen res, `maxPointShards` bumped 2→10
@@ -64,19 +64,15 @@ Cluster of UX work surfaced in a single session; some small, some
 significant. Order is roughly small→large; (a)/(b) land first as a
 warm-up.
 
-- (a) **Intro paragraph: add AASHTO data source link** — third link
-  alongside NJSP + NJDOT, pointing at `https://njdot.aashtowaresafety.net/njdot-crash-data-dashboard`.
-  Trivial.
-- (b) **Map default year range** — current `[2019, 2023]` in
-  `CrashMapSection.tsx:119`. Bumped to `[2019, 2025]` (7 years).
-  Year range is roughly free at fixed zoom — hex parquets are pre-
-  aggregated per cell; year filtering changes counts per cell, not
-  the fetched cell count. (And year-range row-group pushdown
-  doesn't currently shrink bytes anyway, so we fetch the full file
-  regardless.)
-- (c) **Section reorder**: Map first (visual hook), then unified
-  NJSP plot+table, then unified NJDOT plot+table. Annotations etc.
-  below.
+- (a) ~~**Intro paragraph: add AASHTO data source link**~~ — done
+  (`2f05b828929`). Third link alongside NJSP + NJDOT.
+- (b) ~~**Map default year range**~~ — done (`2f05b828929`, later
+  widened to `[2016, 2025]` — `YEAR_RANGE_DEFAULT` in
+  `CrashMapSection.tsx`). Year range is roughly free at fixed zoom —
+  hex parquets are pre-aggregated per cell; year filtering changes
+  counts per cell, not the fetched cell count.
+- (c) ~~**Section reorder**~~ — done (`788cd4d16aa`): Map moved to
+  top. Full unification of plot+table per section is items (e)/(f).
 - (d) **Sticky geo nav** (state → county → muni) accessible on every
   page. Desktop = always-visible compact breadcrumb bar under main
   nav, county/muni dropdowns inline. Mobile = collapsed pill (`📍
@@ -141,9 +137,12 @@ normalization pipeline; no UI deps.
   `projection-and-yoy-audit.md`'s broader git-log-walking audit
 - `slack-channel-client-cleanup.md` — defensive parsing, fixtures,
   tests; NaN-on-int fix was one symptom, more bugs likely lurking
-- `projection-and-yoy-audit.md` — audit git-log-walking, replace
-  Jan-1-anchored projection with 365d-lookback, add trailing-365
-  YTD mode
+- `projection-and-yoy-audit.md` — Phase 1 audit done (2026-05-21):
+  the only unbounded git-walk is `oldest_commit_rundate_since`
+  (`ytd.py`); Phase 1.5 logged to replace it with a
+  `crash-log.parquet` query. Phase 2 (365d-lookback projection) +
+  Phase 3 (trailing-365 YTD mode) still open — both user-facing,
+  have unresolved open questions
 - `crowdsourced-edits.md` — auth + Slack review queue for
   user-submitted edits
 
