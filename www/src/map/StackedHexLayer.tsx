@@ -14,8 +14,8 @@
  *  segments with no shader mods.
  */
 import { latLngToCell, cellToBoundary, cellToParent, getResolution } from "h3-js"
-import { ColumnLayer } from "@deck.gl/layers/typed"
-import type { PickingInfo } from "@deck.gl/core/typed"
+import { ColumnLayer } from "@deck.gl/layers"
+import type { PickingInfo } from "@deck.gl/core"
 
 export type StackableCrash = {
     lon: number
