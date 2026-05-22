@@ -1,8 +1,10 @@
-/** Embeddable crash-map panel for Home.tsx geo-filtered pages.
+/** Crash-map panel — the single map implementation behind both the
+ *  Home.tsx `#map` embed and the standalone full-screen `/map` route.
  *
- *  Scope (cc, mc) comes from the caller. Otherwise mirrors the
- *  standalone `/map` route: year-range slider, severity toggle, mode
- *  toggle (hexbin default), outline overlay, fit-bounds on scope.
+ *  Scope (cc, mc) comes from the caller. With `fullScreen` set, it fills
+ *  the viewport (the `/map` route); otherwise it's an embedded,
+ *  drag-resizable panel. Either way: cells-api backend, year-range
+ *  selects, severity Legend, hexbin controls, debug drawer.
  */
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { useUrlState, viewStateParam } from "use-prms"
@@ -17,17 +19,28 @@ import type { MapMode, ViewState } from "@/src/map/CrashMap"
 import type { StackedHex } from "@/src/map/StackedHexLayer"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import type { FeatureCollection } from "geojson"
-import { FiMaximize2 } from "react-icons/fi"
+import { FiMaximize2, FiMinimize2 } from "react-icons/fi"
 import useSessionStorageState from "use-session-storage-state"
 import { useToolboxOpen } from "@/src/map/useToolboxOpen"
 import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
 import type { MapManifestV2 } from "@/src/map/v2"
-import { fitBoundsToView, pickHexResolutionForPixels } from "@/src/map/CrashMap"
+import { fitBoundsToView, lerpView, pickHexResolutionForPixels } from "@/src/map/CrashMap"
 import { DebugOverlay } from "@/src/map/DebugOverlay"
 
 const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m.CrashMap })))
 
 const STATE_BBOX: [number, number, number, number] = [-75.7, 38.9, -73.9, 41.4]
+
+/** Approximate visible-viewport pixel dims used for the shard-selection
+ *  bbox + hex-resolution picking. Full-screen fills the window; the embed
+ *  is width-capped at 1280 and a fixed 480px tall (its real height varies
+ *  with the user's drag-resize, but 480 is a fine picker midpoint). */
+function viewportDims(fullScreen: boolean): [number, number] {
+    if (typeof window === "undefined") return [1280, 480]
+    return fullScreen
+        ? [window.innerWidth, window.innerHeight]
+        : [Math.min(window.innerWidth, 1280), 480]
+}
 
 /** Extract a polygon's outer ring (`[lon, lat][]`) from the first
  *  Polygon/MultiPolygon feature in a FeatureCollection. For
@@ -77,6 +90,17 @@ const LLZ_OVERRIDES: Record<number, { mobile: ViewState; desktop: ViewState }> =
     },
 }
 
+/** Statewide initial view for the full-screen `/map` route. The
+ *  `fitBoundsToView` auto-fit leaves NJ at ~45% of a tall full-screen
+ *  viewport (the pitch model + padding zoom out generously) — these
+ *  hand-tuned values frame NJ much tighter. Full-screen only: the short
+ *  `#map` embed keeps the bbox auto-fit (height-appropriate). Re-tune by
+ *  dragging to taste at mobile + desktop widths and copying `?llz=`. */
+const STATEWIDE_VIEW: { mobile: ViewState; desktop: ViewState } = {
+    mobile:  { latitude: 39.90, longitude: -74.60, zoom: 7.85, pitch: 45, bearing: 0 },
+    desktop: { latitude: 39.83, longitude: -74.55, zoom: 8.95, pitch: 45, bearing: 0 },
+}
+
 /** `llz` URL param: "lat lng zoom pitch bearing" (signed-delim — `+` or
  *  `-` separates instead of `_`, so URLs read like `40.71-74.09+10.84+45+0`).
  *  Pitch/bearing optional; missing pitch falls back to 45 (the deck.gl 3D
@@ -108,23 +132,39 @@ export type Props = {
     mc: number | null
     /** Initial / default embed height in px. User can drag-resize the
      *  bottom edge; the choice persists in SS, with a reset button to
-     *  restore this default. Defaults to 600px. */
+     *  restore this default. Defaults to 600px. Ignored when `fullScreen`. */
     height?: number
-    /** Optional `href` for the full-screen icon (bottom-right). Omit to hide. */
+    /** Optional `href` for the full-screen icon (bottom-right). Omit to hide.
+     *  Ignored when `fullScreen` (the corner icon becomes a minimize button). */
     fullScreenHref?: string
     /** Geographic scope label rendered in the subtitle (e.g.
      *  "Jersey City, Hudson County"). When omitted, the subtitle is hidden. */
     scopeLabel?: string
+    /** Render as a full-viewport standalone page (the `/map` route) instead
+     *  of an embedded panel: fills 100vw×100vh, no drag-resize, the header
+     *  becomes a top-center overlay, and the corner icon is a "back to
+     *  charts" minimize button (→ `detailsHref`). */
+    fullScreen?: boolean
+    /** Charts-page href for the full-screen minimize button. */
+    detailsHref?: string
+    /** Outline-polygon click handler (geo drill-down). The full-screen
+     *  `/map` route uses it to navigate statewide → county. */
+    onOutlineClick?: (feature: any) => void
 }
 
-export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScreenHref, scopeLabel }: Props) {
+export function CrashMapSection({
+    cc, mc, height: defaultHeight = 600, fullScreenHref, scopeLabel,
+    fullScreen = false, detailsHref, onOutlineClick,
+}: Props) {
     const { actualTheme } = useTheme()
     const [mode, setMode] = useState<MapMode>("hexbin")
     const [yearRange, setYearRange] = useUrlState("y", yearRangeParam)
-    const [severities, setSeverities] = useState<Set<"f" | "i" | "p">>(() => new Set(["f", "i"]))
+    const [severities, setSeverities] = useState<Set<"f" | "i" | "p">>(() => new Set(["f", "i", "p"]))
     const [hexPxTarget, setHexPxTarget] = useSessionStorageState<number>("hccs.crashmap.hexPxTarget", { defaultValue: 1.7 })
     const [elevationPerCount, setElevationPerCount] = useState(60)
-    const [drawerOpen, setDrawerOpen] = useToolboxOpen(false)
+    // Drawer defaults open on the full-screen route (room to spare) and
+    // closed in the embed (don't occlude the small panel on first paint).
+    const [drawerOpen, setDrawerOpen] = useToolboxOpen(fullScreen)
     const [debugOpen, setDebugOpen] = useSessionStorageState<boolean>("hccs.crashmap.debugOpen", { defaultValue: false })
     // Picker-threshold knobs (debug section). SS-persisted so a debugging
     // session survives page reloads. Defaults match `pickFetchPlanV2`.
@@ -153,24 +193,32 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
         loadManifestV2().then(m => { if (m) setV2Manifest(m) }).catch(() => {})
     }, [])
 
+    // Camera override: per-county hand-tuned views apply on both the embed
+    // and the full-screen route; the statewide hand-tuned view is
+    // full-screen only (the short embed wants the height-appropriate bbox
+    // auto-fit). Muni views always auto-fit from the muni bbox.
+    const initialView =
+        cc !== null && mc === null ? (LLZ_OVERRIDES[cc] ?? null)
+        : cc === null && fullScreen ? STATEWIDE_VIEW
+        : null
+
     // Approximate the section's visible viewport. Priority:
     //   1. live `llz` (round-tripped from CrashMap's viewState via URL)
-    //   2. synthetic viewState derived from county/muni bbox via
-    //      `fitBoundsToView` (so the initial fetch picks fine prebins
-    //      matching the county-zoomed view, not the statewide-coarse r6)
-    //   3. null (unknown — picker falls back to r6 single-file; overlay
-    //      shows "—")
+    //   2. the hand-tuned `initialView` override (lerped by width) — keeps
+    //      the fetch viewport aligned with the camera the user sees
+    //   3. synthetic viewState from county/muni bbox via `fitBoundsToView`
+    //   4. null (unknown — picker falls back to r6 single-file)
     const effectiveView: ViewState | null = useMemo(() => {
         if (llz) return llz
-        const w = typeof window !== "undefined" ? Math.min(window.innerWidth, 1280) : 1280
-        const h = 480
+        const [w, h] = viewportDims(fullScreen)
+        if (initialView) return lerpView(initialView, w)
         const bbox: [number, number, number, number] | undefined =
             cc !== null && mc !== null ? v2Manifest?.muni_bboxes?.[`${cc}-${mc}`]
             : cc !== null ? v2Manifest?.county_bboxes?.[cc]
             : STATE_BBOX
         if (!bbox) return null
         return fitBoundsToView(bbox, w, h, mode === "hexbin" ? 45 : 0)
-    }, [llz, cc, mc, mode, v2Manifest])
+    }, [llz, cc, mc, mode, v2Manifest, fullScreen, initialView])
 
 
     const filter: CrashFilter = useMemo(() => {
@@ -184,8 +232,7 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
             maxHexShards,
         }
         if (!effectiveView) return base
-        const w = typeof window !== "undefined" ? Math.min(window.innerWidth, 1280) : 1280
-        const h = 480
+        const [w, h] = viewportDims(fullScreen)
         return {
             ...base,
             viewport: bboxFromViewport(effectiveView.latitude, effectiveView.longitude, effectiveView.zoom, w, h, effectiveView.pitch),
@@ -193,7 +240,7 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
             zoom: effectiveView.zoom,
             hexPxTarget,
         }
-    }, [yearRange, cc, mc, severities, effectiveView, hexPxTarget, pointZoomThreshold, maxPointShards, maxHexShards])
+    }, [yearRange, cc, mc, severities, effectiveView, hexPxTarget, pointZoomThreshold, maxPointShards, maxHexShards, fullScreen])
 
     const [outline, setOutline] = useState<FeatureCollection | null>(null)
     useEffect(() => {
@@ -243,7 +290,7 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
               : undefined
         return {
             yearRange: filter.yearRange,
-            severities: filter.severities ?? new Set(["f", "i"]),
+            severities: filter.severities ?? new Set(["f", "i", "p"]),
             viewport: filter.viewport,
             viewportLat: filter.viewportLat,
             zoom: filter.zoom,
@@ -347,10 +394,6 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
         return STATE_BBOX
     }, [cc, mc, result.manifest])
 
-    // Per-county override applies only when no muni is selected (muni view
-    // still auto-fits from the muni bbox, which is typically small enough).
-    const initialView = cc !== null && mc === null ? (LLZ_OVERRIDES[cc] ?? null) : null
-
     const bg = actualTheme === "dark" ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.95)"
     const fg = actualTheme === "dark" ? "#e0e0e0" : "#333"
     const activeBg = actualTheme === "dark" ? "#6db3f2" : "#0066cc"
@@ -365,6 +408,14 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
         setSeverities(next)
     }
     const severityPhrase = formatSeverityPhrase(severities)
+
+    // Pitch / bearing camera sliders. Read from the effective view; write
+    // through `llz` — which, on first use, commits the override/auto-fit
+    // view (so lat/lon/zoom stay put while only the tilt/rotation moves).
+    const pitch = effectiveView?.pitch ?? 45
+    const bearing = effectiveView?.bearing ?? 0
+    const setPitch = (p: number) => { if (effectiveView) setLlz({ ...effectiveView, pitch: p }) }
+    const setBearing = (b: number) => { if (effectiveView) setLlz({ ...effectiveView, bearing: b }) }
 
     // Close drawer on map click — but not on map drag/pan. Track the
     // pointerdown position; if pointerup happens within a small movement
@@ -381,6 +432,8 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
     // don't thrash SS during the drag. Bail when the height matches our
     // controlled value (avoid feedback when *we* set it).
     useEffect(() => {
+        // Full-screen fills the viewport — no drag-resize handle to track.
+        if (fullScreen) return
         const el = wrapRef.current
         if (!el) return
         let t: number | null = null
@@ -392,9 +445,9 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
         })
         ro.observe(el)
         return () => { ro.disconnect(); if (t !== null) window.clearTimeout(t) }
-    }, [mapHeight, setMapHeight])
+    }, [mapHeight, setMapHeight, fullScreen])
 
-    const heightOverridden = mapHeight !== defaultHeight
+    const heightOverridden = !fullScreen && mapHeight !== defaultHeight
     const showResetButton = !!llz || heightOverridden
     const resetView = () => {
         if (llz) setLlz(null)
@@ -429,39 +482,64 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
         }
     }, [drawerOpen, setDrawerOpen])
 
+    // Header content (severity phrase · scope · year selects). Rendered
+    // above the panel in embed mode, or as a top-center overlay pill in
+    // full-screen mode (where there's no "above the map").
+    const headerInner = (
+        <>
+            <span>{severityPhrase} crashes</span>
+            {scopeLabel && <><span>·</span><span>{scopeLabel}</span></>}
+            <span>·</span>
+            <YearSelect
+                value={yearRange[0]} min={y0min} max={yearRange[1]}
+                onChange={y => setYearRange([y, yearRange[1]])}
+                theme={actualTheme}
+            />
+            <span>–</span>
+            <YearSelect
+                value={yearRange[1]} min={yearRange[0]} max={y1max}
+                onChange={y => setYearRange([yearRange[0], y])}
+                theme={actualTheme}
+            />
+        </>
+    )
+
     return (
         <>
-            {(scopeLabel || true) && (
+            {!fullScreen && (
                 <div style={{
                     textAlign: "center", color: "var(--text-secondary)",
                     marginTop: "-0.3em", marginBottom: "0.4em",
                     display: "flex", flexWrap: "wrap", alignItems: "center",
                     justifyContent: "center", gap: 6, fontSize: "0.95em",
                 }}>
-                    <span>{severityPhrase} crashes</span>
-                    {scopeLabel && <><span>·</span><span>{scopeLabel}</span></>}
-                    <span>·</span>
-                    <YearSelect
-                        value={yearRange[0]} min={y0min} max={yearRange[1]}
-                        onChange={y => setYearRange([y, yearRange[1]])}
-                        theme={actualTheme}
-                    />
-                    <span>–</span>
-                    <YearSelect
-                        value={yearRange[1]} min={yearRange[0]} max={y1max}
-                        onChange={y => setYearRange([yearRange[0], y])}
-                        theme={actualTheme}
-                    />
+                    {headerInner}
                 </div>
             )}
         <div
             ref={wrapRef}
-            style={{
+            style={fullScreen ? {
+                position: "relative", height: "100vh", width: "100vw",
+                overflow: "hidden",
+            } : {
                 position: "relative", height: mapHeight, width: "100%",
                 borderRadius: 4, overflow: "hidden",
                 resize: "vertical", minHeight: 240, maxHeight: 1200,
             }}
         >
+            {fullScreen && (
+                <div style={{
+                    position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)",
+                    zIndex: 1000, background: bg, color: fg,
+                    padding: "3px 10px", borderRadius: 4,
+                    border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
+                    display: "flex", flexWrap: "wrap", alignItems: "center",
+                    justifyContent: "center", gap: 6, fontSize: "0.8em",
+                    maxWidth: "calc(100% - 16px)",
+                }}>
+                    {headerInner}
+                </div>
+            )}
             {result.status === "error" && (
                 <div style={{ padding: "1em", color: "red" }}>Error: {result.error}</div>
             )}
@@ -476,9 +554,10 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                         initialView={initialView}
                         viewState={llz ?? undefined}
                         onViewStateChange={setLlz}
+                        onOutlineClick={onOutlineClick}
                         mode="hexbin"
                         theme={actualTheme}
-                        height={mapHeight}
+                        height={fullScreen ? "100%" : mapHeight}
                         showInternalControls={false}
                         hexPxTarget={hexPxTarget}
                         onHexPxTargetChange={setHexPxTarget}
@@ -489,7 +568,7 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                     />
                 </Suspense>
             )}
-            {result.status === "ready" && result.refetching && <RefetchSpinner theme={actualTheme} />}
+            {result.status === "ready" && result.refetching && !drawerOpen && <RefetchSpinner theme={actualTheme} />}
             {!drawerOpen && (
                 <>
                     <button
@@ -527,6 +606,12 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                 maxHeight: "calc(100% - 16px)", overflowY: "auto",
             }}>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 4, alignItems: "center", marginBottom: -4 }}>
+                    {result.status === "ready" && result.refetching && (
+                        <div style={{ marginRight: "auto", display: "flex", alignItems: "center" }}
+                             title="Refreshing map data…">
+                            <SpinnerCircle theme={actualTheme} size={13} />
+                        </div>
+                    )}
                     {showResetButton && (
                         <button
                             onClick={resetView}
@@ -578,6 +663,16 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                                 style={{ width: 100 }}
                             />
                         </label>
+                        <NumberSlider
+                            label="Pitch" unit="°" min={0} max={85} step={1}
+                            value={pitch} onChange={setPitch}
+                            defaultValue={45} reset={() => setPitch(45)}
+                        />
+                        <NumberSlider
+                            label="Bearing" unit="°" min={0} max={360} step={1}
+                            value={bearing} onChange={setBearing}
+                            defaultValue={0} reset={() => setBearing(0)}
+                        />
                     </>
                 )}
                 <DebugSection
@@ -652,11 +747,11 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                 </DebugSection>
             </div>
             )}
-            {fullScreenHref && (
+            {(fullScreen ? detailsHref : fullScreenHref) && (
                 <a
-                    href={fullScreenHref}
-                    title="Open full-screen"
-                    aria-label="Open map in full-screen view"
+                    href={(fullScreen ? detailsHref : fullScreenHref) as string}
+                    title={fullScreen ? "Back to charts" : "Open full-screen"}
+                    aria-label={fullScreen ? "Back to charts view" : "Open map in full-screen view"}
                     style={{
                         position: "absolute", bottom: 8, right: 8, zIndex: 1000,
                         background: bg, color: fg,
@@ -666,12 +761,11 @@ export function CrashMapSection({ cc, mc, height: defaultHeight = 600, fullScree
                         textDecoration: "none", lineHeight: 1,
                     }}
                 >
-                    <FiMaximize2 size={14} />
+                    {fullScreen ? <FiMinimize2 size={14} /> : <FiMaximize2 size={14} />}
                 </a>
             )}
             <Legend
                 theme={actualTheme}
-                pdoEnabled={severities.has("p")}
                 severities={severities}
                 onToggle={toggleSeverity}
             />
@@ -728,37 +822,46 @@ function LoadingOverlay({ theme }: { theme: "light" | "dark" }) {
     )
 }
 
-/** Subtle top-right spinner shown while a background refetch is in flight
- *  (e.g. zoom crossed a hex-resolution threshold). The map keeps rendering
- *  the previous data underneath. */
-function RefetchSpinner({ theme }: { theme: "light" | "dark" }) {
+/** Bare spinning ring. Caller positions it (corner overlay or inline in
+ *  the drawer header). */
+function SpinnerCircle({ theme, size = 16 }: { theme: "light" | "dark"; size?: number }) {
     const border = theme === "dark" ? "#aaa" : "#555"
+    return (
+        <>
+            <style>{`@keyframes hccs-spin { to { transform: rotate(360deg) } }`}</style>
+            <div style={{
+                width: size, height: size, borderRadius: "50%", flexShrink: 0,
+                border: `2px solid ${border}`, borderTopColor: "transparent",
+                animation: "hccs-spin 0.8s linear infinite",
+            }} />
+        </>
+    )
+}
+
+/** Subtle top-right spinner shown while a background refetch is in flight
+ *  (e.g. zoom crossed a hex-resolution threshold). Used only when the
+ *  controls drawer is closed — when open, the spinner moves into the
+ *  drawer header (the open drawer would otherwise occlude `right: 72`). */
+function RefetchSpinner({ theme }: { theme: "light" | "dark" }) {
     const bg = theme === "dark" ? "rgba(30,30,30,0.6)" : "rgba(255,255,255,0.7)"
     return (
         <div style={{
             // `right: 72` clears the ⚙ gear (right: 8) and ↺ reset
-            // (right: 40) buttons — at the shared `right: 8` the spinner
-            // rendered behind the gear (zIndex 5 vs 1000) and was never
-            // visible.
+            // (right: 40) buttons shown when the drawer is closed.
             position: "absolute", top: 8, right: 72, zIndex: 1000,
             width: 24, height: 24, borderRadius: "50%", padding: 4,
             background: bg, pointerEvents: "none",
+            display: "flex", alignItems: "center", justifyContent: "center",
         }}>
-            <style>{`@keyframes hccs-spin { to { transform: rotate(360deg) } }`}</style>
-            <div style={{
-                width: "100%", height: "100%", borderRadius: "50%",
-                border: `2px solid ${border}`, borderTopColor: "transparent",
-                animation: "hccs-spin 0.8s linear infinite",
-            }} />
+            <SpinnerCircle theme={theme} size={16} />
         </div>
     )
 }
 
 function Legend({
-    theme, pdoEnabled, severities, onToggle,
+    theme, severities, onToggle,
 }: {
     theme: "light" | "dark"
-    pdoEnabled: boolean
     severities: Set<"f" | "i" | "p">
     onToggle: (s: "f" | "i" | "p") => void
 }) {
@@ -777,22 +880,18 @@ function Legend({
             border: `1px solid ${theme === "dark" ? "#444" : "#ccc"}`,
         }}>
             {items.map(it => {
-                const showable = it.key !== "p" || pdoEnabled
-                const on = showable && severities.has(it.key)
+                const on = severities.has(it.key)
                 return (
                     <button
                         key={it.key}
-                        disabled={!showable}
-                        title={!showable
-                            ? "Other only available in statewide + Hexbin mode"
-                            : on ? `Hide ${it.label}` : `Show ${it.label}`}
+                        title={on ? `Hide ${it.label}` : `Show ${it.label}`}
                         aria-pressed={on}
-                        onClick={() => showable && onToggle(it.key)}
+                        onClick={() => onToggle(it.key)}
                         style={{
                             display: "flex", alignItems: "center", gap: 6,
                             opacity: on ? 1 : 0.4,
                             background: "transparent", color: fg, border: "none", padding: 0,
-                            cursor: showable ? "pointer" : "not-allowed",
+                            cursor: "pointer",
                             font: "inherit", textAlign: "left",
                         }}
                     >
@@ -836,7 +935,7 @@ function HexPxTargetSlider({ value, onChange }: { value: number; onChange: (n: n
 /** Drawer-friendly numeric slider with inline value, min/max, and a
  *  reset-to-default chip when the user has overridden the default. */
 function NumberSlider({
-    label, value, onChange, min, max, step, defaultValue, reset,
+    label, value, onChange, min, max, step, defaultValue, reset, unit,
 }: {
     label: string
     value: number
@@ -846,12 +945,13 @@ function NumberSlider({
     step: number
     defaultValue: number
     reset: () => void
+    unit?: string
 }) {
     const overridden = value !== defaultValue
     return (
         <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
             <span style={{ fontSize: "0.78em" }}>
-                {label}: <b>{Number.isInteger(step) ? Math.round(value) : value}</b>
+                {label}: <b>{Number.isInteger(step) ? Math.round(value) : value}{unit ?? ""}</b>
                 {overridden && (
                     <button
                         type="button" onClick={reset} title={`Reset to ${defaultValue}`}

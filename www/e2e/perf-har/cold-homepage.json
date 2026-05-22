@@ -7,7 +7,7 @@
   {
     "url": "http://localhost:4006/",
     "status": 200,
-    "body_size": 2464
+    "body_size": 2448
   },
   {
     "url": "http://localhost:4006/annotations.json",
@@ -87,12 +87,12 @@
   {
     "url": "http://localhost:4006/njsp/monthly.parquet",
     "status": 200,
-    "body_size": 99627
+    "body_size": 98215
   },
   {
     "url": "http://localhost:4006/njsp/projected.csv",
     "status": 200,
-    "body_size": 10836
+    "body_size": 10880
   },
   {
     "url": "http://localhost:4006/njsp/rundate.json",
@@ -112,22 +112,12 @@
   {
     "url": "http://localhost:4006/njsp/ytd.parquet",
     "status": 200,
-    "body_size": 139523
+    "body_size": 146935
   },
   {
     "url": "http://localhost:4006/styles/globals.css",
     "status": 200,
     "body_size": 2693
-  },
-  {
-    "url": "http://localhost:51895/v1/cells?res=7&years=2016-2025&severities=fi&shard_res=2&polygon=-82.0000%2C44.2500%2C-67.7500%2C44.2500%2C-67.7500%2C35.7500%2C-82.0000%2C35.7500%2C-82.0000%2C44.2500&cells=822a17fffffffff,822a1ffffffffff,822aaffffffffff",
-    "status": 200,
-    "body_size": 384412
-  },
-  {
-    "url": "http://localhost:51895/v1/manifest",
-    "status": 200,
-    "body_size": 2939
   },
   {
     "url": "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/dist/duckdb-browser-eh.worker.js",
@@ -203,5 +193,15 @@
     "url": "https://crashes-api.ryan-0dc.workers.dev/njsp/crashes?limit=20&offset=0",
     "status": 200,
     "body_size": 3756
+  },
+  {
+    "url": "https://crashes-cells-api.ryan-0dc.workers.dev/v1/cells?res=7&years=2016-2025&severities=fip&shard_res=2&polygon=-82.0000%2C44.2500%2C-67.7500%2C44.2500%2C-67.7500%2C35.7500%2C-82.0000%2C35.7500%2C-82.0000%2C44.2500&cells=822a17fffffffff,822a1ffffffffff,822aaffffffffff",
+    "status": 200,
+    "body_size": 431422
+  },
+  {
+    "url": "https://crashes-cells-api.ryan-0dc.workers.dev/v1/manifest",
+    "status": 200,
+    "body_size": 2939
   }
 ]

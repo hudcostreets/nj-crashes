@@ -253,7 +253,7 @@ export function fitBoundsToView(
 const LERP_MIN_W = 400
 const LERP_MAX_W = 900
 
-function lerpView(o: { mobile: ViewState; desktop: ViewState }, containerW: number): ViewState {
+export function lerpView(o: { mobile: ViewState; desktop: ViewState }, containerW: number): ViewState {
     const t = Math.max(0, Math.min(1, (containerW - LERP_MIN_W) / (LERP_MAX_W - LERP_MIN_W)))
     const { mobile: m, desktop: d } = o
     return {
