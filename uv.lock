@@ -2521,6 +2521,9 @@ slack = [
     { name = "slack-sdk" },
     { name = "stdlb" },
 ]
+test = [
+    { name = "pytest" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -2553,6 +2556,7 @@ requires-dist = [
     { name = "pygithub", specifier = ">=2.6" },
     { name = "pyogrio", specifier = ">=0.10" },
     { name = "pyproj", specifier = ">=3.7" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8" },
     { name = "python-dotenv", marker = "extra == 'bsky'", specifier = ">=1.0" },
     { name = "python-dotenv", marker = "extra == 'slack'", specifier = ">=1.0" },
     { name = "requests", specifier = ">=2.32" },
@@ -2568,7 +2572,7 @@ requires-dist = [
     { name = "thrds", git = "https://github.com/runsascoded/thrds?rev=41ca769" },
     { name = "utz", specifier = ">=0.21" },
 ]
-provides-extras = ["bsky", "slack"]
+provides-extras = ["bsky", "slack", "test"]
 
 [[package]]
 name = "notebook-shim"

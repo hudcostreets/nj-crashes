@@ -58,6 +58,9 @@ slack = [
     "python-dotenv>=1.0",
     "stdlb>=0.0.4",
 ]
+test = [
+    "pytest>=8",
+]
 
 [project.scripts]
 njsp = "njsp.cli.main:main"

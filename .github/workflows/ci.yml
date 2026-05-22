@@ -45,7 +45,7 @@ jobs:
         # full NJDOT dataset, so it's excluded until `specs/hermetic-e2e-ci.md`
         # lands a fixture. `test_feed_snapshot.py`'s golden skips itself when
         # `crash-log.parquet` is absent (its synthetic tests still run).
-        run: uv run --with pytest pytest njsp/tests nj_crashes/tests --ignore=nj_crashes/tests/test_crash_lls.py
+        run: uv run --extra test pytest njsp/tests nj_crashes/tests --ignore=nj_crashes/tests/test_crash_lls.py
 
   www:
     name: Typecheck, build, unit tests
