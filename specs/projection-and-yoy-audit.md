@@ -15,15 +15,75 @@ Two related concerns:
    year produces wild error bars. The same model should look back
    **365 days** rather than to the most-recent Jan 1.
 
+## Phase 1 audit findings (2026-05-21)
+
+Grepped every `iter_commits` / `Repo()` / `blob_from_commit` /
+`repo.commit` call site under `njsp/` + `nj_crashes/`. Only **two**
+code paths actually walk commit history; one is the hacky one, the
+other is fine.
+
+### 1. `oldest_commit_rundate_since()` — `njsp/ytd.py:51` — **the hacky one**
+
+Walks **all** commits backward from `HEAD`, JSON-deserializing
+`rundate.json` out of every commit's tree, until it finds the oldest
+commit whose `rundate ≥ {prv_year}-{cur_month}-{cur_day}`. Reached via
+`Ytd.prv_commit_rundate → prv_commit → prv_ytd_fauqstats`, which then
+reads `FAUQStats{prv_year}.xml` **as it stood ~365 days ago** to get
+`prv_ytd_total` (the YTD fatality count NJSP had *reported* at the same
+calendar point last year) and `prv_ytd_crashes`.
+
+- **Why it needs historical state:** NJSP revises crash records
+  continuously (the whole point of `crash-log.parquet`). "How many
+  deaths had NJSP reported as of May 21 *last* year" is a point-in-time
+  question the current `crashes.parquet` (latest state only) cannot
+  answer.
+- **Cost:** unbounded — one blob deserialization per commit, from
+  `HEAD` back ~1 year of daily commits (≈300+). Runs every
+  `update_projections` (daily stage `projections.dvc`).
+- **Can it be a static query?** *Yes, in principle* — `crash-log.parquet`
+  **is** the historical add/update/del event log keyed by `rundate`,
+  already produced daily as a static artifact. `prv_ytd_total` could be
+  reconstructed by replaying events with `rundate ≤ D`. This is
+  correctness-sensitive (add→update→del sequencing must reproduce
+  `FAUQStats.totals.fatalities` exactly) — warrants a prototype +
+  cross-check against the git-walk result before adopting. Logged as
+  **Phase 1.5** below.
+
+### 2. `get_crash_log()` — `njsp/crash_log.py:72` — **fine, incremental**
+
+Walks history computing per-commit add/update/del crash events, but
+`crash_log compute -a <pqt>` (daily `crash-log.parquet.dvc` stage)
+starts the walk at the **latest SHA already in the parquet** and only
+processes new commits — bounded, ~1 commit/day. Falls back to the
+GitHub API for commit traversal when the local clone is shallow.
+No change needed.
+
+### Not walkers (checked, cleared)
+
+- `CommitCrashes` (`commit_crashes.py`) — per-commit diff helper used
+  *by* `get_crash_log`; single-commit.
+- `Crashes(ref=…)` (`crashes.py:102`) — single `repo.commit()` blob
+  read for XML-diff-URL generation in `crash/log.py`.
+- `refresh_data.py` — `git add`s fetched XML; reads `rundate` straight
+  from XML content, no history walk.
+- `bsky/post.py`, `slack/sync.py` — consume `crash-log.parquet`; no walk.
+
+### Verdict
+
+The spec's premise ("YoY fetch walks ~1yr of commits") is real but
+**localized to exactly one function**, `oldest_commit_rundate_since`.
+`bsky/backfill.py` (named as a suspect in the original spec) does not
+exist / does not walk. Phase 2/3 below are independent of this cleanup.
+
 ## Proposed work
 
-### Phase 1: Audit
-- Map every place we walk git history for crash-log / YoY data.
-  Likely candidates: `njsp/cli/update_projections.py`, `crash_log.py`,
-  `bsky/backfill.py`, anything reading "previous year" data.
-- Document why each one needs historical state vs. just the current
-  snapshot. Identify which can be replaced with a static query
-  against `crashes.parquet`.
+### Phase 1.5: Replace the git walk with a `crash-log.parquet` query
+- Prototype reconstructing `prv_ytd_total` / `prv_ytd_crashes` from
+  `crash-log.parquet` event replay (`rundate ≤ {prv_year}-MM-DD`).
+- Cross-check against `oldest_commit_rundate_since` output for a range
+  of dates; only swap once byte-equal (or document the discrepancy).
+- Keeps `Ytd` off git entirely → faster `projections.dvc`, no shallow-
+  clone GitHub-API fallback needed.
 
 ### Phase 2: Replace Jan-1-anchored projection with 365d-lookback
 - `update_projections` should compute "projected total for next
