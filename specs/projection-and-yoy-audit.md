@@ -77,42 +77,55 @@ exist / does not walk. Phase 2/3 below are independent of this cleanup.
 
 ## Proposed work
 
-### Phase 1.5: Replace the git walk with a `crash-log.parquet` query
-- Prototype reconstructing `prv_ytd_total` / `prv_ytd_crashes` from
-  `crash-log.parquet` event replay (`rundate ≤ {prv_year}-MM-DD`).
-- Cross-check against `oldest_commit_rundate_since` output for a range
-  of dates; only swap once byte-equal (or document the discrepancy).
-- Keeps `Ytd` off git entirely → faster `projections.dvc`, no shallow-
-  clone GitHub-API fallback needed.
+### Phase 1.5: Replace the git walk with a `crash-log.parquet` query ✅
 
-### Phase 2: Replace Jan-1-anchored projection with 365d-lookback
-- `update_projections` should compute "projected total for next
-  365 days" from the trailing 365d, instead of "projected total for
-  current calendar year".
-- Or split: keep the calendar-year projection (still useful Aug-Dec)
-  but add a new trailing-365d metric that's always meaningful.
+Done (2026-05-21). `njsp.crash_log.feed_snapshot(year, as_of)` replays
+`crash-log.parquet` add/update/del events to reconstruct the NJSP feed's
+point-in-time view of a year — the prev-year snapshot `update_projections`
+needs. `Ytd` now calls it (`prv_feed_snapshot`); `oldest_commit_rundate_since`
++ the `prv_commit` / `prv_ytd_fauqstats` chain are deleted. `Ytd` no longer
+touches git.
 
-### Phase 3: New YTD plot mode — 1yr-lookbacks-by-end-date
-- Existing `YtdDeathsPlot` shows cumulative deaths from each
-  Jan 1 to the present day.
-- New mode: cumulative deaths over the 365 days **ending on the
-  current date**, plotted across multiple years. Each year's line
-  represents "the year ending on April 14 of year X."
-- Question this answers: **how deadly was the last ~365d compared
-  to historical 365d windows?** That's the sensible "how are we
-  doing" framing.
-- UI: add a third option to the YTD plot's view-mode toggle
-  (currently `ytd | full-faded | full`) — call it `trailing-365`
-  or `1yr-rolling`.
+Cross-checked against the old git-walk for 11 `(year, MM-DD)` targets
+spanning 2023–2025: `to_ytc` / `to_ytmc` byte-identical every time, and
+`prv_ytd_total` (`sum(FATALITIES)`) equals the old XML `<TOTFATALITIES>`.
+`update_projections` produces a byte-identical `projected.csv`. Frozen
+golden + synthetic-replay tests in `njsp/tests/test_feed_snapshot.py`.
+
+Note (informs Phase 2): the walk was clunky in *mechanism* but sound in
+*purpose* — it corrects NJSP **reporting lag**. This year's `cur_ytd` feed
+under-counts recent un-entered crashes, so the model compares it against
+last year's *equally-incomplete* feed snapshot at the same calendar point;
+the ratio cancels the lag bias. Any reframe in Phase 2/3 must preserve
+that — a plain `crashes.parquet` occurrence-date filter would bias it.
+
+### Phase 3: New YTD plot mode — trailing-365 ✅
+
+Done (2026-05-21). `YtdDeathsPlot` gains a 4th view-mode toggle button,
+`Trailing` — per year, the cumulative-deaths curve over the 365 days
+**ending on today's date**. Unlike YTD (which compares partial Jan-1
+slices), every line is a complete, comparable 365-day window. Answers
+"how deadly was the last ~365d vs historical 365d windows?".
+
+x-axis: calendar dates spanning the window (Jun→Dec→Jan→May, month
+labels) — the user-picked option. Frontend-only: the windowing
+(`trailing365Series`) is computed from the existing `ytd.parquet` daily
+fatalities, no backend change. Pure module `www/src/njsp/trailing365.ts`
++ unit tests `trailing365.test.ts`.
+
+### Phase 2: Replace Jan-1-anchored projection with 365d-lookback (still open)
+- See the Phase 1.5 note: the current model already *damps* the
+  January signal via `cur_ytd_frac`, so it's not "wild error bars" —
+  it's *low-information* in January (the headline ≈ last year's total).
+- The Phase 3 trailing-365 *plot* now gives the always-meaningful view;
+  Phase 2 would additionally surface a trailing-365 *projected number*
+  alongside (or instead of) the calendar-year "on pace for N".
+- Any reframe must preserve the reporting-lag correction (Phase 1.5).
 
 ## Open questions
 
-- Does the trailing-365 view need a different x-axis? Could use
-  "days from window-end" (going backwards), or just calendar dates
-  spanning Apr 14 prev → Apr 14 cur.
-- For UI: keep view-mode toggle linear (4 options) or split into
-  two axes (anchor: `Jan 1` vs `current date`; window: `to-date`
-  vs `full year`).
+- ~~trailing-365 x-axis~~ — resolved: calendar dates spanning the window.
+- ~~toggle linear vs 2-axis~~ — resolved: 4th linear toggle button.
 - The git-log walking pattern probably also affects
   `slack_post.sh` lookback (see `specs/slack-sync-lookback.md`) —
   align both.
