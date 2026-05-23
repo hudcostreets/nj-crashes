@@ -1,5 +1,5 @@
 outs:
-- md5: fcf9e6f9b6cf3d1b954e492677b1555a
+- md5: 2252a46d1d645541dbfce099945eacc3
   size: 63635456
   hash: md5
   path: cmymc.db
@@ -11,7 +11,7 @@ meta:
       /njdot/data/vehicles.parquet: f556fa6424ee67986f1b8f69b0ab7eab
       /njdot/data/occupants.parquet: a2879e533e566c4c1b8be11ee403d59e
       /njdot/data/pedestrians.parquet: 7f1dc043bbc22ed522115e4adbc911fd
-      /njdot/data/aashto_supplemented_crashes.parquet: bc29adc43ec5a6eb248511a70fd8b1e2
+      /njdot/data/aashto_supplemented_crashes.parquet: 92ac7e301eab0f949748c6061317cf9f
       /njdot/data/aashto_supplemented_occupants.parquet: 806dd7a46ebafbe426faeb05373359b9
       /njdot/data/aashto_supplemented_pedestrians.parquet: d3d913d7d0716ee4b5588e8380bb456a
     git_deps:
