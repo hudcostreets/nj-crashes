@@ -60,7 +60,7 @@
     "sass": "^1",
     "strftime": "^0.10.2",
     "use-kbd": "^0.12.0",
-    "use-prms": "https://github.com/runsascoded/use-prms#e7d82ad2b2d7834c59bc10f863d186a6d78081de",
+    "use-prms": "https://github.com/runsascoded/use-prms#3db90a820b4372cea3efb7e02bac317dc049fa04",
     "use-session-storage-state": "^18.2.0"
   },
   "devDependencies": {

@@ -7,7 +7,7 @@
  *  selects, severity Legend, hexbin controls, debug drawer.
  */
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
-import { useUrlState, viewStateParam } from "use-prms"
+import { useUrlState, viewStateParam, cleanUrl } from "use-prms"
 import type { Param } from "use-prms"
 import type { CrashFilter } from "@/src/map/useCrashData"
 import { useCellsApi, CELLS_BUDGET } from "@/src/map/useCellsApi"
@@ -107,9 +107,19 @@ const STATEWIDE_VIEW: { mobile: ViewState; desktop: ViewState } = {
  *  tilt default we use for crash-map embeds). Overrides the auto-fit. */
 const llzParam = viewStateParam({
     default: null,
-    signedDelim: true,
     pitchFallback: 45,
 })
+
+/** Legacy `v` URL param (parquet-backed CrashMapPage, pre-unification):
+ *  `lat_lon_zoom_pitch_bearing` — underscore-separated. Migrated to the new
+ *  `llz` param via `cleanUrl({ deprecated: { v: parseLegacyV } })` on mount;
+ *  see the `useEffect` below. */
+function parseLegacyV(raw: string): { llz?: { latitude: number; longitude: number; zoom: number; pitch: number; bearing: number } } {
+    const parts = raw.split("_").map(Number)
+    if (parts.length < 3 || parts.some(Number.isNaN)) return {}
+    const [latitude, longitude, zoom, pitch = 45, bearing = 0] = parts
+    return { llz: { latitude, longitude, zoom, pitch, bearing } }
+}
 
 /** `y` URL param: `"<a>-<b>"` (e.g. `2019-2025`). Out-of-order pairs are
  *  swapped silently. */
@@ -183,6 +193,19 @@ export function CrashMapSection({
     // polygon layer. State updates still apply immediately via use-prms's
     // `pendingRef`, so the map keeps tracking the cursor.
     const [llz, setLlz] = useUrlState("llz", llzParam, { debounce: 100 })
+
+    // One-shot migration: rewrite legacy `v=lat_lon_zoom_pitch_bearing` URLs
+    // (parquet-backed CrashMapPage, pre-unification) into the new `llz=`
+    // form, then strip `v=`. No-op when `v=` isn't present (cleanUrl
+    // early-returns without touching history). The migrated `llz=` value
+    // is picked up by the `useUrlState` hook above on the next popstate
+    // cleanUrl dispatches, so the user briefly sees the auto-fit before
+    // snapping to the bookmarked view — acceptable for a stale-link migrate.
+    useEffect(() => {
+        cleanUrl({ llz: llzParam }, {
+            deprecated: { v: parseLegacyV },
+        })
+    }, [])
 
     // Pre-fetch the v2 manifest so we can derive a sensible initial
     // viewport from the county/muni bbox before the user has moved the

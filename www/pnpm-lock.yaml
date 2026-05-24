@@ -129,8 +129,8 @@ importers:
         specifier: ^0.12.0
         version: 0.12.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       use-prms:
-        specifier: https://github.com/runsascoded/use-prms#e7d82ad2b2d7834c59bc10f863d186a6d78081de
-        version: https://codeload.github.com/runsascoded/use-prms/tar.gz/e7d82ad2b2d7834c59bc10f863d186a6d78081de(react@18.2.0)
+        specifier: https://github.com/runsascoded/use-prms#3db90a820b4372cea3efb7e02bac317dc049fa04
+        version: https://codeload.github.com/runsascoded/use-prms/tar.gz/3db90a820b4372cea3efb7e02bac317dc049fa04(react@18.2.0)
       use-session-storage-state:
         specifier: ^18.2.0
         version: 18.2.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -3384,9 +3384,9 @@ packages:
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
 
-  use-prms@https://codeload.github.com/runsascoded/use-prms/tar.gz/e7d82ad2b2d7834c59bc10f863d186a6d78081de:
-    resolution: {tarball: https://codeload.github.com/runsascoded/use-prms/tar.gz/e7d82ad2b2d7834c59bc10f863d186a6d78081de}
-    version: 0.4.1-dist.fc4a65e
+  use-prms@https://codeload.github.com/runsascoded/use-prms/tar.gz/3db90a820b4372cea3efb7e02bac317dc049fa04:
+    resolution: {tarball: https://codeload.github.com/runsascoded/use-prms/tar.gz/3db90a820b4372cea3efb7e02bac317dc049fa04}
+    version: 0.4.1-dist.84efcc8
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
 
@@ -7253,7 +7253,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  use-prms@https://codeload.github.com/runsascoded/use-prms/tar.gz/e7d82ad2b2d7834c59bc10f863d186a6d78081de(react@18.2.0):
+  use-prms@https://codeload.github.com/runsascoded/use-prms/tar.gz/3db90a820b4372cea3efb7e02bac317dc049fa04(react@18.2.0):
     dependencies:
       react: 18.2.0
 
