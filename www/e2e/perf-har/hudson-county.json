@@ -12,7 +12,7 @@
   {
     "url": "http://localhost:4006/c/hudson",
     "status": 200,
-    "body_size": 2448
+    "body_size": 2464
   },
   {
     "url": "http://localhost:4006/census/population.parquet",

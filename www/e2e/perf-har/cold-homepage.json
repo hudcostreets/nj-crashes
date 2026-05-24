@@ -7,7 +7,7 @@
   {
     "url": "http://localhost:4006/",
     "status": 200,
-    "body_size": 2448
+    "body_size": 2464
   },
   {
     "url": "http://localhost:4006/annotations.json",

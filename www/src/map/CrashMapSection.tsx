@@ -747,13 +747,17 @@ export function CrashMapSection({
                 </DebugSection>
             </div>
             )}
+            {/* "Back to charts" (fullscreen) / "Open full-screen" (embed) lives
+             *  bottom-left so it doesn't collide with the Legend (top-left),
+             *  scope pill (top-center), drawer (top-right), or use-kbd's
+             *  SpeedDial (viewport's bottom-right). */}
             {(fullScreen ? detailsHref : fullScreenHref) && (
                 <a
                     href={(fullScreen ? detailsHref : fullScreenHref) as string}
                     title={fullScreen ? "Back to charts" : "Open full-screen"}
                     aria-label={fullScreen ? "Back to charts view" : "Open map in full-screen view"}
                     style={{
-                        position: "absolute", bottom: 8, right: 8, zIndex: 1000,
+                        position: "absolute", bottom: 8, left: 8, zIndex: 1000,
                         background: bg, color: fg,
                         padding: "0.3em", borderRadius: 4,
                         border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,

@@ -7,7 +7,7 @@
   {
     "url": "http://localhost:4006/?llz=40.7271-74.0515+15.76+0+0&y=2016-2025",
     "status": 200,
-    "body_size": 2448
+    "body_size": 2464
   },
   {
     "url": "http://localhost:4006/annotations.json",

@@ -1,9 +1,9 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
-import { HotkeysProvider, Omnibar, ShortcutsModal, LookupModal, SpeedDial } from 'use-kbd'
+import { HotkeysProvider, Omnibar, ShortcutsModal, LookupModal } from 'use-kbd'
 import 'use-kbd/styles.css'
 import Home from './routes/Home'
-import { ThemeToggle } from './components/ThemeToggle'
+import { AppSpeedDial } from './components/AppSpeedDial'
 import { GeoFilterProvider } from './GeoFilterContext'
 import { DuckDbProvider } from './lib/DuckDbContext'
 import { useGeoActions } from './components/GeoOmnibar'
@@ -84,8 +84,7 @@ export default function App() {
             <Omnibar />
             <ShortcutsModal />
             <LookupModal />
-            <SpeedDial />
-            <ThemeToggle />
+            <AppSpeedDial />
         </DuckDbProvider>
         </HotkeysProvider>
     )
