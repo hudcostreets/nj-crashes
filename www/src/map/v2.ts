@@ -236,7 +236,7 @@ export function pickFetchPlanV2(args: PickFetchPlanArgs): FetchPlan {
         hexPxTarget,
         pointZoomThreshold = 11,
         maxPointShards = 10,
-        maxHexShards = 30,
+        maxHexShards = 100,
     } = args
     const singleFiles = singleFileResolutions(manifest)
     const dbg = (typeof window !== "undefined") && (window as any).__pickerDebug

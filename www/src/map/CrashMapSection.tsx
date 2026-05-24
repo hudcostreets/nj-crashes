@@ -170,7 +170,7 @@ export function CrashMapSection({
     // session survives page reloads. Defaults match `pickFetchPlanV2`.
     const [pointZoomThreshold, setPointZoomThreshold] = useSessionStorageState<number>("hccs.crashmap.pointZoomThreshold", { defaultValue: 11 })
     const [maxPointShards, setMaxPointShards] = useSessionStorageState<number>("hccs.crashmap.maxPointShards", { defaultValue: 10 })
-    const [maxHexShards, setMaxHexShards] = useSessionStorageState<number>("hccs.crashmap.maxHexShards", { defaultValue: 30 })
+    const [maxHexShards, setMaxHexShards] = useSessionStorageState<number>("hccs.crashmap.maxHexShards", { defaultValue: 100 })
     // User-resizable map height (drag bottom edge of the wrapper; CSS
     // `resize: vertical`). Persisted per session. Reset (↺) restores the
     // caller-provided default.
@@ -742,7 +742,7 @@ export function CrashMapSection({
                     <NumberSlider
                         label="max hex shards" min={1} max={200} step={1}
                         value={maxHexShards} onChange={setMaxHexShards}
-                        defaultValue={30} reset={() => setMaxHexShards(30)}
+                        defaultValue={100} reset={() => setMaxHexShards(100)}
                     />
                 </DebugSection>
             </div>

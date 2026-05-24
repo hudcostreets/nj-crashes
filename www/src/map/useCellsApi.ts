@@ -346,9 +346,11 @@ const DEBOUNCE_MS = 500
  *
  *  Bumped 30k → 60k after multi-res sharding landed: at z~10 over urban
  *  NJ the actual in-viewport r10 cell count is ~42k. 30k forced a coarsen
- *  to r9 (defeating the point of finer sharding). Deck.gl's
- *  HexagonLayer-style instanced rendering handles 100k+ smoothly. */
-export const CELLS_BUDGET = 60000
+ *  to r9 (defeating the point of finer sharding). Then 60k → 100k:
+ *  statewide r9 fits in ~66.5k cells, and 60k was forcing r9 → r8 at
+ *  z≈9.6 (the default full-screen view). Deck.gl's HexagonLayer-style
+ *  instanced rendering handles 100k+ smoothly. */
+export const CELLS_BUDGET = 100000
 
 /** Per-shard cap sent to the worker as `?maxCells=`. Worker walks
  *  coarser if a shard's cells would exceed this — only triggers
