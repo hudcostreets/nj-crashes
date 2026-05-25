@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun May 24 10:00:06 EDT 2026</RUNDATE>
+  <RUNDATE>Mon May 25 10:00:06 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -4750,7 +4750,7 @@
   </COUNTY>
   <COUNTY CCODE="10" CNAME="Hunterdon">
     <MUNICIPALITY MCODE="1022" MNAME="Readington Twsp">
-      <ACCIDENT ACCID="13931" DATE="05/26/2025" TIME="2023">
+      <ACCIDENT ACCID="13931" DATE="05/26/2025" TIME="2026">
         <HIGHWAY>22</HIGHWAY>
         <LOCATION>State Highway 22 MP 24.5</LOCATION>
         <FATALITIES>1</FATALITIES>
