@@ -1,5 +1,5 @@
 outs:
-- md5: 90dd8a135a98e3990c454ea79ae22c92
+- md5: 408983a7562136a07642428a25b539d8
   size: 2416640
   hash: md5
   path: crashes.db
@@ -8,5 +8,5 @@ meta:
     cmd: njsp update_pqts --s3
     git_deps:
       /data/FAUQStats2024.xml: e6ece47084bc6d58e8d8aa5a40d0d85f028c1ac3
-      /data/FAUQStats2025.xml: 3e6f8669c839530bb13d6eaa151496acb21b1e6f
-      /data/FAUQStats2026.xml: f3750b0aa7b5037fb3390b74dfc4922e6b2b2c0d
+      /data/FAUQStats2025.xml: 8331bf23acd50a94fb5c7aaebc77cc5161a32289
+      /data/FAUQStats2026.xml: ad021876a6b92702b23b0dcc4f60a93f279dab62
