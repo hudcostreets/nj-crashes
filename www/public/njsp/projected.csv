@@ -11,9 +11,9 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Hunterdon,,4,0,2,1,1
 ,,Mercer,,28,1,11,7,10
 ,,Middlesex,,56,1,34,12,14
-,,Monmouth,,40,1,14,6,18
+,,Monmouth,,43,1,16,6,18
 ,,Morris,,30,1,16,1,13
-,,Ocean,,45,1,33,4,10
+,,Ocean,,42,1,31,4,9
 ,,Passaic,,19,0,11,5,7
 ,,Salem,,13,0,11,3,1
 ,,Somerset,,10,0,7,1,2
@@ -199,7 +199,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 13,37,Monmouth,Ocean Twsp,1,0,0,0,1
 13,49,Monmouth,Tinton Falls Boro,2,0,1,2,0
 13,51,Monmouth,Upper Freehold Twsp,0,0,0,0,0
-13,52,Monmouth,Wall Twsp,2,0,1,0,1
+13,52,Monmouth,Wall Twsp,3,0,2,0,1
 14,4,Morris,Chatham Boro,2,0,0,0,2
 14,7,Morris,Chester Twsp,1,0,1,0,0
 14,8,Morris,Denville Twsp,1,1,0,0,1
@@ -219,8 +219,8 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 15,2,Ocean,Barnegat Light Boro,-1,0,-1,0,0
 15,6,Ocean,Berkeley Twsp,1,0,1,1,0
 15,7,Ocean,Brick Twsp,5,2,2,0,2
-15,8,Ocean,Toms River,10,-1,7,1,4
-15,12,Ocean,Jackson Twsp,5,0,7,2,-1
+15,8,Ocean,Toms River,9,-1,7,1,4
+15,12,Ocean,Jackson Twsp,5,0,7,1,-1
 15,13,Ocean,Lacey Twsp,3,0,2,0,1
 15,14,Ocean,Lakehurst Boro,0,0,0,0,0
 15,15,Ocean,Lakewood Twsp,5,2,2,1,1
