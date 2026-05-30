@@ -1,15 +1,15 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
-,,Atlantic,,31,2,15,2,10
+,,Atlantic,,30,2,14,2,10
 ,,Bergen,,32,0,18,1,15
-,,Burlington,,37,1,27,6,7
+,,Burlington,,36,1,27,6,7
 ,,Camden,,27,3,12,2,11
 ,,Cape May,,8,0,7,2,0
-,,Cumberland,,21,0,13,2,6
+,,Cumberland,,19,0,11,2,6
 ,,Essex,,42,0,12,5,28
 ,,Gloucester,,23,2,14,4,3
 ,,Hudson,,32,1,10,0,22
-,,Hunterdon,,4,0,2,1,1
-,,Mercer,,28,1,11,7,10
+,,Hunterdon,,5,0,3,1,1
+,,Mercer,,29,1,14,9,10
 ,,Middlesex,,54,1,34,12,12
 ,,Monmouth,,39,1,16,4,18
 ,,Morris,,30,1,16,1,13
@@ -18,7 +18,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Salem,,13,0,11,3,1
 ,,Somerset,,10,0,7,1,2
 ,,Sussex,,21,0,7,0,3
-,,Union,,41,1,26,2,20
+,,Union,,43,1,26,4,20
 ,,Warren,,4,0,2,1,2
 1,1,Atlantic,Absecon City,1,0,0,0,1
 1,2,Atlantic,Atlantic City,5,2,1,0,2
@@ -28,7 +28,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 1,9,Atlantic,Estell Manor City,1,0,1,0,0
 1,10,Atlantic,Folsom Boro,1,0,1,0,0
 1,11,Atlantic,Galloway Twsp,3,0,2,0,1
-1,12,Atlantic,Hamilton Twsp,10,0,6,1,2
+1,12,Atlantic,Hamilton Twsp,8,0,5,1,2
 1,13,Atlantic,Hammonton Town,2,0,2,0,0
 1,14,Atlantic,Linwood City,1,0,0,0,1
 1,19,Atlantic,Pleasantville City,2,0,0,1,1
@@ -114,7 +114,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 6,9,Cumberland,Maurice River Twsp,1,0,1,0,0
 6,10,Cumberland,Millville City,2,0,1,0,1
 6,13,Cumberland,Upper Deerfield Tws,0,0,0,0,0
-6,14,Cumberland,Vineland City,12,0,4,2,2
+6,14,Cumberland,Vineland City,8,0,4,2,2
 7,1,Essex,Belleville Town,1,0,0,0,1
 7,3,Essex,Caldwell Boro,2,0,0,0,2
 7,5,Essex,East Orange City,6,0,2,0,3
@@ -155,15 +155,16 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 10,8,Hunterdon,East Amwell Tws,0,0,0,0,0
 10,16,Hunterdon,Kingwood Twsp,2,0,2,0,0
 10,19,Hunterdon,Lebanon Twsp,2,0,2,0,0
-10,21,Hunterdon,Raritan Twsp,1,0,0,1,0
+10,21,Hunterdon,Raritan Twsp,2,0,2,1,0
 10,22,Hunterdon,Readington Twsp,1,0,0,0,1
 11,1,Mercer,East Windsor Twsp,2,0,1,1,1
 11,2,Mercer,Ewing Twsp,7,0,5,1,1
 11,3,Mercer,Hamilton Twsp,7,0,1,4,3
-11,6,Mercer,Hopewell Twsp,1,0,0,1,0
+11,6,Mercer,Hopewell Twsp,0,0,0,0,0
 11,7,Mercer,Lawrence Twsp,2,0,2,0,0
 11,11,Mercer,Trenton,8,0,1,1,4
-11,12,Mercer,Robbinsville Twsp,1,0,1,0,0
+11,12,Mercer,Robbinsville Twsp,2,0,2,0,0
+11,13,Mercer,West Windsor Twp,2,0,2,0,0
 11,14,Mercer,Princeton,1,2,0,0,0
 12,1,Middlesex,Carteret Boro,1,0,1,0,0
 12,2,Middlesex,Cranbury Twsp,0,0,0,0,0
@@ -280,7 +281,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 20,14,Union,Roselle Boro,1,0,1,0,0
 20,16,Union,Scotch Plains Twsp,1,0,0,0,1
 20,17,Union,Springfield Twsp,2,0,2,0,0
-20,19,Union,Union Twsp,8,0,2,0,5
+20,19,Union,Union Twsp,11,0,2,2,5
 20,20,Union,Westfield Town,1,1,0,0,0
 21,1,Warren,Allamuchy Twsp,0,0,0,0,0
 21,4,Warren,Blairstown Twsp,0,0,0,0,0
