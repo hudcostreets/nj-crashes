@@ -1,7 +1,7 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Atlantic,,30,2,14,2,10
-,,Bergen,,32,0,18,1,15
-,,Burlington,,36,1,27,6,7
+,,Bergen,,34,0,20,1,15
+,,Burlington,,38,1,28,6,7
 ,,Camden,,27,3,12,2,11
 ,,Cape May,,8,0,7,2,0
 ,,Cumberland,,19,0,11,2,6
@@ -11,9 +11,9 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Hunterdon,,5,0,3,1,1
 ,,Mercer,,29,1,14,9,10
 ,,Middlesex,,54,1,34,12,12
-,,Monmouth,,39,1,16,4,18
+,,Monmouth,,41,1,16,4,21
 ,,Morris,,30,1,16,1,13
-,,Ocean,,44,1,33,4,9
+,,Ocean,,47,1,34,4,11
 ,,Passaic,,19,0,11,5,7
 ,,Salem,,13,0,11,3,1
 ,,Somerset,,10,0,7,1,2
@@ -56,7 +56,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 2,46,Bergen,Paramus Boro,0,0,0,0,0
 2,48,Bergen,Ramsey Boro,1,0,1,0,0
 2,50,Bergen,Ridgefield Park Tws,3,0,3,0,0
-2,56,Bergen,Rutherford Boro,2,0,2,0,1
+2,56,Bergen,Rutherford Boro,4,0,3,0,1
 2,57,Bergen,Saddle Brook Twsp,1,0,1,0,0
 2,61,Bergen,Tenafly Boro,0,0,0,0,0
 2,66,Bergen,Washington Twsp,2,0,2,0,0
@@ -81,7 +81,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 3,33,Burlington,Southampton Twsp,1,0,1,0,0
 3,34,Burlington,Springfield Twsp,2,0,2,0,0
 3,35,Burlington,Tabernacle Twsp,1,0,1,0,0
-3,36,Burlington,Washington Twsp,1,0,1,0,0
+3,36,Burlington,Washington Twsp,2,0,2,0,0
 3,37,Burlington,Westampton Twsp,6,0,4,3,1
 3,38,Burlington,Willingboro Twsp,3,0,2,0,1
 4,4,Camden,Bellmawr Boro,1,0,1,0,0
@@ -183,6 +183,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 12,21,Middlesex,South Brunswick Tws,8,0,3,1,3
 12,23,Middlesex,South River Boro,2,0,2,0,1
 12,25,Middlesex,Woodbridge Twsp,12,0,7,2,2
+13,1,Monmouth,Aberdeen Twsp,2,0,0,0,2
 13,5,Monmouth,Atlantic Highlands,1,1,0,0,0
 13,10,Monmouth,Colts Neck Twsp,1,0,1,0,0
 13,12,Monmouth,Eatontown Boro,2,0,0,0,2
@@ -222,13 +223,14 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 15,6,Ocean,Berkeley Twsp,1,0,1,1,0
 15,7,Ocean,Brick Twsp,5,2,2,0,2
 15,8,Ocean,Toms River,9,-1,7,1,4
-15,12,Ocean,Jackson Twsp,5,0,7,1,-1
+15,12,Ocean,Jackson Twsp,6,0,7,1,0
 15,13,Ocean,Lacey Twsp,3,0,2,0,1
 15,14,Ocean,Lakehurst Boro,0,0,0,0,0
 15,15,Ocean,Lakewood Twsp,6,2,3,1,1
 15,17,Ocean,Little Egg Harbor T,1,0,0,0,1
 15,18,Ocean,Long Beach Twsp,2,0,2,0,0
 15,19,Ocean,Manchester Twsp,5,0,4,1,0
+15,21,Ocean,Ocean Twsp,2,0,2,0,0
 15,24,Ocean,Plumsted Twsp,1,0,1,0,1
 15,26,Ocean,Point Pleasant Beac,1,0,1,0,0
 15,30,Ocean,South Toms River Bo,2,0,2,0,1
