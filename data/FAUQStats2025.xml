@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Jun 04 10:00:04 EDT 2026</RUNDATE>
+  <RUNDATE>Fri Jun 05 10:00:04 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -893,7 +893,7 @@
   </COUNTY>
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0242" MNAME="Oakland Boro">
-      <ACCIDENT ACCID="14273" DATE="11/18/2025" TIME="2102">
+      <ACCIDENT ACCID="14273" DATE="11/17/2025" TIME="2102">
         <HIGHWAY>287</HIGHWAY>
         <LOCATION>Interstate 287 MP 57.6</LOCATION>
         <FATALITIES>1</FATALITIES>
