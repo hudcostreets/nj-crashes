@@ -1,23 +1,23 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Atlantic,,30,2,15,2,9
 ,,Bergen,,34,0,20,1,15
-,,Burlington,,38,1,29,6,7
+,,Burlington,,42,1,30,8,7
 ,,Camden,,28,3,14,2,11
 ,,Cape May,,8,0,7,2,0
 ,,Cumberland,,19,0,11,2,6
 ,,Essex,,42,0,12,5,28
 ,,Gloucester,,24,2,16,4,3
-,,Hudson,,32,1,10,0,23
+,,Hudson,,28,1,10,0,17
 ,,Hunterdon,,5,0,3,1,1
 ,,Mercer,,29,1,14,9,10
-,,Middlesex,,54,1,34,12,12
-,,Monmouth,,41,1,16,4,22
-,,Morris,,30,1,16,1,13
-,,Ocean,,47,1,34,4,11
-,,Passaic,,20,0,13,5,7
+,,Middlesex,,52,1,32,12,12
+,,Monmouth,,44,1,18,4,22
+,,Morris,,31,1,16,1,13
+,,Ocean,,45,1,33,4,11
+,,Passaic,,19,0,13,5,6
 ,,Salem,,13,0,11,3,1
 ,,Somerset,,10,0,8,1,2
-,,Sussex,,21,0,7,0,3
+,,Sussex,,22,0,7,0,3
 ,,Union,,44,1,26,4,20
 ,,Warren,,5,0,3,1,2
 1,1,Atlantic,Absecon City,1,0,0,0,1
@@ -69,7 +69,9 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 3,13,Burlington,Evesham Twsp,2,0,2,0,0
 3,15,Burlington,Florence Twsp,0,0,0,0,0
 3,16,Burlington,Hainesport Twsp,2,0,2,0,0
+3,17,Burlington,Lumberton Twsp,2,0,2,0,0
 3,18,Burlington,Mansfield Twsp,1,0,1,0,0
+3,19,Burlington,Maple Shade Twsp,2,0,0,2,0
 3,21,Burlington,Medford Lakes Boro,1,0,1,0,0
 3,22,Burlington,Moorestown Twsp,2,0,0,0,2
 3,23,Burlington,Mount Holly Twsp,0,0,0,0,0
@@ -144,7 +146,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 9,3,Hudson,Guttenberg Town,1,0,0,0,1
 9,6,Hudson,Jersey City,4,1,1,0,3
 9,7,Hudson,Kearny Town,3,0,1,0,3
-9,8,Hudson,North Bergen Twsp,3,0,1,0,2
+9,8,Hudson,North Bergen Twsp,2,0,1,0,2
 9,9,Hudson,Secaucus Town,3,0,2,0,2
 9,10,Hudson,Union City,5,0,2,0,3
 9,11,Hudson,Weehawken Twsp,1,0,1,0,0
@@ -179,7 +181,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 12,17,Middlesex,Piscataway Twsp,1,0,1,0,0
 12,18,Middlesex,Plainsboro Twsp,1,0,1,0,0
 12,19,Middlesex,Sayreville Boro,2,0,2,0,0
-12,20,Middlesex,South Amboy City,1,0,1,0,0
+12,20,Middlesex,South Amboy City,0,0,0,0,0
 12,21,Middlesex,South Brunswick Tws,8,0,3,1,3
 12,23,Middlesex,South River Boro,2,0,2,0,1
 12,25,Middlesex,Woodbridge Twsp,12,0,7,2,2
@@ -199,7 +201,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 13,31,Monmouth,Matawan Boro,2,0,0,0,2
 13,32,Monmouth,Middletown Twsp,2,0,2,0,0
 13,35,Monmouth,Neptune Twsp,4,1,2,0,2
-13,37,Monmouth,Ocean Twsp,1,0,0,0,1
+13,37,Monmouth,Ocean Twsp,2,0,2,0,1
 13,49,Monmouth,Tinton Falls Boro,2,0,1,2,0
 13,51,Monmouth,Upper Freehold Twsp,0,0,0,0,0
 13,52,Monmouth,Wall Twsp,3,0,2,0,1
@@ -230,7 +232,6 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 15,17,Ocean,Little Egg Harbor T,1,0,0,0,1
 15,18,Ocean,Long Beach Twsp,2,0,2,0,0
 15,19,Ocean,Manchester Twsp,5,0,4,1,0
-15,21,Ocean,Ocean Twsp,2,0,2,0,0
 15,24,Ocean,Plumsted Twsp,1,0,1,0,1
 15,26,Ocean,Point Pleasant Beac,1,0,1,0,0
 15,30,Ocean,South Toms River Bo,2,0,2,0,1
@@ -240,7 +241,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 16,3,Passaic,Haledon Boro,2,0,0,2,0
 16,4,Passaic,Hawthorne Boro,1,0,1,0,0
 16,7,Passaic,Passaic City,1,0,2,0,0
-16,8,Passaic,Paterson City,4,0,1,1,2
+16,8,Passaic,Paterson City,3,0,1,1,2
 16,11,Passaic,Ringwood Boro,0,0,0,0,0
 16,12,Passaic,Totowa Boro,2,0,2,2,0
 16,13,Passaic,Wanaque Boro,2,0,1,0,2
