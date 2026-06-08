@@ -1,16 +1,16 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Atlantic,,30,2,15,2,9
-,,Bergen,,34,0,20,1,15
+,,Bergen,,36,0,22,1,15
 ,,Burlington,,42,1,30,8,7
 ,,Camden,,28,3,14,2,11
-,,Cape May,,8,0,7,2,0
+,,Cape May,,8,0,6,2,0
 ,,Cumberland,,19,0,11,2,6
 ,,Essex,,44,0,14,5,28
 ,,Gloucester,,24,2,16,4,3
 ,,Hudson,,28,1,10,0,17
 ,,Hunterdon,,5,0,3,1,1
-,,Mercer,,29,1,14,9,10
-,,Middlesex,,52,1,32,12,12
+,,Mercer,,29,1,15,9,10
+,,Middlesex,,51,1,30,12,12
 ,,Monmouth,,44,1,18,4,22
 ,,Morris,,31,1,16,1,13
 ,,Ocean,,45,1,33,4,11
@@ -18,7 +18,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Salem,,13,0,11,3,1
 ,,Somerset,,10,0,8,1,2
 ,,Sussex,,22,0,7,0,3
-,,Union,,44,1,26,4,20
+,,Union,,46,1,26,6,20
 ,,Warren,,5,0,3,1,2
 1,1,Atlantic,Absecon City,1,0,0,0,1
 1,2,Atlantic,Atlantic City,5,2,1,0,2
@@ -61,6 +61,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 2,61,Bergen,Tenafly Boro,0,0,0,0,0
 2,66,Bergen,Washington Twsp,2,0,2,0,0
 2,68,Bergen,Woodcliff Lake Boro,1,0,1,0,0
+2,70,Bergen,Wyckoff Twsp,2,0,2,0,0
 3,4,Burlington,Bordentown Twsp,0,0,0,0,0
 3,6,Burlington,Burlington Twsp,1,0,0,0,1
 3,7,Burlington,Chesterfield Twsp,1,0,1,0,0
@@ -184,7 +185,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 12,20,Middlesex,South Amboy City,0,0,0,0,0
 12,21,Middlesex,South Brunswick Tws,8,0,3,1,3
 12,23,Middlesex,South River Boro,2,0,2,0,1
-12,25,Middlesex,Woodbridge Twsp,12,0,7,2,2
+12,25,Middlesex,Woodbridge Twsp,10,0,6,2,2
 13,1,Monmouth,Aberdeen Twsp,2,0,0,0,2
 13,5,Monmouth,Atlantic Highlands,1,1,0,0,0
 13,10,Monmouth,Colts Neck Twsp,1,0,1,0,0
@@ -279,7 +280,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 20,7,Union,Hillside Twsp,2,0,2,1,0
 20,9,Union,Linden City,4,0,2,0,3
 20,10,Union,Mountainside Boro,1,0,0,1,0
-20,12,Union,Plainfield City,8,0,4,1,2
+20,12,Union,Plainfield City,10,0,4,3,2
 20,13,Union,Rahway City,1,0,2,0,0
 20,14,Union,Roselle Boro,1,0,1,0,0
 20,16,Union,Scotch Plains Twsp,1,0,0,0,1
