@@ -1,7 +1,7 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Atlantic,,30,2,15,2,9
 ,,Bergen,,36,0,22,1,15
-,,Burlington,,42,1,30,8,7
+,,Burlington,,42,1,32,7,7
 ,,Camden,,28,3,14,2,11
 ,,Cape May,,8,0,6,2,0
 ,,Cumberland,,19,0,11,2,6
@@ -10,15 +10,15 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Hudson,,28,1,10,0,17
 ,,Hunterdon,,5,0,3,1,1
 ,,Mercer,,29,1,15,9,10
-,,Middlesex,,51,1,30,12,12
-,,Monmouth,,44,1,18,4,22
-,,Morris,,31,1,16,1,13
+,,Middlesex,,52,1,30,16,12
+,,Monmouth,,46,1,20,4,22
+,,Morris,,28,1,14,1,13
 ,,Ocean,,45,1,33,4,11
 ,,Passaic,,19,0,13,5,6
 ,,Salem,,13,0,11,3,1
 ,,Somerset,,10,0,8,1,2
 ,,Sussex,,22,0,7,0,3
-,,Union,,46,1,26,6,20
+,,Union,,42,1,20,6,20
 ,,Warren,,5,0,3,1,2
 1,1,Atlantic,Absecon City,1,0,0,0,1
 1,2,Atlantic,Atlantic City,5,2,1,0,2
@@ -76,10 +76,10 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 3,21,Burlington,Medford Lakes Boro,1,0,1,0,0
 3,22,Burlington,Moorestown Twsp,2,0,0,0,2
 3,23,Burlington,Mount Holly Twsp,0,0,0,0,0
-3,24,Burlington,Mount Laurel Twsp,9,0,6,2,2
+3,24,Burlington,Mount Laurel Twsp,11,0,7,2,2
 3,26,Burlington,North Hanover Twsp,1,0,1,0,0
 3,27,Burlington,Palmyra Boro,1,0,1,0,0
-3,29,Burlington,Pemberton Twsp,1,0,1,1,0
+3,29,Burlington,Pemberton Twsp,1,0,1,0,0
 3,32,Burlington,Shamong Twsp,1,0,1,1,0
 3,33,Burlington,Southampton Twsp,1,0,1,0,0
 3,34,Burlington,Springfield Twsp,2,0,2,0,0
@@ -176,7 +176,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 12,8,Middlesex,Jamesburg Boro,2,1,2,0,0
 12,9,Middlesex,Metuchen Boro,2,0,2,2,0
 12,13,Middlesex,New Brunswick City,6,0,4,1,1
-12,14,Middlesex,North Brunswick Tws,0,0,0,0,0
+12,14,Middlesex,North Brunswick Tws,1,0,0,2,0
 12,15,Middlesex,Old Bridge Twsp,5,0,2,1,2
 12,16,Middlesex,Perth Amboy City,2,0,0,0,2
 12,17,Middlesex,Piscataway Twsp,1,0,1,0,0
@@ -188,7 +188,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 12,25,Middlesex,Woodbridge Twsp,10,0,6,2,2
 13,1,Monmouth,Aberdeen Twsp,2,0,0,0,2
 13,5,Monmouth,Atlantic Highlands,1,1,0,0,0
-13,10,Monmouth,Colts Neck Twsp,1,0,1,0,0
+13,10,Monmouth,Colts Neck Twsp,3,0,3,0,0
 13,12,Monmouth,Eatontown Boro,2,0,0,0,2
 13,17,Monmouth,Freehold Twsp,2,0,0,2,0
 13,18,Monmouth,Hazlet Boro,1,0,1,0,0
@@ -215,7 +215,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 14,21,Morris,Montville Twsp,1,0,1,0,0
 14,24,Morris,Morristown Town,3,0,2,0,2
 14,27,Morris,Mount Olive Twsp,5,0,5,0,0
-14,29,Morris,Parsippany-Troy Hil,3,0,1,0,2
+14,29,Morris,Parsippany-Troy Hil,2,0,1,0,2
 14,32,Morris,Randolph Twsp,0,0,0,0,0
 14,34,Morris,Rockaway Boro,0,-1,0,0,1
 14,35,Morris,Rockaway Twsp,1,0,1,0,0
@@ -280,7 +280,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 20,7,Union,Hillside Twsp,2,0,2,1,0
 20,9,Union,Linden City,4,0,2,0,3
 20,10,Union,Mountainside Boro,1,0,0,1,0
-20,12,Union,Plainfield City,10,0,4,3,2
+20,12,Union,Plainfield City,7,0,4,3,2
 20,13,Union,Rahway City,1,0,2,0,0
 20,14,Union,Roselle Boro,1,0,1,0,0
 20,16,Union,Scotch Plains Twsp,1,0,0,0,1
