@@ -1,23 +1,23 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
-,,Atlantic,,30,2,15,2,9
+,,Atlantic,,28,2,15,2,9
 ,,Bergen,,36,0,22,1,15
 ,,Burlington,,42,1,32,7,7
 ,,Camden,,28,3,14,2,11
 ,,Cape May,,8,0,6,2,0
 ,,Cumberland,,19,0,11,2,6
 ,,Essex,,44,0,14,5,28
-,,Gloucester,,24,2,16,4,3
-,,Hudson,,28,1,10,0,17
+,,Gloucester,,24,2,15,4,3
+,,Hudson,,28,1,10,0,18
 ,,Hunterdon,,5,0,3,1,1
 ,,Mercer,,29,1,15,9,10
 ,,Middlesex,,52,1,30,16,12
-,,Monmouth,,46,1,20,4,22
+,,Monmouth,,47,1,20,4,22
 ,,Morris,,28,1,14,1,13
-,,Ocean,,45,1,33,4,11
-,,Passaic,,19,0,13,5,6
+,,Ocean,,45,1,33,4,10
+,,Passaic,,20,0,13,5,7
 ,,Salem,,13,0,11,3,1
 ,,Somerset,,10,0,8,1,2
-,,Sussex,,22,0,7,0,3
+,,Sussex,,27,0,9,0,3
 ,,Union,,42,1,20,6,20
 ,,Warren,,5,0,3,1,2
 1,1,Atlantic,Absecon City,1,0,0,0,1
@@ -242,7 +242,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 16,3,Passaic,Haledon Boro,2,0,0,2,0
 16,4,Passaic,Hawthorne Boro,1,0,1,0,0
 16,7,Passaic,Passaic City,1,0,2,0,0
-16,8,Passaic,Paterson City,3,0,1,1,2
+16,8,Passaic,Paterson City,5,0,1,1,3
 16,11,Passaic,Ringwood Boro,0,0,0,0,0
 16,12,Passaic,Totowa Boro,2,0,2,2,0
 16,13,Passaic,Wanaque Boro,2,0,1,0,2
@@ -270,6 +270,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 19,4,Sussex,Byram Twsp,0,0,0,0,0
 19,5,Sussex,Frankford Twsp,1,0,1,0,0
 19,9,Sussex,Hamburg Boro,1,0,1,0,0
+19,10,Sussex,Hampton Twsp,2,0,2,0,0
 19,11,Sussex,Hardyston Twsp,1,0,0,0,1
 19,14,Sussex,Montague Twsp,3,0,3,0,1
 19,17,Sussex,Sandyston Twsp,1,0,1,0,0
