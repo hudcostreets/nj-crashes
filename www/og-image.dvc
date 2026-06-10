@@ -2,7 +2,7 @@ meta:
   computation:
     cmd: ./og-image.sh
     deps:
-      /njsp/data/crash-log.parquet: af87bd3e9c65c7810b83fcd91bd7460e
+      /njsp/data/crash-log.parquet: c4d87ef92ea568ea7ce2ecb32cc98de2
     git_deps:
       og-image.sh: 11706b0280f9ffe53e3df0c99db0f3e9cf1215d5
       e2e/og-screenshot.spec.ts: 22b45497b0b2bba89d7e14655dc2bc9ec07bc478
