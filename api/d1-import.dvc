@@ -2,7 +2,7 @@ meta:
   computation:
     cmd: bash scripts/d1-import.sh --inplace njsp-crashes cmymc
     deps:
-      /www/public/njsp/crashes.db: 05895741d9866fed7132c183d00cc3d0
-      /www/public/njdot/cmymc.db: 3143b113fb559dcd55f6991ccccc203c
+      /www/public/njsp/crashes.db: 10a956b533dce55101f96a4ec11e74e2
+      /www/public/njdot/cmymc.db: 65c55de8a55a7608509fe029f758f619
     git_deps:
       scripts/d1-import.sh: aef2e481ec52f0034f5c230423b621265342a8b5
