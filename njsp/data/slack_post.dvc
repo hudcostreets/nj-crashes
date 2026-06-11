@@ -2,6 +2,6 @@ meta:
   computation:
     cmd: ./slack_post.sh
     deps:
-      crash-log.parquet: c4d87ef92ea568ea7ce2ecb32cc98de2
+      crash-log.parquet: ff33ff7ddafb7fe05fe4b0578eb2b818
     git_deps:
       slack_post.sh: 12d70b48c5fb83110444b3837ed6ab43613966da
