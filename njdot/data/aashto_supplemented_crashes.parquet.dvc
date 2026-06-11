@@ -8,7 +8,7 @@ meta:
     cmd: njdot aashto supplement
     deps:
       aashto_combined_crashes.parquet: 0ae2595cd33ce71d47ab2d022a22b60e
-      /njsp/data/njsp_njdot_residuals.parquet: f86c2308ea8bc6aecd4962340e1c0d28
+      /njsp/data/njsp_njdot_residuals.parquet: af7b5457cf5ac9fd0837e02117090b68
       aashto_supplemented_occupants.parquet: 806dd7a46ebafbe426faeb05373359b9
       aashto_supplemented_pedestrians.parquet: d3d913d7d0716ee4b5588e8380bb456a
     git_deps:
