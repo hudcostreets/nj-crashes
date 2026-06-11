@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Jun 10 10:00:04 EDT 2026</RUNDATE>
+  <RUNDATE>Thu Jun 11 10:00:03 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -5116,7 +5116,7 @@
     <MUNICIPALITY MCODE="1106" MNAME="Hopewell Twsp">
       <ACCIDENT ACCID="13902" DATE="05/12/2025" TIME="1908">
         <HIGHWAY>31</HIGHWAY>
-        <LOCATION>State Highway 31</LOCATION>
+        <LOCATION>State Highway 31 MP 4.95</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5788,7 +5788,7 @@
     <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
       <ACCIDENT ACCID="13841" DATE="04/09/2025" TIME="1433">
         <HIGHWAY>533</HIGHWAY>
-        <LOCATION>County 533</LOCATION>
+        <LOCATION>County 533 MP 5.57</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
