@@ -22,6 +22,7 @@ import { Counties } from "@/src/njdot/data"
 import { YearStatsSection } from "@/src/tables/YearStatsSection"
 import { NjspCrashesSection } from "@/src/tables/NjspCrashesSection"
 import { NjdotCrashesSection } from "@/src/tables/NjdotCrashesSection"
+import { NjspSection } from "@/src/njsp/NjspSection"
 import { LazySection } from "@/src/components/LazySection"
 import { PlotInfo } from "@/src/icons"
 import { useEffect } from "react"
@@ -147,18 +148,20 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                     />
                 </PlotContainer>
 
-                <PlotContainer><FatalitiesPerYearPlot key={`p1-${cc}-${mc}`} initialCounty={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
+                <NjspSection>
+                    <PlotContainer><FatalitiesPerYearPlot key={`p1-${cc}-${mc}`} initialCounty={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
 
-                {/* NJSP Fatal Crashes Table */}
-                <h2 id="njsp-crashes"><a href="#njsp-crashes">Recent Fatal Crashes</a></h2>
-                <div className={css.subtitle}>Fatal crashes, 2001–present{geo} <PlotInfo source="njsp" showLegendHint={false} /></div>
-                <LazySection placeholder={<p>Loading crash data...</p>}>
-                    <NjspCrashesSection key={`njsp-${cc}-${mc}`} />
-                </LazySection>
+                    {/* NJSP Fatal Crashes Table */}
+                    <h2 id="njsp-crashes"><a href="#njsp-crashes">Recent Fatal Crashes</a></h2>
+                    <div className={css.subtitle}>Fatal crashes, 2001–present{geo} <PlotInfo source="njsp" showLegendHint={false} /></div>
+                    <LazySection placeholder={<p>Loading crash data...</p>}>
+                        <NjspCrashesSection key={`njsp-${cc}-${mc}`} />
+                    </LazySection>
 
-                <PlotContainer><YtdDeathsPlot key={`ytd-${cc}-${mc}`} county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
-                {!municipalityName && <PlotContainer><HomicidesComparisonPlot key={`hom-${countyName}`} county={countyName} cc={cc} /></PlotContainer>}
-                <PlotContainer><FatalitiesByMonthBarsPlot key={`fbm-${cc}-${mc}`} county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
+                    <PlotContainer><YtdDeathsPlot key={`ytd-${cc}-${mc}`} county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
+                    {!municipalityName && <PlotContainer><HomicidesComparisonPlot key={`hom-${countyName}`} county={countyName} cc={cc} /></PlotContainer>}
+                    <PlotContainer><FatalitiesByMonthBarsPlot key={`fbm-${cc}-${mc}`} county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
+                </NjspSection>
 
                 {/* NJ DOT Section */}
                 <h2 id="njdot"><a href="#njdot">NJ DOT Crash Data</a></h2>

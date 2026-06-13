@@ -10,8 +10,8 @@
  *   GET /njdot/pedestrians?crash_ids=1,2,3
  *   GET /njdot/year-stats?cc=&mc=
  *   GET /njdot/victim-severity?cc=&mc=
- *   GET /njsp/crashes?cc=&mc=&page=&limit=
- *   GET /njsp/crashes/count?cc=&mc=
+ *   GET /njsp/crashes?cc=&mc=&yearFrom=&yearTo=&page=&limit=
+ *   GET /njsp/crashes/count?cc=&mc=&yearFrom=&yearTo=
  */
 
 interface Env {
@@ -66,8 +66,14 @@ function njdotWhere(cc: number | null, mc: number | null, before: string | null)
 	return { clause: conditions.join(" AND "), params }
 }
 
-/** Build WHERE clause for NJSP crashes (optional cc/mc). */
-function njspWhere(cc: number | null, mc: number | null): { clause: string; params: unknown[] } {
+/** Build WHERE clause for NJSP crashes (optional cc/mc, optional inclusive
+ *  yearFrom/yearTo bounds on `dt`). */
+function njspWhere(
+	cc: number | null,
+	mc: number | null,
+	yearFrom: number | null,
+	yearTo: number | null,
+): { clause: string; params: unknown[] } {
 	const conditions: string[] = []
 	const params: unknown[] = []
 
@@ -78,6 +84,15 @@ function njspWhere(cc: number | null, mc: number | null): { clause: string; para
 			params.push(mc)
 			conditions.push(`mc = ?${params.length}`)
 		}
+	}
+
+	if (yearFrom !== null) {
+		params.push(`${yearFrom}-01-01`)
+		conditions.push(`dt >= ?${params.length}`)
+	}
+	if (yearTo !== null) {
+		params.push(`${yearTo}-12-31`)
+		conditions.push(`dt <= ?${params.length}`)
 	}
 
 	const clause = conditions.length ? conditions.join(" AND ") : "1=1"
@@ -228,9 +243,11 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 	if (path === "/njsp/crashes") {
 		const cc = intParam(url, "cc")
 		const mc = intParam(url, "mc")
+		const yearFrom = intParam(url, "yearFrom")
+		const yearTo = intParam(url, "yearTo")
 		const limit = intParam(url, "limit") ?? 10
 		const offset = intParam(url, "offset") ?? 0
-		const { clause, params } = njspWhere(cc, mc)
+		const { clause, params } = njspWhere(cc, mc, yearFrom, yearTo)
 		params.push(limit, offset)
 		const sql = `SELECT * FROM crashes WHERE ${clause} ORDER BY dt DESC LIMIT ?${params.length - 1} OFFSET ?${params.length}`
 		const result = await env.NJSP_CRASHES_DB.prepare(sql).bind(...params).all()
@@ -241,7 +258,9 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 	if (path === "/njsp/crashes/count") {
 		const cc = intParam(url, "cc")
 		const mc = intParam(url, "mc")
-		const { clause, params } = njspWhere(cc, mc)
+		const yearFrom = intParam(url, "yearFrom")
+		const yearTo = intParam(url, "yearTo")
+		const { clause, params } = njspWhere(cc, mc, yearFrom, yearTo)
 		const sql = `SELECT count(*) as total FROM crashes WHERE ${clause}`
 		const result = await env.NJSP_CRASHES_DB.prepare(sql).bind(...params).all()
 		return Response.json(result.results, { headers: corsHeaders(env) })

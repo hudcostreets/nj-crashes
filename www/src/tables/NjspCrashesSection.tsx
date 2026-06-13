@@ -4,13 +4,17 @@ import { usePaginationControls, Pagination } from "@/src/pagination"
 import { useNjspCrashRows, useNjspCrashesTotal, Total } from "@/src/use-njsp-crashes"
 import { ResultTable } from "@/src/result-table"
 import { fold } from "fp-ts/Either"
+import { useNjspSection } from "@/src/njsp/NjspSectionContext"
 
 export function NjspCrashesSection({ perPage: perPageProp, hidePagination }: { perPage?: number; hidePagination?: boolean } = {}) {
     const { cc, mc, cc2mc2mn } = useGeoFilter()
+    const section = useNjspSection()
+    const yearFrom = section?.yearRangeActive ? section.yearRange[0] : null
+    const yearTo = section?.yearRangeActive ? section.yearRange[1] : null
     const { page, setPage, perPage: defaultPerPage, setPerPage } = usePaginationControls({ id: "njsp-crashes", perPage: perPageProp ?? 20 })
     const perPage = perPageProp ?? defaultPerPage
 
-    const totalsResult = useNjspCrashesTotal({ cc, mc })
+    const totalsResult = useNjspCrashesTotal({ cc, mc, yearFrom, yearTo })
     const total = useMemo(
         () => fold(
             () => 0,
@@ -24,7 +28,7 @@ export function NjspCrashesSection({ perPage: perPageProp, hidePagination }: { p
     )
 
     const crashRows = useNjspCrashRows({
-        cc, mc, page, perPage,
+        cc, mc, page, perPage, yearFrom, yearTo,
         cc2mc2mn: cc2mc2mn ?? {},
     })
 

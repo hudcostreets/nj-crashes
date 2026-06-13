@@ -26,6 +26,7 @@ import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
 import type { MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, pickHexResolutionForPixels } from "@/src/map/CrashMap"
 import { DebugOverlay } from "@/src/map/DebugOverlay"
+import { YearSelect } from "@/src/lib/year-select"
 
 const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m.CrashMap })))
 
@@ -1033,30 +1034,3 @@ function DebugSection({
     )
 }
 
-function YearSelect({
-    value, min, max, onChange, theme,
-}: {
-    value: number
-    min: number
-    max: number
-    onChange: (y: number) => void
-    theme: "light" | "dark"
-}) {
-    const bg = theme === "dark" ? "#2a2a2a" : "#fff"
-    const fg = theme === "dark" ? "#e0e0e0" : "#333"
-    const border = `1px solid ${theme === "dark" ? "#444" : "#ccc"}`
-    const opts: number[] = []
-    for (let y = min; y <= max; y++) opts.push(y)
-    return (
-        <select
-            value={value}
-            onChange={e => onChange(Number(e.target.value))}
-            style={{
-                background: bg, color: fg, border, borderRadius: 3,
-                padding: "1px 4px", fontSize: "0.95em",
-            }}
-        >
-            {opts.map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-    )
-}
