@@ -1,23 +1,23 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Atlantic,,28,2,15,2,9
 ,,Bergen,,34,0,20,1,15
-,,Burlington,,40,1,30,7,7
+,,Burlington,,38,1,28,7,7
 ,,Camden,,28,3,14,2,11
 ,,Cape May,,7,0,5,2,0
 ,,Cumberland,,18,0,9,2,6
-,,Essex,,44,0,14,5,28
+,,Essex,,41,0,12,5,26
 ,,Gloucester,,24,2,15,4,3
-,,Hudson,,30,1,13,0,18
+,,Hudson,,27,0,13,0,18
 ,,Hunterdon,,5,0,3,1,1
-,,Mercer,,29,1,15,9,10
+,,Mercer,,27,1,13,9,10
 ,,Middlesex,,54,2,30,16,12
 ,,Monmouth,,47,1,20,4,22
-,,Morris,,28,1,14,1,13
-,,Ocean,,45,1,33,4,10
-,,Passaic,,19,0,13,4,7
+,,Morris,,25,1,12,1,13
+,,Ocean,,45,1,33,3,10
+,,Passaic,,18,0,11,4,7
 ,,Salem,,13,0,11,3,1
-,,Somerset,,12,0,9,1,2
-,,Sussex,,27,0,9,0,3
+,,Somerset,,15,0,11,1,2
+,,Sussex,,28,0,8,0,3
 ,,Union,,43,1,20,6,20
 ,,Warren,,5,0,3,1,2
 1,1,Atlantic,Absecon City,1,0,0,0,1
@@ -64,7 +64,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 2,70,Bergen,Wyckoff Twsp,2,0,2,0,0
 3,4,Burlington,Bordentown Twsp,0,0,0,0,0
 3,6,Burlington,Burlington Twsp,1,0,0,0,1
-3,7,Burlington,Chesterfield Twsp,1,0,1,0,0
+3,7,Burlington,Chesterfield Twsp,0,0,0,0,0
 3,8,Burlington,Cinnaminson Twsp,1,1,0,0,0
 3,11,Burlington,Easthampton Twsp,1,0,1,0,0
 3,13,Burlington,Evesham Twsp,2,0,2,0,0
@@ -119,9 +119,10 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 6,13,Cumberland,Upper Deerfield Tws,0,0,0,0,0
 6,14,Cumberland,Vineland City,8,0,4,2,2
 7,1,Essex,Belleville Town,1,0,0,0,1
+7,2,Essex,Bloomfield Boro,-1,0,-1,0,0
 7,3,Essex,Caldwell Boro,2,0,0,0,2
 7,5,Essex,East Orange City,6,0,2,0,3
-7,9,Essex,Irvington Town,1,0,1,0,1
+7,9,Essex,Irvington Town,1,0,1,0,0
 7,10,Essex,Livingston Twsp,0,0,0,0,0
 7,12,Essex,Millburn Twsp,4,0,0,1,3
 7,13,Essex,Montclair Town,1,0,0,1,0
@@ -145,7 +146,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 8,24,Gloucester,Woolwich Twsp,1,0,1,0,0
 9,1,Hudson,Bayonne City,2,0,2,0,0
 9,3,Hudson,Guttenberg Town,1,0,0,0,1
-9,6,Hudson,Jersey City,4,1,1,0,3
+9,6,Hudson,Jersey City,3,0,1,0,3
 9,7,Hudson,Kearny Town,3,0,1,0,3
 9,8,Hudson,North Bergen Twsp,4,0,3,0,2
 9,9,Hudson,Secaucus Town,3,0,2,0,2
@@ -164,7 +165,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 11,2,Mercer,Ewing Twsp,7,0,5,1,1
 11,3,Mercer,Hamilton Twsp,7,0,1,4,3
 11,6,Mercer,Hopewell Twsp,0,0,0,0,0
-11,7,Mercer,Lawrence Twsp,2,0,2,0,0
+11,7,Mercer,Lawrence Twsp,1,0,1,0,0
 11,11,Mercer,Trenton,8,0,1,1,4
 11,12,Mercer,Robbinsville Twsp,2,0,2,0,0
 11,13,Mercer,West Windsor Twp,2,0,2,0,0
@@ -212,7 +213,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 14,9,Morris,Dover Town,2,0,0,0,2
 14,13,Morris,Harding Twsp,1,0,0,0,1
 14,14,Morris,Jefferson Twsp,1,0,1,1,0
-14,21,Morris,Montville Twsp,1,0,1,0,0
+14,21,Morris,Montville Twsp,0,0,0,0,0
 14,24,Morris,Morristown Town,3,0,2,0,2
 14,27,Morris,Mount Olive Twsp,5,0,5,0,0
 14,29,Morris,Parsippany-Troy Hil,2,0,1,0,2
@@ -225,7 +226,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 15,2,Ocean,Barnegat Light Boro,-1,0,-1,0,0
 15,6,Ocean,Berkeley Twsp,1,0,1,1,0
 15,7,Ocean,Brick Twsp,5,2,2,0,2
-15,8,Ocean,Toms River,9,-1,7,1,3
+15,8,Ocean,Toms River,8,-1,7,1,3
 15,12,Ocean,Jackson Twsp,6,0,7,1,0
 15,13,Ocean,Lacey Twsp,3,0,2,0,1
 15,14,Ocean,Lakehurst Boro,0,0,0,0,0
@@ -240,7 +241,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 15,33,Ocean,Tuckerton Boro,1,0,1,0,0
 16,2,Passaic,Clifton City,3,0,2,0,1
 16,3,Passaic,Haledon Boro,2,0,0,2,0
-16,4,Passaic,Hawthorne Boro,1,0,1,0,0
+16,4,Passaic,Hawthorne Boro,0,0,0,0,0
 16,7,Passaic,Passaic City,1,0,2,0,0
 16,8,Passaic,Paterson City,5,0,1,1,3
 16,11,Passaic,Ringwood Boro,0,0,0,0,0
@@ -262,7 +263,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 18,1,Somerset,Bedminster Twsp,2,0,2,0,0
 18,2,Somerset,Bernards Twsp,2,0,1,1,1
 18,5,Somerset,Branchburg Twsp,1,0,1,0,0
-18,6,Somerset,Bridgewater Twsp,2,0,2,0,2
+18,6,Somerset,Bridgewater Twsp,5,0,3,1,2
 18,8,Somerset,Franklin Twsp,3,0,3,0,0
 18,10,Somerset,Hillsborough Twsp,0,0,0,0,0
 18,13,Somerset,Montgomery Twsp,1,0,1,0,0
