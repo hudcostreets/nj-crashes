@@ -2,7 +2,7 @@ meta:
   computation:
     cmd: njsp harmonize_muni_codes
     deps:
-      crashes.parquet: baa3bf2db702b0cdf64e7c0646809547
+      crashes.parquet: d45f851c117d69a263e2762cc824d93e
       /njdot/data/2001/NewJersey2001Accidents.pqt: 9e5d8dc82b9a430856622577a8ed077a
       /njdot/data/2002/NewJersey2002Accidents.pqt: e8e4efc4f5f25e6507b42f792450bce6
       /njdot/data/2003/NewJersey2003Accidents.pqt: cd6660487ff0870f3b8bede69e2c46f1
