@@ -2,4 +2,4 @@ meta:
   computation:
     cmd: njsp update_projections
     deps:
-      /njsp/data/crashes.parquet: baa3bf2db702b0cdf64e7c0646809547
+      /njsp/data/crashes.parquet: d45f851c117d69a263e2762cc824d93e
