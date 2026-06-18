@@ -1,12 +1,12 @@
 outs:
-- md5: ee2e0ad1fb0feb21fe497b1f23c46a3d
-  size: 171638
+- md5: 32680d1080925886349531b04c5dd414
+  size: 171645
   hash: md5
   path: njsp_njdot_match.parquet
 meta:
   computation:
     cmd: njsp match_njdot
     deps:
-      crashes.parquet: 85ec2d533905a7130180eb96ebfec0f3
+      crashes.parquet: 9cfc5ee0394e8eda58daa777a1412bc0
       /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
       /njdot/data/aashto_combined_crashes.parquet: 0ae2595cd33ce71d47ab2d022a22b60e
