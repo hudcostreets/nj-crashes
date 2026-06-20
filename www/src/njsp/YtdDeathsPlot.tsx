@@ -484,54 +484,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     }, [ytdRows, colorScale, plotColors, legendPosition, viewMode, effectiveFadeOpacity, futureDash])
 
 
-    // Active-line width bump is now declarative via pltly's
-    // `activeStyle` (below). Pltly's `applyFadeSolo` still skips
-    // `showlegend: false` traces, so YTD's RoY sibling needs an
-    // afterplot mirror until pltly handles `legendgroup`-based fade.
     const wrapRef = useRef<HTMLDivElement | null>(null)
-    useEffect(() => {
-        const wrap = wrapRef.current
-        if (!wrap) return
-        const plotDiv = wrap.querySelector('.js-plotly-plot') as any
-        if (!plotDiv?.on) return
-        const apply = () => {
-            if (!plotDiv?.data) return
-            const traceEls = wrap.querySelectorAll('.scatterlayer .trace.scatter')
-            // Pass 1: capture each main trace's opacity (set by pltly).
-            const opByGroup = new Map<string, string>()
-            plotDiv.data.forEach((t: any, i: number) => {
-                if (t.showlegend === false) return
-                const g = t.legendgroup
-                if (!g) return
-                const op = (traceEls[i] as SVGElement | undefined)?.style.opacity
-                if (op) opByGroup.set(g, op)
-            })
-            const anyFaded = [...opByGroup.values()].some(op => op !== '1')
-            // Pass 2: mirror opacity onto RoY siblings + bump active RoY width.
-            plotDiv.data.forEach((t: any, i: number) => {
-                if (t.showlegend !== false) return
-                const el = traceEls[i] as SVGElement | undefined
-                if (!el) return
-                const op = opByGroup.get(t.legendgroup ?? '')
-                if (op !== undefined) el.style.opacity = op
-                const path = el.querySelector('path.js-line') as SVGPathElement | null
-                if (path) {
-                    const isActive = anyFaded && op === '1'
-                    if (isActive) {
-                        path.style.strokeWidth = '4px'
-                    } else {
-                        const baseW = (t.line?.width as number | undefined) ?? 1
-                        path.style.strokeWidth = `${baseW}px`
-                    }
-                }
-            })
-        }
-        plotDiv.on('plotly_afterplot', apply)
-        apply()
-        return () => {
-            try { plotDiv.removeAllListeners?.('plotly_afterplot') } catch {}
-        }
-    }, [data])
 
     // Scroll the legend to bottom on initial render so the current year is
     // visible without manual scrolling. Plotly has no public API for this;
