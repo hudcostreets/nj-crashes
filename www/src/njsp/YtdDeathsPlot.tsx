@@ -12,6 +12,7 @@ import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { COLORSCALES, ColorScaleName, getColorAt } from "@/src/lib/colorscales"
 import { ControlsGear } from "@/src/components/ControlsGear"
 import { trailing365Series } from "./trailing365"
+import { useNjspSection } from "./NjspSectionContext"
 import css from "./plot.module.scss"
 
 const HEIGHT = 450
@@ -119,7 +120,17 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     // Load YTD data
     const ytdDb = useRegisteredParquetDb({ db, table: "ytd", url: YtdParquet })
     const ytdQueryStr = useMemo(() => ytdQueryFn(county ?? null, cc ?? null, mc ?? null), [county, cc, mc])
-    const ytdRows = useQuery<YtdRow>({ db: ytdDb, query: ytdQueryStr, init: [] })
+    const ytdRowsAll = useQuery<YtdRow>({ db: ytdDb, query: ytdQueryStr, init: [] })
+
+    // Section-scoped year-range filter (NjspSection). When narrowed, drop
+    // year-lines outside the range; trailing-365 mode applies the same filter
+    // when it derives its own per-year series internally.
+    const njspSection = useNjspSection()
+    const yearRange = njspSection?.yearRangeActive ? njspSection.yearRange : null
+    const ytdRows = useMemo(
+        () => yearRange ? ytdRowsAll.filter(r => r.year >= yearRange[0] && r.year <= yearRange[1]) : ytdRowsAll,
+        [ytdRowsAll, yearRange],
+    )
 
     // Derive year from string trace name
     const activeYear = useMemo(() => {

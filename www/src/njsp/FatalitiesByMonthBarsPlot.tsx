@@ -10,6 +10,7 @@ import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { COLORSCALES, ColorScaleName, getColorAt } from "@/src/lib/colorscales"
 import { ControlsGear } from "@/src/components/ControlsGear"
+import { useNjspSection } from "./NjspSectionContext"
 import css from "./plot.module.scss"
 
 const HEIGHT = 550
@@ -152,7 +153,15 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
     // Load monthly data
     const monthlyDb = useRegisteredParquetDb({ db, table: "monthly", url: MonthlyParquet })
     const monthlyQueryStr = useMemo(() => monthlyQueryFn(county ?? null, cc ?? null, mc ?? null), [county, cc, mc])
-    const monthlyRows = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
+    const monthlyRowsAll = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
+
+    // Section-scoped year-range filter (NjspSection).
+    const njspSection = useNjspSection()
+    const yearRange = njspSection?.yearRangeActive ? njspSection.yearRange : null
+    const monthlyRows = useMemo(
+        () => yearRange ? monthlyRowsAll.filter(r => r.year >= yearRange[0] && r.year <= yearRange[1]) : monthlyRowsAll,
+        [monthlyRowsAll, yearRange],
+    )
 
     // Derive year from active trace name
     const activeYear = useMemo(() => {

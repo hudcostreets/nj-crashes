@@ -17,6 +17,7 @@ import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { useUrlState, boolParam } from "use-prms"
 import { getPopulation, usePopulation } from "@/src/census/usePopulation"
+import { useNjspSection } from "./NjspSectionContext"
 import css from "./plot.module.scss"
 
 // Latest ACS5 vintage. Years past this reuse 2023's population as the
@@ -271,13 +272,27 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     )
     const yearlyFromMonthly = useQuery<YtRow>({ db: monthlyDb, query: yearlyQueryStr, init: [] })
     // Use monthly-aggregated data if available, fall back to ytc
-    const ytRows = yearlyFromMonthly.length > 0 ? yearlyFromMonthly : ytcRows
+    const ytRowsAll = yearlyFromMonthly.length > 0 ? yearlyFromMonthly : ytcRows
 
     // Projected current-year totals (statewide / county / municipality).
     const projectionsQueryStr = useMemo(() => typeCountsQuery(county, propCc ?? null, propMc ?? null), [county, propCc, propMc])
     const [projections] = useQuery<TypeCounts>({ db: projectionsDb, query: projectionsQueryStr, init: [{ driver: 0, pedestrian: 0, cyclist: 0, passenger: 0 }] })
     const monthlyQueryStr = useMemo(() => monthlyQueryFn(county, propCc ?? null, propMc ?? null), [county, propCc, propMc])
-    const monthlyRows = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
+    const monthlyRowsAll = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
+
+    // Section-scoped year-range filter (NjspSection). Null when the plot is
+    // outside an NjspSection or the user hasn't narrowed the default range —
+    // in which case the unfiltered rows pass straight through.
+    const njspSection = useNjspSection()
+    const yearRange = njspSection?.yearRangeActive ? njspSection.yearRange : null
+    const ytRows = useMemo(
+        () => yearRange ? ytRowsAll.filter(r => r.year >= yearRange[0] && r.year <= yearRange[1]) : ytRowsAll,
+        [ytRowsAll, yearRange],
+    )
+    const monthlyRows = useMemo(
+        () => yearRange ? monthlyRowsAll.filter(r => r.year >= yearRange[0] && r.year <= yearRange[1]) : monthlyRowsAll,
+        [monthlyRowsAll, yearRange],
+    )
 
     // Population data for per-capita scaling. Loaded unconditionally so the user
     // can toggle without a fresh fetch.
