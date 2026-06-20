@@ -56,7 +56,7 @@ const crashHomicideQueryFn = (county: string | null, source: CrashSource) => `
     SELECT year, traffic_deaths, homicides, ratio
     FROM read_parquet('crash_homicide')
     WHERE source = '${source}'
-      AND ${county ? `county = '${county}'` : `county IS NULL OR county = ''`}
+      AND (${county ? `county = '${county}'` : `county IS NULL OR county = ''`})
     ORDER BY year
 `
 
