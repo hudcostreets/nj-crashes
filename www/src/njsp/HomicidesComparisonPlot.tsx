@@ -104,10 +104,25 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
         return () => obs.disconnect()
     }, [])
 
-    // Pre-compute value arrays for dual-axis alignment hook (must be unconditional)
+    // Pre-compute value arrays for dual-axis alignment hook (must be unconditional).
+    // `useAlignedDualAxes` minimizes per-axis "waste" (range padding), so it picks
+    // the smallest nice range that covers the data — which leaves bars kissing the
+    // top edge AND drops the top tick label (e.g. range=[0,800] with dtick=200 has
+    // 800 right at the edge; Plotly hides it). Inflating the per-axis max by 10%
+    // before passing to the hook tells it to allocate a range one nice-step taller,
+    // giving the top tick label space + the bars breathing room.
+    const HEADROOM = 1.1
     const deathValues = useMemo(() => rows.flatMap(r => [r.traffic_deaths, r.homicides]), [rows])
     const ratioValues = useMemo(() => rows.map(r => Number(r.ratio)).filter(isFinite), [rows])
-    const axisAlignment = useAlignedDualAxes({ values1: deathValues, values2: ratioValues })
+    const deathValuesPadded = useMemo(
+        () => deathValues.length ? [...deathValues, Math.max(...deathValues) * HEADROOM] : deathValues,
+        [deathValues],
+    )
+    const ratioValuesPadded = useMemo(
+        () => ratioValues.length ? [...ratioValues, Math.max(...ratioValues) * HEADROOM] : ratioValues,
+        [ratioValues],
+    )
+    const axisAlignment = useAlignedDualAxes({ values1: deathValuesPadded, values2: ratioValuesPadded })
 
     // Build plot data
     const { data, layout, highlightRow, avgRatio } = useMemo(() => {
