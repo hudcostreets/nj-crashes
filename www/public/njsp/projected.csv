@@ -13,7 +13,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Middlesex,,52,2,30,16,11
 ,,Monmouth,,47,1,21,4,23
 ,,Morris,,27,1,14,1,14
-,,Ocean,,43,1,31,3,10
+,,Ocean,,42,1,30,3,10
 ,,Passaic,,18,0,11,4,7
 ,,Salem,,12,0,10,3,1
 ,,Somerset,,15,0,11,1,2
@@ -76,7 +76,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 3,21,Burlington,Medford Lakes Boro,1,0,1,0,0
 3,22,Burlington,Moorestown Twsp,2,0,0,0,2
 3,23,Burlington,Mount Holly Twsp,0,0,0,0,0
-3,24,Burlington,Mount Laurel Twsp,16,0,6,2,2
+3,24,Burlington,Mount Laurel Twsp,17,0,6,2,2
 3,26,Burlington,North Hanover Twsp,1,0,1,0,0
 3,27,Burlington,Palmyra Boro,1,0,1,0,0
 3,29,Burlington,Pemberton Twsp,1,0,1,0,0
@@ -235,7 +235,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 15,15,Ocean,Lakewood Twsp,6,2,3,1,1
 15,17,Ocean,Little Egg Harbor T,1,0,0,0,1
 15,18,Ocean,Long Beach Twsp,2,0,2,0,0
-15,19,Ocean,Manchester Twsp,5,0,4,1,0
+15,19,Ocean,Manchester Twsp,4,0,3,1,0
 15,24,Ocean,Plumsted Twsp,1,0,1,0,1
 15,26,Ocean,Point Pleasant Beac,1,0,1,0,0
 15,30,Ocean,South Toms River Bo,2,0,2,0,1
