@@ -1,25 +1,25 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Atlantic,,31,2,15,4,10
 ,,Bergen,,34,0,20,1,15
-,,Burlington,,40,1,30,7,7
-,,Camden,,27,3,12,2,11
-,,Cape May,,6,0,4,2,0
+,,Burlington,,37,1,26,7,7
+,,Camden,,25,3,12,2,10
+,,Cape May,,5,0,3,2,0
 ,,Cumberland,,19,0,9,2,8
 ,,Essex,,44,0,12,5,32
 ,,Gloucester,,26,2,15,5,3
 ,,Hudson,,29,0,15,0,18
 ,,Hunterdon,,6,0,3,1,2
 ,,Mercer,,29,1,13,13,10
-,,Middlesex,,52,2,30,16,11
-,,Monmouth,,52,1,25,4,23
+,,Middlesex,,54,2,32,16,11
+,,Monmouth,,53,1,25,4,23
 ,,Morris,,27,1,14,1,14
 ,,Ocean,,41,1,30,3,9
-,,Passaic,,18,0,11,4,7
-,,Salem,,12,0,10,3,1
-,,Somerset,,15,0,11,1,2
+,,Passaic,,17,0,9,4,7
+,,Salem,,13,0,11,3,1
+,,Somerset,,13,0,11,1,2
 ,,Sussex,,34,0,10,0,3
 ,,Union,,43,1,21,6,21
-,,Warren,,5,0,3,1,2
+,,Warren,,8,0,5,1,2
 1,1,Atlantic,Absecon City,1,0,0,0,1
 1,2,Atlantic,Atlantic City,5,2,1,0,2
 1,5,Atlantic,Buena Vista Twsp,3,0,1,2,0
@@ -85,7 +85,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 3,34,Burlington,Springfield Twsp,2,0,2,0,0
 3,35,Burlington,Tabernacle Twsp,1,0,1,0,0
 3,36,Burlington,Washington Twsp,2,0,2,0,0
-3,37,Burlington,Westampton Twsp,6,0,4,3,1
+3,37,Burlington,Westampton Twsp,5,0,3,3,1
 3,38,Burlington,Willingboro Twsp,3,0,2,0,1
 4,4,Camden,Bellmawr Boro,1,0,1,0,0
 4,6,Camden,Berlin Twsp,1,0,0,0,1
@@ -99,14 +99,14 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 4,21,Camden,Lawnside Boro,0,0,0,0,0
 4,22,Camden,Lindenwold Boro,0,0,0,0,0
 4,27,Camden,Pennsauken Twsp,2,0,1,0,1
-4,28,Camden,Pine Hill Boro,1,0,0,0,1
+4,28,Camden,Pine Hill Boro,0,0,0,0,0
 4,30,Camden,Runnemede Boro,0,0,0,0,0
 4,34,Camden,Voorhees Twsp,3,0,0,1,2
 4,35,Camden,Waterford Twsp,2,0,0,0,2
 4,36,Camden,Winslow Twsp,4,0,1,0,3
 5,4,Cape May,Dennis Twsp,0,0,0,0,0
 5,5,Cape May,Lower Twsp,1,0,1,0,0
-5,6,Cape May,Middle Twsp,5,0,4,2,0
+5,6,Cape May,Middle Twsp,3,0,3,2,0
 5,7,Cape May,North Wildwood City,1,0,1,0,0
 5,11,Cape May,Upper Twsp,0,0,0,0,0
 5,16,Cape May,Woodbine Boro,1,0,0,1,0
@@ -185,7 +185,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 12,18,Middlesex,Plainsboro Twsp,1,0,1,0,0
 12,19,Middlesex,Sayreville Boro,2,0,2,0,0
 12,20,Middlesex,South Amboy City,0,0,0,0,0
-12,21,Middlesex,South Brunswick Tws,8,0,3,1,3
+12,21,Middlesex,South Brunswick Tws,10,0,5,1,3
 12,22,Middlesex,South Plainfield Bo,2,0,2,0,0
 12,23,Middlesex,South River Boro,2,0,2,0,1
 12,25,Middlesex,Woodbridge Twsp,10,0,6,2,2
@@ -241,7 +241,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 15,30,Ocean,South Toms River Bo,2,0,2,0,1
 15,31,Ocean,Stafford Twsp,1,0,1,0,0
 15,33,Ocean,Tuckerton Boro,1,0,1,0,0
-16,2,Passaic,Clifton City,3,0,2,0,1
+16,2,Passaic,Clifton City,2,0,1,0,1
 16,3,Passaic,Haledon Boro,2,0,0,2,0
 16,4,Passaic,Hawthorne Boro,0,0,0,0,0
 16,7,Passaic,Passaic City,1,0,2,0,0
@@ -254,6 +254,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 16,16,Passaic,Woodland Park Boro,1,0,0,0,2
 17,1,Salem,Alloway Twsp,1,0,1,0,0
 17,2,Salem,Carneys Point Twsp,1,0,1,2,0
+17,5,Salem,Lower Alloways Cree,2,0,2,0,0
 17,6,Salem,Mannington Twsp,2,0,2,0,0
 17,7,Salem,Oldmans Twsp,1,0,1,0,0
 17,8,Salem,Penns Grove Bor,1,0,0,0,1
@@ -263,7 +264,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 17,12,Salem,Quinton Twsp,2,0,2,0,0
 17,14,Salem,Upper Pittsgrove Tw,1,0,1,1,0
 18,1,Somerset,Bedminster Twsp,2,0,2,0,0
-18,2,Somerset,Bernards Twsp,2,0,1,1,1
+18,2,Somerset,Bernards Twsp,1,0,1,0,1
 18,5,Somerset,Branchburg Twsp,1,0,1,0,0
 18,6,Somerset,Bridgewater Twsp,5,0,3,1,2
 18,8,Somerset,Franklin Twsp,3,0,3,0,0
@@ -298,6 +299,8 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 21,6,Warren,Frelinghuysen Twsp,1,0,0,0,1
 21,8,Warren,Hackettstown Town,0,0,0,0,0
 21,11,Warren,Hope Twsp,2,0,2,0,0
+21,12,Warren,Independence Twsp,2,0,2,0,0
 21,13,Warren,Knowlton Twsp,1,0,1,0,0
 21,19,Warren,Phillipsburg To,2,0,0,0,2
+21,22,Warren,Washington Twsp,2,0,2,0,0
 21,23,Warren,White Twsp,1,0,1,1,0
