@@ -9,7 +9,7 @@ meta:
     cmd: env -u PYTHONPATH njdot agg
     deps:
       /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
-      /njdot/data/aashto_supplemented_crashes.parquet: bc29adc43ec5a6eb248511a70fd8b1e2
+      /njdot/data/aashto_supplemented_crashes.parquet: 92ac7e301eab0f949748c6061317cf9f
       /njdot/data/occupants.parquet: a2879e533e566c4c1b8be11ee403d59e
       /njdot/data/pedestrians.parquet: 7f1dc043bbc22ed522115e4adbc911fd
       /njdot/data/vehicles.parquet: f556fa6424ee67986f1b8f69b0ab7eab
