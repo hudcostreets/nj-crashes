@@ -80,3 +80,7 @@ def annual_ytd_url(year):
 
 def fauqstats_relpath(year: int) -> str:
     return f'{paths.DATA_RELPATH}/FAUQStats{year}.xml'
+
+
+def fauqstats_url(year: int) -> str:
+    return f'https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats{year}.xml'

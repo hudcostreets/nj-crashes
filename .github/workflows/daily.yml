@@ -23,6 +23,7 @@ env:
   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
   SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
   SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+  SLACK_CI_CHANNEL_ID: ${{ vars.SLACK_CI_CHANNEL_ID }}
 jobs:
   run:
     name: DVX pipeline
