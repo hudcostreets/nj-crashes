@@ -86,12 +86,6 @@ jobs:
           dvx pull www/public/njsp/crashes.db.dvc
           # Side-effect output of `njsp match_njdot`; needed by supplement_with_sp
           dvx pull njsp/data/njsp_njdot_residuals.parquet.dvc
-          # Downstream parquets/dbs — pre-stage so `is_output_fresh` sees them on
-          # disk and reports `up-to-date` instead of "output missing" → re-execute.
-          dvx pull njdot/data/aashto_supplemented_crashes.parquet.dvc
-          dvx pull www/public/njdot/cmymc.db.dvc
-          dvx pull www/public/data/njdot/ymccmc.dvc
-          dvx pull www/public/data/njdot/ymccmcs.dvc
           dvx pull www/public/Municipal_Boundaries_of_NJ.geojson
       - name: DVX status
         run: dvx status
