@@ -11,10 +11,6 @@ on:
       targets:
         type: string
         description: "Specific DVX targets to run (space-separated .dvc paths, empty = all)"
-      fail_test:
-        type: boolean
-        description: "TEMP: force a deliberate failure (validates notify-on-failure)"
-        default: false
 concurrency:
   group: daily
   cancel-in-progress: false
@@ -155,11 +151,6 @@ jobs:
       - name: Run custom targets
         if: ${{ inputs.targets }}
         run: $DVX ${{ inputs.targets }}
-      - name: TEMP - force test failure
-        if: ${{ inputs.fail_test }}
-        run: |
-          echo "Forcing failure to validate notify-on-failure step."
-          exit 1
       - name: "Notify #crash-bot-ci on failure"
         if: failure()
         env:
