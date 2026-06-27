@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Jun 25 10:00:04 EDT 2026</RUNDATE>
+  <RUNDATE>Sat Jun 27 10:00:07 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -538,7 +538,7 @@
     <MUNICIPALITY MCODE="0412" MNAME="Cherry Hill Twsp">
       <ACCIDENT ACCID="14299" DATE="12/08/2025" TIME="1842">
         <HIGHWAY>644</HIGHWAY>
-        <LOCATION>County 644</LOCATION>
+        <LOCATION>County 644 MP 3.86</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -618,7 +618,7 @@
     <MUNICIPALITY MCODE="0406" MNAME="Berlin Twsp">
       <ACCIDENT ACCID="14291" DATE="12/01/2025" TIME="0605">
         <HIGHWAY>73</HIGHWAY>
-        <LOCATION>State Highway 73</LOCATION>
+        <LOCATION>State Highway 73 MP 18.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1097,7 +1097,7 @@
     <MUNICIPALITY MCODE="0434" MNAME="Voorhees Twsp">
       <ACCIDENT ACCID="14247" DATE="11/09/2025" TIME="1620">
         <HIGHWAY>544</HIGHWAY>
-        <LOCATION>County 544</LOCATION>
+        <LOCATION>County 544 MP 9.85</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>1</FATAL_P>
@@ -2253,6 +2253,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2301,12 +2302,13 @@
     <MUNICIPALITY MCODE="1914" MNAME="Montague Twsp">
       <ACCIDENT ACCID="14126" DATE="09/13/2025" TIME="1850">
         <HIGHWAY>23</HIGHWAY>
-        <LOCATION>State Highway 23 MP 49</LOCATION>
+        <LOCATION>State Highway 23 MP 49.2</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2407,13 +2409,14 @@
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0219" MNAME="Fort Lee Boro">
       <ACCIDENT ACCID="14134" DATE="09/07/2025" TIME="1316">
-        <HIGHWAY>63</HIGHWAY>
-        <LOCATION>State Highway 63</LOCATION>
+        <HIGHWAY>1</HIGHWAY>
+        <LOCATION>State Highway 1 MP 63.95</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
