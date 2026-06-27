@@ -151,3 +151,9 @@ jobs:
       - name: Run custom targets
         if: ${{ inputs.targets }}
         run: $DVX ${{ inputs.targets }}
+      - name: "Notify #crash-bot-ci on failure"
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: bash .github/scripts/notify-ci-failure.sh
