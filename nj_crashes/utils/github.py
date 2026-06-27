@@ -18,11 +18,32 @@ import pandas as pd
 from utz import proc
 
 from nj_crashes.utils.git import git_fmt
+from nj_crashes.utils.retry import with_gh_retry
 from njdot.rawdata.utils import singleton
 
 REPO = 'hudcostreets/nj-crashes'
 _gh: Github | None = None
 _gh_repo: Repository | None = None
+
+
+@with_gh_retry()
+def _gh_get_commit(sha: str) -> Commit:
+    return get_github_repo().get_commit(sha)
+
+
+@with_gh_retry()
+def _gh_get_git_tree(sha: str) -> GitTree:
+    return get_github_repo().get_git_tree(sha)
+
+
+@with_gh_retry()
+def _gh_get_git_blob(hexsha: str):
+    return get_github_repo().get_git_blob(hexsha)
+
+
+@with_gh_retry()
+def _gh_get_contents(path: str, ref: str | None = None):
+    return get_github_repo().get_contents(path, ref=ref)
 
 
 def expand_ref(ref: str) -> str:
@@ -32,8 +53,7 @@ def expand_ref(ref: str) -> str:
         try:
             return git_fmt(ref, fmt='%H')
         except CalledProcessError:
-            gh = get_github_repo()
-            return gh.get_commit(ref).sha
+            return _gh_get_commit(ref).sha
 
 
 def expand_refspec(refspec: str, *args: str) -> list[str]:
@@ -76,9 +96,9 @@ def load_github(
     ref: str | None = None,
     repo: Repository | None = None,
 ) -> bytes:
-    if repo is None:
-        repo = get_github_repo()
-    return repo.get_contents(path, ref=ref).decoded_content
+    if repo is not None:
+        return repo.get_contents(path, ref=ref).decoded_content
+    return _gh_get_contents(path, ref=ref).decoded_content
 
 
 def load_pqt_github(
@@ -98,8 +118,7 @@ class GithubBlob:
 
     @property
     def data_stream(self):
-        gh = get_github_repo()
-        blob = gh.get_git_blob(self.hexsha)
+        blob = _gh_get_git_blob(self.hexsha)
         return BytesIO(b64decode(blob.content))
         # return BytesIO(process.output('gh', 'api', '-H', 'Accept: application/vnd.github.raw+json', f'/repos/{REPO}/git/blobs/{self.hexsha}'))
         # TODO: streaming response
@@ -118,14 +137,12 @@ class GithubTree:
 
     @staticmethod
     def from_commit(commit: Commit) -> 'GithubTree':
-        gh = get_github_repo()
-        tree = gh.get_git_tree(commit.raw_data['commit']['tree']['sha'])
+        tree = _gh_get_git_tree(commit.raw_data['commit']['tree']['sha'])
         return GithubTree(tree)
 
     @staticmethod
     def from_sha(sha: str) -> 'GithubTree':
-        gh = get_github_repo()
-        return GithubTree(gh.get_git_tree(sha))
+        return GithubTree(_gh_get_git_tree(sha))
 
     @cached_property
     def raw_data(self):
@@ -171,9 +188,8 @@ class GithubTree:
 
     @property
     def trees(self):
-        gh = get_github_repo()
         return [
-            GithubTree(gh.get_git_tree(e['sha']))
+            GithubTree(_gh_get_git_tree(e['sha']))
             for e in self.children if e['type'] == 'tree'
         ]
 
@@ -187,13 +203,11 @@ class GithubCommit:
 
     @staticmethod
     def from_git(git_commit: git.Commit) -> 'GithubCommit':
-        gh = get_github_repo()
-        return GithubCommit(gh.get_commit(git_commit.hexsha))
+        return GithubCommit(_gh_get_commit(git_commit.hexsha))
 
     @staticmethod
     def from_sha(sha: str) -> 'GithubCommit':
-        gh = get_github_repo()
-        return GithubCommit(gh.get_commit(sha))
+        return GithubCommit(_gh_get_commit(sha))
 
     @property
     def raw_data(self):
@@ -213,9 +227,8 @@ class GithubCommit:
 
     @property
     def parents(self) -> list['GithubCommit']:
-        gh = get_github_repo()
         return [
-            GithubCommit(gh.get_commit(p['sha']))
+            GithubCommit(_gh_get_commit(p['sha']))
             for p in self.raw_data['parents']
         ]
 
@@ -229,8 +242,7 @@ class GithubCommit:
 
     @cached_property
     def tree(self) -> GithubTree:
-        gh = get_github_repo()
-        tree = gh.get_git_tree(self.tree_sha)
+        tree = _gh_get_git_tree(self.tree_sha)
         return GithubTree(tree)
 
 

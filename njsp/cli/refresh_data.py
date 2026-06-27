@@ -11,6 +11,7 @@ import requests
 from utz import err, process, s3
 from utz.cli import flag
 
+from nj_crashes.utils.retry import http_get_with_retry
 from .base import command
 from ..paths import fauqstats_relpath, S3_XML_FETCH_LOG
 
@@ -171,7 +172,7 @@ def update_years(*years, current_year: int = None, log_s3: bool = False):
             })
             continue
 
-        res = requests.get(url, allow_redirects=True, timeout=30, headers=headers)
+        res = http_get_with_retry(url, headers=headers, timeout=30)
         if res.status_code == 404 and year == current_year:
             err(f"Skipping {name}: 404 Not Found (current year file not yet available)")
             continue
