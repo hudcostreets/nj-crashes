@@ -1,37 +1,50 @@
 #!/usr/bin/env bash
 # Import local SQLite databases into D1.
 #
-# Three modes:
+# Modes:
 #   remote   — staging-swap workflow (default): create fresh staging D1,
 #              import, verify, atomic binding swap via `wrangler.toml`
 #              edit + `wrangler deploy`. Zero-downtime; mutates
-#              `wrangler.toml` (must be committed).
+#              `wrangler.toml` (must be committed). Always full import.
 #   local    — `wrangler dev` local D1; direct DROP+CREATE+INSERT.
-#   inplace  — remote, but DROP+CREATE+INSERT on the existing binding.
-#              No `wrangler.toml` change, no deploy. Brief inconsistency
-#              window (~seconds) during import. Suitable for daily CI
-#              where traffic is low.
+#   inplace  — remote, existing binding. Default uses exact-diff against
+#              the prior `.db` (fetched via DVC md5 from local cache or
+#              S3) so write volume tracks actual deltas. Pass `--full`
+#              to force DROP+CREATE+INSERT (escape hatch for schema
+#              changes or recovery).
 #
 # Usage:
-#   bash scripts/d1-import.sh --local   [db_name ...]
-#   bash scripts/d1-import.sh --inplace [db_name ...]
-#   bash scripts/d1-import.sh           [db_name ...]   # remote, staging
+#   bash scripts/d1-import.sh --local            [db_name ...]
+#   bash scripts/d1-import.sh --inplace          [db_name ...]   # exact diff
+#   bash scripts/d1-import.sh --inplace --full   [db_name ...]   # full re-import
+#   bash scripts/d1-import.sh                    [db_name ...]   # remote, staging
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 MODE="remote"
-if [[ "${1:-}" == "--local" ]]; then
-    MODE="local"
-    shift
-elif [[ "${1:-}" == "--inplace" ]]; then
-    MODE="inplace"
-    shift
-fi
+FULL=0
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --local)   MODE="local";   shift ;;
+        --inplace) MODE="inplace"; shift ;;
+        --full)    FULL=1;         shift ;;
+        --) shift; break ;;
+        -*)
+            echo "Unknown flag: $1" >&2
+            exit 2
+            ;;
+        *) break ;;
+    esac
+done
 
 WWW="../www/public"
 CHUNK_DIR="tmp/chunks"
 CHUNK_SIZE=200000
 SMALL_THRESHOLD=$((50 * 1024 * 1024))  # 50MB
+DVC_CACHE=".dvc/cache/files/md5"
+DVC_S3_PREFIX="s3://nj-crashes/.dvc/files/md5"
+# Universal natural-key columns (cmymc-style dims + njsp-crashes id/dt).
+NATURAL_KEYS=(cc mc y m condition id dt)
 
 declare -A DB_MAP=(
     [crashes]="$WWW/njdot/crashes.db"
@@ -177,6 +190,131 @@ verify_import() {
     fi
 }
 
+# Echo D1's stamped source_md5 for db_name, or empty if missing/unreadable.
+read_source_md5() {
+    local db_name="$1"
+    local flag="--remote"
+    if [[ "$MODE" == "local" ]]; then flag="--local"; fi
+    npx wrangler d1 execute "$db_name" $flag \
+        --command="SELECT source_md5 FROM _metadata LIMIT 1;" --json 2>/dev/null \
+        | python3 -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    rows = d[0]['results']
+    print(rows[0]['source_md5'] if rows else '')
+except Exception:
+    print('')
+" || echo ""
+}
+
+# Resolve a md5 to a local .db file (cache hit) or fetch from S3.
+fetch_prior_db() {
+    local md5="$1" out_path="$2"
+    local rel="${md5:0:2}/${md5:2}"
+    if [[ -f "$DVC_CACHE/$rel" ]]; then
+        cp "$DVC_CACHE/$rel" "$out_path"
+        return 0
+    fi
+    if command -v aws >/dev/null 2>&1; then
+        if aws s3 cp "$DVC_S3_PREFIX/$rel" "$out_path" 2>/dev/null; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# Echo comma-separated natural-key columns present in (local_db, table).
+natural_key_cols() {
+    local local_path="$1" table="$2"
+    local in_list
+    in_list=$(printf "'%s'," "${NATURAL_KEYS[@]}")
+    in_list="${in_list%,}"
+    sqlite3 "$local_path" \
+        "SELECT name FROM pragma_table_info('$table') WHERE name IN ($in_list);" \
+        | paste -sd, -
+}
+
+# Exact-diff per-db: read prior md5, fetch prior .db, diff each table, apply.
+import_db_diff() {
+    local db_name="$1" local_path="$2"
+    local current_md5 prior_md5
+    current_md5=$(md5sum "$local_path" 2>/dev/null | cut -d' ' -f1 || md5 -q "$local_path")
+    prior_md5=$(read_source_md5 "$db_name")
+    echo "  current_md5=$current_md5"
+    echo "  prior_md5=${prior_md5:-<none>}"
+    if [[ -n "$prior_md5" && "$prior_md5" == "$current_md5" ]]; then
+        echo "  no changes since last sync — skipping"
+        return 0
+    fi
+    if [[ -z "$prior_md5" ]]; then
+        echo "  no prior md5 stamped — falling back to full import"
+        drop_tables "$db_name" "$local_path"
+        import_data "$db_name" "$local_path"
+        write_metadata "$db_name" "$local_path"
+        return 0
+    fi
+
+    local prior_db="$CHUNK_DIR/${db_name}_prior.db"
+    rm -f "$prior_db"
+    if ! fetch_prior_db "$prior_md5" "$prior_db"; then
+        echo "  prior .db ($prior_md5) not available in cache or S3 — falling back to full import"
+        drop_tables "$db_name" "$local_path"
+        import_data "$db_name" "$local_path"
+        write_metadata "$db_name" "$local_path"
+        return 0
+    fi
+
+    local tables t pk del_file ins_file
+    tables=$(sqlite3 "$local_path" ".tables")
+    SCRIPT_DIR="$(dirname "$0")"
+    for t in $tables; do
+        if [[ "$t" == "_metadata" ]]; then continue; fi
+        pk=$(natural_key_cols "$local_path" "$t")
+        if [[ -z "$pk" ]]; then
+            echo "  $t: no natural-key columns — falling back to DROP+CREATE+INSERT"
+            local drop_file="$CHUNK_DIR/${db_name}_${t}_drop.sql"
+            echo "DROP TABLE IF EXISTS \"$t\";" > "$drop_file"
+            wrangler_exec "$db_name" "$drop_file"
+            rm -f "$drop_file"
+            local schema_file="$CHUNK_DIR/${db_name}_${t}_schema.sql"
+            sqlite3 "$local_path" ".schema \"$t\"" > "$schema_file"
+            wrangler_exec "$db_name" "$schema_file"
+            rm -f "$schema_file"
+            local inserts_file="$CHUNK_DIR/${db_name}_${t}_inserts.sql"
+            sqlite3 "$local_path" ".dump \"$t\"" \
+                | python3 "$SCRIPT_DIR/dump-compat.py" \
+                | grep '^INSERT ' > "$inserts_file" || true
+            if [[ -s "$inserts_file" ]]; then
+                wrangler_exec "$db_name" "$inserts_file"
+            fi
+            rm -f "$inserts_file"
+            continue
+        fi
+
+        del_file="$CHUNK_DIR/${db_name}_${t}_delete.sql"
+        ins_file="$CHUNK_DIR/${db_name}_${t}_upsert.sql"
+        echo "  $t: pk=($pk)"
+        python3 "$SCRIPT_DIR/d1-diff.py" \
+            --curr "$local_path" \
+            --prior "$prior_db" \
+            --table "$t" \
+            --pk "$pk" \
+            --out-delete "$del_file" \
+            --out-upsert "$ins_file"
+        if [[ -s "$del_file" ]]; then
+            wrangler_exec "$db_name" "$del_file"
+        fi
+        if [[ -s "$ins_file" ]]; then
+            wrangler_exec "$db_name" "$ins_file"
+        fi
+        rm -f "$del_file" "$ins_file"
+    done
+    rm -f "$prior_db"
+
+    write_metadata "$db_name" "$local_path"
+}
+
 # Create a staging D1 database, returns the new database_id
 create_staging_db() {
     local db_name="$1"
@@ -237,17 +375,23 @@ fi
 if [[ "$MODE" == "local" || "$MODE" == "inplace" ]]; then
     if [[ "$MODE" == "local" ]]; then
         echo "Importing into LOCAL D1 databases"
+    elif [[ "$FULL" -eq 1 ]]; then
+        echo "Importing into REMOTE D1 databases (in-place, full DROP+CREATE+INSERT)"
     else
-        echo "Importing into REMOTE D1 databases (in-place — brief inconsistency window)"
+        echo "Importing into REMOTE D1 databases (in-place, exact diff)"
     fi
     echo
     for db_name in "${import_dbs[@]}"; do
         local_path="${DB_MAP[$db_name]}"
         size_human=$(du -h "$local_path" | cut -f1)
         echo "Importing $db_name ($size_human)..."
-        drop_tables "$db_name" "$local_path"
-        import_data "$db_name" "$local_path"
-        write_metadata "$db_name" "$local_path"
+        if [[ "$MODE" == "inplace" && "$FULL" -eq 0 ]]; then
+            import_db_diff "$db_name" "$local_path"
+        else
+            drop_tables "$db_name" "$local_path"
+            import_data "$db_name" "$local_path"
+            write_metadata "$db_name" "$local_path"
+        fi
         if [[ "$MODE" == "inplace" ]]; then
             verify_import "$db_name" "$local_path"
         fi
