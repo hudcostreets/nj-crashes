@@ -421,7 +421,10 @@ export function parseCellsRequest(url: URL): CellsRequest {
     }
 
     let severities: Set<"f" | "i" | "p"> | undefined
-    const ss = url.searchParams.get("severities")
+    // Accept both `severity` (singular) and `severities` (plural). Historical
+    // clients use the plural; `severity` is what a hand-written URL typically
+    // tries and was previously dropped silently. Singular wins on conflict.
+    const ss = url.searchParams.get("severity") ?? url.searchParams.get("severities")
     if (ss) {
         severities = new Set()
         for (const ch of ss) {
