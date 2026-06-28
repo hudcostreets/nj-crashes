@@ -8,10 +8,11 @@ import { StartYear, curYear } from "@/src/constants"
 export const NJSP_YEAR_RANGE_DEFAULT: [number, number] = [StartYear, curYear]
 
 /** `nsy` URL param: NJSP-section year range, `"<a>-<b>"` (e.g. `"2019-2025"`).
- *  Out-of-order pairs are swapped silently; default is omitted from URL. */
+ *  Out-of-order pairs are swapped silently; default returns `undefined` so the
+ *  key is stripped from the URL entirely (not `?nsy=`). */
 const njspYearRangeParam: Param<[number, number]> = {
     encode: ([a, b]) =>
-        a === NJSP_YEAR_RANGE_DEFAULT[0] && b === NJSP_YEAR_RANGE_DEFAULT[1] ? "" : `${a}-${b}`,
+        a === NJSP_YEAR_RANGE_DEFAULT[0] && b === NJSP_YEAR_RANGE_DEFAULT[1] ? undefined : `${a}-${b}`,
     decode: (s) => {
         if (!s) return NJSP_YEAR_RANGE_DEFAULT
         const m = s.match(/^(\d{4})-(\d{4})$/)
