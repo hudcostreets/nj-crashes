@@ -14,10 +14,10 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Monmouth,,58,1,30,4,23
 ,,Morris,,25,1,14,1,14
 ,,Ocean,,42,1,30,5,9
-,,Passaic,,17,0,9,4,7
+,,Passaic,,16,0,9,4,6
 ,,Salem,,13,0,11,3,1
-,,Somerset,,13,0,11,1,2
-,,Sussex,,34,0,10,0,3
+,,Somerset,,14,0,12,1,2
+,,Sussex,,35,0,10,0,3
 ,,Union,,49,1,23,6,25
 ,,Warren,,8,0,5,1,2
 1,1,Atlantic,Absecon City,1,0,0,0,1
@@ -250,7 +250,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 16,11,Passaic,Ringwood Boro,0,0,0,0,0
 16,12,Passaic,Totowa Boro,2,0,2,2,0
 16,13,Passaic,Wanaque Boro,2,0,1,0,2
-16,14,Passaic,Wayne Twsp,1,0,0,0,1
+16,14,Passaic,Wayne Twsp,0,0,0,0,0
 16,15,Passaic,West Milford Twsp,3,0,3,0,0
 16,16,Passaic,Woodland Park Boro,1,0,0,0,2
 17,1,Salem,Alloway Twsp,1,0,1,0,0
@@ -267,7 +267,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 18,1,Somerset,Bedminster Twsp,2,0,2,0,0
 18,2,Somerset,Bernards Twsp,1,0,1,0,1
 18,5,Somerset,Branchburg Twsp,1,0,1,0,0
-18,6,Somerset,Bridgewater Twsp,5,0,3,1,2
+18,6,Somerset,Bridgewater Twsp,6,0,5,1,2
 18,8,Somerset,Franklin Twsp,3,0,3,0,0
 18,10,Somerset,Hillsborough Twsp,0,0,0,0,0
 18,13,Somerset,Montgomery Twsp,1,0,1,0,0
