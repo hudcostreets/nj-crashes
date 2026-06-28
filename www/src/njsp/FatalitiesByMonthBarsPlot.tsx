@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import type { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
@@ -11,94 +11,12 @@ import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { COLORSCALES, ColorScaleName, getColorAt } from "@/src/lib/colorscales"
 import { ControlsGear } from "@/src/components/ControlsGear"
 import { useNjspSection } from "./NjspSectionContext"
+import { VICTIM_TYPES, type VictimType } from "./victim-types"
 import css from "./plot.module.scss"
 
 const HEIGHT = 550
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-type VictimType = 'driver' | 'passenger' | 'pedestrian' | 'cyclist'
-const VICTIM_TYPES: VictimType[] = ['driver', 'passenger', 'pedestrian', 'cyclist']
-const VICTIM_LABELS: Record<VictimType, string> = { driver: 'Drivers', passenger: 'Passengers', pedestrian: 'Pedestrians', cyclist: 'Cyclists' }
-
-function VictimTypeDropdown({ selected, onChange }: { selected: VictimType[], onChange: (types: VictimType[]) => void }) {
-    const [isOpen, setIsOpen] = useState(false)
-    const detailsRef = useRef<HTMLDetailsElement>(null)
-    const suppressToggle = useRef(false)
-
-    const allSelected = selected.length === VICTIM_TYPES.length
-    const summaryText = allSelected
-        ? "All Types"
-        : selected.length === 1
-            ? VICTIM_LABELS[selected[0]]
-            : `${selected.length} Types`
-
-    const stableOnChange = useCallback((types: VictimType[]) => {
-        if (types.length === 0) return
-        suppressToggle.current = true
-        onChange(types)
-        requestAnimationFrame(() => {
-            if (detailsRef.current) detailsRef.current.open = true
-            suppressToggle.current = false
-        })
-    }, [onChange])
-
-    const toggleAll = () => stableOnChange(allSelected ? [VICTIM_TYPES[0]] : [...VICTIM_TYPES])
-    const toggleType = (t: VictimType) => {
-        if (selected.includes(t)) {
-            if (selected.length > 1) stableOnChange(selected.filter(s => s !== t))
-        } else {
-            stableOnChange([...selected, t])
-        }
-    }
-    const soloType = (t: VictimType) => {
-        stableOnChange(selected.length === 1 && selected[0] === t ? [...VICTIM_TYPES] : [t])
-    }
-
-    useEffect(() => {
-        if (!isOpen) return
-        const handleClickOutside = (e: MouseEvent) => {
-            if (detailsRef.current && !detailsRef.current.contains(e.target as Node)) {
-                setIsOpen(false)
-                detailsRef.current.open = false
-            }
-        }
-        document.addEventListener('click', handleClickOutside)
-        return () => document.removeEventListener('click', handleClickOutside)
-    }, [isOpen])
-
-    return (
-        <details
-            ref={detailsRef}
-            className={css.victimTypeDropdown}
-            open={isOpen}
-            onToggle={e => {
-                if (suppressToggle.current) { e.preventDefault(); return }
-                setIsOpen((e.target as HTMLDetailsElement).open)
-            }}
-        >
-            <summary>{summaryText}</summary>
-            <div className={css.victimTypeList}>
-                <label className={css.selectAll}>
-                    <input type="checkbox" checked={allSelected} onChange={toggleAll} />
-                    {allSelected ? "Deselect All" : "Select All"}
-                </label>
-                {VICTIM_TYPES.map(t => (
-                    <label key={t}>
-                        <input type="checkbox" checked={selected.includes(t)} onChange={() => toggleType(t)} />
-                        <span
-                            onClick={e => { e.preventDefault(); soloType(t) }}
-                            title={selected.length === 1 && selected[0] === t ? "Show all" : `Only ${VICTIM_LABELS[t]}`}
-                            style={{ cursor: 'pointer' }}
-                        >
-                            {VICTIM_LABELS[t]}
-                        </span>
-                    </label>
-                ))}
-            </div>
-        </details>
-    )
-}
 
 export type Props = {
     id?: string
@@ -147,7 +65,6 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
     const [colorScaleName, setColorScaleName] = useSessionStorage<ColorScaleName>(`plot-${id}-colorscale`, 'inferno')
     const [legendPosition, setLegendPosition] = useSessionStorage<'bottom' | 'right'>(`plot-${id}-legend-position`, 'right')
     const [controlsOpen, setControlsOpen] = useSessionStorage<boolean>(`plot-${id}-controls-open`, false)
-    const [selectedTypes, setSelectedTypes] = useSessionStorage<VictimType[]>(`plot-${id}-victim-types`, [...VICTIM_TYPES])
     const colorScale = COLORSCALES[colorScaleName]
 
     // Load monthly data
@@ -155,9 +72,11 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
     const monthlyQueryStr = useMemo(() => monthlyQueryFn(county ?? null, cc ?? null, mc ?? null), [county, cc, mc])
     const monthlyRowsAll = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
 
-    // Section-scoped year-range filter (NjspSection).
+    // Section-scoped filters (NjspSection): year-range + victim-type subset.
+    // The victim-type subset drives which `row[t]` values get summed below.
     const njspSection = useNjspSection()
     const yearRange = njspSection?.yearRangeActive ? njspSection.yearRange : null
+    const selectedTypes = njspSection?.selectedTypes ?? VICTIM_TYPES
     const monthlyRows = useMemo(
         () => yearRange ? monthlyRowsAll.filter(r => r.year >= yearRange[0] && r.year <= yearRange[1]) : monthlyRowsAll,
         [monthlyRowsAll, yearRange],
@@ -329,10 +248,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
             <ControlsGear
                 open={controlsOpen}
                 onToggle={setControlsOpen}
-                extra={<>
-                    <PlotInfo source="njsp" />
-                    <VictimTypeDropdown selected={selectedTypes} onChange={setSelectedTypes} />
-                </>}
+                extra={<PlotInfo source="njsp" />}
                 bottomLegend={legendPosition === 'bottom'}
             >
                 <div>

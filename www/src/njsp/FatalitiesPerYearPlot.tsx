@@ -18,6 +18,7 @@ import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { useUrlState, boolParam } from "use-prms"
 import { getPopulation, usePopulation } from "@/src/census/usePopulation"
 import { useNjspSection } from "./NjspSectionContext"
+import { VICTIM_TYPES } from "./victim-types"
 import css from "./plot.module.scss"
 
 // Latest ACS5 vintage. Years past this reuse 2023's population as the
@@ -280,11 +281,16 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     const monthlyQueryStr = useMemo(() => monthlyQueryFn(county, propCc ?? null, propMc ?? null), [county, propCc, propMc])
     const monthlyRowsAll = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
 
-    // Section-scoped year-range filter (NjspSection). Null when the plot is
-    // outside an NjspSection or the user hasn't narrowed the default range —
-    // in which case the unfiltered rows pass straight through.
+    // Section-scoped filters (NjspSection): year-range narrowing (`yearRange`
+    // is null when default/wide) + victim-type subset (`visibleTypes` is the
+    // subset of `Types` the user has selected — defaults to all 4).
     const njspSection = useNjspSection()
     const yearRange = njspSection?.yearRangeActive ? njspSection.yearRange : null
+    const selectedTypeKeys = njspSection?.selectedTypes ?? VICTIM_TYPES
+    const enabledTypes = useMemo<Type[]>(
+        () => Types.filter(t => selectedTypeKeys.includes(typesMap[t])),
+        [selectedTypeKeys],
+    )
     const ytRows = useMemo(
         () => yearRange ? ytRowsAll.filter(r => r.year >= yearRange[0] && r.year <= yearRange[1]) : ytRowsAll,
         [ytRowsAll, yearRange],
@@ -302,12 +308,12 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     // is a popover trigger (`<details>`), tracked with a simple hover state below.
     type PinItem = Type | '12-mo avg'
     const pinItems = useMemo<readonly PinItem[]>(
-        () => isMonthly ? [...Types, '12-mo avg'] : Types,
-        [isMonthly],
+        () => isMonthly ? [...enabledTypes, '12-mo avg'] : enabledTypes,
+        [isMonthly, enabledTypes],
     )
     const legend = useLegendPin<PinItem>(pinItems)
     const rawActive = legend.activeItem
-    const activeType = (rawActive && Types.includes(rawActive as Type) ? rawActive : null) as Type | null
+    const activeType = (rawActive && enabledTypes.includes(rawActive as Type) ? rawActive : null) as Type | null
 
     // '* Projected' hover-only (no pin): fades non-current-year bars when hovered
     const [projHovered, setProjHovered] = useState(false)
@@ -373,9 +379,9 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             const dates = filteredRows.map(r => r.date)
 
             // Determine which types are visible (solo trace support)
-            const visibleTypes = activeType && Types.includes(activeType)
+            const visibleTypes = activeType && enabledTypes.includes(activeType)
                 ? new Set([activeType])
-                : new Set(Types)
+                : new Set(enabledTypes)
             const avgActive = activeType === '12-mo avg' as any
             const avgGreyed = activeType !== null && !avgActive
 
@@ -383,7 +389,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             // or compute from the solo'd type's values. For per-capita, the
             // 12-mo average is computed by averaging per-month per-100k values
             // (each month divided by its own linterp'd population).
-            const soloType = activeType && Types.includes(activeType) ? activeType : null
+            const soloType = activeType && enabledTypes.includes(activeType) ? activeType : null
             const avgValues: (number | null)[] = filteredRows.map((r, i) => {
                 if (i < 11) return null
                 if (!soloType) {
@@ -407,7 +413,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             // Stacked bars by victim type
             // Fade bars when 12-mo avg is highlighted
             const barsGreyed = avgActive
-            const traces: PlotData[] = Types.map(type => {
+            const traces: PlotData[] = enabledTypes.map(type => {
                 const col = typesMap[type]
                 const isVisible = visibleTypes.has(type)
                 const isGreyed = barsGreyed || (activeType !== null && !isVisible)
@@ -550,7 +556,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
         // Calculate projected remainders for current year (per type)
         const projectedRemainder: Record<string, number> = {}
         if (lastYear === curYear && projections) {
-            for (const type of Types) {
+            for (const type of enabledTypes) {
                 const col = typesMap[type]
                 const actual = lastRow[col] || 0
                 const projected = projections[col] || 0
@@ -561,7 +567,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
         // Build traces: actual data for each type
         // Use visible:'legendonly' for solo (removes from stack) — key={activeType} on
         // PlotWrapper forces remount to work around d3 v7 data join bug
-        const traces: PlotData[] = Types.map(type => {
+        const traces: PlotData[] = enabledTypes.map(type => {
             const col = typesMap[type]
             const isActive = !activeType || activeType === type
             const isSolo = activeType === type
@@ -595,7 +601,11 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                 name: "Total",
                 showlegend: false,
                 x: rows.map(r => r.year),
-                y: rows.map(r => scale(r.driver + r.pedestrian + r.cyclist + r.passenger, r.year)),
+                y: rows.map(r => {
+                    let total = 0
+                    for (const type of enabledTypes) total += r[typesMap[type]] as number
+                    return scale(total, r.year)
+                }),
                 marker: { size: 0, opacity: 0 },
                 hovertemplate: `<b>%{y:${yFmt}}</b><extra>Total</extra>`,
             } as PlotData)
@@ -604,7 +614,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
         // Add projected remainder traces (only for current year, stacked by type)
         let hasProjected = false
         if (showProjected && lastYear === curYear) {
-            for (const type of Types) {
+            for (const type of enabledTypes) {
                 const col = typesMap[type]
                 const remainder = projectedRemainder[col] || 0
                 if (remainder > 0) {
@@ -684,13 +694,14 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             return effectivePerCapita ? v.toPrecision(2) : String(Math.round(v))
         }
         if (!activeType) {
-            // Show all year totals when all types visible
+            // Show all year totals when all types visible (sum only enabled types).
             rows.forEach(row => {
-                const actual = row.driver + row.pedestrian + row.cyclist + row.passenger
+                let actual = 0
+                for (const type of enabledTypes) actual += row[typesMap[type]] as number
                 // Add projected remainder for current year
                 let projected = 0
                 if (showProjected && row.year === curYear) {
-                    for (const type of Types) {
+                    for (const type of enabledTypes) {
                         const col = typesMap[type]
                         projected += projectedRemainder[col] || 0
                     }
@@ -776,7 +787,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
         }
 
         return { data: traces, annotations, layout, projectedRemainder }
-    }, [ytRows, projections, activeType, highlightProjected, showProjected, projSolidity, projFgOpacity, height, plotColors, containerWidth, isMonthly, monthlyRows, effectivePerCapita, popLookup, propCc, propMc, showPop])
+    }, [ytRows, projections, activeType, highlightProjected, showProjected, projSolidity, projFgOpacity, height, plotColors, containerWidth, isMonthly, monthlyRows, effectivePerCapita, popLookup, propCc, propMc, showPop, enabledTypes])
 
     // Compute year totals for summary text
     const yearTotals = useMemo(() => {
@@ -862,7 +873,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                             title="Overlay population (right axis)"
                         >Pop</button>
                     </div>
-                    {Types.map(type => {
+                    {enabledTypes.map(type => {
                         const IconComponent = TYPE_ICONS[type]
                         return (
                             <LegendItem
