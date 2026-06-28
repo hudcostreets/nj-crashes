@@ -16,7 +16,7 @@ dependencies = [
     "dask>=2024",
     "dotenv>=0.9.9",
     "dvc[s3]>=3.59",
-    "dvx @ git+https://github.com/runsascoded/dvx@a180cda1e",
+    "dvx @ git+https://github.com/runsascoded/dvx@9edbef726",
     "geopandas>=1.0",
     "geopy>=2.4",
     "GitPython>=3.1",
