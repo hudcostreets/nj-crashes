@@ -1,11 +1,11 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
-,,Atlantic,,31,2,15,4,10
+,,Atlantic,,33,2,17,6,10
 ,,Bergen,,34,0,20,1,15
-,,Burlington,,37,1,26,7,7
-,,Camden,,27,3,12,2,11
+,,Burlington,,36,1,25,7,7
+,,Camden,,26,3,12,2,10
 ,,Cape May,,4,0,3,2,0
-,,Cumberland,,18,0,9,2,6
-,,Essex,,38,0,11,2,30
+,,Cumberland,,19,0,11,2,6
+,,Essex,,40,0,11,2,31
 ,,Gloucester,,28,2,17,5,3
 ,,Hudson,,29,0,15,0,18
 ,,Hunterdon,,6,0,3,1,2
@@ -15,13 +15,13 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Morris,,25,1,14,1,14
 ,,Ocean,,42,1,30,5,9
 ,,Passaic,,16,0,9,4,6
-,,Salem,,13,0,11,3,1
+,,Salem,,15,0,13,3,1
 ,,Somerset,,14,0,12,1,2
 ,,Sussex,,35,0,10,0,3
 ,,Union,,49,1,23,6,25
 ,,Warren,,8,0,5,1,2
 1,1,Atlantic,Absecon City,1,0,0,0,1
-1,2,Atlantic,Atlantic City,5,2,1,0,2
+1,2,Atlantic,Atlantic City,6,2,2,2,2
 1,5,Atlantic,Buena Vista Twsp,3,0,1,2,0
 1,7,Atlantic,Egg Harbor City,1,0,1,0,0
 1,8,Atlantic,Egg Harbor Twsp,1,0,1,0,1
@@ -79,7 +79,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 3,24,Burlington,Mount Laurel Twsp,10,0,7,2,2
 3,26,Burlington,North Hanover Twsp,1,0,1,0,0
 3,27,Burlington,Palmyra Boro,1,0,1,0,0
-3,29,Burlington,Pemberton Twsp,1,0,1,0,0
+3,29,Burlington,Pemberton Twsp,0,0,0,0,0
 3,32,Burlington,Shamong Twsp,1,0,1,1,0
 3,33,Burlington,Southampton Twsp,2,0,2,0,0
 3,34,Burlington,Springfield Twsp,2,0,2,0,0
@@ -103,7 +103,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 4,30,Camden,Runnemede Boro,0,0,0,0,0
 4,34,Camden,Voorhees Twsp,3,0,0,1,2
 4,35,Camden,Waterford Twsp,2,0,0,0,2
-4,36,Camden,Winslow Twsp,4,0,1,0,3
+4,36,Camden,Winslow Twsp,3,0,1,0,2
 5,4,Cape May,Dennis Twsp,0,0,0,0,0
 5,5,Cape May,Lower Twsp,1,0,1,0,0
 5,6,Cape May,Middle Twsp,2,0,3,1,0
@@ -117,7 +117,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 6,9,Cumberland,Maurice River Twsp,1,0,1,0,0
 6,10,Cumberland,Millville City,2,0,1,0,1
 6,13,Cumberland,Upper Deerfield Tws,0,0,0,0,0
-6,14,Cumberland,Vineland City,6,0,4,2,1
+6,14,Cumberland,Vineland City,7,0,6,2,1
 7,1,Essex,Belleville Town,1,0,0,0,1
 7,2,Essex,Bloomfield Boro,-1,0,-1,0,0
 7,3,Essex,Caldwell Boro,2,0,0,0,2
@@ -126,7 +126,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 7,10,Essex,Livingston Twsp,0,0,0,0,0
 7,12,Essex,Millburn Twsp,2,0,0,0,3
 7,13,Essex,Montclair Town,0,0,0,0,0
-7,14,Essex,Newark City,28,0,9,3,20
+7,14,Essex,Newark City,30,0,9,3,22
 7,16,Essex,Nutley Town,1,0,0,0,1
 7,17,Essex,Orange City,1,0,-1,0,1
 7,20,Essex,Verona Boro,1,0,1,0,0
@@ -257,7 +257,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 17,2,Salem,Carneys Point Twsp,1,0,1,2,0
 17,5,Salem,Lower Alloways Cree,2,0,2,0,0
 17,6,Salem,Mannington Twsp,2,0,2,0,0
-17,7,Salem,Oldmans Twsp,1,0,1,0,0
+17,7,Salem,Oldmans Twsp,2,0,2,0,0
 17,8,Salem,Penns Grove Bor,1,0,0,0,1
 17,9,Salem,Pennsville Twsp,1,0,1,0,0
 17,10,Salem,Pilesgrove Twsp,3,0,2,1,0
