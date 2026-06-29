@@ -4,4 +4,4 @@ meta:
     deps:
       /njsp/data/crashes.parquet: 634b90a475d405d4cd969c9b0d2a28a0
     git_deps:
-      /njsp/cli/update_www_data.py: a04a0d0ebd8ae41382e2bfd76260f1742272210f
+      /njsp/cli/update_www_data.py: 150b52689e45b5e2f4af5e1f7b60399ddb0a111a
