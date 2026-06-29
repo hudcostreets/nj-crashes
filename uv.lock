@@ -1095,8 +1095,8 @@ wheels = [
 
 [[package]]
 name = "dvx"
-version = "0.5.1.dev3+g9edbef726"
-source = { git = "https://github.com/runsascoded/dvx?rev=9edbef726#9edbef72621d388f75fdda949bf089148aaf843d" }
+version = "0.5.1.dev6+g09ba6124e"
+source = { git = "https://github.com/runsascoded/dvx?rev=09ba6124e#09ba6124ef3b0cc1a39674d6b3cf0df67c5a920b" }
 dependencies = [
     { name = "click" },
     { name = "dffs" },
@@ -1554,7 +1554,7 @@ name = "importlib-metadata"
 version = "8.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "zipp", marker = "python_full_version < '3.12'" },
+    { name = "zipp" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/76/66/650a33bd90f786193e4de4b3ad86ea60b53c89b669a5c7be931fac31cdb0/importlib_metadata-8.7.0.tar.gz", hash = "sha256:d13b81ad223b890aa16c5471f2ac3056cf76c5f10f82d6f9292f0b415f389000", size = 56641, upload-time = "2025-04-27T15:29:01.736Z" }
 wheels = [
@@ -2536,7 +2536,7 @@ requires-dist = [
     { name = "dask", specifier = ">=2024" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "dvc", extras = ["s3"], specifier = ">=3.59" },
-    { name = "dvx", git = "https://github.com/runsascoded/dvx?rev=9edbef726" },
+    { name = "dvx", git = "https://github.com/runsascoded/dvx?rev=09ba6124e" },
     { name = "geopandas", specifier = ">=1.0" },
     { name = "geopy", specifier = ">=2.4" },
     { name = "gitpython", specifier = ">=3.1" },
