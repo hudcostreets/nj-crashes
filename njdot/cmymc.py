@@ -109,6 +109,57 @@ def load_aashto_legs(c_aashto: pd.DataFrame,
     return om, pm
 
 
+def aashto_fatal_victims_override(c_aashto: pd.DataFrame) -> pd.DataFrame:
+    """Per-(cc,mc,y,m) victim-type breakdown for AASHTO fatal crashes,
+    derived from crash-level totals instead of the person-level supplements.
+
+    The person-level AASHTO supplements undercount fatals two ways:
+    (1) ghost-driver rows mask ped/cyclist fatals as `uf` and get filtered
+        out by `pos==0`, so the person-level aggregation reports far fewer
+        deaths than `tk`;
+    (2) NJSP-supplemented crashes (`#68`) have no person rows at all.
+
+    Crash-level `tk` is authoritative (matches NJSP). Allocate it across
+    the four victim buckets by reading the VTC matrix and falling back to
+    `crash_type` for the remainder.
+
+    Returns a DataFrame indexed by `(cc, mc, y, m)` with `drivers,
+    passengers, pedestrians, cyclists` columns covering condition=1 only.
+    """
+    fatal = c_aashto[c_aashto['severity'] == 'f'].copy()
+    for c in ['df', 'of', 'pf', 'bf', 'uf', 'pk', 'tk']:
+        fatal[c] = fatal[c].fillna(0).astype('int16')
+    # `pk` (crash-level Pedestrians Killed) is authoritative per the
+    # AASHTO supplements DVC note; falls back to `pf` if `pk` is somehow
+    # smaller.
+    fatal['n_t'] = fatal[['pf', 'pk']].max(axis=1).astype('int32')
+    fatal['n_b'] = fatal['bf'].astype('int32')
+    fatal['n_d'] = fatal['df'].astype('int32')
+    fatal['n_o'] = fatal['of'].astype('int32')
+    allocated = fatal[['n_d', 'n_o', 'n_t', 'n_b']].sum(axis=1)
+    remainder = (fatal['tk'].astype('int32') - allocated).clip(lower=0).astype('int32')
+    # `.fillna(False)` so NaN crash_type rows land in the default
+    # (driver) bucket via `other` instead of being silently dropped by
+    # NaN-propagating bool indexing.
+    is_ped = (fatal['crash_type'] == 'Pedestrian').fillna(False)
+    is_cyc = (fatal['crash_type'] == 'Pedalcyclist').fillna(False)
+    fatal.loc[is_ped, 'n_t'] = fatal.loc[is_ped, 'n_t'] + remainder.loc[is_ped]
+    fatal.loc[is_cyc, 'n_b'] = fatal.loc[is_cyc, 'n_b'] + remainder.loc[is_cyc]
+    other = ~(is_ped | is_cyc)
+    fatal.loc[other, 'n_d'] = fatal.loc[other, 'n_d'] + remainder.loc[other]
+    agg = fatal.groupby(CMYM_COLS)[['n_d', 'n_o', 'n_t', 'n_b']].sum()
+    agg = agg.rename(columns={
+        'n_d': 'drivers',
+        'n_o': 'passengers',
+        'n_t': 'pedestrians',
+        'n_b': 'cyclists',
+    }).astype(int)
+    err(f'  AASHTO fatal-victim override: {len(agg):,} (cc,mc,y,m) groups; '
+        f'totals drivers={agg.drivers.sum():,} passengers={agg.passengers.sum():,} '
+        f'pedestrians={agg.pedestrians.sum():,} cyclists={agg.cyclists.sum():,}')
+    return agg
+
+
 def build_cmymc(om: pd.DataFrame, pm: pd.DataFrame,
                 c_combined: pd.DataFrame) -> pd.DataFrame:
     """Build the cmymc table: {drivers, passengers, pedestrians, cyclists,
@@ -246,6 +297,31 @@ def cmymc(occupants_supplement: str, pedestrians_supplement: str,
     c_combined['mc'] = c_combined['mc'].astype('Int16')
 
     cmymc = build_cmymc(om_combined, pm_combined, c_combined)
+
+    # Override condition=1 victim-type counts for AASHTO years using
+    # crash-level VTC + `tk`/`pk` from `aashto_supplemented_crashes.parquet`.
+    # See `aashto_fatal_victims_override` for rationale.
+    err('Overriding AASHTO condition=1 victim counts from crash-level VTC…')
+    fatal_override = aashto_fatal_victims_override(c_aashto)
+    # cmymc index is (cc, mc, y, m, condition); override only condition=1
+    f1_mask = cmymc.index.get_level_values('condition') == 1
+    f1_aashto_mask = f1_mask & cmymc.index.get_level_values('y').isin(AASHTO_YEARS)
+    # Drop existing AASHTO-year fatal rows, then concat the override (with
+    # condition=1 stamped in) back in.
+    f1_idx = cmymc.index[f1_aashto_mask]
+    err(f'  replacing {len(f1_idx):,} existing AASHTO-fatal rows '
+        f'(old deaths sum: {cmymc.loc[f1_aashto_mask, ["drivers","passengers","pedestrians","cyclists"]].sum().sum():,})')
+    cmymc_keep = cmymc[~f1_aashto_mask].copy()
+    # Carry num_crashes from existing rows where present; default 0 (will
+    # be recomputed below from cxs anyway via reindex).
+    num_crashes_map = cmymc.loc[f1_aashto_mask, 'num_crashes']
+    num_crashes_map.index = num_crashes_map.index.droplevel('condition')
+    fatal_override = fatal_override.assign(num_crashes=fatal_override.index.map(num_crashes_map).fillna(0).astype(int))
+    fatal_override['condition'] = 1
+    fatal_override = fatal_override.set_index('condition', append=True)
+    cmymc = pd.concat([cmymc_keep, fatal_override]).sort_index()
+    new_deaths = cmymc.loc[cmymc.index.get_level_values('condition') == 1, ['drivers', 'passengers', 'pedestrians', 'cyclists']].sum().sum()
+    err(f'  new condition=1 deaths total (all years): {new_deaths:,}')
 
     err(f'\nWriting tables to {out}…')
     sql.write(

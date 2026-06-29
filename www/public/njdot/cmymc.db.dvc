@@ -1,6 +1,6 @@
 outs:
-- md5: 9a2b1e078354864c5f036130960a64ea
-  size: 63635456
+- md5: 9a59b8fefd7f0559c935d147c4622572
+  size: 63569920
   hash: md5
   path: cmymc.db
 meta:
@@ -15,4 +15,4 @@ meta:
       /njdot/data/aashto_supplemented_occupants.parquet: 806dd7a46ebafbe426faeb05373359b9
       /njdot/data/aashto_supplemented_pedestrians.parquet: d3d913d7d0716ee4b5588e8380bb456a
     git_deps:
-      /njdot/cmymc.py: 73f12d1a5cf4d20a83c4f7e1e20da71211b9ab37
+      /njdot/cmymc.py: ad7edaf63c1747e3ea12c276d390eccdc0489df6
