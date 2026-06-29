@@ -23,7 +23,8 @@ import { YearStatsSection } from "@/src/tables/YearStatsSection"
 import { NjspCrashesSection } from "@/src/tables/NjspCrashesSection"
 import { NjdotCrashesSection } from "@/src/tables/NjdotCrashesSection"
 import { NjspSection } from "@/src/njsp/NjspSection"
-import { NjspSectionProvider } from "@/src/njsp/NjspSectionContext"
+import { NjspSectionProvider, useNjspSection } from "@/src/njsp/NjspSectionContext"
+import { VICTIM_LABEL_SINGULAR, VICTIM_TYPES } from "@/src/njsp/victim-types"
 import { LazySection } from "@/src/components/LazySection"
 import { PlotInfo } from "@/src/icons"
 import { useEffect } from "react"
@@ -155,7 +156,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
 
                     {/* NJSP Fatal Crashes Table */}
                     <h2 id="njsp-crashes"><a href="#njsp-crashes">Recent Fatal Crashes</a></h2>
-                    <div className={css.subtitle}>Fatal crashes, 2001–present{geo} <PlotInfo source="njsp" showLegendHint={false} /></div>
+                    <NjspFatalsSubtitle geo={geo} />
                     <LazySection placeholder={<p>Loading crash data...</p>}>
                         <NjspCrashesSection key={`njsp-${cc}-${mc}`} />
                     </LazySection>
@@ -196,6 +197,28 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                 <Footer />
                 </NjspSectionProvider>
             </main>
+        </div>
+    )
+}
+
+function NjspFatalsSubtitle({ geo }: { geo: string }) {
+    const section = useNjspSection()
+    const yearText = section?.yearRangeActive
+        ? `${section.yearRange[0]}–${section.yearRange[1]}`
+        : "2001–present"
+    // Filter labels: include only when fewer than all 4 types are selected.
+    // Preserve canonical order (driver, passenger, pedestrian, cyclist) so
+    // "driver/pedestrian" never reads as "pedestrian/driver".
+    let typeText = ""
+    if (section?.typesActive) {
+        const labels = VICTIM_TYPES
+            .filter(t => section.selectedTypes.includes(t))
+            .map(t => VICTIM_LABEL_SINGULAR[t])
+        typeText = ` ${labels.join("/")}`
+    }
+    return (
+        <div className={css.subtitle}>
+            Fatal{typeText} crashes, {yearText}{geo} <PlotInfo source="njsp" showLegendHint={false} />
         </div>
     )
 }

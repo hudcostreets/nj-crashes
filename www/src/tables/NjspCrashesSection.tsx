@@ -5,16 +5,18 @@ import { useNjspCrashRows, useNjspCrashesTotal, Total } from "@/src/use-njsp-cra
 import { ResultTable } from "@/src/result-table"
 import { fold } from "fp-ts/Either"
 import { useNjspSection } from "@/src/njsp/NjspSectionContext"
+import { encodeVictimTypes } from "@/src/njsp/victim-types"
 
 export function NjspCrashesSection({ perPage: perPageProp, hidePagination }: { perPage?: number; hidePagination?: boolean } = {}) {
     const { cc, mc, cc2mc2mn } = useGeoFilter()
     const section = useNjspSection()
     const yearFrom = section?.yearRangeActive ? section.yearRange[0] : null
     const yearTo = section?.yearRangeActive ? section.yearRange[1] : null
+    const types = section?.typesActive ? encodeVictimTypes(section.selectedTypes) : null
     const { page, setPage, perPage: defaultPerPage, setPerPage } = usePaginationControls({ id: "njsp-crashes", perPage: perPageProp ?? 20 })
     const perPage = perPageProp ?? defaultPerPage
 
-    const totalsResult = useNjspCrashesTotal({ cc, mc, yearFrom, yearTo })
+    const totalsResult = useNjspCrashesTotal({ cc, mc, yearFrom, yearTo, types })
     const total = useMemo(
         () => fold(
             () => 0,
@@ -28,7 +30,7 @@ export function NjspCrashesSection({ perPage: perPageProp, hidePagination }: { p
     )
 
     const crashRows = useNjspCrashRows({
-        cc, mc, page, perPage, yearFrom, yearTo,
+        cc, mc, page, perPage, yearFrom, yearTo, types,
         cc2mc2mn: cc2mc2mn ?? {},
     })
 

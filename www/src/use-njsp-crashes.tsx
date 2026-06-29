@@ -25,6 +25,9 @@ export type Props = {
     yearFrom?: number | null
     /** Inclusive upper bound on crash year. `null`/omitted = no upper bound. */
     yearTo?: number | null
+    /** Victim-type filter: single-char codes joined (e.g. `"de"` for
+     *  drivers+pedestrians). `null`/omitted/all-4 = no filter. */
+    types?: string | null
 }
 
 export type Crash = {
@@ -60,25 +63,26 @@ export type Col = keyof typeof ColLabels
 export type Total = { total: number }
 
 export function useNjspCrashesTotal({
-    cc, mc, yearFrom, yearTo,
+    cc, mc, yearFrom, yearTo, types,
 }: {
     cc: number | null,
     mc: number | null,
     yearFrom?: number | null,
     yearTo?: number | null,
+    types?: string | null,
 }): Result<Total> {
     const url = useMemo(
-        () => apiUrl("/njsp/crashes/count", { cc, mc, yearFrom, yearTo }),
-        [cc, mc, yearFrom, yearTo],
+        () => apiUrl("/njsp/crashes/count", { cc, mc, yearFrom, yearTo, types }),
+        [cc, mc, yearFrom, yearTo, types],
     )
     return useApiEager<Total>(url, [{ total: 0 }])
 }
 
-export function useNjspCrashes({ cc, mc, page, perPage, yearFrom, yearTo }: Props): Result<Crash> {
+export function useNjspCrashes({ cc, mc, page, perPage, yearFrom, yearTo, types }: Props): Result<Crash> {
     const offset = page * perPage
     const url = useMemo(
-        () => apiUrl("/njsp/crashes", { cc, mc, limit: perPage, offset, yearFrom, yearTo }),
-        [cc, mc, perPage, offset, yearFrom, yearTo],
+        () => apiUrl("/njsp/crashes", { cc, mc, limit: perPage, offset, yearFrom, yearTo, types }),
+        [cc, mc, perPage, offset, yearFrom, yearTo, types],
     )
     return useApiEager<Crash>(url, [])
 }

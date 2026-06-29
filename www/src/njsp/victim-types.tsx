@@ -10,6 +10,14 @@ export const VICTIM_LABELS: Record<VictimType, string> = {
     cyclist: 'Cyclists',
 }
 
+/** Lowercase singular labels for inline prose (e.g. subtitles). */
+export const VICTIM_LABEL_SINGULAR: Record<VictimType, string> = {
+    driver: 'driver',
+    passenger: 'passenger',
+    pedestrian: 'pedestrian',
+    cyclist: 'cyclist',
+}
+
 /** Single-char codes used in the `nst` URL param; lookup-friendly + stable. */
 export const VICTIM_CHAR: Record<VictimType, string> = { driver: 'd', passenger: 'p', pedestrian: 'e', cyclist: 'c' }
 const CHAR_TO_TYPE: Record<string, VictimType> = Object.fromEntries(

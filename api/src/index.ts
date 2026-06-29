@@ -10,8 +10,8 @@
  *   GET /njdot/pedestrians?crash_ids=1,2,3
  *   GET /njdot/year-stats?cc=&mc=
  *   GET /njdot/victim-severity?cc=&mc=
- *   GET /njsp/crashes?cc=&mc=&yearFrom=&yearTo=&page=&limit=
- *   GET /njsp/crashes/count?cc=&mc=&yearFrom=&yearTo=
+ *   GET /njsp/crashes?cc=&mc=&yearFrom=&yearTo=&types=&page=&limit=
+ *   GET /njsp/crashes/count?cc=&mc=&yearFrom=&yearTo=&types=
  */
 
 interface Env {
@@ -67,12 +67,21 @@ function njdotWhere(cc: number | null, mc: number | null, before: string | null)
 }
 
 /** Build WHERE clause for NJSP crashes (optional cc/mc, optional inclusive
- *  yearFrom/yearTo bounds on `dt`). */
+ *  yearFrom/yearTo bounds on `dt`, optional victim-type filter `types`).
+ *
+ *  `types` is a string of single-char codes — `d` (driver), `p` (passenger),
+ *  `e` (pedestrian), `c` (cyclist) — matching the `nst` URL param. Each
+ *  selected type adds an OR predicate on its `*k` column; the OR group is
+ *  AND'd into the WHERE. Unknown chars are ignored. Empty / unset / all-4
+ *  → no filter. */
+const NJSP_TYPE_COLS: Record<string, string> = { d: "dk", p: "ok", e: "pk", c: "bk" }
+
 function njspWhere(
 	cc: number | null,
 	mc: number | null,
 	yearFrom: number | null,
 	yearTo: number | null,
+	types: string | null,
 ): { clause: string; params: unknown[] } {
 	const conditions: string[] = []
 	const params: unknown[] = []
@@ -93,6 +102,17 @@ function njspWhere(
 	if (yearTo !== null) {
 		params.push(`${yearTo}-12-31`)
 		conditions.push(`dt <= ?${params.length}`)
+	}
+
+	if (types) {
+		const cols = Array.from(new Set(types.split("")))
+			.map((c) => NJSP_TYPE_COLS[c])
+			.filter((c): c is string => !!c)
+		// Only filter if the user has narrowed the selection — all 4 cols
+		// means "any victim", which is every fatal crash already.
+		if (cols.length > 0 && cols.length < 4) {
+			conditions.push(`(${cols.map((c) => `${c} > 0`).join(" OR ")})`)
+		}
 	}
 
 	const clause = conditions.length ? conditions.join(" AND ") : "1=1"
@@ -247,7 +267,8 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 		const yearTo = intParam(url, "yearTo")
 		const limit = intParam(url, "limit") ?? 10
 		const offset = intParam(url, "offset") ?? 0
-		const { clause, params } = njspWhere(cc, mc, yearFrom, yearTo)
+		const types = url.searchParams.get("types")
+		const { clause, params } = njspWhere(cc, mc, yearFrom, yearTo, types)
 		params.push(limit, offset)
 		const sql = `SELECT * FROM crashes WHERE ${clause} ORDER BY dt DESC LIMIT ?${params.length - 1} OFFSET ?${params.length}`
 		const result = await env.NJSP_CRASHES_DB.prepare(sql).bind(...params).all()
@@ -260,7 +281,8 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 		const mc = intParam(url, "mc")
 		const yearFrom = intParam(url, "yearFrom")
 		const yearTo = intParam(url, "yearTo")
-		const { clause, params } = njspWhere(cc, mc, yearFrom, yearTo)
+		const types = url.searchParams.get("types")
+		const { clause, params } = njspWhere(cc, mc, yearFrom, yearTo, types)
 		const sql = `SELECT count(*) as total FROM crashes WHERE ${clause}`
 		const result = await env.NJSP_CRASHES_DB.prepare(sql).bind(...params).all()
 		return Response.json(result.results, { headers: corsHeaders(env) })
@@ -298,8 +320,14 @@ export default {
 		}
 		// Edge-cache GET responses. Crash data changes at most daily
 		// (njsp-crashes / cmymc imports) or annually (njdot), so a 1h TTL
-		// keeps the homepage's repeated `count` / table queries off D1
-		// entirely after the first request.
+		// keeps the homepage's repeated queries off D1 after the first hit.
+		//
+		// Explicit `Vary: Accept-Encoding` overrides CF's default
+		// `Vary: Origin` (auto-added when responses set CORS headers).
+		// We send `Access-Control-Allow-Origin: *` — identical bytes per
+		// Origin — so keying the cache by Origin only forks the cache
+		// uselessly. Forking matters at deploy time: old per-Origin entries
+		// outlive their data because each Origin's TTL clock is independent.
 		const cache = caches.default
 		const hit = await cache.match(request)
 		if (hit) return hit
@@ -312,6 +340,7 @@ export default {
 		}
 		if (request.method === "GET" && response.status === 200) {
 			response.headers.set("Cache-Control", "public, max-age=3600")
+			response.headers.set("Vary", "Accept-Encoding")
 			ctx.waitUntil(cache.put(request, response.clone()))
 		}
 		return response

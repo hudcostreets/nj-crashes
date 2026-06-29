@@ -76,19 +76,29 @@ def update_www_data(force):
     ytd_path = join(WWW_NJSP, 'ytd.parquet')
     err(f"Generating {ytd_path}...")
 
+    type_cols = ['driver', 'passenger', 'pedestrian', 'cyclist']
+    ytd_cum_cols = [f'{c}_cumulative' for c in type_cols] + ['cumulative']
+    ytd_out_cols = [
+        'county', 'cc', 'mc', 'year', 'day_of_year', 'date_label',
+        'fatalities', *type_cols, 'cumulative', *(f'{c}_cumulative' for c in type_cols),
+    ]
+
     def compute_ytd(df, county=None, cc=None, mc=None):
+        agg_cols = {'fatalities': 'sum', **{c: 'sum' for c in type_cols}}
         ytd = (
             df
-            .groupby(['year', 'day_of_year'])['fatalities']
-            .sum()
+            .groupby(['year', 'day_of_year'])
+            .agg(agg_cols)
             .reset_index()
         )
         ytd['cumulative'] = ytd.groupby('year')['fatalities'].cumsum()
+        for c in type_cols:
+            ytd[f'{c}_cumulative'] = ytd.groupby('year')[c].cumsum()
         ytd['date_label'] = pd.to_datetime(ytd['day_of_year'], format='%j').dt.strftime('%b %d')
         ytd['county'] = county
         ytd['cc'] = cc
         ytd['mc'] = mc
-        return ytd[['county', 'cc', 'mc', 'year', 'day_of_year', 'date_label', 'fatalities', 'cumulative']]
+        return ytd[ytd_out_cols]
 
     ytd_parts = [compute_ytd(crashes)]
     for cn in sorted(CC2CN.values()):

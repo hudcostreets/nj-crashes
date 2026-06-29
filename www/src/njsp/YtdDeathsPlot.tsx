@@ -13,6 +13,7 @@ import { COLORSCALES, ColorScaleName, getColorAt } from "@/src/lib/colorscales"
 import { ControlsGear } from "@/src/components/ControlsGear"
 import { trailing365Series } from "./trailing365"
 import { useNjspSection } from "./NjspSectionContext"
+import { VICTIM_TYPES, VICTIM_LABEL_SINGULAR, type VictimType } from "./victim-types"
 import css from "./plot.module.scss"
 
 const HEIGHT = 450
@@ -33,8 +34,19 @@ type YtdRow = {
     cumulative: number
 }
 
-// Query to get YTD data (filtered by geo level)
-const ytdQueryFn = (county: string | null, cc: number | null, mc: number | null) => {
+/** Per-victim-type column suffixes in `ytd.parquet`. Matches the
+ *  `VictimType` codes in `victim-types.tsx`. */
+const TYPE_COLS: Record<VictimType, string> = {
+    driver: 'driver',
+    passenger: 'passenger',
+    pedestrian: 'pedestrian',
+    cyclist: 'cyclist',
+}
+
+// Query to get YTD data (filtered by geo level + victim-type subset).
+// `selectedTypes` of all 4 (or omitted) → use the precomputed `fatalities`/
+// `cumulative` totals; a narrowed subset sums the per-type columns instead.
+const ytdQueryFn = (county: string | null, cc: number | null, mc: number | null, selectedTypes: VictimType[]) => {
     let where: string
     if (cc !== null && mc !== null) {
         where = `cc = ${cc} AND mc = ${mc}`
@@ -43,8 +55,17 @@ const ytdQueryFn = (county: string | null, cc: number | null, mc: number | null)
     } else {
         where = `county IS NULL AND cc IS NULL`
     }
+    const allTypes = selectedTypes.length === 4 || selectedTypes.length === 0
+    const fatExpr = allTypes
+        ? 'fatalities'
+        : selectedTypes.map(t => TYPE_COLS[t]).join(' + ')
+    const cumExpr = allTypes
+        ? 'cumulative'
+        : selectedTypes.map(t => `${TYPE_COLS[t]}_cumulative`).join(' + ')
     return `
-    SELECT year, day_of_year, date_label, fatalities, cumulative
+    SELECT year, day_of_year, date_label,
+      (${fatExpr}) AS fatalities,
+      (${cumExpr}) AS cumulative
     FROM read_parquet('ytd')
     WHERE ${where}
     ORDER BY year, day_of_year
@@ -117,16 +138,22 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     const effectiveFadeOpacity = viewMode === 'full' ? 1.0 : fadeOpacity
     const colorScale = COLORSCALES[colorScaleName]
 
-    // Load YTD data
-    const ytdDb = useRegisteredParquetDb({ db, table: "ytd", url: YtdParquet })
-    const ytdQueryStr = useMemo(() => ytdQueryFn(county ?? null, cc ?? null, mc ?? null), [county, cc, mc])
-    const ytdRowsAll = useQuery<YtdRow>({ db: ytdDb, query: ytdQueryStr, init: [] })
-
-    // Section-scoped year-range filter (NjspSection). When narrowed, drop
-    // year-lines outside the range; trailing-365 mode applies the same filter
-    // when it derives its own per-year series internally.
+    // Section-scoped year-range + victim-type filter (NjspSection). When
+    // narrowed, drop year-lines outside the range and sum the selected
+    // type columns instead of the precomputed totals; trailing-365 mode
+    // applies the same filter when it derives its own per-year series
+    // internally.
     const njspSection = useNjspSection()
     const yearRange = njspSection?.yearRangeActive ? njspSection.yearRange : null
+    const selectedTypes: VictimType[] = njspSection?.selectedTypes ?? VICTIM_TYPES
+
+    // Load YTD data
+    const ytdDb = useRegisteredParquetDb({ db, table: "ytd", url: YtdParquet })
+    const ytdQueryStr = useMemo(
+        () => ytdQueryFn(county ?? null, cc ?? null, mc ?? null, selectedTypes),
+        [county, cc, mc, selectedTypes],
+    )
+    const ytdRowsAll = useQuery<YtdRow>({ db: ytdDb, query: ytdQueryStr, init: [] })
     const ytdRows = useMemo(
         () => yearRange ? ytdRowsAll.filter(r => r.year >= yearRange[0] && r.year <= yearRange[1]) : ytdRowsAll,
         [ytdRowsAll, yearRange],
@@ -547,7 +574,15 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     return (
         <div>
             <h2 id={id}><a href={`#${id}`}>YTD Deaths</a></h2>
-            <div className={css.subtitle}>Fatalities, {yearRange ? `${yearRange[0]}–${yearRange[1]}` : '2001–present'}{regionLabel ? ` · ${regionLabel}` : county ? ` · ${county} County` : ''}</div>
+            <div className={css.subtitle}>{(() => {
+                const typesActive = njspSection?.typesActive
+                const typeText = typesActive
+                    ? VICTIM_TYPES.filter(t => selectedTypes.includes(t)).map(t => VICTIM_LABEL_SINGULAR[t]).join("/") + " fatalities"
+                    : "Fatalities"
+                const yearText = yearRange ? `${yearRange[0]}–${yearRange[1]}` : '2001–present'
+                const geo = regionLabel ? ` · ${regionLabel}` : county ? ` · ${county} County` : ''
+                return `${typeText.charAt(0).toUpperCase()}${typeText.slice(1)}, ${yearText}${geo}`
+            })()}</div>
             <div ref={wrapRef} style={{ position: 'relative' }}>
                 <PlotWrapper
                     key={viewMode}
