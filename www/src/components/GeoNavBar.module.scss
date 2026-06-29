@@ -1,31 +1,21 @@
 .geoNav {
     display: flex;
     align-items: center;
-    padding: 0.4em 0.6em;
-    margin-bottom: 0.5em;
-    border-bottom: 1px solid var(--grid-color, #333);
+    padding: 0.7em 0.8em;
+    margin-bottom: 0.6em;
+    font-size: 1.05em;
+    // Doubled-up border for clearer separation against the chart content.
+    border-bottom: 2px solid var(--grid-color, #555);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
     // Sticky: anchored to viewport top while the user scrolls the page.
     // `backdrop-filter` keeps the underlying chart/text legible behind a
     // semi-transparent bg without forcing a fully opaque bar.
     position: sticky;
     top: 0;
     z-index: 100;
-    background: color-mix(in srgb, var(--paper-bg, #0d1117) 88%, transparent);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: transform 0.18s ease, opacity 0.18s ease;
-    will-change: transform;
-}
-
-// On mobile, auto-hide when the user is scrolling down (gain content
-// height while reading); slide back in on scroll-up. Desktop ignores
-// the toggle — bar stays visible.
-@media (max-width: 768px) {
-    .geoNav.hideMobile {
-        transform: translateY(-100%);
-        opacity: 0;
-        pointer-events: none;
-    }
+    background: color-mix(in srgb, var(--paper-bg, #0d1117) 94%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .breadcrumb {
@@ -44,6 +34,8 @@
     border-radius: 3px;
     font-size: inherit;
     font-family: inherit;
+    // Keep the `▾` caret on the same line as the county/muni label on narrow vps.
+    white-space: nowrap;
 
     &:hover {
         text-decoration: underline;

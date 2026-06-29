@@ -554,7 +554,7 @@ export function CrashMapSection({
             {fullScreen && (
                 <div style={{
                     position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)",
-                    zIndex: 1000, background: bg, color: fg,
+                    zIndex: 50, background: bg, color: fg,
                     padding: "3px 10px", borderRadius: 4,
                     border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
                     display: "flex", flexWrap: "wrap", alignItems: "center",
@@ -601,7 +601,7 @@ export function CrashMapSection({
                         aria-label="Show map controls"
                         style={{
                             position: "absolute", top: 8, right: 8, background: bg, color: fg,
-                            padding: "0.25em 0.5em", borderRadius: 4, zIndex: 1000,
+                            padding: "0.25em 0.5em", borderRadius: 4, zIndex: 50,
                             border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
                             cursor: "pointer", fontSize: "1em", lineHeight: 1,
                         }}
@@ -613,7 +613,7 @@ export function CrashMapSection({
                             aria-label="Reset map view"
                             style={{
                                 position: "absolute", top: 8, right: 40, background: bg, color: fg,
-                                width: 24, height: 24, padding: 0, borderRadius: 4, zIndex: 1000,
+                                width: 24, height: 24, padding: 0, borderRadius: 4, zIndex: 50,
                                 border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
                                 cursor: "pointer", fontSize: "0.95em", lineHeight: 1,
                                 display: "inline-flex", alignItems: "center", justifyContent: "center",
@@ -625,7 +625,7 @@ export function CrashMapSection({
             {drawerOpen && (
             <div ref={drawerRef} style={{
                 position: "absolute", top: 8, right: 8, background: bg, color: fg,
-                padding: "0.4em 0.6em", borderRadius: 4, zIndex: 1000, fontSize: "0.82em",
+                padding: "0.4em 0.6em", borderRadius: 4, zIndex: 50, fontSize: "0.82em",
                 display: "flex", flexDirection: "column", gap: 6, minWidth: 210, maxWidth: 260,
                 maxHeight: "calc(100% - 16px)", overflowY: "auto",
             }}>
@@ -781,7 +781,7 @@ export function CrashMapSection({
                     title={fullScreen ? "Back to charts" : "Open full-screen"}
                     aria-label={fullScreen ? "Back to charts view" : "Open map in full-screen view"}
                     style={{
-                        position: "absolute", bottom: 8, left: 8, zIndex: 1000,
+                        position: "absolute", bottom: 8, left: 8, zIndex: 50,
                         background: bg, color: fg,
                         padding: "0.3em", borderRadius: 4,
                         border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
@@ -799,7 +799,7 @@ export function CrashMapSection({
             />
             {emptySeverities && result.status === "ready" && (
                 <div style={{
-                    position: "absolute", inset: 0, zIndex: 900,
+                    position: "absolute", inset: 0, zIndex: 45,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     background: actualTheme === "dark" ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)",
                     color: fg, fontSize: "0.9em", pointerEvents: "none",
@@ -876,7 +876,7 @@ function RefetchSpinner({ theme }: { theme: "light" | "dark" }) {
         <div style={{
             // `right: 72` clears the ⚙ gear (right: 8) and ↺ reset
             // (right: 40) buttons shown when the drawer is closed.
-            position: "absolute", top: 8, right: 72, zIndex: 1000,
+            position: "absolute", top: 8, right: 72, zIndex: 50,
             width: 24, height: 24, borderRadius: "50%", padding: 4,
             background: bg, pointerEvents: "none",
             display: "flex", alignItems: "center", justifyContent: "center",
@@ -902,7 +902,7 @@ function Legend({
     ]
     return (
         <div style={{
-            position: "absolute", top: 8, left: 8, zIndex: 1000,
+            position: "absolute", top: 8, left: 8, zIndex: 50,
             background: bg, color: fg, padding: "4px 8px", borderRadius: 4,
             fontSize: "0.72em", display: "flex", flexDirection: "column", gap: 2,
             border: `1px solid ${theme === "dark" ? "#444" : "#ccc"}`,

@@ -94,18 +94,25 @@ export function VictimTypeDropdown({ selected, onChange }: { selected: VictimTyp
                     <input type="checkbox" checked={allSelected} onChange={toggleAll} />
                     {allSelected ? "Deselect All" : "Select All"}
                 </label>
-                {VICTIM_TYPES.map(t => (
-                    <label key={t}>
-                        <input type="checkbox" checked={selected.includes(t)} onChange={() => toggleType(t)} />
-                        <span
-                            onClick={e => { e.preventDefault(); soloType(t) }}
-                            title={selected.length === 1 && selected[0] === t ? "Show all" : `Only ${VICTIM_LABELS[t]}`}
-                            style={{ cursor: 'pointer' }}
-                        >
-                            {VICTIM_LABELS[t]}
-                        </span>
-                    </label>
-                ))}
+                {VICTIM_TYPES.map(t => {
+                    const isSolo = selected.length === 1 && selected[0] === t
+                    return (
+                        <div key={t} className={css.victimTypeRow}>
+                            <label>
+                                <input type="checkbox" checked={selected.includes(t)} onChange={() => toggleType(t)} />
+                                {VICTIM_LABELS[t]}
+                            </label>
+                            <span
+                                className={css.soloLink}
+                                onClick={e => { e.preventDefault(); e.stopPropagation(); soloType(t) }}
+                                title={isSolo ? "Show all" : `Only ${VICTIM_LABELS[t]}`}
+                                aria-label={isSolo ? "Show all" : `Only ${VICTIM_LABELS[t]}`}
+                            >
+                                ◉
+                            </span>
+                        </div>
+                    )
+                })}
             </div>
         </details>
     )

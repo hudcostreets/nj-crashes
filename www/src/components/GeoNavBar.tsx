@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react"
 import { useGeoFilter } from "@/src/GeoFilterContext"
-import { useScrollDirection } from "@/src/lib/useScrollDirection"
 import { CountyPicker } from "./CountyPicker"
 import { MuniPicker } from "./MuniPicker"
+import { NjspSectionFilters } from "@/src/njsp/NjspSectionFilters"
 import css from "./GeoNavBar.module.scss"
 
 type PickerOpen = 'county' | 'muni' | null
@@ -12,12 +12,6 @@ export function GeoNavBar() {
     const [openPicker, setOpenPicker] = useState<PickerOpen>(null)
     const countyRef = useRef<HTMLDivElement>(null)
     const muniRef = useRef<HTMLDivElement>(null)
-    // Mobile: auto-hide nav on scroll-down (recover content height when
-    // reading), restore on scroll-up (the moment the user looks back for
-    // navigation). At scroll-top it stays visible regardless. Desktop CSS
-    // overrides this back to always-visible.
-    const scrollDir = useScrollDirection()
-    const hideOnMobile = scrollDir === "down" && openPicker === null
 
     useEffect(() => {
         if (!openPicker) return
@@ -32,7 +26,7 @@ export function GeoNavBar() {
     }, [openPicker])
 
     return (
-        <nav className={`${css.geoNav} ${hideOnMobile ? css.hideMobile : ''}`}>
+        <nav className={css.geoNav}>
             <div className={css.breadcrumb}>
                 <button
                     className={`${css.crumb} ${!countyName ? css.current : ''}`}
@@ -87,6 +81,10 @@ export function GeoNavBar() {
                     </div>
                 </>}
             </div>
+            {/* NJSP-section filters (year-range + victim-type). Returns null when
+             *  not inside an `NjspSectionProvider` (e.g. routes that don't
+             *  render NJSP plots) so this stays a no-op there. */}
+            <NjspSectionFilters />
         </nav>
     )
 }

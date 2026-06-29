@@ -197,8 +197,14 @@
 .victimTypeDropdown[open] summary::after { content: " ▲"; }
 .victimTypeList {
   position: absolute;
-  bottom: 100%;
-  left: 0;
+  // Open downward — dropdown lives in the sticky top nav; opening upward
+  // (the old behavior when it lived inside the plot's gear panel) would
+  // clip against the viewport top.
+  // Anchor to the trigger's right edge so the panel opens leftward into
+  // the viewport instead of overflowing the right edge on narrow vps.
+  top: 100%;
+  right: 0;
+  left: auto;
   z-index: 100;
   background: var(--bg-secondary);
   border: 1px solid var(--border-primary);
@@ -214,9 +220,48 @@
   cursor: pointer;
   color: var(--text-primary);
   font-size: 12px;
+  flex: 1;
 }
-.victimTypeList label:hover { background: var(--bg-primary); }
 .victimTypeList .selectAll {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.15em 0.3em;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 12px;
   border-bottom: 1px solid var(--border-secondary);
   margin-bottom: 0.2em;
+}
+.victimTypeList .selectAll:hover { background: var(--bg-primary); }
+.victimTypeRow {
+  display: flex;
+  align-items: center;
+  // Hover reveals the `only` link inside.
+  &:hover {
+    background: var(--bg-primary);
+    .soloLink { opacity: 1; }
+  }
+  label { padding: 0.15em 0.3em; }
+}
+.soloLink {
+  // Always visible on touch devices (no hover), but dimmed on desktop until
+  // row-hover. `@media (hover: hover)` carves out the hover-only behavior.
+  opacity: 1;
+  font-size: 0.85em;
+  line-height: 1;
+  color: var(--text-secondary, #999);
+  cursor: pointer;
+  padding: 0.1em 0.3em;
+  margin-right: 0.1em;
+  flex-shrink: 0;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  &:hover {
+    color: var(--text-primary, #eee);
+    background: rgba(255, 255, 255, 0.18);
+  }
+  @media (hover: hover) {
+    opacity: 0;
+  }
 }

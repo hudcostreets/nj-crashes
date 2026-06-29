@@ -15,28 +15,28 @@ export function NjspSectionFilters() {
     return (
         <div style={{
             display: "flex", flexWrap: "wrap", alignItems: "center",
-            justifyContent: "center", gap: 12,
-            fontSize: "0.95em", color: "var(--text-secondary)",
-            margin: "0.4em 0 0.8em",
+            gap: 12,
+            fontSize: "0.9em", color: "var(--text-secondary)",
+            // Lives inline inside `GeoNavBar` — the nav supplies the sticky
+            // positioning + backdrop. Push to the right of the breadcrumb.
+            marginLeft: "auto",
         }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span>Years:</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
                 <YearSelect
                     value={yearRange[0]} min={StartYear} max={yearRange[1]}
                     onChange={y => setYearRange([y, yearRange[1]])}
                     theme={actualTheme}
+                    short
                 />
                 <span>–</span>
                 <YearSelect
                     value={yearRange[1]} min={yearRange[0]} max={curYear}
                     onChange={y => setYearRange([yearRange[0], y])}
                     theme={actualTheme}
+                    short
                 />
             </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span>Types:</span>
-                <VictimTypeDropdown selected={selectedTypes} onChange={setSelectedTypes} />
-            </span>
+            <VictimTypeDropdown selected={selectedTypes} onChange={setSelectedTypes} />
             {anyActive && (
                 <button
                     type="button"
@@ -49,12 +49,14 @@ export function NjspSectionFilters() {
                         color: "var(--text-secondary)",
                         border: "1px solid var(--border-color, #ccc)",
                         borderRadius: 3,
-                        padding: "1px 6px",
+                        padding: "1px 5px",
                         cursor: "pointer",
-                        fontSize: "0.9em",
+                        fontSize: "0.95em",
+                        lineHeight: 1,
                     }}
                     title="Reset all filters"
-                >reset</button>
+                    aria-label="Reset all filters"
+                >↻</button>
             )}
         </div>
     )

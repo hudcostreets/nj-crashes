@@ -23,6 +23,7 @@ import { YearStatsSection } from "@/src/tables/YearStatsSection"
 import { NjspCrashesSection } from "@/src/tables/NjspCrashesSection"
 import { NjdotCrashesSection } from "@/src/tables/NjdotCrashesSection"
 import { NjspSection } from "@/src/njsp/NjspSection"
+import { NjspSectionProvider } from "@/src/njsp/NjspSectionContext"
 import { LazySection } from "@/src/components/LazySection"
 import { PlotInfo } from "@/src/icons"
 import { useEffect } from "react"
@@ -115,6 +116,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
             />
 
             <main className={css.index}>
+                <NjspSectionProvider>
                 <GeoNavBar />
                 <h1 className={css.title}>{headingLabel}</h1>
                 {!regionLabel && (
@@ -192,6 +194,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                 </LazySection>
 
                 <Footer />
+                </NjspSectionProvider>
             </main>
         </div>
     )

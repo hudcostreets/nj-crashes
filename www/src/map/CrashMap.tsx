@@ -793,7 +793,7 @@ function AttributionPopover({ theme }: { theme: "light" | "dark" }) {
         <div
             onMouseEnter={() => setOpen(true)}
             onMouseLeave={() => setOpen(false)}
-            style={{ position: "absolute", bottom: 8, left: 8, zIndex: 1000 }}
+            style={{ position: "absolute", bottom: 8, left: 8, zIndex: 50 }}
         >
             <button
                 type="button"
@@ -835,7 +835,7 @@ function PitchSlider({
     return (
         <div style={{
             position: "absolute", top: "1em", left: "1em", background: bg, color: fg,
-            padding: "0.4em 0.7em", borderRadius: 4, zIndex: 1000, fontSize: "0.85em",
+            padding: "0.4em 0.7em", borderRadius: 4, zIndex: 50, fontSize: "0.85em",
             display: "flex", alignItems: "center", gap: 8,
         }}>
             <span>Pitch: {Math.round(viewState.pitch)}°</span>
@@ -866,7 +866,7 @@ function HexControls({
     return (
         <div style={{
             position: "absolute", top: "3.5em", left: "1em", background: bg, color: fg,
-            padding: "0.5em 0.7em", borderRadius: 4, zIndex: 1000, fontSize: "0.85em",
+            padding: "0.5em 0.7em", borderRadius: 4, zIndex: 50, fontSize: "0.85em",
             display: "flex", flexDirection: "column", gap: 6, minWidth: 210,
         }}>
             {(() => {
