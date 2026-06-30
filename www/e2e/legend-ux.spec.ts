@@ -204,6 +204,47 @@ test.describe('YTD legend', () => {
     await page.mouse.move(0, 0)
     await expect.poll(lineWidth).toBe(2)
   })
+
+  // PLTLY GAP: clicking a Plotly-native legend item runs Plotly's default
+  // toggle-visibility handler; pltly's `onActiveTrace` only fires on hover,
+  // so click-to-pin doesn't carry over to plotly-native legends like YTD.
+  // FBM (#by-month-bars) also uses a plotly-native legend but its
+  // click-to-pin works (see the FBM test below) — that's actually Plotly's
+  // own click-to-isolate behavior, not pltly's pin. For YTD's pin to work
+  // like the Homicides custom legend, pltly needs to add a click handler
+  // for native legends that sets activeTrace alongside Plotly's default.
+  // Marking this test `fail` (xfail-style) so it documents the missing
+  // behavior and the CI stays green until pltly grows the feature.
+  test.fail('clicking a legend item pins it (stays thickened after unhover)', async ({ page }) => {
+    await page.goto('/#ytd')
+    await waitForPlots(page)
+    const plot = page.locator('.js-plotly-plot').nth(1)
+    const items = legendItems(plot)
+    const count = await items.count()
+    if (count < 2) return
+
+    const idx = count - 2
+    const name = (await legendTexts(plot).nth(idx).textContent())?.trim()
+    const lineWidth = () => plot.evaluate(
+      (el, n) => ((el as any).data.find((t: any) => t.name === n)?.line?.width) as number | undefined,
+      name,
+    )
+
+    expect(await lineWidth()).toBe(2)
+    await items.nth(idx).evaluate(el => el.scrollIntoView({ block: 'center' }))
+    await items.nth(idx).click()
+    await expect.poll(lineWidth).toBe(5)
+
+    // Pinned — move away; should STAY at width 5 (vs hover test which reverts to 2).
+    await page.mouse.move(0, 0)
+    await page.waitForTimeout(400)
+    expect(await lineWidth()).toBe(5)
+
+    // Click again to unpin.
+    await items.nth(idx).click()
+    await page.mouse.move(0, 0)
+    await expect.poll(lineWidth).toBe(2)
+  })
 })
 
 test.describe('FBM pin', () => {
@@ -227,6 +268,72 @@ test.describe('FBM pin', () => {
     await page.mouse.move(0, 0)
     await page.waitForTimeout(200)
     expect(isBold(await fontWeight(texts.first()))).toBe(false)
+  })
+})
+
+test.describe('FatalitiesPerYearPlot hover', () => {
+  // Plot index 0 is `FatalitiesPerYearPlot`; its legend is a `pltly` custom
+  // HTML legend with one item per victim type + a special `* Projected`
+  // hover-only item that fades non-current-year bars when hovered.
+  test('hovering a victim-type fades the others', async ({ page }) => {
+    await page.goto('/#per-year')
+    await waitForPlots(page)
+    const items = customLegendItems(page, 'per-year')
+    if (await items.count() < 2) return
+
+    await items.first().hover()
+    await expect.poll(() => opacity(items.nth(1))).toBe(0.3)
+    await page.mouse.move(0, 0)
+    await expect.poll(() => opacity(items.nth(1))).toBe(1)
+  })
+})
+
+test.describe('CrashPlot pin', () => {
+  test('clicking a stack-segment legend item toggles trace visibility', async ({ page }) => {
+    await page.goto('/#njdot')
+    await waitForPlots(page)
+    const plot = page.locator('.js-plotly-plot').nth(4)
+    const items = legendItems(plot)
+    if (await items.count() < 2) return
+    const visBefore = await visibleTraceCount(plot)
+
+    await items.first().evaluate(el => el.scrollIntoView({ block: 'center' }))
+    await items.first().click()
+    // Plotly native: single click on a legend item toggles its trace
+    // between `visible: true` and `visible: 'legendonly'`.
+    await expect.poll(() => visibleTraceCount(plot)).toBe(visBefore - 1)
+
+    await items.first().click()  // restore
+    await expect.poll(() => visibleTraceCount(plot)).toBe(visBefore)
+  })
+})
+
+test.describe('Homicides y-range', () => {
+  test('y-axis range stays positive and bounded when pinning a trace', async ({ page }) => {
+    await page.goto('/#vs-homicides')
+    await waitForPlots(page)
+    const items = customLegendItems(page, 'vs-homicides')
+    const plot = page.locator('.js-plotly-plot').nth(2)
+
+    const yRange = () => plot.evaluate(el => {
+      const r = (el as any)._fullLayout?.yaxis?.range
+      return r ? [r[0], r[1]] : null
+    })
+
+    const before = await yRange()
+    expect(before).not.toBeNull()
+    expect(before![0]).toBe(0)
+    expect(before![1]).toBeGreaterThan(0)
+
+    await items.nth(1).click()  // pin "Homicides"
+    await page.waitForTimeout(300)
+
+    const after = await yRange()
+    expect(after).not.toBeNull()
+    expect(after![0]).toBe(0)
+    expect(after![1]).toBeGreaterThan(0)
+    // y-range shouldn't collapse to NaN or invert on pin.
+    expect(Number.isFinite(after![1])).toBe(true)
   })
 })
 
