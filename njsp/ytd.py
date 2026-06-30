@@ -215,3 +215,17 @@ class Ytd:
     @cached_property
     def projected_year_total(self):
         return self.cur_ytd_deaths + self.projected_roy_deaths
+
+    @cached_property
+    def trailing_365_crashes(self):
+        """All NJSP fatal crashes in the trailing 365d window, lag-corrected
+        via `crash-log.parquet` replay as of `self.rundate`. Spans up to 2
+        calendar years (cur_year + prv_year). Used by `update_projections` to
+        write per-geo trailing-365 totals into `projected.csv`."""
+        rundate = self.rundate.cur
+        window_start = rundate - pd.Timedelta(days=365)
+        # Each call replays the full crash-log; cheap (~14k rows, 0.5 MB).
+        cur = feed_snapshot(self.cur_year, rundate).crashes
+        prv = feed_snapshot(self.prv_year, rundate).crashes
+        crashes = pd.concat([prv, cur])
+        return crashes[(crashes.dt >= window_start) & (crashes.dt <= rundate)]

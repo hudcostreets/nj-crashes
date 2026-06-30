@@ -23,10 +23,11 @@ from nj_crashes.paths import ROOT_DIR
 from njsp import Ytd
 from njsp.cli.base import command
 from njsp.paths import PROJECTED_CSV, fauqstats_relpath
-from njsp.ytc import to_ytc, to_ytmc
+from njsp.ytc import TYPES, to_tc, to_tmc, to_ytc, to_ytmc
 from njsp.ytd import projected_roy_deaths
 
-PROJECTED_COLS = ['cc', 'mc', 'county', 'municipality', 'crashes', 'cyclist', 'driver', 'passenger', 'pedestrian']
+TRAILING_COLS = ['trailing_365', *(f'trailing_365_{t}' for t in TYPES)]
+PROJECTED_COLS = ['cc', 'mc', 'county', 'municipality', 'crashes', 'cyclist', 'driver', 'passenger', 'pedestrian', *TRAILING_COLS]
 
 
 def melt(df, name):
@@ -100,12 +101,29 @@ def update_projections():
         cur_ytd_frac,
     )
 
-    county_rows = projected_county.reset_index()
+    # Phase 2A — trailing-365d totals (lag-corrected via `crash-log.parquet`
+    # replay). Joined onto the projection rows by `(county)` / `(cc, mc)` so the
+    # frontend can render "Last 365 days: N" alongside "on pace for M".
+    trailing = ytd.trailing_365_crashes
+    trailing_county = to_tc(trailing).rename(
+        columns={'crashes': 'trailing_365', **{t: f'trailing_365_{t}' for t in TYPES}},
+    )
+    trailing_muni = to_tmc(trailing).rename(
+        columns={'crashes': 'trailing_365', **{t: f'trailing_365_{t}' for t in TYPES}},
+    )
+    err(f"Trailing 365d (statewide): {int(trailing_county.trailing_365.sum())} crashes, "
+        f"{int(trailing.FATALITIES.sum())} deaths")
+
+    county_rows = projected_county.join(trailing_county, how='left').fillna(0).reset_index()
     county_rows['cc'] = county_rows['mc'] = county_rows['municipality'] = ''
+    muni_rows = projected_muni.join(trailing_muni, how='left').fillna(0).reset_index()
+    for col in TRAILING_COLS:
+        county_rows[col] = county_rows[col].astype(int)
+        muni_rows[col] = muni_rows[col].astype(int)
     projected = pd.concat(
-        [county_rows[PROJECTED_COLS], projected_muni.reset_index()[PROJECTED_COLS]],
+        [county_rows[PROJECTED_COLS], muni_rows[PROJECTED_COLS]],
         ignore_index=True,
     )
     projected.to_csv(PROJECTED_CSV, index=False)
-    err(f"Wrote {PROJECTED_CSV}: {len(county_rows)} county + {len(projected_muni)} muni rows")
+    err(f"Wrote {PROJECTED_CSV}: {len(county_rows)} county + {len(muni_rows)} muni rows")
     return "Update NJSP projections"

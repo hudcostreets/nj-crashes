@@ -113,13 +113,30 @@ labels) — the user-picked option. Frontend-only: the windowing
 fatalities, no backend change. Pure module `www/src/njsp/trailing365.ts`
 + unit tests `trailing365.test.ts`.
 
-### Phase 2: Replace Jan-1-anchored projection with 365d-lookback (still open)
+### Phase 2A: Headline trailing-365d number ✅
+
+Done (2026-06-30). `Ytd.trailing_365_crashes` is a lag-corrected replay over
+`crash-log.parquet`'s [rundate − 365d, rundate] window, composing two
+`feed_snapshot(year, rundate)` calls (cur + prv). `to_tc` / `to_tmc`
+aggregate per geo (statewide / county / municipality). `update_projections`
+appends 5 cols to `projected.csv`: `trailing_365`, `trailing_365_{driver,
+passenger, pedestrian, cyclist}`. Additive — no consumer breakage.
+
+Frontend reads the summed type-cols (= deaths) via the existing DuckDB
+`projected` table and renders `Last 365 days: N deaths` in the
+`FatalitiesPerYearPlot` subtitle. Scopes correctly to statewide / county /
+muni via the geo filter.
+
+Tests: synthetic crash-log tests in `test_feed_snapshot.py` exercise the
+windowing across calendar boundaries and across rundates.
+
+### Phase 2B: Replace YoY-ratio with 365d-rolling baseline (still open)
 - See the Phase 1.5 note: the current model already *damps* the
   January signal via `cur_ytd_frac`, so it's not "wild error bars" —
   it's *low-information* in January (the headline ≈ last year's total).
-- The Phase 3 trailing-365 *plot* now gives the always-meaningful view;
-  Phase 2 would additionally surface a trailing-365 *projected number*
-  alongside (or instead of) the calendar-year "on pace for N".
+- Replace `prv_end`/`prv_ytd` in `projected_roy_deaths` with a
+  trailing-365 baseline. Validate via backtest against 2023/2024
+  year-end actuals; only adopt if RMSE drops.
 - Any reframe must preserve the reporting-lag correction (Phase 1.5).
 
 ## Open questions

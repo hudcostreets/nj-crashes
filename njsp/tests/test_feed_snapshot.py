@@ -78,3 +78,57 @@ def test_feed_snapshot_golden_2025_05_21():
     assert {k: int(v) for k, v in totals.items()} == {
         "driver": 103, "passenger": 33, "pedestrian": 54, "cyclist": 6, "crashes": 181,
     }
+
+
+# ── Trailing-365 windowing — Phase 2A ──────────────────────────────────────
+#
+# `Ytd.trailing_365_crashes` calls `feed_snapshot(prv_year, rundate)` +
+# `feed_snapshot(cur_year, rundate)` and filters dt to `[rundate-365d, rundate]`.
+# These tests cover that compose: replay correctness via `feed_snapshot` (tested
+# above) + the dt-window filter on top.
+
+# Synthetic crash-log spanning two years for trailing-window tests. Three
+# rundates: 2024-03-15 (early), 2024-09-15 (mid), 2025-03-15 (cross-year).
+TRAILING_SYNTHETIC = pd.DataFrame([
+    _event(10, "r1", "2024-03-15", "add", "2024-03-10"),     # in window from any 2024-03+ rundate
+    _event(11, "r1", "2024-03-15", "add", "2023-04-10"),     # 11mo+ before 2025-03-15 — in window
+    _event(12, "r1", "2024-03-15", "add", "2023-02-10"),     # 13mo before 2025-03-15 — OUT
+    _event(13, "r2", "2024-09-15", "add", "2024-09-10"),     # added at r2
+    _event(14, "r3", "2025-03-15", "add", "2025-03-01"),     # added at r3
+    _event(15, "r1", "2024-03-15", "add", "2024-01-01"),     # in window from 2024-09 rundate
+    _event(15, "r3", "2025-03-15", "del", "2024-01-01"),     # …but deleted by r3
+]).set_index(["accid", "sha"])
+
+
+def _trailing_window(crash_log, prv_year, cur_year, rundate):
+    """Mirror `Ytd.trailing_365_crashes` for testing — same compose pattern."""
+    rundate_ts = pd.Timestamp(rundate, tz=TZ)
+    window_start = rundate_ts - pd.Timedelta(days=365)
+    cur = feed_snapshot(cur_year, rundate_ts, crash_log=crash_log).crashes
+    prv = feed_snapshot(prv_year, rundate_ts, crash_log=crash_log).crashes
+    crashes = pd.concat([prv, cur])
+    return crashes[(crashes.dt >= window_start) & (crashes.dt <= rundate_ts)]
+
+
+def test_trailing_365_window_filters_by_dt():
+    # At r1 (2024-03-15), window = [2023-03-16, 2024-03-15]:
+    #   10 (2024-03-10) IN; 11 (2023-04-10) IN; 12 (2023-02-10) OUT (~1mo before
+    #   window start); 13/14 not yet added; 15 (2024-01-01) IN.
+    out = _trailing_window(TRAILING_SYNTHETIC, prv_year=2023, cur_year=2024, rundate="2024-03-15")
+    assert sorted(out.index) == [10, 11, 15]
+
+
+def test_trailing_365_window_spans_calendar_boundary():
+    # Window = [2024-03-16, 2025-03-15]. accid 13 (2024-09-10) IN, 14 (2025-03-01) IN.
+    # accid 15 was added 2024-01-01 (OUT of window) then del'd at r3 anyway.
+    # accid 11 (2023-04-10) is OUT of window.
+    out = _trailing_window(TRAILING_SYNTHETIC, prv_year=2024, cur_year=2025, rundate="2025-03-15")
+    assert sorted(out.index) == [13, 14]
+
+
+def test_trailing_365_window_at_earlier_rundate_sees_no_2025():
+    # At r2 (2024-09-15), no 2025 crashes yet exist in the crash-log. Window
+    # = [2023-09-16, 2024-09-15] — 11 (2023-04-10) OUT, 15 (2024-01-01) IN,
+    # 13 (2024-09-10) IN, 10 (2024-03-10) IN.
+    out = _trailing_window(TRAILING_SYNTHETIC, prv_year=2023, cur_year=2024, rundate="2024-09-15")
+    assert sorted(out.index) == [10, 13, 15]

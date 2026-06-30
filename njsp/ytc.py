@@ -27,6 +27,17 @@ def to_ytc(df):
     )
 
 
+def to_tc(df):
+    """Type-county aggregation (no year grouping) — for trailing-window summaries
+    where the window crosses calendar boundaries. Mirrors `to_ytc` minus `year`."""
+    df = df.rename(columns={'CNAME': 'county', **TYPE_RENAMES})
+    grouped = df[['county', *TYPES]].groupby('county')
+    return sxs(
+        grouped[TYPES].sum().astype(int),
+        grouped.size().rename('crashes'),
+    )
+
+
 def to_ytmc(df):
     """Year-type-municipality aggregation of NJSP fatal crashes, keyed by
     canonical NJGIN `(cc, mc)` codes.
@@ -52,6 +63,30 @@ def to_ytmc(df):
         .rename(columns={'mc_gin': 'mc'})
     )
     grouped = yt.groupby(['year', 'cc', 'mc', 'county', 'municipality'])
+    return sxs(
+        grouped[TYPES].sum().astype(int),
+        grouped.size().rename('crashes'),
+    )
+
+
+def to_tmc(df):
+    """Type-municipality aggregation (no year grouping) — for trailing-window
+    summaries. Mirrors `to_ytmc` minus `year`."""
+    df = df.rename(columns=TYPE_RENAMES)
+    sp2gin = pd.read_parquet(MC_PQT)[['cc', 'mc_sp', 'mc_gin']]
+    yt = sxs(
+        df.CCODE.astype(int).rename('cc'),
+        df.MCODE.str[2:].astype('Int64').rename('mc_sp'),
+        df.CNAME.rename('county'),
+        df.MNAME.rename('municipality'),
+        df[TYPES],
+    )
+    yt = (
+        yt
+        .merge(sp2gin, on=['cc', 'mc_sp'], how='left', validate='many_to_one')
+        .rename(columns={'mc_gin': 'mc'})
+    )
+    grouped = yt.groupby(['cc', 'mc', 'county', 'municipality'])
     return sxs(
         grouped[TYPES].sum().astype(int),
         grouped.size().rename('crashes'),
