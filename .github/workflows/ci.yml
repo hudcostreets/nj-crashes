@@ -2,9 +2,10 @@ name: CI
 
 # Fast checks on every code push / PR. The daily data pipeline (`daily.yml`)
 # only commits data files, so the `paths` filter keeps those commits from
-# triggering CI. e2e here is just `legend-ux` (hermetic — homepage plots read
-# static parquet from `www/public/`); the API-dependent e2e specs need a local
-# API, tracked in `specs/hermetic-e2e-ci.md`.
+# triggering CI. e2e here is just `legend-ux` — homepage plots read static
+# parquet from `www/public/njsp/`, which we fetch from the public DVX S3
+# cache by md5 (the 5 NJSP parquets are not in git — see `csvs.dvc`).
+# The API-dependent e2e specs need a local API, tracked in `specs/hermetic-e2e-ci.md`.
 on:
   push:
     paths: &code-paths
@@ -84,6 +85,15 @@ jobs:
         run: cd www && pnpm install
       - name: Install Playwright (chromium)
         run: cd www && pnpm exec playwright install --with-deps chromium
+      - name: Fetch NJSP parquets from S3
+        # `csvs.dvc` is multi-out; pull the 5 frontend parquets from the public
+        # DVX S3 cache by md5 so plots have data to render in the dev server.
+        run: |
+          cd www/public/njsp
+          yq '.outs[] | .md5 + " " + .path' csvs.dvc | while read -r md5 path; do
+            curl -fsSL -o "$path" "https://nj-crashes.s3.amazonaws.com/.dvc/files/md5/${md5:0:2}/${md5:2}"
+          done
+          ls -la *.parquet
       - name: e2e — legend-ux
         run: cd www && pnpm exec playwright test e2e/legend-ux.spec.ts --reporter=list
       - uses: actions/upload-artifact@v4
