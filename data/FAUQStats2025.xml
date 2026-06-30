@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Jun 29 10:00:05 EDT 2026</RUNDATE>
+  <RUNDATE>Tue Jun 30 10:00:02 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -413,6 +413,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -777,8 +778,8 @@
   <COUNTY CCODE="04" CNAME="Camden">
     <MUNICIPALITY MCODE="0434" MNAME="Voorhees Twsp">
       <ACCIDENT ACCID="14274" DATE="11/22/2025" TIME="1706">
-        <STREET>White Horse Rd</STREET>
-        <LOCATION>White Horse Rd</LOCATION>
+        <HIGHWAY>673</HIGHWAY>
+        <LOCATION>County 673 MP 6.19</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -805,25 +806,27 @@
     <MUNICIPALITY MCODE="1436" MNAME="Roxbury Twsp">
       <ACCIDENT ACCID="14272" DATE="11/21/2025" TIME="0525">
         <HIGHWAY>80</HIGHWAY>
-        <LOCATION>Interstate 80</LOCATION>
+        <LOCATION>Interstate 80 MP 31.3</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0238" MNAME="New Milford Boro">
       <ACCIDENT ACCID="14275" DATE="11/20/2025" TIME="1747">
-        <STREET>River Rd</STREET>
-        <LOCATION>River Rd</LOCATION>
+        <HIGHWAY>41</HIGHWAY>
+        <LOCATION>County 41 MP 5.6</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1016,13 +1019,14 @@
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0256" MNAME="Rutherford Boro">
       <ACCIDENT ACCID="14320" DATE="11/10/2025" TIME="1924">
-        <STREET>Union Ave</STREET>
-        <LOCATION>Union Ave</LOCATION>
+        <HIGHWAY>32</HIGHWAY>
+        <LOCATION>County 32 (Spur (County Routes Only)) MP 1.06</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1123,13 +1127,14 @@
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0231" MNAME="Lodi Boro">
       <ACCIDENT ACCID="14240" DATE="11/08/2025" TIME="1500">
-        <STREET>Essex St</STREET>
-        <LOCATION>Essex St</LOCATION>
+        <HIGHWAY>56</HIGHWAY>
+        <LOCATION>County 56 MP 3.25</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1253,13 +1258,14 @@
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0223" MNAME="Hackensack City">
       <ACCIDENT ACCID="14231" DATE="11/04/2025" TIME="1348">
-        <STREET>Polifly Rd</STREET>
-        <LOCATION>Polifly Rd</LOCATION>
+        <HIGHWAY>55</HIGHWAY>
+        <LOCATION>County 55 MP 4.3</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1711,12 +1717,13 @@
     <MUNICIPALITY MCODE="0248" MNAME="Ramsey Boro">
       <ACCIDENT ACCID="14198" DATE="10/08/2025" TIME="0707">
         <HIGHWAY>85</HIGHWAY>
-        <LOCATION>County 85</LOCATION>
+        <LOCATION>County 85 MP 3.33</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1896,13 +1903,14 @@
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0232" MNAME="Lyndhurst Twsp">
       <ACCIDENT ACCID="14317" DATE="10/02/2025" TIME="0755">
-        <HIGHWAY>11</HIGHWAY>
-        <LOCATION>County 11</LOCATION>
+        <HIGHWAY>130</HIGHWAY>
+        <LOCATION>County 130 MP 2.75</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3953,13 +3961,14 @@
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0221" MNAME="Garfield City">
       <ACCIDENT ACCID="14161" DATE="07/03/2025" TIME="2228">
-        <STREET>Outwater Ln</STREET>
-        <LOCATION>Outwater Ln</LOCATION>
+        <HIGHWAY>42</HIGHWAY>
+        <LOCATION>County 42 MP .38</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3981,12 +3990,13 @@
     <MUNICIPALITY MCODE="0230" MNAME="Little Ferry Boro">
       <ACCIDENT ACCID="14160" DATE="07/02/2025" TIME="2332">
         <HIGHWAY>124</HIGHWAY>
-        <LOCATION>County 124</LOCATION>
+        <LOCATION>County 124 MP .35</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -7486,5 +7496,5 @@
   </COUNTY>
   <TOTACCIDENTS>547</TOTACCIDENTS>
   <TOTFATALITIES>582</TOTFATALITIES>
-  <TOTINJURIES>306</TOTINJURIES>
+  <TOTINJURIES>307</TOTINJURIES>
 </FAUQSTATS>

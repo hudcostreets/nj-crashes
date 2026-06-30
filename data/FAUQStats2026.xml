@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Jun 29 10:00:04 EDT 2026</RUNDATE>
+  <RUNDATE>Tue Jun 30 10:00:01 EDT 2026</RUNDATE>
   <STATSYEAR>2026</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -53,7 +53,7 @@
     <MUNICIPALITY MCODE="0614" MNAME="Vineland City">
       <ACCIDENT ACCID="14668" DATE="06/29/2026" TIME="0217">
         <HIGHWAY>47</HIGHWAY>
-        <LOCATION>State Highway 47 (Business) MP 45</LOCATION>
+        <LOCATION>State Highway 47 MP 45</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
