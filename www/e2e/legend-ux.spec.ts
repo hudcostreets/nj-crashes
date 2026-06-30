@@ -193,6 +193,11 @@ test.describe('YTD legend', () => {
     )
 
     expect(await lineWidth()).toBe(2)
+    // Center the item in the viewport before hovering — the sticky `GeoNavBar`
+    // (`z: 100`) at top + various controls/wrappers below the plot can intercept
+    // pointer events at viewport edges, which trips Playwright's actionability
+    // check. `block: 'center'` parks the item well clear of either.
+    await items.nth(idx).evaluate(el => el.scrollIntoView({ block: 'center' }))
     await items.nth(idx).hover()
     await expect.poll(lineWidth).toBe(5)
 
@@ -236,7 +241,7 @@ test.describe('Tooltip order', () => {
     expect(traceorder).toContain('reversed')
   })
 
-  test('CrashPlot tooltip order matches stack (top-first)', async ({ page }) => {
+  test('CrashPlot tooltip order matches stack', async ({ page }) => {
     await page.goto('/#njdot')
     const plot = page.locator('.js-plotly-plot').nth(4)
     await plot.waitFor({ timeout: 15000 })
@@ -244,10 +249,13 @@ test.describe('Tooltip order', () => {
     await plot.scrollIntoViewIfNeeded()
     const box = await plot.boundingBox()
 
-    // The x-unified tooltip lists traces top-of-stack first — the reverse of
-    // `gd.data`'s bottom-up order. Asserting against the live stack keeps this
-    // robust to severity-label changes; the `toPass` retries the hover, which
-    // can land between bars on the first sweep.
+    // Plotly's x-unified tooltip lists traces in `gd.data` order (matches
+    // `layout.legend.traceorder: 'normal'` set on CrashPlot). For our stacked
+    // bars that's bottom-of-stack first. Top-first would arguably be better
+    // UX (eye reads top-to-bottom), but plotly couples tooltip order to
+    // `legend.traceorder` — switching one swaps the other. Asserting against
+    // the live `data.order` keeps this robust to severity-label changes;
+    // `toPass` retries the hover in case the first sweep lands between bars.
     await expect(async () => {
       await page.mouse.move(box!.x + 50, box!.y + box!.height / 2, { steps: 3 })
       await page.waitForTimeout(200)
@@ -256,7 +264,7 @@ test.describe('Tooltip order', () => {
       const stackOrder = await plot.evaluate(el => (el as any).data.map((t: any) => t.name))
       const tip = await plot.locator('.hoverlayer .legend .traces .legendtext').allTextContents()
       const tipTypes = tip.map(n => n.split(':')[0].trim())
-      expect(tipTypes).toEqual([...stackOrder].reverse())
+      expect(tipTypes).toEqual(stackOrder)
     }).toPass({ timeout: 15000 })
   })
 })
