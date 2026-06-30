@@ -3,16 +3,33 @@ import {
     AsyncDuckDB,
     AsyncDuckDBConnection,
     selectBundle,
-    getJsDelivrBundles,
     createWorker,
+    PACKAGE_VERSION as DUCKDB_VERSION,
 } from "@duckdb/duckdb-wasm"
 
 const DuckDbContext = createContext<AsyncDuckDB | null>(null)
 
 const SilentLogger = { log: () => {} }
 
+/** Equivalent to `getJsDelivrBundles()` but served from unpkg. The jsdelivr
+ *  CDN intermittently 404s the worker JS for headless Playwright Chromium
+ *  (CI + local) — unpkg is more reliable for that fingerprint. */
+function getUnpkgBundles() {
+    const base = `https://unpkg.com/@duckdb/duckdb-wasm@${DUCKDB_VERSION}/dist/`
+    return {
+        mvp: {
+            mainModule: `${base}duckdb-mvp.wasm`,
+            mainWorker: `${base}duckdb-browser-mvp.worker.js`,
+        },
+        eh: {
+            mainModule: `${base}duckdb-eh.wasm`,
+            mainWorker: `${base}duckdb-browser-eh.worker.js`,
+        },
+    }
+}
+
 async function initDuckDb(): Promise<AsyncDuckDB> {
-    const allBundles = getJsDelivrBundles()
+    const allBundles = getUnpkgBundles()
     const bundle = await selectBundle(allBundles)
     if (!bundle.mainWorker) throw Error("No mainWorker in DuckDB bundle")
     const worker = await createWorker(bundle.mainWorker)
