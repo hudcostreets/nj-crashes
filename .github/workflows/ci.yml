@@ -102,3 +102,18 @@ jobs:
           name: playwright-results
           path: www/test-results/
           retention-days: 7
+
+  notify:
+    name: notify
+    needs: [python, www, e2e]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: "Notify #crash-bot-ci on failure"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CI_CHANNEL_ID: ${{ vars.SLACK_CI_CHANNEL_ID }}
+        run: bash .github/scripts/notify-ci-failure.sh

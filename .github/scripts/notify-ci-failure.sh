@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
-# Post a CI-failure summary to Slack channel `$SLACK_CI_CHANNEL_ID`.
+# Post a workflow-failure summary to Slack channel `$SLACK_CI_CHANNEL_ID`.
 #
-# Wired into `.github/workflows/daily.yml` as the final step under
-# `if: failure()`. Pure-bash so it still runs even when the failure is in
-# Python / dependency-install steps before `.venv/bin` is on PATH.
+# Wired into `.github/workflows/{daily,ci}.yml` as a final `if: failure()`
+# step (daily) / job (ci). Pure-bash so it still runs even when the failure
+# is in Python / dependency-install steps before `.venv/bin` is on PATH.
 #
-# Required env (set by the GHA shell automatically unless noted):
-#   GITHUB_RUN_ID        — for `gh run view` lookup of the failed step
+# Required env (set by GHA automatically unless noted):
+#   GITHUB_WORKFLOW      — name of the failing workflow
+#   GITHUB_RUN_ID        — for `gh run view` lookup of the failed step(s)
 #   GITHUB_SHA           — commit SHA
 #   GITHUB_REF_NAME      — branch
 #   GITHUB_SERVER_URL    — e.g. https://github.com
 #   GITHUB_REPOSITORY    — owner/repo
 #   GH_TOKEN             — must be passed in step env (gh CLI auth)
-#   EVENT_NAME           — caller-set; the workflow's event (schedule / workflow_dispatch / …)
+#   EVENT_NAME           — caller-set; the workflow's event (schedule / push / workflow_dispatch / …)
 #   SLACK_BOT_TOKEN, SLACK_CI_CHANNEL_ID
 #                        — Slack post target; if either is unset the script
 #                          prints the would-be message and exits 0 so the
@@ -26,14 +27,19 @@ set -euo pipefail
 
 run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
-failed_step=$(gh run view "${GITHUB_RUN_ID}" --json jobs \
-    --jq '.jobs[].steps[] | select(.conclusion == "failure") | .name' \
-    | head -1)
-failed_step="${failed_step:-unknown step}"
+# Per failed job, take its first failed step. Joins all into one comma-
+# separated string — usually one entry; ci.yml has 3 parallel jobs so
+# more than one can fail in the same run. The notify-job itself is
+# excluded so it doesn't report itself.
+failed=$(gh run view "${GITHUB_RUN_ID}" --json jobs \
+    --jq '[.jobs[] | select(.conclusion == "failure" and .name != "notify") |
+           "\(.name) → \([.steps[] | select(.conclusion == "failure") | .name] | first // "unknown step")"]
+          | join(", ")')
+failed="${failed:-unknown step}"
 short_sha="${GITHUB_SHA:0:7}"
 commit_subject=$(git log -1 --format=%s "${GITHUB_SHA}" 2>/dev/null || echo '(unavailable)')
 
-text=":x: *Daily pipeline failed* at \`${failed_step}\` (\`${GITHUB_REF_NAME}\` ${short_sha} _${commit_subject}_, event=${EVENT_NAME:-?})"$'\n'"<${run_url}|view run>"
+text=":x: *${GITHUB_WORKFLOW:-workflow} failed* at \`${failed}\` (\`${GITHUB_REF_NAME}\` ${short_sha} _${commit_subject}_, event=${EVENT_NAME:-?})"$'\n'"<${run_url}|view run>"
 
 if [[ -z "${SLACK_CI_CHANNEL_ID:-}" || -z "${SLACK_BOT_TOKEN:-}" ]]; then
     echo "SLACK_CI_CHANNEL_ID or SLACK_BOT_TOKEN unset; would-be message:"
