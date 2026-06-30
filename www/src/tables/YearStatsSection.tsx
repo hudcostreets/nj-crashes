@@ -7,6 +7,7 @@ import { o2a } from "@rdub/base/objs"
 import { useAnnotations } from "@/src/annotations/useAnnotations"
 import type { Annotation } from "@/src/annotations/types"
 import { AnnotationBody, AnnotationTrigger, useAnnotationOpenState } from "@/src/annotations/AnnotationDetails"
+import { useNjdotSection } from "@/src/njdot/NjdotSectionContext"
 import css from "./year-stats.module.scss"
 
 type YearRow = {
@@ -216,9 +217,31 @@ export function YearStatsSection() {
     const { cc, mc } = useGeoFilter()
     const result = useYearStats({ cc, mc })
     const annotations = useAnnotations({ page: 'annual-stats-table', cc, mc })
+    const njdotSection = useNjdotSection()
     if (!result) return <p>Loading annual statistics...</p>
     return fold(
         (err: Error) => <div><p>Error loading statistics: {err.message}</p></div>,
-        (ysds: YearStatsDicts) => <YearStatsTable ysds={ysds} annotations={annotations} />
+        (ysds: YearStatsDicts) => {
+            // Filter to the section year range when active. Recompute the
+            // `totals` row from the kept years so the Total stays consistent
+            // with the displayed rows (the backend totals reflect every year).
+            const filtered = njdotSection?.yearRangeActive
+                ? filterYsdsByYearRange(ysds, njdotSection.yearRange)
+                : ysds
+            return <YearStatsTable ysds={filtered} annotations={annotations} />
+        }
     )(result)
+}
+
+/** Return a new `YearStatsDicts` with only the years in `[lo, hi]` and a
+ *  recomputed `totals` row summed over those kept years. */
+function filterYsdsByYearRange(ysds: YearStatsDicts, range: [number, number]): YearStatsDicts {
+    const [lo, hi] = range
+    const kept: { [y: number]: YearStatsDict } = {}
+    for (const [k, v] of Object.entries(ysds)) {
+        if (k === 'totals') continue
+        const y = Number(k)
+        if (Number.isFinite(y) && y >= lo && y <= hi) kept[y] = v
+    }
+    return { ...kept, totals: sumDicts(Object.values(kept)) }
 }

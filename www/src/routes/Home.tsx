@@ -24,6 +24,8 @@ import { NjspCrashesSection } from "@/src/tables/NjspCrashesSection"
 import { NjdotCrashesSection } from "@/src/tables/NjdotCrashesSection"
 import { NjspSection } from "@/src/njsp/NjspSection"
 import { NjspSectionProvider, useNjspSection } from "@/src/njsp/NjspSectionContext"
+import { NjdotSection } from "@/src/njdot/NjdotSection"
+import { NjdotSectionProvider } from "@/src/njdot/NjdotSectionContext"
 import { VICTIM_LABEL_SINGULAR, VICTIM_TYPES } from "@/src/njsp/victim-types"
 import { LazySection } from "@/src/components/LazySection"
 import { PlotInfo } from "@/src/icons"
@@ -167,6 +169,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                 </NjspSection>
 
                 {/* NJ DOT Section */}
+                <NjdotSectionProvider>
                 <h2 id="njdot"><a href="#njdot">NJ DOT Crash Data</a></h2>
                 {regionLabel
                     ? <div className={css.subtitle}>All reported crashes, 2001–{EndYear}{geo}</div>
@@ -178,21 +181,24 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                         {" "}including property-damage, injury, and fatal crashes, going back to 2001 (≈6MM records, currently through {EndYear}).
                     </p>
                 }
-                <PlotContainer showHr={false}><CrashPlot key={`dot-${cc}-${mc}`} counties={countyFilter} mc={mc} /></PlotContainer>
+                <NjdotSection>
+                    <PlotContainer showHr={false}><CrashPlot key={`dot-${cc}-${mc}`} counties={countyFilter} mc={mc} /></PlotContainer>
 
-                {/* Annual Statistics Table (NJ DOT) */}
-                <h2 id="stats"><a href="#stats">Annual Statistics (NJ DOT)</a></h2>
-                <div className={css.subtitle}>All reported crashes, 2001–{EndYear}{geo}</div>
-                <LazySection placeholder={<p>Loading annual statistics...</p>}>
-                    <YearStatsSection key={`stats-${cc}-${mc}`} />
-                </LazySection>
+                    {/* Annual Statistics Table (NJ DOT) */}
+                    <h2 id="stats"><a href="#stats">Annual Statistics (NJ DOT)</a></h2>
+                    <div className={css.subtitle}>All reported crashes, 2001–{EndYear}{geo}</div>
+                    <LazySection placeholder={<p>Loading annual statistics...</p>}>
+                        <YearStatsSection key={`stats-${cc}-${mc}`} />
+                    </LazySection>
 
-                {/* NJDOT Crash Details Table */}
-                <h2 id="njdot-crashes"><a href="#njdot-crashes">Crash Details (NJ DOT)</a></h2>
-                <div className={css.subtitle}>Injury and fatal crashes, 2001–{EndYear}{geo}</div>
-                <LazySection placeholder={<p>Loading crash data...</p>}>
-                    <NjdotCrashesSection key={`njdot-${cc}-${mc}`} />
-                </LazySection>
+                    {/* NJDOT Crash Details Table */}
+                    <h2 id="njdot-crashes"><a href="#njdot-crashes">Crash Details (NJ DOT)</a></h2>
+                    <div className={css.subtitle}>Injury and fatal crashes, 2001–{EndYear}{geo}</div>
+                    <LazySection placeholder={<p>Loading crash data...</p>}>
+                        <NjdotCrashesSection key={`njdot-${cc}-${mc}`} />
+                    </LazySection>
+                </NjdotSection>
+                </NjdotSectionProvider>
 
                 <Footer />
                 </NjspSectionProvider>
