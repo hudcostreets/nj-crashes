@@ -23,9 +23,7 @@ import { YearStatsSection } from "@/src/tables/YearStatsSection"
 import { NjspCrashesSection } from "@/src/tables/NjspCrashesSection"
 import { NjdotCrashesSection } from "@/src/tables/NjdotCrashesSection"
 import { NjspSection } from "@/src/njsp/NjspSection"
-import { NjspSectionProvider, useNjspSection } from "@/src/njsp/NjspSectionContext"
-import { NjdotSection } from "@/src/njdot/NjdotSection"
-import { NjdotSectionProvider, useNjdotSection } from "@/src/njdot/NjdotSectionContext"
+import { PageFiltersProvider, usePageFilters } from "@/src/PageFiltersContext"
 import { VICTIM_LABEL_SINGULAR, VICTIM_TYPES } from "@/src/njsp/victim-types"
 import { LazySection } from "@/src/components/LazySection"
 import { PlotInfo } from "@/src/icons"
@@ -119,7 +117,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
             />
 
             <main className={css.index}>
-                <NjspSectionProvider>
+                <PageFiltersProvider>
                 <GeoNavBar />
                 <h1 className={css.title}>{headingLabel}</h1>
                 {!regionLabel && (
@@ -169,7 +167,6 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                 </NjspSection>
 
                 {/* NJ DOT Section */}
-                <NjdotSectionProvider>
                 <h2 id="njdot"><a href="#njdot">NJ DOT Crash Data</a></h2>
                 {regionLabel
                     ? <NjdotSubtitle prefix="All reported crashes" geo={geo} />
@@ -181,42 +178,42 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                         {" "}including property-damage, injury, and fatal crashes, going back to 2001 (≈6MM records, currently through {EndYear}).
                     </p>
                 }
-                <NjdotSection>
-                    <PlotContainer showHr={false}><CrashPlot key={`dot-${cc}-${mc}`} counties={countyFilter} mc={mc} /></PlotContainer>
+                <PlotContainer showHr={false}><CrashPlot key={`dot-${cc}-${mc}`} counties={countyFilter} mc={mc} /></PlotContainer>
 
-                    {/* Annual Statistics Table (NJ DOT) */}
-                    <h2 id="stats"><a href="#stats">Annual Statistics (NJ DOT)</a></h2>
-                    <NjdotSubtitle prefix="All reported crashes" geo={geo} />
-                    <LazySection placeholder={<p>Loading annual statistics...</p>}>
-                        <YearStatsSection key={`stats-${cc}-${mc}`} />
-                    </LazySection>
+                {/* Annual Statistics Table (NJ DOT) */}
+                <h2 id="stats"><a href="#stats">Annual Statistics (NJ DOT)</a></h2>
+                <NjdotSubtitle prefix="All reported crashes" geo={geo} />
+                <LazySection placeholder={<p>Loading annual statistics...</p>}>
+                    <YearStatsSection key={`stats-${cc}-${mc}`} />
+                </LazySection>
 
-                    {/* NJDOT Crash Details Table */}
-                    <h2 id="njdot-crashes"><a href="#njdot-crashes">Crash Details (NJ DOT)</a></h2>
-                    <NjdotSubtitle prefix="Injury and fatal crashes" geo={geo} />
-                    <LazySection placeholder={<p>Loading crash data...</p>}>
-                        <NjdotCrashesSection key={`njdot-${cc}-${mc}`} />
-                    </LazySection>
-                </NjdotSection>
-                </NjdotSectionProvider>
+                {/* NJDOT Crash Details Table */}
+                <h2 id="njdot-crashes"><a href="#njdot-crashes">Crash Details (NJ DOT)</a></h2>
+                <NjdotSubtitle prefix="Injury and fatal crashes" geo={geo} />
+                <LazySection placeholder={<p>Loading crash data...</p>}>
+                    <NjdotCrashesSection key={`njdot-${cc}-${mc}`} />
+                </LazySection>
 
                 <Footer />
-                </NjspSectionProvider>
+                </PageFiltersProvider>
             </main>
         </div>
     )
 }
 
 function NjdotSubtitle({ prefix, geo }: { prefix: string, geo: string }) {
-    const section = useNjdotSection()
+    const section = usePageFilters()
+    // NJDOT tables/plots clamp the upper bound to `EndYear` since the DOT
+    // data set ends there. Mirror that here so the subtitle range shown to
+    // the user matches what's actually rendered below it.
     const yearText = section?.yearRangeActive
-        ? `${section.yearRange[0]}–${section.yearRange[1]}`
+        ? `${section.yearRange[0]}–${Math.min(section.yearRange[1], EndYear)}`
         : `2001–${EndYear}`
     return <div className={css.subtitle}>{prefix}, {yearText}{geo}</div>
 }
 
 function NjspFatalsSubtitle({ geo }: { geo: string }) {
-    const section = useNjspSection()
+    const section = usePageFilters()
     const yearText = section?.yearRangeActive
         ? `${section.yearRange[0]}–${section.yearRange[1]}`
         : "2001–present"

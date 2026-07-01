@@ -12,7 +12,7 @@ import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { COLORSCALES, ColorScaleName, getColorAt } from "@/src/lib/colorscales"
 import { ControlsGear } from "@/src/components/ControlsGear"
 import { trailing365Series } from "./trailing365"
-import { useNjspSection } from "./NjspSectionContext"
+import { usePageFilters } from "@/src/PageFiltersContext"
 import { VICTIM_TYPES, VICTIM_LABEL_SINGULAR, type VictimType } from "./victim-types"
 import css from "./plot.module.scss"
 
@@ -143,9 +143,9 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     // type columns instead of the precomputed totals; trailing-365 mode
     // applies the same filter when it derives its own per-year series
     // internally.
-    const njspSection = useNjspSection()
-    const yearRange = njspSection?.yearRangeActive ? njspSection.yearRange : null
-    const selectedTypes: VictimType[] = njspSection?.selectedTypes ?? VICTIM_TYPES
+    const filters = usePageFilters()
+    const yearRange = filters?.yearRangeActive ? filters.yearRange : null
+    const selectedTypes: VictimType[] = filters?.selectedTypes ?? VICTIM_TYPES
 
     // Load YTD data
     const ytdDb = useRegisteredParquetDb({ db, table: "ytd", url: YtdParquet })
@@ -575,7 +575,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
         <div>
             <h2 id={id}><a href={`#${id}`}>YTD Deaths</a></h2>
             <div className={css.subtitle}>{(() => {
-                const typesActive = njspSection?.typesActive
+                const typesActive = filters?.typesActive
                 const typeText = typesActive
                     ? VICTIM_TYPES.filter(t => selectedTypes.includes(t)).map(t => VICTIM_LABEL_SINGULAR[t]).join("/") + " fatalities"
                     : "Fatalities"

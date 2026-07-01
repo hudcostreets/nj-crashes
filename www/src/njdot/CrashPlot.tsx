@@ -31,7 +31,7 @@ import css from "./controls.module.css"
 import { useAnnotations } from "@/src/annotations/useAnnotations"
 import { toPlotLayers, yearInAnyRange } from "@/src/annotations/plot"
 import { AnnotationTrigger, AnnotationBody, useAnnotationOpenState } from "@/src/annotations/AnnotationDetails"
-import { useNjdotSection } from "@/src/njdot/NjdotSectionContext"
+import { usePageFilters } from "@/src/PageFiltersContext"
 
 // Local alias: place facet tooltips ABOVE the control so the popup
 // doesn't occlude radios/checklist options below it. The controls live
@@ -107,14 +107,17 @@ export default function CrashPlot({
     const plotColors = usePlotColors()
 
     const { cc2mc2mn } = useGeoFilter()
-    // Section-scoped year-range narrowing (`NjdotSection`). When at the full
-    // span default, `yearRange` is null so we take the whole 2001..EndYear
-    // window (same as pre-section behavior). Otherwise we clamp both the
-    // row filter and the x-axis range to `[lo, hi]`.
-    const njdotSection = useNjdotSection()
-    const yearRange = njdotSection?.yearRangeActive ? njdotSection.yearRange : null
-    const yearLo = yearRange?.[0] ?? StartYear
-    const yearHi = yearRange?.[1] ?? EndYear
+    // Page-level year-range filter (`PageFiltersContext`). When the range
+    // is at its default we take the whole `[StartYear, EndYear]` window
+    // (same as pre-filter behavior). When narrowed we clamp both the row
+    // filter and the x-axis range to `[lo, hi]`; the upper bound is
+    // additionally clamped to `EndYear` so setting the shared range to
+    // e.g. `2020..curYear` doesn't leave an empty column for years past
+    // NJDOT's last-published year.
+    const filters = usePageFilters()
+    const yearRange = filters?.yearRangeActive ? filters.yearRange : null
+    const yearLo = Math.max(yearRange?.[0] ?? StartYear, StartYear)
+    const yearHi = Math.min(yearRange?.[1] ?? EndYear, EndYear)
     const hasMuniFilter = mc !== null
     const isSingleCounty = counties.length === 1
     const annotationCc = isSingleCounty ? counties[0] : null

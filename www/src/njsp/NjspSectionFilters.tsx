@@ -1,14 +1,15 @@
 import { useTheme } from "@/src/contexts/ThemeContext"
 import { StartYear, curYear } from "@/src/constants"
 import { YearSelect } from "@/src/lib/year-select"
-import { useNjspSection, NJSP_YEAR_RANGE_DEFAULT, NJSP_TYPES_DEFAULT } from "./NjspSectionContext"
+import { usePageFilters, YEAR_RANGE_DEFAULT, NJSP_TYPES_DEFAULT } from "@/src/PageFiltersContext"
 import { VictimTypeDropdown } from "./victim-types"
 
-/** Compact filter bar for the NJSP section: year-range pair + victim-type
- *  multi-select. Both cascade to plots and (year only) the table below. */
+/** Compact page-level filter bar: year-range pair (cascades to every NJSP
+ *  and NJDOT plot + table on the page) + NJSP victim-type multi-select
+ *  (cascades to NJSP plots + the Recent-Fatal-Crashes table only). */
 export function NjspSectionFilters() {
     const { actualTheme } = useTheme()
-    const section = useNjspSection()
+    const section = usePageFilters()
     if (!section) return null
     const { yearRange, setYearRange, yearRangeActive, selectedTypes, setSelectedTypes, typesActive } = section
     const anyActive = yearRangeActive || typesActive
@@ -41,7 +42,7 @@ export function NjspSectionFilters() {
                 <button
                     type="button"
                     onClick={() => {
-                        if (yearRangeActive) setYearRange(NJSP_YEAR_RANGE_DEFAULT)
+                        if (yearRangeActive) setYearRange(YEAR_RANGE_DEFAULT)
                         if (typesActive) setSelectedTypes(NJSP_TYPES_DEFAULT)
                     }}
                     style={{

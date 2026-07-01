@@ -17,7 +17,7 @@ import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { useUrlState, boolParam } from "use-prms"
 import { getPopulation, usePopulation } from "@/src/census/usePopulation"
-import { useNjspSection } from "./NjspSectionContext"
+import { usePageFilters } from "@/src/PageFiltersContext"
 import { VICTIM_TYPES } from "./victim-types"
 import css from "./plot.module.scss"
 
@@ -295,9 +295,9 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     // Section-scoped filters (NjspSection): year-range narrowing (`yearRange`
     // is null when default/wide) + victim-type subset (`visibleTypes` is the
     // subset of `Types` the user has selected — defaults to all 4).
-    const njspSection = useNjspSection()
-    const yearRange = njspSection?.yearRangeActive ? njspSection.yearRange : null
-    const selectedTypeKeys = njspSection?.selectedTypes ?? VICTIM_TYPES
+    const filters = usePageFilters()
+    const yearRange = filters?.yearRangeActive ? filters.yearRange : null
+    const selectedTypeKeys = filters?.selectedTypes ?? VICTIM_TYPES
     const enabledTypes = useMemo<Type[]>(
         () => Types.filter(t => selectedTypeKeys.includes(typesMap[t])),
         [selectedTypeKeys],

@@ -10,7 +10,7 @@ import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { COLORSCALES, ColorScaleName, getColorAt } from "@/src/lib/colorscales"
 import { ControlsGear } from "@/src/components/ControlsGear"
-import { useNjspSection } from "./NjspSectionContext"
+import { usePageFilters } from "@/src/PageFiltersContext"
 import { VICTIM_TYPES, type VictimType } from "./victim-types"
 import css from "./plot.module.scss"
 
@@ -74,9 +74,9 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
 
     // Section-scoped filters (NjspSection): year-range + victim-type subset.
     // The victim-type subset drives which `row[t]` values get summed below.
-    const njspSection = useNjspSection()
-    const yearRange = njspSection?.yearRangeActive ? njspSection.yearRange : null
-    const selectedTypes = njspSection?.selectedTypes ?? VICTIM_TYPES
+    const filters = usePageFilters()
+    const yearRange = filters?.yearRangeActive ? filters.yearRange : null
+    const selectedTypes = filters?.selectedTypes ?? VICTIM_TYPES
     const monthlyRows = useMemo(
         () => yearRange ? monthlyRowsAll.filter(r => r.year >= yearRange[0] && r.year <= yearRange[1]) : monthlyRowsAll,
         [monthlyRowsAll, yearRange],

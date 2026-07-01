@@ -81,9 +81,9 @@ export function GeoNavBar() {
                     </div>
                 </>}
             </div>
-            {/* NJSP-section filters (year-range + victim-type). Returns null when
-             *  not inside an `NjspSectionProvider` (e.g. routes that don't
-             *  render NJSP plots) so this stays a no-op there. */}
+            {/* Page-level filters (year-range + victim-type). Returns null when
+             *  not inside a `PageFiltersProvider` (e.g. routes that don't
+             *  render the crash plots) so this stays a no-op there. */}
             <NjspSectionFilters />
         </nav>
     )

@@ -4,12 +4,12 @@ import { usePaginationControls, Pagination } from "@/src/pagination"
 import { useNjspCrashRows, useNjspCrashesTotal, Total } from "@/src/use-njsp-crashes"
 import { ResultTable } from "@/src/result-table"
 import { fold } from "fp-ts/Either"
-import { useNjspSection } from "@/src/njsp/NjspSectionContext"
+import { usePageFilters } from "@/src/PageFiltersContext"
 import { encodeVictimTypes } from "@/src/njsp/victim-types"
 
 export function NjspCrashesSection({ perPage: perPageProp, hidePagination }: { perPage?: number; hidePagination?: boolean } = {}) {
     const { cc, mc, cc2mc2mn } = useGeoFilter()
-    const section = useNjspSection()
+    const section = usePageFilters()
     const yearFrom = section?.yearRangeActive ? section.yearRange[0] : null
     const yearTo = section?.yearRangeActive ? section.yearRange[1] : null
     const types = section?.typesActive ? encodeVictimTypes(section.selectedTypes) : null

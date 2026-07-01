@@ -12,7 +12,7 @@ import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { useAnnotations } from "@/src/annotations/useAnnotations"
 import { toPlotLayers } from "@/src/annotations/plot"
 import { AnnotationTrigger, AnnotationBody, useAnnotationOpenState } from "@/src/annotations/AnnotationDetails"
-import { useNjspSection } from "./NjspSectionContext"
+import { usePageFilters } from "@/src/PageFiltersContext"
 import css from "./plot.module.scss"
 
 const HEIGHT = 450
@@ -80,8 +80,8 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
     const rowsAll = useQuery<CrashHomicideRow>({ db: crashHomicideDb, query: crashHomicideQuery, init: [] })
 
     // Section-scoped year-range filter (NjspSection).
-    const njspSection = useNjspSection()
-    const yearRange = njspSection?.yearRangeActive ? njspSection.yearRange : null
+    const filters = usePageFilters()
+    const yearRange = filters?.yearRangeActive ? filters.yearRange : null
     const rows = useMemo(
         () => yearRange ? rowsAll.filter(r => r.year >= yearRange[0] && r.year <= yearRange[1]) : rowsAll,
         [rowsAll, yearRange],
