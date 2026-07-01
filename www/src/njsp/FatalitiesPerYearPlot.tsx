@@ -506,22 +506,31 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                     bordercolor: plotColors.gridColor,
                     font: { color: '#ffffff' },
                 },
-                xaxis: {
+                xaxis: (() => {
                     // Trace `x` is numeric ms-since-epoch (see `dates` map
                     // above). Without an explicit date type, Plotly infers
                     // `linear` and coerces `dtick: "M12"` → 1, producing a
                     // tick at every millisecond (empty visually).
-                    type: "date",
-                    tickfont: { color: plotColors.textColor },
-                    gridcolor: plotColors.gridColor,
-                    automargin: true,
-                    tickangle: -45,
-                    tick0: "2001-01-01",
-                    dtick: "M12",
-                    tickformat: "'%y",
-                    hoverformat: "%b '%y",
-                    fixedrange: true,
-                },
+                    //
+                    // Tick density scales to the year-range span so a 3-year
+                    // filter gets quarterly ticks (12 labels) instead of just
+                    // 3, and a 25-year default view stays at yearly.
+                    const yrs = (yearRange?.[1] ?? curYear) - (yearRange?.[0] ?? 2001) + 1
+                    const dtick = yrs <= 3 ? "M3" : yrs <= 8 ? "M6" : "M12"
+                    const tickformat = yrs <= 8 ? "%b '%y" : "'%y"
+                    return {
+                        type: "date",
+                        tickfont: { color: plotColors.textColor },
+                        gridcolor: plotColors.gridColor,
+                        automargin: true,
+                        tickangle: -45,
+                        tick0: "2001-01-01",
+                        dtick,
+                        tickformat,
+                        hoverformat: "%b '%y",
+                        fixedrange: true,
+                    }
+                })(),
                 yaxis: {
                     automargin: true,
                     tickfont: { color: plotColors.textColor },
