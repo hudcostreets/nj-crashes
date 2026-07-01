@@ -252,16 +252,15 @@ export default function CrashPlot({
     // level) is applied at the row-filter stage (above), not here.
     const getVal = (row: AnyRow): number => {
         if (measure === 'crashes') {
-            if (filters?.typesActive) {
-                // Sum `n_X` over selected types. Multi-type selections
-                // overcount crashes involving >1 type (proposal B). Most
-                // filter selections are single-type so this is rarely an
-                // issue in practice.
-                let total = 0
-                for (const vt of effectiveVictimTypes) total += getCol(row, `n_${vt}`)
-                return total
-            }
-            return getCol(row, 'n')
+            // When all 4 victim types are selected (whether via the local
+            // checklist or the top-nav filter), use the total `n` — no
+            // sense summing 4 per-flag counts that each triple-count
+            // multi-type crashes. Otherwise sum `n_X` over the selected
+            // types (proposal B: unions overcount, single-type is exact).
+            if (effectiveVictimTypes.length === VictimTypes.length) return getCol(row, 'n')
+            let total = 0
+            for (const vt of effectiveVictimTypes) total += getCol(row, `n_${vt}`)
+            return total
         }
         if (measure === 'vehicles') {
             let total = 0
@@ -1016,13 +1015,16 @@ export default function CrashPlot({
                             cb={setConditions}
                         />
                     )}
-                    {measure === 'people' && (() => {
+                    {(measure === 'people' || measure === 'crashes') && (() => {
                         const locked = !!filters?.typesActive
+                        const helpText = measure === 'crashes'
+                            ? "Include only crashes involving a person of the selected type(s). Multi-type selections union; a crash matching both driver + pedestrian counts once toward each."
+                            : "Who was involved. Filters the victim-type × condition matrix."
                         const checklist = (<Checklist
                             label={
                                 <Tooltip title={locked
                                     ? "Locked by the page-level victim-type filter (top nav). Clear it there to edit these checkboxes directly."
-                                    : "Who was involved. Filters the victim-type × condition matrix."}>
+                                    : helpText}>
                                     <span>Victim Type{locked ? ' 🔒' : ''}</span>
                                 </Tooltip>
                             }

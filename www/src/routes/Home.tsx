@@ -166,30 +166,29 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                     <PlotContainer><FatalitiesByMonthBarsPlot key={`fbm-${cc}-${mc}`} county={countyName} cc={cc} mc={mc} regionLabel={regionLabel} /></PlotContainer>
                 </NjspSection>
 
-                {/* NJ DOT Section */}
-                <h2 id="njdot"><a href="#njdot">NJ DOT Crash Data</a></h2>
+                {/* All reported crashes (NJDOT-sourced) */}
+                <h2 id="njdot"><a href="#njdot">Reported Crashes</a></h2>
                 {regionLabel
-                    ? <NjdotSubtitle prefix="All reported crashes" geo={geo} />
+                    ? <NjdotSubtitle prefix="All crashes reported to police" geo={geo} />
                     : <p>
-                        NJ DOT{" "}
-                        <A title="NJ DOT raw crash data" href={NjdotRawData}>
-                            publishes raw crash data
-                        </A>
-                        {" "}including property-damage, injury, and fatal crashes, going back to 2001 (≈6MM records, currently through {EndYear}).
+                        Every crash reported to police in NJ — <b>fatal</b>, <b>injury</b>, or <b>other</b> (property damage).
+                        {" "}~7 million records back to 2001 (through {EndYear}).
+                        {" "}Filter by year and victim type from the top nav, or narrow the view below.
+                        {" "}Source: <A title="NJ DOT raw crash data" href={NjdotRawData}>NJ DOT</A>.
                     </p>
                 }
                 <PlotContainer showHr={false}><CrashPlot key={`dot-${cc}-${mc}`} counties={countyFilter} mc={mc} /></PlotContainer>
 
-                {/* Annual Statistics Table (NJ DOT) */}
-                <h2 id="stats"><a href="#stats">Annual Statistics (NJ DOT)</a></h2>
-                <NjdotSubtitle prefix="All reported crashes" geo={geo} />
+                {/* Annual Statistics */}
+                <h2 id="stats"><a href="#stats">Annual Statistics</a></h2>
+                <NjdotSubtitle prefix="All crashes reported to police" geo={geo} />
                 <LazySection placeholder={<p>Loading annual statistics...</p>}>
                     <YearStatsSection key={`stats-${cc}-${mc}`} />
                 </LazySection>
 
-                {/* NJDOT Crash Details Table */}
-                <h2 id="njdot-crashes"><a href="#njdot-crashes">Crash Details (NJ DOT)</a></h2>
-                <NjdotSubtitle prefix="Injury and fatal crashes" geo={geo} />
+                {/* Crash Details */}
+                <h2 id="njdot-crashes"><a href="#njdot-crashes">Crash Details</a></h2>
+                <NjdotSubtitle prefix="Injury and fatal crashes reported to police" geo={geo} />
                 <LazySection placeholder={<p>Loading crash data...</p>}>
                     <NjdotCrashesSection key={`njdot-${cc}-${mc}`} />
                 </LazySection>
