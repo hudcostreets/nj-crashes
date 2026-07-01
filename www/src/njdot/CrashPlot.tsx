@@ -117,9 +117,10 @@ export default function CrashPlot({
     // filter narrows below all four we override the CrashPlot session-
     // storage `victimTypes` state with the NJSP→DOT-mapped subset
     // (d→d, p→o, e→p, c→b; drop 'u' Unknown since it has no NJSP analog).
-    // This only affects Measure=People today — filtering Crashes /
-    // Vehicles by victim type needs new per-crash flag columns (see
-    // specs/dot-crash-victim-type-flags.md).
+    // Applied to Measure=People via the VTC cells; Measure=Crashes uses
+    // per-flag `n_{d,o,p,b}` aggregate counts (union with proposal-B
+    // overcount when >1 type). Measure=Vehicles isn't type-filterable
+    // yet — needs `nv_*` counts. See specs/dot-crash-victim-type-flags.md.
     const filters = usePageFilters()
     const yearRange = filters?.yearRangeActive ? filters.yearRange : null
     const yearLo = Math.max(yearRange?.[0] ?? StartYear, StartYear)
@@ -244,12 +245,24 @@ export default function CrashPlot({
         : damages.length === 0 && departures.length > 0 ? 'departure'
         : 'damage'
 
-    // `crashes` → `n`; `vehicles` → sum of damage-tier (or departure-bucket)
-    // cells filtered by the active selection; `people` → sum of VTC cells
+    // `crashes` → `n` (or sum of `n_{d,o,p,b}` when top-nav type filter is
+    // active); `vehicles` → sum of damage-tier (or departure-bucket) cells
+    // filtered by the active selection; `people` → sum of VTC cells
     // filtered by current Condition/VictimType selections. Severity (crash-
     // level) is applied at the row-filter stage (above), not here.
     const getVal = (row: AnyRow): number => {
-        if (measure === 'crashes') return getCol(row, 'n')
+        if (measure === 'crashes') {
+            if (filters?.typesActive) {
+                // Sum `n_X` over selected types. Multi-type selections
+                // overcount crashes involving >1 type (proposal B). Most
+                // filter selections are single-type so this is rarely an
+                // issue in practice.
+                let total = 0
+                for (const vt of effectiveVictimTypes) total += getCol(row, `n_${vt}`)
+                return total
+            }
+            return getCol(row, 'n')
+        }
         if (measure === 'vehicles') {
             let total = 0
             if (activeVehicleFacet === 'damage') {
