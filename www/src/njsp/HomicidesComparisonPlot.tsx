@@ -3,7 +3,8 @@ import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import type { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredParquetDb } from "@/src/tableData"
-import { CrashHomicideParquet } from "@/src/paths"
+import { CrashHomicideParquet, YtcParquet } from "@/src/paths"
+import { VICTIM_LABEL_SINGULAR, VICTIM_TYPES, type VictimType } from "./victim-types"
 import { useAlignedDualAxes, LegendRow, LegendItem, useLegendPin } from "pltly/react"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo, DataSource } from "@/src/icons"
@@ -51,12 +52,36 @@ type CrashHomicideRow = {
     ratio: number | null
 }
 
+// Per-year, per-victim-type NJSP fatal counts. Used to override the
+// pre-aggregated `traffic_deaths` column from `crash_homicide.parquet`
+// when the page-level victim-type filter is active.
+type YtcRow = {
+    year: number
+    driver: number
+    passenger: number
+    pedestrian: number
+    cyclist: number
+}
+
 // Query to get crash-homicide data (filtered by county and source)
 const crashHomicideQueryFn = (county: string | null, source: CrashSource) => `
     SELECT year, traffic_deaths, homicides, ratio
     FROM read_parquet('crash_homicide')
     WHERE source = '${source}'
       AND (${county ? `county = '${county}'` : `county IS NULL OR county = ''`})
+    ORDER BY year
+`
+
+const ytcTypeQueryFn = (county: string | null) => `
+    SELECT
+        year,
+        CAST(sum(driver) as INT) as driver,
+        CAST(sum(passenger) as INT) as passenger,
+        CAST(sum(pedestrian) as INT) as pedestrian,
+        CAST(sum(cyclist) as INT) as cyclist
+    FROM read_parquet('ytc')
+    ${county ? `WHERE county = '${county}'` : ``}
+    GROUP BY year
     ORDER BY year
 `
 
@@ -69,18 +94,51 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
     const annOpen = useAnnotationOpenState()
 
     const [avgYears, setAvgYears] = useSessionStorage<number>('homicides-avg-years', 5)
+    // Page-level victim-type filter (NJSP-only — NJDOT doesn't share our
+    // categorization). When the user narrows via `nst`, force the crash
+    // source to NJSP so the plot compares filtered NJSP fatalities vs.
+    // homicides.
+    const filters = usePageFilters()
+    const selectedTypes: VictimType[] = filters?.selectedTypes ?? VICTIM_TYPES
+    const typesActive = !!filters?.typesActive
     // Only show source toggle for statewide (county data is NJSP-only)
     const [crashSource] = useSessionStorage<CrashSource>('homicides-crash-source', 'njsp')
-    // Force NJSP for county views
-    const effectiveSource = county ? 'njsp' as CrashSource : crashSource
+    // Force NJSP for county views AND when a type filter is active.
+    const effectiveSource: CrashSource = (county || typesActive) ? 'njsp' : crashSource
 
     // Load crash-homicide data
     const crashHomicideDb = useRegisteredParquetDb({ db, table: "crash_homicide", url: CrashHomicideParquet })
     const crashHomicideQuery = useMemo(() => crashHomicideQueryFn(county ?? null, effectiveSource), [county, effectiveSource])
-    const rowsAll = useQuery<CrashHomicideRow>({ db: crashHomicideDb, query: crashHomicideQuery, init: [] })
+    const rowsRaw = useQuery<CrashHomicideRow>({ db: crashHomicideDb, query: crashHomicideQuery, init: [] })
 
-    // Section-scoped year-range filter (NjspSection).
-    const filters = usePageFilters()
+    // Per-victim-type NJSP counts — used to derive filtered `traffic_deaths`
+    // when the type filter is active. Loaded unconditionally so toggling
+    // the filter doesn't trigger a fetch.
+    const ytcDb = useRegisteredParquetDb({ db, table: "ytc", url: YtcParquet })
+    const ytcQuery = useMemo(() => ytcTypeQueryFn(county ?? null), [county])
+    const ytcRows = useQuery<YtcRow>({ db: ytcDb, query: ytcQuery, init: [] })
+
+    // Override `traffic_deaths` with the sum of selected type columns when
+    // the type filter narrows below all four. Homicides + ratio are
+    // recomputed against the filtered traffic total. Years where the type
+    // breakdown is missing (e.g. pre-2020 statewide) come through as 0 —
+    // acceptable, mirrors what the NJSP plot above shows for the same
+    // year+filter combo.
+    const rowsAll = useMemo<CrashHomicideRow[]>(() => {
+        if (!typesActive) return rowsRaw
+        const ytcByYear = new Map(ytcRows.map(r => [r.year, r]))
+        return rowsRaw.map(r => {
+            const y = ytcByYear.get(r.year)
+            let filtered = 0
+            if (y) {
+                for (const t of selectedTypes) filtered += (y as unknown as Record<VictimType, number>)[t] ?? 0
+            }
+            const ratio = r.homicides > 0 ? filtered / r.homicides : null
+            return { year: r.year, traffic_deaths: filtered, homicides: r.homicides, ratio }
+        })
+    }, [rowsRaw, ytcRows, typesActive, selectedTypes])
+
+    // Section-scoped year-range filter (PageFilters).
     const yearRange = filters?.yearRangeActive ? filters.yearRange : null
     const rows = useMemo(
         () => yearRange ? rowsAll.filter(r => r.year >= yearRange[0] && r.year <= yearRange[1]) : rowsAll,
@@ -255,11 +313,23 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
     const minYear = rows.length ? rows[0].year : 2001
     const maxYear = rows.length ? rows[rows.length - 1].year : 2024
     const sourceLabel = effectiveSource === 'njsp' ? 'NJSP' : 'NJ DOT'
+    // Pluralized victim-type phrase for the caption: "pedestrian",
+    // "pedestrian/cyclist", "pedestrian, driver/cyclist", etc. Preserve
+    // canonical order (driver, passenger, pedestrian, cyclist).
+    const typeLabels = VICTIM_TYPES.filter(t => selectedTypes.includes(t)).map(t => VICTIM_LABEL_SINGULAR[t])
+    const typePhrase = typesActive ? typeLabels.join("/") : null
+    // Plural noun (`pedestrians`) for use as the direct object of
+    // "crashes killed X ___". When multiple types are selected, we bail
+    // back to the generic "people" phrasing rather than stitch together
+    // an awkward "pedestrians/cyclists" phrase.
+    const filteredNoun = typesActive && typeLabels.length === 1 ? `${typeLabels[0]}s` : 'people'
 
     return (
         <div ref={containerRef}>
             <h2 id={id}><a href={`#${id}`}>Car Crash Deaths vs. Homicides</a></h2>
-            <div className={css.subtitle}>{sourceLabel} fatalities, {minYear}–{maxYear}{county ? ` · ${county} County` : ''}</div>
+            <div className={css.subtitle}>
+                {sourceLabel} {typePhrase ? `${typePhrase} ` : ''}fatalities, {minYear}–{maxYear}{county ? ` · ${county} County` : ''}
+            </div>
             <PlotWrapper
                 key={rows.length}
                 id={id}
@@ -298,10 +368,16 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
                     </select>
                     {' '}years
                     {(() => {
+                        // With a type filter active most ratios fall below 1
+                        // (e.g. pedestrian deaths vs. all homicides), so we
+                        // switch the sub-1x phrasing from "N% fewer" to
+                        // "N% as many" — the latter reads more naturally
+                        // when the filtered noun differs from the compare
+                        // set. Bold segment / trailing segment.
                         const fmtRatio = (r: number): [string, string] => {
-                            if (r >= 1.8) return [`${r.toFixed(1)}x as many`, 'people as']
-                            if (r >= 1) return [`${Math.round((r - 1) * 100)}% more`, 'people than']
-                            return [`${Math.round((1 - r) * 100)}% fewer`, 'people than']
+                            if (r >= 1.8) return [`${r.toFixed(1)}x as many`, `${filteredNoun} as`]
+                            if (r >= 1) return [`${Math.round((r - 1) * 100)}% more`, `${filteredNoun} than`]
+                            return [`${Math.round(r * 100)}% as many`, `${filteredNoun} as`]
                         }
                         const [avgBold, avgRest] = fmtRatio(avgRatio)
                         const [hlBold, hlRest] = fmtRatio(highlightRow.ratio)
