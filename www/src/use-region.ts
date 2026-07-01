@@ -1,4 +1,4 @@
-import { CC2MC2MN, County, denormalize, MC2MN, normalize } from "@/src/county";
+import { CC2MC2MN, County, denormalize, MC2MN, muniKey, normalize } from "@/src/county";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { keys, mapEntries } from "@rdub/base/objs";
 import { Arr } from "@rdub/base/arr";
@@ -48,8 +48,8 @@ export default function useRegion({ cc2mc2mn, urlPrefix, ...props }: {
                     setMc(null)
                 } else {
                     const { mc2mn } = cc2mc2mn[newCc]
-                    const mn2mc = mapEntries(mc2mn, (mc, mn) => [ mn, mc ])
-                    const newMc = mn2mc[mnPart]
+                    const mn2mc = mapEntries(mc2mn, (mc, mn) => [ muniKey(mn), mc ])
+                    const newMc = mn2mc[muniKey(mnPart)]
                     console.log(`setting mc ${newMc}`)
                     setMc(newMc)
                 }
