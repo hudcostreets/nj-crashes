@@ -48,10 +48,19 @@ DAMAGE_MAP = {1: 'vdn', 2: 'vdm', 3: 'vdo', 4: 'vdx'}
 VEP_COLS = ['vepd', 'vepl', 'vept', 'vepu']
 DEPARTURE_MAP = {1: 'vepd', 2: 'vepl', 3: 'vept', 4: 'vept', 5: 'vept', 6: 'vept'}
 
+# Per-crash victim-type flag columns (0/1 booleans). `has_X=1` iff the
+# crash has ≥1 victim of type X in any condition. Summed at aggregate
+# time to yield `n_{d,o,p,b}` bucket counts — see `aggregate()` rename.
+# `u` (unknown) intentionally omitted; the site-wide type filter uses
+# NJSP's 4-type vocabulary.
+HAS_COLS = ['has_d', 'has_o', 'has_p', 'has_b']
+HAS_TO_N = {c: f'n_{c.split("_")[1]}' for c in HAS_COLS}
+
 # Measure columns (aggregations)
 # Include victim type × condition matrix (25 columns) + per-vehicle damage
-# tiers (5) + departure buckets (4) for frontend filtering/stacking.
-MEASURES = ['n', 'tk', 'ti', 'pk', 'pi', 'tv'] + VTC_COLS + VD_COLS + VEP_COLS
+# tiers (5) + departure buckets (4) for frontend filtering/stacking, and
+# per-crash victim-type flags (4) that get summed into `n_*` counts.
+MEASURES = ['n', 'tk', 'ti', 'pk', 'pi', 'tv'] + VTC_COLS + VD_COLS + VEP_COLS + HAS_COLS
 
 
 def _pos_to_vt(pos):
@@ -216,6 +225,12 @@ def load_crashes(path: Path, enrich_legacy_vtc: bool = False, enrich_legacy_vehi
     missing_vep = (vep_sum == 0) & (df['tv'] > 0)
     df.loc[missing_vd, 'vdu'] = df.loc[missing_vd, 'tv'].astype('int32')
     df.loc[missing_vep, 'vepu'] = df.loc[missing_vep, 'tv'].astype('int32')
+
+    # Derive per-crash victim-type flags from the VTC matrix. Summed at
+    # aggregate time into `n_{d,o,p,b}` bucket counts (see `aggregate()`).
+    for vt in ('d', 'o', 'p', 'b'):
+        vt_cells = [f'{vt}{c}' for c in CONDITIONS]
+        df[f'has_{vt}'] = (df[vt_cells].sum(axis=1) > 0).astype('int8')
     return df
 
 
@@ -228,6 +243,9 @@ def aggregate(df: pd.DataFrame, dims: list[str]) -> pd.DataFrame:
     agg_df = df.groupby(group_cols, as_index=False)[MEASURES].sum()
     # Rename columns to short names
     rename = {v: k for k, v in DIMS.items() if v in group_cols}
+    # Also rename `has_*` (crash-level 0/1) to `n_*` (bucket count) after
+    # the groupby sum has produced the counts.
+    rename.update(HAS_TO_N)
     agg_df = agg_df.rename(columns=rename)
     # Drop VTC columns that are all zero (not present in source data)
     for c in VTC_COLS:
