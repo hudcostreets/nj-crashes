@@ -31,6 +31,7 @@ import css from "./controls.module.css"
 import { useAnnotations } from "@/src/annotations/useAnnotations"
 import { toPlotLayers, yearInAnyRange } from "@/src/annotations/plot"
 import { AnnotationTrigger, AnnotationBody, useAnnotationOpenState } from "@/src/annotations/AnnotationDetails"
+import { useNjdotSection } from "@/src/njdot/NjdotSectionContext"
 
 // Local alias: place facet tooltips ABOVE the control so the popup
 // doesn't occlude radios/checklist options below it. The controls live
@@ -106,6 +107,14 @@ export default function CrashPlot({
     const plotColors = usePlotColors()
 
     const { cc2mc2mn } = useGeoFilter()
+    // Section-scoped year-range narrowing (`NjdotSection`). When at the full
+    // span default, `yearRange` is null so we take the whole 2001..EndYear
+    // window (same as pre-section behavior). Otherwise we clamp both the
+    // row filter and the x-axis range to `[lo, hi]`.
+    const njdotSection = useNjdotSection()
+    const yearRange = njdotSection?.yearRangeActive ? njdotSection.yearRange : null
+    const yearLo = yearRange?.[0] ?? StartYear
+    const yearHi = yearRange?.[1] ?? EndYear
     const hasMuniFilter = mc !== null
     const isSingleCounty = counties.length === 1
     const annotationCc = isSingleCounty ? counties[0] : null
@@ -281,22 +290,26 @@ export default function CrashPlot({
 
         // Filter data by valid years, severity, county, and municipality
         let filtered: typeof data
+        const inYearRange = (row: AnyRow): boolean => {
+            const y = getYear(row)
+            return y >= yearLo && y <= yearHi
+        }
         if (hasMuniFilter) {
             // Per-county ymccmcs data: already filtered to one county, just filter mc + severity
             filtered = data.filter(row => {
-                if (getYear(row) > EndYear) return false
+                if (!inYearRange(row)) return false
                 const r = row as YmccmcsRow
                 return getMc(r) === mc && severities.includes(r.s)
             })
         } else if (effectiveStackBy === 'municipality') {
             // Muni stacking at county level: ymccmcs data, filter severity + selected munis
             filtered = data.filter(row => {
-                if (getYear(row) > EndYear) return false
+                if (!inYearRange(row)) return false
                 if (!('s' in row) || !severities.includes((row as YmccmcsRow).s)) return false
                 return selectedMunis.length === 0 || selectedMunis.includes(getMc(row as YmccmcsRow))
             })
         } else {
-            filtered = data.filter(row => 's' in row && severities.includes((row as YmsRow).s) && getYear(row) <= EndYear)
+            filtered = data.filter(row => 's' in row && severities.includes((row as YmsRow).s) && inYearRange(row))
             // Only filter by county when NOT stacking by county
             const filterByCounty = counties.length < ALL_COUNTIES.length && effectiveStackBy !== 'county'
             if (filterByCounty && data.length > 0 && 'cc' in data[0]) {
@@ -749,11 +762,11 @@ export default function CrashPlot({
                 // (including empty ones) so tick density is consistent across geos.
                 ...(timeGranularity === 'year' ? (() => {
                     const years = Array.from(
-                        { length: EndYear - StartYear + 1 },
-                        (_, i) => StartYear + i,
+                        { length: yearHi - yearLo + 1 },
+                        (_, i) => yearLo + i,
                     )
                     return {
-                        range: [StartYear - 0.5, EndYear + 0.5],
+                        range: [yearLo - 0.5, yearHi + 0.5],
                         tickvals: years,
                         ticktext: years.map(y => `'${String(y).slice(2)}`),
                     }
@@ -793,7 +806,7 @@ export default function CrashPlot({
         }
 
         return { traces, layout, computeMs: performance.now() - t0 }
-    }, [data, effectiveStackBy, severities, conditions, victimTypes, damages, departures, activeVehicleFacet, measure, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors, isDark, cc2mc2mn, plotAnnotations])
+    }, [data, effectiveStackBy, severities, conditions, victimTypes, damages, departures, activeVehicleFacet, measure, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors, isDark, cc2mc2mn, plotAnnotations, yearLo, yearHi])
 
     // Check if we're waiting for county data (need ymccs but have yms)
     const waitingForCountyData = needsCountyData && data && data.length > 0 && !('cc' in data[0])

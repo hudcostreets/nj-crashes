@@ -25,7 +25,7 @@ import { NjdotCrashesSection } from "@/src/tables/NjdotCrashesSection"
 import { NjspSection } from "@/src/njsp/NjspSection"
 import { NjspSectionProvider, useNjspSection } from "@/src/njsp/NjspSectionContext"
 import { NjdotSection } from "@/src/njdot/NjdotSection"
-import { NjdotSectionProvider } from "@/src/njdot/NjdotSectionContext"
+import { NjdotSectionProvider, useNjdotSection } from "@/src/njdot/NjdotSectionContext"
 import { VICTIM_LABEL_SINGULAR, VICTIM_TYPES } from "@/src/njsp/victim-types"
 import { LazySection } from "@/src/components/LazySection"
 import { PlotInfo } from "@/src/icons"
@@ -172,7 +172,7 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                 <NjdotSectionProvider>
                 <h2 id="njdot"><a href="#njdot">NJ DOT Crash Data</a></h2>
                 {regionLabel
-                    ? <div className={css.subtitle}>All reported crashes, 2001–{EndYear}{geo}</div>
+                    ? <NjdotSubtitle prefix="All reported crashes" geo={geo} />
                     : <p>
                         NJ DOT{" "}
                         <A title="NJ DOT raw crash data" href={NjdotRawData}>
@@ -186,14 +186,14 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
 
                     {/* Annual Statistics Table (NJ DOT) */}
                     <h2 id="stats"><a href="#stats">Annual Statistics (NJ DOT)</a></h2>
-                    <div className={css.subtitle}>All reported crashes, 2001–{EndYear}{geo}</div>
+                    <NjdotSubtitle prefix="All reported crashes" geo={geo} />
                     <LazySection placeholder={<p>Loading annual statistics...</p>}>
                         <YearStatsSection key={`stats-${cc}-${mc}`} />
                     </LazySection>
 
                     {/* NJDOT Crash Details Table */}
                     <h2 id="njdot-crashes"><a href="#njdot-crashes">Crash Details (NJ DOT)</a></h2>
-                    <div className={css.subtitle}>Injury and fatal crashes, 2001–{EndYear}{geo}</div>
+                    <NjdotSubtitle prefix="Injury and fatal crashes" geo={geo} />
                     <LazySection placeholder={<p>Loading crash data...</p>}>
                         <NjdotCrashesSection key={`njdot-${cc}-${mc}`} />
                     </LazySection>
@@ -205,6 +205,14 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
             </main>
         </div>
     )
+}
+
+function NjdotSubtitle({ prefix, geo }: { prefix: string, geo: string }) {
+    const section = useNjdotSection()
+    const yearText = section?.yearRangeActive
+        ? `${section.yearRange[0]}–${section.yearRange[1]}`
+        : `2001–${EndYear}`
+    return <div className={css.subtitle}>{prefix}, {yearText}{geo}</div>
 }
 
 function NjspFatalsSubtitle({ geo }: { geo: string }) {
