@@ -13,22 +13,26 @@ export const YEAR_RANGE_DEFAULT: [number, number] = [StartYear, curYear]
  *  crashes aren't broken down by victim type. */
 export const NJSP_TYPES_DEFAULT: VictimType[] = [...VICTIM_TYPES]
 
-/** `yr` URL param: page-wide year range, `"<a>-<b>"` (e.g. `"2019-2025"`).
- *  Out-of-order pairs are swapped silently; default returns `undefined` so
- *  the key is stripped from the URL entirely (not `?yr=`). */
+/** `y` URL param: page-wide year range, `"<aa>-<bb>"` — 2-digit form
+ *  (e.g. `"19-25"` for 2019-2025). Accepts either 2- or 4-digit input
+ *  and normalizes on encode. Out-of-order pairs are swapped silently;
+ *  default returns `undefined` so the key is stripped from the URL. */
 const yearRangeParam: Param<[number, number]> = {
     encode: ([a, b]) =>
-        a === YEAR_RANGE_DEFAULT[0] && b === YEAR_RANGE_DEFAULT[1] ? undefined : `${a}-${b}`,
+        a === YEAR_RANGE_DEFAULT[0] && b === YEAR_RANGE_DEFAULT[1]
+            ? undefined
+            : `${String(a).slice(2)}-${String(b).slice(2)}`,
     decode: (s) => {
         if (!s) return YEAR_RANGE_DEFAULT
-        const m = s.match(/^(\d{4})-(\d{4})$/)
+        const m = s.match(/^(\d{2}|\d{4})-(\d{2}|\d{4})$/)
         if (!m) return YEAR_RANGE_DEFAULT
-        const a = +m[1], b = +m[2]
+        const parse = (n: string) => n.length === 2 ? 2000 + +n : +n
+        const a = parse(m[1]), b = parse(m[2])
         return a <= b ? [a, b] : [b, a]
     },
 }
 
-/** `nst` URL param: NJSP victim-type filter, as single-char codes
+/** `t` URL param: NJSP victim-type filter, as single-char codes
  *  (`d`/`p`/`e`/`c`). Empty / all-four → `undefined` (key stripped). */
 const njspTypesParam: Param<VictimType[]> = {
     encode: (types) => {
@@ -57,8 +61,8 @@ export type PageFiltersState = {
 const PageFiltersContext = createContext<PageFiltersState | null>(null)
 
 export function PageFiltersProvider({ children }: { children: ReactNode }) {
-    const [yearRange, setYearRange] = useUrlState("yr", yearRangeParam)
-    const [selectedTypes, setSelectedTypes] = useUrlState("nst", njspTypesParam)
+    const [yearRange, setYearRange] = useUrlState("y", yearRangeParam)
+    const [selectedTypes, setSelectedTypes] = useUrlState("t", njspTypesParam)
     const yearRangeActive = useMemo(
         () => yearRange[0] !== YEAR_RANGE_DEFAULT[0]
             || yearRange[1] !== YEAR_RANGE_DEFAULT[1],
