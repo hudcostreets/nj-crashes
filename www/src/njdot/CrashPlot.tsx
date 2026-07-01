@@ -107,17 +107,32 @@ export default function CrashPlot({
     const plotColors = usePlotColors()
 
     const { cc2mc2mn } = useGeoFilter()
-    // Page-level year-range filter (`PageFiltersContext`). When the range
-    // is at its default we take the whole `[StartYear, EndYear]` window
-    // (same as pre-filter behavior). When narrowed we clamp both the row
-    // filter and the x-axis range to `[lo, hi]`; the upper bound is
-    // additionally clamped to `EndYear` so setting the shared range to
+    // Page-level filters (`PageFiltersContext`). Year range: when at its
+    // default we take the whole `[StartYear, EndYear]` window (same as
+    // pre-filter behavior). When narrowed we clamp both the row filter
+    // and the x-axis range to `[lo, hi]`; the upper bound is additionally
+    // clamped to `EndYear` so setting the shared range to
     // e.g. `2020..curYear` doesn't leave an empty column for years past
-    // NJDOT's last-published year.
+    // NJDOT's last-published year. Types: when the NJSP victim-type
+    // filter narrows below all four we override the CrashPlot session-
+    // storage `victimTypes` state with the NJSP→DOT-mapped subset
+    // (d→d, p→o, e→p, c→b; drop 'u' Unknown since it has no NJSP analog).
+    // This only affects Measure=People today — filtering Crashes /
+    // Vehicles by victim type needs new per-crash flag columns (see
+    // specs/dot-crash-victim-type-flags.md).
     const filters = usePageFilters()
     const yearRange = filters?.yearRangeActive ? filters.yearRange : null
     const yearLo = Math.max(yearRange?.[0] ?? StartYear, StartYear)
     const yearHi = Math.min(yearRange?.[1] ?? EndYear, EndYear)
+    // NJSP victim-type name → NJDOT VictimType code. NJSP `passenger`
+    // maps to NJDOT `o` (which is labeled "Passenger" in our UI even
+    // though the underlying persons table is "occupants").
+    const NJSP_TO_DOT_VT: Record<'driver' | 'passenger' | 'pedestrian' | 'cyclist', VictimType> = {
+        driver: 'd', passenger: 'o', pedestrian: 'p', cyclist: 'b',
+    }
+    const effectiveVictimTypes: VictimType[] = filters?.typesActive
+        ? filters.selectedTypes.map(t => NJSP_TO_DOT_VT[t])
+        : victimTypes
     const hasMuniFilter = mc !== null
     const isSingleCounty = counties.length === 1
     const annotationCc = isSingleCounty ? counties[0] : null
@@ -246,7 +261,7 @@ export default function CrashPlot({
         }
         // people: sum vtcCol(vt, c) cells for selected types × conditions
         let total = 0
-        for (const vt of victimTypes) {
+        for (const vt of effectiveVictimTypes) {
             for (const c of conditions) {
                 total += getCol(row, vtcCol(vt, c))
             }
@@ -256,7 +271,7 @@ export default function CrashPlot({
     // For Stack By = Condition: pick only one Condition's cells per trace.
     const getValByCondition = (row: AnyRow, c: Condition): number => {
         let total = 0
-        for (const vt of victimTypes) {
+        for (const vt of effectiveVictimTypes) {
             total += getCol(row, vtcCol(vt, c))
         }
         return total
@@ -547,7 +562,7 @@ export default function CrashPlot({
             // measure='people'; the trace value sums VTC cells across
             // selected Conditions for one Victim Type at a time.
             for (const vt of VictimTypes) {
-                if (!victimTypes.includes(vt)) continue
+                if (!effectiveVictimTypes.includes(vt)) continue
                 const grouped = new Map<string, number>()
                 for (const row of filtered) {
                     const key = timeGranularity === 'month'
@@ -809,7 +824,7 @@ export default function CrashPlot({
         }
 
         return { traces, layout, computeMs: performance.now() - t0 }
-    }, [data, effectiveStackBy, severities, conditions, victimTypes, damages, departures, activeVehicleFacet, measure, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors, isDark, cc2mc2mn, plotAnnotations, yearLo, yearHi])
+    }, [data, effectiveStackBy, severities, conditions, effectiveVictimTypes, damages, departures, activeVehicleFacet, measure, counties, mc, selectedMunis, timeGranularity, stackPercent, show12moAvg, height, needsCountyData, activeTrace, plotColors, isDark, cc2mc2mn, plotAnnotations, yearLo, yearHi])
 
     // Check if we're waiting for county data (need ymccs but have yms)
     const waitingForCountyData = needsCountyData && data && data.length > 0 && !('cc' in data[0])
@@ -981,19 +996,32 @@ export default function CrashPlot({
                             cb={setConditions}
                         />
                     )}
-                    {measure === 'people' && (
-                        <Checklist
-                            label={<Tooltip title="Who was involved. Filters the victim-type × condition matrix."><span>Victim Type</span></Tooltip>}
+                    {measure === 'people' && (() => {
+                        const locked = !!filters?.typesActive
+                        const checklist = (<Checklist
+                            label={
+                                <Tooltip title={locked
+                                    ? "Locked by the page-level victim-type filter (top nav). Clear it there to edit these checkboxes directly."
+                                    : "Who was involved. Filters the victim-type × condition matrix."}>
+                                    <span>Victim Type{locked ? ' 🔒' : ''}</span>
+                                </Tooltip>
+                            }
                             data={VictimTypes.map(vt => ({
                                 name: vt,
                                 label: <Tooltip title={VictimTypeDefs[vt]}><span>{VictimTypeLabels[vt]}</span></Tooltip>,
                                 data: vt,
-                                checked: victimTypes.includes(vt),
+                                checked: effectiveVictimTypes.includes(vt),
+                                disabled: locked,
                                 ...(stackBy === 'victim_type' && { color: VictimTypeColors[vt] }),
                             }))}
                             cb={setVictimTypes}
-                        />
-                    )}
+                        />)
+                        return locked ? (
+                            <Tooltip title="Locked by the page-level victim-type filter (top nav). Clear it there to edit these checkboxes directly.">
+                                <div style={{ opacity: 0.55, cursor: 'not-allowed' }}>{checklist}</div>
+                            </Tooltip>
+                        ) : checklist
+                    })()}
                     {measure === 'vehicles' && (
                         <Checklist
                             label={<Tooltip title="Per-vehicle Extent of Damage (NJTR-1). Only captured 2017+; pre-2017 (and AASHTO 2023+) vehicles all land in Unknown."><span>Damage</span></Tooltip>}
