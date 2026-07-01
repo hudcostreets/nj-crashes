@@ -396,27 +396,26 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             const avgActive = activeType === '12-mo avg' as any
             const avgGreyed = activeType !== null && !avgActive
 
-            // Compute 12-mo avg: use precomputed avg_12mo for all types,
-            // or compute from the solo'd type's values. For per-capita, the
-            // 12-mo average is computed by averaging per-month per-100k values
-            // (each month divided by its own linterp'd population).
+            // Compute 12-mo avg over the currently-active type subset:
+            //   - solo'd type (legend hover/pin) → just that one type
+            //   - all 4 types enabled + no per-capita → use precomputed
+            //     `r.avg_12mo` (fast path, matches statewide DB value)
+            //   - otherwise → sum the enabled-type columns each month
+            // For per-capita, values are scaled per-month before averaging
+            // so each month uses its own linterp'd population.
             const soloType = activeType && enabledTypes.includes(activeType) ? activeType : null
+            const targetTypes: Type[] = soloType ? [soloType] : enabledTypes
+            const targetCols = targetTypes.map(t => typesMap[t])
+            const canUsePrecomputed = !soloType && enabledTypes.length === Types.length && !effectivePerCapita
             const avgValues: (number | null)[] = filteredRows.map((r, i) => {
                 if (i < 11) return null
-                if (!soloType) {
-                    if (!effectivePerCapita) return r.avg_12mo
-                    let sum = 0
-                    for (let j = i - 11; j <= i; j++) {
-                        const rj = filteredRows[j]
-                        sum += scale(rj.fatalities, rj.year, rj.month)
-                    }
-                    return sum / 12
-                }
-                const col = typesMap[soloType]
+                if (canUsePrecomputed) return r.avg_12mo
                 let sum = 0
                 for (let j = i - 11; j <= i; j++) {
                     const rj = filteredRows[j]
-                    sum += scale(rj[col] as number, rj.year, rj.month)
+                    let monthTotal = 0
+                    for (const col of targetCols) monthTotal += rj[col] as number
+                    sum += effectivePerCapita ? scale(monthTotal, rj.year, rj.month) : monthTotal
                 }
                 return sum / 12
             })
