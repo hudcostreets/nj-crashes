@@ -381,9 +381,14 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
                         }
                         const [avgBold, avgRest] = fmtRatio(avgRatio)
                         const [hlBold, hlRest] = fmtRatio(highlightRow.ratio)
+                        // When a type filter is active we compare filtered
+                        // crash deaths against ALL homicides — say so
+                        // explicitly, else the phrasing implies pedestrians
+                        // (etc.) killed by homicides.
+                        const homNoun = typesActive ? 'all homicides' : 'homicides'
                         return <>
-                            , car crashes killed <b>{avgBold}</b> {avgRest} homicides in {region}.
-                            <br />In {highlightRow.year}, crashes killed <b>{hlBold}</b> {hlRest} homicides.
+                            , car crashes killed <b>{avgBold}</b> {avgRest} {homNoun} in {region}.
+                            <br />In {highlightRow.year}, crashes killed <b>{hlBold}</b> {hlRest} {homNoun}.
                         </>
                     })()}
                 </p>
