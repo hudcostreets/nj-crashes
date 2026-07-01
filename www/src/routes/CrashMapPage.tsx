@@ -15,7 +15,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { Head } from "@/src/lib/head"
 import { url } from "@/src/site"
 import { CrashMapSection } from "@/src/map/CrashMapSection"
-import { normalize } from "@/src/county"
+import { muniKey, normalize } from "@/src/county"
 
 // Local county-name → cc map (subset; full table in nj_crashes data files).
 const COUNTY_NAMES: Record<string, number> = {
@@ -37,9 +37,9 @@ function muniFromParam(cc: number | undefined, muni: string | undefined, lookup:
     if (!cc || !muni || !lookup) return undefined
     const mc2mn = lookup[String(cc)]?.mc2mn
     if (!mc2mn) return undefined
-    const norm = muni.toLowerCase().replace(/-/g, " ").replace(/\s+/g, " ").trim()
+    const key = muniKey(muni.replace(/-/g, " "))
     for (const [mc, name] of Object.entries(mc2mn)) {
-        if (name.toLowerCase() === norm) return Number(mc)
+        if (muniKey(name) === key) return Number(mc)
     }
     return undefined
 }
