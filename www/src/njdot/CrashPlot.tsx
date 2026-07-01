@@ -864,13 +864,20 @@ export default function CrashPlot({
     // Belt-and-suspenders alongside per-trace `uid` (see `buildTrace`):
     // `layout.datarevision` forces Plotly to do a full data refresh on
     // the next `Plotly.react` call instead of the attribute-level diff.
+    // `layout.revision` forces the layout-side redraw — needed so the
+    // above-bar total annotations re-render when the periodTotals
+    // change (e.g. after toggling the page-level victim-type filter
+    // from Peds → All: the trace y-values update but Plotly's layout
+    // diff leaves the annotation `<text>` children empty).
     // The per-trace `uid` is what actually keeps stale SVG fills from
     // carrying over (Plotly's diff would otherwise reuse old `<path>`
     // elements with `style="fill: <old-color>"` even though
     // `_fullData[i].marker.color` has the new value — CIC-confirmed).
     // We avoid `key={plotKey}` (React remount) because the fallback
     // flash would be visible on every Stack-By / Measure change.
-    const plotKey = `${measure}-${effectiveStackBy}`
+    // `effectiveVictimTypes` is included so toggling `t` from the top
+    // nav bumps the revision and forces the layout redraw.
+    const plotKey = `${measure}-${effectiveStackBy}-${effectiveVictimTypes.join('') || 'x'}`
 
     return (
         <div>
@@ -890,7 +897,7 @@ export default function CrashPlot({
                 ) : (
                     <PlotWrapper
                         data={renderTraces as PlotData[]}
-                        layout={{ ...renderLayout, datarevision: plotKey } as Partial<Layout>}
+                        layout={{ ...renderLayout, datarevision: plotKey, revision: plotKey } as Partial<Layout>}
                         onActiveTrace={setActiveTrace}
                         onHover={handleHover}
                         onUnhover={handleUnhover}
