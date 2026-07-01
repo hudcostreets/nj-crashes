@@ -1,6 +1,6 @@
 outs:
-- md5: 252d4ed9215ec14d3e678f54898174d2.dir
-  size: 3423416
+- md5: 12122e97c9b3e66de78f78eef00dae04.dir
+  size: 3919774
   hash: md5
   nfiles: 21
   path: ymccmc
@@ -15,4 +15,4 @@ meta:
       /njdot/data/vehicles.parquet: f556fa6424ee67986f1b8f69b0ab7eab
       /njdot/data/aashto_supplemented_vehicles.parquet: ebefcf842124ee67c8b0ddcd0c51043d
     git_deps:
-      /njdot/agg.py: 463c77943c4a9171bb08924c6cccdbebc2997d03
+      /njdot/agg.py: 7b47d373e22e6b0de2944ae69057d610175f4379
