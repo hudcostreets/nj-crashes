@@ -251,9 +251,13 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
             yearData.get(row.year)!.push(row)
         }
 
-        // Ensure current year always has a trace (even with 0 deaths)
+        // Ensure current year always has a trace (even with 0 deaths) —
+        // but skip when the active year range excludes it, otherwise a
+        // flat-at-0 line for `curYear` sneaks into e.g. `?yr=2012-2020`
+        // views.
         const currentYearNow = new Date().getFullYear()
-        if (!yearData.has(currentYearNow)) {
+        const curYearInRange = !yearRange || (currentYearNow >= yearRange[0] && currentYearNow <= yearRange[1])
+        if (curYearInRange && !yearData.has(currentYearNow)) {
             yearData.set(currentYearNow, [{ year: currentYearNow, day_of_year: 1, date_label: 'Jan 01', fatalities: 0, cumulative: 0 }])
         }
 
