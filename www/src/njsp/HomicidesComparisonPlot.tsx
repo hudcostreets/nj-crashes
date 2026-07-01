@@ -4,7 +4,7 @@ import type { Layout, PlotData } from "plotly.js"
 import { useDb, useQuery } from "@/src/lib/DuckDbContext"
 import { useRegisteredParquetDb } from "@/src/tableData"
 import { CrashHomicideParquet, YtcParquet } from "@/src/paths"
-import { VICTIM_LABEL_SINGULAR, VICTIM_TYPES, type VictimType } from "./victim-types"
+import { VICTIM_LABEL_SINGULAR, VICTIM_TYPES, victimTypeTitlePhrase, type VictimType } from "./victim-types"
 import { useAlignedDualAxes, LegendRow, LegendItem, useLegendPin } from "pltly/react"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo, DataSource } from "@/src/icons"
@@ -312,12 +312,11 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
     const region = county ? `${county} County` : 'NJ'
     const minYear = rows.length ? rows[0].year : 2001
     const maxYear = rows.length ? rows[rows.length - 1].year : 2024
-    const sourceLabel = effectiveSource === 'njsp' ? 'NJSP' : 'NJ DOT'
-    // Pluralized victim-type phrase for the caption: "pedestrian",
-    // "pedestrian/cyclist", "pedestrian, driver/cyclist", etc. Preserve
-    // canonical order (driver, passenger, pedestrian, cyclist).
+    // Title-cased phrase (e.g. `"Pedestrian"`, `"Pedestrian + Cyclist"`)
+    // used when narrowing the plot to a subset of victim types.
+    const typeTitlePhrase = victimTypeTitlePhrase(selectedTypes)
+    const titleText = typeTitlePhrase ? `${typeTitlePhrase} Deaths vs. Homicides` : 'Car Crash Deaths vs. Homicides'
     const typeLabels = VICTIM_TYPES.filter(t => selectedTypes.includes(t)).map(t => VICTIM_LABEL_SINGULAR[t])
-    const typePhrase = typesActive ? typeLabels.join("/") : null
     // Plural noun (`pedestrians`) for use as the direct object of
     // "crashes killed X ___". When multiple types are selected, we bail
     // back to the generic "people" phrasing rather than stitch together
@@ -326,9 +325,9 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
 
     return (
         <div ref={containerRef}>
-            <h2 id={id}><a href={`#${id}`}>Car Crash Deaths vs. Homicides</a></h2>
+            <h2 id={id}><a href={`#${id}`}>{titleText}</a></h2>
             <div className={css.subtitle}>
-                {sourceLabel} {typePhrase ? `${typePhrase} ` : ''}fatalities, {minYear}–{maxYear}{county ? ` · ${county} County` : ''}
+                {minYear}–{maxYear}{county ? ` · ${county} County` : ''}
             </div>
             <PlotWrapper
                 key={rows.length}

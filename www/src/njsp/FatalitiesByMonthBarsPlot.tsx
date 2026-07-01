@@ -11,7 +11,7 @@ import { useSessionStorage } from "@/src/lib/useSessionStorage"
 import { COLORSCALES, ColorScaleName, getColorAt } from "@/src/lib/colorscales"
 import { ControlsGear } from "@/src/components/ControlsGear"
 import { usePageFilters } from "@/src/PageFiltersContext"
-import { VICTIM_TYPES, type VictimType } from "./victim-types"
+import { VICTIM_TYPES, victimTypeTitlePhrase, type VictimType } from "./victim-types"
 import css from "./plot.module.scss"
 
 const HEIGHT = 550
@@ -90,6 +90,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
     }, [activeTrace])
 
     const allSelected = selectedTypes.length === VICTIM_TYPES.length
+    const typeTitlePhrase = victimTypeTitlePhrase(selectedTypes)
 
     // Build plot data
     const { data, layout } = useMemo(() => {
@@ -230,8 +231,8 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
 
     return (
         <div>
-            <h2 id={id}><a href={`#${id}`}>Fatalities by Month</a></h2>
-            <div className={css.subtitle}>Fatalities, {yearRange ? `${yearRange[0]}–${yearRange[1]}` : '2001–present'}{regionLabel ? ` · ${regionLabel}` : county ? ` · ${county} County` : ''}</div>
+            <h2 id={id}><a href={`#${id}`}>{typeTitlePhrase ? `${typeTitlePhrase} Fatalities` : 'Fatalities'} by Month</a></h2>
+            <div className={css.subtitle}>{yearRange ? `${yearRange[0]}–${yearRange[1]}` : '2001–present'}{regionLabel ? ` · ${regionLabel}` : county ? ` · ${county} County` : ''}</div>
             <PlotWrapper
                 id={id}
                 data={data}

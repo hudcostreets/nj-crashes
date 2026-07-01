@@ -18,6 +18,20 @@ export const VICTIM_LABEL_SINGULAR: Record<VictimType, string> = {
     cyclist: 'cyclist',
 }
 
+/** Title-cased victim-type phrase for section headings — e.g. `"Pedestrian"`,
+ *  `"Pedestrian + Cyclist"`. Returns `null` when all four types are selected
+ *  (no filter to advertise in the title). */
+export function victimTypeTitlePhrase(selectedTypes: VictimType[]): string | null {
+    if (selectedTypes.length === VICTIM_TYPES.length) return null
+    const parts = VICTIM_TYPES
+        .filter(t => selectedTypes.includes(t))
+        .map(t => {
+            const s = VICTIM_LABEL_SINGULAR[t]
+            return s[0].toUpperCase() + s.slice(1)
+        })
+    return parts.length ? parts.join(" + ") : null
+}
+
 /** Single-char codes used in the `nst` URL param; lookup-friendly + stable. */
 export const VICTIM_CHAR: Record<VictimType, string> = { driver: 'd', passenger: 'p', pedestrian: 'e', cyclist: 'c' }
 const CHAR_TO_TYPE: Record<string, VictimType> = Object.fromEntries(
