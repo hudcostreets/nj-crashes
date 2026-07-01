@@ -8,7 +8,7 @@
  */
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { useUrlState, viewStateParam, cleanUrl } from "use-prms"
-import type { Param } from "use-prms"
+import { usePageFilters, YEAR_RANGE_DEFAULT } from "@/src/PageFiltersContext"
 import type { CrashFilter } from "@/src/map/useCrashData"
 import { useCellsApi, CELLS_BUDGET } from "@/src/map/useCellsApi"
 import type { CellsApiFilter } from "@/src/map/useCellsApi"
@@ -122,19 +122,10 @@ function parseLegacyV(raw: string): { llz?: { latitude: number; longitude: numbe
     return { llz: { latitude, longitude, zoom, pitch, bearing } }
 }
 
-/** `y` URL param: `"<a>-<b>"` (e.g. `2019-2025`). Out-of-order pairs are
- *  swapped silently. */
-const YEAR_RANGE_DEFAULT: [number, number] = [2016, 2025]
-const yearRangeParam: Param<[number, number]> = {
-    encode: ([a, b]) => a === YEAR_RANGE_DEFAULT[0] && b === YEAR_RANGE_DEFAULT[1] ? "" : `${a}-${b}`,
-    decode: (s) => {
-        if (!s) return YEAR_RANGE_DEFAULT
-        const m = s.match(/^(\d{4})-(\d{4})$/)
-        if (!m) return YEAR_RANGE_DEFAULT
-        const a = +m[1], b = +m[2]
-        return a <= b ? [a, b] : [b, a]
-    },
-}
+// Year range is read from the page-level `<PageFiltersProvider>` (URL
+// param `yr`). Both the Home embed and the fullscreen `/map` route wrap
+// this component in a provider, so `usePageFilters()` is never null in
+// practice.
 
 export type Props = {
     /** County code (1-21) or null for statewide. */
@@ -169,7 +160,13 @@ export function CrashMapSection({
 }: Props) {
     const { actualTheme } = useTheme()
     const [mode, setMode] = useState<MapMode>("hexbin")
-    const [yearRange, setYearRange] = useUrlState("y", yearRangeParam)
+    // Year range comes from the page-level filter provider — same `yr`
+    // URL param that drives the NJSP/NJDOT plots + tables below. Fallback
+    // to a static default lets the map still render if someone drops the
+    // component in without a provider (should not happen on our routes).
+    const filters = usePageFilters()
+    const yearRange = filters?.yearRange ?? YEAR_RANGE_DEFAULT
+    const setYearRange = filters?.setYearRange ?? (() => {})
     const [severities, setSeverities] = useState<Set<"f" | "i" | "p">>(() => new Set(["f", "i", "p"]))
     const [hexPxTarget, setHexPxTarget] = useSessionStorageState<number>("hccs.crashmap.hexPxTarget", { defaultValue: 1.7 })
     const [elevationPerCount, setElevationPerCount] = useState(60)
@@ -509,22 +506,33 @@ export function CrashMapSection({
     // Header content (severity phrase · scope · year selects). Rendered
     // above the panel in embed mode, or as a top-center overlay pill in
     // full-screen mode (where there's no "above the map").
+    // Header content (severity phrase · scope · year range). In embed
+    // mode the page-level top-nav owns the year-range dropdowns, so we
+    // just show the range as text to avoid a duplicate control. In
+    // fullscreen mode (the `/map` route, no top nav), keep the
+    // interactive `YearSelect` dropdowns.
     const headerInner = (
         <>
             <span>{severityPhrase} crashes</span>
             {scopeLabel && <><span>·</span><span>{scopeLabel}</span></>}
             <span>·</span>
-            <YearSelect
-                value={yearRange[0]} min={y0min} max={yearRange[1]}
-                onChange={y => setYearRange([y, yearRange[1]])}
-                theme={actualTheme}
-            />
-            <span>–</span>
-            <YearSelect
-                value={yearRange[1]} min={yearRange[0]} max={y1max}
-                onChange={y => setYearRange([yearRange[0], y])}
-                theme={actualTheme}
-            />
+            {fullScreen ? (
+                <>
+                    <YearSelect
+                        value={yearRange[0]} min={y0min} max={yearRange[1]}
+                        onChange={y => setYearRange([y, yearRange[1]])}
+                        theme={actualTheme}
+                    />
+                    <span>–</span>
+                    <YearSelect
+                        value={yearRange[1]} min={yearRange[0]} max={y1max}
+                        onChange={y => setYearRange([yearRange[0], y])}
+                        theme={actualTheme}
+                    />
+                </>
+            ) : (
+                <span>{yearRange[0]}–{yearRange[1]}</span>
+            )}
         </>
     )
 

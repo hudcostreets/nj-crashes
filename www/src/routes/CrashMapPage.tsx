@@ -8,13 +8,16 @@
  *
  *  URL: /map  ·  /map/:county  ·  /map/:county/:muni
  *       (also /map/c/:county[/:muni] — disambiguation form)
- *  Query params are owned by <CrashMapSection>: `llz` (view) + `y` (years).
+ *  Query params: `llz` (view, owned by CrashMapSection) + `yr` (years,
+ *  owned by the shared PageFiltersProvider — same param as the plots +
+ *  tables on the homepage).
  */
 import { useCallback, useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Head } from "@/src/lib/head"
 import { url } from "@/src/site"
 import { CrashMapSection } from "@/src/map/CrashMapSection"
+import { PageFiltersProvider } from "@/src/PageFiltersContext"
 import { normalize } from "@/src/county"
 
 // Local county-name → cc map (subset; full table in nj_crashes data files).
@@ -85,7 +88,7 @@ export default function CrashMapPage() {
             : "/"
 
     return (
-        <>
+        <PageFiltersProvider>
             <Head title={title} description="Interactive crash map" url={url} />
             {params.muni && !cc2mc2mn ? (
                 <div style={{ padding: "1em" }}>Loading map…</div>
@@ -100,6 +103,6 @@ export default function CrashMapPage() {
                     onOutlineClick={cc === undefined ? onOutlineClick : undefined}
                 />
             )}
-        </>
+        </PageFiltersProvider>
     )
 }

@@ -507,6 +507,11 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
                     font: { color: '#ffffff' },
                 },
                 xaxis: {
+                    // Trace `x` is numeric ms-since-epoch (see `dates` map
+                    // above). Without an explicit date type, Plotly infers
+                    // `linear` and coerces `dtick: "M12"` → 1, producing a
+                    // tick at every millisecond (empty visually).
+                    type: "date",
                     tickfont: { color: plotColors.textColor },
                     gridcolor: plotColors.gridColor,
                     automargin: true,
@@ -759,21 +764,26 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
             showlegend: false,
             xaxis: {
                 fixedrange: true,
-                dtick: 1,
                 tickfont: { color: plotColors.textColor },
                 gridcolor: plotColors.gridColor,
                 tickangle: -45,  // Slant from LL to UR
                 automargin: true,
-                // Trim x-axis to the active year-range filter (defaults to 2001–curYear).
-                range: [(yearRange?.[0] ?? 2001) - 0.5, (yearRange?.[1] ?? curYear) + 0.5],
-                tickvals: Array.from(
-                    { length: (yearRange?.[1] ?? curYear) - (yearRange?.[0] ?? 2001) + 1 },
-                    (_, i) => (yearRange?.[0] ?? 2001) + i,
-                ),
-                ticktext: Array.from(
-                    { length: (yearRange?.[1] ?? curYear) - (yearRange?.[0] ?? 2001) + 1 },
-                    (_, i) => `'${String((yearRange?.[0] ?? 2001) + i).slice(2)}`,
-                ),
+                // By-year: force integer tickvals + tight range so all years
+                // in the active window get a labeled bar. By-month: let
+                // Plotly pick date ticks; year-range narrows via the row
+                // filter above, so no explicit `range` is needed.
+                ...(isMonthly ? {} : {
+                    dtick: 1,
+                    range: [(yearRange?.[0] ?? 2001) - 0.5, (yearRange?.[1] ?? curYear) + 0.5],
+                    tickvals: Array.from(
+                        { length: (yearRange?.[1] ?? curYear) - (yearRange?.[0] ?? 2001) + 1 },
+                        (_, i) => (yearRange?.[0] ?? 2001) + i,
+                    ),
+                    ticktext: Array.from(
+                        { length: (yearRange?.[1] ?? curYear) - (yearRange?.[0] ?? 2001) + 1 },
+                        (_, i) => `'${String((yearRange?.[0] ?? 2001) + i).slice(2)}`,
+                    ),
+                }),
             },
             yaxis: {
                 fixedrange: true,
