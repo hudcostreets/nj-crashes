@@ -1,24 +1,24 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 ,,Atlantic,,33,2,17,6,10
-,,Bergen,,34,0,20,1,15
+,,Bergen,,36,0,20,1,18
 ,,Burlington,,36,1,25,7,7
 ,,Camden,,26,3,12,2,10
 ,,Cape May,,4,0,3,2,0
 ,,Cumberland,,19,0,11,2,6
-,,Essex,,40,0,11,2,31
+,,Essex,,38,0,11,2,29
 ,,Gloucester,,28,2,17,5,3
-,,Hudson,,29,0,15,0,18
+,,Hudson,,31,0,18,0,18
 ,,Hunterdon,,6,0,3,1,2
 ,,Mercer,,29,1,13,13,10
-,,Middlesex,,52,2,35,7,10
-,,Monmouth,,58,1,30,4,23
+,,Middlesex,,50,2,33,7,10
+,,Monmouth,,59,1,30,4,23
 ,,Morris,,25,1,14,1,14
 ,,Ocean,,42,1,30,5,9
 ,,Passaic,,16,0,9,4,6
 ,,Salem,,14,0,12,3,1
 ,,Somerset,,14,0,12,1,2
 ,,Sussex,,35,0,10,0,3
-,,Union,,49,1,23,6,25
+,,Union,,45,1,19,6,25
 ,,Warren,,8,0,5,1,2
 1,1,Atlantic,Absecon City,1,0,0,0,1
 1,2,Atlantic,Atlantic City,6,2,2,2,2
@@ -55,6 +55,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 2,42,Bergen,Oakland Boro,1,0,0,1,1
 2,46,Bergen,Paramus Boro,0,0,0,0,0
 2,48,Bergen,Ramsey Boro,1,0,1,0,0
+2,49,Bergen,Ridgefield Boro,2,0,0,0,2
 2,50,Bergen,Ridgefield Park Tws,3,0,3,0,0
 2,56,Bergen,Rutherford Boro,4,0,3,0,1
 2,57,Bergen,Saddle Brook Twsp,1,0,1,0,0
@@ -118,7 +119,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 6,10,Cumberland,Millville City,2,0,1,0,1
 6,13,Cumberland,Upper Deerfield Tws,0,0,0,0,0
 6,14,Cumberland,Vineland City,7,0,6,2,1
-7,1,Essex,Belleville Town,1,0,0,0,1
+7,1,Essex,Belleville Town,0,0,0,0,0
 7,2,Essex,Bloomfield Boro,-1,0,-1,0,0
 7,3,Essex,Caldwell Boro,2,0,0,0,2
 7,5,Essex,East Orange City,6,0,2,0,3
@@ -149,7 +150,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 9,4,Hudson,Harrison Town,2,0,0,0,2
 9,6,Hudson,Jersey City,3,0,1,0,3
 9,7,Hudson,Kearny Town,3,0,2,0,2
-9,8,Hudson,North Bergen Twsp,4,0,3,0,2
+9,8,Hudson,North Bergen Twsp,6,0,4,0,2
 9,9,Hudson,Secaucus Town,3,0,2,0,2
 9,10,Hudson,Union City,5,0,2,0,3
 9,11,Hudson,Weehawken Twsp,1,0,1,0,0
@@ -187,7 +188,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 12,20,Middlesex,South Amboy City,0,0,0,0,0
 12,21,Middlesex,South Brunswick Tws,10,0,5,1,3
 12,22,Middlesex,South Plainfield Bo,2,0,2,0,0
-12,23,Middlesex,South River Boro,2,0,2,0,1
+12,23,Middlesex,South River Boro,1,0,0,0,1
 12,25,Middlesex,Woodbridge Twsp,9,0,6,1,2
 13,1,Monmouth,Aberdeen Twsp,2,0,0,0,2
 13,5,Monmouth,Atlantic Highlands,1,1,0,0,0
@@ -293,7 +294,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian
 20,14,Union,Roselle Boro,1,0,1,0,0
 20,16,Union,Scotch Plains Twsp,1,0,0,0,1
 20,17,Union,Springfield Twsp,2,0,2,0,0
-20,19,Union,Union Twsp,14,0,4,2,5
+20,19,Union,Union Twsp,8,0,2,2,5
 20,20,Union,Westfield Town,1,1,0,0,0
 21,1,Warren,Allamuchy Twsp,0,0,0,0,0
 21,4,Warren,Blairstown Twsp,0,0,0,0,0
