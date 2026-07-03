@@ -34,6 +34,15 @@ describe("muniKey", () => {
         expect(muniKey("Marlboro")).toBe("marlboro")
         expect(muniKey("Marlboro Twp")).toBe("marlboro township")
     })
+
+    it("normalizes case (lowercase, all-caps, mixed) to one key", () => {
+        // Slugs land here after `denormalize` (title-case) but URL
+        // resolvers may also compare against raw-case NJDOT strings —
+        // guarantee case doesn't affect the key.
+        expect(muniKey("egg harbor twp")).toBe(muniKey("Egg Harbor Twp"))
+        expect(muniKey("EGG HARBOR TWP")).toBe(muniKey("Egg Harbor Twp"))
+        expect(muniKey("HoPeWeLl BoRo")).toBe("hopewell borough")
+    })
 })
 
 describe("levenshtein", () => {
