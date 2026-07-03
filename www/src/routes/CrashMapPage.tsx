@@ -19,6 +19,7 @@ import { url } from "@/src/site"
 import { CrashMapSection } from "@/src/map/CrashMapSection"
 import { PageFiltersProvider } from "@/src/PageFiltersContext"
 import { normalize } from "@/src/county"
+import { RegionNotFound } from "@/src/components/RegionNotFound"
 
 // Local county-name → cc map (subset; full table in nj_crashes data files).
 const COUNTY_NAMES: Record<string, number> = {
@@ -60,6 +61,12 @@ export default function CrashMapPage() {
     }, [])
     const cc = countyFromParam(params.county)
     const mc = muniFromParam(cc, params.muni, cc2mc2mn)
+    // Distinguish "no muni segment in URL" (params.muni undefined → county
+    // view) from "muni segment present but didn't resolve" (mc undefined
+    // after lookup). Only the latter triggers a not-found panel; the
+    // former is the intended county-view flow.
+    const countyUnresolved = params.county !== undefined && cc === undefined
+    const muniUnresolved = cc !== undefined && params.muni !== undefined && cc2mc2mn !== null && mc === undefined
 
     const onOutlineClick = useCallback((feature: any) => {
         const name: string | undefined = feature?.properties?.name
@@ -87,6 +94,32 @@ export default function CrashMapPage() {
             ? `/c/${params.county}`
             : "/"
 
+    if (countyUnresolved) {
+        // `cc2mc2mn` (from public JSON) may still be loading — the
+        // component's own render handles that by not showing suggestions.
+        // Cast: local shape is a subset of `CC2MC2MN`.
+        return (
+            <PageFiltersProvider>
+                <Head title="Not found — NJ Crash Map" description="Unknown county" url={url} />
+                <RegionNotFound kind="county" slug={params.county!} cc2mc2mn={cc2mc2mn as any} />
+            </PageFiltersProvider>
+        )
+    }
+    if (muniUnresolved) {
+        const mc2mn = cc2mc2mn?.[String(cc)]?.mc2mn as Record<number, string> | undefined
+        return (
+            <PageFiltersProvider>
+                <Head title={`Not found — ${countyName} County Crash Map`} description="Unknown municipality" url={url} />
+                <RegionNotFound
+                    kind="muni"
+                    slug={params.muni!}
+                    countyName={countyName}
+                    countySlug={params.county!}
+                    mc2mn={mc2mn}
+                />
+            </PageFiltersProvider>
+        )
+    }
     return (
         <PageFiltersProvider>
             <Head title={title} description="Interactive crash map" url={url} />

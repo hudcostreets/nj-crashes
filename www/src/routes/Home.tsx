@@ -18,6 +18,7 @@ import { PlotContainer } from "@/src/components/PlotContainer"
 import { GeoNavBar } from "@/src/components/GeoNavBar"
 import { useGeoFilter } from "@/src/GeoFilterContext"
 import { normalize } from "@/src/county"
+import { RegionNotFound } from "@/src/components/RegionNotFound"
 import { Counties } from "@/src/njdot/data"
 import { YearStatsSection } from "@/src/tables/YearStatsSection"
 import { NjspCrashesSection } from "@/src/tables/NjspCrashesSection"
@@ -32,7 +33,40 @@ import { ResetSoloProvider, useResetAllSolo } from "@/src/lib/ResetSoloContext"
 
 export default function Home() {
     const basePath = getBasePath()
-    const { cc, mc, countyName, municipalityName } = useGeoFilter()
+    const { cc, mc, countyName, municipalityName, cc2mc2mn, countySlugUnresolved, muniSlugUnresolved } = useGeoFilter()
+
+    // If the URL contains a county/muni segment that didn't resolve, replace
+    // the whole homepage payload with a `<RegionNotFound>` panel. Silent
+    // fallthrough to the state / county view was misleading — the URL and
+    // page title stayed out of sync.
+    if (countySlugUnresolved) {
+        return (
+            <div className={css.container}>
+                <Head title="Not found — NJ Car Crash Data" description="Unknown county" url={url} />
+                <main className={css.index}>
+                    <RegionNotFound kind="county" slug={countySlugUnresolved} cc2mc2mn={cc2mc2mn} />
+                </main>
+            </div>
+        )
+    }
+    if (muniSlugUnresolved && cc !== null && countyName) {
+        const countySlug = normalize(countyName)
+        const mc2mn = cc2mc2mn?.[cc]?.mc2mn
+        return (
+            <div className={css.container}>
+                <Head title={`Not found — ${countyName} County — NJ Car Crash Data`} description="Unknown municipality" url={url} />
+                <main className={css.index}>
+                    <RegionNotFound
+                        kind="muni"
+                        slug={muniSlugUnresolved}
+                        countyName={countyName}
+                        countySlug={countySlug}
+                        mc2mn={mc2mn}
+                    />
+                </main>
+            </div>
+        )
+    }
 
     // Build title and description based on geo filter
     const regionLabel = municipalityName
