@@ -77,9 +77,12 @@ export type Props = {
     /** Controlled hex pixel target (pairs with `onHexPxTargetChange`). */
     hexPxTarget?: number
     onHexPxTargetChange?: (n: number) => void
-    /** Controlled bar height multiplier (hexbin only). */
-    elevationPerCount?: number
-    onElevationPerCountChange?: (n: number) => void
+    /** Bar height scale (hexbin only) — ratio of the tallest bar to the
+     *  region bbox's max dimension. `0.3` means "tallest bar ≈ 30% of
+     *  the region's widest side" — keeps visual weight consistent across
+     *  zoom levels + muni sizes without the user re-tuning. */
+    heightScale?: number
+    onHeightScaleChange?: (n: number) => void
     /** Click handler for outline polygons (geo drill-down). */
     onOutlineClick?: (feature: any) => void
     /** Fired for any click on the map canvas (used for drawer close-on-click). */
@@ -303,8 +306,8 @@ export function CrashMap({
     onViewStateChange: onControlledChange,
     hexPxTarget: controlledHexPxTarget,
     onHexPxTargetChange,
-    elevationPerCount: controlledElevation,
-    onElevationPerCountChange,
+    heightScale: controlledHeightScale,
+    onHeightScaleChange,
     onOutlineClick,
     onMapClick,
     showInternalControls = true,
@@ -393,13 +396,15 @@ export function CrashMap({
         else setLocalHexPxTarget(n)
     }, [controlledHexPxTarget, onHexPxTargetChange])
     const mapRef = React.useRef<MapRef | null>(null)
-    // Height multiplier (meters per crash)
-    const [localElevation, setLocalElevation] = useState(15)
-    const elevationPerCount = controlledElevation ?? localElevation
-    const setElevationPerCount = useCallback((n: number) => {
-        if (controlledElevation !== undefined && onElevationPerCountChange) onElevationPerCountChange(n)
-        else setLocalElevation(n)
-    }, [controlledElevation, onElevationPerCountChange])
+    // Bar height *scale* (0..1) — tallest bar rendered = `heightScale ×
+    // maxDim(bbox)` in meters. Adaptive so a small muni like Union City
+    // doesn't get bars towering above the whole region.
+    const [localHeightScale, setLocalHeightScale] = useState(0.3)
+    const heightScale = controlledHeightScale ?? localHeightScale
+    const setHeightScale = useCallback((n: number) => {
+        if (controlledHeightScale !== undefined && onHeightScaleChange) onHeightScaleChange(n)
+        else setLocalHeightScale(n)
+    }, [controlledHeightScale, onHeightScaleChange])
 
     // Auto-tilt when switching into hexbin, flatten when leaving
     useEffect(() => {
@@ -688,16 +693,19 @@ export function CrashMap({
         // without raw rows; cells just render larger than ideal.
         if (!hexes || hexes.length === 0) return base
         const hexesArr = hexes
-        // Auto-scale bar heights based on the visible max count: when the
-        // user filters to fatal-only (max ~5) we'd otherwise get pancake
-        // bars vs the baseline fatal+injury view (max ~100). Keep the
-        // tallest bar near a target height of `elevationPerCount × 100`,
-        // clamped so we don't inflate single-crash hexes wildly. Sqrt-
-        // softened so the slider still has perceptible effect.
+        // Adaptive bar height. Target: tallest bar = `heightScale × bbMaxDim`
+        // in meters, where `bbMaxDim` is the region bbox's largest side.
+        // So `heightScale=0.3` means "tallest bar ≈ 30% of the region's
+        // widest side" — visual weight stays consistent across muni sizes
+        // and zoom levels.
         const maxCount = hexesArr.reduce((m, h) => Math.max(m, h.total), 1)
-        const HEIGHT_TARGET = 100  // calibrated for typical fatal+injury max
-        const autoScale = Math.min(8, Math.max(0.4, Math.sqrt(HEIGHT_TARGET / maxCount)))
-        const effectiveElevation = elevationPerCount * autoScale
+        const [w, s, e, n] = initialBounds ?? [-75.6, 38.9, -73.9, 41.4]  // NJ fallback
+        const bboxCenterLat = (s + n) / 2
+        const metersPerDegLon = 111_320 * Math.cos(bboxCenterLat * Math.PI / 180)
+        const lonMeters = (e - w) * metersPerDegLon
+        const latMeters = (n - s) * 110_574
+        const bbMaxDim = Math.max(lonMeters, latMeters, 1_000)  // floor at 1km so div doesn't blow up
+        const effectiveElevation = (heightScale * bbMaxDim) / maxCount
         const segments = hexesToSegments(hexesArr, effectiveElevation)
         // Render columns sized to the data's actual H3 res, not the picker's
         // desired one. Prebinned data (`prebinnedHexes`) is fetched at a fixed
@@ -720,7 +728,7 @@ export function CrashMap({
             console.log(`[perf] layers: ${ms.toFixed(1)}ms (mode=${mode}, segments=${segments.length})`)
         }
         return result
-    }, [hexes, effectiveCrashes, mode, effectiveHexRes, elevationPerCount, outlineLayers, gridOverlayLayer, coverOverlayLayer])
+    }, [hexes, effectiveCrashes, mode, effectiveHexRes, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer])
 
     // Only bubble user-driven changes. DeckGL also echoes back programmatic
     // viewState updates (from the fit effect, mode-switch tilt, etc.) via
@@ -768,8 +776,8 @@ export function CrashMap({
                     effectiveRes={effectiveHexRes}
                     pixelTarget={hexPxTarget}
                     setPixelTarget={setHexPxTarget}
-                    elevationPerCount={elevationPerCount}
-                    setElevationPerCount={setElevationPerCount}
+                    heightScale={heightScale}
+                    setHeightScale={setHeightScale}
                     theme={theme}
                 />
             )}
@@ -852,13 +860,13 @@ function PitchSlider({
 }
 
 function HexControls({
-    effectiveRes, pixelTarget, setPixelTarget, elevationPerCount, setElevationPerCount, theme,
+    effectiveRes, pixelTarget, setPixelTarget, heightScale, setHeightScale, theme,
 }: {
     effectiveRes: number
     pixelTarget: number
     setPixelTarget: (v: number) => void
-    elevationPerCount: number
-    setElevationPerCount: (v: number) => void
+    heightScale: number
+    setHeightScale: (v: number) => void
     theme: "light" | "dark"
 }) {
     const bg = theme === "dark" ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.95)"
@@ -896,11 +904,11 @@ function HexControls({
                 )
             })()}
             <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
-                <span>Bar height: {elevationPerCount}×</span>
+                <span>Height scale: {heightScale.toFixed(2)}</span>
                 <input
-                    type="range" min={3} max={60} step={1}
-                    value={elevationPerCount}
-                    onChange={(e) => setElevationPerCount(Number(e.target.value))}
+                    type="range" min={0} max={1} step={0.05}
+                    value={heightScale}
+                    onChange={(e) => setHeightScale(Number(e.target.value))}
                     style={{ width: 90 }}
                 />
             </label>

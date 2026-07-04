@@ -7,7 +7,7 @@
  *  selects, severity Legend, hexbin controls, debug drawer.
  */
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
-import { useUrlState, viewStateParam, cleanUrl } from "use-prms"
+import { useUrlState, viewStateParam, cleanUrl, optFloatParam } from "use-prms"
 import { usePageFilters, YEAR_RANGE_DEFAULT } from "@/src/PageFiltersContext"
 import type { CrashFilter } from "@/src/map/useCrashData"
 import { useCellsApi, CELLS_BUDGET } from "@/src/map/useCellsApi"
@@ -168,8 +168,21 @@ export function CrashMapSection({
     const yearRange = filters?.yearRange ?? YEAR_RANGE_DEFAULT
     const setYearRange = filters?.setYearRange ?? (() => {})
     const [severities, setSeverities] = useState<Set<"f" | "i" | "p">>(() => new Set(["f", "i", "p"]))
-    const [hexPxTarget, setHexPxTarget] = useSessionStorageState<number>("hccs.crashmap.hexPxTarget", { defaultValue: 1.7 })
-    const [elevationPerCount, setElevationPerCount] = useState(60)
+    // `hpx` (hex-pixel target) and `hs` (bar height scale) are URL-persisted
+    // so a shared map link reproduces the exact viz — otherwise slider tweaks
+    // silently reset on page reload. Defaults chosen to feel neutral across
+    // muni + county scopes.
+    // • `hpx` — hex px target. Higher = coarser hexes (fewer, chunkier).
+    // • `hs`  — bar height *scale*: the tallest hexbin's rendered height
+    //           is `hs × maxDim(regionBbox)` in meters. So `hs=0.3` means
+    //           "tallest bar ≈ 30% of the region's largest dimension" —
+    //           consistent visual weight regardless of zoom / muni size.
+    const [hexPxTargetUrl, setHexPxTargetUrl] = useUrlState("hpx", optFloatParam(), { debounce: 100 })
+    const [heightScaleUrl, setHeightScaleUrl] = useUrlState("hs", optFloatParam(), { debounce: 100 })
+    const hexPxTarget = hexPxTargetUrl ?? 1.7
+    const heightScale = heightScaleUrl ?? 0.3
+    const setHexPxTarget = (v: number) => setHexPxTargetUrl(v === 1.7 ? null : v)
+    const setHeightScale = (v: number) => setHeightScaleUrl(v === 0.3 ? null : v)
     // Drawer defaults open on the full-screen route (room to spare) and
     // closed in the embed (don't occlude the small panel on first paint).
     const [drawerOpen, setDrawerOpen] = useToolboxOpen(fullScreen)
@@ -593,8 +606,8 @@ export function CrashMapSection({
                         showInternalControls={false}
                         hexPxTarget={hexPxTarget}
                         onHexPxTargetChange={setHexPxTarget}
-                        elevationPerCount={elevationPerCount}
-                        onElevationPerCountChange={setElevationPerCount}
+                        heightScale={heightScale}
+                        onHeightScaleChange={setHeightScale}
                         gridOverlayRes={drawerOpen ? gridOverlayRes : null}
                         coverCells={drawerOpen && debugOpen ? apiResult.plan?.cover ?? null : null}
                     />
@@ -687,11 +700,11 @@ export function CrashMapSection({
                     <>
                         <HexPxTargetSlider value={hexPxTarget} onChange={setHexPxTarget} />
                         <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
-                            <span style={{ fontSize: "0.78em" }}>Bar height: <b>{elevationPerCount}×</b></span>
+                            <span style={{ fontSize: "0.78em" }}>Height scale: <b>{heightScale.toFixed(2)}</b></span>
                             <input
-                                type="range" min={3} max={150} step={1}
-                                value={elevationPerCount}
-                                onChange={e => setElevationPerCount(Number(e.target.value))}
+                                type="range" min={0} max={1} step={0.05}
+                                value={heightScale}
+                                onChange={e => setHeightScale(Number(e.target.value))}
                                 style={{ width: 100 }}
                             />
                         </label>
