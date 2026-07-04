@@ -2,11 +2,9 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { HotkeysProvider, Omnibar, ShortcutsModal, LookupModal } from 'use-kbd'
 import 'use-kbd/styles.css'
-import Home from './routes/Home'
+import GeoHome from './routes/GeoHome'
 import { AppSpeedDial } from './components/AppSpeedDial'
-import { GeoFilterProvider } from './GeoFilterContext'
 import { DuckDbProvider } from './lib/DuckDbContext'
-import { useGeoActions } from './components/GeoOmnibar'
 import { useSectionsActions } from './components/SectionsOmnibar'
 import { useScrollAnchor } from './lib/useScrollAnchor'
 
@@ -27,16 +25,7 @@ const RawFileBrowser = lazy(() => import('./raw/RawFileBrowser'))
 const FilesPage = lazy(() => import('./routes/FilesPage'))
 const HarmonizationPage = lazy(() => import('./routes/HarmonizationPage'))
 const MuniSlugRoute = lazy(() => import('./routes/MuniSlugRoute'))
-
-function GeoHome() {
-    return <GeoFilterProvider><GeoActionsRegistrar /><Home /></GeoFilterProvider>
-}
-
-/** Register geo actions inside GeoFilterProvider */
-function GeoActionsRegistrar() {
-    useGeoActions()
-    return null
-}
+const CanonicalizeMuni = lazy(() => import('./routes/CanonicalizeMuni'))
 
 /** Register sections-jump omnibar endpoint. Sits at the App level so any
  *  route with `<h2 id="…">` anchors gets jumpable from Cmd+K. */
@@ -56,7 +45,10 @@ export default function App() {
                 <Route path="/" element={<GeoHome />} />
                 <Route path="/c" element={<GeoHome />} />
                 <Route path="/c/:county" element={<GeoHome />} />
-                <Route path="/c/:county/:city" element={<GeoHome />} />
+                {/* Muni-level `/c/{county}/{muni}` redirects to the short
+                    canonical `/{muni-slug}` (or `/{muni-slug}-{county}`
+                    when the stem+type is ambiguous state-wide). */}
+                <Route path="/c/:county/:city" element={<CanonicalizeMuni />} />
                 <Route path="/njsp" element={<GeoHome />} />
                 <Route path="/njsp/:county" element={<GeoHome />} />
                 <Route path="/sql" element={<SqlPage />} />

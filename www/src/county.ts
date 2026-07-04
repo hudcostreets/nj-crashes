@@ -74,6 +74,68 @@ export function slugMatchesMuni(input: { stem: string, type?: string }, candidat
     return candidate.type === input.type
 }
 
+/** Extended parseSlug that also detects a trailing county-name disambiguator
+ *  (e.g. `washington-twp-bergen` → `{stem: 'washington', type: 'twp',
+ *  county: 'bergen'}`; `washington-twp-cape-may` → county `'cape may'`).
+ *
+ *  `countyNames` is the lowercase set of NJ county names — pass
+ *  `new Set(Object.values(cc2mc2mn).map(c => c.cn.toLowerCase()))`. Both
+ *  single-word (Bergen, Morris) and multi-word (Cape May) are supported;
+ *  the parser prefers the longest matching trailing county name so
+ *  `cape-may` doesn't get truncated to just `may`. */
+export function parseSlugFull(
+    s: string,
+    countyNames: Set<string>,
+): { stem: string, type?: string, county?: string } {
+    const words = s.toLowerCase().replace(/[-_.]+/g, ' ').split(/\s+/).filter(Boolean)
+    let county: string | undefined
+    // Try longest trailing county match first (2-word "cape may" > 1-word "may").
+    for (const n of [2, 1]) {
+        if (words.length > n) {
+            const tail = words.slice(-n).join(' ')
+            if (countyNames.has(tail)) {
+                county = tail
+                words.splice(-n, n)
+                break
+            }
+        }
+    }
+    let type: string | undefined
+    if (words.length >= 2) {
+        const canonType = canonicalType(words[words.length - 1])
+        if (canonType) {
+            type = canonType
+            words.pop()
+        }
+    }
+    return { stem: words.join(' '), ...(type && { type }), ...(county && { county }) }
+}
+
+/** Compute the shortest slug that uniquely resolves to `(cc, mc)` under
+ *  `slugMatchesMuni`. If `(stem, type)` is unique state-wide (excluding
+ *  `cc=99` Port Authority), returns `{stem}-{type}` (or `{stem}` when the
+ *  muni has no type suffix). Otherwise appends the county slug to
+ *  disambiguate. Returns null if the muni isn't in `cc2mc2mn`. */
+export function canonicalMuniSlug(cc: number, mc: number, cc2mc2mn: CC2MC2MN): string | null {
+    const county = cc2mc2mn[cc]
+    if (!county) return null
+    const mn = county.mc2mn[mc]
+    if (!mn) return null
+    const parsed = parseSlug(mn)
+    let count = 0
+    for (const [cc2, county2] of Object.entries(cc2mc2mn)) {
+        if (Number(cc2) === 99) continue
+        for (const mn2 of Object.values(county2.mc2mn)) {
+            const p2 = parseSlug(mn2)
+            if (slugMatchesMuni(parsed, p2)) count++
+        }
+    }
+    const short = parsed.type ? `${parsed.stem}-${parsed.type}` : parsed.stem
+    const shortSlug = short.replace(/\s+/g, '-')
+    if (count === 1) return shortSlug
+    return `${shortSlug}-${normalize(county.cn)}`
+}
+
 /** Levenshtein edit distance. Small helper — NJ counties have ~20-40 munis
  *  and slugs stay short, so an O(mn) DP is fine. */
 export function levenshtein(a: string, b: string): number {

@@ -38,7 +38,13 @@ export function useGeoFilter() {
     return useContext(GeoFilterContext)
 }
 
-export function GeoFilterProvider({ children }: { children: React.ReactNode }) {
+/** Explicit scope override for callers that resolve `(cc, mc)` from a
+ *  non-`/c/:county/:city` route (e.g. `/{muni-slug}`) and want to render
+ *  the muni page inline. When provided, bypasses `useParams` resolution;
+ *  the values here go straight into the context. */
+export type GeoScopeOverride = { cc: number, mc: number | null, countyName: string, municipalityName: string | null }
+
+export function GeoFilterProvider({ children, override }: { children: React.ReactNode, override?: GeoScopeOverride }) {
     const { county: countySlug, city: citySlug } = useParams<{ county?: string; city?: string }>()
     const navigate = useNavigate()
     const [cc2mc2mn, setCc2mc2mn] = useState<CC2MC2MN | null>(null)
@@ -56,11 +62,21 @@ export function GeoFilterProvider({ children }: { children: React.ReactNode }) {
     // Resolve route params to codes and names. On failure, surface the
     // raw slug via `countySlugUnresolved` / `muniSlugUnresolved` so callers
     // can render a "not found" panel instead of silently falling through
-    // to the state / county view.
+    // to the state / county view. If `override` is supplied, skip param
+    // parsing entirely and use those values.
     const { cc, mc, countyName, municipalityName, countySlugUnresolved, muniSlugUnresolved } = useMemo(() => {
         const empty = {
             cc: null, mc: null, countyName: null, municipalityName: null,
             countySlugUnresolved: null, muniSlugUnresolved: null,
+        }
+        if (override) {
+            return {
+                ...empty,
+                cc: override.cc,
+                mc: override.mc,
+                countyName: override.countyName,
+                municipalityName: override.municipalityName,
+            }
         }
         if (!cc2mc2mn || !countySlug) return empty
         const cn = denormalize(countySlug)
@@ -75,7 +91,7 @@ export function GeoFilterProvider({ children }: { children: React.ReactNode }) {
         const mc = mcRaw !== null ? Number(mcRaw) : null
         if (mc === null) return { ...empty, cc, countyName: cn, muniSlugUnresolved: citySlug }
         return { ...empty, cc, mc, countyName: cn, municipalityName: mn }
-    }, [cc2mc2mn, countySlug, citySlug, cn2cc])
+    }, [cc2mc2mn, countySlug, citySlug, cn2cc, override])
 
     const setCounty = (name: string | null) => {
         if (name) {
