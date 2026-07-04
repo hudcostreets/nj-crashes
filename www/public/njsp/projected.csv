@@ -1,10 +1,10 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_365,trailing_365_driver,trailing_365_passenger,trailing_365_pedestrian,trailing_365_cyclist
 ,,Atlantic,,35,1,18,9,10,33,17,6,11,1
-,,Bergen,,36,0,20,0,18,34,21,1,12,0
+,,Bergen,,36,0,20,0,18,33,20,1,12,0
 ,,Burlington,,35,0,25,6,7,36,25,6,8,1
 ,,Camden,,26,2,12,2,10,30,14,2,12,3
 ,,Cape May,,4,0,3,1,0,6,5,2,0,0
-,,Cumberland,,19,0,11,2,6,20,11,2,7,0
+,,Cumberland,,18,0,10,2,6,19,10,2,7,0
 ,,Essex,,38,0,11,2,29,42,14,2,28,0
 ,,Gloucester,,28,2,17,5,3,27,18,5,3,2
 ,,Hudson,,32,0,18,0,18,26,13,0,14,0
@@ -18,7 +18,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Salem,,13,0,12,2,0,15,12,5,1,0
 ,,Somerset,,14,0,13,0,2,14,11,1,2,0
 ,,Sussex,,35,0,9,0,3,14,10,0,4,0
-,,Union,,46,0,19,6,25,37,15,6,17,1
+,,Union,,49,0,21,6,27,38,15,5,18,1
 ,,Warren,,8,0,5,0,2,8,5,1,2,0
 1,1,Atlantic,Absecon City,0,0,0,0,0,1,0,0,1,0
 1,2,Atlantic,Atlantic City,8,1,3,3,2,6,3,2,2,1
@@ -42,7 +42,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 2,16,Bergen,Englewood Cliffs Bo,0,0,0,0,0,0,0,0,0,0
 2,17,Bergen,Fair Lawn Boro,0,0,0,0,0,1,1,0,0,0
 2,19,Bergen,Fort Lee Boro,2,0,1,0,1,3,2,0,1,0
-2,21,Bergen,Garfield City,2,0,0,0,1,2,1,0,1,0
+2,21,Bergen,Garfield City,2,0,0,0,1,1,0,0,1,0
 2,23,Bergen,Hackensack City,3,0,0,0,3,3,1,0,2,0
 2,25,Bergen,Hasbrouck Heights B,0,0,0,0,0,0,0,0,0,0
 2,29,Bergen,Leonia Boro,0,0,0,0,0,1,0,0,1,0
@@ -115,7 +115,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 6,3,Cumberland,Deerfield Twsp,0,0,0,0,0,1,0,1,0,0
 6,5,Cumberland,Fairfield Twsp,4,0,3,0,1,3,2,0,1,0
 6,7,Cumberland,Hopewell Twsp,0,0,0,0,0,1,1,0,0,0
-6,9,Cumberland,Maurice River Twsp,0,0,0,0,0,1,1,0,0,0
+6,9,Cumberland,Maurice River Twsp,0,0,0,0,0,0,0,0,0,0
 6,10,Cumberland,Millville City,1,0,0,0,1,3,1,0,2,0
 6,13,Cumberland,Upper Deerfield Tws,0,0,0,0,0,0,0,0,0,0
 6,14,Cumberland,Vineland City,8,0,7,1,1,7,5,1,1,0
@@ -286,15 +286,15 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 19,24,Sussex,Wantage Twsp,0,0,0,0,0,1,1,0,0,0
 20,1,Union,Berkeley Heights Tw,0,0,0,0,0,1,0,0,1,0
 20,4,Union,Elizabeth City,14,0,3,0,10,11,3,0,8,0
-20,7,Union,Hillside Twsp,2,0,1,0,0,2,1,1,0,0
+20,7,Union,Hillside Twsp,3,0,3,0,0,3,2,1,0,0
 20,9,Union,Linden City,4,0,2,0,3,4,2,0,2,0
 20,10,Union,Mountainside Boro,0,0,0,0,0,1,0,1,0,0
-20,12,Union,Plainfield City,7,0,4,2,1,6,4,3,1,0
+20,12,Union,Plainfield City,7,0,4,2,1,5,3,2,1,0
 20,13,Union,Rahway City,1,0,1,0,0,1,1,0,0,0
 20,14,Union,Roselle Boro,0,0,0,0,0,1,1,0,0,0
 20,16,Union,Scotch Plains Twsp,0,0,0,0,0,1,0,0,1,0
 20,17,Union,Springfield Twsp,1,0,1,0,0,1,1,0,0,0
-20,19,Union,Union Twsp,9,0,2,1,5,7,2,1,4,0
+20,19,Union,Union Twsp,10,0,2,1,7,8,2,1,5,0
 20,20,Union,Westfield Town,0,0,0,0,0,1,0,0,0,1
 21,1,Warren,Allamuchy Twsp,0,0,0,0,0,0,0,0,0,0
 21,4,Warren,Blairstown Twsp,0,0,0,0,0,0,0,0,0,0
