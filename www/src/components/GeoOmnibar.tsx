@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { useAction, useOmnibarEndpoint } from "use-kbd"
 import type { EndpointPagination, EndpointResponse, OmnibarEntry } from "use-kbd"
 import { useGeoFilter } from "@/src/GeoFilterContext"
-import { normalize } from "@/src/county"
+import { canonicalMuniHref, normalize } from "@/src/county"
 
 /**
  * Registers:
@@ -32,7 +32,7 @@ export function useGeoActions() {
                     id: `muni:${normalize(cn)}:${normalize(mn)}`,
                     label: mn,
                     description: `${cn} County`,
-                    href: `/c/${normalize(cn)}/${normalize(mn)}`,
+                    href: canonicalMuniHref(cn, mn, cc2mc2mn),
                     group: 'Municipalities',
                     keywords: [cn],
                 })

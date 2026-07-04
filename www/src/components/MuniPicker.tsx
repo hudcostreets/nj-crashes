@@ -1,7 +1,8 @@
 import { useMemo } from "react"
 import muniMaps from "@/src/muni-maps.json"
 import { RegionMapPicker, type RegionData } from "./RegionMapPicker"
-import { normalize } from "@/src/county"
+import { canonicalMuniHref, normalize } from "@/src/county"
+import { useGeoFilter } from "@/src/GeoFilterContext"
 
 const allMuniMaps = muniMaps as Record<string, RegionData>
 
@@ -13,6 +14,7 @@ type Props = {
 
 export function MuniPicker({ county, selected, onSelect }: Props) {
     const data = useMemo(() => allMuniMaps[county] ?? null, [county])
+    const { cc2mc2mn } = useGeoFilter()
     if (!data) return null
 
     const countySlug = normalize(county)
@@ -21,7 +23,7 @@ export function MuniPicker({ county, selected, onSelect }: Props) {
             data={data}
             selected={selected}
             onSelect={onSelect}
-            hrefFor={name => name ? `/c/${countySlug}/${normalize(name)}` : `/c/${countySlug}`}
+            hrefFor={name => name ? canonicalMuniHref(county, name, cc2mc2mn) : `/c/${countySlug}`}
             allLabel={`All ${county}`}
         />
     )

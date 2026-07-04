@@ -136,6 +136,26 @@ export function canonicalMuniSlug(cc: number, mc: number, cc2mc2mn: CC2MC2MN): s
     return `${shortSlug}-${normalize(county.cn)}`
 }
 
+/** Convenience: resolve `(countyName, muniName)` to the canonical short
+ *  URL (e.g. `/hopewell-boro`). Falls back to `/c/{county}/{muni}` when
+ *  `cc2mc2mn` is still loading or the pair doesn't resolve — the
+ *  `CanonicalizeMuni` redirect handler catches those on land. Use from
+ *  any callsite that emits a muni link, so we don't ship URLs that
+ *  redirect-flash on click. */
+export function canonicalMuniHref(cn: string, mn: string, cc2mc2mn: CC2MC2MN | null): string {
+    const fallback = `/c/${normalize(cn)}/${normalize(mn)}`
+    if (!cc2mc2mn) return fallback
+    for (const [cc, county] of Object.entries(cc2mc2mn)) {
+        if (county.cn !== cn) continue
+        for (const [mc, storedMn] of Object.entries(county.mc2mn)) {
+            if (storedMn !== mn) continue
+            const slug = canonicalMuniSlug(Number(cc), Number(mc), cc2mc2mn)
+            return slug ? `/${slug}` : fallback
+        }
+    }
+    return fallback
+}
+
 /** Levenshtein edit distance. Small helper — NJ counties have ~20-40 munis
  *  and slugs stay short, so an O(mn) DP is fine. */
 export function levenshtein(a: string, b: string): number {

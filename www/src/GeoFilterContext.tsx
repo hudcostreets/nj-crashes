@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { CC2MC2MN, denormalize, normalize } from "@/src/county"
+import { CC2MC2MN, canonicalMuniHref, denormalize, normalize } from "@/src/county"
 import { loadCC2MC2MN } from "@/src/lib/data"
 import { mapEntries } from "@rdub/base/objs"
 
@@ -103,7 +103,7 @@ export function GeoFilterProvider({ children, override }: { children: React.Reac
 
     const setMunicipality = (name: string | null) => {
         if (name && countyName) {
-            navigate(`/c/${normalize(countyName)}/${normalize(name)}`)
+            navigate(canonicalMuniHref(countyName, name, cc2mc2mn))
         } else if (countyName) {
             navigate(`/c/${normalize(countyName)}`)
         }
