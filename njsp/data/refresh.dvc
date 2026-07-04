@@ -3,4 +3,4 @@ meta:
     cmd: njsp refresh_data --s3
     fetch:
       schedule: 30 15 * * *
-      last_run: '2026-07-04T11:40:35.722945+00:00'
+      last_run: '2026-07-04T16:33:17.345149+00:00'
