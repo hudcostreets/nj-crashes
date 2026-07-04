@@ -31,6 +31,49 @@ export const muniKey = (s: string): string =>
         .replace(/\s+/g, ' ')
         .trim()
 
+/** Canonicalize a muni type suffix. `Boro`/`Borough` → `boro`,
+ *  `Twp`/`Township` → `twp`, `City` → `city`, `Village` → `village`.
+ *  Returns undefined for anything else. */
+export function canonicalType(word: string): string | undefined {
+    const w = word.toLowerCase().replace(/\.$/, '')
+    if (w === 'boro' || w === 'borough') return 'boro'
+    if (w === 'twp' || w === 'township') return 'twp'
+    if (w === 'city') return 'city'
+    if (w === 'village') return 'village'
+    return undefined
+}
+
+/** Split a slug or muni name into `{ stem, type? }`. `hopewell-boro` →
+ *  `{ stem: 'hopewell', type: 'boro' }`; `hopewell` → `{ stem: 'hopewell' }`.
+ *  Whitespace and hyphens both split words; case-insensitive; strips the
+ *  trailing period `.` on `Twp.`/`Boro.` NJDOT variants.
+ *
+ *  NOTE: only strips a *single* trailing type token. `Long Beach Twp` →
+ *  `{ stem: 'long beach', type: 'twp' }`. `New Providence` → no trailing
+ *  type → `{ stem: 'new providence' }`. */
+export function parseSlug(s: string): { stem: string, type?: string } {
+    const words = s.toLowerCase().replace(/[-_.]+/g, ' ').split(/\s+/).filter(Boolean)
+    if (words.length < 2) return { stem: words.join(' ') }
+    const last = words[words.length - 1]
+    const type = canonicalType(last)
+    if (type) return { stem: words.slice(0, -1).join(' '), type }
+    return { stem: words.join(' ') }
+}
+
+/** Match rule between an input slug and a candidate muni. Strict when the
+ *  input specifies a type; wildcard when it doesn't.
+ *
+ *  - Stems must be equal.
+ *  - If input has no type: any candidate with the same stem matches.
+ *  - If input has a type: candidate must have the same type. Candidates
+ *    with no stored type (e.g. Cumberland's "Hopewell") are *excluded* —
+ *    this is a known limitation until `cc2mc2mn.json` stores types. */
+export function slugMatchesMuni(input: { stem: string, type?: string }, candidate: { stem: string, type?: string }): boolean {
+    if (input.stem !== candidate.stem) return false
+    if (input.type === undefined) return true
+    return candidate.type === input.type
+}
+
 /** Levenshtein edit distance. Small helper — NJ counties have ~20-40 munis
  *  and slugs stay short, so an O(mn) DP is fine. */
 export function levenshtein(a: string, b: string): number {

@@ -16,7 +16,7 @@
  *  suggestion (per `suggestMunisStatewide`). */
 import { useEffect, useState } from "react"
 import { Link, Navigate, useParams } from "react-router-dom"
-import { CC2MC2MN, muniKey, normalize, suggestMunisStatewide } from "@/src/county"
+import { CC2MC2MN, normalize, parseSlug, slugMatchesMuni, suggestMunisStatewide } from "@/src/county"
 import { loadCC2MC2MN } from "@/src/lib/data"
 import { Head } from "@/src/lib/head"
 import { url } from "@/src/site"
@@ -24,14 +24,17 @@ import css from "@/src/components/RegionNotFound.module.scss"
 
 type ExactMatch = { cc: number, cn: string, countySlug: string, mc: number, mn: string, muniSlug: string }
 
-function exactMatches(slug: string, cc2mc2mn: CC2MC2MN): ExactMatch[] {
-    const key = muniKey(slug.replace(/-/g, " "))
+/** Resolve a slug against `cc2mc2mn` via `parseSlug` + `slugMatchesMuni`.
+ *  Filters out `cc=99` (Port Authority — not a real jurisdiction). */
+function resolveMatches(slug: string, cc2mc2mn: CC2MC2MN): ExactMatch[] {
+    const input = parseSlug(slug)
     const out: ExactMatch[] = []
     for (const [cc, county] of Object.entries(cc2mc2mn)) {
         if (Number(cc) === 99) continue
         const countySlug = normalize(county.cn)
         for (const [mc, mn] of Object.entries(county.mc2mn)) {
-            if (muniKey(mn) === key) {
+            const candidate = parseSlug(mn)
+            if (slugMatchesMuni(input, candidate)) {
                 out.push({ cc: Number(cc), cn: county.cn, countySlug, mc: Number(mc), mn, muniSlug: normalize(mn) })
             }
         }
@@ -47,7 +50,7 @@ export default function MuniSlugRoute() {
     if (!muniSlug) return null
     if (!cc2mc2mn) return <div style={{ padding: "1em" }}>Loading…</div>
 
-    const matches = exactMatches(muniSlug, cc2mc2mn)
+    const matches = resolveMatches(muniSlug, cc2mc2mn)
 
     if (matches.length === 1) {
         const m = matches[0]
