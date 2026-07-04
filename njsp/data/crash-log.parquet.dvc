@@ -1,10 +1,10 @@
 outs:
-- md5: 24b2ee6c2027a16985edf2592c67ae92
-  size: 510917
+- md5: 7ac69e5e440503277fb2af7d078d6384
+  size: 511033
   hash: md5
   path: crash-log.parquet
 meta:
   computation:
     cmd: njsp crash_log compute -a njsp/data/crash-log.parquet -i -v
     deps:
-      crashes.parquet: 4182b76d9ced2eabba6a4fd740c7c818
+      crashes.parquet: 37600558dd34cef5cb589f75d524901c
