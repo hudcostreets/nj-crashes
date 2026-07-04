@@ -26,6 +26,7 @@ const CrashDetailPage = lazy(() => import('./routes/CrashDetailPage'))
 const RawFileBrowser = lazy(() => import('./raw/RawFileBrowser'))
 const FilesPage = lazy(() => import('./routes/FilesPage'))
 const HarmonizationPage = lazy(() => import('./routes/HarmonizationPage'))
+const MuniSlugRoute = lazy(() => import('./routes/MuniSlugRoute'))
 
 function GeoHome() {
     return <GeoFilterProvider><GeoActionsRegistrar /><Home /></GeoFilterProvider>
@@ -78,6 +79,11 @@ export default function App() {
                 <Route path="/h11n" element={<HarmonizationPage />} />
                 <Route path="/files" element={<FilesPage />} />
                 <Route path="/files/*" element={<FilesPage />} />
+                {/* Bare `/{muni-slug}` convenience URL — resolves state-wide via
+                    `muniKey` and redirects to `/c/{county}/{muni}` when unique;
+                    picker when ambiguous; 404 with suggestions when nothing
+                    matches. See `specs/canonical-muni-slugs.md`. */}
+                <Route path="/:muniSlug" element={<MuniSlugRoute />} />
                 <Route path="*" element={<NotFound />} />
             </Routes>
             </Suspense>

@@ -52,6 +52,37 @@ export function levenshtein(a: string, b: string): number {
 
 export type MuniSuggestion = { mc: number, mn: string, slug: string, similarity: number }
 
+/** State-wide muni suggestion: also carries the containing county so a
+ *  URL like `/hopewell-boro` (no county segment) can be resolved to
+ *  `/c/{countySlug}/{muniSlug}`. */
+export type StatewideMuniSuggestion = MuniSuggestion & { cc: number, cn: string, countySlug: string }
+
+/** Search all counties' munis for slug matches. Uses the same
+ *  Levenshtein-similarity ranking as `suggestMunis`, but flattens across
+ *  the whole state. Also filters out `cc=99` (Port Authority — not a
+ *  real jurisdiction users would type as a slug). */
+export function suggestMunisStatewide(
+    slug: string,
+    cc2mc2mn: CC2MC2MN,
+    { limit = 5, threshold = 0.5 }: { limit?: number, threshold?: number } = {},
+): StatewideMuniSuggestion[] {
+    const target = slug.toLowerCase()
+    const scored: StatewideMuniSuggestion[] = []
+    for (const [cc, county] of Object.entries(cc2mc2mn)) {
+        if (Number(cc) === 99) continue
+        const countySlug = normalize(county.cn)
+        for (const [mc, mn] of Object.entries(county.mc2mn)) {
+            const candSlug = normalize(mn)
+            const dist = levenshtein(target, candSlug)
+            const maxLen = Math.max(target.length, candSlug.length)
+            const similarity = maxLen === 0 ? 1 : 1 - dist / maxLen
+            if (similarity < threshold) continue
+            scored.push({ mc: Number(mc), mn, slug: candSlug, similarity, cc: Number(cc), cn: county.cn, countySlug })
+        }
+    }
+    return scored.sort((a, b) => b.similarity - a.similarity).slice(0, limit)
+}
+
 /** Rank a county's munis by slug similarity to `slug`, returning up to
  *  `limit` matches above the `threshold` similarity (0..1 normalized
  *  Levenshtein). Used to answer "did you mean" when a URL slug doesn't
