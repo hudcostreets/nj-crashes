@@ -335,11 +335,23 @@ def build_names(m12, m02, cc2cn, df2):
     m = m.merge(cc2cn, left_on='cc', right_index=True, how='left', validate='m:1')
     m = m[['cc', 'cn', 'mc_gin', 'mc_dot', 'mc_sp', 'mn', 'stem', 'type']]
 
-    # Short names: drop type suffix by default; preserve full for "Atlantic City"-style cities
-    # and for stem-collisions ("Bordentown" + "Bordentown Twp").
+    # Short names: drop type suffix by default; preserve full when needed
+    # to disambiguate. Three preservation triggers:
+    #   1. CITIES entries — "Atlantic City", "Jersey City", etc. Always
+    #      shown with "City" because that's their canonical name.
+    #   2. Within-county stem collisions — Warren has both "Washington Boro"
+    #      and "Washington Twp"; both need the suffix.
+    #   3. State-wide stem collisions — "Washington" appears in Bergen,
+    #      Burlington, Gloucester, Morris, and Warren; without the type
+    #      suffix, `/washington-twp` URL routing can't tell them apart
+    #      from Warren's "Washington Boro". And `stem in CITY_STEMS`
+    #      catches Union Twp (Hunterdon, Union County) so they don't
+    #      visually collide with Union City (Hudson).
     city_full_mask = df2.mn.isin(CITIES)
     cnn_dupe_mask = df2.duplicated(['cc', 'stem'], keep=False)
-    full_name_mask = city_full_mask | cnn_dupe_mask
+    statewide_dupe_mask = df2.duplicated(['stem'], keep=False)
+    city_stem_mask = df2.stem.isin(CITY_STEMS)
+    full_name_mask = city_full_mask | cnn_dupe_mask | statewide_dupe_mask | city_stem_mask
     names = df2.copy()
     names['name'] = names['stem']
     names.loc[full_name_mask & ~city_full_mask, 'name'] = names.loc[full_name_mask & ~city_full_mask].apply(
