@@ -193,15 +193,16 @@ test.describe('YTD legend', () => {
     )
 
     expect(await lineWidth()).toBe(2)
-    // Center the item in the viewport before hovering — the sticky `GeoNavBar`
-    // (`z: 100`) at top + various controls/wrappers below the plot can intercept
-    // pointer events at viewport edges, which trips Playwright's actionability
-    // check. `block: 'center'` parks the item well clear of either.
-    await items.nth(idx).evaluate(el => el.scrollIntoView({ block: 'center' }))
-    await items.nth(idx).hover()
+    // pltly's `useLegendHover` binds `mouseover`/`mouseout` directly on the
+    // `.legend .traces` element, so dispatching those events on the LI is
+    // sufficient to drive the highlight — no real hover needed. This avoids
+    // Playwright's actionability check tripping on the sticky `GeoNavBar` or
+    // NjspSection `controlsWrapper` intercepting pointer events at the LI's
+    // scroll-target position (a slow-CI-runner flake seen in GHA).
+    await items.nth(idx).dispatchEvent('mouseover')
     await expect.poll(lineWidth).toBe(5)
 
-    await page.mouse.move(0, 0)
+    await items.nth(idx).dispatchEvent('mouseout')
     await expect.poll(lineWidth).toBe(2)
   })
 
