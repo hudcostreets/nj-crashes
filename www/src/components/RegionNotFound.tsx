@@ -13,7 +13,11 @@ function suggestCounties(
     { limit = 3, threshold = 0.4 }: { limit?: number, threshold?: number } = {},
 ): CountySuggestion[] {
     const target = slug.toLowerCase()
-    const scored: CountySuggestion[] = Object.entries(cc2mc2mn).map(([cc, county]) => {
+    // Exclude `cc=99` (Port Authority — bridges/tunnels jurisdiction, not
+    // a real NJ county) so we don't offer it as a "did you mean" match.
+    const scored: CountySuggestion[] = Object.entries(cc2mc2mn)
+        .filter(([cc]) => Number(cc) !== 99)
+        .map(([cc, county]) => {
         const candSlug = normalize(county.cn)
         // Inline Levenshtein call would create a cycle; just proxy through
         // `suggestMunis` semantics — but we want county names, so replicate

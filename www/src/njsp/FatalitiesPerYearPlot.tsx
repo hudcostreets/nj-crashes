@@ -78,10 +78,16 @@ type TypeCounts = {
     passenger: number
 }
 
-// Projection row also carries trailing-365d total — same shape as TypeCounts
-// but with one extra field. Separate type so `keyof TypeCounts` (used by
-// `typesMap` for per-victim-type indexing) doesn't pick up `trailing_365`.
-type ProjectionRow = TypeCounts & { trailing_365: number }
+// Projection row carries trailing-365d totals split by victim type so the
+// header can filter to the active `t=` subset client-side. Separate type
+// so `keyof TypeCounts` (used by `typesMap` for per-victim-type indexing)
+// doesn't pick up the `trailing_365_*` extras.
+type ProjectionRow = TypeCounts & {
+    trailing_365_driver: number
+    trailing_365_pedestrian: number
+    trailing_365_cyclist: number
+    trailing_365_passenger: number
+}
 
 const curYear = new Date().getFullYear()
 const prvYear = curYear - 1
@@ -102,10 +108,10 @@ const typeCountsQuery = (county: string | null, cc: number | null, mc: number | 
         CAST(sum(pedestrian) as INT) as pedestrian,
         CAST(sum(cyclist) as INT) as cyclist,
         CAST(sum(passenger) as INT) as passenger,
-        CAST(sum(trailing_365_driver
-                + trailing_365_pedestrian
-                + trailing_365_cyclist
-                + trailing_365_passenger) as INT) as trailing_365
+        CAST(sum(trailing_365_driver) as INT) as trailing_365_driver,
+        CAST(sum(trailing_365_pedestrian) as INT) as trailing_365_pedestrian,
+        CAST(sum(trailing_365_cyclist) as INT) as trailing_365_cyclist,
+        CAST(sum(trailing_365_passenger) as INT) as trailing_365_passenger
     FROM read_csv_auto('projected')
     ${where}
 `
@@ -288,7 +294,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
 
     // Projected current-year totals (statewide / county / municipality).
     const projectionsQueryStr = useMemo(() => typeCountsQuery(county, propCc ?? null, propMc ?? null), [county, propCc, propMc])
-    const [projections] = useQuery<ProjectionRow>({ db: projectionsDb, query: projectionsQueryStr, init: [{ driver: 0, pedestrian: 0, cyclist: 0, passenger: 0, trailing_365: 0 }] })
+    const [projections] = useQuery<ProjectionRow>({ db: projectionsDb, query: projectionsQueryStr, init: [{ driver: 0, pedestrian: 0, cyclist: 0, passenger: 0, trailing_365_driver: 0, trailing_365_pedestrian: 0, trailing_365_cyclist: 0, trailing_365_passenger: 0 }] })
     const monthlyQueryStr = useMemo(() => monthlyQueryFn(county, propCc ?? null, propMc ?? null), [county, propCc, propMc])
     const monthlyRowsAll = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
 
@@ -853,13 +859,19 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     const total2021 = yearTotals[2021]?.actual ?? 0
     const total2022 = yearTotals[2022]?.actual ?? 0
     const countyLabel = regionLabel ?? (county ? `${county} County` : "NJ")
+    // Sum trailing-365d only over the active `t=` subset so the header
+    // headline tracks the same filter the plot bars reflect.
+    const trailing365 = selectedTypeKeys.reduce(
+        (sum, t) => sum + (projections[`trailing_365_${t}` as keyof ProjectionRow] as number),
+        0,
+    )
 
     return (
         <div ref={containerRef}>
             <h2 id={id}>
                 <a href={`#${id}`}>Car Crash Deaths</a>
             </h2>
-            <div className={css.subtitle}>{activeType ? `${TYPE_SINGULAR[activeType]} ` : ''}Fatalities{effectivePerCapita ? ' per 100k population' : ''}, {yearRange ? `${yearRange[0]}–${yearRange[1]}` : '2001–present'}{regionLabel ? ` · ${regionLabel}` : initialCounty ? ` · ${initialCounty} County` : ''}{projections.trailing_365 > 0 ? ` · Last 365 days: ${projections.trailing_365.toLocaleString()} deaths` : ''}</div>
+            <div className={css.subtitle}>{activeType ? `${TYPE_SINGULAR[activeType]} ` : ''}Fatalities{effectivePerCapita ? ' per 100k population' : ''}, {yearRange ? `${yearRange[0]}–${yearRange[1]}` : '2001–present'}{regionLabel ? ` · ${regionLabel}` : initialCounty ? ` · ${initialCounty} County` : ''}{trailing365 > 0 ? ` · Last 365 days: ${trailing365.toLocaleString()} deaths` : ''}</div>
             <PlotWrapper
                 key={`${timeGranularity}-${activeType ?? 'all'}-${highlightProjected}-${showPop ? 'pop' : 'nopop'}`}
                 id={id}
