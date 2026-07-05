@@ -7,7 +7,7 @@
  *  selects, severity Legend, hexbin controls, debug drawer.
  */
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
-import { useUrlState, viewStateParam, cleanUrl, optFloatParam } from "use-prms"
+import { useUrlState, viewStateParam, cleanUrl, optFloatParam, boolParam } from "use-prms"
 import { usePageFilters, YEAR_RANGE_DEFAULT } from "@/src/PageFiltersContext"
 import type { CrashFilter } from "@/src/map/useCrashData"
 import { useCellsApi, CELLS_BUDGET } from "@/src/map/useCellsApi"
@@ -24,7 +24,8 @@ import useSessionStorageState from "use-session-storage-state"
 import { useToolboxOpen } from "@/src/map/useToolboxOpen"
 import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
 import type { MapManifestV2 } from "@/src/map/v2"
-import { fitBoundsToView, lerpView, pickHexResolutionForPixels } from "@/src/map/CrashMap"
+import { fitBoundsToView, lerpView, metersPerPixel, pickHexResolutionForPixels } from "@/src/map/CrashMap"
+import { H3_RADIUS_METERS } from "@/src/map/StackedHexLayer"
 import { DebugOverlay } from "@/src/map/DebugOverlay"
 import { YearSelect } from "@/src/lib/year-select"
 
@@ -179,10 +180,18 @@ export function CrashMapSection({
     //           consistent visual weight regardless of zoom / muni size.
     const [hexPxTargetUrl, setHexPxTargetUrl] = useUrlState("hpx", optFloatParam(), { debounce: 100 })
     const [heightScaleUrl, setHeightScaleUrl] = useUrlState("hs", optFloatParam(), { debounce: 100 })
-    const hexPxTarget = hexPxTargetUrl ?? 1.7
+    // `hexAuto` — when true (default), hexPxTarget grows with zoom so
+    // close-up views get chunkier, more-pickable cells; when false, the
+    // manual slider value wins. `?ha=false` to opt out of adaptive.
+    const [hexAutoUrl, setHexAutoUrl] = useUrlState("ha", boolParam)
+    // `boolParam` default is `false`; we invert to keep the URL absent
+    // when the user is on the default (auto=on). `?ha=1` when disabled.
+    const hexAuto = !hexAutoUrl
+    const setHexAuto = (v: boolean) => setHexAutoUrl(!v)
     const heightScale = heightScaleUrl ?? 0.3
-    const setHexPxTarget = (v: number) => setHexPxTargetUrl(v === 1.7 ? null : v)
     const setHeightScale = (v: number) => setHeightScaleUrl(v === 0.3 ? null : v)
+    const manualHexPx = hexPxTargetUrl ?? 1.7
+    const setHexPxTarget = (v: number) => setHexPxTargetUrl(v === 1.7 ? null : v)
     // Drawer defaults open on the full-screen route (room to spare) and
     // closed in the embed (don't occlude the small panel on first paint).
     const [drawerOpen, setDrawerOpen] = useToolboxOpen(fullScreen)
@@ -254,6 +263,47 @@ export function CrashMapSection({
         return fitBoundsToView(bbox, w, h, mode === "hexbin" ? 45 : 0)
     }, [llz, cc, mc, mode, v2Manifest, fullScreen, initialView])
 
+    // Effective hex-pixel target. When `hexAuto` is on, use an exponential
+    // ramp calibrated for floor-semantics — `hexPxTarget` is the *min* cell
+    // size the picker will render. Anchor points from CIC:
+    //   z=7  → 1.0px  (statewide; floor picks r8, `~1.4`px dia)
+    //   z=13 → 3.5px  (city;      floor picks r11, `~3.5`px dia)
+    //   z=16 → 6.9px  (street;    floor picks r12, `~12`px dia)
+    // Formula: `0.9 × 1.234^(z-7)` clamped to [1, 30]. The 0.9 coefficient
+    // targets the geometric mean of each anchor's cell size and its finer
+    // neighbor, giving ~10% slack so borderline resolutions clear floor
+    // reliably (e.g. r11 at z=13, where r11.dia = 3.44px and the raw
+    // exponential lands at 3.47px would exclude r11 by 1%).
+    // Density and vp-size are second-order and intentionally ignored —
+    // hex-px is per-cell-in-screen-space, invariant to vp size; a
+    // density-adaptive variant would introduce a feedback loop between
+    // hexPxTarget → picker res → cells → hexPxTarget.
+    const hexPxTarget = useMemo(() => {
+        if (!hexAuto) return manualHexPx
+        const zoom = effectiveView?.zoom ?? 7
+        return Math.min(30, Math.max(1.0, 0.9 * Math.pow(1.234, zoom - 7)))
+    }, [hexAuto, manualHexPx, effectiveView?.zoom])
+
+    // Picker-state snapshot: current H3 resolution + adjacent levels
+    // (one coarser, one finer) as clickable jump targets. Neighbors that
+    // don't exist (below r0 / above r15) are omitted from the carousel.
+    const pickerInfo = useMemo(() => {
+        if (!effectiveView) return null
+        const { zoom, latitude } = effectiveView
+        const mppx = metersPerPixel(zoom, latitude)
+        const currRes = pickHexResolutionForPixels(hexPxTarget, zoom, latitude)
+        const pxAt = (r: number): number | null => {
+            const rad = H3_RADIUS_METERS[r]
+            if (rad === undefined) return null
+            return (2 * rad) / mppx
+        }
+        const levels: { res: number, px: number, isCurrent: boolean }[] = []
+        for (const res of [currRes - 1, currRes, currRes + 1]) {
+            const px = pxAt(res)
+            if (px !== null) levels.push({ res, px, isCurrent: res === currRes })
+        }
+        return { levels }
+    }, [effectiveView, hexPxTarget])
 
     const filter: CrashFilter = useMemo(() => {
         const base: CrashFilter = {
@@ -698,7 +748,14 @@ export function CrashMapSection({
                 </div>
                 {mode === "hexbin" && (
                     <>
-                        <HexPxTargetSlider value={hexPxTarget} onChange={setHexPxTarget} />
+                        <HexPxTargetSlider
+                            value={hexPxTarget}
+                            onChange={setHexPxTarget}
+                            auto={hexAuto}
+                            onAutoChange={setHexAuto}
+                            pickerInfo={pickerInfo}
+                            zoom={effectiveView?.zoom}
+                        />
                         <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
                             <span style={{ fontSize: "0.78em" }}>Height scale: <b>{heightScale.toFixed(2)}</b></span>
                             <input
@@ -959,25 +1016,85 @@ function Legend({
 /** Direct-px slider for `hexPxTarget`. Log-spaced on a 0-100 abstract
  *  scale (so each tick is a constant log-px ratio), but always shows the
  *  actual px value alongside. Defaults to 1.2 px on first session use. */
-function HexPxTargetSlider({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+function HexPxTargetSlider({
+    value, onChange, auto, onAutoChange, pickerInfo, zoom,
+}: {
+    value: number
+    onChange: (n: number) => void
+    auto: boolean
+    onAutoChange: (v: boolean) => void
+    pickerInfo: {
+        levels: { res: number, px: number, isCurrent: boolean }[],
+    } | null
+    zoom: number | undefined
+}) {
     const MIN = 0.5, MAX = 30
     const toScale = (v: number) => 100 * (Math.log2(v / MIN) / Math.log2(MAX / MIN))
     const fromScale = (s: number) => MIN * Math.pow(MAX / MIN, s / 100)
     const sliderValue = Math.round(toScale(value))
+    const fmtPx = (px: number | null) => px === null ? "–" : (px < 5 ? px.toFixed(1) : String(Math.round(px)))
     return (
-        <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
-            <span style={{ fontSize: "0.78em" }}>Hex px target: <b>{value < 5 ? value.toFixed(1) : Math.round(value)}</b> px</span>
-            <input
-                type="range" min={0} max={100} step={1}
-                value={sliderValue}
-                onChange={e => {
-                    const px = fromScale(Number(e.target.value))
-                    const rounded = px < 5 ? Math.round(px * 10) / 10 : Math.round(px)
-                    onChange(Math.max(MIN, Math.min(MAX, rounded)))
-                }}
-                style={{ width: 100 }}
-            />
-        </label>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
+                <span style={{ fontSize: "0.78em", display: "flex", alignItems: "center", gap: 4 }}>
+                    <input
+                        type="checkbox"
+                        checked={auto}
+                        onChange={e => onAutoChange(e.target.checked)}
+                        title="Auto: grow hex px target with zoom (bigger hexes when zoomed in). Uncheck for manual control."
+                        style={{ margin: 0 }}
+                    />
+                    Hex px: <b>{value < 5 ? value.toFixed(1) : Math.round(value)}</b>
+                    {auto && <span style={{ opacity: 0.55, marginLeft: 2 }}>(auto)</span>}
+                    {zoom !== undefined && (
+                        <span style={{ opacity: 0.55, marginLeft: 4 }}>· z={zoom.toFixed(1)}</span>
+                    )}
+                </span>
+                <input
+                    type="range" min={0} max={100} step={1}
+                    value={sliderValue}
+                    disabled={auto}
+                    onChange={e => {
+                        const px = fromScale(Number(e.target.value))
+                        const rounded = px < 5 ? Math.round(px * 10) / 10 : Math.round(px)
+                        onChange(Math.max(MIN, Math.min(MAX, rounded)))
+                    }}
+                    style={{ width: 100, opacity: auto ? 0.4 : 1 }}
+                />
+            </label>
+            {pickerInfo && (
+                <div style={{
+                    fontSize: "0.78em", opacity: 0.85, paddingLeft: 22, lineHeight: 1.3,
+                    display: "flex", gap: 8, alignItems: "center",
+                }}>
+                    {pickerInfo.levels.map(({ res, px, isCurrent }) => isCurrent ? (
+                        <span key={res}><b>r{res} · {fmtPx(px)}px</b></span>
+                    ) : (
+                        <button
+                            key={res}
+                            type="button"
+                            onClick={() => {
+                                // Turn off auto so the manual target sticks
+                                // (auto formula would override it on next
+                                // render) and set the target to this
+                                // level's own px — the picker then locks
+                                // onto it.
+                                if (auto) onAutoChange(false)
+                                onChange(Math.max(MIN, Math.min(MAX, px < 5 ? Math.round(px * 10) / 10 : Math.round(px))))
+                            }}
+                            style={{
+                                background: "none", border: "none", padding: 0, color: "inherit",
+                                cursor: "pointer", textDecoration: "underline dotted",
+                                font: "inherit", opacity: 0.75,
+                            }}
+                            title={`Snap to H3 resolution r${res}`}
+                        >
+                            r{res} · {fmtPx(px)}px
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
     )
 }
 

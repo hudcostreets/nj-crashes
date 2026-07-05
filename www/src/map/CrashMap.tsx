@@ -135,24 +135,32 @@ function severityRgba(sev: Crash["severity"], alpha = 200): [number, number, num
 }
 
 /** Web-mercator meters-per-pixel at given zoom + latitude. */
-function metersPerPixel(zoom: number, lat: number): number {
+export function metersPerPixel(zoom: number, lat: number): number {
     return 156543.03 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom)
 }
 
-/** Pick integer H3 resolution whose on-screen vertex-to-vertex diameter
- *  is closest to the desired pixel target at the current zoom+latitude.
- *  `pixelTarget` matches the visual ⌀-px column in the debug overlay
- *  (= 2× edge-px). Comparison on a log2 scale so ±1 resolution is one
- *  constant step of coarseness. */
+/** Pick integer H3 resolution — floor semantics: `pixelTarget` is a
+ *  *minimum* cell size, so we return the finest resolution whose
+ *  vertex-to-vertex diameter still meets or exceeds the target at the
+ *  current zoom+latitude. Ensures cells never render smaller than the
+ *  user's target, so pickability doesn't silently degrade at cell-size
+ *  boundaries the way "closest-on-log2" would (halfway between two
+ *  levels, closest picks the finer one, dropping below target).
+ *
+ *  If no resolution qualifies (target > coarsest cell), returns r0
+ *  (globe-scale). */
 export function pickHexResolutionForPixels(pixelTarget: number, zoom: number, lat: number): number {
     const mppx = metersPerPixel(zoom, lat)
     const targetMeters = pixelTarget * mppx
-    let best = 9, bestDiff = Infinity
-    for (const rStr of Object.keys(H3_RADIUS_METERS)) {
-        const r = Number(rStr)
+    // Sort resolutions ascending (coarsest → finest). Walk until a cell
+    // dips below the target; the last resolution that passed is the
+    // finest resolution whose cell still meets the min.
+    const resolutions = Object.keys(H3_RADIUS_METERS).map(Number).sort((a, b) => a - b)
+    let best = resolutions[0]  // fallback: coarsest
+    for (const r of resolutions) {
         const diaMeters = 2 * H3_RADIUS_METERS[r]
-        const diff = Math.abs(Math.log2(diaMeters / targetMeters))
-        if (diff < bestDiff) { bestDiff = diff; best = r }
+        if (diaMeters >= targetMeters) best = r
+        else break
     }
     return best
 }
