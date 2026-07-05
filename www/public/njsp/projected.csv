@@ -1,5 +1,5 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_365,trailing_365_driver,trailing_365_passenger,trailing_365_pedestrian,trailing_365_cyclist
-,,Atlantic,,35,1,18,9,10,33,17,6,11,1
+,,Atlantic,,35,1,18,9,10,32,17,5,11,1
 ,,Bergen,,36,0,20,0,18,33,20,1,12,0
 ,,Burlington,,35,0,25,6,7,36,25,6,8,1
 ,,Camden,,26,2,12,2,10,30,14,2,12,3
@@ -11,7 +11,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Hunterdon,,6,0,3,0,2,6,3,1,2,0
 ,,Mercer,,29,1,13,13,10,27,12,8,9,1
 ,,Middlesex,,50,2,33,8,10,48,31,5,11,2
-,,Monmouth,,59,1,30,4,24,38,21,4,11,2
+,,Monmouth,,62,1,32,4,24,38,21,4,11,2
 ,,Morris,,23,0,14,0,9,22,13,1,6,2
 ,,Ocean,,42,0,29,5,9,44,31,6,10,2
 ,,Passaic,,16,0,9,4,6,17,10,4,6,0
@@ -31,7 +31,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 1,12,Atlantic,Hamilton Twsp,11,0,6,0,4,9,5,1,3,0
 1,13,Atlantic,Hammonton Town,1,0,1,0,0,1,1,0,0,0
 1,14,Atlantic,Linwood City,0,0,0,0,0,1,0,0,1,0
-1,19,Atlantic,Pleasantville City,2,0,0,0,1,2,0,1,1,0
+1,19,Atlantic,Pleasantville City,2,0,0,0,1,1,0,0,1,0
 1,21,Atlantic,Somers Point City,0,0,0,0,0,1,0,0,1,0
 2,2,Bergen,Alpine Boro,1,0,1,0,0,1,1,0,0,0
 2,7,Bergen,Closter Boro,0,0,0,0,0,0,0,0,0,0
@@ -199,10 +199,10 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 13,20,Monmouth,Holmdel Twsp,0,0,0,0,0,1,1,0,0,0
 13,21,Monmouth,Howell Twsp,0,0,0,0,0,1,1,0,0,0
 13,23,Monmouth,Keansburg Boro,0,0,0,0,0,1,1,0,0,0
-13,24,Monmouth,Keyport Boro,1,0,1,0,0,2,2,0,0,0
+13,24,Monmouth,Keyport Boro,1,0,1,0,0,1,1,0,0,0
 13,27,Monmouth,Long Branch City,2,0,0,0,2,3,0,1,2,0
 13,28,Monmouth,Manalapan Twsp,2,0,1,0,1,2,1,0,1,0
-13,30,Monmouth,Marlboro Twsp,1,0,0,0,0,2,1,0,1,0
+13,30,Monmouth,Marlboro Twsp,3,0,2,0,0,3,2,0,1,0
 13,31,Monmouth,Matawan Boro,1,0,0,0,1,1,0,0,1,0
 13,32,Monmouth,Middletown Twsp,3,0,3,0,0,3,3,0,0,0
 13,33,Monmouth,Millstone Twsp,1,0,1,0,0,1,1,0,0,0
