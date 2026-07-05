@@ -38,8 +38,10 @@ const AUTO_RES_BY_ZOOM: Record<number, number> = {
     12: 11, 13: 11,
     14: 12,  // user-CIC calibration: at z=14.77 wants r12 (~4.4px)
     15: 12, 16: 12,
-    17: 13, 18: 13,
-    19: 14, 20: 14,
+    17: 13,
+    18: 14,  // z=18: r13 would give ~16px (too chunky); r14 → ~6px
+    19: 14,
+    20: 15,  // z=20: r14 would give ~35px; r15 → ~13px
 }
 import { DebugOverlay } from "@/src/map/DebugOverlay"
 import { YearSelect } from "@/src/lib/year-select"

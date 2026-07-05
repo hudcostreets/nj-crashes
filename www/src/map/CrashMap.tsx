@@ -404,6 +404,14 @@ export function CrashMap({
         else setLocalHexPxTarget(n)
     }, [controlledHexPxTarget, onHexPxTargetChange])
     const mapRef = React.useRef<MapRef | null>(null)
+    // Session cache: max-count seen at each (scope, resolution). Grows
+    // monotonically as user pans/zooms — never shrinks. Prevents the
+    // height cliff that raw `max(hexesArr)` produced when a tall cell
+    // drifted out of the fetched set on a small viewport change. First
+    // fetch calibrates conservatively; scale settles as user explores.
+    // Scoped by `initialBounds` (region bbox) so different munis have
+    // independent maxes. Cleared on scope change by re-mount.
+    const scopeMaxRef = React.useRef<Record<string, number>>({})
     // Bar height *scale* (0..1) — tallest bar rendered = `heightScale ×
     // maxDim(bbox)` in meters. Adaptive so a small muni like Union City
     // doesn't get bars towering above the whole region.
@@ -706,14 +714,21 @@ export function CrashMap({
         // So `heightScale=0.3` means "tallest bar ≈ 30% of the region's
         // widest side" — visual weight stays consistent across muni sizes
         // and zoom levels.
-        const maxCount = hexesArr.reduce((m, h) => Math.max(m, h.total), 1)
+        // Session-cached max: grows monotonically per (scope, resolution)
+        // as the user explores. Once the max at a given res has been seen
+        // during this session, it's stable — no cliff from small vp
+        // changes moving tall cells in/out of the fetched set.
+        const scopeKey = `${initialBounds?.join(",") ?? "nj"}_r${effectiveHexRes}`
+        const fetchMax = hexesArr.reduce((m, h) => Math.max(m, h.total), 1)
+        const stableMax = Math.max(fetchMax, scopeMaxRef.current[scopeKey] ?? 0)
+        scopeMaxRef.current[scopeKey] = stableMax
         const [w, s, e, n] = initialBounds ?? [-75.6, 38.9, -73.9, 41.4]  // NJ fallback
         const bboxCenterLat = (s + n) / 2
         const metersPerDegLon = 111_320 * Math.cos(bboxCenterLat * Math.PI / 180)
         const lonMeters = (e - w) * metersPerDegLon
         const latMeters = (n - s) * 110_574
         const bbMaxDim = Math.max(lonMeters, latMeters, 1_000)  // floor at 1km so div doesn't blow up
-        const effectiveElevation = (heightScale * bbMaxDim) / maxCount
+        const effectiveElevation = (heightScale * bbMaxDim) / stableMax
         const segments = hexesToSegments(hexesArr, effectiveElevation)
         // Render columns sized to the data's actual H3 res, not the picker's
         // desired one. Prebinned data (`prebinnedHexes`) is fetched at a fixed
