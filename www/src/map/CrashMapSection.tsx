@@ -201,6 +201,11 @@ export function CrashMapSection({
     // close-up views get chunkier, more-pickable cells; when false, the
     // manual slider value wins. `?ha=false` to opt out of adaptive.
     const [hexAutoUrl, setHexAutoUrl] = useUrlState("ha", boolParam)
+    // Session overrides for the auto lookup table — when the user clicks a
+    // resolution in the carousel while auto is on, remember it for that
+    // zoom bucket so subsequent visits stay pinned. Ephemeral (not URL-
+    // persisted); cleared on reload. Keyed by `floor(zoom)`.
+    const [autoOverrides, setAutoOverrides] = useState<Record<number, number>>({})
     // `boolParam` default is `false`; we invert to keep the URL absent
     // when the user is on the default (auto=on). `?ha=1` when disabled.
     const hexAuto = !hexAutoUrl
@@ -299,13 +304,14 @@ export function CrashMapSection({
         const zoom = effectiveView?.zoom ?? 7
         const lat = effectiveView?.latitude ?? 40.7
         const z = Math.max(0, Math.min(20, Math.floor(zoom)))
-        const res = AUTO_RES_BY_ZOOM[z] ?? AUTO_RES_BY_ZOOM[7]
+        // Session override wins over the built-in table entry.
+        const res = autoOverrides[z] ?? AUTO_RES_BY_ZOOM[z] ?? AUTO_RES_BY_ZOOM[7]
         const mppx = metersPerPixel(zoom, lat)
         const diaPx = (2 * H3_RADIUS_METERS[res]) / mppx
         // 0.99 slack so floor picker reliably selects `res` even at the
         // boundary where diaPx rounds equal to target.
         return Math.min(30, Math.max(1.0, diaPx * 0.99))
-    }, [hexAuto, manualHexPx, effectiveView?.zoom, effectiveView?.latitude])
+    }, [hexAuto, manualHexPx, effectiveView?.zoom, effectiveView?.latitude, autoOverrides])
 
     // Picker-state snapshot: current H3 resolution + adjacent levels
     // (one coarser, one finer) as clickable jump targets. Neighbors that
@@ -778,6 +784,10 @@ export function CrashMapSection({
                             onAutoChange={setHexAuto}
                             pickerInfo={pickerInfo}
                             zoom={effectiveView?.zoom}
+                            onPinRes={res => {
+                                const z = Math.max(0, Math.min(20, Math.floor(effectiveView?.zoom ?? 7)))
+                                setAutoOverrides(prev => ({ ...prev, [z]: res }))
+                            }}
                         />
                         <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
                             <span style={{ fontSize: "0.78em" }}>Height scale: <b>{heightScale.toFixed(2)}</b></span>
@@ -1040,7 +1050,7 @@ function Legend({
  *  scale (so each tick is a constant log-px ratio), but always shows the
  *  actual px value alongside. Defaults to 1.2 px on first session use. */
 function HexPxTargetSlider({
-    value, onChange, auto, onAutoChange, pickerInfo, zoom,
+    value, onChange, auto, onAutoChange, pickerInfo, zoom, onPinRes,
 }: {
     value: number
     onChange: (n: number) => void
@@ -1050,6 +1060,7 @@ function HexPxTargetSlider({
         levels: { res: number, px: number, isCurrent: boolean }[],
     } | null
     zoom: number | undefined
+    onPinRes: (res: number) => void
 }) {
     const MIN = 0.5, MAX = 30
     const toScale = (v: number) => 100 * (Math.log2(v / MIN) / Math.log2(MAX / MIN))
@@ -1097,20 +1108,25 @@ function HexPxTargetSlider({
                             key={res}
                             type="button"
                             onClick={() => {
-                                // Turn off auto so the manual target sticks
-                                // (auto formula would override it on next
-                                // render) and set the target to this
-                                // level's own px — the picker then locks
-                                // onto it.
-                                if (auto) onAutoChange(false)
-                                onChange(Math.max(MIN, Math.min(MAX, px < 5 ? Math.round(px * 10) / 10 : Math.round(px))))
+                                if (auto) {
+                                    // Auto stays on; nudge the auto table
+                                    // for the current zoom bucket. Persists
+                                    // across pans until reload or scope
+                                    // change (see `autoOverrides`).
+                                    onPinRes(res)
+                                } else {
+                                    // Manual mode: set the target to this
+                                    // level's own px so the floor picker
+                                    // locks onto it.
+                                    onChange(Math.max(MIN, Math.min(MAX, px < 5 ? Math.round(px * 10) / 10 : Math.round(px))))
+                                }
                             }}
                             style={{
                                 background: "none", border: "none", padding: 0, color: "inherit",
                                 cursor: "pointer", textDecoration: "underline dotted",
                                 font: "inherit", opacity: 0.75,
                             }}
-                            title={`Snap to H3 resolution r${res}`}
+                            title={auto ? `Pin r${res} for this zoom (auto stays on)` : `Snap to r${res}`}
                         >
                             r{res} · {fmtPx(px)}px
                         </button>
