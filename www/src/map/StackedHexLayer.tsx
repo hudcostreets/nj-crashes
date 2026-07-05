@@ -185,6 +185,7 @@ export const H3_RADIUS_METERS: Record<number, number> = {
     12: 9.4,
     13: 3.6,
     14: 1.4,
+    15: 0.54,  // r14 / ~2.6 (per-level H3 radius ratio)
 }
 
 export function buildStackedHexLayer({

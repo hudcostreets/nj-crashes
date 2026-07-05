@@ -722,13 +722,14 @@ export function CrashMap({
         const fetchMax = hexesArr.reduce((m, h) => Math.max(m, h.total), 1)
         const stableMax = Math.max(fetchMax, scopeMaxRef.current[scopeKey] ?? 0)
         scopeMaxRef.current[scopeKey] = stableMax
-        const [w, s, e, n] = initialBounds ?? [-75.6, 38.9, -73.9, 41.4]  // NJ fallback
-        const bboxCenterLat = (s + n) / 2
-        const metersPerDegLon = 111_320 * Math.cos(bboxCenterLat * Math.PI / 180)
-        const lonMeters = (e - w) * metersPerDegLon
-        const latMeters = (n - s) * 110_574
-        const bbMaxDim = Math.max(lonMeters, latMeters, 1_000)  // floor at 1km so div doesn't blow up
-        const effectiveElevation = (heightScale * bbMaxDim) / stableMax
+        // Viewport-relative bar height: tallest bar = heightScale × the
+        // shorter viewport dimension in meters. Bars scale down as the
+        // camera zooms in — a muni-wide scaling made bars grow linearly
+        // with zoom, dwarfing the street-level view.
+        const cw = containerRef.current?.clientWidth ?? 800
+        const ch = containerRef.current?.clientHeight ?? 600
+        const vpMinDimMeters = Math.min(cw, ch) * metersPerPixel(viewState.zoom, viewState.latitude)
+        const effectiveElevation = (heightScale * vpMinDimMeters) / stableMax
         const segments = hexesToSegments(hexesArr, effectiveElevation)
         // Render columns sized to the data's actual H3 res, not the picker's
         // desired one. Prebinned data (`prebinnedHexes`) is fetched at a fixed

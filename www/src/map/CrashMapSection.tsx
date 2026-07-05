@@ -40,8 +40,8 @@ const AUTO_RES_BY_ZOOM: Record<number, number> = {
     15: 12, 16: 12,
     17: 13,
     18: 14,  // z=18: r13 would give ~16px (too chunky); r14 → ~6px
-    19: 14,
-    20: 15,  // z=20: r14 would give ~35px; r15 → ~13px
+    19: 15,  // z=19: r14 → 18px (too chunky); r15 → ~7px
+    20: 15,  // z=20: r14 → 35px; r15 → ~13px
 }
 import { DebugOverlay } from "@/src/map/DebugOverlay"
 import { YearSelect } from "@/src/lib/year-select"
