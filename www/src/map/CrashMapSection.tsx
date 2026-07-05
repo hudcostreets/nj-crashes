@@ -26,6 +26,21 @@ import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
 import type { MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel, pickHexResolutionForPixels } from "@/src/map/CrashMap"
 import { H3_RADIUS_METERS } from "@/src/map/StackedHexLayer"
+
+/** Preferred H3 resolution per integer camera zoom (auto mode). Half-int
+ *  zooms use `floor(zoom)`, so z=14.77 uses the row for z=14. Tune
+ *  individual rows without breaking the curve elsewhere. */
+const AUTO_RES_BY_ZOOM: Record<number, number> = {
+    0: 3, 1: 4, 2: 5, 3: 6, 4: 7, 5: 7, 6: 8,
+    7: 8,    // statewide aggregate
+    8: 9, 9: 9,
+    10: 10, 11: 10,
+    12: 11, 13: 11,
+    14: 12,  // user-CIC calibration: at z=14.77 wants r12 (~4.4px)
+    15: 12, 16: 12,
+    17: 13, 18: 13,
+    19: 14, 20: 14,
+}
 import { DebugOverlay } from "@/src/map/DebugOverlay"
 import { YearSelect } from "@/src/lib/year-select"
 
@@ -263,26 +278,32 @@ export function CrashMapSection({
         return fitBoundsToView(bbox, w, h, mode === "hexbin" ? 45 : 0)
     }, [llz, cc, mc, mode, v2Manifest, fullScreen, initialView])
 
-    // Effective hex-pixel target. When `hexAuto` is on, use an exponential
-    // ramp calibrated for floor-semantics — `hexPxTarget` is the *min* cell
-    // size the picker will render. Anchor points from CIC:
-    //   z=7  → 1.0px  (statewide; floor picks r8, `~1.4`px dia)
-    //   z=13 → 3.5px  (city;      floor picks r11, `~3.5`px dia)
-    //   z=16 → 6.9px  (street;    floor picks r12, `~12`px dia)
-    // Formula: `0.9 × 1.234^(z-7)` clamped to [1, 30]. The 0.9 coefficient
-    // targets the geometric mean of each anchor's cell size and its finer
-    // neighbor, giving ~10% slack so borderline resolutions clear floor
-    // reliably (e.g. r11 at z=13, where r11.dia = 3.44px and the raw
-    // exponential lands at 3.47px would exclude r11 by 1%).
-    // Density and vp-size are second-order and intentionally ignored —
-    // hex-px is per-cell-in-screen-space, invariant to vp size; a
-    // density-adaptive variant would introduce a feedback loop between
-    // hexPxTarget → picker res → cells → hexPxTarget.
+    // Effective hex-pixel target. When `hexAuto` is on, look up the
+    // preferred H3 resolution for the current integer zoom, then set the
+    // target to that resolution's on-screen diameter (× 0.99 for slack).
+    // This is a `Record<zoom, res>` calibration table — much easier to
+    // reason about than fitting a curve through anchor points, and lets
+    // us tune each zoom step independently.
+    //
+    // Math: `hex_px(z, lat, r) = 2 × H3_RADIUS_METERS[r] × 2^z /
+    // (156543 × cos(lat))`. Fully deterministic; only latitude (NJ
+    // range 39-41°) varies materially. VP size doesn't factor in —
+    // that's what makes this stable across the embed + full-screen.
+    //
+    // Density-adaptive would feedback-loop (hexPxTarget → picker res →
+    // cells → hexPxTarget), so intentionally ignored here.
     const hexPxTarget = useMemo(() => {
         if (!hexAuto) return manualHexPx
         const zoom = effectiveView?.zoom ?? 7
-        return Math.min(30, Math.max(1.0, 0.9 * Math.pow(1.234, zoom - 7)))
-    }, [hexAuto, manualHexPx, effectiveView?.zoom])
+        const lat = effectiveView?.latitude ?? 40.7
+        const z = Math.max(0, Math.min(20, Math.floor(zoom)))
+        const res = AUTO_RES_BY_ZOOM[z] ?? AUTO_RES_BY_ZOOM[7]
+        const mppx = metersPerPixel(zoom, lat)
+        const diaPx = (2 * H3_RADIUS_METERS[res]) / mppx
+        // 0.99 slack so floor picker reliably selects `res` even at the
+        // boundary where diaPx rounds equal to target.
+        return Math.min(30, Math.max(1.0, diaPx * 0.99))
+    }, [hexAuto, manualHexPx, effectiveView?.zoom, effectiveView?.latitude])
 
     // Picker-state snapshot: current H3 resolution + adjacent levels
     // (one coarser, one finer) as clickable jump targets. Neighbors that
