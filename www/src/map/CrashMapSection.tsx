@@ -201,7 +201,9 @@ export function CrashMapSection({
     // smooth `target_px(z)` curve, capped at each cell's inscribed
     // circle, so res transitions don't visually pop and we get
     // density-scaled dots (small at wide zoom, chunkier deep-zoom).
-    const [viz] = useUrlState("viz", enumParam("hex" as const, ["hex", "circle"] as const))
+    const [viz, setVizUrl] = useUrlState("viz", enumParam("hex" as const, ["hex", "circle"] as const))
+    // Keep URL absent when on default (hex) so URLs stay tidy.
+    const setViz = (v: "hex" | "circle") => setVizUrl(v === "hex" ? "hex" : v)
     // `hexAuto` — when true (default), hexPxTarget grows with zoom so
     // close-up views get chunkier, more-pickable cells; when false, the
     // manual slider value wins. `?ha=false` to opt out of adaptive.
@@ -795,6 +797,24 @@ export function CrashMapSection({
                 </div>
                 {mode === "hexbin" && (
                     <>
+                        <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
+                            {(["hex", "circle"] as const).map(v => (
+                                <button
+                                    key={v}
+                                    onClick={() => setViz(v)}
+                                    style={{
+                                        cursor: "pointer",
+                                        background: viz === v ? activeBg : "transparent",
+                                        color: viz === v ? "#fff" : fg,
+                                        border: `1px solid ${viz === v ? activeBg : fg}`,
+                                        borderRadius: 3,
+                                        padding: "2px 8px",
+                                        fontSize: "0.78em",
+                                        flex: 1,
+                                    }}
+                                >{v === "hex" ? "Hex" : "Circle"}</button>
+                            ))}
+                        </div>
                         <HexPxTargetSlider
                             value={hexPxTarget}
                             onChange={setHexPxTarget}
