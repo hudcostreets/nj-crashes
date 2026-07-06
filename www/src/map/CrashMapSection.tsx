@@ -7,7 +7,7 @@
  *  selects, severity Legend, hexbin controls, debug drawer.
  */
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
-import { useUrlState, viewStateParam, cleanUrl, optFloatParam, boolParam } from "use-prms"
+import { useUrlState, viewStateParam, cleanUrl, optFloatParam, boolParam, enumParam } from "use-prms"
 import { usePageFilters, YEAR_RANGE_DEFAULT } from "@/src/PageFiltersContext"
 import type { CrashFilter } from "@/src/map/useCrashData"
 import { useCellsApi, CELLS_BUDGET } from "@/src/map/useCellsApi"
@@ -197,6 +197,11 @@ export function CrashMapSection({
     //           consistent visual weight regardless of zoom / muni size.
     const [hexPxTargetUrl, setHexPxTargetUrl] = useUrlState("hpx", optFloatParam(), { debounce: 100 })
     const [heightScaleUrl, setHeightScaleUrl] = useUrlState("hs", optFloatParam(), { debounce: 100 })
+    // `viz=circle` — prototype circle-column mode. Radius follows a
+    // smooth `target_px(z)` curve, capped at each cell's inscribed
+    // circle, so res transitions don't visually pop and we get
+    // density-scaled dots (small at wide zoom, chunkier deep-zoom).
+    const [viz] = useUrlState("viz", enumParam("hex" as const, ["hex", "circle"] as const))
     // `hexAuto` — when true (default), hexPxTarget grows with zoom so
     // close-up views get chunkier, more-pickable cells; when false, the
     // manual slider value wins. `?ha=false` to opt out of adaptive.
@@ -299,6 +304,17 @@ export function CrashMapSection({
     //
     // Density-adaptive would feedback-loop (hexPxTarget → picker res →
     // cells → hexPxTarget), so intentionally ignored here.
+    // Circle-mode target radius (px) — smooth monotone curve in zoom.
+    // At z=7 (whole-NJ): ~1.2px dots (dense field). At z=17
+    // (street-level): ~5px (hoverable). Exponent chosen so `target_px`
+    // grows slower than an H3 cell's inscribed radius (which doubles
+    // every zoom), preserving cell-fit + smooth res transitions.
+    const circleRadiusPx = useMemo(() => {
+        const z = effectiveView?.zoom ?? 7
+        const raw = 1.2 * Math.pow(2, (z - 7) * 0.21)
+        return Math.min(24, Math.max(1.2, raw))
+    }, [effectiveView?.zoom])
+
     const hexPxTarget = useMemo(() => {
         if (!hexAuto) return manualHexPx
         const zoom = effectiveView?.zoom ?? 7
@@ -689,6 +705,8 @@ export function CrashMapSection({
                         onHeightScaleChange={setHeightScale}
                         gridOverlayRes={drawerOpen ? gridOverlayRes : null}
                         coverCells={drawerOpen && debugOpen ? apiResult.plan?.cover ?? null : null}
+                        viz={viz}
+                        circleRadiusPx={circleRadiusPx}
                     />
                 </Suspense>
             )}

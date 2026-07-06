@@ -13,9 +13,8 @@ import { HeatmapLayer } from "@deck.gl/aggregation-layers"
 import type { PickingInfo } from "@deck.gl/core"
 import type { FeatureCollection } from "geojson"
 import { useTouchPitch } from "./hooks/useTouchPitch"
-import { binIntoHexes, coarsenHexes, hexesToSegments, buildStackedHexLayer, Segment, StackedHex, H3_RADIUS_METERS } from "./StackedHexLayer"
+import { binIntoHexes, coarsenHexes, hexesToSegments, buildStackedHexLayer, Segment, StackedHex, H3_RADIUS_METERS, type VizMode } from "./StackedHexLayer"
 import { getResolution, cellToBoundary, polygonToCellsExperimental, POLYGON_TO_CELLS_FLAGS } from "h3-js"
-import { useHexSld, type HexSldLookup } from "./useHexSld"
 
 export type MapMode = "scatter" | "heatmap" | "hexbin"
 
@@ -101,6 +100,16 @@ export type Props = {
      *  cells-api cover. Color-coded by `shard_res` so a heterogeneous
      *  cover reads at a glance — coarser cells one hue, finer another. */
     coverCells?: Array<{ h3: string; shard_res: number }> | null
+    /** Hexbin visual mode. `hex` (default) tessellates full h3 cells.
+     *  `circle` renders circular columns bounded by each cell's
+     *  inscribed circle; the caller-supplied `circleRadiusPx` drives
+     *  the actual radius (smoothly, per zoom), so transitions between
+     *  H3 resolutions don't visually pop. */
+    viz?: VizMode
+    /** In `viz=circle` mode, the target circle radius in screen pixels.
+     *  Converted to meters via the layer's viewport; capped at the
+     *  current cell's inscribed radius. Ignored in `hex` mode. */
+    circleRadiusPx?: number
 }
 
 const MAX_PITCH = 85
@@ -324,9 +333,10 @@ export function CrashMap({
     height = "100%",
     gridOverlayRes,
     coverCells,
+    viz = "hex",
+    circleRadiusPx,
 }: Props) {
     const effectiveCrashes = crashes ?? []
-    const sldMap = useHexSld()
     const containerRef = React.useRef<HTMLDivElement | null>(null)
     const [localViewState, setLocalViewState] = useState<ViewState>(() => defaultView(initialBounds, initialCenter, initialView, mode))
     const viewState = controlledView ?? localViewState
@@ -738,6 +748,13 @@ export function CrashMap({
         // column radius would shrink below the cell's hex-tant and reveal the
         // underlying lattice as visible gaps between bars.
         const renderRes = Math.min(effectiveHexRes, getResolution(hexesArr[0].h3))
+        // `viz=circle` translates the caller-owned px target into meters
+        // *once* per layer build, using the current camera. The layer
+        // itself clamps to the cell's inscribed radius, guaranteeing no
+        // cross-cell overlap even if the caller passes an oversized target.
+        const overrideRadiusMeters = viz === "circle" && circleRadiusPx != null
+            ? circleRadiusPx * metersPerPixel(viewState.zoom, viewState.latitude)
+            : undefined
         const result = [...base,
             buildStackedHexLayer({
                 id: "crashes-hex-stacked",
@@ -745,6 +762,8 @@ export function CrashMap({
                 resolution: renderRes,
                 pickable: true,
                 onHover: (info) => { setHoverInfo(info); return false },
+                viz,
+                overrideRadiusMeters,
             }),
         ]
         if (perfEnabled()) {
@@ -752,7 +771,7 @@ export function CrashMap({
             console.log(`[perf] layers: ${ms.toFixed(1)}ms (mode=${mode}, segments=${segments.length})`)
         }
         return result
-    }, [hexes, effectiveCrashes, mode, effectiveHexRes, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer])
+    }, [hexes, effectiveCrashes, mode, effectiveHexRes, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, viz, circleRadiusPx])
 
     // Only bubble user-driven changes. DeckGL also echoes back programmatic
     // viewState updates (from the fit effect, mode-switch tilt, etc.) via
@@ -805,7 +824,7 @@ export function CrashMap({
                     theme={theme}
                 />
             )}
-            {hoverInfo?.object && mode !== "heatmap" && <CrashTooltip info={hoverInfo} sldMap={sldMap} />}
+            {hoverInfo?.object && mode !== "heatmap" && <CrashTooltip info={hoverInfo} />}
             <AttributionPopover theme={theme} />
         </div>
     )
@@ -956,7 +975,7 @@ function tooltipStyle(info: PickingInfo): React.CSSProperties {
     }
 }
 
-function CrashTooltip({ info, sldMap }: { info: PickingInfo; sldMap?: HexSldLookup | null }) {
+function CrashTooltip({ info }: { info: PickingInfo }) {
     const obj = info.object
     if (!obj) return null
     const isHex = Array.isArray(obj.points)
@@ -965,27 +984,27 @@ function CrashTooltip({ info, sldMap }: { info: PickingInfo; sldMap?: HexSldLook
         const seg = obj as Segment
         const h = seg.hex
         const injury = h.pedInj + h.otherInj
-        const sld = sldMap?.get(h.h3)
+        // Sidecar fields are multiplexed onto the cells-api response by
+        // the worker (`pyramid_sld/` join). Absent on the client-binned
+        // scatter-fallback path or when a cells-api shard's sidecar is
+        // missing — the tooltip degrades gracefully to no label.
         // Drop trailing "Borough"/"Township"/"City"/"Town"/"Village"
         // suffix from MUN_LABEL — keeps the second line compact.
-        const munShort = sld?.mun?.replace(/\s+(Borough|Township|City|Town|Village)$/i, "") ?? ""
-        const sldLabel = sld?.sld_name || h.topRoute
+        const munShort = h.mun?.replace(/\s+(Borough|Township|City|Town|Village)$/i, "") ?? ""
+        const sldLabel = h.sld_name || h.topRoute
         return (
             <div style={tooltipStyle(info)}>
                 {sldLabel && (
                     <div style={{ fontSize: "0.85em", opacity: 0.85, marginBottom: 1 }}>
                         <b>{sldLabel}</b>
-                        {sld?.cross_sld_name && (
-                            <span style={{ opacity: 0.8 }}> @ <b>{sld.cross_sld_name}</b></span>
-                        )}
-                        {sld && Number.isFinite(sld.mp) && (
-                            <span style={{ opacity: 0.8 }}> · MP {sld.mp.toFixed(2)}</span>
+                        {h.cross_sld_name && (
+                            <span style={{ opacity: 0.8 }}> @ <b>{h.cross_sld_name}</b></span>
                         )}
                     </div>
                 )}
                 {munShort && (
                     <div style={{ fontSize: "0.8em", opacity: 0.7, marginBottom: 4 }}>
-                        {munShort}{sld?.county ? ` (${sld.county})` : ""}
+                        {munShort}{h.county ? ` (${h.county})` : ""}
                     </div>
                 )}
                 <div><b>{h.total}</b> crashes</div>

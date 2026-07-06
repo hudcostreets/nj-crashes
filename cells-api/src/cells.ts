@@ -74,6 +74,64 @@ export type CellOut = {
      *  when n_fatal === 0. Used by the hex tooltip to show "Fatal: 2018,
      *  2020, 2022" instead of just a bare count. */
     fatal_years?: number[]
+    /** Primary road at this cell's centroid, joined in-worker from the
+     *  `pyramid_sld/` sidecar. Present when the sidecar shard exists +
+     *  the cell has a match; omitted for missing shard (worker warns) or
+     *  ocean/off-road cells. Used by the hex tooltip. Deletes the
+     *  15 MB client-side `hex-sld.parquet` fetch this once replaced. */
+    sld_name?: string
+    /** Cross-street from the same sidecar. Populated for cells within
+     *  ~80m of a different SRI; ~25-75% of cells depending on res. */
+    cross_sld_name?: string
+    mun?: string
+    county?: string
+}
+
+/** Row shape read from `pyramid_sld/{subdir}/{shard}.parquet`. */
+type SldRow = {
+    h3: string
+    sld_name: string | null
+    cross_sld_name: string | null
+    mun: string | null
+    county: string | null
+}
+
+/** Join sidecar sld rows onto an already-built `CellOut` map from
+ *  `queryPyramid` / `queryRaw`. Missing shard → soft-fail (warn,
+ *  tooltip degrades to no road label). Missing per-row match → skip
+ *  (aggregated cell whose children happened to have no sld cell). */
+async function joinSld(
+    bucket: R2Bucket,
+    prefix: string,
+    subdir: string,
+    shards: string[],
+    cells: CellOut[],
+): Promise<void> {
+    if (cells.length === 0) return
+    const byH3 = new Map<string, CellOut>()
+    for (const c of cells) byH3.set(c.h3, c)
+    const results = await Promise.all(shards.map(async s => {
+        try {
+            return await readParquetFromR2<SldRow>(
+                bucket, `${prefix}/pyramid_sld/${subdir}/${s}.parquet`,
+                { columns: ["h3", "sld_name", "cross_sld_name", "mun", "county"] },
+            )
+        } catch (e) {
+            console.warn(`pyramid_sld ${subdir}/${s} read failed:`, e)
+            return null
+        }
+    }))
+    for (const rows of results) {
+        if (!rows) continue
+        for (const r of rows) {
+            const cell = byH3.get(r.h3)
+            if (!cell) continue
+            if (r.sld_name) cell.sld_name = r.sld_name
+            if (r.cross_sld_name) cell.cross_sld_name = r.cross_sld_name
+            if (r.mun) cell.mun = r.mun
+            if (r.county) cell.county = r.county
+        }
+    }
 }
 
 export type CellsResponse = {
@@ -175,6 +233,7 @@ export async function handleCellsRequest(
         const shards = requestedShards.filter(s => known.has(s))
         const clipPoly = req.clipPolygon && req.clipPolygon.length >= 3 ? req.clipPolygon : null
         const cells = await queryPyramid(bucket, prefix, requestedRes, shards, yearRange, sevSet, clipPoly, shardRes)
+        await joinSld(bucket, prefix, `s${shardRes}_r${requestedRes}`, shards, cells)
         return {
             res: requestedRes,
             year_range: yearRange,
@@ -205,6 +264,7 @@ export async function handleCellsRequest(
             ? await queryPyramid(bucket, prefix, res, shards, yearRange, sevSet, clipPoly)
             : await queryRaw(bucket, prefix, manifest, res, shards, yearRange, sevSet, clipPoly)
         if (maxCells == null || cells.length <= maxCells || res === MIN_RES) {
+            await joinSld(bucket, prefix, `r${res}`, shards, cells)
             return {
                 res,
                 year_range: yearRange,

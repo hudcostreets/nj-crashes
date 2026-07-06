@@ -46,6 +46,13 @@ type CellRow = {
     n_pdo: number
     n_vehs: number
     fatal_years?: number[]
+    /** Sidecar labels multiplexed into the response by the cells-api
+     *  worker (`pyramid_sld/` join). Optional — missing shard degrades
+     *  to no label on the tooltip. */
+    sld_name?: string
+    cross_sld_name?: string
+    mun?: string
+    county?: string
 }
 
 type CellsResponse = {
@@ -529,6 +536,10 @@ function cellsToStackedHex(cells: CellRow[]): StackedHex[] {
             pdo: c.n_pdo,
             total,
             fatalYears: c.fatal_years,
+            sld_name: c.sld_name,
+            cross_sld_name: c.cross_sld_name,
+            mun: c.mun,
+            county: c.county,
         })
     }
     return out

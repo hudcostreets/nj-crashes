@@ -48,6 +48,13 @@ export type StackedHex = {
      *  from the cells-api per-cell breakdown. Used by the tooltip to
      *  show "Fatal: 2018, 2020" instead of just a bare count. */
     fatalYears?: number[]
+    /** Sidecar labels multiplexed onto the cells-api response by the
+     *  worker (`pyramid_sld/` join). Present on server-sourced cells;
+     *  absent on the client-binned points/scatter fallback path. */
+    sld_name?: string
+    cross_sld_name?: string
+    mun?: string
+    county?: string
 }
 
 export type Segment = {
@@ -188,6 +195,17 @@ export const H3_RADIUS_METERS: Record<number, number> = {
     15: 0.54,  // r14 / ~2.6 (per-level H3 radius ratio)
 }
 
+/** `hex` — full h3-hex cross-section, radius = edge length so vertices
+ *  touch neighboring cells (classic tessellation).
+ *
+ *  `circle` — circular cross-section with `overrideRadiusMeters`, clamped
+ *  to the current cell's inscribed-circle radius (edge × √3/2) so
+ *  adjacent circles never overlap. Combined with a smooth `target_px(z)`
+ *  curve at the callsite, this yields no visual jump at res transitions:
+ *  transitions happen when the target radius equals the finer cell's
+ *  inscribed radius, so before/after both render at the same size. */
+export type VizMode = "hex" | "circle"
+
 export function buildStackedHexLayer({
     id,
     segments,
@@ -195,6 +213,8 @@ export function buildStackedHexLayer({
     pickable,
     onHover,
     elevationScale = 1,
+    viz = "hex",
+    overrideRadiusMeters,
 }: {
     id: string
     segments: Segment[]
@@ -202,12 +222,25 @@ export function buildStackedHexLayer({
     pickable?: boolean
     onHover?: (info: PickingInfo) => boolean | void
     elevationScale?: number
+    viz?: VizMode
+    overrideRadiusMeters?: number
 }): ColumnLayer<Segment> {
+    const edge = H3_RADIUS_METERS[resolution] ?? 174
+    let diskResolution: number
+    let radius: number
+    if (viz === "circle") {
+        diskResolution = 24
+        const inscribed = edge * Math.sqrt(3) / 2
+        radius = Math.min(overrideRadiusMeters ?? inscribed, inscribed)
+    } else {
+        diskResolution = 6
+        radius = edge
+    }
     return new ColumnLayer<Segment>({
         id,
         data: segments,
-        diskResolution: 6,                      // hexagonal cross-section
-        radius: H3_RADIUS_METERS[resolution] ?? 174,
+        diskResolution,
+        radius,
         radiusUnits: "meters",
         extruded: true,
         pickable: !!pickable,
