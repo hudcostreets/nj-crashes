@@ -201,9 +201,7 @@ export function CrashMapSection({
     // smooth `target_px(z)` curve, capped at each cell's inscribed
     // circle, so res transitions don't visually pop and we get
     // density-scaled dots (small at wide zoom, chunkier deep-zoom).
-    const [viz, setVizUrl] = useUrlState("viz", enumParam("hex" as const, ["hex", "circle"] as const))
-    // Keep URL absent when on default (hex) so URLs stay tidy.
-    const setViz = (v: "hex" | "circle") => setVizUrl(v === "hex" ? "hex" : v)
+    const [viz, setViz] = useUrlState("viz", enumParam("circle" as const, ["hex", "circle"] as const))
     // `hexAuto` — when true (default), hexPxTarget grows with zoom so
     // close-up views get chunkier, more-pickable cells; when false, the
     // manual slider value wins. `?ha=false` to opt out of adaptive.
