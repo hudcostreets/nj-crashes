@@ -808,6 +808,11 @@ export function CrashMapSection({
                             value={bearing} onChange={setBearing}
                             defaultValue={0} reset={() => setBearing(0)}
                         />
+                        <ZoomResChart
+                            currentZoom={effectiveView?.zoom ?? 7}
+                            currentLat={effectiveView?.latitude ?? 40.7}
+                            currentRes={pickerInfo?.levels.find(l => l.isCurrent)?.res ?? 11}
+                        />
                     </>
                 )}
                 <DebugSection
@@ -1042,6 +1047,117 @@ function Legend({
                     </button>
                 )
             })}
+        </div>
+    )
+}
+
+/** Drawer widget: 2D chart mapping map-zoom (left axis) to hex-px
+ *  size in each of three H3 resolution columns (prev / current / next).
+ *
+ *  Y-axis (linear in zoom): integer zoom labels on the left. Range =
+ *  current zoom ±3.5 — cursor stays centered, ticks slide smoothly.
+ *
+ *  For each res column: ticks at round pixel sizes (1, 2, 4, 8, 16,
+ *  32 px), positioned at the *fractional* zoom that produces exactly
+ *  that px for that resolution+latitude:
+ *      px = 2 × H3_RADIUS_METERS[r] / mppx
+ *      z_at(px, r) = log2( px × 156543 × cos(lat) / (2 × H3_R[r]) )
+ *  Since res r+1's cell is ~1/2.65 × of res r, the same round px sits
+ *  at a lower zoom in the finer col. Rows are intentionally *not*
+ *  v-aligned across cols — that mismatch IS the point of the chart.
+ *
+ *  Horizontal orange line: the camera's current zoom, so users see
+ *  where they are in the mapping at a glance. */
+function ZoomResChart({
+    currentZoom, currentLat, currentRes,
+}: {
+    currentZoom: number
+    currentLat: number
+    currentRes: number
+}) {
+    const H = 180  // chart height in px
+    // Center the current zoom in the window; ticks slide smoothly as
+    // zoom changes, rather than jumping when the camera crosses an
+    // integer-zoom boundary. Window half-width = 3.5 zoom units, so
+    // ~7 integer zooms visible at any time.
+    const halfWin = 3.5
+    const zMin = currentZoom - halfWin
+    const zMax = currentZoom + halfWin
+    const yFor = (z: number) => ((zMax - z) / (zMax - zMin)) * H
+    const cosLat = Math.cos(currentLat * Math.PI / 180)
+    const zForPxRes = (px: number, r: number): number =>
+        Math.log2((px * 156543 * cosLat) / (2 * H3_RADIUS_METERS[r]))
+
+    const roundPx = [0.5, 1, 2, 4, 8, 16, 32]
+    const resCols = [currentRes - 1, currentRes, currentRes + 1].filter(r => r in H3_RADIUS_METERS)
+    const intZooms: number[] = []
+    for (let z = Math.ceil(zMin); z <= Math.floor(zMax); z++) intZooms.push(z)
+
+    const zoomColW = 32
+    const resColW = 46
+    const W = zoomColW + resColW * resCols.length + 8
+    return (
+        <div style={{
+            marginTop: 4, paddingTop: 4, borderTop: "1px solid rgba(128,128,128,0.25)",
+            fontSize: "0.72em", opacity: 0.9,
+        }}>
+            <div style={{ opacity: 0.55, marginBottom: 2, fontSize: "0.9em" }}>Zoom × hex px</div>
+            <svg width={W} height={H + 18} style={{ overflow: "visible", display: "block" }}>
+                {/* Column headers */}
+                {resCols.map((r, i) => (
+                    <text
+                        key={r}
+                        x={zoomColW + i * resColW + resColW / 2}
+                        y={10}
+                        fontSize={9}
+                        textAnchor="middle"
+                        fill="currentColor"
+                        fontWeight={r === currentRes ? 700 : 400}
+                        opacity={r === currentRes ? 1 : 0.7}
+                    >r{r}</text>
+                ))}
+                {/* Integer zoom labels + horizontal guide lines */}
+                {intZooms.map(z => (
+                    <g key={z} transform={`translate(0, ${16 + yFor(z)})`}>
+                        <text x={zoomColW - 2} y={3} fontSize={9} textAnchor="end" fill="currentColor" opacity={0.75}>
+                            z={z}
+                        </text>
+                        <line
+                            x1={zoomColW} x2={W}
+                            y1={0} y2={0}
+                            stroke="currentColor" strokeWidth={0.5} opacity={0.12}
+                        />
+                    </g>
+                ))}
+                {/* Per-res round-px ticks */}
+                {resCols.map((r, i) => (
+                    <g key={r} transform={`translate(${zoomColW + i * resColW}, 16)`}>
+                        {roundPx.map(px => {
+                            const z = zForPxRes(px, r)
+                            if (z < zMin || z > zMax) return null
+                            return (
+                                <g key={px} transform={`translate(0, ${yFor(z)})`}>
+                                    <line x1={0} x2={4} y1={0} y2={0} stroke="currentColor" opacity={0.6} strokeWidth={1} />
+                                    <text x={7} y={3} fontSize={9} fill="currentColor" opacity={r === currentRes ? 0.95 : 0.55}>
+                                        {px < 1 ? px.toFixed(1) : px}px
+                                    </text>
+                                </g>
+                            )
+                        })}
+                    </g>
+                ))}
+                {/* Current-zoom marker */}
+                <line
+                    x1={zoomColW - 4} x2={W}
+                    y1={16 + yFor(currentZoom)} y2={16 + yFor(currentZoom)}
+                    stroke="orange" strokeWidth={1.25} opacity={0.85}
+                />
+                <text
+                    x={zoomColW - 6}
+                    y={16 + yFor(currentZoom) + 3}
+                    fontSize={9} textAnchor="end" fill="orange" fontWeight={700}
+                >{currentZoom.toFixed(1)}</text>
+            </svg>
         </div>
     )
 }
