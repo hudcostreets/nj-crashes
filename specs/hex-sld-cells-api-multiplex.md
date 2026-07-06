@@ -48,22 +48,31 @@ shard read + in-worker hash-join by h3.
 
 ### R2 layout
 
-New pyramid `pyramid_sld/`, mirroring the counts pyramid layout:
+**Single flat file** at `cells/hex-sld.parquet` (~7 MB zstd,
+column-pruned to 5 tooltip cols). The counts pyramid needs sharding
+because it has 6-14M rows × years × severity breakdowns (~4 GB); the
+sld sidecar is only 723k rows × 4 short string cols — sharding it
+would blow up file count without meaningful per-request wins.
+
+Layout:
 
 ```
-pyramid_sld/s{shard_res}_r{data_res}/{shard_cell}.parquet
-```
-
-Same `(shard_res, data_res)` combos as `manifest.pyramid_combos`.
-Cols per row (zstd, one row-group):
-
-```
-h3: BYTE_ARRAY (UTF8)                       # cell id at data_res
+h3: BYTE_ARRAY (UTF8)                       # cell id, r6-r11
 sld_name: BYTE_ARRAY (UTF8)
 cross_sld_name: BYTE_ARRAY (UTF8), nullable
 mun: BYTE_ARRAY (UTF8)
 county: BYTE_ARRAY (UTF8)
 ```
+
+Rows sorted by `h3` so parquet row-group stats (min/max per group)
+give hyparquet range-pruning — worker reads only row groups whose h3
+range overlaps the query cells. Row group size: 50k rows → 15 groups
+for 723k rows.
+
+Worker loads the whole map once per isolate (module-scoped cache);
+cells at data_res > 11 walk up to their r11 ancestor via
+`cellToParent` (same fallback as the legacy client
+`useHexSld.lookup`).
 
 ### Wire types
 
@@ -93,52 +102,37 @@ new URL, no new endpoint, no extra RTT.
 
 ### Worker changes (`cells-api/src/cells.ts`)
 
-In both `queryPyramid` and `queryRaw`, after building the `CellOut`
-map, do a parallel-per-shard sld read:
+Module-scoped cached Map: `sldCached: Promise<Map<h3, SldRow>>` —
+first request reads `cells/hex-sld.parquet` (~7 MB), builds the map,
+caches for the isolate's lifetime. Subsequent requests do O(1) lookups.
 
 ```ts
-// After counts join, run per-shard sld read in parallel.
-const sldResults = await Promise.all(shards.map(async s => {
-    try {
-        return await readParquetFromR2<SldRow>(
-            bucket,
-            `${prefix}/pyramid_sld/${subdir}/${s}.parquet`,
-            { columns: ["h3", "sld_name", "cross_sld_name", "mun", "county"] },
-        )
-    } catch (e) {
-        // Missing sld shard is non-fatal — tooltip degrades to no
-        // road/muni label. Log once, skip.
-        console.warn(`pyramid_sld ${subdir}/${s} read failed:`, e)
-        return null
-    }
-}))
-for (const rows of sldResults) {
-    if (!rows) continue
-    for (const r of rows) {
-        const cell = out.get(r.h3)
-        if (!cell) continue  // sld row for a cell we filtered out — skip
-        if (r.sld_name) cell.sld_name = r.sld_name
-        if (r.cross_sld_name) cell.cross_sld_name = r.cross_sld_name
-        if (r.mun) cell.mun = r.mun
-        if (r.county) cell.county = r.county
+async function joinSld(bucket, prefix, cells: CellOut[]) {
+    const sld = await loadSldMap(bucket, prefix)
+    for (const c of cells) {
+        const res = getResolution(c.h3)
+        const key = res > SLD_MAX_RES ? cellToParent(c.h3, SLD_MAX_RES) : c.h3
+        const row = sld.get(key)
+        if (!row) continue
+        if (row.sld_name) c.sld_name = row.sld_name
+        if (row.cross_sld_name) c.cross_sld_name = row.cross_sld_name
+        if (row.mun) c.mun = row.mun
+        if (row.county) c.county = row.county
     }
 }
 ```
 
-Notes:
-- Same `subdir` (`s{shard_res}_r{data_res}` or `r{res}`) — sld shards
-  live under a parallel prefix.
-- Each shard's counts + sld reads happen concurrently (already inside
-  `Promise.all` — worker just adds a second batch of R2 reads).
-- Missing shard is soft-fail; user sees a tooltip without the road
-  name but the map still works.
+Wired into both request paths (combo path + legacy adaptive-res path),
+after cells have been built. Missing sidecar → soft-fail (warn once,
+tooltip degrades to no road label). Cached load failure clears
+`sldCached` so a subsequent request retries.
 
-Extra R2 reads = number of shards in the request (typically 1-25).
-Same R2 bucket, same region, in parallel with the existing reads →
-~10-30 ms overhead on the 200-500 ms baseline.
-
-Extra JSON payload: ~40 bytes/row × N cells. For 1000 cells:
-+40 KB uncompressed, +10-15 KB gzipped. Noise vs the 15 MB baseline.
+Costs:
+- Cold-start: one R2 read of ~7 MB, ~200-500 ms parse. Amortized across
+  all requests handled by that isolate.
+- Warm: O(1) map lookups per cell, ~0 ms.
+- Payload delta: +40 bytes/row × N cells. For 1000 cells: +40 KB
+  uncompressed / +10-15 KB gzipped. Noise vs 15 MB baseline.
 
 ### Client changes
 
@@ -163,61 +157,42 @@ used when `prebinnedHexes` is absent) does *not* get sld fields
 populated — that path was rare and only fired for raw scatter data.
 Tooltip degrades to no label; acceptable.
 
-### Pipeline change — reuse existing `hex-sld.parquet`
+### Pipeline change — column-prune the existing `hex-sld.parquet`
 
-Rather than rebuild from scratch, **derive the sharded output from
-the already-fresh `hex-sld.parquet`**. It's built by
-`njdot export_hex_sld` as part of `www/public/njdot/map.dvc`, so it's
-refreshed whenever crash data changes — the KDTree + PIP work already
-happened.
-
-New subcommand: `njdot reshard_hex_sld` (this session, already
-written).
+`hex-sld.parquet` is built by `njdot export_hex_sld` as part of
+`www/public/njdot/map.dvc`, refreshed on every crash-data update.
+The reshard subcommand just column-prunes + zstd-compresses +
+h3-sorts it:
 
 ```bash
 njdot reshard_hex_sld \
     -s www/public/njdot/map/v2/hex-sld.parquet \
-    -m data/cells/manifest.json \
-    -o data/cells/pyramid_sld
+    -o data/cells/hex-sld.parquet \
+    -r 50000
 ```
 
-Steps:
+Output: `data/cells/hex-sld.parquet` — 5 cols
+(`h3, sld_name, cross_sld_name, mun, county`), zstd, h3-sorted, 15
+row groups of 50k rows each.
 
-1. Load `hex-sld.parquet` (r6-r11 cells with sld/mun/county).
-2. Read `data/cells/manifest.json` → enumerate `pyramid_combos`.
-3. For each combo `(shard_res, data_res)`, for each shard listed,
-   read the peer counts-pyramid shard's h3 column
-   (`data/cells/pyramid/s{shard_res}_r{data_res}/{shard}.parquet`) to
-   get the exact cell set at that (combo, shard).
-4. For each cell: if `data_res <= 11`, look up sld directly; else
-   walk up to the r11 parent (same fallback as legacy
-   `useHexSld.lookup`).
-5. Emit `pyramid_sld/s{shard_res}_r{data_res}/{shard}.parquet` with
-   cols `[h3, sld_name, cross_sld_name, mun, county]`, zstd, one
-   row group.
+Runtime: seconds (single-file rewrite; no h3 enumeration).
 
-Runtime: ~10 min on a laptop (single-threaded pandas). Cheap because
-KDTree/PIP is already done; this is pure enumeration + parent walk +
-parquet write.
-
-Local test result (2026-07-06):
-- Total: 1.2 GB across 23 combos, ~200k shards
-- Typical per-shard: 5-20 KB
-- All combos emit within ~3% shard-count of counts-pyramid
-  (soft-miss on cells present in counts but absent in the r6-r11
-  sidecar — silent pass-through, tooltip degrades).
+Local result (2026-07-06):
+- Source: 15.11 MB (10 cols)
+- Output: 6.86 MB (5 cols, zstd, sorted) — 45% of source, 45% of
+  original 15 MB unconditional client fetch
+- 723,681 rows / 15 row groups. Row-group h3 ranges cleanly split
+  by resolution prefix (r6-r8 → rg0; r9 → rg1-2; r10 → rg3-6;
+  r11 → rg7-14).
 
 ### DVX / DVC wiring
 
-- `data/cells/pyramid_sld.dvc` (new) — deps: `www/public/njdot/map/v2/hex-sld.parquet`
-  + `data/cells/manifest.json` + shard shells from
-  `data/cells/pyramid/`. Cmd: `cd ../.. && njdot reshard_hex_sld -f`.
-  Runs after `data/cells/pyramid.dvc` (needs the counts pyramid to
-  know which cells to shard for).
-- R2 upload: existing `njdot compute cells push` already syncs
-  `data/cells/` → `s3://nj-crashes/cells/` with `aws s3 sync --delete`.
-  The new `pyramid_sld/` subdir gets synced automatically — no code
-  change to `cells.py:cells_push`.
+- `data/cells/hex-sld.parquet.dvc` (new) — dep:
+  `www/public/njdot/map/v2/hex-sld.parquet`.
+  Cmd: `cd ../.. && njdot reshard_hex_sld`.
+- R2 upload: `data/cells/hex-sld.parquet` is a single file — either
+  `aws s3 cp` it directly or piggyback on `njdot compute cells push`
+  (which syncs `data/cells/`).
 - Old `www/public/njdot/map/v2/hex-sld.parquet` gets deleted once
   multiplex is verified in prod (follow-up commit).
   `njdot/cli/export_hex_sld.py` stays — the reshard depends on its

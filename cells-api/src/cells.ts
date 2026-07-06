@@ -32,7 +32,7 @@
  *        cells: [{ h3, n_fatal, n_inj_ped, n_inj_other, n_pdo, n_vehs }]
  *      }
  */
-import { cellToLatLng, cellToParent } from "h3-js"
+import { cellToLatLng, cellToParent, getResolution } from "h3-js"
 import { loadManifest } from "./manifest"
 import { readParquetFromR2 } from "./parquet"
 
@@ -87,7 +87,7 @@ export type CellOut = {
     county?: string
 }
 
-/** Row shape read from `pyramid_sld/{subdir}/{shard}.parquet`. */
+/** Row shape read from `hex-sld.parquet`. */
 type SldRow = {
     h3: string
     sld_name: string | null
@@ -96,42 +96,71 @@ type SldRow = {
     county: string | null
 }
 
-/** Join sidecar sld rows onto an already-built `CellOut` map from
- *  `queryPyramid` / `queryRaw`. Missing shard → soft-fail (warn,
- *  tooltip degrades to no road label). Missing per-row match → skip
- *  (aggregated cell whose children happened to have no sld cell). */
+/** Finest resolution covered by the sidecar. Cells at data_res > this
+ *  walk up to this res via `cellToParent` — same fallback as the legacy
+ *  client `useHexSld.lookup`. Kept in sync with `RESOLUTIONS` in
+ *  `njdot/cli/export_hex_sld.py`. */
+const SLD_MAX_RES = 11
+
+/** Module-scoped cache: the sidecar is ~5-7 MB / 723k rows — read once
+ *  per worker isolate, keep resident in memory. All requests share.
+ *  `readParquetFromR2` uses hyparquet's range-fetching so the initial
+ *  read is efficient even without column-projection (source is already
+ *  pruned to the 5 tooltip cols). */
+let sldCached: Promise<Map<string, SldRow>> | null = null
+
+async function loadSldMap(
+    bucket: R2Bucket, prefix: string,
+): Promise<Map<string, SldRow>> {
+    if (sldCached) return sldCached
+    sldCached = (async () => {
+        const rows = await readParquetFromR2<SldRow>(
+            bucket, `${prefix}/hex-sld.parquet`,
+            { columns: ["h3", "sld_name", "cross_sld_name", "mun", "county"] },
+        )
+        const m = new Map<string, SldRow>()
+        for (const r of rows) m.set(r.h3, r)
+        return m
+    })()
+    try {
+        return await sldCached
+    } catch (e) {
+        sldCached = null   // let a subsequent request retry
+        throw e
+    }
+}
+
+/** Attach sidecar sld/mun/county fields to `cells` in place. Cells at
+ *  res > SLD_MAX_RES walk up to their SLD_MAX_RES ancestor. Missing
+ *  sidecar → soft-fail (worker warns, tooltip degrades to no label). */
 async function joinSld(
     bucket: R2Bucket,
     prefix: string,
-    subdir: string,
-    shards: string[],
     cells: CellOut[],
 ): Promise<void> {
     if (cells.length === 0) return
-    const byH3 = new Map<string, CellOut>()
-    for (const c of cells) byH3.set(c.h3, c)
-    const results = await Promise.all(shards.map(async s => {
-        try {
-            return await readParquetFromR2<SldRow>(
-                bucket, `${prefix}/pyramid_sld/${subdir}/${s}.parquet`,
-                { columns: ["h3", "sld_name", "cross_sld_name", "mun", "county"] },
-            )
-        } catch (e) {
-            console.warn(`pyramid_sld ${subdir}/${s} read failed:`, e)
-            return null
-        }
-    }))
-    for (const rows of results) {
-        if (!rows) continue
-        for (const r of rows) {
-            const cell = byH3.get(r.h3)
-            if (!cell) continue
-            if (r.sld_name) cell.sld_name = r.sld_name
-            if (r.cross_sld_name) cell.cross_sld_name = r.cross_sld_name
-            if (r.mun) cell.mun = r.mun
-            if (r.county) cell.county = r.county
-        }
+    let sld: Map<string, SldRow>
+    try {
+        sld = await loadSldMap(bucket, prefix)
+    } catch (e) {
+        console.warn(`hex-sld sidecar read failed:`, e)
+        return
     }
+    for (const c of cells) {
+        const res = getResolution(c.h3)
+        const key = res > SLD_MAX_RES ? cellToParent(c.h3, SLD_MAX_RES) : c.h3
+        const row = sld.get(key)
+        if (!row) continue
+        if (row.sld_name) c.sld_name = row.sld_name
+        if (row.cross_sld_name) c.cross_sld_name = row.cross_sld_name
+        if (row.mun) c.mun = row.mun
+        if (row.county) c.county = row.county
+    }
+}
+
+/** Test-only: clear the in-memory sld cache. */
+export function _resetSldCache(): void {
+    sldCached = null
 }
 
 export type CellsResponse = {
@@ -233,7 +262,7 @@ export async function handleCellsRequest(
         const shards = requestedShards.filter(s => known.has(s))
         const clipPoly = req.clipPolygon && req.clipPolygon.length >= 3 ? req.clipPolygon : null
         const cells = await queryPyramid(bucket, prefix, requestedRes, shards, yearRange, sevSet, clipPoly, shardRes)
-        await joinSld(bucket, prefix, `s${shardRes}_r${requestedRes}`, shards, cells)
+        await joinSld(bucket, prefix, cells)
         return {
             res: requestedRes,
             year_range: yearRange,
@@ -264,7 +293,7 @@ export async function handleCellsRequest(
             ? await queryPyramid(bucket, prefix, res, shards, yearRange, sevSet, clipPoly)
             : await queryRaw(bucket, prefix, manifest, res, shards, yearRange, sevSet, clipPoly)
         if (maxCells == null || cells.length <= maxCells || res === MIN_RES) {
-            await joinSld(bucket, prefix, `r${res}`, shards, cells)
+            await joinSld(bucket, prefix, cells)
             return {
                 res,
                 year_range: yearRange,
