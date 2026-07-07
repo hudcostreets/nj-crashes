@@ -1,4 +1,4 @@
-# cells-api: extend pyramid to r15
+# cells-api: extend pyramid to r15 + bake sld into rows
 
 ## Motivation
 
@@ -51,11 +51,38 @@ up new combos automatically once the manifest lists them.
 
 ## Pipeline changes
 
-**Sidecar / sld coverage** — no change. `hex-sld.parquet` covers
-r6-r11 with `SLD_MAX_RES=11`; the worker's `joinSld` already walks
-r12-r15 up to their r11 parent for lookup. That's fine — a single
-r11 cell's road label is a reasonable proxy for its ~50 r15
-descendants.
+**Bake sld INTO pyramid rows (delete sidecar path)** — while
+rebuilding, add four string columns to every pyramid parquet row:
+`sld_name, cross_sld_name, mun, county`. Populated by joining the
+existing `hex-sld.parquet` against each row's h3 (parent-walk to
+r11 for `data_res > 11` — same fallback the worker's `joinSld`
+does today).
+
+Storage impact: sld strings are per-h3, not per-(h3,year), and
+dict-encode extremely well (a few hundred distinct road names per
+county). Estimated ~+100-200 MB across the whole pyramid — under
+1% growth. Trivial R2 cost.
+
+Worker payoff: `joinSld`, `loadSldMap`, `SldRow`, and the whole
+`hex-sld.parquet` file become dead code. Delete after the new
+pyramid is live:
+
+  - `cells-api/src/cells.ts`: drop `joinSld` calls in both request
+    paths, drop the sld-cache module state, drop `SldRow` type
+  - `data/cells/hex-sld.parquet`: delete from R2 after verification
+  - `njdot/cli/reshard_hex_sld.py`: keep as-is (still emits the
+    sidecar used by `export_hex_sld.dvc` outputs — sidecar
+    becomes an intermediate consumed by the pyramid builder, no
+    longer served directly)
+
+Measured cost this replaces: **1.8-3.5 s per 35k-cell request**
+(65-80% of the worker's total wall-clock). Baking eliminates it
+entirely; requests drop to ~500-1000 ms for the same payload.
+
+**Sidecar / sld coverage of the pyramid** — for `data_res > 11`
+(r12-r15 cells), pipeline uses `cellToParent(h3, 11)` to inherit
+the sld from the r11 ancestor. Same fallback the worker does
+today; identical output.
 
 **Pyramid emitter** — extend `njdot/cli/cells.py` (or the specific
 `pyramid_combos` command) to accept r15 as a target data_res. The
@@ -98,30 +125,59 @@ anyway so the worker's res-range validation
 manifest lists `s{7,8,9}_r15`, `pickCover(combos, 15, ...)` returns
 a non-empty cover and requests fire.
 
+Client already reads `sld_name / cross_sld_name / mun / county` off
+the `CellOut` — this shape is preserved regardless of whether the
+worker populated them via sidecar-join (old) or the pyramid emitted
+them pre-baked (new). No client refactor.
+
 ## Rollout on `e`
+
+Two-part rebuild — r15 needs new combos, and every existing combo
+needs sld baked in (r6-r14 all need +4 string cols). Whole pyramid
+gets rewritten. Existing R2 objects can stay in place during the
+build and get overwritten atomically at push time.
 
 ```bash
 # on e, after pulling latest main
 git pull u main
+grhh   # align WT to just-pushed HEAD
 
-# 1. build r15 raw h3 keys if not already present
+# 1. update the pyramid-combos command to bake sld into every row.
+#    Reads hex-sld.parquet, parent-walks to r11 for data_res > 11,
+#    joins by h3 before per-shard write. Code changes live in
+#    njdot/cli/cells.py (or wherever pyramid_combos is emitted).
+
+# 2. build r15 raw h3 keys if not already present
 env -u PYTHONPATH njdot compute cells raw -r 15 -f
 
-# 2. build sharded r15 pyramid at the three combos we care about
-env -u PYTHONPATH njdot compute cells pyramid-combos -c 's7:r15,s8:r15,s9:r15' -f
+# 3. rebuild the ENTIRE pyramid (all combos) with sld baked in.
+#    Adds three new r15 combos, overwrites the existing combos with
+#    the sld-enriched schema. Runtime: ~1-3 hours on e (dominated by
+#    the fine-res combos).
+env -u PYTHONPATH njdot compute cells pyramid-combos -f
 
-# 3. push to R2
+# 4. push to R2 (both new and overwritten combos)
 env -u PYTHONPATH njdot compute cells push
 
-# 4. verify manifest has new combos
+# 5. verify manifest has new combos + sld cols
 curl -s https://crashes-cells-api.ryan-0dc.workers.dev/v1/manifest | jq '.pyramid_combos | map(.data_res) | unique'
+# expect: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
-# 5. bump worker env + deploy
-# edit cells-api/wrangler.toml: BASE_RES = "15"
+# 6. code changes for the worker:
+#    - bump BASE_RES = "15" in cells-api/wrangler.toml
+#    - delete joinSld, loadSldMap, SldRow, sld cache module state
+#    - drop the two joinSld call sites in handleCellsRequest
+#    - readParquetFromR2's `columns` arg extends to include the
+#      four sld cols so they flow through to CellOut
+
+# 7. deploy worker
 cd cells-api && pnpm wrangler deploy
 
-# 6. verify
-curl -s 'https://crashes-cells-api.ryan-0dc.workers.dev/v1/cells?cells=892a1008a0a7fff&res=15&years=2001-2026&severities=fip&shard_res=9' | jq '.res, (.cells | length)'
+# 8. verify: response includes sld fields directly (no join step)
+curl -s 'https://crashes-cells-api.ryan-0dc.workers.dev/v1/cells?cells=892a1008a0a7fff&res=15&years=2001-2026&severities=fip&shard_res=9' | jq '.res, .cells[0]'
+
+# 9. once verified, delete the standalone sidecar
+aws --profile cf s3 rm s3://nj-crashes/cells/hex-sld.parquet
 ```
 
 ## Tests / verification
