@@ -555,10 +555,15 @@ def cells_manifest(base_res: int, pyramid_levels: str, out_dir: Path, shard_res:
                 p = cdir / f'{sh}.parquet'
                 n_rows += pq.ParquetFile(p).metadata.num_rows
                 n_bytes += p.stat().st_size
+            # Emit only the shard COUNT, not the full cell list: the worker
+            # reads shards with `missingOk` rather than pre-filtering against
+            # an existence set, so the per-combo lists (up to ~78k cells ×
+            # several combos = ~9 MB) served no consumer. The top-level
+            # `shard_cells` (raw r{shard_res} cells) is kept below.
             pyramid_combos.append({
                 'shard_res': s_res,
                 'data_res': d_res,
-                'shard_cells': shards,
+                'shard_count': len(shards),
                 'row_count': n_rows,
                 'byte_size': n_bytes,
             })
@@ -584,7 +589,7 @@ def cells_manifest(base_res: int, pyramid_levels: str, out_dir: Path, shard_res:
     if pyramid_combos:
         err(f'  combos: {len(pyramid_combos)}')
         for c in pyramid_combos:
-            err(f'    s{c["shard_res"]}/r{c["data_res"]}: {len(c["shard_cells"]):,} shards, {c["row_count"]:,} rows, {c["byte_size"]/1024/1024:.1f} MB')
+            err(f'    s{c["shard_res"]}/r{c["data_res"]}: {c["shard_count"]:,} shards, {c["row_count"]:,} rows, {c["byte_size"]/1024/1024:.1f} MB')
 
 
 @cells.command('push')

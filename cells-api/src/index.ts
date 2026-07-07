@@ -95,25 +95,18 @@ export default {
             const prefix = env.CELLS_PREFIX || "cells"
             if (pathname === "/v1/manifest") {
                 const m = await loadManifest(env.CELLS_BUCKET, prefix)
-                // Strip the per-combo `shard_cells` arrays before sending —
-                // they account for 99%+ of the manifest (NJ has hundreds of
-                // thousands of cells at the finest shard_res), and the
-                // client only used them as an exists-check filter. The
-                // worker still validates shard existence server-side; the
-                // few off-NJ shard requests the client may now issue cost
-                // little (empty responses). `?full=1` opts back in for
-                // debug / regen scripts that need the full list.
-                const full = url.searchParams.get("full") === "1"
-                // The top-level `shard_cells` is tiny (31 r4 cells covering
-                // NJ, ~600 bytes) and is used by the client to filter
-                // off-NJ candidates out of `polygonToCells` ring output.
-                // Keep it. Strip only the per-combo `shard_cells` arrays
-                // (the 5MB+ blowup).
-                const out = full ? m : {
+                // The slim manifest no longer carries per-combo `shard_cells`
+                // (the worker reads shards with `missingOk`, so it needs no
+                // existence set). This projection is now defensive: it drops
+                // the arrays if a legacy 9 MB manifest is still in R2 during
+                // rollout. The top-level `shard_cells` (34 r4 cells, ~600 B)
+                // stays — the client uses it to NJ-clip `polygonToCells`.
+                const out = {
                     ...m,
                     pyramid_combos: (m.pyramid_combos ?? []).map(c => ({
                         shard_res: c.shard_res,
                         data_res: c.data_res,
+                        shard_count: c.shard_count ?? c.shard_cells?.length,
                         row_count: c.row_count,
                         byte_size: c.byte_size,
                     })),

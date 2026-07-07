@@ -64,11 +64,13 @@ type CellsResponse = {
 }
 
 /** A pre-aggregated `(shard_res, data_res)` slice. Mirrors the
- *  worker-side `PyramidCombo`. */
+ *  worker-side `PyramidCombo`. The per-combo `shard_cells` list is no
+ *  longer shipped (the worker reads shards with `missingOk`); only the
+ *  `(shard_res, data_res)` set and counts remain. */
 export type PyramidCombo = {
     shard_res: number
     data_res: number
-    shard_cells: string[]
+    shard_count?: number
     row_count?: number
     byte_size?: number
 }

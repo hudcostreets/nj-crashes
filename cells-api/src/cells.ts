@@ -237,8 +237,13 @@ export async function handleCellsRequest(
             const avail = combos.map(c => `s${c.shard_res}/r${c.data_res}`).join(", ")
             throw new HttpError(404, `no combo (shard_res=${shardRes}, data_res=${requestedRes}); have: [${avail}]`)
         }
-        const known = new Set(combo.shard_cells)
-        const shards = requestedShards.filter(s => known.has(s))
+        // No per-shard existence filter: the client's cover is already
+        // NJ-clipped and bounded (≤ COVER_MAX_SHARDS), and `queryPyramid`
+        // reads with `missingOk` so a shard with no data (water/boundary)
+        // costs one HEAD and returns empty. Keeping a 9 MB per-combo
+        // shard-cell list in every isolate to skip a handful of HEADs was
+        // a net loss (see manifest slim-down).
+        const shards = requestedShards
         const clipPoly = req.clipPolygon && req.clipPolygon.length >= 3 ? req.clipPolygon : null
         const t0 = Date.now()
         let cells = await queryPyramid(bucket, prefix, requestedRes, shards, yearRange, sevSet, clipPoly, shardRes)
@@ -331,6 +336,7 @@ async function queryPyramid(
                 {
                     columns: cols,
                     filter: { year: { $gte: yearRange[0], $lte: yearRange[1] } },
+                    missingOk: true,
                 },
             )
         } catch (e) {

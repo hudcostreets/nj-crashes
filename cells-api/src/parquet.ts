@@ -27,17 +27,11 @@ export interface AsyncBuffer {
     slice(start: number, end?: number): Promise<ArrayBuffer>
 }
 
-/** Build an AsyncBuffer backed by an R2 object, using Range GETs. The
- *  parquet footer is at the end of the object (last ~64 KB) and hyparquet
- *  reads it first; subsequent slice calls fetch the row groups it needs
- *  based on its filter pushdown. */
-export async function r2AsyncBuffer(
-    bucket: R2Bucket,
-    key: string,
-): Promise<AsyncBuffer> {
-    const head = await bucket.head(key)
-    if (!head) throw new Error(`R2 key not found: ${key}`)
-    const byteLength = head.size
+/** Build an AsyncBuffer over an R2 object of known size, using Range GETs.
+ *  The parquet footer is at the end of the object (last ~64 KB) and hyparquet
+ *  reads it first; subsequent slice calls fetch the row groups it needs based
+ *  on its filter pushdown. */
+function r2BufferOfSize(bucket: R2Bucket, key: string, byteLength: number): AsyncBuffer {
     return {
         byteLength,
         async slice(start: number, end?: number): Promise<ArrayBuffer> {
@@ -52,14 +46,35 @@ export async function r2AsyncBuffer(
     }
 }
 
+/** Build an AsyncBuffer backed by an R2 object. Throws if the key is missing. */
+export async function r2AsyncBuffer(
+    bucket: R2Bucket,
+    key: string,
+): Promise<AsyncBuffer> {
+    const head = await bucket.head(key)
+    if (!head) throw new Error(`R2 key not found: ${key}`)
+    return r2BufferOfSize(bucket, key, head.size)
+}
+
 /** Read parquet rows from an R2 key with column projection + optional
- *  row-group pushdown filter. Returns an array of plain JS objects. */
+ *  row-group pushdown filter. Returns an array of plain JS objects.
+ *
+ *  `missingOk`: when the key doesn't exist, return `[]` instead of throwing.
+ *  Used by the pyramid/raw shard reads — the client's cover may include
+ *  shards with no data (water/boundary), and an empty read is the correct
+ *  answer. A single HEAD distinguishes missing from present, so this adds
+ *  no extra round-trip on the hot (present) path. */
 export async function readParquetFromR2<T>(
     bucket: R2Bucket,
     key: string,
-    opts: { columns?: readonly string[]; filter?: object } = {},
+    opts: { columns?: readonly string[]; filter?: object; missingOk?: boolean } = {},
 ): Promise<T[]> {
-    const file = await r2AsyncBuffer(bucket, key)
+    const head = await bucket.head(key)
+    if (!head) {
+        if (opts.missingOk) return []
+        throw new Error(`R2 key not found: ${key}`)
+    }
+    const file = r2BufferOfSize(bucket, key, head.size)
     const rows = await parquetReadObjects({
         file: file as any,
         columns: opts.columns as string[] | undefined,

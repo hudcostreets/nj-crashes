@@ -16,7 +16,13 @@
 export type PyramidCombo = {
     shard_res: number
     data_res: number
-    shard_cells: string[]
+    /** Number of non-empty shard cells at `shard_res` (informational). The
+     *  full list is no longer shipped — the worker reads shards with
+     *  `missingOk` rather than pre-filtering against an existence set. */
+    shard_count?: number
+    /** Legacy: full shard-cell list. Absent since the manifest slim-down;
+     *  retained optional so older manifests still type-check. */
+    shard_cells?: string[]
     row_count?: number
     byte_size?: number
 }
