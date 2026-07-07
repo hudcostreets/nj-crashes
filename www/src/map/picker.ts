@@ -39,32 +39,20 @@ export function autoHexPxTarget(
     return Math.min(30, Math.max(1.0, diaPx * 0.99))
 }
 
-/** Threshold (px) below which we stay in the *rasterized-heatmap*
- *  regime — target dot < ~1.5px, cells blend into density paint. Above
- *  this we're in the *discrete-dot* regime where we can safely drop to
- *  a coarser resolution whose inscribed circle still fits the target
- *  dot, saving bandwidth without changing the visual. */
-const CIRCLE_RASTERIZED_THRESHOLD_PX = 1.5
-
 /** Effective `hexPxTarget` fed into `pickHexResolutionForPixels`.
- *  Layer over the auto target with viz-mode overrides. */
+ *  Circle mode uses the identical picker as hex mode — same res, same
+ *  cell count, same fetch. Circle is a pure rendering swap: each cell
+ *  is drawn as a circular column clamped to the cell's inscribed
+ *  radius. Bandwidth optimizations belong elsewhere (worker-side
+ *  aggregation, parquet transport). */
 export function hexPxTargetFor(
     viz: VizMode,
     zoom: number,
     lat: number,
     autoOverrides: Record<number, number> = {},
 ): number {
-    const auto = autoHexPxTarget(zoom, lat, autoOverrides)
-    if (viz !== "circle") return auto
-    const target = circleRadiusPx(zoom)
-    if (target < CIRCLE_RASTERIZED_THRESHOLD_PX) return auto
-    // inscribed_radius ≥ target_radius ⇔ hex_diameter ≥ 4·target/√3.
-    // Accept up to ~15% clamp (dot rendered slightly smaller than
-    // target) rather than jump two H3 levels for a strict fit — the
-    // difference between "1.5px" and "1.3px" dots is invisible; the
-    // difference between r7 and r8 cell counts is 7×.
-    const coarsestFit = ((4 * target) / Math.sqrt(3)) / 1.15
-    return Math.max(auto, coarsestFit)
+    void viz  // parity with hex mode
+    return autoHexPxTarget(zoom, lat, autoOverrides)
 }
 
 /** End-to-end: given (viz, zoom, lat, autoOverrides), return the H3

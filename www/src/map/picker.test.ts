@@ -48,82 +48,30 @@ describe("picker: hex mode auto res per zoom", () => {
     }
 })
 
-describe("picker: circle mode coarsest-fit override", () => {
-    // Below the rasterized threshold (target dot < 1.5px), circle mode
-    // MUST fall through to hex-mode auto to preserve statewide density
-    // paint. Above it, circle can go coarser than hex mode.
-    it("z=8.5 (target < 1.5px): matches hex auto (r9, rasterized)", () => {
-        expect(circleRadiusPx(8.5)).toBeLessThan(1.5)
-        expect(pickRes("circle", 8.5, NJ_LAT)).toBe(pickRes("hex", 8.5, NJ_LAT))
+describe("picker: circle mode == hex mode (pure rendering swap)", () => {
+    // Circle mode is a rendering swap only — same picker, same res,
+    // same cell fetch. Anything else conflates two concerns (viz
+    // rendering vs. bandwidth optimization). Bandwidth wins live
+    // elsewhere (worker-side coarsening, parquet transport).
+    it("hex and circle pick identical res across z=7 → 20", () => {
+        for (let z = 7; z <= 20; z += 0.25) {
+            expect(pickRes("circle", z, NJ_LAT)).toBe(pickRes("hex", z, NJ_LAT))
+        }
     })
+})
 
-    // Anchor circle-mode picks at every zoom in a table so any drift
-    // shows up loud.
-    const cases: Array<[number, number, number]> = [
-        // [zoom, hex_res, circle_res]
-        [8.5, 9, 9],    // rasterized preserved (target < 1.5)
-        [8.7, 9, 8],    // one-step jump at threshold crossing (target ≈ 1.53)
-        [9.0, 9, 8],
-        [10.94, 10, 9], // Bergen — the vp that flagged the picker over-fetch
-        [11.0, 10, 9],
-        [12.0, 11, 9],
-        [13.81, 11, 10], // mid-zoom (DTJC)
-        [14.0, 12, 11],
-        [16.91, 12, 12], // deep: auto wins (coarsestFit fits inside auto)
-        [17.0, 13, 12], // circle stays r12; hex bumps to r13
-        [18.0, 14, 13],
-        [19.0, 15, 13], // circle strictly coarser at very deep zoom
-        [20.0, 15, 14],
-    ]
-    for (const [zoom, hex, circle] of cases) {
-        it(`z=${zoom}: hex=r${hex}, circle=r${circle}`, () => {
-            expect(pickRes("hex", zoom, NJ_LAT)).toBe(hex)
-            expect(pickRes("circle", zoom, NJ_LAT)).toBe(circle)
+describe("picker: monotone in zoom (never coarser as we zoom in)", () => {
+    // Both modes: as zoom deepens, res never decreases.
+    for (const viz of ["hex", "circle"] as const) {
+        it(`${viz} mode: res non-decreasing across z=7 → 20`, () => {
+            let prev = -1
+            for (let z = 7; z <= 20; z += 0.1) {
+                const r = pickRes(viz, z, NJ_LAT)
+                expect(r).toBeGreaterThanOrEqual(prev)
+                prev = r
+            }
         })
     }
-})
-
-describe("picker: hex mode monotone (never coarser as we zoom in)", () => {
-    // Hex-mode tessellation should never drop res as zoom increases.
-    // Circle mode is intentionally *not* monotone at the boundary
-    // crossing (z≈8.5 target=1.49→1.55 wants slightly-coarser cells so
-    // 1.5px dots fit inscribed instead of clamping to sub-px on r9).
-    it("res non-decreasing across z=7 → 20 (hex)", () => {
-        let prev = -1
-        for (let z = 7; z <= 20; z += 0.1) {
-            const r = pickRes("hex", z, NJ_LAT)
-            expect(r).toBeGreaterThanOrEqual(prev)
-            prev = r
-        }
-    })
-})
-
-describe("picker: circle mode piecewise monotone", () => {
-    // Circle mode has ONE legit dropdown at the rasterized→discrete-dot
-    // threshold crossing (z≈8.6 for the current curve). Everywhere else
-    // it should stay non-decreasing as z increases.
-    it("at most one res-drop across z=7 → 20", () => {
-        let prev = -1
-        let drops = 0
-        for (let z = 7; z <= 20; z += 0.1) {
-            const r = pickRes("circle", z, NJ_LAT)
-            if (r < prev) drops++
-            prev = r
-        }
-        expect(drops).toBeLessThanOrEqual(1)
-    })
-})
-
-describe("picker: circle mode never picks a res finer than hex mode", () => {
-    // Corollary of the "Math.max with auto" guard — circle-mode's data
-    // reduction should never accidentally fetch finer cells than hex.
-    it("across z=7 → 20", () => {
-        for (let z = 7; z <= 20; z += 0.25) {
-            const hexRes = pickRes("hex", z, NJ_LAT)
-            const circleRes = pickRes("circle", z, NJ_LAT)
-            expect(circleRes).toBeLessThanOrEqual(hexRes)
-        }
-    })
 })
 
 describe("picker: circleRadiusPx curve", () => {
