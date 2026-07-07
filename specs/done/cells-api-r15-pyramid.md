@@ -1,5 +1,30 @@
 # cells-api: extend pyramid to r15 + bake sld into rows
 
+> **Implemented 2026-07-07** (deployed worker version `1cbb2a4f`). Deltas from
+> the plan below, found during implementation:
+> - **`cells raw -b 15`, not `-r 15`** — `cells raw` has no `-r`; r15 combos
+>   can't roll up from the r14 base (r15 is finer), so a fresh r15 raw base is
+>   required, and `pyramid-combos` must also run with `-b 15`.
+> - **Manifest is a separate step** — `pyramid-combos` doesn't emit
+>   `manifest.json`; ran `cells manifest -b 15 -l 6..13` explicitly.
+> - **Whole-pyramid rebuild** (all 26 combos) to bake sld into every row;
+>   `queryPyramid` reads the 4 sld cols (combo path only — legacy `r{N}` levels
+>   lack them) and `joinSld`/`loadSldMap`/`SldRow` were deleted.
+> - **Dropped `s9_r15`** — `pickCover` escalates to the finest published
+>   `shard_res` at deep zoom; `s9_r15` was 78k tiny files (~11 KB each, mostly
+>   parquet overhead) for negligible benefit over `s8_r15`. r15 = [s7, s8].
+>   See `specs/pyramid-file-consolidation.md` for the broader s9-tier cleanup.
+> - **Emitter parallelized** (`-j`, fork pool) + base-column trim to fix a
+>   `-j14` OOM (per-combo ~5.8 GB from the topK dict-list); settled on `-j6`.
+>   Added `cells push -q` (`--only-show-errors`).
+> - **`BASE_RES` wrangler var is vestigial** — the worker reads only
+>   `CORS_ORIGIN`/`CELLS_BUCKET`/`CELLS_PREFIX`; the res-gate uses
+>   `manifest.base_res`. Bumped `BASE_RES=15` for humans; the deploy's real job
+>   is flushing the per-isolate manifest cache.
+> - **Storage estimate was ~10× high** — real pyramid ~6 GB, not 30–40 GB.
+> - **Sidecar kept** — `hex-sld.parquet` left in R2 for worker-rollback safety
+>   (a `cells/hex-sld.DEPRECATED.txt` marker notes it's superseded).
+
 ## Motivation
 
 At z ≥ 19 (deep street-level zoom), the client's `AUTO_RES_BY_ZOOM`

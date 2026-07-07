@@ -17,7 +17,10 @@ CORS_ORIGIN = "*"
 # reads under it. Other crashes-project data (parquets/, csvs/, geo/...)
 # can share the bucket at sibling prefixes.
 CELLS_PREFIX = "cells"
-BASE_RES = "14"
+# Informational only — the worker reads these from `manifest.json` at
+# request time (the res-gate uses `manifest.base_res`); kept here in sync
+# for humans. base is r15 since the pyramid gained the s{7,8,9}_r15 combos.
+BASE_RES = "15"
 SHARD_RES = "4"
 PYRAMID_LEVELS = "6,7,8,9,10,11"
 TOPK = "10"

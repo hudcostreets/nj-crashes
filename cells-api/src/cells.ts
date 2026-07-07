@@ -32,7 +32,7 @@
  *        cells: [{ h3, n_fatal, n_inj_ped, n_inj_other, n_pdo, n_vehs }]
  *      }
  */
-import { cellToLatLng, cellToParent, getResolution } from "h3-js"
+import { cellToLatLng, cellToParent } from "h3-js"
 import { loadManifest } from "./manifest"
 import { readParquetFromR2 } from "./parquet"
 
@@ -61,6 +61,12 @@ type PyramidRow = {
     n_inj_other: number
     n_pdo: number
     n_vehs?: number
+    // Baked into every pyramid row by `njdot compute cells pyramid-combos`
+    // (see `_build_pyramid_level`). Constant across a cell's year-rows.
+    sld_name?: string | null
+    cross_sld_name?: string | null
+    mun?: string | null
+    county?: string | null
 }
 
 export type CellOut = {
@@ -74,99 +80,18 @@ export type CellOut = {
      *  when n_fatal === 0. Used by the hex tooltip to show "Fatal: 2018,
      *  2020, 2022" instead of just a bare count. */
     fatal_years?: number[]
-    /** Primary road at this cell's centroid, joined in-worker from the
-     *  `pyramid_sld/` sidecar. Present when the sidecar shard exists +
-     *  the cell has a match; omitted for missing shard (worker warns) or
-     *  ocean/off-road cells. Used by the hex tooltip. Deletes the
-     *  15 MB client-side `hex-sld.parquet` fetch this once replaced. */
+    /** Primary road at this cell's centroid, baked into the pyramid row
+     *  at build time (`njdot compute cells pyramid-combos`, joined from
+     *  `hex-sld.parquet` with an r11-ancestor fallback for data_res > 11).
+     *  Omitted for ocean/off-road cells. Used by the hex tooltip; replaced
+     *  the 15 MB client-side `hex-sld.parquet` fetch and the former
+     *  per-request `joinSld` sidecar read. */
     sld_name?: string
-    /** Cross-street from the same sidecar. Populated for cells within
+    /** Cross-street from the same baked source. Populated for cells within
      *  ~80m of a different SRI; ~25-75% of cells depending on res. */
     cross_sld_name?: string
     mun?: string
     county?: string
-}
-
-/** Row shape read from `hex-sld.parquet`. */
-type SldRow = {
-    h3: string
-    sld_name: string | null
-    cross_sld_name: string | null
-    mun: string | null
-    county: string | null
-}
-
-/** Finest resolution covered by the sidecar. Cells at data_res > this
- *  walk up to this res via `cellToParent` — same fallback as the legacy
- *  client `useHexSld.lookup`. Kept in sync with `RESOLUTIONS` in
- *  `njdot/cli/export_hex_sld.py`. */
-const SLD_MAX_RES = 11
-
-/** Module-scoped cache: the sidecar is ~5-7 MB / 723k rows — read once
- *  per worker isolate, keep resident in memory. All requests share.
- *  `readParquetFromR2` uses hyparquet's range-fetching so the initial
- *  read is efficient even without column-projection (source is already
- *  pruned to the 5 tooltip cols). */
-let sldCached: Promise<Map<string, SldRow>> | null = null
-
-async function loadSldMap(
-    bucket: R2Bucket, prefix: string,
-): Promise<Map<string, SldRow>> {
-    if (sldCached) return sldCached
-    sldCached = (async () => {
-        const rows = await readParquetFromR2<SldRow>(
-            bucket, `${prefix}/hex-sld.parquet`,
-            { columns: ["h3", "sld_name", "cross_sld_name", "mun", "county"] },
-        )
-        const m = new Map<string, SldRow>()
-        for (const r of rows) m.set(r.h3, r)
-        return m
-    })()
-    try {
-        return await sldCached
-    } catch (e) {
-        sldCached = null   // let a subsequent request retry
-        throw e
-    }
-}
-
-/** Attach sidecar sld/mun/county fields to `cells` in place. Cells at
- *  res > SLD_MAX_RES walk up to their SLD_MAX_RES ancestor. Missing
- *  sidecar → soft-fail (worker warns, tooltip degrades to no label). */
-async function joinSld(
-    bucket: R2Bucket,
-    prefix: string,
-    cells: CellOut[],
-): Promise<void> {
-    if (cells.length === 0) return
-    let sld: Map<string, SldRow>
-    const tLoad0 = Date.now()
-    try {
-        sld = await loadSldMap(bucket, prefix)
-    } catch (e) {
-        console.warn(`hex-sld sidecar read failed:`, e)
-        return
-    }
-    const tLoad1 = Date.now()
-    for (const c of cells) {
-        const res = getResolution(c.h3)
-        const key = res > SLD_MAX_RES ? cellToParent(c.h3, SLD_MAX_RES) : c.h3
-        const row = sld.get(key)
-        if (!row) continue
-        if (row.sld_name) c.sld_name = row.sld_name
-        if (row.cross_sld_name) c.cross_sld_name = row.cross_sld_name
-        if (row.mun) c.mun = row.mun
-        if (row.county) c.county = row.county
-    }
-    const tLoop1 = Date.now()
-    if (tLoop1 - tLoad0 > 200) {
-        console.log(`[timing] joinSld cells=${cells.length}: load=${tLoad1 - tLoad0}ms, loop=${tLoop1 - tLoad1}ms, sldSize=${sld.size}`)
-    }
-}
-
-/** Test-only: clear the in-memory sld cache. */
-export function _resetSldCache(): void {
-    sldCached = null
 }
 
 /** In-worker parent-aggregate — used to drop one H3 res in the combo
@@ -197,6 +122,15 @@ export function coarsenCells(cells: CellOut[], toRes: number): CellOut[] {
         p.n_vehs += c.n_vehs
         if (c.fatal_years && c.fatal_years.length > 0) {
             (p.fatal_years ??= []).push(...c.fatal_years)
+        }
+        // Inherit the tooltip labels from the first child that carries a
+        // road name — a representative proxy for the coarsened cell (the
+        // baked pyramid can't pre-label these dynamically-merged parents).
+        if (p.sld_name == null && c.sld_name != null) {
+            p.sld_name = c.sld_name
+            p.cross_sld_name = c.cross_sld_name
+            p.mun = c.mun
+            p.county = c.county
         }
     }
     for (const p of parents.values()) {
@@ -316,9 +250,7 @@ export async function handleCellsRequest(
             cells = coarsenCells(cells, res)
         }
         const t2 = Date.now()
-        await joinSld(bucket, prefix, cells)
-        const t3 = Date.now()
-        console.log(`[timing] combo s${shardRes}_r${requestedRes} shards=${shards.length} cells=${cells.length}: pyramid=${t1 - t0}ms, coarsen=${t2 - t1}ms, sld=${t3 - t2}ms, total=${t3 - t0}ms`)
+        console.log(`[timing] combo s${shardRes}_r${requestedRes} shards=${shards.length} cells=${cells.length}: pyramid=${t1 - t0}ms, coarsen=${t2 - t1}ms, total=${t2 - t0}ms`)
         return {
             res,
             year_range: yearRange,
@@ -349,7 +281,6 @@ export async function handleCellsRequest(
             ? await queryPyramid(bucket, prefix, res, shards, yearRange, sevSet, clipPoly)
             : await queryRaw(bucket, prefix, manifest, res, shards, yearRange, sevSet, clipPoly)
         if (maxCells == null || cells.length <= maxCells || res === MIN_RES) {
-            await joinSld(bucket, prefix, cells)
             return {
                 res,
                 year_range: yearRange,
@@ -382,6 +313,11 @@ async function queryPyramid(
     // Multi-res combos live under `pyramid/s{shard_res}_r{data_res}/...`;
     // legacy single-shard-res pyramid lives under `pyramid/r{res}/...`.
     const subdir = shardRes != null ? `s${shardRes}_r${res}` : `r${res}`
+    // sld labels are baked into combo parquets only; the legacy `r{res}`
+    // levels lack those columns, so don't project them there.
+    const cols = shardRes != null
+        ? [h3Col, "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "sld_name", "cross_sld_name", "mun", "county"]
+        : [h3Col, "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"]
 
     // Parallel R2 reads — each shard's parquet was sequential before, which
     // made a 25-shard batch take ~4s (25 × ~150ms). With `Promise.all` the
@@ -393,7 +329,7 @@ async function queryPyramid(
             return await readParquetFromR2<PyramidRow>(
                 bucket, `${prefix}/pyramid/${subdir}/${s}.parquet`,
                 {
-                    columns: [h3Col, "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"],
+                    columns: cols,
                     filter: { year: { $gte: yearRange[0], $lte: yearRange[1] } },
                 },
             )
@@ -411,6 +347,12 @@ async function queryPyramid(
             let c = out.get(hex)
             if (!c) {
                 c = { h3: hex, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
+                // sld labels are baked per-row and constant across a cell's
+                // year-rows — set once on first sight (truthy skips nulls).
+                if (row.sld_name) c.sld_name = row.sld_name
+                if (row.cross_sld_name) c.cross_sld_name = row.cross_sld_name
+                if (row.mun) c.mun = row.mun
+                if (row.county) c.county = row.county
                 out.set(hex, c)
             }
             if (wantF) {

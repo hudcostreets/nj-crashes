@@ -52,6 +52,14 @@ PYRAMID_LEVELS_DEFAULT = (6, 7, 8, 9, 10, 11, 12, 13)
 TOPK_DEFAULT = 10
 SCHEMA_VERSION = 4
 
+# Resolutions covered by `hex-sld.parquet` (r6-r11). Pyramid rows at a finer
+# `data_res` inherit sld from their r{SLD_MAX_RES} ancestor — same fallback the
+# worker's `joinSld` applies (see cells-api/src/cells.ts). Baking these columns
+# into every pyramid row at build time replaces that runtime join.
+SLD_MAX_RES = 11
+SLD_COLS = ('sld_name', 'cross_sld_name', 'mun', 'county')
+SLD_PATH_DEFAULT = Path('www/public/njdot/map/v2/hex-sld.parquet')
+
 OUT_DIR_DEFAULT = Path('data/cells')
 R2_BUCKET_DEFAULT = 'nj-crashes'
 R2_PREFIX_DEFAULT = 'cells'
@@ -74,6 +82,40 @@ def _parent_int_col(cells: np.ndarray, res: int) -> np.ndarray:
     for i in range(n):
         out[i] = h3i.cell_to_parent(int(cells[i]), res)
     return out
+
+
+def _str_to_int_col(cells: np.ndarray) -> np.ndarray:
+    """Vectorize h3.str_to_int over an array of h3 hex strings → int64."""
+    n = len(cells)
+    out = np.empty(n, dtype=np.int64)
+    for i in range(n):
+        out[i] = h3i.str_to_int(cells[i])
+    return out
+
+
+# Columns `_build_pyramid_level` actually consumes (counts agg + topK struct).
+# The raw base carries ~10 more (cc, mc, road, cross_street, route, sri, mp,
+# lat, lon, geocode_src) — dropping them before the fork roughly halves the
+# per-worker footprint (the string road cols are the heavy ones) and, crucially,
+# shrinks the full-frame copy each worker makes in `base.assign(...)`.
+def _pyramid_keep_cols(base_res: int) -> list[str]:
+    return [f'h3_r{base_res}', 'year', 'dt', 'case', 'severity', 'ti', 'pi', 'tk', 'pk', 'tv']
+
+
+def _load_sld_lookup(sld_path: Path) -> pd.DataFrame:
+    """Load `hex-sld.parquet` (r6-r11 road/muni labels) keyed by int64 h3.
+
+    Returns a DataFrame indexed by int64 h3 with `SLD_COLS`, ready for
+    `.reindex(<int64 h3 array>)`. String h3 → int64 once here so the per-combo
+    join is a hash lookup on int keys (no per-row string round-trip)."""
+    sld = pd.read_parquet(sld_path, columns=['h3', *SLD_COLS])
+    sld['h3_int'] = _str_to_int_col(sld['h3'].to_numpy())
+    for c in SLD_COLS:
+        sld[c] = sld[c].astype('string')
+    # `.reindex` (per-combo join) requires a unique index; hex-sld should have
+    # one row per h3, but dedup defensively so a stray dup can't abort a build.
+    sld = sld.drop(columns='h3').drop_duplicates('h3_int').set_index('h3_int')
+    return sld
 
 
 def _git_sha() -> str:
@@ -158,12 +200,17 @@ def _build_pyramid_level(
     shard_res: int,
     topk: int,
     out_dir: Path,
+    sld: pd.DataFrame | None = None,
 ) -> dict[str, int]:
     """Aggregate raw rows to a pyramid level and write per-shard parquet files.
 
     Returns {shard_hex: row_count}. Input `base` must already be sorted by `dt`
     descending — groupby(sort=False).head(topk) then yields the K most-recent
     crashes per (shard, h3_rN, year).
+
+    When `sld` (int64-h3-indexed label table from `_load_sld_lookup`) is given,
+    bakes `SLD_COLS` into every row: key on the cell's own h3 for
+    `level <= SLD_MAX_RES`, else on its r{SLD_MAX_RES} ancestor.
     """
     h3_col = f'h3_r{level}'
     err(f'  parents r{level}...')
@@ -225,6 +272,18 @@ def _build_pyramid_level(
     for col in ('n_crashes', 'n_fatal', 'n_inj', 'n_pdo', 'n_killed', 'n_killed_ped', 'n_injured', 'n_inj_ped', 'n_inj_other', 'n_vehs'):
         out[col] = out[col].fillna(0).astype('int32')
 
+    if sld is not None:
+        err(f'  sld join...')
+        t0 = time()
+        key = out[h3_col].to_numpy()
+        if level > SLD_MAX_RES:
+            key = _parent_int_col(key, SLD_MAX_RES)
+        aligned = sld.reindex(key)
+        for c in SLD_COLS:
+            out[c] = aligned[c].to_numpy()
+        n_hit = aligned['sld_name'].notna().sum()
+        err(f'    {time() - t0:.1f}s, {n_hit:,}/{len(out):,} rows with sld_name')
+
     err(f'  sort + write...')
     t0 = time()
     out = out.sort_values(['__shard', h3_col, 'year'], kind='mergesort')
@@ -241,7 +300,7 @@ def _build_pyramid_level(
         ('severity', pa.string()),
         ('year', pa.int16()),
     ])
-    schema = pa.schema([
+    schema_fields = [
         (h3_col, pa.int64()),
         ('year', pa.int16()),
         *((c, pa.int32()) for c in (
@@ -249,7 +308,11 @@ def _build_pyramid_level(
             'n_injured', 'n_inj_ped', 'n_inj_other', 'n_vehs',
         )),
         ('topK', pa.list_(topk_struct)),
-    ])
+    ]
+    if sld is not None:
+        cols_out = [*cols_out, *SLD_COLS]
+        schema_fields += [(c, pa.string()) for c in SLD_COLS]
+    schema = pa.schema(schema_fields)
     for shard, sub in out.groupby('__shard', sort=False):
         shard_hex = h3.int_to_str(int(shard))
         path = level_dir / f'{shard_hex}.parquet'
@@ -324,18 +387,48 @@ def _parse_combos(spec: str) -> list[tuple[int, int]]:
     return out
 
 
+# Fork-shared state for combo workers. Set once in `cells_pyramid_combos`
+# before the pool is created; children inherit via copy-on-write so the
+# multi-million-row `base` (and the sld lookup) are never pickled per task.
+_MP_BASE: pd.DataFrame | None = None
+_MP_SLD: pd.DataFrame | None = None
+_MP_H3_BASE_COL: str | None = None
+_MP_TOPK: int | None = None
+_MP_PYRAMID_DIR: Path | None = None
+
+
+def _combo_task(combo: tuple[int, int]) -> tuple[int, int, int]:
+    s_res, d_res = combo
+    err(f'=== Combo s{s_res} / r{d_res} (D={d_res - s_res}) ===')
+    counts = _build_pyramid_level(
+        _MP_BASE, _MP_H3_BASE_COL, d_res, s_res, _MP_TOPK,
+        _MP_PYRAMID_DIR / f's{s_res}_r{d_res}', sld=_MP_SLD,
+    )
+    return s_res, d_res, sum(counts.values())
+
+
 @cells.command('pyramid-combos')
 @click.option('-b', '--base-res', type=int, default=BASE_RES_DEFAULT)
 @click.option('-c', '--combos', required=True, help='Comma-sep (shard_res, data_res) pairs, e.g. "s5:r9,s6:r10,s7:r11,s8:r12"')
 @click.option('-f', '--force', is_flag=True, help='Overwrite existing combo output dirs')
+@click.option('-j', '--jobs', type=int, default=0, help='Parallel combo workers (0 = min(#combos, cpu_count))')
 @click.option('-k', '--topk', type=int, default=TOPK_DEFAULT)
 @click.option('-o', '--out-dir', type=click.Path(path_type=Path), default=OUT_DIR_DEFAULT)
-def cells_pyramid_combos(base_res: int, combos: str, force: bool, topk: int, out_dir: Path):
+@click.option('-S', '--sld-path', type=click.Path(path_type=Path), default=SLD_PATH_DEFAULT, help=f'hex-sld.parquet to bake into rows, or "" to skip (default: {SLD_PATH_DEFAULT})')
+def cells_pyramid_combos(base_res: int, combos: str, force: bool, jobs: int, topk: int, out_dir: Path, sld_path: Path):
     """Multi-resolution pyramid: each `(shard_res, data_res)` combo writes
     to `pyramid/s{shard_res}_r{data_res}/{shard_hex}.parquet`. The
     client picks the combo whose viewport-shard count is in target
-    range (typically D = data_res - shard_res = 3-5)."""
+    range (typically D = data_res - shard_res = 3-5).
+
+    Combos run in a fork pool (`-j`); `SLD_COLS` are baked into every row
+    from `--sld-path` unless it's empty."""
     combo_list = _parse_combos(combos)
+    # Coarse→fine: per-worker memory is dominated by the topK object graph,
+    # which grows with data_res (fine combos are ~all singleton groups, so
+    # head(topk) keeps ~every row). Ordering cheap combos first lets them
+    # clear fast, so at most `-j` of the *expensive* fine combos overlap.
+    combo_list = sorted(combo_list, key=lambda c: (c[1], c[0]))
     err(f'Generating {len(combo_list)} combos: {combo_list}')
     pyramid_dir = out_dir / 'pyramid'
     pyramid_dir.mkdir(parents=True, exist_ok=True)
@@ -354,19 +447,42 @@ def cells_pyramid_combos(base_res: int, combos: str, force: bool, topk: int, out
     if not raw_paths:
         err(f'No raw shards in {raw_dir}; run `compute cells raw` first')
         raise SystemExit(1)
-    err(f'Loading {len(raw_paths)} raw shards from {raw_dir}...')
+    keep = _pyramid_keep_cols(base_res)
+    err(f'Loading {len(raw_paths)} raw shards from {raw_dir} (cols: {keep})...')
     t0 = time()
-    base = pd.concat([pd.read_parquet(p) for p in raw_paths], ignore_index=True)
+    base = pd.concat([pd.read_parquet(p, columns=keep) for p in raw_paths], ignore_index=True)
     err(f'  {len(base):,} rows in {time() - t0:.1f}s')
     err('Sorting by dt desc (once, for topK head() correctness)...')
     t0 = time()
     base = base.sort_values('dt', ascending=False, kind='mergesort')
     err(f'  {time() - t0:.1f}s')
 
-    h3_base_col = f'h3_r{base_res}'
-    for s_res, d_res in combo_list:
-        err(f'\n=== Combo s{s_res} / r{d_res} (D={d_res - s_res}) ===')
-        _build_pyramid_level(base, h3_base_col, d_res, s_res, topk, pyramid_dir / f's{s_res}_r{d_res}')
+    sld = None
+    if str(sld_path):
+        err(f'Loading sld lookup from {sld_path}...')
+        t0 = time()
+        sld = _load_sld_lookup(sld_path)
+        err(f'  {len(sld):,} labelled cells in {time() - t0:.1f}s')
+
+    global _MP_BASE, _MP_SLD, _MP_H3_BASE_COL, _MP_TOPK, _MP_PYRAMID_DIR
+    _MP_BASE = base
+    _MP_SLD = sld
+    _MP_H3_BASE_COL = f'h3_r{base_res}'
+    _MP_TOPK = topk
+    _MP_PYRAMID_DIR = pyramid_dir
+
+    n_jobs = jobs if jobs > 0 else min(len(combo_list), os.cpu_count() or 1)
+    err(f'\nBuilding {len(combo_list)} combos across {n_jobs} worker(s)...')
+    t0 = time()
+    if n_jobs == 1:
+        for combo in combo_list:
+            _combo_task(combo)
+    else:
+        from multiprocessing import get_context
+        with get_context('fork').Pool(n_jobs) as pool:
+            for s_res, d_res, n in pool.imap_unordered(_combo_task, combo_list):
+                err(f'  ✓ s{s_res}_r{d_res}: {n:,} rows')
+    err(f'All combos done in {time() - t0:.1f}s')
 
 
 @cells.command('manifest')
@@ -477,8 +593,9 @@ def cells_manifest(base_res: int, pyramid_levels: str, out_dir: Path, shard_res:
 @click.option('-n', '--dry-run', is_flag=True, help='Show what would be uploaded without uploading')
 @click.option('-o', '--out-dir', type=click.Path(path_type=Path), default=OUT_DIR_DEFAULT)
 @click.option('-p', '--prefix', default=R2_PREFIX_DEFAULT, help=f'Bucket prefix (default: {R2_PREFIX_DEFAULT})')
+@click.option('-q', '--quiet', is_flag=True, help='`--only-show-errors` (suppress per-file progress; huge with 100k+ shards)')
 @click.option('--profile', default=R2_PROFILE_DEFAULT, help=f'AWS profile for R2 (default: {R2_PROFILE_DEFAULT})')
-def cells_push(bucket: str, no_delete: bool, dry_run: bool, out_dir: Path, prefix: str, profile: str):
+def cells_push(bucket: str, no_delete: bool, dry_run: bool, out_dir: Path, prefix: str, quiet: bool, profile: str):
     """Mirror `out_dir` to s3://{bucket}/{prefix}/ for the worker (excludes .dvc artifacts)."""
     s3_uri = f's3://{bucket}/{prefix}/'
     cmd = [
@@ -490,6 +607,8 @@ def cells_push(bucket: str, no_delete: bool, dry_run: bool, out_dir: Path, prefi
         cmd.append('--delete')
     if dry_run:
         cmd.append('--dryrun')
+    if quiet:
+        cmd.append('--only-show-errors')
     env = {**os.environ, 'AWS_PROFILE': profile}
     err(f'$ AWS_PROFILE={profile} {" ".join(cmd)}')
     subprocess.run(cmd, env=env, check=True)
