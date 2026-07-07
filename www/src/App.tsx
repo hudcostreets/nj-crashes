@@ -23,6 +23,7 @@ const CrashMapPage = lazy(() => import('./routes/CrashMapPage'))
 const CrashDetailPage = lazy(() => import('./routes/CrashDetailPage'))
 const RawFileBrowser = lazy(() => import('./raw/RawFileBrowser'))
 const FilesPage = lazy(() => import('./routes/FilesPage'))
+const DevAb = lazy(() => import('./routes/DevAb'))
 const HarmonizationPage = lazy(() => import('./routes/HarmonizationPage'))
 const MuniSlugRoute = lazy(() => import('./routes/MuniSlugRoute'))
 const CanonicalizeMuni = lazy(() => import('./routes/CanonicalizeMuni'))
@@ -55,6 +56,7 @@ export default function App() {
                 <Route path="/duckdb" element={<DuckDbPage />} />
                 <Route path="/og" element={<OgImage />} />
                 <Route path="/match-review" element={<MatchReview />} />
+                <Route path="/dev/ab" element={<DevAb />} />
                 <Route path="/map/hudson/diffs" element={<HudsonDiffs />} />
                 <Route path="/map/hudson/legacy" element={<HudsonMap />} />
                 <Route path="/map" element={<CrashMapPage />} />

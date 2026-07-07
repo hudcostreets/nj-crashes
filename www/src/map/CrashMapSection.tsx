@@ -27,22 +27,7 @@ import type { MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel, pickHexResolutionForPixels } from "@/src/map/CrashMap"
 import { H3_RADIUS_METERS } from "@/src/map/StackedHexLayer"
 
-/** Preferred H3 resolution per integer camera zoom (auto mode). Half-int
- *  zooms use `floor(zoom)`, so z=14.77 uses the row for z=14. Tune
- *  individual rows without breaking the curve elsewhere. */
-const AUTO_RES_BY_ZOOM: Record<number, number> = {
-    0: 3, 1: 4, 2: 5, 3: 6, 4: 7, 5: 7, 6: 8,
-    7: 8,    // statewide aggregate
-    8: 9, 9: 9,
-    10: 10, 11: 10,
-    12: 11, 13: 11,
-    14: 12,  // user-CIC calibration: at z=14.77 wants r12 (~4.4px)
-    15: 12, 16: 12,
-    17: 13,
-    18: 14,  // z=18: r13 would give ~16px (too chunky); r14 → ~6px
-    19: 15,  // z=19: r14 → 18px (too chunky); r15 → ~7px
-    20: 15,  // z=20: r14 → 35px; r15 → ~13px
-}
+import { circleRadiusPx, hexPxTargetFor } from "@/src/map/picker"
 import { DebugOverlay } from "@/src/map/DebugOverlay"
 import { YearSelect } from "@/src/lib/year-select"
 
@@ -304,30 +289,17 @@ export function CrashMapSection({
     //
     // Density-adaptive would feedback-loop (hexPxTarget → picker res →
     // cells → hexPxTarget), so intentionally ignored here.
-    // Circle-mode target radius (px) — smooth monotone curve in zoom.
-    // At z=7 (whole-NJ): ~1.2px dots (dense field). At z=17
-    // (street-level): ~5px (hoverable). Exponent chosen so `target_px`
-    // grows slower than an H3 cell's inscribed radius (which doubles
-    // every zoom), preserving cell-fit + smooth res transitions.
-    const circleRadiusPx = useMemo(() => {
-        const z = effectiveView?.zoom ?? 7
-        const raw = 1.2 * Math.pow(2, (z - 7) * 0.21)
-        return Math.min(24, Math.max(1.2, raw))
-    }, [effectiveView?.zoom])
+    const circleRadiusPxValue = useMemo(
+        () => circleRadiusPx(effectiveView?.zoom ?? 7),
+        [effectiveView?.zoom],
+    )
 
     const hexPxTarget = useMemo(() => {
         if (!hexAuto) return manualHexPx
         const zoom = effectiveView?.zoom ?? 7
         const lat = effectiveView?.latitude ?? 40.7
-        const z = Math.max(0, Math.min(20, Math.floor(zoom)))
-        // Session override wins over the built-in table entry.
-        const res = autoOverrides[z] ?? AUTO_RES_BY_ZOOM[z] ?? AUTO_RES_BY_ZOOM[7]
-        const mppx = metersPerPixel(zoom, lat)
-        const diaPx = (2 * H3_RADIUS_METERS[res]) / mppx
-        // 0.99 slack so floor picker reliably selects `res` even at the
-        // boundary where diaPx rounds equal to target.
-        return Math.min(30, Math.max(1.0, diaPx * 0.99))
-    }, [hexAuto, manualHexPx, effectiveView?.zoom, effectiveView?.latitude, autoOverrides])
+        return hexPxTargetFor(viz, zoom, lat, autoOverrides)
+    }, [viz, hexAuto, manualHexPx, effectiveView?.zoom, effectiveView?.latitude, autoOverrides])
 
     // Picker-state snapshot: current H3 resolution + adjacent levels
     // (one coarser, one finer) as clickable jump targets. Neighbors that
@@ -706,7 +678,7 @@ export function CrashMapSection({
                         gridOverlayRes={drawerOpen ? gridOverlayRes : null}
                         coverCells={drawerOpen && debugOpen ? apiResult.plan?.cover ?? null : null}
                         viz={viz}
-                        circleRadiusPx={circleRadiusPx}
+                        circleRadiusPx={circleRadiusPxValue}
                     />
                 </Suspense>
             )}
