@@ -793,7 +793,7 @@ export function CrashMapSection({
                             pickerInfo={pickerInfo}
                             zoom={effectiveView?.zoom}
                             onPinRes={res => {
-                                const z = Math.max(0, Math.min(20, Math.floor(effectiveView?.zoom ?? 7)))
+                                const z = Math.max(0, Math.min(20, Math.round(effectiveView?.zoom ?? 7)))
                                 setAutoOverrides(prev => ({ ...prev, [z]: res }))
                             }}
                         />

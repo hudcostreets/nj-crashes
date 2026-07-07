@@ -25,14 +25,20 @@ export function circleRadiusPx(zoom: number): number {
 }
 
 /** Auto-table hex-pixel target: pick a preferred res for the current
- *  integer-zoom bucket, then back-solve to its on-screen diameter
- *  (× 0.99 slack so the floor picker snaps to that res reliably). */
+ *  zoom bucket, then back-solve to its on-screen diameter (× 0.99
+ *  slack so the floor picker snaps to that res reliably).
+ *
+ *  Bucketing uses `round(zoom)` so half-int zooms fall into the
+ *  nearest-int bucket — z=16.97 → key 17 (r13), z=17.98 → key 18 (r14).
+ *  Previously used `floor`, which held z=16.7 at r12 and pushed the
+ *  r12→r13 transition all the way to z=17.0; users found that
+ *  transition too late for how the map felt visually. */
 export function autoHexPxTarget(
     zoom: number,
     lat: number,
     autoOverrides: Record<number, number> = {},
 ): number {
-    const z = Math.max(0, Math.min(20, Math.floor(zoom)))
+    const z = Math.max(0, Math.min(20, Math.round(zoom)))
     const res = autoOverrides[z] ?? AUTO_RES_BY_ZOOM[z] ?? AUTO_RES_BY_ZOOM[7]
     const mppx = metersPerPixel(zoom, lat)
     const diaPx = (2 * H3_RADIUS_METERS[res]) / mppx

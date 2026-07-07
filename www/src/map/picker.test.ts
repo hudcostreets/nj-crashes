@@ -23,21 +23,24 @@ const NJ_LAT = 40.7
 describe("picker: hex mode auto res per zoom", () => {
     // Anchor points from AUTO_RES_BY_ZOOM. Any drift → this test flags it
     // and the user gets to decide whether to update the golden or revert.
+    // Table anchors under `round(zoom)` bucketing. Any drift → this
+    // trips and the user gets to decide whether to update the golden
+    // or revert. At z=7.0 exactly, the 1.0 min clamp on autoTarget
+    // pushes one res coarser than the AUTO_RES_BY_ZOOM entry (r8) —
+    // preserved from prior behavior.
     const cases: Array<[number, number]> = [
         // [zoom, expected_res]
-        // Note: at z=7.0 exactly, the 1.0 min clamp on autoTarget pushes
-        // the picker one res coarser than the AUTO_RES_BY_ZOOM entry (r8).
-        // Auto anchor recovers by z=7.5 with mppx small enough to un-clamp.
         [7.0, 7],   // statewide
-        [8.5, 9],   // county-overview
+        [8.5, 9],   // round(8.5)=9 → AUTO[9]=9
         [10.0, 10], // regional
         [10.94, 10],
         [12.0, 11], // urban
-        [13.81, 11],
+        [13.81, 12], // round(13.81)=14 → AUTO[14]=12 (was r11 under floor)
         [14.0, 12],
         [16.0, 12],
-        [16.91, 12],
+        [16.91, 13], // round(16.91)=17 → AUTO[17]=13 (was r12 under floor)
         [17.0, 13], // street-level
+        [17.98, 14], // round(17.98)=18 → AUTO[18]=14 (was r13 under floor)
         [18.0, 14],
         [19.0, 15], // deep-zoom
     ]
