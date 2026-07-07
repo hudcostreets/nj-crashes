@@ -140,12 +140,14 @@ async function joinSld(
 ): Promise<void> {
     if (cells.length === 0) return
     let sld: Map<string, SldRow>
+    const tLoad0 = Date.now()
     try {
         sld = await loadSldMap(bucket, prefix)
     } catch (e) {
         console.warn(`hex-sld sidecar read failed:`, e)
         return
     }
+    const tLoad1 = Date.now()
     for (const c of cells) {
         const res = getResolution(c.h3)
         const key = res > SLD_MAX_RES ? cellToParent(c.h3, SLD_MAX_RES) : c.h3
@@ -155,6 +157,10 @@ async function joinSld(
         if (row.cross_sld_name) c.cross_sld_name = row.cross_sld_name
         if (row.mun) c.mun = row.mun
         if (row.county) c.county = row.county
+    }
+    const tLoop1 = Date.now()
+    if (tLoop1 - tLoad0 > 200) {
+        console.log(`[timing] joinSld cells=${cells.length}: load=${tLoad1 - tLoad0}ms, loop=${tLoop1 - tLoad1}ms, sldSize=${sld.size}`)
     }
 }
 
@@ -300,14 +306,19 @@ export async function handleCellsRequest(
         const known = new Set(combo.shard_cells)
         const shards = requestedShards.filter(s => known.has(s))
         const clipPoly = req.clipPolygon && req.clipPolygon.length >= 3 ? req.clipPolygon : null
+        const t0 = Date.now()
         let cells = await queryPyramid(bucket, prefix, requestedRes, shards, yearRange, sevSet, clipPoly, shardRes)
+        const t1 = Date.now()
         let res = requestedRes
         const MIN_RES_COMBO = 5
         while (maxCells != null && cells.length > maxCells && res > MIN_RES_COMBO) {
             res--
             cells = coarsenCells(cells, res)
         }
+        const t2 = Date.now()
         await joinSld(bucket, prefix, cells)
+        const t3 = Date.now()
+        console.log(`[timing] combo s${shardRes}_r${requestedRes} shards=${shards.length} cells=${cells.length}: pyramid=${t1 - t0}ms, coarsen=${t2 - t1}ms, sld=${t3 - t2}ms, total=${t3 - t0}ms`)
         return {
             res,
             year_range: yearRange,
