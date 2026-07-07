@@ -480,8 +480,11 @@ function buildShardUrl(
         years: `${filter.yearRange[0]}-${filter.yearRange[1]}`,
         severities: sevs,
     })
-    // Combo path skips `maxCells` (combo was pre-picked to fit budget);
-    // legacy path needs it for worker-side adaptive coarsening.
+    // Combo path skips `maxCells` for now — worker supports it (see
+    // `specs/cells-api-combo-maxcells.md`) but wiring the client to
+    // actually use it requires a per-shard render path so
+    // heterogeneously-coarsened shards don't force the whole viewport
+    // to the coarsest returned res. Deferred followup.
     if (shardRes != null) params.set("shard_res", String(shardRes))
     else params.set("maxCells", String(maxCells))
     if (polygonStr) params.set("polygon", polygonStr)

@@ -163,6 +163,42 @@ export function _resetSldCache(): void {
     sldCached = null
 }
 
+/** In-worker parent-aggregate — used to drop one H3 res in the combo
+ *  path when a shard came back with more cells than `maxCells`. Cheaper
+ *  than re-reading a coarser parquet (no extra R2 hit), and the sum-
+ *  of-tiers semantics match how the offline pyramid rollup was built. */
+export function coarsenCells(cells: CellOut[], toRes: number): CellOut[] {
+    if (cells.length === 0) return cells
+    const parents = new Map<string, CellOut>()
+    for (const c of cells) {
+        const ph = cellToParent(c.h3, toRes)
+        let p = parents.get(ph)
+        if (!p) {
+            p = {
+                h3: ph,
+                n_fatal: 0,
+                n_inj_ped: 0,
+                n_inj_other: 0,
+                n_pdo: 0,
+                n_vehs: 0,
+            }
+            parents.set(ph, p)
+        }
+        p.n_fatal += c.n_fatal
+        p.n_inj_ped += c.n_inj_ped
+        p.n_inj_other += c.n_inj_other
+        p.n_pdo += c.n_pdo
+        p.n_vehs += c.n_vehs
+        if (c.fatal_years && c.fatal_years.length > 0) {
+            (p.fatal_years ??= []).push(...c.fatal_years)
+        }
+    }
+    for (const p of parents.values()) {
+        if (p.fatal_years) p.fatal_years = [...new Set(p.fatal_years)].sort((a, b) => a - b)
+    }
+    return [...parents.values()]
+}
+
 export type CellsResponse = {
     res: number
     year_range: [number, number]
@@ -249,8 +285,11 @@ export async function handleCellsRequest(
 
     // Multi-resolution combo path: client specifies `(shard_res, data_res)`.
     // Worker reads `pyramid/s{shard_res}_r{data_res}/{shard}.parquet`
-    // directly, no coarsening (the client picks a combo whose cell count
-    // is already in budget). `maxCells` is ignored on the combo path.
+    // directly. When `maxCells` is set (client-signaled per-shard cap),
+    // in-worker coarsening walks parent-aggregate cells down one res at
+    // a time until it fits or hits `MIN_RES` — cheaper than re-reading
+    // a coarser parquet from R2. Response `res` reports the actual res
+    // returned, which the client trusts as ground truth.
     if (shardRes != null) {
         const combos = manifest.pyramid_combos ?? []
         const combo = combos.find(c => c.shard_res === shardRes && c.data_res === requestedRes)
@@ -261,10 +300,16 @@ export async function handleCellsRequest(
         const known = new Set(combo.shard_cells)
         const shards = requestedShards.filter(s => known.has(s))
         const clipPoly = req.clipPolygon && req.clipPolygon.length >= 3 ? req.clipPolygon : null
-        const cells = await queryPyramid(bucket, prefix, requestedRes, shards, yearRange, sevSet, clipPoly, shardRes)
+        let cells = await queryPyramid(bucket, prefix, requestedRes, shards, yearRange, sevSet, clipPoly, shardRes)
+        let res = requestedRes
+        const MIN_RES_COMBO = 5
+        while (maxCells != null && cells.length > maxCells && res > MIN_RES_COMBO) {
+            res--
+            cells = coarsenCells(cells, res)
+        }
         await joinSld(bucket, prefix, cells)
         return {
-            res: requestedRes,
+            res,
             year_range: yearRange,
             data_version: manifest.data_version,
             source: "pyramid",
