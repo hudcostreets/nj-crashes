@@ -7,22 +7,22 @@ outs:
   size: 32577
   hash: md5
   path: month-year.parquet
-- md5: d857c0abf66ca19ef77156bb1f9126d8
-  size: 96632
+- md5: 7de8437b44ca2c222e7e04d7297ac2c4
+  size: 96652
   hash: md5
   path: monthly.parquet
-- md5: ccfc18cfa77e57b000035c1a15add9fd
+- md5: 35714ef5bd3f1997111ce2d82d26ba96
   size: 7335
   hash: md5
   path: year-type-county.parquet
-- md5: 431d8e253633c41023a0922bdd6d4ed4
-  size: 258481
+- md5: a56713e297085274d4295193c84d0b64
+  size: 258461
   hash: md5
   path: ytd.parquet
 meta:
   computation:
     cmd: njsp update_www_data -f
     deps:
-      /njsp/data/crashes.parquet: 9b3f808fdda532acf03d7cd55871bbe1
+      /njsp/data/crashes.parquet: ba0b5be14622a314071214197ee54225
     git_deps:
       /njsp/cli/update_www_data.py: 150b52689e45b5e2f4af5e1f7b60399ddb0a111a
