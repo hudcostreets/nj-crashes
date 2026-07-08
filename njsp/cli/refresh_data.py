@@ -71,7 +71,7 @@ def update_xml_dvc(out_path: str, content: bytes, response=None):
     process.run('git', 'add', str(dvc_path))
 
 
-UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
 
 
 def _load_prior_dep(dvc_path: Path) -> dict | None:
@@ -102,7 +102,9 @@ def update_years(*years, current_year: int = None, log_s3: bool = False):
     latest_rundate = None
     changed_years: list[int] = []
     headers = {
-        'Accept': 'text/xml',
+        'Accept': 'text/xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'en-US,en;q=0.9',
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache',
         'User-Agent': UA,
@@ -172,7 +174,16 @@ def update_years(*years, current_year: int = None, log_s3: bool = False):
             })
             continue
 
-        res = http_get_with_retry(url, headers=headers, timeout=30)
+        # Wider envelope than the retry helper's default (4×3s cap 30s). NJSP's
+        # WAF has been observed to reject for windows longer than 30s — daily
+        # run 28885986554 (2026-07-07) exhausted the default envelope while the
+        # feed was blocking every request. 6 attempts / base 15s / cap 180s
+        # covers ~5min worst case (~15+30+60+120+180s), giving the WAF cool-off
+        # room while still bounding the daily's wall-clock.
+        res = http_get_with_retry(
+            url, headers=headers, timeout=30,
+            max_attempts=6, base=15.0, cap=180.0,
+        )
         if res.status_code == 404 and year == current_year:
             err(f"Skipping {name}: 404 Not Found (current year file not yet available)")
             continue
