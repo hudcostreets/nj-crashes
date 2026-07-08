@@ -15,6 +15,7 @@ dependencies = [
     "croniter>=1.0",
     "dask>=2024",
     "dotenv>=0.9.9",
+    "duckdb>=1.5",
     "dvc[s3]>=3.59",
     "dvx @ git+https://github.com/runsascoded/dvx@09ba6124e",
     "geopandas>=1.0",
