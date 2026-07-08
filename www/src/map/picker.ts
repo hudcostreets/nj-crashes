@@ -2,17 +2,33 @@
  *
  *  Extracted from `CrashMapSection` for unit testing — anything that
  *  reads viewState or user state stays there; anything deterministic
- *  from `(zoom, lat, viz, target)` lives here so we can pin its
- *  behavior across zoom/mode sweeps in `picker.test.ts`.
+ *  from `(viewportAreaPx, budget, zoom, lat, viz)` lives here so we
+ *  can pin its behavior across viewport/mode sweeps in `picker.test.ts`.
+ *
+ *  Bins-per-viewport model (spec: `specs/autores-bins-budget.md`).
+ *  For a target of `budget` bins filling a viewport of `A_px` pixels,
+ *  each hex has area `A_px / budget`; solving for vertex-diameter of
+ *  a hex with area `(3√3/8)·d²` gives `d = √(A_px / budget)` — with
+ *  the ~1.24 packing constant folded into the swept `budget`. This
+ *  keeps on-screen hex size roughly constant across zoom levels,
+ *  which bounds both visual density and worker CPU / IO cost.
  *
  *  Companion to `pickHexResolutionForPixels` in `CrashMap.tsx` (the
- *  low-level "finest r whose diameter ≥ threshold" walk).
- */
-import { metersPerPixel, pickHexResolutionForPixels } from "./CrashMap"
-import { H3_RADIUS_METERS } from "./StackedHexLayer"
-import { AUTO_RES_BY_ZOOM } from "./autoRes"
+ *  low-level "finest r whose diameter ≥ threshold" walk). */
+import { pickHexResolutionForPixels } from "./CrashMap"
 
 export type VizMode = "hex" | "circle"
+
+/** Default target hex-count filling the map viewport (packing constant
+ *  and fill factor folded in; not "populated bins/vp" which is 10-30×
+ *  smaller). Chosen so the embed viewport (1280×480 ≈ 614k px²) yields
+ *  ~3.5 px per hex — one res coarser than the old zoom-table at the
+ *  wide-zoom band, unchanged at mid/street zoom. Per spec, this is the
+ *  swept param; `?bins=<N>` URL param overrides for A/B eval. Spec's
+ *  {3k,5k,8k} sweep referred to populated bins/vp not viewport tiles,
+ *  which are 10-30× denser — hence the ~50k landing here.
+ *  See `specs/autores-bins-budget.md`. */
+export const BINS_BUDGET = 100000
 
 /** Circle-mode target dot-radius (px) — smooth monotone curve in zoom.
  *  At z=7 (whole-NJ): ~1.2px dots (dense field). At z=17 (street-level):
@@ -24,25 +40,15 @@ export function circleRadiusPx(zoom: number): number {
     return Math.min(24, Math.max(1.2, raw))
 }
 
-/** Auto-table hex-pixel target: pick a preferred res for the current
- *  zoom bucket, then back-solve to its on-screen diameter (× 0.99
- *  slack so the floor picker snaps to that res reliably).
- *
- *  Bucketing uses `round(zoom)` so half-int zooms fall into the
- *  nearest-int bucket — z=16.97 → key 17 (r13), z=17.98 → key 18 (r14).
- *  Previously used `floor`, which held z=16.7 at r12 and pushed the
- *  r12→r13 transition all the way to z=17.0; users found that
- *  transition too late for how the map felt visually. */
+/** Target hex vertex-diameter (px) that yields ~`budget` hexes filling
+ *  a viewport of area `viewportAreaPx`. Clamped to [1.0, 30] so the
+ *  finest / coarsest ends stay in the picker's usable range. */
 export function autoHexPxTarget(
-    zoom: number,
-    lat: number,
-    autoOverrides: Record<number, number> = {},
+    viewportAreaPx: number,
+    budget: number = BINS_BUDGET,
 ): number {
-    const z = Math.max(0, Math.min(20, Math.round(zoom)))
-    const res = autoOverrides[z] ?? AUTO_RES_BY_ZOOM[z] ?? AUTO_RES_BY_ZOOM[7]
-    const mppx = metersPerPixel(zoom, lat)
-    const diaPx = (2 * H3_RADIUS_METERS[res]) / mppx
-    return Math.min(30, Math.max(1.0, diaPx * 0.99))
+    const diaPx = Math.sqrt(viewportAreaPx / Math.max(1, budget))
+    return Math.min(30, Math.max(1.0, diaPx))
 }
 
 /** Effective `hexPxTarget` fed into `pickHexResolutionForPixels`.
@@ -53,22 +59,25 @@ export function autoHexPxTarget(
  *  aggregation, parquet transport). */
 export function hexPxTargetFor(
     viz: VizMode,
-    zoom: number,
-    lat: number,
-    autoOverrides: Record<number, number> = {},
+    viewportAreaPx: number,
+    budget: number = BINS_BUDGET,
 ): number {
     void viz  // parity with hex mode
-    return autoHexPxTarget(zoom, lat, autoOverrides)
+    return autoHexPxTarget(viewportAreaPx, budget)
 }
 
-/** End-to-end: given (viz, zoom, lat, autoOverrides), return the H3
- *  resolution the picker would select. */
+/** End-to-end: given (viz, zoom, lat, viewportAreaPx, budget), return
+ *  the H3 resolution the picker would select. `zoom` + `lat` are still
+ *  needed downstream by `pickHexResolutionForPixels` to convert the
+ *  target diameter (px) into a target diameter (meters) for cell
+ *  matching. */
 export function pickRes(
     viz: VizMode,
     zoom: number,
     lat: number,
-    autoOverrides: Record<number, number> = {},
+    viewportAreaPx: number,
+    budget: number = BINS_BUDGET,
 ): number {
-    const target = hexPxTargetFor(viz, zoom, lat, autoOverrides)
+    const target = hexPxTargetFor(viz, viewportAreaPx, budget)
     return pickHexResolutionForPixels(target, zoom, lat)
 }

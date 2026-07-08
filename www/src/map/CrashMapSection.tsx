@@ -27,7 +27,7 @@ import type { MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel, pickHexResolutionForPixels } from "@/src/map/CrashMap"
 import { H3_RADIUS_METERS } from "@/src/map/StackedHexLayer"
 
-import { circleRadiusPx, hexPxTargetFor, pickRes } from "@/src/map/picker"
+import { circleRadiusPx, hexPxTargetFor, pickRes, BINS_BUDGET } from "@/src/map/picker"
 import { DebugOverlay } from "@/src/map/DebugOverlay"
 import { YearSelect } from "@/src/lib/year-select"
 
@@ -191,11 +191,14 @@ export function CrashMapSection({
     // close-up views get chunkier, more-pickable cells; when false, the
     // manual slider value wins. `?ha=false` to opt out of adaptive.
     const [hexAutoUrl, setHexAutoUrl] = useUrlState("ha", boolParam)
-    // Session overrides for the auto lookup table — when the user clicks a
-    // resolution in the carousel while auto is on, remember it for that
-    // zoom bucket so subsequent visits stay pinned. Ephemeral (not URL-
-    // persisted); cleared on reload. Keyed by `floor(zoom)`.
-    const [autoOverrides, setAutoOverrides] = useState<Record<number, number>>({})
+    // Bins-per-viewport budget — target hex count that fills the map
+    // canvas. Lower = coarser hexes = fewer bins = faster /cells. The
+    // spec (`specs/autores-bins-budget.md`) sweeps {3k, 5k, 8k}; the
+    // module default lives in `picker.ts` (`BINS_BUDGET`). URL param
+    // `?bins=<N>` for A/B eval via `/dev/ab`.
+    const [binsUrl, setBinsUrl] = useUrlState("bins", optFloatParam(), { debounce: 100 })
+    const binsBudget = binsUrl ?? BINS_BUDGET
+    void setBinsUrl
     // `boolParam` default is `false`; we invert to keep the URL absent
     // when the user is on the default (auto=on). `?ha=1` when disabled.
     const hexAuto = !hexAutoUrl
@@ -296,10 +299,9 @@ export function CrashMapSection({
 
     const hexPxTarget = useMemo(() => {
         if (!hexAuto) return manualHexPx
-        const zoom = effectiveView?.zoom ?? 7
-        const lat = effectiveView?.latitude ?? 40.7
-        return hexPxTargetFor(viz, zoom, lat, autoOverrides)
-    }, [viz, hexAuto, manualHexPx, effectiveView?.zoom, effectiveView?.latitude, autoOverrides])
+        const [vpw, vph] = viewportDims(fullScreen)
+        return hexPxTargetFor(viz, vpw * vph, binsBudget)
+    }, [viz, hexAuto, manualHexPx, fullScreen, binsBudget])
 
     // Picker-state snapshot: current H3 resolution + adjacent levels
     // (one coarser, one finer) as clickable jump targets. Neighbors that
@@ -806,10 +808,6 @@ export function CrashMapSection({
                             onAutoChange={setHexAuto}
                             pickerInfo={pickerInfo}
                             zoom={effectiveView?.zoom}
-                            onPinRes={res => {
-                                const z = Math.max(0, Math.min(20, Math.round(effectiveView?.zoom ?? 7)))
-                                setAutoOverrides(prev => ({ ...prev, [z]: res }))
-                            }}
                         />
                         <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
                             <span style={{ fontSize: "0.78em" }}>Height scale: <b>{heightScale.toFixed(2)}</b></span>
@@ -835,7 +833,8 @@ export function CrashMapSection({
                             currentLat={effectiveView?.latitude ?? 40.7}
                             currentRes={pickerInfo?.levels.find(l => l.isCurrent)?.res ?? 11}
                             viz={viz}
-                            autoOverrides={autoOverrides}
+                            viewportAreaPx={(() => { const [w, h] = viewportDims(fullScreen); return w * h })()}
+                            budget={binsBudget}
                         />
                     </>
                 )}
@@ -1093,13 +1092,14 @@ function Legend({
  *  Horizontal orange line: the camera's current zoom, so users see
  *  where they are in the mapping at a glance. */
 function ZoomResChart({
-    currentZoom, currentLat, currentRes, viz, autoOverrides,
+    currentZoom, currentLat, currentRes, viz, viewportAreaPx, budget,
 }: {
     currentZoom: number
     currentLat: number
     currentRes: number
     viz: "hex" | "circle"
-    autoOverrides: Record<number, number>
+    viewportAreaPx: number
+    budget: number
 }) {
     const H = 180  // chart height in px
     // Center the current zoom in the window; ticks slide smoothly as
@@ -1126,14 +1126,14 @@ function ZoomResChart({
     // transition is detected to nail the boundary to ~0.005-zoom precision.
     const transitions: { z: number; from: number; to: number }[] = []
     const coarseStep = 0.1
-    let prevRes = pickRes(viz, zMin, currentLat, autoOverrides)
+    let prevRes = pickRes(viz, zMin, currentLat, viewportAreaPx, budget)
     for (let z = zMin + coarseStep; z <= zMax + 1e-9; z += coarseStep) {
-        const r = pickRes(viz, z, currentLat, autoOverrides)
+        const r = pickRes(viz, z, currentLat, viewportAreaPx, budget)
         if (r !== prevRes) {
             let lo = z - coarseStep, hi = z
             for (let i = 0; i < 8; i++) {
                 const mid = (lo + hi) / 2
-                if (pickRes(viz, mid, currentLat, autoOverrides) === prevRes) lo = mid
+                if (pickRes(viz, mid, currentLat, viewportAreaPx, budget) === prevRes) lo = mid
                 else hi = mid
             }
             transitions.push({ z: (lo + hi) / 2, from: prevRes, to: r })
@@ -1236,7 +1236,7 @@ function ZoomResChart({
  *  scale (so each tick is a constant log-px ratio), but always shows the
  *  actual px value alongside. Defaults to 1.2 px on first session use. */
 function HexPxTargetSlider({
-    value, onChange, auto, onAutoChange, pickerInfo, zoom, onPinRes,
+    value, onChange, auto, onAutoChange, pickerInfo, zoom,
 }: {
     value: number
     onChange: (n: number) => void
@@ -1246,7 +1246,6 @@ function HexPxTargetSlider({
         levels: { res: number, px: number, isCurrent: boolean }[],
     } | null
     zoom: number | undefined
-    onPinRes: (res: number) => void
 }) {
     const MIN = 0.5, MAX = 30
     const toScale = (v: number) => 100 * (Math.log2(v / MIN) / Math.log2(MAX / MIN))
@@ -1293,19 +1292,14 @@ function HexPxTargetSlider({
                         <button
                             key={res}
                             type="button"
+                            disabled={auto}
                             onClick={() => {
-                                if (auto) {
-                                    // Auto stays on; nudge the auto table
-                                    // for the current zoom bucket. Persists
-                                    // across pans until reload or scope
-                                    // change (see `autoOverrides`).
-                                    onPinRes(res)
-                                } else {
-                                    // Manual mode: set the target to this
-                                    // level's own px so the floor picker
-                                    // locks onto it.
-                                    onChange(Math.max(MIN, Math.min(MAX, px < 5 ? Math.round(px * 10) / 10 : Math.round(px))))
-                                }
+                                // Under bins-budget the auto picker is
+                                // deterministic from viewport area + budget,
+                                // so per-zoom pinning doesn't compose. In
+                                // manual mode: set the target to this level's
+                                // own px so the floor picker locks onto it.
+                                onChange(Math.max(MIN, Math.min(MAX, px < 5 ? Math.round(px * 10) / 10 : Math.round(px))))
                             }}
                             style={{
                                 background: "none", border: "none", padding: 0, color: "inherit",
