@@ -101,3 +101,31 @@ representative deep-zoom covers before rebuilding all levels.
 - Not changing counts/topK/sld semantics — purely physical layout + read path.
 - Not touching the raw path (already r4-sharded; could later gain the same
   h3-range pruning, but it's the rarely-hit fallback).
+
+## Outcome (implemented)
+
+- **Pyramid: 336,664 files / 5.03 GB → 340 files / 0.46 GB** (990× fewer, 11×
+  smaller); r14/r15 now first-class levels (previously r14 was s9-only).
+- **Manifest: 9 MB → 1.1 KB** (only `pyramid_levels`, no combos).
+- Empirical pruning (`consolidated.test.ts`, real r13 bytes): a viewport cover
+  fetches **~3–4% of an r4 shard**. Footer = 264 KB (68% of a minimal fetch) —
+  the fixed per-request cost; RG=4096 is near the √-optimum (~6000), curve flat
+  ±6% over 4k–8k.
+- Cutover was **in-place, no hard-down window** (blue-green unneeded): the new
+  layout lives at disjoint keys (`pyramid/r{N}/` vs `pyramid/s{S}_r{N}/`), the
+  new worker is backward-compatible with the deployed client (`shard_res`
+  ignored; cover cells → prune ancestors), and a transition manifest
+  (levels 6–15 + combos) satisfied both workers until the combos were dropped.
+- Deployed (worker `53f8e86d`), verified live at r13/r14/r15. Orphaned
+  `raw/h3_r14` dropped (base is r15). `pyramid.dvc` re-tracked (`dvx add` +
+  `push`, cache now 0.46 GB).
+
+## Deferred follow-ups (not needed for the cutover)
+
+- **Worker footer caching**: cache parsed `FileMetaData` per r4 key in the
+  isolate so repeated pans over a region don't re-fetch the 264 KB footer.
+  Higher-value than any grouping-size retune.
+- **Client `pickCover` simplification**: the client still sends one request per
+  `shard_res` tier (each now re-reads the same r4 files with a different prune
+  range). Collapse to a single request; drop the `shard_res` param.
+- **RG-size retune**: optional; flat optimum, low value.

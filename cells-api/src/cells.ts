@@ -43,7 +43,7 @@ type LonLatPolygon = [number, number][]
 
 type RawRow = {
     year: number
-    h3_r14: bigint | number
+    h3_r15: bigint | number
     severity: "f" | "i" | "p"
     cc: number
     mc: number
@@ -428,7 +428,7 @@ async function queryRaw(
     for (const rows of results) {
         if (!rows) continue
         for (const row of rows) {
-            const cellId = (row as any)[h3Col] ?? row.h3_r14
+            const cellId = (row as any)[h3Col] ?? row.h3_r15
             const baseHex = bigintToHex(cellId)
             const ancHex = fastPath ? baseHex : cellToParent(baseHex, res)
             if (!cellInPolygon(ancHex, clipPoly)) continue
