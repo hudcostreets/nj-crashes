@@ -657,11 +657,12 @@ export function CrashMapSection({
             )}
             {result.status === "loading" && <LoadingOverlay theme={actualTheme} />}
             {result.status === "ready" && (() => {
-                // Fade always signals "fetch in flight". Desaturate only when
-                // the incoming res differs from what's currently on screen —
-                // same-res pans just clip existing bins to a new viewport,
-                // so muting them would misleadingly suggest a bigger change
-                // is coming.
+                // Fade + desaturate only when the incoming res differs from
+                // what's currently on screen. Same-res pans just clip
+                // existing bins to a new viewport — muting them would
+                // misleadingly suggest a bigger change is coming. The
+                // corner `<RefetchSpinner>` still signals "fetch in flight"
+                // for pan-only reloads.
                 const currRes = renderHexes?.res
                     ?? (result.data.length ? getResolution(result.data[0].h3) : null)
                 const targetRes = pickerInfo?.levels.find(l => l.isCurrent)?.res ?? null
@@ -689,7 +690,7 @@ export function CrashMapSection({
                         coverCells={drawerOpen && debugOpen ? apiResult.plan?.cover ?? null : null}
                         viz={viz}
                         circleRadiusPx={circleRadiusPxValue}
-                        hexOpacity={result.refetching ? 0.35 : 1}
+                        hexOpacity={result.refetching && resChanging ? 0.35 : 1}
                         hexDesaturate={result.refetching && resChanging ? 0.55 : 0}
                     />
                 </Suspense>
