@@ -656,7 +656,17 @@ export function CrashMapSection({
                 <div style={{ padding: "1em", color: "red" }}>Error: {result.error}</div>
             )}
             {result.status === "loading" && <LoadingOverlay theme={actualTheme} />}
-            {result.status === "ready" && (
+            {result.status === "ready" && (() => {
+                // Fade always signals "fetch in flight". Desaturate only when
+                // the incoming res differs from what's currently on screen —
+                // same-res pans just clip existing bins to a new viewport,
+                // so muting them would misleadingly suggest a bigger change
+                // is coming.
+                const currRes = renderHexes?.res
+                    ?? (result.data.length ? getResolution(result.data[0].h3) : null)
+                const targetRes = pickerInfo?.levels.find(l => l.isCurrent)?.res ?? null
+                const resChanging = currRes !== null && targetRes !== null && currRes !== targetRes
+                return (
                 <Suspense fallback={<LoadingOverlay theme={actualTheme} />}>
                     <CrashMap
                         prebinnedHexes={renderHexes?.hexes ?? (result.data as StackedHex[])}
@@ -679,11 +689,12 @@ export function CrashMapSection({
                         coverCells={drawerOpen && debugOpen ? apiResult.plan?.cover ?? null : null}
                         viz={viz}
                         circleRadiusPx={circleRadiusPxValue}
-                        hexOpacity={result.status === "ready" && result.refetching ? 0.35 : 1}
-                        hexDesaturate={result.status === "ready" && result.refetching ? 0.55 : 0}
+                        hexOpacity={result.refetching ? 0.35 : 1}
+                        hexDesaturate={result.refetching && resChanging ? 0.55 : 0}
                     />
                 </Suspense>
-            )}
+                )
+            })()}
             {result.status === "ready" && result.refetching && !drawerOpen && <RefetchSpinner theme={actualTheme} />}
             {!drawerOpen && (
                 <>
