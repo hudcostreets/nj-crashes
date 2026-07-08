@@ -79,6 +79,16 @@ jobs:
           dvx pull njdot/data/2023/vehicles.parquet.dvc
           dvx pull njdot/data/2024/vehicles.parquet.dvc
           dvx pull njdot/data/2025/vehicles.parquet.dvc
+          # Per-year AASHTO `crashes.parquet` — same rationale as persons /
+          # vehicles above. Consumed transitively by
+          # `aashto_combined_crashes.parquet` (which is pulled below). Without
+          # these on disk, DVX sees the intermediate stage's output-fresh
+          # check pass but the *upstream* per-year stage's output missing,
+          # tries to re-run `normalize.py`, and hits the shebang-not-found
+          # path (see #127-adjacent notes).
+          dvx pull njdot/data/2023/crashes.parquet.dvc
+          dvx pull njdot/data/2024/crashes.parquet.dvc
+          dvx pull njdot/data/2025/crashes.parquet.dvc
           dvx pull njsp/data/crash-log.parquet.dvc
           # NJSP outputs of `njsp update_pqts` (consumed by harmonize, csvs,
           # projections, match, three-way-match, d1-import).
