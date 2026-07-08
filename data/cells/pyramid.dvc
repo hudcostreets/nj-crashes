@@ -12,4 +12,4 @@ meta:
       raw/h3_r15: bc053c027d1b97c343cdb63daa78d6b4
       hex-sld.parquet: d92f73ede05e5f5a24ef094b9a0db441
     git_deps:
-      /njdot/cli/cells.py: 2d2f861da5c75cb36016b69561f8a9bd580d311a
+      /njdot/cli/cells.py: dd3c8b60098b43212f04e585cb9f9546deb26b02

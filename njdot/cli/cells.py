@@ -615,6 +615,23 @@ def cells_manifest(base_res: int, pyramid_levels: str, out_dir: Path, shard_res:
             })
             row_counts[f'pyramid_s{s_res}_r{d_res}'] = n_rows
 
+    # Consolidated layout has no `s*_r*` dirs, but the client's `pickCover`
+    # still reads `pyramid_combos` as its viewport-cover granularity menu:
+    # per data_res it picks a shard_res, builds a cover at that res, and sends
+    # those cells. The worker ignores `shard_res` (it serves any
+    # (shard_res, data_res) from the one r4-sharded level via row-group
+    # pruning), so this is purely a client-side cover-sizing menu. Synthesize
+    # it — the exact granularities the old fine tiers advertised, so cover
+    # counts stay within the client's COVER_MAX_SHARDS — for every level.
+    if not pyramid_combos:
+        cover_menu = {
+            6: (2, 3), 7: (2, 3, 4), 8: (3, 4, 5), 9: (4, 5, 6), 10: (5, 6, 7),
+            11: (6, 7, 8), 12: (7, 8, 9), 13: (8, 9), 14: (9,), 15: (7, 8),
+        }
+        for d_res in levels:
+            for s_res in cover_menu.get(d_res, ()):
+                pyramid_combos.append({'shard_res': s_res, 'data_res': d_res})
+
     sha = _git_sha()
     ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     manifest = {
@@ -633,9 +650,12 @@ def cells_manifest(base_res: int, pyramid_levels: str, out_dir: Path, shard_res:
     err(f'Wrote {out_path}')
     err(f'  raw rows: {raw_total:,}, shards: {len(raw_shards)}, year_range: {manifest["year_range"]}')
     if pyramid_combos:
-        err(f'  combos: {len(pyramid_combos)}')
+        err(f'  combos (client cover menu): {len(pyramid_combos)}')
         for c in pyramid_combos:
-            err(f'    s{c["shard_res"]}/r{c["data_res"]}: {c["shard_count"]:,} shards, {c["row_count"]:,} rows, {c["byte_size"]/1024/1024:.1f} MB')
+            if 'shard_count' in c:  # measured from on-disk s*_r* dirs (legacy layout)
+                err(f'    s{c["shard_res"]}/r{c["data_res"]}: {c["shard_count"]:,} shards, {c["row_count"]:,} rows, {c["byte_size"]/1024/1024:.1f} MB')
+            else:  # synthesized menu (consolidated layout)
+                err(f'    s{c["shard_res"]}/r{c["data_res"]}')
 
 
 @cells.command('push')
