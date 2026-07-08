@@ -27,7 +27,7 @@ import type { MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel, pickHexResolutionForPixels } from "@/src/map/CrashMap"
 import { H3_RADIUS_METERS } from "@/src/map/StackedHexLayer"
 
-import { circleRadiusPx, hexPxTargetFor } from "@/src/map/picker"
+import { circleRadiusPx, hexPxTargetFor, pickRes } from "@/src/map/picker"
 import { DebugOverlay } from "@/src/map/DebugOverlay"
 import { YearSelect } from "@/src/lib/year-select"
 
@@ -679,6 +679,8 @@ export function CrashMapSection({
                         coverCells={drawerOpen && debugOpen ? apiResult.plan?.cover ?? null : null}
                         viz={viz}
                         circleRadiusPx={circleRadiusPxValue}
+                        hexOpacity={result.status === "ready" && result.refetching ? 0.35 : 1}
+                        hexDesaturate={result.status === "ready" && result.refetching ? 0.55 : 0}
                     />
                 </Suspense>
             )}
@@ -820,6 +822,8 @@ export function CrashMapSection({
                             currentZoom={effectiveView?.zoom ?? 7}
                             currentLat={effectiveView?.latitude ?? 40.7}
                             currentRes={pickerInfo?.levels.find(l => l.isCurrent)?.res ?? 11}
+                            viz={viz}
+                            autoOverrides={autoOverrides}
                         />
                     </>
                 )}
@@ -1077,11 +1081,13 @@ function Legend({
  *  Horizontal orange line: the camera's current zoom, so users see
  *  where they are in the mapping at a glance. */
 function ZoomResChart({
-    currentZoom, currentLat, currentRes,
+    currentZoom, currentLat, currentRes, viz, autoOverrides,
 }: {
     currentZoom: number
     currentLat: number
     currentRes: number
+    viz: "hex" | "circle"
+    autoOverrides: Record<number, number>
 }) {
     const H = 180  // chart height in px
     // Center the current zoom in the window; ticks slide smoothly as
@@ -1100,6 +1106,28 @@ function ZoomResChart({
     const resCols = [currentRes - 1, currentRes, currentRes + 1].filter(r => r in H3_RADIUS_METERS)
     const intZooms: number[] = []
     for (let z = Math.ceil(zMin); z <= Math.floor(zMax); z++) intZooms.push(z)
+
+    // Res-transition zooms in the visible window: scan for boundaries where
+    // the auto picker flips from r{N} → r{N±1}, so the user can see where
+    // pan/zoom will trigger a fetch at a different res (and 20s of new
+    // wide-viewport /cells work). Binary-search each 0.1-zoom step where a
+    // transition is detected to nail the boundary to ~0.005-zoom precision.
+    const transitions: { z: number; from: number; to: number }[] = []
+    const coarseStep = 0.1
+    let prevRes = pickRes(viz, zMin, currentLat, autoOverrides)
+    for (let z = zMin + coarseStep; z <= zMax + 1e-9; z += coarseStep) {
+        const r = pickRes(viz, z, currentLat, autoOverrides)
+        if (r !== prevRes) {
+            let lo = z - coarseStep, hi = z
+            for (let i = 0; i < 8; i++) {
+                const mid = (lo + hi) / 2
+                if (pickRes(viz, mid, currentLat, autoOverrides) === prevRes) lo = mid
+                else hi = mid
+            }
+            transitions.push({ z: (lo + hi) / 2, from: prevRes, to: r })
+            prevRes = r
+        }
+    }
 
     const zoomColW = 32
     const resColW = 46
@@ -1152,6 +1180,28 @@ function ZoomResChart({
                                 </g>
                             )
                         })}
+                    </g>
+                ))}
+                {/* Res-transition boundaries — where zooming will flip the
+                 *  picker to a new res (and trigger a fresh /cells fetch at
+                 *  a different data volume). Dashed cyan line + a small label
+                 *  showing the direction (which res you land in going up
+                 *  in zoom, i.e. into the region above the line). */}
+                {transitions.map(t => (
+                    <g key={t.z.toFixed(3)} transform={`translate(0, ${16 + yFor(t.z)})`}>
+                        <line
+                            x1={zoomColW} x2={W}
+                            y1={0} y2={0}
+                            stroke="#4dd0e1"
+                            strokeWidth={1}
+                            strokeDasharray="3 2"
+                            opacity={0.75}
+                        />
+                        <text
+                            x={W - 2} y={-2}
+                            fontSize={8.5} textAnchor="end"
+                            fill="#4dd0e1" opacity={0.9}
+                        >↑ r{t.to}</text>
                     </g>
                 ))}
                 {/* Current-zoom marker */}

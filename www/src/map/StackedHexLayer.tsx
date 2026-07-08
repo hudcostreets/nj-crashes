@@ -215,6 +215,8 @@ export function buildStackedHexLayer({
     elevationScale = 1,
     viz = "hex",
     overrideRadiusMeters,
+    opacity = 1,
+    desaturate = 0,
 }: {
     id: string
     segments: Segment[]
@@ -224,6 +226,15 @@ export function buildStackedHexLayer({
     elevationScale?: number
     viz?: VizMode
     overrideRadiusMeters?: number
+    /** Multiplies each column's fill alpha. Used by the section to fade
+     *  the currently-rendered layer while a fresh /cells fetch is in
+     *  flight — gives an immediate "this is stale" signal during 5-20s
+     *  wide-viewport reqs without a modal spinner. */
+    opacity?: number
+    /** 0 = untouched, 1 = fully luminance-grey. Applied in combination
+     *  with `opacity` while a fetch is in flight so the fatal/injury/other
+     *  signal remains readable but is clearly de-emphasized. */
+    desaturate?: number
 }): ColumnLayer<Segment> {
     const edge = H3_RADIUS_METERS[resolution] ?? 174
     let diskResolution: number
@@ -236,6 +247,18 @@ export function buildStackedHexLayer({
         diskResolution = 6
         radius = edge
     }
+    const getFillColor = desaturate > 0
+        ? (s: Segment): [number, number, number] | [number, number, number, number] => {
+            const [r, g, b, a] = s.color as [number, number, number, number]
+            const lum = 0.299 * r + 0.587 * g + 0.114 * b
+            return [
+                r + (lum - r) * desaturate,
+                g + (lum - g) * desaturate,
+                b + (lum - b) * desaturate,
+                a,
+            ]
+        }
+        : (s: Segment) => s.color
     return new ColumnLayer<Segment>({
         id,
         data: segments,
@@ -247,10 +270,12 @@ export function buildStackedHexLayer({
         // Note: position includes altitude (baseZ) as the 3rd coord. DeckGL's
         // ColumnLayer uses `instancePositions.z` as the column's base z.
         getPosition: (s) => s.center,
-        getFillColor: (s) => s.color,
+        getFillColor,
+        updateTriggers: { getFillColor: [desaturate] },
         getElevation: (s) => s.height,
         elevationScale,
         material: false,
+        opacity,
         onHover,
     })
 }

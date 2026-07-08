@@ -110,6 +110,16 @@ export type Props = {
      *  Converted to meters via the layer's viewport; capped at the
      *  current cell's inscribed radius. Ignored in `hex` mode. */
     circleRadiusPx?: number
+    /** Multiplies the hex/circle layer's alpha. The section sets this
+     *  ~0.35 while a fresh /cells fetch is in flight so the stale
+     *  currently-rendered hexes fade into a "loading" affordance —
+     *  visible feedback during multi-second reqs at wide zoom. */
+    hexOpacity?: number
+    /** Blends fatal/injury/other fills toward luminance-grey by this
+     *  fraction (0-1). Set together with `hexOpacity` during a stale
+     *  fetch — the tier signal stays readable but is de-emphasized so
+     *  the difference between stale and fresh reads at a glance. */
+    hexDesaturate?: number
 }
 
 const MAX_PITCH = 85
@@ -335,6 +345,8 @@ export function CrashMap({
     coverCells,
     viz = "hex",
     circleRadiusPx,
+    hexOpacity = 1,
+    hexDesaturate = 0,
 }: Props) {
     const effectiveCrashes = crashes ?? []
     const containerRef = React.useRef<HTMLDivElement | null>(null)
@@ -764,6 +776,8 @@ export function CrashMap({
                 onHover: (info) => { setHoverInfo(info); return false },
                 viz,
                 overrideRadiusMeters,
+                opacity: hexOpacity,
+                desaturate: hexDesaturate,
             }),
         ]
         if (perfEnabled()) {
@@ -771,7 +785,7 @@ export function CrashMap({
             console.log(`[perf] layers: ${ms.toFixed(1)}ms (mode=${mode}, segments=${segments.length})`)
         }
         return result
-    }, [hexes, effectiveCrashes, mode, effectiveHexRes, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, viz, circleRadiusPx])
+    }, [hexes, effectiveCrashes, mode, effectiveHexRes, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, viz, circleRadiusPx, hexOpacity, hexDesaturate])
 
     // Only bubble user-driven changes. DeckGL also echoes back programmatic
     // viewState updates (from the fit effect, mode-switch tilt, etc.) via
