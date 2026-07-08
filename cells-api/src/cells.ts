@@ -32,7 +32,8 @@
  *        cells: [{ h3, n_fatal, n_inj_ped, n_inj_other, n_pdo, n_vehs }]
  *      }
  */
-import { cellToLatLng, cellToParent } from "h3-js"
+import { cellToLatLng, cellToParent, getResolution } from "h3-js"
+import { descendantRange, mergeRanges, type CellRange } from "./h3-range"
 import { loadManifest } from "./manifest"
 import { readParquetFromR2 } from "./parquet"
 
@@ -181,6 +182,10 @@ function bigintToHex(b: bigint | number): string {
     return (typeof b === "bigint" ? b : BigInt(b)).toString(16).padStart(15, "0")
 }
 
+function hexToBigint(hex: string): bigint {
+    return BigInt(`0x${hex}`)
+}
+
 /** Standard ray-casting point-in-polygon. Polygon as `[lon, lat][]`,
  *  point as `[lon, lat]`. */
 function pointInPolygon(pt: [number, number], poly: LonLatPolygon): boolean {
@@ -212,7 +217,7 @@ export async function handleCellsRequest(
     req: CellsRequest,
 ): Promise<CellsResponse> {
     const manifest = await loadManifest(bucket, prefix)
-    const { cells: requestedShards, res: requestedRes, maxCells, shardRes } = req
+    const { cells: requestedShards, res: requestedRes, maxCells } = req
     const yearRange = req.yearRange ?? manifest.year_range
     const sevSet = req.severities  // undefined ⇒ all
 
@@ -223,39 +228,40 @@ export async function handleCellsRequest(
         throw new HttpError(400, "cells must list ≥1 shard")
     }
 
-    // Multi-resolution combo path: client specifies `(shard_res, data_res)`.
-    // Worker reads `pyramid/s{shard_res}_r{data_res}/{shard}.parquet`
-    // directly. When `maxCells` is set (client-signaled per-shard cap),
-    // in-worker coarsening walks parent-aggregate cells down one res at
-    // a time until it fits or hits `MIN_RES` — cheaper than re-reading
-    // a coarser parquet from R2. Response `res` reports the actual res
-    // returned, which the client trusts as ground truth.
-    if (shardRes != null) {
-        const combos = manifest.pyramid_combos ?? []
-        const combo = combos.find(c => c.shard_res === shardRes && c.data_res === requestedRes)
-        if (!combo) {
-            const avail = combos.map(c => `s${c.shard_res}/r${c.data_res}`).join(", ")
-            throw new HttpError(404, `no combo (shard_res=${shardRes}, data_res=${requestedRes}); have: [${avail}]`)
-        }
-        // No per-shard existence filter: the client's cover is already
-        // NJ-clipped and bounded (≤ COVER_MAX_SHARDS), and `queryPyramid`
-        // reads with `missingOk` so a shard with no data (water/boundary)
-        // costs one HEAD and returns empty. Keeping a 9 MB per-combo
-        // shard-cell list in every isolate to skip a handful of HEADs was
-        // a net loss (see manifest slim-down).
-        const shards = requestedShards
-        const clipPoly = req.clipPolygon && req.clipPolygon.length >= 3 ? req.clipPolygon : null
+    // Consolidated read: every data_res is one r4-sharded level
+    // (`pyramid/r{res}/{r4}.parquet`, h3-sorted + row-grouped). The client's
+    // cover cells (`requestedShards`, at any resolution — a legacy `shard_res`
+    // param is ignored) become the prune ancestors: their base-res descendant
+    // ranges (`rangesForCovering`) drive hyparquet row-group pruning so each
+    // r4 shard yields only the ~viewport row-groups. `maxCells` still triggers
+    // in-worker coarsening; `res` in the response is ground truth.
+    const clipPoly = req.clipPolygon && req.clipPolygon.length >= 3 ? req.clipPolygon : null
+    const fileRes = manifest.shard_res  // r4: the physical file-sharding resolution
+    const MIN_RES = 5
+
+    // r4 shard files to read: each cover cell's r4 ancestor. A cover cell at or
+    // coarser than r4 spans multiple r4 shards, so fall back to all known r4
+    // shards (cheap — coarse levels are small, and `missingOk` skips empties).
+    const anyCoarse = requestedShards.some(s => getResolution(s) <= fileRes)
+    const shards = anyCoarse
+        ? manifest.shard_cells
+        : [...new Set(requestedShards.map(s => cellToParent(s, fileRes)))]
+
+    const usePyramid = manifest.pyramid_levels.includes(requestedRes)
+    if (usePyramid) {
+        const ranges = mergeRanges(
+            requestedShards.map(s => descendantRange(hexToBigint(s), getResolution(s), requestedRes)),
+        )
         const t0 = Date.now()
-        let cells = await queryPyramid(bucket, prefix, requestedRes, shards, yearRange, sevSet, clipPoly, shardRes)
+        let cells = await queryPyramid(bucket, prefix, requestedRes, shards, yearRange, sevSet, clipPoly, ranges)
         const t1 = Date.now()
         let res = requestedRes
-        const MIN_RES_COMBO = 5
-        while (maxCells != null && cells.length > maxCells && res > MIN_RES_COMBO) {
+        while (maxCells != null && cells.length > maxCells && res > MIN_RES) {
             res--
             cells = coarsenCells(cells, res)
         }
         const t2 = Date.now()
-        console.log(`[timing] combo s${shardRes}_r${requestedRes} shards=${shards.length} cells=${cells.length}: pyramid=${t1 - t0}ms, coarsen=${t2 - t1}ms, total=${t2 - t0}ms`)
+        console.log(`[timing] r${requestedRes} shards=${shards.length} ranges=${ranges.length} cells=${cells.length}: pyramid=${t1 - t0}ms, coarsen=${t2 - t1}ms, total=${t2 - t0}ms`)
         return {
             res,
             year_range: yearRange,
@@ -265,39 +271,16 @@ export async function handleCellsRequest(
         }
     }
 
-    // Legacy path: shards keyed at `manifest.shard_res`, pyramid levels are
-    // single-shard-res. Adaptive coarsening when `maxCells` exceeded.
-    // Intersect with the manifest's known shard set so an unknown cell
-    // (typo, stale client, off-NJ shard) becomes a silent skip rather
-    // than a 404 on the parquet read.
-    const known = new Set(manifest.shard_cells)
-    const shards = requestedShards.filter(s => known.has(s))
-
-    // Adaptive res: start at requested, walk coarser if cells.length
-    // exceeds `maxCells`. Each step is a fresh parquet read (lossless,
-    // since each pyramid level is independently aggregated). When
-    // `maxCells` is omitted, we always return at the requested res.
-    const MIN_RES = 5
-    const clipPoly = req.clipPolygon && req.clipPolygon.length >= 3 ? req.clipPolygon : null
-    let res = requestedRes
-    while (res >= MIN_RES) {
-        const usePyramid = res < manifest.base_res && manifest.pyramid_levels.includes(res)
-        const cells = usePyramid
-            ? await queryPyramid(bucket, prefix, res, shards, yearRange, sevSet, clipPoly)
-            : await queryRaw(bucket, prefix, manifest, res, shards, yearRange, sevSet, clipPoly)
-        if (maxCells == null || cells.length <= maxCells || res === MIN_RES) {
-            return {
-                res,
-                year_range: yearRange,
-                data_version: manifest.data_version,
-                source: usePyramid ? "pyramid" : "raw",
-                cells,
-            }
-        }
-        res--
+    // Raw fallback for a res below the finest pyramid level (rare — very wide
+    // zoom). Aggregates raw crashes up to `res` via `cellToParent`.
+    const cells = await queryRaw(bucket, prefix, manifest, requestedRes, shards, yearRange, sevSet, clipPoly)
+    return {
+        res: requestedRes,
+        year_range: yearRange,
+        data_version: manifest.data_version,
+        source: "raw",
+        cells,
     }
-    // Unreachable — loop returns at res === MIN_RES.
-    throw new Error("unreachable")
 }
 
 async function queryPyramid(
@@ -308,34 +291,37 @@ async function queryPyramid(
     yearRange: [number, number],
     severities: Set<"f" | "i" | "p"> | undefined,
     clipPoly: LonLatPolygon | null,
-    shardRes?: number,
+    h3Ranges?: CellRange[],
 ): Promise<CellOut[]> {
     const h3Col = `h3_r${res}`
     const wantF = !severities || severities.has("f")
     const wantI = !severities || severities.has("i")
     const wantP = !severities || severities.has("p")
     const out = new Map<string, CellOut>()
-    // Multi-res combos live under `pyramid/s{shard_res}_r{data_res}/...`;
-    // legacy single-shard-res pyramid lives under `pyramid/r{res}/...`.
-    const subdir = shardRes != null ? `s${shardRes}_r${res}` : `r${res}`
-    // sld labels are baked into combo parquets only; the legacy `r{res}`
-    // levels lack those columns, so don't project them there.
-    const cols = shardRes != null
-        ? [h3Col, "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "sld_name", "cross_sld_name", "mun", "county"]
-        : [h3Col, "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"]
+    // Consolidated layout: every data_res lives under `pyramid/r{res}/`,
+    // sharded at r4 (h3-sorted, row-grouped) with sld baked into every row.
+    const subdir = `r${res}`
+    const cols = [h3Col, "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "sld_name", "cross_sld_name", "mun", "county"]
 
-    // Parallel R2 reads — each shard's parquet was sequential before, which
-    // made a 25-shard batch take ~4s (25 × ~150ms). With `Promise.all` the
-    // I/O happens concurrently; total latency drops to roughly the slowest
-    // single shard plus small overhead. Memory is fine — peak is N shards'
-    // row arrays held briefly before folding (~6MB for typical urban N=25).
+    // Row-group pruning: `h3Ranges` are the base-res descendant ranges of the
+    // viewport cover (`rangesForCovering`). Passed as an `$or` of `h3_r{res}`
+    // ranges so hyparquet skips row-groups whose min/max stats fall outside
+    // every range — fetching only the ~viewport row-groups from each r4 shard
+    // (measured ~3-4% of a shard's bytes). ANDed with the year pushdown.
+    const yearFilter = { year: { $gte: yearRange[0], $lte: yearRange[1] } }
+    const filter = h3Ranges && h3Ranges.length
+        ? { $and: [yearFilter, { $or: h3Ranges.map(r => ({ [h3Col]: { $gte: r.lo, $lte: r.hi } })) }] }
+        : yearFilter
+
+    // Parallel R2 reads — each r4 shard's parquet reads concurrently via
+    // `Promise.all`; total latency ≈ the slowest single shard plus overhead.
     const results = await Promise.all(shards.map(async s => {
         try {
             return await readParquetFromR2<PyramidRow>(
                 bucket, `${prefix}/pyramid/${subdir}/${s}.parquet`,
                 {
                     columns: cols,
-                    filter: { year: { $gte: yearRange[0], $lte: yearRange[1] } },
+                    filter,
                     missingOk: true,
                 },
             )

@@ -201,6 +201,7 @@ def _build_pyramid_level(
     topk: int,
     out_dir: Path,
     sld: pd.DataFrame | None = None,
+    row_group_size: int = 20_000,
 ) -> dict[str, int]:
     """Aggregate raw rows to a pyramid level and write per-shard parquet files.
 
@@ -317,7 +318,7 @@ def _build_pyramid_level(
         shard_hex = h3.int_to_str(int(shard))
         path = level_dir / f'{shard_hex}.parquet'
         table = pa.Table.from_pandas(sub[cols_out], schema=schema, preserve_index=False)
-        pq.write_table(table, path, row_group_size=20_000, compression='zstd')
+        pq.write_table(table, path, row_group_size=row_group_size, compression='zstd')
         counts[shard_hex] = len(sub)
     err(f'    {time() - t0:.1f}s, {len(counts)} shards, {sum(counts.values()):,} rows')
     return counts
@@ -326,22 +327,30 @@ def _build_pyramid_level(
 @cells.command('pyramid')
 @click.option('-b', '--base-res', type=int, default=BASE_RES_DEFAULT)
 @click.option('-f', '--force', is_flag=True, help='Overwrite existing pyramid output')
+@click.option('-j', '--jobs', type=int, default=0, help='Parallel level workers (0 = min(#levels, cpu_count))')
 @click.option('-k', '--topk', type=int, default=TOPK_DEFAULT, help=f'topK most-recent crashes per cell-year (default: {TOPK_DEFAULT})')
 @click.option('-l', '--levels', default=','.join(map(str, PYRAMID_LEVELS_DEFAULT)), help='Comma-separated pyramid levels')
 @click.option('-o', '--out-dir', type=click.Path(path_type=Path), default=OUT_DIR_DEFAULT)
+@click.option('-r', '--row-group-size', type=int, default=4096, help='Parquet row-group size (smaller → finer worker h3-range pruning; default: 4096)')
 @click.option('-s', '--shard-res', type=int, default=SHARD_RES_DEFAULT)
-def cells_pyramid(base_res: int, force: bool, topk: int, levels: str, out_dir: Path, shard_res: int):
-    """Phase 2: per-resolution rollups (h3_rN, year) → counts + topK."""
-    level_ints = [int(x) for x in levels.split(',') if x.strip()]
+@click.option('-S', '--sld-path', type=click.Path(path_type=Path), default=SLD_PATH_DEFAULT, help=f'hex-sld.parquet to bake into rows, or "" to skip (default: {SLD_PATH_DEFAULT})')
+def cells_pyramid(base_res: int, force: bool, jobs: int, topk: int, levels: str, out_dir: Path, row_group_size: int, shard_res: int, sld_path: Path):
+    """Phase 2: per-resolution rollups (h3_rN, year) → counts + topK + sld.
+
+    Consolidated layout: one `pyramid/r{N}/{shard_hex}.parquet` per r{shard_res}
+    shard (default r4), h3-sorted with `row_group_size` row-groups so the worker
+    prunes to viewport row-groups by h3 range (no per-shard file explosion).
+    Levels build in a fork pool (`-j`); `SLD_COLS` baked from `--sld-path`."""
+    level_ints = sorted(int(x) for x in levels.split(',') if x.strip())
     pyramid_dir = out_dir / 'pyramid'
-    if pyramid_dir.exists() and any(pyramid_dir.iterdir()):
-        if not force:
-            err(f'{pyramid_dir} non-empty; use -f/--force to overwrite')
-            return
-        for sub in pyramid_dir.glob('r*'):
-            for p in sub.glob('*.parquet'):
-                p.unlink()
-            sub.rmdir()
+    level_dirs = [pyramid_dir / f'r{lv}' for lv in level_ints]
+    existing = [d for d in level_dirs if d.exists() and any(d.glob('*.parquet'))]
+    if existing and not force:
+        err(f'level dirs already populated: {[d.name for d in existing]}; use -f/--force to overwrite')
+        return
+    for d in existing:
+        for p in d.glob('*.parquet'):
+            p.unlink()
     pyramid_dir.mkdir(parents=True, exist_ok=True)
 
     raw_dir = out_dir / 'raw' / f'h3_r{base_res}'
@@ -349,10 +358,10 @@ def cells_pyramid(base_res: int, force: bool, topk: int, levels: str, out_dir: P
     if not raw_paths:
         err(f'No raw shards in {raw_dir}; run `compute cells raw` first')
         raise SystemExit(1)
-
-    err(f'Loading {len(raw_paths)} raw shards from {raw_dir}...')
+    keep = _pyramid_keep_cols(base_res)
+    err(f'Loading {len(raw_paths)} raw shards from {raw_dir} (cols: {keep})...')
     t0 = time()
-    base = pd.concat([pd.read_parquet(p) for p in raw_paths], ignore_index=True)
+    base = pd.concat([pd.read_parquet(p, columns=keep) for p in raw_paths], ignore_index=True)
     err(f'  {len(base):,} rows in {time() - t0:.1f}s')
 
     err('Sorting by dt desc (once, for topK head() correctness)...')
@@ -360,10 +369,34 @@ def cells_pyramid(base_res: int, force: bool, topk: int, levels: str, out_dir: P
     base = base.sort_values('dt', ascending=False, kind='mergesort')
     err(f'  {time() - t0:.1f}s')
 
-    h3_base_col = f'h3_r{base_res}'
-    for level in level_ints:
-        err(f'\n=== Pyramid r{level} ===')
-        _build_pyramid_level(base, h3_base_col, level, shard_res, topk, pyramid_dir / f'r{level}')
+    sld = None
+    if str(sld_path):
+        err(f'Loading sld lookup from {sld_path}...')
+        t0 = time()
+        sld = _load_sld_lookup(sld_path)
+        err(f'  {len(sld):,} labelled cells in {time() - t0:.1f}s')
+
+    global _MP_BASE, _MP_SLD, _MP_H3_BASE_COL, _MP_TOPK, _MP_PYRAMID_DIR, _MP_SHARD_RES, _MP_RGS
+    _MP_BASE = base
+    _MP_SLD = sld
+    _MP_H3_BASE_COL = f'h3_r{base_res}'
+    _MP_TOPK = topk
+    _MP_PYRAMID_DIR = pyramid_dir
+    _MP_SHARD_RES = shard_res
+    _MP_RGS = row_group_size
+
+    n_jobs = jobs if jobs > 0 else min(len(level_ints), os.cpu_count() or 1)
+    err(f'\nBuilding {len(level_ints)} levels (shard r{shard_res}, rgs={row_group_size}) across {n_jobs} worker(s)...')
+    t0 = time()
+    if n_jobs == 1:
+        for level in level_ints:
+            _level_task(level)
+    else:
+        from multiprocessing import get_context
+        with get_context('fork').Pool(n_jobs) as pool:
+            for level, n in pool.imap_unordered(_level_task, level_ints):
+                err(f'  ✓ r{level}: {n:,} rows')
+    err(f'All levels done in {time() - t0:.1f}s')
 
 
 def _parse_combos(spec: str) -> list[tuple[int, int]]:
@@ -395,6 +428,19 @@ _MP_SLD: pd.DataFrame | None = None
 _MP_H3_BASE_COL: str | None = None
 _MP_TOPK: int | None = None
 _MP_PYRAMID_DIR: Path | None = None
+_MP_SHARD_RES: int | None = None
+_MP_RGS: int | None = None
+
+
+def _level_task(level: int) -> tuple[int, int]:
+    """Fork worker: build one consolidated level `pyramid/r{level}/` sharded at
+    `_MP_SHARD_RES` (r4) with sld baked. Mirrors `_combo_task` but one
+    shard_res, plain `r{level}` output path."""
+    counts = _build_pyramid_level(
+        _MP_BASE, _MP_H3_BASE_COL, level, _MP_SHARD_RES, _MP_TOPK,
+        _MP_PYRAMID_DIR / f'r{level}', sld=_MP_SLD, row_group_size=_MP_RGS,
+    )
+    return level, sum(counts.values())
 
 
 def _combo_task(combo: tuple[int, int]) -> tuple[int, int, int]:
