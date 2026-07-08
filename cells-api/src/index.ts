@@ -24,6 +24,9 @@ interface Env {
     CELLS_BUCKET: R2Bucket
     CORS_ORIGIN: string
     CELLS_PREFIX: string
+    // Per-cell all-years rollup (counts + labels). Optional so a deploy
+    // without the binding still works (falls back to the R2 parquet path).
+    CELLS_DB?: D1Database
 }
 
 function corsHeaders(env: Env, extra: HeadersInit = {}): HeadersInit {
@@ -120,7 +123,7 @@ export default {
                 if (request.headers.get("If-None-Match") === tag) {
                     return new Response(null, { status: 304, headers: corsHeaders(env, { ETag: tag }) })
                 }
-                const body = await handleCellsRequest(env.CELLS_BUCKET, prefix, cellsReq)
+                const body = await handleCellsRequest(env.CELLS_BUCKET, prefix, cellsReq, env.CELLS_DB)
                 return new Response(JSON.stringify(body, jsonReplacer), {
                     headers: corsHeaders(env, {
                         ETag: tag,

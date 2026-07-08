@@ -1,0 +1,12 @@
+outs:
+- md5: a8d179291a9528aaa5924304341fca28
+  size: 315428864
+  hash: md5
+  path: cells.db
+meta:
+  computation:
+    cmd: cd ../.. && njdot compute cells db -f
+    deps:
+      pyramid: 49189c014db1d7b32ad02f6d8853b522
+    git_deps:
+      /njdot/cli/cells.py: 08fe162c376396e662f5dd484f889cc64691acd4

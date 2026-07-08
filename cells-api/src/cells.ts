@@ -144,7 +144,7 @@ export type CellsResponse = {
     res: number
     year_range: [number, number]
     data_version: string
-    source: "pyramid" | "raw"
+    source: "pyramid" | "raw" | "d1"
     cells: CellOut[]
 }
 
@@ -224,6 +224,7 @@ export async function handleCellsRequest(
     bucket: R2Bucket,
     prefix: string,
     req: CellsRequest,
+    db?: D1Database,
 ): Promise<CellsResponse> {
     const manifest = await loadManifest(bucket, prefix)
     const { cells: requestedShards, res: requestedRes, maxCells } = req
@@ -259,11 +260,41 @@ export async function handleCellsRequest(
         : [...new Set(requestedShards.map(s => cellToParent(s, fileRes)))]
 
     const labels = req.labels ?? "full"
+
+    // Viewport-cover h3 ranges — shared by the D1 fast path and the parquet
+    // row-group pruning below.
+    const ranges = mergeRanges(
+        requestedShards.map(s => descendantRange(hexToBigint(s), getResolution(s), requestedRes)),
+    )
+
+    // D1 fast path: the default (all-years, all-severity, full-labels) query
+    // at a res the rollup covers (r6-r15). One indexed `h3 BETWEEN` range scan
+    // returns counts + labels together — no year-row expansion, no string
+    // re-decode. Any failure (binding absent, table missing, result too large)
+    // falls through to the parquet path below.
+    const isDefault = !sevSet
+        && (req.yearRange == null
+            || (req.yearRange[0] === manifest.year_range[0] && req.yearRange[1] === manifest.year_range[1]))
+    if (db && isDefault && labels === "full" && requestedRes >= 6 && requestedRes <= manifest.base_res) {
+        try {
+            const t0 = Date.now()
+            let cells = await queryCellsD1(db, requestedRes, ranges, clipPoly)
+            const t1 = Date.now()
+            let res = requestedRes
+            while (maxCells != null && cells.length > maxCells && res > MIN_RES) {
+                res--
+                cells = coarsenCells(cells, res)
+            }
+            const t2 = Date.now()
+            console.log(`[timing] r${requestedRes} D1 ranges=${ranges.length} cells=${cells.length}: d1=${t1 - t0}ms, coarsen=${t2 - t1}ms, total=${t2 - t0}ms`)
+            return { res, year_range: yearRange, data_version: manifest.data_version, source: "d1", cells }
+        } catch (e) {
+            console.error(`D1 path failed (res ${requestedRes}), falling back to parquet:`, e)
+        }
+    }
+
     const usePyramid = manifest.pyramid_levels.includes(requestedRes)
     if (usePyramid) {
-        const ranges = mergeRanges(
-            requestedShards.map(s => descendantRange(hexToBigint(s), getResolution(s), requestedRes)),
-        )
         const t0 = Date.now()
         let cells = await queryPyramid(bucket, prefix, requestedRes, shards, yearRange, sevSet, clipPoly, ranges, labels)
         const t1 = Date.now()
@@ -296,6 +327,54 @@ export async function handleCellsRequest(
         source: "raw",
         cells,
     }
+}
+
+/** D1 fast path for the default (all-years, all-severity) query. Reads the
+ *  per-cell rollup `cells_r{res}` (one row/cell — counts + labels) with a
+ *  single indexed range scan over the viewport cover's merged h3 ranges.
+ *
+ *  h3 comes back as TEXT: D1 hands INTEGER columns to JS as `number`, which
+ *  loses precision above 2^53 (h3 ids are ~6e17). Range bounds are inlined as
+ *  decimal literals — they're server-computed int64s (not user input), which
+ *  also sidesteps D1's lack of an int64 bind type. */
+async function queryCellsD1(
+    db: D1Database,
+    res: number,
+    ranges: CellRange[],
+    clipPoly: LonLatPolygon | null,
+): Promise<CellOut[]> {
+    const where = ranges.length
+        ? ranges.map(r => `(h3 BETWEEN ${r.lo.toString()} AND ${r.hi.toString()})`).join(" OR ")
+        : "1=1"
+    const sql = `SELECT CAST(h3 AS TEXT) AS h3, n_fatal, n_inj_ped, n_inj_other, n_pdo, n_vehs, `
+        + `fatal_years, sld_name, cross_sld_name, mun, county FROM cells_r${res} WHERE ${where}`
+    const { results } = await db.prepare(sql).all<{
+        h3: string
+        n_fatal: number; n_inj_ped: number; n_inj_other: number; n_pdo: number; n_vehs: number
+        fatal_years: string | null
+        sld_name: string | null; cross_sld_name: string | null; mun: string | null; county: string | null
+    }>()
+    const cells: CellOut[] = []
+    for (const row of results) {
+        // Match the parquet path: drop cells with no severity-count hit.
+        if (!(row.n_fatal > 0 || row.n_inj_ped > 0 || row.n_inj_other > 0 || row.n_pdo > 0)) continue
+        const hex = bigintToHex(BigInt(row.h3))
+        if (!cellInPolygon(hex, clipPoly)) continue
+        const c: CellOut = {
+            h3: hex,
+            n_fatal: row.n_fatal, n_inj_ped: row.n_inj_ped, n_inj_other: row.n_inj_other,
+            n_pdo: row.n_pdo, n_vehs: row.n_vehs,
+        }
+        // `fatal_years` is pre-sorted ascending by the builder (string_agg
+        // ORDER BY year), matching the parquet path's output.
+        if (row.fatal_years) c.fatal_years = row.fatal_years.split(",").map(Number)
+        if (row.sld_name) c.sld_name = row.sld_name
+        if (row.cross_sld_name) c.cross_sld_name = row.cross_sld_name
+        if (row.mun) c.mun = row.mun
+        if (row.county) c.county = row.county
+        cells.push(c)
+    }
+    return cells
 }
 
 async function queryPyramid(

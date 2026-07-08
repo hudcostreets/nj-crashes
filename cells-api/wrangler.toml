@@ -7,6 +7,16 @@ compatibility_flags = ["nodejs_compat"]
 binding = "CELLS_BUCKET"
 bucket_name = "nj-crashes"
 
+# Per-cell all-years rollup (counts + labels), one row/cell for r6-r15.
+# Built by `njdot compute cells db`, imported via `api/scripts/d1-import.sh`.
+# Serves the default (all-years, all-severity) `/v1/cells` query as a single
+# indexed `h3 BETWEEN` range scan; year/severity-filtered queries fall back
+# to the R2 parquet pyramid.
+[[d1_databases]]
+binding = "CELLS_DB"
+database_name = "cells"
+database_id = "8d71621d-7b48-4018-b3fe-0db68ec528ad"
+
 [dev]
 port = 51895
 

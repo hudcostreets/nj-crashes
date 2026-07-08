@@ -19,7 +19,11 @@
 #   bash scripts/d1-import.sh --inplace --full   [db_name ...]   # full re-import
 #   bash scripts/d1-import.sh                    [db_name ...]   # remote, staging
 set -euo pipefail
-cd "$(dirname "$0")/.."
+# Absolute path to this script's dir, resolved BEFORE the cd below — later
+# references (dump-compat.py, d1-diff.py) must not re-derive from `$0`, which
+# is relative to the original CWD and breaks once we cd.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/.."
 
 MODE="remote"
 FULL=0
@@ -43,8 +47,9 @@ CHUNK_SIZE=200000
 SMALL_THRESHOLD=$((50 * 1024 * 1024))  # 50MB
 DVC_CACHE=".dvc/cache/files/md5"
 DVC_S3_PREFIX="s3://nj-crashes/.dvc/files/md5"
-# Universal natural-key columns (cmymc-style dims + njsp-crashes id/dt).
-NATURAL_KEYS=(cc mc y m condition id dt)
+# Universal natural-key columns (cmymc-style dims + njsp-crashes id/dt +
+# cells h3). The exact-diff picks whichever are present per table.
+NATURAL_KEYS=(cc mc y m condition id dt h3)
 
 declare -A DB_MAP=(
     [crashes]="$WWW/njdot/crashes.db"
@@ -53,6 +58,7 @@ declare -A DB_MAP=(
     [pedestrians]="$WWW/njdot/pedestrians.db"
     [cmymc]="$WWW/njdot/cmymc.db"
     [njsp-crashes]="$WWW/njsp/crashes.db"
+    [cells]="../data/cells/cells.db"
 )
 
 # Binding names in wrangler.toml, keyed by db_name
@@ -63,6 +69,7 @@ declare -A BINDING_MAP=(
     [pedestrians]="PEDESTRIANS_DB"
     [cmymc]="CMYMC_DB"
     [njsp-crashes]="NJSP_CRASHES_DB"
+    [cells]="CELLS_DB"
 )
 
 requested=("$@")
@@ -106,7 +113,6 @@ import_data() {
     # Dump INSERT statements
     local inserts_file="$CHUNK_DIR/${db_name}_inserts.sql"
     echo "  Dumping INSERT statements..."
-    SCRIPT_DIR="$(dirname "$0")"
     sqlite3 "$local_path" .dump | python3 "$SCRIPT_DIR/dump-compat.py" | grep '^INSERT ' > "$inserts_file"
 
     local insert_lines
@@ -267,7 +273,6 @@ import_db_diff() {
 
     local tables t pk del_file ins_file
     tables=$(sqlite3 "$local_path" ".tables")
-    SCRIPT_DIR="$(dirname "$0")"
     for t in $tables; do
         if [[ "$t" == "_metadata" ]]; then continue; fi
         pk=$(natural_key_cols "$local_path" "$t")
