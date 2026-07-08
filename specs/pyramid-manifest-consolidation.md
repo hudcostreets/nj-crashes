@@ -43,18 +43,37 @@ eliminates ~90% of that CPU.
 Neither "one file per r4 shard" (current: 34) nor "one file total" is
 right at every res. Split by size:
 
-| data_res | rows in NJ (est) | files | rows/RG | RGs/file | notes |
-|---|---:|---:|---:|---:|---|
-| r6  | ~250 | **1** | all | 1 | trivially small; wide-vp decodes everything |
-| r7  | ~1k  | **1** | all | 1 |  |
-| r8  | ~9k  | **1** | 2k  | ~5 |  |
-| r9  | ~40k | **1** | 3k  | ~15 | tight-vp starts pruning |
-| r10 | ~150k | **1** | 5k  | ~30 |  |
-| r11 | ~500k | **1** | 5k  | ~100 | wide-vp reads all RGs, but a big file's overhead isn't per-RG here |
-| r12 | ~1.5M | **2** (r1-sharded) | 5k  | ~150/file |  |
-| r13 | ~5M   | **4** (r2-sharded, coarse) | 5k  | ~250/file |  |
-| r14 | ~15M  | **8** (r2-sharded) | 5k  | ~375/file |  |
-| r15 | ~40M  | **16** (r2-sharded) | 5k  | ~500/file | current 34 (r4) also fine; keep whichever the build tools prefer |
+The picker matches res to zoom, so each data_res has a **natural viewport
+regime** — the picker never asks for r15 at statewide zoom (target-px
+would be sub-pixel) and never asks for r6 at street-level. That
+regime dictates how much of a res's data one query actually touches,
+and drives the layout:
+
+| data_res | rows in NJ (est) | picker regime (viewport at res) | files | rows/RG | RGs/file |
+|---|---:|:---|---:|---:|---:|
+| r6  | ~250   | statewide (spans all NJ) | **1** | all | 1 |
+| r7  | ~1k    | statewide → 1/2 state | **1** | all | 1 |
+| r8  | ~9k    | 1/2 state → 1/4 | **1** | 2k | ~5 |
+| r9  | ~40k   | 1/4 state → county | **1** | 3k | ~15 |
+| r10 | ~150k  | county → muni | **1** | 5k | ~30 |
+| r11 | ~500k  | muni → neighborhood | **1** | 5k | ~100 |
+| r12 | ~1.5M  | neighborhood | **2** (r1-sharded) | 5k | ~150/file |
+| r13 | ~5M    | few blocks | **4** (r2-sharded) | 5k | ~250/file |
+| r14 | ~15M   | 1–2 blocks | **8** (r2-sharded) | 5k | ~375/file |
+| r15 | ~40M   | single block / intersection | **16** (r2-sharded) | 5k | ~500/file |
+
+Two consequences from the picker-regime alignment:
+
+1. **Fine res queries are inherently narrow.** A query at r13 touches
+   maybe 0.1% of NJ's r13 cells — RG prune (via h3 min/max stats in the
+   manifest) skips ~99% of the file's RGs, so wall-clock is dominated
+   by the ~few RGs actually read, not by file size.
+2. **File count at fine res isn't for query fanout, it's for build /
+   CDN-cache locality.** A single 200 MB r15 file works fine at request
+   time (range-reads only pull needed RGs) but is annoying to rebuild
+   incrementally and eats R2 cache pressure. r2-sharding gets us a
+   half-dozen ~30 MB files each, which pyarrow builds happily and CDN
+   caches nicely.
 
 Row counts are estimates from the current pyramid; **`e` should verify
 against real data before finalizing** — the file / RG counts follow from
