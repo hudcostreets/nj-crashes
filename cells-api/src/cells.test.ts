@@ -46,6 +46,24 @@ describe("parseCellsRequest severity param", () => {
     })
 })
 
+describe("parseCellsRequest labels param", () => {
+    it("defaults to undefined (handler treats as full)", () => {
+        expect(parse(BASE).labels).toBeUndefined()
+    })
+
+    it.each(["full", "nums", "only"] as const)("accepts labels=%s", v => {
+        expect(parse(`${BASE}&labels=${v}`).labels).toBe(v)
+    })
+
+    it("rejects an unknown labels value with 400", () => {
+        let err: HttpError | undefined
+        try { parse(`${BASE}&labels=strings`) } catch (e) { err = e as HttpError }
+        expect(err).toBeInstanceOf(HttpError)
+        expect(err?.status).toBe(400)
+        expect(err?.message).toBe("labels must be one of full|nums|only")
+    })
+})
+
 describe("coarsenCells", () => {
     // Two distinct r10 cells from geographically-separated lat/lngs so
     // their r9 parents differ; plus a synthetic sibling of the first

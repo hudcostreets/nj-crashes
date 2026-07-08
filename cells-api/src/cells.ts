@@ -176,6 +176,15 @@ export type CellsRequest = {
      *  available `(shard_res, data_res)` combos in `pyramid_combos`; the
      *  client picks one whose viewport-shard-count is in a target range. */
     shardRes?: number
+    /** Which columns to materialize, splitting the expensive string-label
+     *  decode off the paint critical path (labels are ~37% of decode but
+     *  tooltip-only). Default `full` = counts + labels (back-compat).
+     *  - `nums`: counts only (drops sld_name/cross_sld_name/mun/county).
+     *    Paints the map + bars; ~37% faster decode.
+     *  - `only`: labels only, keyed by h3 — the backfill/hover request the
+     *    client merges into already-painted cells. Year-invariant, so no
+     *    year filter; deduped by h3; count fields are 0. */
+    labels?: "full" | "nums" | "only"
 }
 
 function bigintToHex(b: bigint | number): string {
@@ -249,21 +258,25 @@ export async function handleCellsRequest(
         ? manifest.shard_cells
         : [...new Set(requestedShards.map(s => cellToParent(s, fileRes)))]
 
+    const labels = req.labels ?? "full"
     const usePyramid = manifest.pyramid_levels.includes(requestedRes)
     if (usePyramid) {
         const ranges = mergeRanges(
             requestedShards.map(s => descendantRange(hexToBigint(s), getResolution(s), requestedRes)),
         )
         const t0 = Date.now()
-        let cells = await queryPyramid(bucket, prefix, requestedRes, shards, yearRange, sevSet, clipPoly, ranges)
+        let cells = await queryPyramid(bucket, prefix, requestedRes, shards, yearRange, sevSet, clipPoly, ranges, labels)
         const t1 = Date.now()
         let res = requestedRes
-        while (maxCells != null && cells.length > maxCells && res > MIN_RES) {
+        // Label-only requests are keyed lookups the client merges into
+        // already-painted cells at the paint's actual res — never coarsened
+        // (counts are 0 here, so `maxCells` wouldn't apply meaningfully).
+        while (labels !== "only" && maxCells != null && cells.length > maxCells && res > MIN_RES) {
             res--
             cells = coarsenCells(cells, res)
         }
         const t2 = Date.now()
-        console.log(`[timing] r${requestedRes} shards=${shards.length} ranges=${ranges.length} cells=${cells.length}: pyramid=${t1 - t0}ms, coarsen=${t2 - t1}ms, total=${t2 - t0}ms`)
+        console.log(`[timing] r${requestedRes} labels=${labels} shards=${shards.length} ranges=${ranges.length} cells=${cells.length}: pyramid=${t1 - t0}ms, coarsen=${t2 - t1}ms, total=${t2 - t0}ms`)
         return {
             res,
             year_range: yearRange,
@@ -294,6 +307,7 @@ async function queryPyramid(
     severities: Set<"f" | "i" | "p"> | undefined,
     clipPoly: LonLatPolygon | null,
     h3Ranges?: CellRange[],
+    labels: "full" | "nums" | "only" = "full",
 ): Promise<CellOut[]> {
     const h3Col = `h3_r${res}`
     const wantF = !severities || severities.has("f")
@@ -303,17 +317,59 @@ async function queryPyramid(
     // Consolidated layout: every data_res lives under `pyramid/r{res}/`,
     // sharded at r4 (h3-sorted, row-grouped) with sld baked into every row.
     const subdir = `r${res}`
-    const cols = [h3Col, "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "sld_name", "cross_sld_name", "mun", "county"]
-
     // Row-group pruning: `h3Ranges` are the base-res descendant ranges of the
     // viewport cover (`rangesForCovering`). Passed as an `$or` of `h3_r{res}`
     // ranges so hyparquet skips row-groups whose min/max stats fall outside
     // every range — fetching only the ~viewport row-groups from each r4 shard
-    // (measured ~3-4% of a shard's bytes). ANDed with the year pushdown.
+    // (measured ~3-4% of a shard's bytes).
+    const h3RangeOr = h3Ranges && h3Ranges.length
+        ? { $or: h3Ranges.map(r => ({ [h3Col]: { $gte: r.lo, $lte: r.hi } })) }
+        : null
+
+    // Label-only path: the string labels (~37% of decode) are tooltip-only
+    // and constant across a cell's year-rows, so skip the year filter and
+    // decode just h3 + the 4 string cols, deduping by h3. Returns one record
+    // per labeled cell (counts 0); the client merges these into the cells it
+    // already painted from a `labels=nums` request.
+    if (labels === "only") {
+        const cols = [h3Col, "sld_name", "cross_sld_name", "mun", "county"]
+        const results = await Promise.all(shards.map(async s => {
+            try {
+                return await readParquetFromR2<PyramidRow>(
+                    bucket, `${prefix}/pyramid/${subdir}/${s}.parquet`,
+                    { columns: cols, filter: h3RangeOr ?? undefined, missingOk: true },
+                )
+            } catch (e) {
+                console.error(`pyramid ${subdir}/${s} labels read failed:`, e)
+                return null
+            }
+        }))
+        for (const rows of results) {
+            if (!rows) continue
+            for (const row of rows) {
+                const hex = bigintToHex((row as any)[h3Col] ?? row.h3)
+                if (out.has(hex)) continue
+                if (!row.sld_name && !row.cross_sld_name && !row.mun && !row.county) continue
+                if (!cellInPolygon(hex, clipPoly)) continue
+                const c: CellOut = { h3: hex, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
+                if (row.sld_name) c.sld_name = row.sld_name
+                if (row.cross_sld_name) c.cross_sld_name = row.cross_sld_name
+                if (row.mun) c.mun = row.mun
+                if (row.county) c.county = row.county
+                out.set(hex, c)
+            }
+        }
+        return [...out.values()]
+    }
+
+    // `nums` drops the 4 string cols; `full` keeps them (back-compat default).
+    const cols = labels === "nums"
+        ? [h3Col, "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"]
+        : [h3Col, "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "sld_name", "cross_sld_name", "mun", "county"]
+
+    // ANDed with the year pushdown for the count path.
     const yearFilter = { year: { $gte: yearRange[0], $lte: yearRange[1] } }
-    const filter = h3Ranges && h3Ranges.length
-        ? { $and: [yearFilter, { $or: h3Ranges.map(r => ({ [h3Col]: { $gte: r.lo, $lte: r.hi } })) }] }
-        : yearFilter
+    const filter = h3RangeOr ? { $and: [yearFilter, h3RangeOr] } : yearFilter
 
     // Parallel R2 reads — each r4 shard's parquet reads concurrently via
     // `Promise.all`; total latency ≈ the slowest single shard plus overhead.
@@ -547,5 +603,14 @@ export function parseCellsRequest(url: URL): CellsRequest {
         shardRes = n
     }
 
-    return { cells, res, yearRange, severities, clipPolygon, maxCells, shardRes }
+    let labels: "full" | "nums" | "only" | undefined
+    const lb = url.searchParams.get("labels")
+    if (lb) {
+        if (lb !== "full" && lb !== "nums" && lb !== "only") {
+            throw new HttpError(400, "labels must be one of full|nums|only")
+        }
+        labels = lb
+    }
+
+    return { cells, res, yearRange, severities, clipPolygon, maxCells, shardRes, labels }
 }
