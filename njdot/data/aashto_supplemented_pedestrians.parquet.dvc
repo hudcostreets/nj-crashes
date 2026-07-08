@@ -7,7 +7,8 @@ meta:
   computation:
     cmd: njdot aashto persons -y 2023,2024,2025
     git_deps:
-      /njdot/aashto/to_njdot_persons.py: 21b6405b82bcf6c362c6f73052168a11f5896d48
+      /njdot/aashto/to_njdot_persons.py: 
+        21b6405b82bcf6c362c6f73052168a11f5896d48
       /njdot/aashto/to_njdot_schema.py: 358a48b822f7e461f9d2ebef97eac0bbff04958f
     deps:
       /njdot/data/2023/persons.parquet: 72625f5a685ceb7489789e886f4f3171
@@ -16,7 +17,7 @@ meta:
       /njdot/data/2024/crashes.parquet: fd7cdf13806203af5ddce84ca94d3e23
       /njdot/data/2025/persons.parquet: 2c311b054ff1f7fbb27c0c099ae0486b
       /njdot/data/2025/crashes.parquet: 26e6bc7f841bbaa6b5878e57771869dd
-      /www/public/njdot/cc2mc2mn.json: 2c12563c5ea3a3fdd443fc14610822e8
+      /www/public/njdot/cc2mc2mn.json: 21626cd6b5ed02264335837141b86984
     note: |
       AASHTO persons → DOTr-style pedestrians supplement for 2023-2025.
       Both pedestrians and cyclists are co-tracked here (`cyclist` bool
