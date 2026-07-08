@@ -239,10 +239,12 @@ export async function handleCellsRequest(
     const fileRes = manifest.shard_res  // r4: the physical file-sharding resolution
     const MIN_RES = 5
 
-    // r4 shard files to read: each cover cell's r4 ancestor. A cover cell at or
-    // coarser than r4 spans multiple r4 shards, so fall back to all known r4
-    // shards (cheap — coarse levels are small, and `missingOk` skips empties).
-    const anyCoarse = requestedShards.some(s => getResolution(s) <= fileRes)
+    // r4 shard files to read: each cover cell's r4 ancestor (a cover cell at
+    // exactly r4 maps to itself). Only a cover cell strictly coarser than r4
+    // spans multiple r4 shards → fall back to all known r4 shards (cheap —
+    // coarse levels are small, and `missingOk` skips empties). `cellToParent`
+    // to a *finer* res throws, so the guard must be strict.
+    const anyCoarse = requestedShards.some(s => getResolution(s) < fileRes)
     const shards = anyCoarse
         ? manifest.shard_cells
         : [...new Set(requestedShards.map(s => cellToParent(s, fileRes)))]

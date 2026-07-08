@@ -1,9 +1,9 @@
 /// <reference types="node" />
-import { describe, it, expect } from "vitest"
+import { describe, it, expect, beforeEach } from "vitest"
 import { readFileSync, existsSync } from "node:fs"
 import { resolve } from "node:path"
 import { cellToParent } from "h3-js"
-import { readParquetFromR2 } from "./parquet"
+import { readParquetFromR2, _resetFooterCache } from "./parquet"
 import { rangesForCovering } from "./h3-range"
 
 /** Real-data validation of the consolidated-pyramid read path: a single
@@ -23,8 +23,10 @@ const HAVE = existsSync(R13_FILE)
 function fileBucket(path: string) {
     const buf = readFileSync(path)
     let bytesFetched = 0
+    let headCount = 0
     const bucket = {
         async head(_key: string) {
+            headCount++
             return { size: buf.length }
         },
         async get(_key: string, opts?: { range?: { offset: number; length: number } }) {
@@ -35,13 +37,15 @@ function fileBucket(path: string) {
             return { async arrayBuffer() { return slice.buffer.slice(slice.byteOffset, slice.byteOffset + slice.byteLength) } }
         },
     } as unknown as R2Bucket
-    return { bucket, bytes: () => bytesFetched, total: buf.length }
+    return { bucket, bytes: () => bytesFetched, heads: () => headCount, total: buf.length }
 }
 
 const bigintToHex = (b: bigint | number) => BigInt(b).toString(16)
 const COLS = ["h3_r13", "year", "n_fatal", "sld_name"] as const
 
 describe.skipIf(!HAVE)("consolidated r13 row-group pruning", () => {
+    beforeEach(() => _resetFooterCache())
+
     it("prunes to the cover's row-groups and returns exactly its descendants", async () => {
         // Baseline: whole-file read (no filter) → ground-truth row set.
         const whole = fileBucket(R13_FILE)
@@ -71,4 +75,33 @@ describe.skipIf(!HAVE)("consolidated r13 row-group pruning", () => {
         // Pruning: fetched materially fewer bytes than the whole file.
         expect(pruned.bytes()).toBeLessThan(whole.total * 0.5)
     })
+
+    it("caches the footer: a second read on the same key skips the HEAD + footer fetch", async () => {
+        const cover = [cellToParent((await sampleR13()), 7)]
+        const ranges = rangesForCovering(cover.map(h => BigInt(`0x${h}`)), 7, 13)
+        const filter = { $or: ranges.map(r => ({ h3_r13: { $gte: r.lo, $lte: r.hi } })) }
+
+        // First read on a cold cache: one HEAD (for size) + footer parse.
+        const first = fileBucket(R13_FILE)
+        const a = await readParquetFromR2<any>(first.bucket, R4, { columns: COLS as any, filter })
+        expect(first.heads()).toBe(1)
+        const firstBytes = first.bytes()
+
+        // Second read, same key, warm cache: no HEAD, and fewer bytes than the
+        // first (the footer range-fetch is skipped — only RG data GETs remain).
+        const second = fileBucket(R13_FILE)
+        const b = await readParquetFromR2<any>(second.bucket, R4, { columns: COLS as any, filter })
+        expect(second.heads()).toBe(0)
+        expect(second.bytes()).toBeLessThan(firstBytes)
+        expect(b.length).toBe(a.length)
+    })
 })
+
+/** First r13 cell hex in the sample shard — used to build a small cover. */
+async function sampleR13(): Promise<string> {
+    _resetFooterCache()
+    const fb = fileBucket(R13_FILE)
+    const rows = await readParquetFromR2<any>(fb.bucket, R4, { columns: ["h3_r13"] as any })
+    _resetFooterCache()
+    return bigintToHex(rows[rows.length >> 1].h3_r13)
+}
