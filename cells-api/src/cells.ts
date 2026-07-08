@@ -272,9 +272,16 @@ export async function handleCellsRequest(
     // returns counts + labels together — no year-row expansion, no string
     // re-decode. Any failure (binding absent, table missing, result too large)
     // falls through to the parquet path below.
-    const isDefault = !sevSet
-        && (req.yearRange == null
-            || (req.yearRange[0] === manifest.year_range[0] && req.yearRange[1] === manifest.year_range[1]))
+    // "All severities" = absent or all three present (the client always sends
+    // `severities=fip` for the default view, never omits it). "All years" =
+    // the requested range *covers* the data range — the client's default
+    // upper year is the calendar year (e.g. 2026), which overshoots the data
+    // (2025), so an exact match would never fire. A covering range is a no-op
+    // filter, so the all-years D1 rollup is exact.
+    const allSev = !sevSet || (sevSet.has("f") && sevSet.has("i") && sevSet.has("p"))
+    const coversAllYears = req.yearRange == null
+        || (req.yearRange[0] <= manifest.year_range[0] && req.yearRange[1] >= manifest.year_range[1])
+    const isDefault = allSev && coversAllYears
     if (db && isDefault && labels === "full" && requestedRes >= 6 && requestedRes <= manifest.base_res) {
         try {
             const t0 = Date.now()
