@@ -448,6 +448,24 @@ export function CrashMapSection({
         }
     }, [apiResult, v2Manifest])
 
+    // Level-change detection for the loading fade. Fade/desaturate the prior
+    // bins only when the picker's *target* res actually changed (a zoom that
+    // crossed a level boundary) — never on a pure pan (same res, new
+    // viewport; the bins mostly stay put, so muting them is just noise). We
+    // compare the live target res against the target res of the data
+    // currently shown (tracked in a ref), so budget-coarsening (rendered res
+    // < target res) doesn't read as a level change on every refetch.
+    const targetRes = pickerInfo?.levels.find(l => l.isCurrent)?.res ?? null
+    const shownTargetRes = useRef<number | null>(null)
+    useEffect(() => {
+        if (result.status === "ready" && !result.refetching && targetRes !== null) {
+            shownTargetRes.current = targetRes
+        }
+    }, [result, targetRes])
+    const resChanging = result.status === "ready" && result.refetching
+        && shownTargetRes.current !== null && targetRes !== null
+        && shownTargetRes.current !== targetRes
+
     // Worker handles budget enforcement via `?maxCells=`: dense shards
     // come back at a coarser res than requested. Client-side fallback
     // here is just a safety net (cumulative across shards may still
@@ -659,16 +677,6 @@ export function CrashMapSection({
             )}
             {result.status === "loading" && <LoadingOverlay theme={actualTheme} />}
             {result.status === "ready" && (() => {
-                // Fade + desaturate only when the incoming res differs from
-                // what's currently on screen. Same-res pans just clip
-                // existing bins to a new viewport — muting them would
-                // misleadingly suggest a bigger change is coming. The
-                // corner `<RefetchSpinner>` still signals "fetch in flight"
-                // for pan-only reloads.
-                const currRes = renderHexes?.res
-                    ?? (result.data.length ? getResolution(result.data[0].h3) : null)
-                const targetRes = pickerInfo?.levels.find(l => l.isCurrent)?.res ?? null
-                const resChanging = currRes !== null && targetRes !== null && currRes !== targetRes
                 return (
                 <Suspense fallback={<LoadingOverlay theme={actualTheme} />}>
                     <CrashMap
@@ -692,8 +700,8 @@ export function CrashMapSection({
                         coverCells={drawerOpen && debugOpen ? apiResult.plan?.cover ?? null : null}
                         viz={viz}
                         circleRadiusPx={circleRadiusPxValue}
-                        hexOpacity={result.refetching && resChanging ? 0.35 : 1}
-                        hexDesaturate={result.refetching && resChanging ? 0.55 : 0}
+                        hexOpacity={resChanging ? 0.35 : 1}
+                        hexDesaturate={resChanging ? 0.55 : 0}
                     />
                 </Suspense>
                 )
