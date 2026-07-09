@@ -11,5 +11,5 @@ meta:
       /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
       /njdot/data/aashto_supplemented_crashes.parquet: 92ac7e301eab0f949748c6061317cf9f
     git_deps:
-      /njdot/cli/cells.py: dd3c8b60098b43212f04e585cb9f9546deb26b02
+      /njdot/cli/cells.py: 92844805a4fe691cc0fe23da3eece202019bc7f4
       /njdot/load.py: 04e81d5e2acd331dea5496d084b37d79f54aa5e2
