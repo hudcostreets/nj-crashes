@@ -70,6 +70,10 @@ def main():
 
     conn.close()
 
+    # One-line delta summary → stderr, so the import log shows the actual
+    # daily write volume per table (expected ~tens for the cells rollup).
+    print(f"  d1-diff {table}: {len(delete_pks)} delete + {len(upsert_rows)} upsert row(s)", file=sys.stderr)
+
     out_del = Path(args.out_delete)
     out_ins = Path(args.out_upsert)
     out_del.parent.mkdir(parents=True, exist_ok=True)

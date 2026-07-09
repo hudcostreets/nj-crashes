@@ -154,10 +154,23 @@ jobs:
       - name: Post to Slack
         if: ${{ !inputs.targets }}
         run: $DVX njsp/data/slack_post.dvc
+      # Cells refresh for the map. DVX-gated: the pyramid rebuild only runs on
+      # days the crash data actually changed. `cells.db` (the D1 rollup source)
+      # feeds the d1-import below; the R2 pyramid push for the filtered/parquet
+      # path is deferred (needs R2 creds — see 4b).
+      - name: Rebuild cells raw H3 index
+        if: ${{ !inputs.targets }}
+        run: $DVX data/cells/raw/h3_r15.dvc
+      - name: Rebuild cells pyramid
+        if: ${{ !inputs.targets }}
+        run: $DVX data/cells/pyramid.dvc
+      - name: Rebuild cells rollup DB (D1 source)
+        if: ${{ !inputs.targets }}
+        run: $DVX data/cells/cells.db.dvc
       - name: Install api dependencies
         if: ${{ !inputs.targets }}
         run: cd api && pnpm install
-      - name: Sync NJSP crashes.db → D1
+      - name: Sync crash DBs (NJSP, cmymc, cells) → D1
         if: ${{ !inputs.targets }}
         run: $DVX api/d1-import.dvc
       - name: Regenerate homepage OG mosaic (→ S3)
