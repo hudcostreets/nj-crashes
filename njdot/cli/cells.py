@@ -663,29 +663,50 @@ def cells_manifest(base_res: int, pyramid_levels: str, out_dir: Path, shard_res:
 
 
 @cells.command('db')
+@click.option('-b', '--base-res', type=int, default=None, help='Raw H3 base resolution (default: auto-detect from raw/h3_r* dir)')
 @click.option('-f', '--force', is_flag=True, help='Overwrite existing output .db')
-@click.option('-l', '--levels', default=','.join(map(str, CELLS_DB_LEVELS_DEFAULT)), help=f'Comma-separated data resolutions (default: {",".join(map(str, CELLS_DB_LEVELS_DEFAULT))}); missing pyramid levels skip')
+@click.option('-l', '--levels', default=','.join(map(str, CELLS_DB_LEVELS_DEFAULT)), help=f'Comma-separated data resolutions (default: {",".join(map(str, CELLS_DB_LEVELS_DEFAULT))})')
 @click.option('-o', '--out-dir', type=click.Path(path_type=Path), default=OUT_DIR_DEFAULT)
-def cells_db(force: bool, levels: str, out_dir: Path):
-    """Aggregate the pyramid to one row per cell (all years) → SQLite for D1.
+@click.option('-S', '--sld-path', type=click.Path(path_type=Path), default=None, help='hex-sld.parquet with r6-r{SLD_MAX_RES} labels (default: <out-dir>/hex-sld.parquet)')
+def cells_db(base_res: int | None, force: bool, levels: str, out_dir: Path, sld_path: Path | None):
+    """Roll the raw H3 index up to one row per cell (all years) → SQLite for D1.
 
-    Each `pyramid/r{res}/*.parquet` (per cell-year) collapses over `year` into
+    Aggregates `raw/h3_r{base_res}/*.parquet` (per-crash) directly — via the
+    duckdb `h3` extension's `h3_cell_to_parent` — into
     `cells_r{res}(h3 PK, n_fatal, n_inj_ped, n_inj_other, n_pdo, n_vehs,
-    fatal_years, sld_name, cross_sld_name, mun, county)` — the default
-    (all-years, all-severity) `/v1/cells` fast path. `h3` is the INTEGER PRIMARY
-    KEY (rowid) so the worker's `WHERE h3 BETWEEN lo AND hi` range scans are
-    B-tree-fast. Year- or severity-filtered queries still read the parquet
-    pyramid (this table has no year/severity dimension).
+    fatal_years, sld_name, cross_sld_name, mun, county)` for each requested res,
+    the default (all-years, all-severity) `/v1/cells` fast path. Building from
+    raw (not the pyramid) keeps the whole rollup memory-bounded — duckdb streams
+    each res's group-by — so it runs in CI where the pyramid build OOMs. The
+    per-res counts match `_build_pyramid_level` exactly (verified row-for-row
+    against the pyramid-derived output).
 
-    Labels are constant across a cell's year-rows, so `min()` picks that value
-    deterministically (byte-reproducible rebuilds → the D1 exact-diff import
-    writes only genuinely-changed cells). `fatal_years` is the sorted-distinct
-    set of years with a fatal, matching the worker's `fatal_years` output.
+    `h3` is the INTEGER PRIMARY KEY (rowid) so the worker's
+    `WHERE h3 BETWEEN lo AND hi` range scans are B-tree-fast. Year- or
+    severity-filtered queries still read the parquet pyramid (this table has no
+    year/severity dimension). Labels come from a `LEFT JOIN` on `hex-sld`
+    (keyed on the cell's own h3 for `res <= SLD_MAX_RES`, else its
+    r{SLD_MAX_RES} ancestor — the same fallback `_build_pyramid_level` bakes in).
+    `fatal_years` is the sorted-distinct set of years with a fatal. The build is
+    deterministic → the D1 exact-diff import writes only genuinely-changed cells.
     """
     import sqlite3
     import duckdb
     level_ints = [int(x) for x in levels.split(',') if x.strip()]
-    pyramid_dir = out_dir / 'pyramid'
+    if base_res is None:
+        raw_root = out_dir / 'raw'
+        cand = sorted(
+            int(p.name[len('h3_r'):]) for p in raw_root.glob('h3_r*')
+            if p.is_dir() and any(p.glob('*.parquet'))
+        )
+        if not cand:
+            err(f'No raw index found under {raw_root}; run `compute cells raw` first')
+            raise SystemExit(1)
+        base_res = cand[-1]
+    raw_glob = out_dir / 'raw' / f'h3_r{base_res}' / '*.parquet'
+    if sld_path is None:
+        sld_path = out_dir / 'hex-sld.parquet'
+    h3col = f'h3_r{base_res}'
     out = out_dir / 'cells.db'
     if out.exists():
         if not force:
@@ -694,36 +715,49 @@ def cells_db(force: bool, levels: str, out_dir: Path):
         out.unlink()
     out.parent.mkdir(parents=True, exist_ok=True)
 
-    present = [r for r in level_ints if any((pyramid_dir / f'r{r}').glob('*.parquet'))]
-    if not present:
-        err(f'No pyramid levels found under {pyramid_dir}; run `compute cells pyramid` first')
-        raise SystemExit(1)
-
     # 1. Typed empty tables — `h3 INTEGER PRIMARY KEY` aliases the rowid, so
     #    range scans need no secondary index. `.schema` carries this into D1.
     s = sqlite3.connect(out)
     counts_ddl = ', '.join(f'{c} INTEGER NOT NULL' for c in CELLS_DB_COUNT_COLS)
     labels_ddl = ', '.join(f'{c} TEXT' for c in SLD_COLS)
-    for r in present:
+    for r in level_ints:
         s.execute(f'CREATE TABLE cells_r{r} (h3 INTEGER PRIMARY KEY, {counts_ddl}, fatal_years TEXT, {labels_ddl})')
     s.commit()
     s.close()
 
-    # 2. Aggregate + insert via duckdb (one pass over each res's parquet glob).
+    # 2. Aggregate raw → each res via duckdb (streams the group-by; `h3`
+    #    extension supplies `h3_cell_to_parent`). `hex-sld` (string h3) is
+    #    interned to int64 once, then LEFT-JOINed per res.
     con = duckdb.connect()
+    con.execute('INSTALL h3 FROM community; LOAD h3')
     con.execute(f"ATTACH '{out}' AS d (TYPE SQLITE)")
+    con.execute(f"""
+      CREATE TEMP TABLE sld AS
+      SELECT CAST(h3_string_to_h3(h3) AS BIGINT) AS h3, {', '.join(SLD_COLS)}
+      FROM read_parquet('{sld_path}')
+    """)
     insert_cols = ', '.join(['h3', *CELLS_DB_COUNT_COLS, 'fatal_years', *SLD_COLS])
-    for r in present:
+    agg_cols = ', '.join(f'a.{c}' for c in CELLS_DB_COUNT_COLS)
+    sld_sel = ', '.join(f's.{c}' for c in SLD_COLS)
+    for r in level_ints:
         t0 = time()
-        sums = ', '.join(f'CAST(sum({c}) AS BIGINT) AS {c}' for c in CELLS_DB_COUNT_COLS)
-        lbls = ', '.join(f'min({c}) AS {c}' for c in SLD_COLS)
         con.execute(f"""
           INSERT INTO d.cells_r{r} ({insert_cols})
-          SELECT h3_r{r} AS h3, {sums},
-                 string_agg(CASE WHEN n_fatal > 0 THEN CAST(year AS VARCHAR) END, ',' ORDER BY year) AS fatal_years,
-                 {lbls}
-          FROM read_parquet('{pyramid_dir}/r{r}/*.parquet')
-          GROUP BY h3_r{r}
+          WITH agg AS (
+            SELECT
+              CAST(h3_cell_to_parent(CAST({h3col} AS UBIGINT), {r}) AS BIGINT) AS h3,
+              count(*) FILTER (WHERE severity = 'f') AS n_fatal,
+              coalesce(sum(pi), 0) AS n_inj_ped,
+              coalesce(sum(greatest(coalesce(ti, 0) - coalesce(pi, 0), 0)), 0) AS n_inj_other,
+              count(*) FILTER (WHERE severity = 'p') AS n_pdo,
+              coalesce(sum(tv), 0) AS n_vehs,
+              nullif(array_to_string(list_sort(list_distinct(list(year) FILTER (WHERE severity = 'f'))), ','), '') AS fatal_years
+            FROM read_parquet('{raw_glob}')
+            GROUP BY 1
+          )
+          SELECT a.h3, {agg_cols}, a.fatal_years, {sld_sel}
+          FROM agg a
+          LEFT JOIN sld s ON s.h3 = CAST(h3_cell_to_parent(CAST(a.h3 AS UBIGINT), LEAST({r}, {SLD_MAX_RES})) AS BIGINT)
         """)
         n = con.execute(f'SELECT count(*) FROM d.cells_r{r}').fetchone()[0]
         err(f'  r{r}: {n:,} cells ({time() - t0:.1f}s)')
@@ -733,7 +767,7 @@ def cells_db(force: bool, levels: str, out_dir: Path):
     s = sqlite3.connect(out)
     s.execute('VACUUM')
     s.close()
-    err(f'Wrote {out} ({out.stat().st_size / 1e6:.1f} MB, res {present})')
+    err(f'Wrote {out} ({out.stat().st_size / 1e6:.1f} MB, res {level_ints}, base r{base_res})')
 
 
 @cells.command('push')

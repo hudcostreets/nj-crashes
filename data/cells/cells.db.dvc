@@ -7,6 +7,7 @@ meta:
   computation:
     cmd: cd ../.. && njdot compute cells db -f
     deps:
-      pyramid: 49189c014db1d7b32ad02f6d8853b522
+      raw/h3_r15: bc053c027d1b97c343cdb63daa78d6b4
+      hex-sld.parquet: d92f73ede05e5f5a24ef094b9a0db441
     git_deps:
-      /njdot/cli/cells.py: 08fe162c376396e662f5dd484f889cc64691acd4
+      /njdot/cli/cells.py: 92844805a4fe691cc0fe23da3eece202019bc7f4
