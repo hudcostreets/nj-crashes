@@ -201,14 +201,101 @@ sometimes-outside for H3.
 
 ### Phase 3 — Pyramid generation (`e` picks up)
 
-- Rebuild the R2 pyramid using S2 cell IDs instead of H3.
-  Layout: `pyramid/s2_l{data_level}/{s2_l4_shard}.parquet` — level 4
-  shards, level 4–16 data. Rough count: ~15 level-4 cells cover NJ ×
-  13 data levels = ~200 files.
-- Rebuild the D1 rollup: `cells_s2_l{level}(cellid PK TEXT, ...)`
-  matching `cells_r{res}` shape.
-- Data build in `njdot/cli/cells.py`: swap H3 binning for S2. Cell IDs
-  as decimal-string TEXT for D1 (mirrors the H3 `queryCellsD1` gotcha).
+**When to start**: after this spec's phase 2 lands (client picker +
+`?grid=s2|h3` URL param). Phase 2 doesn't gate the data build — it
+gates whether the client can meaningfully consume the output — but
+building without a client to eyeball the results burns CI cycles.
+Ask before starting if there's ambiguity.
+
+**Layout on R2**:
+
+```
+data/cells/s2_pyramid/
+  s2_l4/{token}.parquet   # per-cell counts at data level 4
+  s2_l5/{token}.parquet
+  ...
+  s2_l16/{token}.parquet
+```
+
+The `{token}` in the filename is the level-4 shard's S2 token
+(14-char hex, e.g. `89c25c1`). Level-4 cell area ≈ 980 km² — NJ is
+covered by ~15 level-4 tokens. Total files ≈ 15 shards × 13 levels
+= ~200. Total size should mirror the current H3 pyramid (~460 MB).
+
+**Layout in D1**:
+
+Per-cell all-years rollup, one table per level:
+```sql
+CREATE TABLE cells_s2_l{level} (
+    cellid TEXT PRIMARY KEY,        -- S2 token, 14-char hex
+    n_fatal INTEGER,
+    n_inj_ped INTEGER,
+    n_inj_other INTEGER,
+    n_pdo INTEGER,
+    n_vehs INTEGER,
+    fatal_years TEXT,               -- JSON array
+    sld_name TEXT,
+    cross_sld_name TEXT,
+    mun TEXT,
+    county TEXT
+);
+CREATE INDEX cells_s2_l{level}_cellid ON cells_s2_l{level}(cellid);
+```
+
+*Note on cellid encoding*: unlike H3 (where we had to encode as
+decimal-string TEXT to sidestep JS/D1's int64 limits — see the
+`queryCellsD1` fix in commit `40834bee6d2`), S2 tokens are already
+strings by design. This simplifies the D1 binding + range query
+math. Range scans use `WHERE cellid BETWEEN lo AND hi` on the
+lexicographic order of tokens, which matches S2's Hilbert-curve
+ordering — no separate int64 range logic needed.
+
+**Python S2 lib**: use `s2sphere` (well-established, pure Python,
+`pip install s2sphere`). Rough API mirror of `nodes2ts`:
+
+```python
+from s2sphere import LatLng, CellId
+cell = CellId.from_lat_lng(LatLng.from_degrees(40.7, -74.0)).parent(10)
+token = cell.to_token()
+level = cell.level()
+```
+
+**CLI shape**: extend `njdot/cli/cells.py` to accept `--grid s2`:
+
+```
+njdot compute cells pqt --grid s2   # build pyramid parquets
+njdot compute cells db  --grid s2   # build D1 SQLite rollups
+```
+
+The existing `--grid h3` (or the default when unspecified) keeps
+producing the current H3 outputs so both grids can coexist during
+the migration.
+
+**DVX targets** (new):
+- `data/cells/s2_pyramid.dvc` — depends on the underlying per-crash
+  parquets, mirrors the existing `pyramid.dvc`.
+- `data/cells/cells-s2.db.dvc` — depends on `s2_pyramid`, mirrors
+  the existing `cells.db.dvc`.
+
+**When done, hand back**:
+- Commits pushed to `h/main` (or via `git push e main` for pickup by
+  the main session).
+- Total pyramid + D1 sizes reported in the commit message so we can
+  do the sanity check vs H3.
+- One end-to-end spot-check: pick a level-8 S2 token covering
+  Jersey City, verify its aggregate counts match the H3
+  equivalent (r8's ~closest overlapping cell). Note: exact
+  equality isn't expected because the cell boundaries differ; but
+  the totals should be close (within a few %) because NJ is
+  densely covered at both grids' level 8.
+
+**What NOT to do**:
+- Don't touch the worker (`cells-api/src/`) or the H3 pipeline
+  outputs. Phase 4 handles the worker query paths, and the H3
+  pyramid stays live so `?grid=h3` keeps working.
+- Don't wire `data/cells/cells-s2.db` into `api/d1-import.dvc` yet
+  — the worker binding (`CELLS_S2_DB`) doesn't exist until phase
+  4. Producing the artifact is enough; import wiring is phase 4.
 
 ### Phase 4 — Worker query support
 
