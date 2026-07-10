@@ -33,7 +33,7 @@ def cf_query(token: str, acct: str, script: str, lookback_h: int) -> list[dict]:
     end = datetime.now(timezone.utc).replace(microsecond=0, minute=0, second=0)
     start = end - timedelta(hours=lookback_h)
     query = """
-    query WorkerStatusesLast($acct: String!, $start: Time!, $end: Time!, $script: string) {
+    query WorkerStatusesLast($acct: String!, $start: Time!, $end: Time!, $script: String) {
       viewer {
         accounts(filter: { accountTag: $acct }) {
           workersInvocationsAdaptive(
