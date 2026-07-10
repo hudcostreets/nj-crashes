@@ -1,7 +1,8 @@
 # S2 Pyramid: Migrating Off H3
 
-Status: **impl phase 1 (client cell math) landed**. `e` picks up phase 3
-(pyramid generation) when ready. See §Impl progress below.
+Status: **phases 1–3 landed** (client cell math + picker + `?grid=` param;
+pyramid + D1 rollup built on `e`). Phase 4 (worker query support) is next.
+See §Impl progress below.
 
 ## Motivation
 
@@ -296,6 +297,53 @@ the migration.
 - Don't wire `data/cells/cells-s2.db` into `api/d1-import.dvc` yet
   — the worker binding (`CELLS_S2_DB`) doesn't exist until phase
   4. Producing the artifact is enough; import wiring is phase 4.
+
+#### Phase 3 — landed (on `e`)
+
+Built via `njdot compute cells {raw,sld,db,pyramid} --grid s2`; cell math in
+`njdot/s2.py`, validated in `tests/test_s2.py`.
+
+**What shipped**, and where it deviated from the plan above:
+
+- **Cell math** (`njdot/s2.py`): one `s2sphere` per-crash pass tags each crash
+  with its l16 cell id; every coarser level is derived by **duckdb UBIGINT
+  bit-math** (`parent_sql`/`token_sql`), so the rollups stream memory-bounded.
+  Two invariants are pinned by `tests/test_s2.py`: (1) `s2sphere` tokens ==
+  the client's `nodes2ts` tokens (byte-for-byte); (2) the duckdb bit-math ==
+  `s2sphere` for every level 4–16. Token lexicographic order == id order, so
+  a TEXT-PK `BETWEEN` range scan aligns with Hilbert order.
+- **Third DVX target added**: `data/cells/raw/s2_l16.dvc` — a shared S2 raw
+  index (mirrors `raw/h3_r15`), so the one slow `s2sphere` pass feeds both the
+  db and pyramid. The spec listed only `s2_pyramid.dvc` + `cells-s2.db.dvc`;
+  the raw target is the natural dep of both.
+- **Base level = 16**, data levels **4–16** in both db and pyramid. Client
+  picker max is 17 → the worker should clamp 17→16 (phase 4).
+- **Labels**: new `cells sld --grid s2` builds git-tracked
+  `data/cells/s2-sld.parquet` (token → sld_name/cross_sld_name/mun/county),
+  reusing `export_hex_sld`'s grid-agnostic nearest-MP + point-in-polygon. Baked
+  at every level via own-token join (l16 coverage 99.7%). Mirrors how h3's
+  `hex-sld.parquet` is git-tracked + referenced by md5 (no separate `.dvc`).
+- **⚠️ Sharding — only 2 level-4 shards for NJ** (`89b`, `89d`), not the ~15
+  the plan estimated → 2 files/level, **26 files** total (not ~200). Row-group
+  pruning within each file still works, but phase 4 may prefer a finer shard
+  level (e.g. `-s 6`) for better file-level fetch granularity; re-sharding is a
+  one-line rebuild (`cells pyramid --grid s2 -s 6 -f`).
+- **Sizes**: `raw/s2_l16` 89 MB (2 files) · `s2_pyramid` **157 MB** (26 files,
+  3.1 M rows) · `cells-s2.db` **34.7 MB** (13 levels, w/ labels). The pyramid
+  is well under the plan's ~460 MB estimate — s2 l16 (~120 m) is coarser than
+  h3 r15, so far fewer cells (l16 = 210 k vs r15 = 1.15 M).
+- **Validation** (the plan's "l8 ≈ h3 r8" spot-check premise was wrong — the
+  grids' level-8 are very different physical sizes): instead used the stronger
+  **count-conservation** invariant — summing each count over all cells at any
+  level is **byte-identical** between s2 and h3 (`n_fatal=12,537`,
+  `n_inj_ped=55,659`, `n_inj_other=1,541,178`, `n_pdo=3,299,293`,
+  `n_vehs=8,372,869`), since both partition the same crashes. Plus a per-cell
+  spot-check (JC l8 `89c25` vs independent recompute) and pyramid↔db
+  consistency (per-year sums == all-years db), all exact.
+
+**Not done** (correctly deferred to phase 4, per the guardrails): no worker
+changes, no R2 serving push, no `d1-import.dvc` wiring. The DVX cache is pushed
+to S3; the `.dvc` files + code are committed for pickup.
 
 ### Phase 4 — Worker query support
 
