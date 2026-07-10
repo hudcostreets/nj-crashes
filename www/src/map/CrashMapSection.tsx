@@ -503,7 +503,11 @@ export function CrashMapSection({
         if (result.status !== "ready" || result.dataKind !== "hex") return null
         const data = result.data as StackedHex[]
         if (data.length === 0) return { hexes: data, res: result.plan?.kind === "hex" ? result.plan.res : 9, coarsenedFrom: null }
-        const sourceRes = getResolution(data[0].h3)
+        // Grid guard: h3-js can't parse S2 tokens. The worker already
+        // does `maxCells` coarsening server-side, so on the S2 path we
+        // trust the plan's res + skip client-side coarsening entirely.
+        // Downstream render uses `dataRes` prop instead of the inferred
+        // `sourceRes` when grid=s2.
         const vp = filter.viewport
         const clip = (xs: StackedHex[]) => {
             if (!vp) return xs
@@ -513,6 +517,12 @@ export function CrashMapSection({
             const lo1 = vp[1] - padLat, hi1 = vp[3] + padLat
             return xs.filter(h => h.center[0] >= lo0 && h.center[0] <= hi0 && h.center[1] >= lo1 && h.center[1] <= hi1)
         }
+        if (grid === "s2") {
+            const inViewport = clip(data)
+            const res = result.plan?.kind === "hex" ? result.plan.res : 9
+            return { hexes: inViewport, res, coarsenedFrom: null }
+        }
+        const sourceRes = getResolution(data[0].h3)
         let inViewport = clip(data)
         if (inViewport.length <= CELLS_BUDGET) return { hexes: inViewport, res: sourceRes, coarsenedFrom: null }
         let res = sourceRes
@@ -523,7 +533,7 @@ export function CrashMapSection({
             inViewport = clip(out)
         }
         return { hexes: inViewport, res, coarsenedFrom: sourceRes }
-    }, [result, filter.viewport])
+    }, [result, filter.viewport, grid])
 
     const initialBounds: [number, number, number, number] = useMemo(() => {
         const m = result.manifest
@@ -722,6 +732,8 @@ export function CrashMapSection({
                         circleRadiusPx={circleRadiusPxValue}
                         hexOpacity={resChanging ? 0.35 : 1}
                         hexDesaturate={resChanging ? 0.55 : 0}
+                        grid={grid}
+                        dataRes={grid === "s2" ? apiResult.plan?.res : undefined}
                     />
                 </Suspense>
                 )

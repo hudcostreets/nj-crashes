@@ -87,6 +87,38 @@ export function tokenToParent(token: S2Token, level: number): S2Token {
     return S2CellId.fromToken(token).parentL(level).toToken()
 }
 
+/** Approximate cell boundary as a small quadrilateral around the
+ *  center. S2 cells are geodesic quadrilaterals but for the crash
+ *  map's render (columns extruded from a centroid, radius derived
+ *  from `S2_DIAMETER_METERS`) we only need `center` to be right —
+ *  the true 4-vertex boundary is a nice-to-have. This helper
+ *  approximates a small offset-square in lat/lng around the cell
+ *  center at edge/2 scale. Consumers that want the exact geodesic
+ *  quad should pull it from `nodes2ts.S2CellId.toGeoJSON()`. */
+export function tokenBoundary(token: S2Token): [number, number][] {
+    const [lat, lng] = tokenToLatLng(token)
+    const level = tokenLevel(token)
+    // Half-edge in meters → degrees (approx: 1° lat ≈ 111 km).
+    const halfMeters = S2_DIAMETER_METERS[level] / 2
+    const dLat = halfMeters / 111_000
+    const dLng = halfMeters / (111_000 * Math.cos((lat * Math.PI) / 180))
+    return [
+        [lng - dLng, lat - dLat],
+        [lng + dLng, lat - dLat],
+        [lng + dLng, lat + dLat],
+        [lng - dLng, lat + dLat],
+        [lng - dLng, lat - dLat],
+    ]
+}
+
+/** Convenience: cell center as `[lng, lat]` (deck.gl ordering) —
+ *  `tokenToLatLng` returns `[lat, lng]` to match common conventions
+ *  in the rest of the codebase; this wrapper flips for render. */
+export function tokenCenterLngLat(token: S2Token): [number, number] {
+    const [lat, lng] = tokenToLatLng(token)
+    return [lng, lat]
+}
+
 /** Given a target cell-diameter (px), a zoom, and a latitude, return
  *  the finest S2 level whose *average* cell diameter is ≥ the target.
  *  Same semantics as `pickHexResolutionForPixels`: walk coarsest →

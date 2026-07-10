@@ -120,6 +120,16 @@ export type Props = {
      *  fetch — the tier signal stays readable but is de-emphasized so
      *  the difference between stale and fresh reads at a glance. */
     hexDesaturate?: number
+    /** Which cell grid the `prebinnedHexes` come from. `h3` (default)
+     *  parses tokens via `h3-js`; `s2` short-circuits the
+     *  `getResolution`-based render-res inference and passes `grid`
+     *  through to `buildStackedHexLayer` for the S2 edge lookup. See
+     *  `specs/s2-pyramid.md` phase 4e. */
+    grid?: "h3" | "s2"
+    /** When `grid === "s2"`, the picker's actual S2 level for the
+     *  currently-rendered cells (used in place of the H3-only
+     *  `getResolution(cells[0].h3)` inference). Ignored for H3. */
+    dataRes?: number
 }
 
 const MAX_PITCH = 85
@@ -347,6 +357,8 @@ export function CrashMap({
     circleRadiusPx,
     hexOpacity = 1,
     hexDesaturate = 0,
+    grid = "h3",
+    dataRes,
 }: Props) {
     const effectiveCrashes = crashes ?? []
     const containerRef = React.useRef<HTMLDivElement | null>(null)
@@ -759,7 +771,15 @@ export function CrashMap({
         // when zoom drives `effectiveHexRes` finer than what we have, the
         // column radius would shrink below the cell's hex-tant and reveal the
         // underlying lattice as visible gaps between bars.
-        const renderRes = Math.min(effectiveHexRes, getResolution(hexesArr[0].h3))
+        // For H3, infer the data's actual res from the first cell — a
+        // prebinned response may be one coarser than the picker asked
+        // for if the worker coarsened. For S2, tokens don't parse with
+        // `h3-js`; the caller passes `dataRes` explicitly (from the
+        // response plan.res). Falls back to `effectiveHexRes` if not
+        // supplied.
+        const renderRes = grid === "s2"
+            ? (dataRes ?? effectiveHexRes)
+            : Math.min(effectiveHexRes, getResolution(hexesArr[0].h3))
         // `viz=circle` translates the caller-owned px target into meters
         // *once* per layer build, using the current camera. The layer
         // itself clamps to the cell's inscribed radius, guaranteeing no
@@ -772,6 +792,7 @@ export function CrashMap({
                 id: "crashes-hex-stacked",
                 segments,
                 resolution: renderRes,
+                grid,
                 pickable: true,
                 onHover: (info) => { setHoverInfo(info); return false },
                 viz,
@@ -785,7 +806,7 @@ export function CrashMap({
             console.log(`[perf] layers: ${ms.toFixed(1)}ms (mode=${mode}, segments=${segments.length})`)
         }
         return result
-    }, [hexes, effectiveCrashes, mode, effectiveHexRes, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, viz, circleRadiusPx, hexOpacity, hexDesaturate])
+    }, [hexes, effectiveCrashes, mode, effectiveHexRes, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, viz, circleRadiusPx, hexOpacity, hexDesaturate, grid, dataRes])
 
     // Only bubble user-driven changes. DeckGL also echoes back programmatic
     // viewState updates (from the fit effect, mode-switch tilt, etc.) via

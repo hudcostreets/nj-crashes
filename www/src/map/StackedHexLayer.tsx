@@ -206,10 +206,21 @@ export const H3_RADIUS_METERS: Record<number, number> = {
  *  inscribed radius, so before/after both render at the same size. */
 export type VizMode = "hex" | "circle"
 
+/** S2 cell edge length by level, in meters. Matches `S2_DIAMETER_METERS`
+ *  in `map/s2/index.ts`; duplicated here to avoid a `map/s2` import from
+ *  the shared layer module (no runtime dep on nodes2ts if only h3 mode
+ *  is in use). Keep in sync. */
+const S2_EDGE_METERS: Record<number, number> = {
+    4: 490_000, 5: 245_000, 6: 122_500, 7: 61_250, 8: 30_625,
+    9: 15_312, 10: 7_656, 11: 3_828, 12: 1_914, 13: 957,
+    14: 478, 15: 239, 16: 120, 17: 60,
+}
+
 export function buildStackedHexLayer({
     id,
     segments,
     resolution,
+    grid = "h3",
     pickable,
     onHover,
     elevationScale = 1,
@@ -221,6 +232,10 @@ export function buildStackedHexLayer({
     id: string
     segments: Segment[]
     resolution: number
+    /** Which grid the cell tokens belong to. Controls the column
+     *  radius lookup (H3 hex edge vs. S2 average cell edge). H3
+     *  is the default so existing callers don't need to change. */
+    grid?: "h3" | "s2"
     pickable?: boolean
     onHover?: (info: PickingInfo) => boolean | void
     elevationScale?: number
@@ -236,7 +251,9 @@ export function buildStackedHexLayer({
      *  signal remains readable but is clearly de-emphasized. */
     desaturate?: number
 }): ColumnLayer<Segment> {
-    const edge = H3_RADIUS_METERS[resolution] ?? 174
+    const edge = grid === "s2"
+        ? (S2_EDGE_METERS[resolution] ?? 478)
+        : (H3_RADIUS_METERS[resolution] ?? 174)
     let diskResolution: number
     let radius: number
     if (viz === "circle") {

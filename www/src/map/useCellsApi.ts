@@ -20,7 +20,11 @@ import type { StackedHex } from "./StackedHexLayer"
 import { CELLS_API_BASE } from "./config"
 import type { Bbox } from "./v2"
 import { pickHexResolutionForPixels } from "./CrashMap"
-import { pickS2LevelForPixels } from "./s2"
+import {
+    pickS2LevelForPixels,
+    tokenCenterLngLat,
+    tokenToParent as s2TokenToParent,
+} from "./s2"
 
 export type CellsApiFilter = {
     yearRange: [number, number]
@@ -374,11 +378,15 @@ function ensureShardsCached(
                 info.bytes = buf.byteLength
                 return JSON.parse(new TextDecoder().decode(buf)) as CellsResponse
             })()
+            const grid = filter.grid ?? "h3"
             for (const entry of batch) {
                 shardBatch.set(entry.url, info)
                 const shardPromise = batchPromise.then(resp => ({
                     ...resp,
-                    cells: resp.cells.filter(c => cellToParent(c.h3, tier) === entry.h3),
+                    cells: resp.cells.filter(c => {
+                        if (grid === "s2") return s2TokenToParent(c.h3, tier) === entry.h3
+                        return cellToParent(c.h3, tier) === entry.h3
+                    }),
                 }))
                 shardPromise.catch(() => {
                     if (shardCache.get(entry.url) === shardPromise) shardCache.delete(entry.url)
@@ -579,17 +587,28 @@ function rollupCellsToRes(cells: CellRow[], targetRes: number): CellRow[] {
     return [...out.values()]
 }
 
-function cellsToStackedHex(cells: CellRow[]): StackedHex[] {
+function cellsToStackedHex(cells: CellRow[], grid: "h3" | "s2" = "h3"): StackedHex[] {
     const out: StackedHex[] = []
     for (const c of cells) {
         const total = c.n_fatal + c.n_inj_ped + c.n_inj_other + c.n_pdo
         if (total === 0) continue
-        const boundary = cellToBoundary(c.h3, true)
-        let lon = 0, lat = 0
-        for (const [ln, la] of boundary) { lon += ln; lat += la }
+        let center: [number, number]
+        if (grid === "s2") {
+            // S2 tokens go through `nodes2ts` — cell-center in one call,
+            // no boundary polygon needed since the render uses `center`
+            // + an S2-level-derived radius. (H3 path computes center as
+            // boundary centroid for parity with client-side binning; S2
+            // has an exact center accessor.)
+            center = tokenCenterLngLat(c.h3)
+        } else {
+            const boundary = cellToBoundary(c.h3, true)
+            let lon = 0, lat = 0
+            for (const [ln, la] of boundary) { lon += ln; lat += la }
+            center = [lon / boundary.length, lat / boundary.length]
+        }
         out.push({
             h3: c.h3,
-            center: [lon / boundary.length, lat / boundary.length],
+            center,
             fatal: c.n_fatal,
             pedInj: c.n_inj_ped,
             otherInj: c.n_inj_other,
@@ -797,7 +816,7 @@ export function useCellsApi(filter: CellsApiFilter | null):
                         for (const c of rolled) allCells.push(c)
                     }
                 }
-                const data = cellsToStackedHex(allCells)
+                const data = cellsToStackedHex(allCells, filter.grid ?? "h3")
                 const requestedRes = pickAtFire.res
                 const adapted = finalRes !== requestedRes
                 const reason = adapted
