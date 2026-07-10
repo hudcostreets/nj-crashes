@@ -149,6 +149,13 @@ export type CellsResponse = {
 }
 
 export type CellsRequest = {
+    /** Which grid the request operates on. Defaults to `h3` (existing
+     *  shipping stack). `s2` routes to the S2 pyramid/D1 rollup e built
+     *  in `specs/s2-pyramid.md` phase 3. Client sends `grid=s2` when
+     *  the URL param `?grid=s2` is set; picker computes an S2 level
+     *  instead of an H3 res. Cell tokens in `cells` are grid-specific
+     *  (H3 15-char hex vs. S2 up-to-16-char hex). */
+    grid?: "h3" | "s2"
     /** `shard_res` parent cells (h3 hex strings) the client wants data
      *  for. Client computes these from its viewport bbox via
      *  `polygonToCellsExperimental` against the manifest's
@@ -226,6 +233,13 @@ export async function handleCellsRequest(
     req: CellsRequest,
     db?: D1Database,
 ): Promise<CellsResponse> {
+    if (req.grid === "s2") {
+        // S2 grid — phase 4b2/4b3 will fill in the parquet + D1 paths.
+        // For now, tell the client S2 is opted-in but not yet wired
+        // so `?grid=s2` is a controlled failure the client can fall
+        // back on rather than a silent regression.
+        throw new HttpError(501, "S2 grid not yet implemented on the worker (phase 4b2/4b3)")
+    }
     const manifest = await loadManifest(bucket, prefix)
     const { cells: requestedShards, res: requestedRes, maxCells } = req
     const yearRange = req.yearRange ?? manifest.year_range
@@ -618,15 +632,27 @@ export class HttpError extends Error {
 
 /** Parse + validate query string into a CellsRequest. */
 export function parseCellsRequest(url: URL): CellsRequest {
+    let grid: "h3" | "s2" | undefined
+    const g = url.searchParams.get("grid")
+    if (g != null) {
+        if (g !== "h3" && g !== "s2") throw new HttpError(400, "grid must be one of h3|s2")
+        grid = g
+    }
+
     const cellsStr = url.searchParams.get("cells")
-    if (!cellsStr) throw new HttpError(400, "cells is required (comma-separated h3 hex strings)")
+    if (!cellsStr) throw new HttpError(400, "cells is required (comma-separated cell tokens)")
     const cells = cellsStr.split(",").map(c => c.trim()).filter(c => c.length > 0)
     if (cells.length === 0) throw new HttpError(400, "cells must list ≥1 shard")
-    // Validate hex string shape (h3 cells are 15-char lowercase hex, but
-    // shard parents at coarser res may have trailing "fffffff" padding —
-    // accept anything that looks like a 15-char [0-9a-f] string.
-    if (cells.some(c => !/^[0-9a-f]{15}$/.test(c))) {
-        throw new HttpError(400, "cells must be 15-char lowercase hex h3 IDs")
+    // H3 cells are always 15-char lowercase hex (including trailing
+    // "fffffff" padding for shard parents at coarser res). S2 tokens
+    // are lowercase hex with trailing zeros stripped (so length 1-16),
+    // or the literal `"X"` for cell id 0.
+    if (grid === "s2") {
+        if (cells.some(c => c !== "X" && !/^[0-9a-f]{1,16}$/.test(c))) {
+            throw new HttpError(400, "s2 cells must be lowercase hex tokens (or 'X' for id 0)")
+        }
+    } else if (cells.some(c => !/^[0-9a-f]{15}$/.test(c))) {
+        throw new HttpError(400, "h3 cells must be 15-char lowercase hex IDs")
     }
 
     const resStr = url.searchParams.get("res")
@@ -698,5 +724,5 @@ export function parseCellsRequest(url: URL): CellsRequest {
         labels = lb
     }
 
-    return { cells, res, yearRange, severities, clipPolygon, maxCells, shardRes, labels }
+    return { grid, cells, res, yearRange, severities, clipPolygon, maxCells, shardRes, labels }
 }
