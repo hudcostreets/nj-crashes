@@ -30,6 +30,7 @@ import pyarrow.parquet as pq
 from h3.api import numpy_int as h3i
 
 from nj_crashes.utils.log import err
+from njdot import s2
 from njdot.cli.base import compute
 from njdot.cli.export_map_data import _build_base
 from njdot.load import load_crashes_with_aashto
@@ -65,6 +66,19 @@ OUT_DIR_DEFAULT = Path('data/cells')
 # All of r6-r15 fits in ~405 MB (4% of D1's 10 GB); missing levels skip.
 CELLS_DB_LEVELS_DEFAULT = tuple(range(6, 16))
 CELLS_DB_COUNT_COLS = ('n_fatal', 'n_inj_ped', 'n_inj_other', 'n_pdo', 'n_vehs')
+
+# --- S2 grid (specs/s2-pyramid.md) ---
+# S2 steps 4× area / 2× linear per level (vs H3's 7× / 2.65×), so the same
+# zoom span spans ~1.4× more levels. The raw index caches each crash's cell
+# id at `S2_BASE_LEVEL` (the finest data level); every coarser level's cell
+# is derived by UBIGINT bit-math (`njdot.s2.parent_sql`), byte-identical to
+# both `s2sphere` and the client's `nodes2ts` (see `tests/test_s2.py`).
+S2_BASE_LEVEL_DEFAULT = 16       # finest data level; raw stores cell id here
+S2_SHARD_LEVEL_DEFAULT = 4       # ~15 level-4 tokens cover NJ
+# Levels rolled into cells-s2.db / the pyramid. l4-l5 are near-empty (NJ is
+# ~15 cells at l4) but cheap, and the statewide viewport picks them; l16 is
+# the base. Client picker max is 17 → the worker clamps 17→16 (phase 4).
+S2_LEVELS_DEFAULT = tuple(range(4, 17))
 R2_BUCKET_DEFAULT = 'nj-crashes'
 R2_PREFIX_DEFAULT = 'cells'
 R2_PROFILE_DEFAULT = 'cf'
@@ -138,13 +152,21 @@ def cells():
 
 
 @cells.command('raw')
-@click.option('-b', '--base-res', type=int, default=BASE_RES_DEFAULT, help=f'H3 base resolution (default: {BASE_RES_DEFAULT})')
+@click.option('-b', '--base-res', type=int, default=None, help=f'Base resolution/level (default: h3={BASE_RES_DEFAULT}, s2={S2_BASE_LEVEL_DEFAULT})')
 @click.option('-f', '--force', is_flag=True, help='Overwrite existing output directory')
+@click.option('-g', '--grid', type=click.Choice(['h3', 's2']), default='h3', help='Cell grid (default: h3)')
 @click.option('-o', '--out-dir', type=click.Path(path_type=Path), default=OUT_DIR_DEFAULT, help=f'Output root (default: {OUT_DIR_DEFAULT})')
-@click.option('-s', '--shard-res', type=int, default=SHARD_RES_DEFAULT, help=f'H3 shard resolution (default: {SHARD_RES_DEFAULT})')
-def cells_raw(base_res: int, force: bool, out_dir: Path, shard_res: int):
-    """Phase 1: tag crashes with h3_r{base_res}, sort, shard by r{shard_res} parent."""
-    raw_dir = out_dir / 'raw' / f'h3_r{base_res}'
+@click.option('-s', '--shard-res', type=int, default=None, help=f'Shard resolution/level (default: h3={SHARD_RES_DEFAULT}, s2={S2_SHARD_LEVEL_DEFAULT})')
+def cells_raw(base_res: int | None, force: bool, grid: str, out_dir: Path, shard_res: int | None):
+    """Phase 1: tag crashes with a cell id at `base_res`, sort, shard by its
+    `shard_res` parent. `--grid h3` writes int64 h3 cells; `--grid s2` writes
+    uint64 S2 cell ids (see specs/s2-pyramid.md)."""
+    if base_res is None:
+        base_res = S2_BASE_LEVEL_DEFAULT if grid == 's2' else BASE_RES_DEFAULT
+    if shard_res is None:
+        shard_res = S2_SHARD_LEVEL_DEFAULT if grid == 's2' else SHARD_RES_DEFAULT
+    cell_name = f's2_l{base_res}' if grid == 's2' else f'h3_r{base_res}'
+    raw_dir = out_dir / 'raw' / cell_name
     if raw_dir.exists() and any(raw_dir.iterdir()):
         if not force:
             err(f'{raw_dir} non-empty; use -f/--force to overwrite')
@@ -165,32 +187,39 @@ def cells_raw(base_res: int, force: bool, out_dir: Path, shard_res: int):
     err('Re-attaching `year` from source...')
     base['year'] = df.loc[base.index, 'year'].astype('int16')
 
-    err(f'Computing h3_r{base_res} for {n_geo:,} rows...')
+    lat = base['lat'].to_numpy()
+    lon = base['lon'].to_numpy()
+    err(f'Computing {cell_name} for {n_geo:,} rows ({grid})...')
     t0 = time()
-    h3_col = _h3_int_col(base['lat'].to_numpy(), base['lon'].to_numpy(), base_res)
+    if grid == 's2':
+        cells = s2.latlng_to_id(lat, lon, base_res)          # uint64
+        shard_arr = s2.parent_id(cells, shard_res)           # uint64
+        shard_name = lambda v: s2.id_to_token(int(v))
+    else:
+        cells = _h3_int_col(lat, lon, base_res)              # int64
+        shard_arr = _parent_int_col(cells, shard_res)        # int64
+        shard_name = lambda v: h3.int_to_str(int(v))
     err(f'  {time() - t0:.1f}s')
-    h3_name = f'h3_r{base_res}'
-    base[h3_name] = h3_col
+    base[cell_name] = cells
 
-    err(f'Computing shard_cell at r{shard_res}...')
-    t0 = time()
-    shard_int = _parent_int_col(h3_col, shard_res)
-    n_shards = len(np.unique(shard_int))
-    err(f'  {time() - t0:.1f}s, {n_shards} shards')
-    base['__shard'] = shard_int
+    n_shards = len(np.unique(shard_arr))
+    err(f'  shard at {shard_res}: {n_shards} shards')
+    base['__shard'] = shard_arr
 
-    err('Sorting by (shard, h3)...')
-    base = base.sort_values(['__shard', h3_name], kind='mergesort')
+    err(f'Sorting by (shard, {cell_name})...')
+    # Token order == id order for S2 (tests/test_s2.py), so sorting by the
+    # numeric id also sorts by token → the worker's range-scan pruning holds.
+    base = base.sort_values(['__shard', cell_name], kind='mergesort')
 
     err('Writing shards (zstd, row_group_size=20000)...')
     counts: dict[str, int] = {}
     t0 = time()
     for shard, sub in base.groupby('__shard', sort=False):
         out = sub.drop(columns='__shard')
-        shard_hex = h3.int_to_str(int(shard))
-        path = raw_dir / f'{shard_hex}.parquet'
+        name = shard_name(shard)
+        path = raw_dir / f'{name}.parquet'
         out.to_parquet(path, row_group_size=20_000, index=False, compression='zstd')
-        counts[shard_hex] = len(out)
+        counts[name] = len(out)
     err(f'  wrote {len(counts)} shards, total {sum(counts.values()):,} rows in {time() - t0:.1f}s')
 
     assert sum(counts.values()) == n_geo, f'shard sum {sum(counts.values())} != n_geo {n_geo}'
@@ -328,23 +357,240 @@ def _build_pyramid_level(
     return counts
 
 
+def _s2_pyramid_keep_cols(base_level: int) -> list[str]:
+    return [f's2_l{base_level}', 'year', 'dt', 'case', 'severity', 'ti', 'pi', 'tk', 'pk', 'tv']
+
+
+def _load_s2_sld(sld_path: Path) -> pd.DataFrame:
+    """Load `s2-sld.parquet` (token → labels), indexed by token for `.reindex`."""
+    sld = pd.read_parquet(sld_path, columns=['cellid', *SLD_COLS])
+    for c in SLD_COLS:
+        sld[c] = sld[c].astype('string')
+    return sld.drop_duplicates('cellid').set_index('cellid')
+
+
+_PYRAMID_COUNT_COLS = (
+    'n_crashes', 'n_fatal', 'n_inj', 'n_pdo', 'n_killed', 'n_killed_ped',
+    'n_injured', 'n_inj_ped', 'n_inj_other', 'n_vehs',
+)
+
+
+def _build_pyramid_level_s2(
+    base: pd.DataFrame,
+    s2col: str,
+    level: int,
+    shard_level: int,
+    topk: int,
+    out_dir: Path,
+    sld: pd.DataFrame | None = None,
+    row_group_size: int = 4096,
+) -> dict[str, int]:
+    """S2 analog of `_build_pyramid_level`: aggregate raw rows to `(cellid,
+    year)` counts + topK, sharded by l{shard_level} token. `base` must be
+    sorted by `dt` desc (for `head(topk)` recency). Parent ids are derived by
+    bit-math; `cellid` is the S2 token. Labels join `sld` on the cell's own
+    token."""
+    err(f'  parents l{level}...')
+    t0 = time()
+    cell_ids = s2.parent_id(base[s2col].to_numpy(), level)      # uint64
+    shard_ids = s2.parent_id(cell_ids, shard_level)             # uint64
+    err(f'    {time() - t0:.1f}s')
+
+    work = base.assign(__cell=cell_ids, __shard=shard_ids)
+    grp_keys = ['__shard', '__cell', 'year']
+    work['_n_fatal'] = (work['severity'] == 'f').astype('int32')
+    work['_n_inj'] = (work['severity'] == 'i').astype('int32')
+    work['_n_pdo'] = (work['severity'] == 'p').astype('int32')
+    work['_n_inj_other'] = (work['ti'].fillna(0).astype('int32') - work['pi'].fillna(0).astype('int32')).clip(lower=0)
+
+    err('  groupby + sums...')
+    t0 = time()
+    sums = (
+        work.groupby(grp_keys, sort=False)
+        .agg(
+            n_crashes=('case', 'size'),
+            n_fatal=('_n_fatal', 'sum'),
+            n_inj=('_n_inj', 'sum'),
+            n_pdo=('_n_pdo', 'sum'),
+            n_killed=('tk', 'sum'),
+            n_killed_ped=('pk', 'sum'),
+            n_injured=('ti', 'sum'),
+            n_inj_ped=('pi', 'sum'),
+            n_inj_other=('_n_inj_other', 'sum'),
+            n_vehs=('tv', 'sum'),
+        )
+        .reset_index()
+    )
+    err(f'    {time() - t0:.1f}s, {len(sums):,} cell-years')
+
+    err(f'  topK={topk}...')
+    t0 = time()
+    topk_rows = work.groupby(grp_keys, sort=False).head(topk).copy()
+    yr_arr = topk_rows['year'].astype('int16').to_numpy()
+    dt_arr = topk_rows['dt'].astype('int64').to_numpy()
+    case_arr = topk_rows['case'].astype('string').fillna('').to_numpy()
+    sev_arr = topk_rows['severity'].astype('string').fillna('').to_numpy()
+    topk_rows['_struct'] = [
+        {'year': int(y), 'dt': int(d), 'case': str(c), 'severity': str(s)}
+        for y, d, c, s in zip(yr_arr, dt_arr, case_arr, sev_arr)
+    ]
+    topk_lists = (
+        topk_rows.groupby(grp_keys, sort=False)['_struct']
+        .agg(list)
+        .rename('topK')
+        .reset_index()
+    )
+    err(f'    {time() - t0:.1f}s')
+
+    out = sums.merge(topk_lists, on=grp_keys, how='left')
+    out['year'] = out['year'].astype('int16')
+    for col in _PYRAMID_COUNT_COLS:
+        out[col] = out[col].fillna(0).astype('int32')
+
+    # int64 cell id → token, computed once per unique cell (not per cell-year).
+    uniq = np.unique(out['__cell'].to_numpy())
+    tok_map = {int(u): s2.id_to_token(int(u)) for u in uniq}
+    out['cellid'] = out['__cell'].map(lambda v: tok_map[int(v)]).astype('string')
+
+    if sld is not None:
+        err('  sld join...')
+        t0 = time()
+        aligned = sld.reindex(out['cellid'].to_numpy())
+        for c in SLD_COLS:
+            out[c] = aligned[c].to_numpy()
+        n_hit = aligned['sld_name'].notna().sum()
+        err(f'    {time() - t0:.1f}s, {n_hit:,}/{len(out):,} rows with sld_name')
+
+    err('  sort + write...')
+    t0 = time()
+    # Sort by cell id (== token order) so worker range-scan pruning holds.
+    out = out.sort_values(['__shard', '__cell', 'year'], kind='mergesort')
+    out_dir.mkdir(parents=True, exist_ok=True)
+    topk_struct = pa.struct([
+        ('case', pa.string()),
+        ('dt', pa.int64()),
+        ('severity', pa.string()),
+        ('year', pa.int16()),
+    ])
+    cols_out = ['cellid', 'year', *_PYRAMID_COUNT_COLS, 'topK']
+    schema_fields = [
+        ('cellid', pa.string()),
+        ('year', pa.int16()),
+        *((c, pa.int32()) for c in _PYRAMID_COUNT_COLS),
+        ('topK', pa.list_(topk_struct)),
+    ]
+    if sld is not None:
+        cols_out = [*cols_out, *SLD_COLS]
+        schema_fields += [(c, pa.string()) for c in SLD_COLS]
+    schema = pa.schema(schema_fields)
+    counts: dict[str, int] = {}
+    for shard, sub in out.groupby('__shard', sort=False):
+        shard_tok = s2.id_to_token(int(shard))
+        path = out_dir / f'{shard_tok}.parquet'
+        table = pa.Table.from_pandas(sub[cols_out], schema=schema, preserve_index=False)
+        pq.write_table(table, path, row_group_size=row_group_size, compression='zstd')
+        counts[shard_tok] = len(sub)
+    err(f'    {time() - t0:.1f}s, {len(counts)} shards, {sum(counts.values()):,} rows')
+    return counts
+
+
+def _cells_pyramid_s2(base_level, force, topk, levels, out_dir, row_group_size, shard_level, sld_path):
+    """Build the S2 pyramid: `s2_pyramid/s2_l{level}/{token}.parquet`."""
+    if base_level is None:
+        raw_root = out_dir / 'raw'
+        cand = sorted(
+            int(p.name[len('s2_l'):]) for p in raw_root.glob('s2_l*')
+            if p.is_dir() and any(p.glob('*.parquet'))
+        )
+        if not cand:
+            err(f'No raw S2 index under {raw_root}; run `compute cells raw --grid s2` first')
+            raise SystemExit(1)
+        base_level = cand[-1]
+    if shard_level is None:
+        shard_level = S2_SHARD_LEVEL_DEFAULT
+    level_ints = sorted(int(x) for x in (levels or ','.join(map(str, S2_LEVELS_DEFAULT))).split(',') if x.strip())
+    pyramid_dir = out_dir / 's2_pyramid'
+    level_dirs = [pyramid_dir / f's2_l{lv}' for lv in level_ints]
+    existing = [d for d in level_dirs if d.exists() and any(d.glob('*.parquet'))]
+    if existing and not force:
+        err(f'level dirs already populated: {[d.name for d in existing]}; use -f/--force to overwrite')
+        return
+    for d in existing:
+        for p in d.glob('*.parquet'):
+            p.unlink()
+    pyramid_dir.mkdir(parents=True, exist_ok=True)
+
+    s2col = f's2_l{base_level}'
+    raw_dir = out_dir / 'raw' / s2col
+    raw_paths = sorted(raw_dir.glob('*.parquet'))
+    if not raw_paths:
+        err(f'No raw S2 shards in {raw_dir}; run `compute cells raw --grid s2` first')
+        raise SystemExit(1)
+    keep = _s2_pyramid_keep_cols(base_level)
+    err(f'Loading {len(raw_paths)} raw S2 shards from {raw_dir} (cols: {keep})...')
+    t0 = time()
+    base = pd.concat([pd.read_parquet(p, columns=keep) for p in raw_paths], ignore_index=True)
+    err(f'  {len(base):,} rows in {time() - t0:.1f}s')
+    err('Sorting by dt desc (once, for topK head() correctness)...')
+    t0 = time()
+    base = base.sort_values('dt', ascending=False, kind='mergesort')
+    err(f'  {time() - t0:.1f}s')
+
+    if sld_path is None:
+        sld_path = out_dir / 's2-sld.parquet'
+    sld = None
+    if str(sld_path) and Path(sld_path).exists():
+        err(f'Loading s2-sld from {sld_path}...')
+        t0 = time()
+        sld = _load_s2_sld(Path(sld_path))
+        err(f'  {len(sld):,} labelled cells in {time() - t0:.1f}s')
+    else:
+        err(f'  no s2-sld at {sld_path}; pyramid rows will omit label columns')
+
+    # Sequential per-level (S2 has far fewer cells than H3 at the base level,
+    # so the topK object graph stays small — no fork pool needed).
+    err(f'\nBuilding {len(level_ints)} levels (shard l{shard_level}, rgs={row_group_size})...')
+    t0 = time()
+    total = 0
+    for lv in level_ints:
+        err(f'=== l{lv} ===')
+        counts = _build_pyramid_level_s2(
+            base, s2col, lv, shard_level, topk,
+            pyramid_dir / f's2_l{lv}', sld=sld, row_group_size=row_group_size,
+        )
+        total += sum(counts.values())
+    err(f'All levels done in {time() - t0:.1f}s, {total:,} total rows')
+
+
 @cells.command('pyramid')
-@click.option('-b', '--base-res', type=int, default=BASE_RES_DEFAULT)
+@click.option('-b', '--base-res', type=int, default=None)
 @click.option('-f', '--force', is_flag=True, help='Overwrite existing pyramid output')
+@click.option('-g', '--grid', type=click.Choice(['h3', 's2']), default='h3', help='Cell grid (default: h3)')
 @click.option('-j', '--jobs', type=int, default=0, help='Parallel level workers (0 = min(#levels, cpu_count))')
 @click.option('-k', '--topk', type=int, default=TOPK_DEFAULT, help=f'topK most-recent crashes per cell-year (default: {TOPK_DEFAULT})')
-@click.option('-l', '--levels', default=','.join(map(str, PYRAMID_LEVELS_DEFAULT)), help='Comma-separated pyramid levels')
+@click.option('-l', '--levels', default=None, help='Comma-separated pyramid levels')
 @click.option('-o', '--out-dir', type=click.Path(path_type=Path), default=OUT_DIR_DEFAULT)
-@click.option('-r', '--row-group-size', type=int, default=4096, help='Parquet row-group size (smaller → finer worker h3-range pruning; default: 4096)')
-@click.option('-s', '--shard-res', type=int, default=SHARD_RES_DEFAULT)
-@click.option('-S', '--sld-path', type=click.Path(path_type=Path), default=SLD_PATH_DEFAULT, help=f'hex-sld.parquet to bake into rows, or "" to skip (default: {SLD_PATH_DEFAULT})')
-def cells_pyramid(base_res: int, force: bool, jobs: int, topk: int, levels: str, out_dir: Path, row_group_size: int, shard_res: int, sld_path: Path):
-    """Phase 2: per-resolution rollups (h3_rN, year) → counts + topK + sld.
+@click.option('-r', '--row-group-size', type=int, default=4096, help='Parquet row-group size (smaller → finer worker range pruning; default: 4096)')
+@click.option('-s', '--shard-res', type=int, default=None)
+@click.option('-S', '--sld-path', type=click.Path(path_type=Path), default=None, help='sld parquet to bake into rows, or "" to skip (default: hex-sld.parquet for h3, s2-sld.parquet for s2)')
+def cells_pyramid(base_res: int | None, force: bool, grid: str, jobs: int, topk: int, levels: str | None, out_dir: Path, row_group_size: int, shard_res: int | None, sld_path: Path | None):
+    """Phase 2: per-(cell, year) rollups → counts + topK + sld, sharded parquet.
 
-    Consolidated layout: one `pyramid/r{N}/{shard_hex}.parquet` per r{shard_res}
-    shard (default r4), h3-sorted with `row_group_size` row-groups so the worker
-    prunes to viewport row-groups by h3 range (no per-shard file explosion).
-    Levels build in a fork pool (`-j`); `SLD_COLS` baked from `--sld-path`."""
+    Consolidated layout: one `{pyramid_dir}/{level}/{shard}.parquet` per shard,
+    cell-sorted with `row_group_size` row-groups so the worker prunes to
+    viewport row-groups by cell range. `--grid s2` writes
+    `s2_pyramid/s2_l{level}/{token}.parquet` (see specs/s2-pyramid.md); default
+    `--grid h3` writes `pyramid/r{N}/{hex}.parquet`."""
+    if grid == 's2':
+        return _cells_pyramid_s2(base_res, force, topk, levels, out_dir, row_group_size, shard_res, sld_path)
+    if base_res is None:
+        base_res = BASE_RES_DEFAULT
+    if shard_res is None:
+        shard_res = SHARD_RES_DEFAULT
+    if levels is None:
+        levels = ','.join(map(str, PYRAMID_LEVELS_DEFAULT))
+    if sld_path is None:
+        sld_path = SLD_PATH_DEFAULT
     level_ints = sorted(int(x) for x in levels.split(',') if x.strip())
     pyramid_dir = out_dir / 'pyramid'
     level_dirs = [pyramid_dir / f'r{lv}' for lv in level_ints]
@@ -663,12 +909,27 @@ def cells_manifest(base_res: int, pyramid_levels: str, out_dir: Path, shard_res:
 
 
 @cells.command('db')
-@click.option('-b', '--base-res', type=int, default=None, help='Raw H3 base resolution (default: auto-detect from raw/h3_r* dir)')
+@click.option('-b', '--base-res', type=int, default=None, help='Raw base resolution/level (default: auto-detect from raw dir)')
 @click.option('-f', '--force', is_flag=True, help='Overwrite existing output .db')
-@click.option('-l', '--levels', default=','.join(map(str, CELLS_DB_LEVELS_DEFAULT)), help=f'Comma-separated data resolutions (default: {",".join(map(str, CELLS_DB_LEVELS_DEFAULT))})')
+@click.option('-g', '--grid', type=click.Choice(['h3', 's2']), default='h3', help='Cell grid (default: h3)')
+@click.option('-l', '--levels', default=None, help=f'Comma-separated data resolutions (default: h3={",".join(map(str, CELLS_DB_LEVELS_DEFAULT))}, s2={",".join(map(str, S2_LEVELS_DEFAULT))})')
 @click.option('-o', '--out-dir', type=click.Path(path_type=Path), default=OUT_DIR_DEFAULT)
-@click.option('-S', '--sld-path', type=click.Path(path_type=Path), default=None, help='hex-sld.parquet with r6-r{SLD_MAX_RES} labels (default: <out-dir>/hex-sld.parquet)')
-def cells_db(base_res: int | None, force: bool, levels: str, out_dir: Path, sld_path: Path | None):
+@click.option('-S', '--sld-path', type=click.Path(path_type=Path), default=None, help='sld parquet with labels (default: <out-dir>/hex-sld.parquet for h3, s2-sld.parquet for s2)')
+def cells_db(base_res: int | None, force: bool, grid: str, levels: str | None, out_dir: Path, sld_path: Path | None):
+    """Roll the raw index up to one row per cell (all years) → SQLite for D1.
+
+    `--grid s2` builds `cells-s2.db` with `cells_s2_l{level}(cellid TEXT PK, ...)`
+    from `raw/s2_l{base}` (see specs/s2-pyramid.md); default `--grid h3` builds
+    `cells.db` below.
+    """
+    if grid == 's2':
+        return _cells_db_s2(base_res, force, levels, out_dir, sld_path)
+    if levels is None:
+        levels = ','.join(map(str, CELLS_DB_LEVELS_DEFAULT))
+    return _cells_db_h3(base_res, force, levels, out_dir, sld_path)
+
+
+def _cells_db_h3(base_res: int | None, force: bool, levels: str, out_dir: Path, sld_path: Path | None):
     """Roll the raw H3 index up to one row per cell (all years) → SQLite for D1.
 
     Aggregates `raw/h3_r{base_res}/*.parquet` (per-crash) directly — via the
@@ -768,6 +1029,185 @@ def cells_db(base_res: int | None, force: bool, levels: str, out_dir: Path, sld_
     s.execute('VACUUM')
     s.close()
     err(f'Wrote {out} ({out.stat().st_size / 1e6:.1f} MB, res {level_ints}, base r{base_res})')
+
+
+def _cells_db_s2(base_level: int | None, force: bool, levels: str | None, out_dir: Path, sld_path: Path | None):
+    """Roll the raw S2 index up to one row per cell (all years) → `cells-s2.db`.
+
+    Mirrors `_cells_db_h3` but S2: aggregates `raw/s2_l{base}/*.parquet` (each
+    crash's uint64 S2 cell id at the base level) into
+    `cells_s2_l{level}(cellid TEXT PRIMARY KEY, n_fatal, n_inj_ped, n_inj_other,
+    n_pdo, n_vehs, fatal_years, sld_name, cross_sld_name, mun, county)`. Parent
+    ids + tokens are derived in-SQL via `njdot.s2.parent_sql`/`token_sql`
+    (UBIGINT bit-math validated == s2sphere == nodes2ts, tests/test_s2.py), so
+    the group-by streams and stays memory-bounded. `cellid` is a TEXT PK
+    (S2 tokens are strings by design — no int64 encoding as with h3); its
+    BINARY-collation order matches S2's Hilbert order, so the worker's
+    `WHERE cellid BETWEEN lo AND hi` range scan is B-tree-fast. Labels are a
+    `LEFT JOIN` on `s2-sld` keyed on the cell's own token (baked at every level).
+    """
+    import sqlite3
+    import duckdb
+    if levels is None:
+        levels = ','.join(map(str, S2_LEVELS_DEFAULT))
+    level_ints = [int(x) for x in levels.split(',') if x.strip()]
+    if base_level is None:
+        raw_root = out_dir / 'raw'
+        cand = sorted(
+            int(p.name[len('s2_l'):]) for p in raw_root.glob('s2_l*')
+            if p.is_dir() and any(p.glob('*.parquet'))
+        )
+        if not cand:
+            err(f'No raw S2 index under {raw_root}; run `compute cells raw --grid s2` first')
+            raise SystemExit(1)
+        base_level = cand[-1]
+    raw_glob = out_dir / 'raw' / f's2_l{base_level}' / '*.parquet'
+    s2col = f's2_l{base_level}'
+    if sld_path is None:
+        sld_path = out_dir / 's2-sld.parquet'
+    have_sld = Path(sld_path).exists()
+    out = out_dir / 'cells-s2.db'
+    if out.exists():
+        if not force:
+            err(f'{out} exists; use -f to overwrite')
+            raise SystemExit(1)
+        out.unlink()
+    out.parent.mkdir(parents=True, exist_ok=True)
+
+    # 1. Typed empty tables — `cellid TEXT PRIMARY KEY` (a unique index whose
+    #    BINARY order == Hilbert order). `.schema` carries this into D1.
+    s = sqlite3.connect(out)
+    counts_ddl = ', '.join(f'{c} INTEGER NOT NULL' for c in CELLS_DB_COUNT_COLS)
+    labels_ddl = ', '.join(f'{c} TEXT' for c in SLD_COLS)
+    for lv in level_ints:
+        s.execute(f'CREATE TABLE cells_s2_l{lv} (cellid TEXT PRIMARY KEY, {counts_ddl}, fatal_years TEXT, {labels_ddl})')
+    s.commit()
+    s.close()
+
+    # 2. Aggregate raw → each level via duckdb. Group by the integer parent id
+    #    (cheaper than the token string), format the token once per unique
+    #    cell, then LEFT-JOIN labels on that token.
+    con = duckdb.connect()
+    con.execute(f"ATTACH '{out}' AS d (TYPE SQLITE)")
+    if have_sld:
+        con.execute(f"CREATE TEMP TABLE sld AS SELECT cellid, {', '.join(SLD_COLS)} FROM read_parquet('{sld_path}')")
+        err(f'  sld: {con.execute("SELECT count(*) FROM sld").fetchone()[0]:,} labelled cells from {sld_path}')
+    else:
+        err(f'  no s2-sld at {sld_path}; label columns will be NULL')
+    insert_cols = ', '.join(['cellid', *CELLS_DB_COUNT_COLS, 'fatal_years', *SLD_COLS])
+    agg_cols = ', '.join(f't.{c}' for c in CELLS_DB_COUNT_COLS)
+    if have_sld:
+        sld_sel = ', '.join(f's.{c}' for c in SLD_COLS)
+        join = 'LEFT JOIN sld s ON s.cellid = t.cellid'
+    else:
+        sld_sel = ', '.join('NULL' for _ in SLD_COLS)
+        join = ''
+    for lv in level_ints:
+        t0 = time()
+        parent = s2.parent_sql(f'CAST({s2col} AS UBIGINT)', lv)
+        con.execute(f"""
+          INSERT INTO d.cells_s2_l{lv} ({insert_cols})
+          WITH agg AS (
+            SELECT
+              {parent} AS pid,
+              count(*) FILTER (WHERE severity = 'f') AS n_fatal,
+              coalesce(sum(pi), 0) AS n_inj_ped,
+              coalesce(sum(greatest(coalesce(ti, 0) - coalesce(pi, 0), 0)), 0) AS n_inj_other,
+              count(*) FILTER (WHERE severity = 'p') AS n_pdo,
+              coalesce(sum(tv), 0) AS n_vehs,
+              nullif(array_to_string(list_sort(list_distinct(list(year) FILTER (WHERE severity = 'f'))), ','), '') AS fatal_years
+            FROM read_parquet('{raw_glob}')
+            GROUP BY 1
+          ), t AS (
+            SELECT {s2.token_sql('pid')} AS cellid, * EXCLUDE (pid) FROM agg
+          )
+          SELECT t.cellid, {agg_cols}, t.fatal_years, {sld_sel}
+          FROM t
+          {join}
+        """)
+        n = con.execute(f'SELECT count(*) FROM d.cells_s2_l{lv}').fetchone()[0]
+        err(f'  l{lv}: {n:,} cells ({time() - t0:.1f}s)')
+    con.close()
+
+    # 3. Compact so the on-disk size (and DVC md5) is stable run-to-run.
+    s = sqlite3.connect(out)
+    s.execute('VACUUM')
+    s.close()
+    err(f'Wrote {out} ({out.stat().st_size / 1e6:.1f} MB, levels {level_ints}, base l{base_level}, sld={have_sld})')
+
+
+@cells.command('sld')
+@click.option('-b', '--base-level', type=int, default=None, help='Raw S2 base level (default: auto-detect from raw/s2_l* dir)')
+@click.option('-g', '--grid', type=click.Choice(['s2']), default='s2', help='Cell grid (only s2; h3 uses `njdot export_hex_sld`)')
+@click.option('-l', '--levels', default=None, help=f'Comma-separated levels to label (default: {",".join(map(str, S2_LEVELS_DEFAULT))})')
+@click.option('--mp-path', default='njdot/data/nj_mp_tenths.parquet', show_default=True)
+@click.option('--muni-path', default='www/public/Municipal_Boundaries_of_NJ.geojson', show_default=True)
+@click.option('-o', '--out-dir', type=click.Path(path_type=Path), default=OUT_DIR_DEFAULT)
+def cells_sld(base_level: int | None, grid: str, levels: str | None, mp_path: str, muni_path: str, out_dir: Path):
+    """Build `s2-sld.parquet` — road/muni labels per S2 cell token.
+
+    S2 analog of `njdot export_hex_sld`: enumerate every S2 cell (at the given
+    levels) containing a geocoded crash, compute its centroid, and reuse
+    `export_hex_sld`'s grid-agnostic nearest-MP + point-in-polygon lookups.
+    Output `cellid | sld_name | cross_sld_name | mun | county`, keyed by token
+    so `cells db`/`pyramid --grid s2` join on the cell's own token."""
+    import duckdb
+    import pandas as pd
+    from njdot.cli.export_hex_sld import _muni_county, _nearest_mp
+    level_ints = [int(x) for x in (levels or ','.join(map(str, S2_LEVELS_DEFAULT))).split(',') if x.strip()]
+    if base_level is None:
+        raw_root = out_dir / 'raw'
+        cand = sorted(
+            int(p.name[len('s2_l'):]) for p in raw_root.glob('s2_l*')
+            if p.is_dir() and any(p.glob('*.parquet'))
+        )
+        if not cand:
+            err(f'No raw S2 index under {raw_root}; run `compute cells raw --grid s2` first')
+            raise SystemExit(1)
+        base_level = cand[-1]
+    raw_glob = out_dir / 'raw' / f's2_l{base_level}' / '*.parquet'
+
+    err(f'Enumerating distinct l{base_level} cells...')
+    t0 = time()
+    con = duckdb.connect()
+    l16_ids = con.execute(
+        f"SELECT DISTINCT s2_l{base_level} AS id FROM read_parquet('{raw_glob}')"
+    ).df()['id'].to_numpy().astype(np.uint64)
+    err(f'  {len(l16_ids):,} distinct base cells ({time() - t0:.1f}s)')
+
+    # Every cell at level L is a parent of some base cell → union of parent
+    # sets across levels is the full cell set to label.
+    err(f'Deriving distinct cells across levels {level_ints}...')
+    t0 = time()
+    all_ids: set[int] = set()
+    for lv in level_ints:
+        all_ids.update(int(x) for x in np.unique(s2.parent_id(l16_ids, lv)))
+    ids = sorted(all_ids)
+    err(f'  {len(ids):,} distinct cells ({time() - t0:.1f}s)')
+
+    err(f'Computing centroids ({len(ids):,} cells)...')
+    t0 = time()
+    latlngs = [s2.id_to_latlng(i) for i in ids]
+    centroids = pd.DataFrame({
+        'h3': [s2.id_to_token(i) for i in ids],   # 'h3' col name reused by the lookups
+        'lat': [ll[0] for ll in latlngs],
+        'lon': [ll[1] for ll in latlngs],
+    })
+    err(f'  {time() - t0:.1f}s')
+
+    err(f'Loading MP index: {mp_path}')
+    mp = pd.read_parquet(mp_path)
+    err(f'Nearest-MP lookup ({len(centroids):,} centroids → {len(mp):,} MPs)...')
+    sld = _nearest_mp(centroids, mp)
+    err(f'Point-in-polygon lookup ({len(centroids):,} centroids)...')
+    mc = _muni_county(centroids, muni_path)
+
+    enriched = sld.merge(mc, on='h3', how='left').rename(columns={'h3': 'cellid'})
+    out_cols = ['cellid', *SLD_COLS]
+    out_path = out_dir / 's2-sld.parquet'
+    enriched[out_cols].to_parquet(out_path, index=False)
+    n_mun = (enriched['mun'].fillna('') != '').sum()
+    err(f'Wrote {out_path} ({len(enriched):,} cells, {n_mun:,} with muni)')
 
 
 @cells.command('push')
