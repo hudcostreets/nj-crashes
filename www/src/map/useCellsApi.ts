@@ -245,6 +245,10 @@ export type CellsApiPlan = {
     cellCount?: number
     /** Number of shards that contributed to this response. */
     shardCount?: number
+    /** Sum of unique batch-response byte sizes for this view's shards
+     *  (JSON body bytes, gzip-decompressed by fetch). Undefined until
+     *  the fetch resolves. */
+    fetchedBytes?: number
     /** Heterogeneous cover the client picked for this view. The debug
      *  overlay outlines these to make the cover visible. */
     cover?: CoverCell[]
@@ -254,6 +258,28 @@ export type CellsApiPlan = {
  *  different (res, years, sevs, polygon) is a distinct entry. Pan over
  *  already-fetched shards = zero new requests. */
 const shardCache = new Map<string, Promise<CellsResponse>>()
+
+/** Metrics: for each shard URL, the batch URL it was served from + total
+ *  bytes of that batch's response. Multiple shards share one `BatchInfo`
+ *  object, so summing bytes across a view dedupes naturally via
+ *  `new Set([...])`. `bytes` is populated when the batch fetch resolves;
+ *  reads (via `getFetchedBytes`) happen after `await`, so the value is
+ *  present. */
+type BatchInfo = { url: string; bytes: number }
+const shardBatch = new Map<string, BatchInfo>()
+
+/** Sum of unique batch-response byte sizes across the given shard URLs.
+ *  Used by the debug metrics block. */
+export function getFetchedBytes(shardUrls: string[]): number {
+    const seen = new Set<BatchInfo>()
+    for (const u of shardUrls) {
+        const info = shardBatch.get(u)
+        if (info) seen.add(info)
+    }
+    let total = 0
+    for (const info of seen) total += info.bytes
+    return total
+}
 
 /** Manifest is fetched once (cells-api version is stable across a
  *  page lifetime; redeploys flip `data_version` but not `shard_*`). */
@@ -318,17 +344,28 @@ function ensureShardsCached(
         for (let i = 0; i < entries.length; i += BATCH_SIZE) {
             const batch = entries.slice(i, i + BATCH_SIZE)
             const batchUrl = buildBatchUrl(batch.map(e => e.h3), res, filter, polygonStr, tier)
+            // Per-batch metrics: shared across all shard URLs from this
+            // fetch. `bytes` is 0 until the fetch resolves; the debug
+            // panel reads it via `getFetchedBytes` only after the effect
+            // has awaited its shard promises, so the value is populated.
+            const info: BatchInfo = { url: batchUrl, bytes: 0 }
             const batchPromise: Promise<CellsResponse> = (async () => {
                 const r = await fetch(batchUrl)
                 if (!r.ok) throw new Error(`cells api ${r.status}: ${await r.text().catch(() => "")}`)
-                return await r.json() as CellsResponse
+                const buf = await r.arrayBuffer()
+                info.bytes = buf.byteLength
+                return JSON.parse(new TextDecoder().decode(buf)) as CellsResponse
             })()
             for (const entry of batch) {
+                shardBatch.set(entry.url, info)
                 const shardPromise = batchPromise.then(resp => ({
                     ...resp,
                     cells: resp.cells.filter(c => cellToParent(c.h3, tier) === entry.h3),
                 }))
-                shardPromise.catch(() => { if (shardCache.get(entry.url) === shardPromise) shardCache.delete(entry.url) })
+                shardPromise.catch(() => {
+                    if (shardCache.get(entry.url) === shardPromise) shardCache.delete(entry.url)
+                    shardBatch.delete(entry.url)
+                })
                 shardCache.set(entry.url, shardPromise)
             }
         }
@@ -686,6 +723,7 @@ export function useCellsApi(filter: CellsApiFilter | null):
             setState({ urls, data: [], status: "ready", plan: {
                 kind: "hex", res: pickAtFire.res, source: "pyramid",
                 reason: `${pickAtFire.reason} · 0 shards`, cellCount: 0, shardCount: 0,
+                fetchedBytes: 0,
                 cover: pickAtFire.cover,
             } })
             return
@@ -734,6 +772,7 @@ export function useCellsApi(filter: CellsApiFilter | null):
                         kind: "hex", res: finalRes, source,
                         reason,
                         cellCount: data.length, shardCount: urls.length,
+                        fetchedBytes: getFetchedBytes(urls),
                         cover: pickAtFire.cover,
                     },
                 })

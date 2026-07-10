@@ -7,6 +7,7 @@ import { AppSpeedDial } from './components/AppSpeedDial'
 import { DuckDbProvider } from './lib/DuckDbContext'
 import { useSectionsActions } from './components/SectionsOmnibar'
 import { useScrollAnchor } from './lib/useScrollAnchor'
+import { useDomainToggle } from './lib/useDomainToggle'
 
 // Home is eager (the landing page). Everything else lazy — `/sql`,
 // `/duckdb`, `/match-review`, `/map`, `/raw`, `/files`, `/harmonization`
@@ -35,12 +36,20 @@ function SectionsRegistrar() {
     return null
 }
 
+/** Register the `g d` dev⇄prod domain-toggle hotkey. Separate component
+ *  so its `useAction` sits inside `<HotkeysProvider>`. */
+function DomainToggleRegistrar() {
+    useDomainToggle()
+    return null
+}
+
 export default function App() {
     useScrollAnchor()
     return (
         <HotkeysProvider>
         <DuckDbProvider>
             <SectionsRegistrar />
+            <DomainToggleRegistrar />
             <Suspense fallback={null}>
             <Routes>
                 <Route path="/" element={<GeoHome />} />

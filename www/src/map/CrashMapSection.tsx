@@ -417,6 +417,8 @@ export function CrashMapSection({
                 res: apiResult.plan.res,
                 shards: null,
                 reason: apiResult.plan.reason,
+                cellCount: apiResult.plan.cellCount,
+                fetchedBytes: apiResult.plan.fetchedBytes,
             })
             : null
         // While refetching (debounced pan/zoom), keep showing the prior
@@ -843,6 +845,12 @@ export function CrashMapSection({
                             viz={viz}
                             viewportAreaPx={(() => { const [w, h] = viewportDims(fullScreen); return w * h })()}
                             budget={binsBudget}
+                            fetched={result.status === "ready" && result.plan?.kind === "hex" ? result.plan.cellCount : undefined}
+                            fetchedBytes={result.status === "ready" && result.plan?.kind === "hex" ? result.plan.fetchedBytes : undefined}
+                            inViewport={renderHexes?.hexes.length}
+                            actualVp={typeof window !== "undefined" ? [window.innerWidth, window.innerHeight] : undefined}
+                            clampedVp={viewportDims(fullScreen)}
+                            targetPx={hexPxTarget}
                         />
                     </>
                 )}
@@ -1101,6 +1109,7 @@ function Legend({
  *  where they are in the mapping at a glance. */
 function ZoomResChart({
     currentZoom, currentLat, currentRes, viz, viewportAreaPx, budget,
+    fetched, fetchedBytes, inViewport, actualVp, clampedVp, targetPx,
 }: {
     currentZoom: number
     currentLat: number
@@ -1108,6 +1117,24 @@ function ZoomResChart({
     viz: "hex" | "circle"
     viewportAreaPx: number
     budget: number
+    /** Total cells returned across all `/v1/cells` shards for this view
+     *  (pre viewport-clip). Undefined while fetch is in flight. */
+    fetched?: number
+    /** Sum of unique batch-response body sizes (bytes) for this view. */
+    fetchedBytes?: number
+    /** Cells kept after client-side viewport clip → what actually
+     *  renders. Diverges from `fetched` when the fetched cover extends
+     *  past the visible bbox. */
+    inViewport?: number
+    /** Actual browser viewport `[innerWidth, innerHeight]` — for the
+     *  embed clamp display. */
+    actualVp?: [number, number]
+    /** Post-clamp viewport `[w, h]` used by the picker. Shown alongside
+     *  actualVp when they differ (embed mode clamps to `[1280, 480]`). */
+    clampedVp?: [number, number]
+    /** The picker's target hex-diameter (px), post-clamp. Surfaced so a
+     *  wrong render is diagnosable from one screenshot. */
+    targetPx?: number
 }) {
     const H = 180  // chart height in px
     // Center the current zoom in the window; ticks slide smoothly as
@@ -1152,11 +1179,47 @@ function ZoomResChart({
     const zoomColW = 32
     const resColW = 46
     const W = zoomColW + resColW * resCols.length + 8
+
+    // Metrics block: fetched cells + bytes for this view, cells that
+    // actually render (viewport-clipped), and the viewport clamp that
+    // fed the picker. `fetched` is the pre-clip cover total, so a big
+    // `fetched → inViewport` drop means the cover extends past the
+    // visible bbox.
+    const fmtN = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(n)
+    const fmtKB = (b: number) => b >= 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.round(b / 1024)} KB`
+    const vpClamped = actualVp && clampedVp && (actualVp[0] !== clampedVp[0] || actualVp[1] !== clampedVp[1])
+
     return (
         <div style={{
             marginTop: 4, paddingTop: 4, borderTop: "1px solid rgba(128,128,128,0.25)",
-            fontSize: "0.72em", opacity: 0.9,
+            fontSize: "0.85em", opacity: 0.9,
         }}>
+            <div style={{
+                opacity: 0.85, marginBottom: 4, lineHeight: 1.35,
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            }}>
+                <div>
+                    fetched:{" "}
+                    <span style={{ fontWeight: 600 }}>{fetched != null ? fmtN(fetched) : "…"}</span>
+                    {" · "}
+                    <span style={{ fontWeight: 600 }}>{fetchedBytes != null ? fmtKB(fetchedBytes) : "…"}</span>
+                    {" · in-vp: "}
+                    <span style={{ fontWeight: 600 }}>{inViewport != null ? fmtN(inViewport) : "…"}</span>
+                </div>
+                <div style={{ opacity: 0.7 }}>
+                    vp:{" "}
+                    {actualVp ? `${actualVp[0]}×${actualVp[1]}` : "?"}
+                    {vpClamped && clampedVp && (
+                        <span style={{ color: "#e0803a" }}>{` → ${clampedVp[0]}×${clampedVp[1]} (clamp)`}</span>
+                    )}
+                    {targetPx != null && (
+                        <>
+                            {" · target: "}
+                            <span style={{ fontWeight: 600 }}>{targetPx.toFixed(1)}px</span>
+                        </>
+                    )}
+                </div>
+            </div>
             <div style={{ opacity: 0.55, marginBottom: 2, fontSize: "0.9em" }}>Zoom × hex px</div>
             <svg width={W} height={H + 18} style={{ overflow: "visible", display: "block" }}>
                 {/* Column headers */}
@@ -1263,7 +1326,7 @@ function HexPxTargetSlider({
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
-                <span style={{ fontSize: "0.78em", display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ fontSize: "0.88em", display: "flex", alignItems: "center", gap: 4 }}>
                     <input
                         type="checkbox"
                         checked={auto}
@@ -1291,7 +1354,7 @@ function HexPxTargetSlider({
             </label>
             {pickerInfo && (
                 <div style={{
-                    fontSize: "0.78em", opacity: 0.85, paddingLeft: 22, lineHeight: 1.3,
+                    fontSize: "0.88em", opacity: 0.85, paddingLeft: 22, lineHeight: 1.3,
                     display: "flex", gap: 8, alignItems: "center",
                 }}>
                     {pickerInfo.levels.map(({ res, px, isCurrent }) => isCurrent ? (
@@ -1300,21 +1363,23 @@ function HexPxTargetSlider({
                         <button
                             key={res}
                             type="button"
-                            disabled={auto}
                             onClick={() => {
                                 // Under bins-budget the auto picker is
                                 // deterministic from viewport area + budget,
-                                // so per-zoom pinning doesn't compose. In
-                                // manual mode: set the target to this level's
-                                // own px so the floor picker locks onto it.
+                                // so per-zoom pinning doesn't compose. Set
+                                // the target to this level's own px so the
+                                // floor picker locks onto it, and drop out
+                                // of auto — otherwise the manual value gets
+                                // ignored on the next render.
                                 onChange(Math.max(MIN, Math.min(MAX, px < 5 ? Math.round(px * 10) / 10 : Math.round(px))))
+                                if (auto) onAutoChange(false)
                             }}
                             style={{
                                 background: "none", border: "none", padding: 0, color: "inherit",
                                 cursor: "pointer", textDecoration: "underline dotted",
                                 font: "inherit", opacity: 0.75,
                             }}
-                            title={auto ? `Pin r${res} for this zoom (auto stays on)` : `Snap to r${res}`}
+                            title={`Snap to r${res} (turns auto off)`}
                         >
                             r{res} · {fmtPx(px)}px
                         </button>
