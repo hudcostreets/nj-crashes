@@ -304,6 +304,15 @@ function loadManifest(): Promise<Manifest> {
  *  re-requests still hit memory without re-fetching. */
 const BATCH_SIZE = 25
 
+/** Threshold below which the initial fetch drops the 4 string columns
+ *  (`sld_name`, `cross_sld_name`, `mun`, `county`) — sending
+ *  `labels=nums` cuts payload by ~65%. r12 is where hexes become
+ *  hover-scale (~19 m diameter), so labels earn their keep. At
+ *  wide zoom the tooltip degrades gracefully (`CrashTooltip` skips
+ *  the label header line when `sld_name` is missing). See
+ *  `specs/labels-on-demand.md`. */
+const LABELS_NUMS_RES_THRESHOLD = 12
+
 function buildBatchUrl(
     shards: string[], res: number, filter: CellsApiFilter, polygonStr: string | null,
     shardRes: number,
@@ -316,6 +325,7 @@ function buildBatchUrl(
         severities: sevs,
         shard_res: String(shardRes),
     })
+    if (res < LABELS_NUMS_RES_THRESHOLD) params.set("labels", "nums")
     if (polygonStr) params.set("polygon", polygonStr)
     return `${CELLS_API_BASE}/v1/cells?${params}`
 }
