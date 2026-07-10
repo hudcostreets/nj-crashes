@@ -36,6 +36,13 @@ import { cellToLatLng, cellToParent, getResolution } from "h3-js"
 import { descendantRange, mergeRanges, type CellRange } from "./h3-range"
 import { loadManifest } from "./manifest"
 import { readParquetFromR2 } from "./parquet"
+import {
+    s2IdToToken,
+    s2LevelOf,
+    s2Parent,
+    s2RangeForCell,
+    s2TokenToId,
+} from "./s2-range"
 
 /** GeoJSON-like polygon: outer ring as `[lon, lat][]`. We keep just one
  *  ring; multi-ring (holes) doesn't show up for our use cases. */
@@ -234,11 +241,10 @@ export async function handleCellsRequest(
     db?: D1Database,
 ): Promise<CellsResponse> {
     if (req.grid === "s2") {
-        // S2 grid — phase 4b2/4b3 will fill in the parquet + D1 paths.
-        // For now, tell the client S2 is opted-in but not yet wired
-        // so `?grid=s2` is a controlled failure the client can fall
-        // back on rather than a silent regression.
-        throw new HttpError(501, "S2 grid not yet implemented on the worker (phase 4b2/4b3)")
+        // S2 grid — parallel dispatch to the S2 pyramid path. D1 fast
+        // path lands in phase 4b3 once `CELLS_S2_DB` is bound. Parquet
+        // path (below) already handles all filter shapes we support.
+        return await handleCellsRequestS2(bucket, prefix, req)
     }
     const manifest = await loadManifest(bucket, prefix)
     const { cells: requestedShards, res: requestedRes, maxCells } = req
@@ -536,6 +542,255 @@ async function queryPyramid(
         cells.push(c)
     }
     return cells
+}
+
+/** Point-in-polygon variant for S2 cells. Reuses `pointInPolygon`
+ *  after resolving the cell's centroid via S2 bit math (`nodes2ts` is
+ *  used in tests but not the shipping bundle — we can compute the
+ *  centroid from an id without the lib once the S2 cell arithmetic
+ *  lands in phase 4b2b). For now, this is a no-op: the pyramid path
+ *  passes null for `clipPoly` from the initial S2 wiring since the
+ *  client hasn't yet learned to send S2-specific polygon clips.
+ *  Real per-cell centroid resolution comes in phase 4e (client render). */
+function cellInPolygonS2(_token: string, poly: LonLatPolygon | null): boolean {
+    return !poly
+}
+
+/** S2 handler mirroring `handleCellsRequest`'s H3 body. Reads the
+ *  manifest for `data_version` + `year_range` (both grid-agnostic
+ *  — the pipeline stamps the same values on both grids), computes
+ *  S2 token ranges from the request shards, and delegates to
+ *  `queryPyramidS2` for the R2 parquet fetch. D1 fast path is
+ *  phase 4b3 (needs `CELLS_S2_DB` binding). */
+async function handleCellsRequestS2(
+    bucket: R2Bucket,
+    prefix: string,
+    req: CellsRequest,
+): Promise<CellsResponse> {
+    const manifest = await loadManifest(bucket, prefix)
+    const { cells: requestedShards, res: requestedLevel, maxCells } = req
+    if (requestedShards.length === 0) {
+        throw new HttpError(400, "cells must list ≥1 shard")
+    }
+    // S2 level range mirrors the pyramid build (`e` phase 3): data
+    // levels 4-16, base 16. Reject outside this envelope up front so
+    // the R2 fetch doesn't 404 on us.
+    const S2_MIN_LEVEL = 4
+    const S2_MAX_LEVEL = 16
+    if (requestedLevel < S2_MIN_LEVEL || requestedLevel > S2_MAX_LEVEL) {
+        throw new HttpError(400, `s2 level ${requestedLevel} out of range [${S2_MIN_LEVEL}, ${S2_MAX_LEVEL}]`)
+    }
+    const yearRange = req.yearRange ?? manifest.year_range
+    const sevSet = req.severities
+    // Clip polygon plumbing — currently disabled for S2 (see
+    // `cellInPolygonS2`); passes through so phase 4e can turn it on.
+    const clipPoly = req.clipPolygon && req.clipPolygon.length >= 3 ? req.clipPolygon : null
+    const labels = req.labels ?? "full"
+
+    // Build cellid ranges at the target level from the shard tokens.
+    // Each shard's `[lo, hi]` is a bigint pair; we serialize to
+    // 16-char zero-padded hex for parquet TEXT-column comparison
+    // (matches how `njdot/s2.py` stores tokens on disk).
+    const ranges: Array<{ lo: string; hi: string }> = []
+    for (const shard of requestedShards) {
+        const parentId = s2TokenToId(shard)
+        const parentLevel = s2LevelOf(parentId)
+        if (parentLevel > requestedLevel) {
+            throw new HttpError(400,
+                `s2 shard level ${parentLevel} finer than requested level ${requestedLevel}`)
+        }
+        // At parentLevel == requestedLevel, `s2RangeForCell` collapses
+        // to a single cell — still a valid (degenerate) range.
+        const { lo, hi } = s2RangeForCell(parentId, requestedLevel)
+        // Zero-pad to 16 chars — that's the canonical sort order for
+        // the D1 TEXT column and the parquet stats min/max. The token
+        // format on wire strips trailing zeros; padding restores the
+        // full lex order.
+        ranges.push({
+            lo: lo === 0n ? "".padStart(16, "0") : lo.toString(16).padStart(16, "0"),
+            hi: hi === 0n ? "".padStart(16, "0") : hi.toString(16).padStart(16, "0"),
+        })
+    }
+
+    const t0 = Date.now()
+    let cells = await queryPyramidS2(
+        bucket, prefix, requestedLevel, requestedShards, yearRange, sevSet,
+        clipPoly, ranges, labels,
+    )
+    const t1 = Date.now()
+    let level = requestedLevel
+    // In-worker coarsening (mirrors the H3 path). Uses S2 parent walk
+    // instead of `cellToParent`; s2's exact-tiling property means
+    // sums roll up losslessly (the whole point of migrating off H3).
+    while (labels !== "only" && maxCells != null && cells.length > maxCells && level > S2_MIN_LEVEL) {
+        level--
+        cells = coarsenCellsS2(cells, level)
+    }
+    const t2 = Date.now()
+    console.log(`[timing] s2 l${requestedLevel} labels=${labels} shards=${requestedShards.length} ranges=${ranges.length} cells=${cells.length}: pyramid=${t1 - t0}ms, coarsen=${t2 - t1}ms, total=${t2 - t0}ms`)
+    return {
+        res: level,
+        year_range: yearRange,
+        data_version: manifest.data_version,
+        source: "pyramid",
+        cells,
+    }
+}
+
+/** S2 analog of `queryPyramid`. Reads `s2_pyramid/s2_l{level}/{token}.parquet`
+ *  for each requested shard, applies row-group pruning via the
+ *  `cellid BETWEEN` ranges the caller computed, aggregates rows across
+ *  year (drops the year filter's row multiplication), and returns
+ *  one `CellOut` per unique cell.
+ *
+ *  Cell keys in the output reuse the `h3` field name for wire-format
+ *  parity with the H3 path — the client interprets it as an S2 token
+ *  when `grid=s2` is active. Renaming that field to a grid-agnostic
+ *  `cell_id` is a follow-up (touches every downstream client op). */
+async function queryPyramidS2(
+    bucket: R2Bucket,
+    prefix: string,
+    level: number,
+    shards: string[],
+    yearRange: [number, number],
+    severities: Set<"f" | "i" | "p"> | undefined,
+    clipPoly: LonLatPolygon | null,
+    tokenRanges: Array<{ lo: string; hi: string }>,
+    labels: "full" | "nums" | "only" = "full",
+): Promise<CellOut[]> {
+    const wantF = !severities || severities.has("f")
+    const wantI = !severities || severities.has("i")
+    const wantP = !severities || severities.has("p")
+    const out = new Map<string, CellOut>()
+
+    // Parquet column names (from `njdot/cli/cells.py` `_build_pyramid_level_s2`):
+    // cellid TEXT (S2 token), year INT, count cols INT, sld_name TEXT, ...
+    // Row-group pruning uses `$or` of `cellid` bounds, same shape as H3.
+    const cellidRangeOr = tokenRanges.length
+        ? { $or: tokenRanges.map(r => ({ cellid: { $gte: r.lo, $lte: r.hi } })) }
+        : null
+    const subdir = `s2_pyramid/s2_l${level}`
+
+    if (labels === "only") {
+        const cols = ["cellid", "sld_name", "cross_sld_name", "mun", "county"]
+        const results = await Promise.all(shards.map(async s => {
+            try {
+                return await readParquetFromR2<any>(
+                    bucket, `${prefix}/${subdir}/${s}.parquet`,
+                    { columns: cols, filter: cellidRangeOr ?? undefined, missingOk: true },
+                )
+            } catch (e) {
+                console.error(`s2 pyramid ${subdir}/${s} labels read failed:`, e)
+                return null
+            }
+        }))
+        for (const rows of results) {
+            if (!rows) continue
+            for (const row of rows) {
+                const token = row.cellid as string
+                if (out.has(token)) continue
+                if (!row.sld_name && !row.cross_sld_name && !row.mun && !row.county) continue
+                if (!cellInPolygonS2(token, clipPoly)) continue
+                const c: CellOut = { h3: token, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
+                if (row.sld_name) c.sld_name = row.sld_name
+                if (row.cross_sld_name) c.cross_sld_name = row.cross_sld_name
+                if (row.mun) c.mun = row.mun
+                if (row.county) c.county = row.county
+                out.set(token, c)
+            }
+        }
+        return [...out.values()]
+    }
+
+    const cols = labels === "nums"
+        ? ["cellid", "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"]
+        : ["cellid", "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "sld_name", "cross_sld_name", "mun", "county"]
+
+    const yearFilter = { year: { $gte: yearRange[0], $lte: yearRange[1] } }
+    const filter = cellidRangeOr ? { $and: [yearFilter, cellidRangeOr] } : yearFilter
+
+    const results = await Promise.all(shards.map(async s => {
+        try {
+            return await readParquetFromR2<any>(
+                bucket, `${prefix}/${subdir}/${s}.parquet`,
+                { columns: cols, filter, missingOk: true },
+            )
+        } catch (e) {
+            console.error(`s2 pyramid ${subdir}/${s} read failed:`, e)
+            return null
+        }
+    }))
+    for (const rows of results) {
+        if (!rows) continue
+        for (const row of rows) {
+            const token = row.cellid as string
+            if (!cellInPolygonS2(token, clipPoly)) continue
+            let c = out.get(token)
+            if (!c) {
+                c = { h3: token, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
+                if (row.sld_name) c.sld_name = row.sld_name
+                if (row.cross_sld_name) c.cross_sld_name = row.cross_sld_name
+                if (row.mun) c.mun = row.mun
+                if (row.county) c.county = row.county
+                out.set(token, c)
+            }
+            if (wantF) {
+                c.n_fatal += row.n_fatal ?? 0
+                if ((row.n_fatal ?? 0) > 0) {
+                    ;(c.fatal_years ??= []).push(row.year)
+                }
+            }
+            if (wantI) { c.n_inj_ped += row.n_inj_ped ?? 0; c.n_inj_other += row.n_inj_other ?? 0 }
+            if (wantP) c.n_pdo += row.n_pdo ?? 0
+            c.n_vehs += row.n_vehs ?? 0
+        }
+    }
+    const cells: CellOut[] = []
+    for (const c of out.values()) {
+        const keep =
+            (wantF && c.n_fatal > 0) ||
+            (wantI && (c.n_inj_ped > 0 || c.n_inj_other > 0)) ||
+            (wantP && c.n_pdo > 0)
+        if (!keep) continue
+        c.fatal_years?.sort((a, b) => a - b)
+        cells.push(c)
+    }
+    return cells
+}
+
+/** S2 analog of `coarsenCells` — rolls fine-level cells up to a coarser
+ *  target level via the S2 parent walk. Lossless because S2 children
+ *  exactly tile their parents (unlike H3's boundary-triangle drift). */
+function coarsenCellsS2(cells: CellOut[], toLevel: number): CellOut[] {
+    if (cells.length === 0) return cells
+    const parents = new Map<string, CellOut>()
+    for (const c of cells) {
+        const childId = s2TokenToId(c.h3)
+        const parentId = s2Parent(childId, toLevel)
+        const parentToken = s2IdToToken(parentId)
+        let p = parents.get(parentToken)
+        if (!p) {
+            p = {
+                h3: parentToken,
+                n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0,
+            }
+            // Labels drop on coarsen — parent cell doesn't have a single
+            // road label. Client tooltip degrades gracefully.
+            parents.set(parentToken, p)
+        }
+        p.n_fatal += c.n_fatal
+        p.n_inj_ped += c.n_inj_ped
+        p.n_inj_other += c.n_inj_other
+        p.n_pdo += c.n_pdo
+        p.n_vehs += c.n_vehs
+        if (c.fatal_years && c.fatal_years.length) {
+            (p.fatal_years ??= []).push(...c.fatal_years)
+        }
+    }
+    for (const p of parents.values()) {
+        if (p.fatal_years) p.fatal_years = [...new Set(p.fatal_years)].sort((a, b) => a - b)
+    }
+    return [...parents.values()]
 }
 
 async function queryRaw(
