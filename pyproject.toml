@@ -47,6 +47,7 @@ dependencies = [
     "utz>=0.21",
     "lazy-loader>=0.4",
     "kaleido>=1.2.0",
+    "s2sphere>=0.2.5",
 ]
 
 [project.optional-dependencies]
