@@ -21,12 +21,12 @@ database_id = "8d71621d-7b48-4018-b3fe-0db68ec528ad"
 # (`cells_s2_l{level}` tables built from `data/cells/cells-s2.db`,
 # imported via `api/scripts/d1-import.sh cells-s2`). Optional —
 # `handleCellsRequestS2` falls through to the parquet pyramid when
-# absent. Uncomment + fill `database_id` after
-# `wrangler d1 create cells-s2` returns one.
-# [[d1_databases]]
-# binding = "CELLS_S2_DB"
-# database_name = "cells-s2"
-# database_id = "<paste from wrangler d1 create cells-s2>"
+# absent (so this binding is optional but preferred — the D1 fast
+# path is much cheaper than reading R2 parquet per request).
+[[d1_databases]]
+binding = "CELLS_S2_DB"
+database_name = "cells-s2"
+database_id = "ed836697-7116-4a92-ae87-c304d616d1cd"
 
 [dev]
 port = 51895
