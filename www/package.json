@@ -47,6 +47,7 @@
     "mapbox-gl": "^3.0.1",
     "maplibre-gl": "^5.0.0",
     "moment-timezone": "^0.5.45",
+    "nodes2ts": "^4.0.2",
     "plotly.js": "https://github.com/runsascoded/plotly.js#cf90c76e0398a19b429a573fac5fabcec44d0606",
     "pltly": "https://gitlab.com/runsascoded/js/pltly/-/archive/0edf371f940ae549a6511d74b98b96d96048cdd8/pltly-0edf371f940ae549a6511d74b98b96d96048cdd8.tar.gz",
     "react": "^18",

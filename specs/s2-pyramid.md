@@ -1,7 +1,7 @@
 # S2 Pyramid: Migrating Off H3
 
-Status: draft, not started. Documenting rationale + migration outline; no
-implementation planned yet.
+Status: **impl phase 1 (client cell math) landed**. `e` picks up phase 3
+(pyramid generation) when ready. See §Impl progress below.
 
 ## Motivation
 
@@ -167,3 +167,76 @@ sometimes-outside for H3.
 - Not implementing "H13"-style BT-aware H3 aggregation as a fallback.
   If we're touching this, we're touching it to fix the root problem,
   not paper over it.
+
+## Impl progress
+
+### Phase 1 — Client cell math (landed)
+
+- Added `nodes2ts` (1.2 MB unpacked; ESM; tree-shakeable). Chosen over
+  `s2js` (4.4 MB unpacked) and older `s2-geometry` (unmaintained since
+  2018). `nodes2ts` is TS-native, has recent `4.0.2` release (2026-03),
+  no deps.
+- New module `www/src/map/s2/index.ts`:
+  - `latLngToToken(lat, lng, level) → S2Token` (14-char hex)
+  - `tokenToLatLng(token) → [lat, lng]`
+  - `tokenLevel(token) → level`
+  - `tokenToParent(token, level) → S2Token`
+  - `S2_DIAMETER_METERS[level]` — level radius table for the picker,
+    same shape as H3's `H3_RADIUS_METERS`
+  - `S2_MIN_LEVEL = 4`, `S2_MAX_LEVEL = 16` — range that overlaps H3
+    r5–r15 for typical NJ viewport coverage
+- Smoke tests in `www/src/map/s2/s2.test.ts` (5 passing): round-trip
+  accuracy at level 14, token format stability, level extraction,
+  parent walk correctness (JC ↔ Newark share level-8 parent).
+
+### Phase 2 — Client picker + URL param (next)
+
+- Add `pickS2LevelForPixels(target_px, zoom, lat) → level` — mirror of
+  `pickHexResolutionForPixels`.
+- Add `?grid=s2|h3` URL param via `use-prms` `enumParam`. `h3` remains
+  the default until the pyramid lands.
+- Wire the picker call site in `CrashMapSection` to switch on
+  `?grid=…`. Debug widget shows the active grid + the picked res/level.
+- Vitest unit tests for the picker, mirroring `picker.test.ts`.
+
+### Phase 3 — Pyramid generation (`e` picks up)
+
+- Rebuild the R2 pyramid using S2 cell IDs instead of H3.
+  Layout: `pyramid/s2_l{data_level}/{s2_l4_shard}.parquet` — level 4
+  shards, level 4–16 data. Rough count: ~15 level-4 cells cover NJ ×
+  13 data levels = ~200 files.
+- Rebuild the D1 rollup: `cells_s2_l{level}(cellid PK TEXT, ...)`
+  matching `cells_r{res}` shape.
+- Data build in `njdot/cli/cells.py`: swap H3 binning for S2. Cell IDs
+  as decimal-string TEXT for D1 (mirrors the H3 `queryCellsD1` gotcha).
+
+### Phase 4 — Worker query support
+
+- Add `s2-range.ts` to `cells-api/src/` — S2 covering + range math for
+  bbox → cells at a given level. `nodes2ts` `S2RegionCoverer` is the
+  primary primitive.
+- Extend `/v1/cells` to accept `grid=s2` alongside the existing `res=`
+  and `cells=` params. When `grid=s2`, hit `cells_s2_l{level}` for
+  the D1 fast path, `pyramid/s2_l{...}/*.parquet` for filtered queries.
+- The `labels` mode plumbing (`?labels=nums|only|full` from
+  `specs/labels-on-demand.md`) applies unchanged to S2 — the four
+  string columns live in `cells_s2_l{level}` the same way they live
+  in `cells_r{res}`.
+
+### Phase 5 — Render + debug widget
+
+- New rendering path: reuse the existing `ColumnLayer` from
+  `StackedHexLayer` — S2 cell centers come from `tokenToLatLng`,
+  cell diameters from `S2_DIAMETER_METERS[level]`, inscribed circle
+  radius = `diameter * (√2 / 2)`. No new deck.gl layer needed.
+- `ZoomResChart` gets a level column showing the S2 counterpart to
+  the H3 zoom×res chart. Debug widget's grid pill toggles between
+  H3 and S2 rows.
+
+### Rollout order
+
+- Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 as listed. Phases
+  1–2 ship independently (H3 keeps working). Phase 3 unblocks the
+  worker (phase 4); phase 4 unblocks the client render (phase 5).
+  Only once phase 5 lands does `?grid=s2` produce meaningful output.
+

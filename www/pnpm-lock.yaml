@@ -86,6 +86,9 @@ importers:
       moment-timezone:
         specifier: ^0.5.45
         version: 0.5.45
+      nodes2ts:
+        specifier: ^4.0.2
+        version: 4.0.2
       plotly.js:
         specifier: https://github.com/runsascoded/plotly.js#cf90c76e0398a19b429a573fac5fabcec44d0606
         version: https://codeload.github.com/runsascoded/plotly.js/tar.gz/cf90c76e0398a19b429a573fac5fabcec44d0606(mapbox-gl@3.1.2)
@@ -2727,6 +2730,10 @@ packages:
 
   node-releases@2.0.27:
     resolution: {integrity: sha512-nmh3lCkYZ3grZvqcCH+fjmQ7X+H0OeZgP40OierEaAptX4XofMh5kwNbWh7lBduUzCcV/8kZ+NDLCwm2iorIlA==}
+
+  nodes2ts@4.0.2:
+    resolution: {integrity: sha512-990KfVKp5QFpEEJl6UeoKSsVaSVE2u4dpXkDGfSZ7dW1Y3e3OlMhHWzJNv1U6d2M0MOmDBjHMWBqCdXv6Pc/5Q==}
+    engines: {node: '>=20'}
 
   normalize-path@3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
@@ -6446,6 +6453,8 @@ snapshots:
       formdata-polyfill: 4.0.10
 
   node-releases@2.0.27: {}
+
+  nodes2ts@4.0.2: {}
 
   normalize-path@3.0.0: {}
 
