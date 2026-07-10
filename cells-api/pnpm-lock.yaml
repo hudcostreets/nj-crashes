@@ -30,6 +30,9 @@ importers:
       '@types/node':
         specifier: ^26.1.0
         version: 26.1.0
+      nodes2ts:
+        specifier: ^4.0.2
+        version: 4.0.2
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
@@ -970,6 +973,10 @@ packages:
     resolution: {integrity: sha512-ZB9RH/39qpq5Vu6Y+NmUaFhQR6pp+M2Xt76XBnEwDaGcVAqhlvxrl3B2bKS5D3NH3QR76v3aSrKaF/Kiy7lEtQ==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
+
+  nodes2ts@4.0.2:
+    resolution: {integrity: sha512-990KfVKp5QFpEEJl6UeoKSsVaSVE2u4dpXkDGfSZ7dW1Y3e3OlMhHWzJNv1U6d2M0MOmDBjHMWBqCdXv6Pc/5Q==}
+    engines: {node: '>=20'}
 
   object-assign@4.1.1:
     resolution: {integrity: sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==}
@@ -1938,6 +1945,8 @@ snapshots:
       thenify-all: 1.6.0
 
   nanoid@3.3.12: {}
+
+  nodes2ts@4.0.2: {}
 
   object-assign@4.1.1: {}
 
