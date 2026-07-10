@@ -17,6 +17,17 @@ binding = "CELLS_DB"
 database_name = "cells"
 database_id = "8d71621d-7b48-4018-b3fe-0db68ec528ad"
 
+# S2 rollup binding — mirrors CELLS_DB but for the S2 grid
+# (`cells_s2_l{level}` tables built from `data/cells/cells-s2.db`,
+# imported via `api/scripts/d1-import.sh cells-s2`). Optional —
+# `handleCellsRequestS2` falls through to the parquet pyramid when
+# absent. Uncomment + fill `database_id` after
+# `wrangler d1 create cells-s2` returns one.
+# [[d1_databases]]
+# binding = "CELLS_S2_DB"
+# database_name = "cells-s2"
+# database_id = "<paste from wrangler d1 create cells-s2>"
+
 [dev]
 port = 51895
 

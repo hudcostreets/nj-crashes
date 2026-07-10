@@ -27,6 +27,11 @@ interface Env {
     // Per-cell all-years rollup (counts + labels). Optional so a deploy
     // without the binding still works (falls back to the R2 parquet path).
     CELLS_DB?: D1Database
+    /** Optional S2 rollup binding. When present + the request has
+     *  `grid=s2` and matches the default (all-years, all-severity,
+     *  full-labels) predicate, `cells_s2_l{level}` serves the query
+     *  directly. Otherwise the parquet pyramid path handles it. */
+    CELLS_S2_DB?: D1Database
 }
 
 function corsHeaders(env: Env, extra: HeadersInit = {}): HeadersInit {
@@ -123,7 +128,8 @@ export default {
                 if (request.headers.get("If-None-Match") === tag) {
                     return new Response(null, { status: 304, headers: corsHeaders(env, { ETag: tag }) })
                 }
-                const body = await handleCellsRequest(env.CELLS_BUCKET, prefix, cellsReq, env.CELLS_DB)
+                const db = cellsReq.grid === "s2" ? env.CELLS_S2_DB : env.CELLS_DB
+                const body = await handleCellsRequest(env.CELLS_BUCKET, prefix, cellsReq, db)
                 return new Response(JSON.stringify(body, jsonReplacer), {
                     headers: corsHeaders(env, {
                         ETag: tag,

@@ -241,10 +241,11 @@ export async function handleCellsRequest(
     db?: D1Database,
 ): Promise<CellsResponse> {
     if (req.grid === "s2") {
-        // S2 grid — parallel dispatch to the S2 pyramid path. D1 fast
-        // path lands in phase 4b3 once `CELLS_S2_DB` is bound. Parquet
-        // path (below) already handles all filter shapes we support.
-        return await handleCellsRequestS2(bucket, prefix, req)
+        // S2 grid — parallel dispatch. Reuses the same `CELLS_DB`
+        // binding option for a D1 fast path against `cells_s2_l{level}`;
+        // falls through to the parquet pyramid when the table is
+        // absent or the query doesn't match the fast-path predicates.
+        return await handleCellsRequestS2(bucket, prefix, req, db)
     }
     const manifest = await loadManifest(bucket, prefix)
     const { cells: requestedShards, res: requestedRes, maxCells } = req
@@ -566,6 +567,7 @@ async function handleCellsRequestS2(
     bucket: R2Bucket,
     prefix: string,
     req: CellsRequest,
+    db?: D1Database,
 ): Promise<CellsResponse> {
     const manifest = await loadManifest(bucket, prefix)
     const { cells: requestedShards, res: requestedLevel, maxCells } = req
@@ -610,6 +612,32 @@ async function handleCellsRequestS2(
             lo: lo === 0n ? "".padStart(16, "0") : lo.toString(16).padStart(16, "0"),
             hi: hi === 0n ? "".padStart(16, "0") : hi.toString(16).padStart(16, "0"),
         })
+    }
+
+    // D1 fast path: default (all-years, all-severity, full-labels)
+    // query hits `cells_s2_l{level}` — one indexed lex-range scan.
+    // Falls through to the parquet path on any failure (binding
+    // absent, table missing, oversized result). Mirrors the H3 path.
+    const allSev = !sevSet || (sevSet.has("f") && sevSet.has("i") && sevSet.has("p"))
+    const coversAllYears = req.yearRange == null
+        || (req.yearRange[0] <= manifest.year_range[0] && req.yearRange[1] >= manifest.year_range[1])
+    const isDefault = allSev && coversAllYears
+    if (db && isDefault && labels === "full") {
+        try {
+            const t0 = Date.now()
+            let cells = await queryCellsS2D1(db, requestedLevel, ranges, clipPoly)
+            const t1 = Date.now()
+            let level = requestedLevel
+            while (maxCells != null && cells.length > maxCells && level > S2_MIN_LEVEL) {
+                level--
+                cells = coarsenCellsS2(cells, level)
+            }
+            const t2 = Date.now()
+            console.log(`[timing] s2 l${requestedLevel} D1 ranges=${ranges.length} cells=${cells.length}: d1=${t1 - t0}ms, coarsen=${t2 - t1}ms, total=${t2 - t0}ms`)
+            return { res: level, year_range: yearRange, data_version: manifest.data_version, source: "d1", cells }
+        } catch (e) {
+            console.error(`S2 D1 path failed (level ${requestedLevel}), falling back to parquet:`, e)
+        }
     }
 
     const t0 = Date.now()
@@ -753,6 +781,54 @@ async function queryPyramidS2(
             (wantP && c.n_pdo > 0)
         if (!keep) continue
         c.fatal_years?.sort((a, b) => a - b)
+        cells.push(c)
+    }
+    return cells
+}
+
+/** D1 fast path for the S2 default (all-years, all-severity) query.
+ *  Mirrors `queryCellsD1` for H3: one indexed lex-range scan against
+ *  `cells_s2_l{level}`. `cellid` is stored as TEXT (S2 tokens are
+ *  natively strings — no int64 encoding gymnastics like the H3 side),
+ *  so the range predicate uses direct string comparison. Lex order
+ *  on 16-char zero-padded tokens matches S2's Hilbert-curve order,
+ *  matching the ranges produced by `s2-range.ts`. */
+async function queryCellsS2D1(
+    db: D1Database,
+    level: number,
+    tokenRanges: Array<{ lo: string; hi: string }>,
+    clipPoly: LonLatPolygon | null,
+): Promise<CellOut[]> {
+    const where = tokenRanges.length
+        ? tokenRanges.map(r => `(cellid BETWEEN '${r.lo}' AND '${r.hi}')`).join(" OR ")
+        : "1=1"
+    const sql = `SELECT cellid, n_fatal, n_inj_ped, n_inj_other, n_pdo, n_vehs, `
+        + `fatal_years, sld_name, cross_sld_name, mun, county FROM cells_s2_l${level} WHERE ${where}`
+    const { results } = await db.prepare(sql).all<{
+        cellid: string
+        n_fatal: number; n_inj_ped: number; n_inj_other: number; n_pdo: number; n_vehs: number
+        fatal_years: string | null
+        sld_name: string | null; cross_sld_name: string | null; mun: string | null; county: string | null
+    }>()
+    const cells: CellOut[] = []
+    for (const row of results) {
+        if (!(row.n_fatal > 0 || row.n_inj_ped > 0 || row.n_inj_other > 0 || row.n_pdo > 0)) continue
+        if (!cellInPolygonS2(row.cellid, clipPoly)) continue
+        const c: CellOut = {
+            h3: row.cellid,
+            n_fatal: row.n_fatal, n_inj_ped: row.n_inj_ped, n_inj_other: row.n_inj_other,
+            n_pdo: row.n_pdo, n_vehs: row.n_vehs,
+        }
+        if (row.fatal_years) {
+            try {
+                const parsed = JSON.parse(row.fatal_years)
+                if (Array.isArray(parsed) && parsed.length) c.fatal_years = parsed as number[]
+            } catch { /* ignore — malformed rollup */ }
+        }
+        if (row.sld_name) c.sld_name = row.sld_name
+        if (row.cross_sld_name) c.cross_sld_name = row.cross_sld_name
+        if (row.mun) c.mun = row.mun
+        if (row.county) c.county = row.county
         cells.push(c)
     }
     return cells

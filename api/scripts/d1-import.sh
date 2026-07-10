@@ -59,6 +59,7 @@ declare -A DB_MAP=(
     [cmymc]="$WWW/njdot/cmymc.db"
     [njsp-crashes]="$WWW/njsp/crashes.db"
     [cells]="../data/cells/cells.db"
+    [cells-s2]="../data/cells/cells-s2.db"
 )
 
 # Binding names in wrangler.toml, keyed by db_name
@@ -70,6 +71,7 @@ declare -A BINDING_MAP=(
     [cmymc]="CMYMC_DB"
     [njsp-crashes]="NJSP_CRASHES_DB"
     [cells]="CELLS_DB"
+    [cells-s2]="CELLS_S2_DB"
 )
 
 requested=("$@")
