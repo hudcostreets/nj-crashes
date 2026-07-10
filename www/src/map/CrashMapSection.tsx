@@ -28,6 +28,7 @@ import { fitBoundsToView, lerpView, metersPerPixel, pickHexResolutionForPixels }
 import { H3_RADIUS_METERS } from "@/src/map/StackedHexLayer"
 
 import { circleRadiusPx, hexPxTargetFor, pickRes, BINS_BUDGET } from "@/src/map/picker"
+import { pickS2LevelForPixels } from "@/src/map/s2"
 import { DebugOverlay } from "@/src/map/DebugOverlay"
 import { YearSelect } from "@/src/lib/year-select"
 
@@ -187,6 +188,13 @@ export function CrashMapSection({
     // circle, so res transitions don't visually pop and we get
     // density-scaled dots (small at wide zoom, chunkier deep-zoom).
     const [viz, setViz] = useUrlState("viz", enumParam("circle" as const, ["hex", "circle"] as const))
+    // `grid=h3|s2` — which cell grid the picker + fetch layer operate on.
+    // H3 stays the default; S2 is the alternate stack (see
+    // `specs/s2-pyramid.md`). Client plumbing landed ahead of pyramid + worker
+    // support: `?grid=s2` computes S2 levels for display in the widget, but
+    // the actual /v1/cells fetch still uses H3 until phases 3-4 land.
+    const [grid, setGrid] = useUrlState("grid", enumParam("h3" as const, ["h3", "s2"] as const))
+    void setGrid
     // `hexAuto` — when true (default), hexPxTarget grows with zoom so
     // close-up views get chunkier, more-pickable cells; when false, the
     // manual slider value wins. `?ha=false` to opt out of adaptive.
@@ -322,6 +330,15 @@ export function CrashMapSection({
             if (px !== null) levels.push({ res, px, isCurrent: res === currRes })
         }
         return { levels }
+    }, [effectiveView, hexPxTarget])
+
+    // S2 counterpart to `pickerInfo.currRes` — computed regardless of
+    // active grid so the widget can show what an S2 fetch WOULD pick,
+    // even while `?grid=h3` is still driving the actual fetch. Costs
+    // nothing to compute (pure math on the `S2_DIAMETER_METERS` table).
+    const s2Level = useMemo(() => {
+        if (!effectiveView) return null
+        return pickS2LevelForPixels(hexPxTarget, effectiveView.zoom, effectiveView.latitude)
     }, [effectiveView, hexPxTarget])
 
     const filter: CrashFilter = useMemo(() => {
@@ -842,6 +859,8 @@ export function CrashMapSection({
                             currentZoom={effectiveView?.zoom ?? 7}
                             currentLat={effectiveView?.latitude ?? 40.7}
                             currentRes={pickerInfo?.levels.find(l => l.isCurrent)?.res ?? 11}
+                            grid={grid}
+                            s2Level={s2Level}
                             viz={viz}
                             viewportAreaPx={(() => { const [w, h] = viewportDims(fullScreen); return w * h })()}
                             budget={binsBudget}
@@ -1108,12 +1127,21 @@ function Legend({
  *  Horizontal orange line: the camera's current zoom, so users see
  *  where they are in the mapping at a glance. */
 function ZoomResChart({
-    currentZoom, currentLat, currentRes, viz, viewportAreaPx, budget,
+    currentZoom, currentLat, currentRes, grid, s2Level, viz, viewportAreaPx, budget,
     fetched, fetchedBytes, inViewport, actualVp, clampedVp, targetPx,
 }: {
     currentZoom: number
     currentLat: number
     currentRes: number
+    /** Active grid (`h3`/`s2`) from the `?grid=` URL param. When `s2`
+     *  the H3 zoom×res chart still renders (as the shipping fetch path),
+     *  and a small S2 row is appended below showing what an S2 fetch
+     *  WOULD pick. Fetch swap is phase 4. */
+    grid?: "h3" | "s2"
+    /** S2 level the picker would select at this zoom/vp/budget. Shown
+     *  next to the grid indicator when `grid === "s2"` (or always, as
+     *  a preview even when H3 is active — decided by the widget). */
+    s2Level?: number | null
     viz: "hex" | "circle"
     viewportAreaPx: number
     budget: number
@@ -1219,6 +1247,18 @@ function ZoomResChart({
                         </>
                     )}
                 </div>
+                {(grid || s2Level != null) && (
+                    <div style={{ opacity: 0.7 }}>
+                        grid: <span style={{ fontWeight: 600 }}>{grid ?? "h3"}</span>
+                        {" · h3 r"}<span style={{ fontWeight: 600 }}>{currentRes}</span>
+                        {s2Level != null && (
+                            <>{" · s2 l"}<span style={{ fontWeight: 600 }}>{s2Level}</span></>
+                        )}
+                        {grid === "s2" && (
+                            <span style={{ color: "#e0803a", marginLeft: 6 }}>(fetch: h3 — pending)</span>
+                        )}
+                    </div>
+                )}
             </div>
             <div style={{ opacity: 0.55, marginBottom: 2, fontSize: "0.9em" }}>Zoom × hex px</div>
             <svg width={W} height={H + 18} style={{ overflow: "visible", display: "block" }}>

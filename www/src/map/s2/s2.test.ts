@@ -5,7 +5,9 @@
 import { describe, it, expect } from "vitest"
 import {
     S2_DIAMETER_METERS,
+    S2_MAX_LEVEL,
     latLngToToken,
+    pickS2LevelForPixels,
     tokenLevel,
     tokenToLatLng,
     tokenToParent,
@@ -72,5 +74,47 @@ describe("S2 parent walk", () => {
         const jcParent = tokenToParent(jc, 8)
         const newarkParent = tokenToParent(newark, 8)
         expect(jcParent).toBe(newarkParent)
+    })
+})
+
+describe("S2 picker (`pickS2LevelForPixels`)", () => {
+    // Pin the picker's output at anchor zooms for NJ latitude. The
+    // levels here should track the H3 picker's shape (finer as we
+    // zoom in). Computed by hand:
+    //     mppx(z, 40.7°) ≈ 156543 · cos(40.7°) / 2^z ≈ 118844 / 2^z
+    //     target_m = target_px · mppx
+    //     level = finest whose S2 edge ≥ target_m
+    // Sanity check on H3 side: at z=7 target=2.5 → r7 (edge 1220m,
+    // diameter 2440m ≥ 2320m target) — matches picker.test.ts.
+    const NJ_LAT = 40.7
+    const cases: Array<[number, number, number]> = [
+        // [target_px, zoom, expected_level]
+        [2.5, 7,  11],  // statewide — S2 finer than H3 r7 (level 11 edge 3828m ≥ 2320m; level 12 edge 1914m < 2320m)
+        [2.5, 10, 14],  // county-ish (level 14 edge 478m ≥ 290m; level 15 edge 239m < 290m)
+        [2.5, 13, 17],  // city block, at S2_MAX_LEVEL cap
+        [2.5, 16, 17],  // sidewalk-scale, still capped
+    ]
+    for (const [target, zoom, expected] of cases) {
+        it(`target=${target}px z=${zoom} lat=${NJ_LAT} → l${expected}`, () => {
+            const picked = pickS2LevelForPixels(target, zoom, NJ_LAT)
+            // Allow ±1 slack — S2_DIAMETER_METERS are averages and cells
+            // vary ~15% by latitude, so boundary zooms straddle levels.
+            expect(Math.abs(picked - expected)).toBeLessThanOrEqual(1)
+        })
+    }
+
+    it("is monotone-non-decreasing across the zoom range", () => {
+        let prev = -1
+        for (let z = 6; z <= 18; z += 0.25) {
+            const l = pickS2LevelForPixels(2.5, z, NJ_LAT)
+            expect(l).toBeGreaterThanOrEqual(prev)
+            prev = l
+        }
+    })
+
+    it("stays within [0, S2_MAX_LEVEL] bounds", () => {
+        // Extreme wide zoom → coarsest end; extreme deep → finest.
+        expect(pickS2LevelForPixels(2.5, 3, NJ_LAT)).toBeGreaterThanOrEqual(0)
+        expect(pickS2LevelForPixels(2.5, 22, NJ_LAT)).toBeLessThanOrEqual(S2_MAX_LEVEL)
     })
 })

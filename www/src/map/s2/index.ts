@@ -16,41 +16,48 @@
  *  16 (~4 m² street-scale). NJ statewide covers ~15 cells at level 4.
  */
 import { S2LatLng, S2CellId } from "nodes2ts"
+import { metersPerPixel } from "../CrashMap"
 
 export type S2Token = string
 
-/** Vertex-diameter of an S2 cell, in meters, at each level. Averaged
- *  across mid-lat cells (S2 cells vary ~15% by lat within a level).
- *  Sourced from Google's published table:
- *  https://s2geometry.io/resources/s2cell_statistics.html
+/** Edge length of an average S2 cell, in meters, at each level.
+ *  Sourced from Google's published stats table (min/avg/max per
+ *  level): https://s2geometry.io/resources/s2cell_statistics.html.
+ *  Values below are the AVG column.
  *
- *  Callers should treat these as approximations; use `cellLevelDiam`
- *  for a specific cell's real diameter. */
+ *  We use "edge" here rather than diagonal because it's the natural
+ *  on-screen width — a level-N cell occupies roughly `edge/mppx`
+ *  pixels wide at a given zoom, mirroring how H3 uses its vertex
+ *  diameter (`2 × H3_RADIUS_METERS[r]`) in the picker.
+ *
+ *  Cells vary ~15% within a level (avg vs actual by latitude); the
+ *  picker's boundary zooms therefore straddle levels a bit. Close
+ *  enough for hex-vs-S2 aesthetic comparison. */
 export const S2_DIAMETER_METERS: Record<number, number> = {
-    0: 15_755_000,   //  6 faces of the cube; toy scale
-    1: 7_842_000,
-    2: 3_921_000,
-    3: 1_961_000,
-    4: 980_000,      // ~NJ half
-    5: 490_000,
-    6: 245_000,
-    7: 122_500,      // ~county
-    8: 61_250,       // ~large town
-    9: 30_625,       // ~neighborhood
-    10: 15_312,      // ~urban district
-    11: 7_656,       // ~city grid super-block
-    12: 3_828,       // ~city block
-    13: 1_914,       // ~half-block
-    14: 957,         // ~intersection cluster
-    15: 478,
-    16: 239,         // ~single street segment
-    17: 120,         // ~sidewalk-scale
+    0: 7_842_000,     // 6 faces of the cube — toy scale
+    1: 3_921_000,
+    2: 1_961_000,
+    3: 980_000,
+    4: 490_000,       // ~NJ half
+    5: 245_000,
+    6: 122_500,       // ~county
+    7: 61_250,
+    8: 30_625,        // ~large town
+    9: 15_312,
+    10: 7_656,        // ~urban district
+    11: 3_828,        // ~city grid super-block
+    12: 1_914,        // ~city block
+    13: 957,          // ~half-block
+    14: 478,          // ~intersection cluster
+    15: 239,
+    16: 120,          // ~single street segment
+    17: 60,           // ~sidewalk-scale
 }
 
-/** Level range the pyramid supports. Matches H3's r5–r15 for
+/** Level range the pyramid supports. Matches H3's r5-r15 for
  *  overlapping viewport coverage. */
 export const S2_MIN_LEVEL = 4
-export const S2_MAX_LEVEL = 16
+export const S2_MAX_LEVEL = 17
 
 /** Convert (lat, lon) → S2 cell token at `level`. Token is a
  *  14-char lowercase hex string, e.g. `"89c25c1"` (leading digits
@@ -78,4 +85,27 @@ export function tokenLevel(token: S2Token): number {
  *  is not strictly less than the token's own level. */
 export function tokenToParent(token: S2Token, level: number): S2Token {
     return S2CellId.fromToken(token).parentL(level).toToken()
+}
+
+/** Given a target cell-diameter (px), a zoom, and a latitude, return
+ *  the finest S2 level whose *average* cell diameter is ≥ the target.
+ *  Same semantics as `pickHexResolutionForPixels`: walk coarsest →
+ *  finest, keep updating `best` while cells still meet the target,
+ *  break when they drop below.
+ *
+ *  Cell diameters here are Google's published averages (see
+ *  `S2_DIAMETER_METERS`); actual cell diameters vary ~15% within a
+ *  level, so the picker's boundaries are approximate. For NJ latitudes
+ *  the average is close to the actual, so this drift is small. */
+export function pickS2LevelForPixels(pixelTarget: number, zoom: number, lat: number): number {
+    const mppx = metersPerPixel(zoom, lat)
+    const targetMeters = pixelTarget * mppx
+    const levels = Object.keys(S2_DIAMETER_METERS).map(Number).sort((a, b) => a - b)
+    let best = levels[0]
+    for (const l of levels) {
+        const diaMeters = S2_DIAMETER_METERS[l]
+        if (diaMeters >= targetMeters) best = l
+        else break
+    }
+    return best
 }

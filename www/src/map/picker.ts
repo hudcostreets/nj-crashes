@@ -16,8 +16,22 @@
  *  Companion to `pickHexResolutionForPixels` in `CrashMap.tsx` (the
  *  low-level "finest r whose diameter ≥ threshold" walk). */
 import { pickHexResolutionForPixels } from "./CrashMap"
+import { pickS2LevelForPixels } from "./s2"
 
 export type VizMode = "hex" | "circle"
+
+/** Which grid the picker + fetch layer operate on. `h3` is the
+ *  current production grid; `s2` gates the alternate stack described
+ *  in `specs/s2-pyramid.md`. Selected via `?grid=` URL param.
+ *  Client-side plumbing lands ahead of the S2 pyramid + worker
+ *  support (phases 3-4) — until those land, `grid=s2` computes S2
+ *  levels for display but the actual data fetch still uses H3. */
+export type Grid = "h3" | "s2"
+
+/** Callers pass the numeric picker output (an H3 resolution or an
+ *  S2 level, depending on `grid`) alongside the grid so downstream
+ *  consumers know which table + range math applies. */
+export type PickerOutput = { grid: Grid; res: number }
 
 /** Default target hex-count filling the map viewport (packing constant
  *  and fill factor folded in; not "populated bins/vp" which is 10-30×
@@ -80,4 +94,24 @@ export function pickRes(
 ): number {
     const target = hexPxTargetFor(viz, viewportAreaPx, budget)
     return pickHexResolutionForPixels(target, zoom, lat)
+}
+
+/** Grid-aware picker. Given a grid + the usual `(viz, zoom, lat,
+ *  vpArea, budget)`, returns `{ grid, res }` where `res` is either
+ *  an H3 resolution (r5-r15) or an S2 level (l4-l16). The px target
+ *  is grid-agnostic — the difference is which cell-diameter table
+ *  the walk runs against. */
+export function pick(
+    grid: Grid,
+    viz: VizMode,
+    zoom: number,
+    lat: number,
+    viewportAreaPx: number,
+    budget: number = BINS_BUDGET,
+): PickerOutput {
+    const target = hexPxTargetFor(viz, viewportAreaPx, budget)
+    const res = grid === "s2"
+        ? pickS2LevelForPixels(target, zoom, lat)
+        : pickHexResolutionForPixels(target, zoom, lat)
+    return { grid, res }
 }
