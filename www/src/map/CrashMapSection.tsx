@@ -416,8 +416,9 @@ export function CrashMapSection({
             zoom: filter.zoom,
             hexPxTarget: filter.hexPxTarget,
             clipPolygon,
+            grid,
         }
-    }, [filter, cc, mc, outline, muniOutline])
+    }, [filter, cc, mc, outline, muniOutline, grid])
     const apiResult = useCellsApi(apiFilter)
     const result = useMemo(() => {
         // Adapt the cells-api result into the shape consumers below expect.

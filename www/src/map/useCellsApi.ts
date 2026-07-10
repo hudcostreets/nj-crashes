@@ -20,6 +20,7 @@ import type { StackedHex } from "./StackedHexLayer"
 import { CELLS_API_BASE } from "./config"
 import type { Bbox } from "./v2"
 import { pickHexResolutionForPixels } from "./CrashMap"
+import { pickS2LevelForPixels } from "./s2"
 
 export type CellsApiFilter = {
     yearRange: [number, number]
@@ -36,6 +37,12 @@ export type CellsApiFilter = {
      *  to scope to the admin boundary instead of the (pitch-inflated)
      *  viewport bbox. */
     clipPolygon?: [number, number][]
+    /** Cell grid to fetch on. Undefined / `"h3"` uses the H3 pyramid
+     *  (shipping default). `"s2"` opts into the S2 pyramid path — the
+     *  client picker's `pickS2LevelForPixels` output is used as `res`,
+     *  and `cells=` is a comma-separated list of S2 shard tokens. See
+     *  `specs/s2-pyramid.md`. */
+    grid?: "h3" | "s2"
 }
 
 type CellRow = {
@@ -325,6 +332,7 @@ function buildBatchUrl(
         severities: sevs,
         shard_res: String(shardRes),
     })
+    if (filter.grid === "s2") params.set("grid", "s2")
     if (res < LABELS_NUMS_RES_THRESHOLD) params.set("labels", "nums")
     if (polygonStr) params.set("polygon", polygonStr)
     return `${CELLS_API_BASE}/v1/cells?${params}`
@@ -640,6 +648,25 @@ export function useCellsApi(filter: CellsApiFilter | null):
 
     const pick = useMemo<{ res: number; cover: CoverCell[]; reason: string } | null>(() => {
         if (!filter || !manifest || !snappedBbox) return null
+        // Grid dispatch. S2 mode short-circuits the H3 shard-cover
+        // machinery: NJ spans only 2 level-4 S2 shard tokens per e's
+        // phase-3 build (`89b`, `89d`), so we hardcode the cover
+        // instead of running `pickCover` against H3-only manifest
+        // fields. Fine-grained viewport pruning still happens
+        // server-side via `s2-range.ts` row-group filtering. Bumping
+        // to `-s 6` or finer would motivate a real S2 cover algorithm
+        // — deferred as an optimization (see `specs/s2-pyramid.md`).
+        if (filter.grid === "s2") {
+            const level = filter.resOverride != null
+                ? filter.resOverride
+                : pickS2LevelForPixels(filter.hexPxTarget ?? 1.2, filter.zoom, filter.viewportLat)
+            // Level clamp mirrors the worker's phase-3 pyramid envelope.
+            const S2_MIN = 4, S2_MAX = 16
+            const clamped = Math.max(S2_MIN, Math.min(S2_MAX, level))
+            const S2_STATEWIDE_SHARDS = ["89b", "89d"]
+            const cover: CoverCell[] = S2_STATEWIDE_SHARDS.map(h3 => ({ h3, shard_res: 4 }))
+            return { res: clamped, cover, reason: `s2 l${clamped} · ${cover.length} shard${cover.length > 1 ? "s" : ""}` }
+        }
         const res = filter.resOverride != null
             ? clamp(filter.resOverride)
             : clamp(pickHexResolutionForPixels(filter.hexPxTarget ?? 1.2, filter.zoom, filter.viewportLat))
@@ -672,7 +699,7 @@ export function useCellsApi(filter: CellsApiFilter | null):
         const tierStr = [...tiers.entries()].sort((a, b) => a[0] - b[0]).map(([sr, n]) => `s${sr}×${n}`).join(" + ")
         return { res, cover, reason: `r${res} · ${tierStr}` }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filter?.zoom, filter?.viewportLat, filter?.hexPxTarget, filter?.resOverride, manifest, bboxKey, usingPoly, filter?.clipPolygon])
+    }, [filter?.grid, filter?.zoom, filter?.viewportLat, filter?.hexPxTarget, filter?.resOverride, manifest, bboxKey, usingPoly, filter?.clipPolygon])
 
     // `polygonStr` for the worker `polygon=` arg. Tied to the snap-grid
     // bbox so per-URL cache hits across users/sessions at the same
