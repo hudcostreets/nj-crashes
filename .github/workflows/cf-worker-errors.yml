@@ -1,0 +1,26 @@
+name: "CF Worker Errors: nightly probe"
+
+on:
+  schedule:
+    # 03:00 UTC ≈ 11 PM EDT / 8 PM PDT. Separate cron from `daily.yml`
+    # (15:30 UTC) so a daily failure doesn't skip this probe.
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+# Prevent overlapping runs (belt + suspenders — probe finishes in seconds).
+concurrency:
+  group: cf-worker-errors
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: "Query CF Workers Analytics + post to Slack on errors"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CI_CHANNEL_ID: ${{ vars.SLACK_CI_CHANNEL_ID }}
+        run: python3 .github/scripts/cf-worker-errors.py
