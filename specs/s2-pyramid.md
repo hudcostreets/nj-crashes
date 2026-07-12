@@ -493,3 +493,72 @@ Spot-check picker: at z=15 street zoom, S2 should now pick `l17`
 granularity) — only worth doing if measured latency at l18 justifies
 the extra file count.
 
+#### Phase 6 — landed (on `e`)
+
+Base level 16 → **18**; data levels **4–18** in both the pyramid and
+`cells-s2.db`. Driven by bumping two constants in `njdot/cli/cells.py`
+(`S2_BASE_LEVEL_DEFAULT`, `S2_LEVELS_DEFAULT`) rather than passing `-b
+18 -l 4,…,18` to each of `raw`/`sld`/`pyramid`/`db` — so the `.dvc`
+`meta.computation.cmd`s stay as-is and DVX sees the code change as a
+`git_deps` bump, correctly marking all three S2 targets stale.
+
+**Where the plan's estimates were wrong.** The sizing assumed ~4×
+cells/level. Actual growth decays hard, because NJ crashes cluster at
+intersections and by l18 (~30 m) the cell count is converging on the
+number of *distinct crash locations*:
+
+| level | cells | ×prev |
+|---|---|---|
+| l16 | 210,733 | — |
+| l17 | 367,649 | 1.74× |
+| l18 | 558,183 | 1.52× |
+
+So everything came in well under estimate: pyramid **274 MB** (30 files,
+6.8 M rows) vs. ~360 MB projected; `cells-s2.db` **118 MB** (15 levels)
+vs. ~185 MB. `s2-sld.parquet` grew 3.7 MB → **10.8 MB** (1,301,782
+cells across l4–l18, 99.6% with a muni) — still git-tracked, no `.dvc`.
+
+**This also settles the deferred `l19` question**: the trend implies
+l19 ≈ 1.3× l18 ≈ 730 k cells, i.e. *cheap*. So the reason to skip l19 is
+the one the spec already gives (individual crashes resolve at 15 m, so a
+per-cell count adds little over a scatterplot), not file size.
+
+**Validation.** Count-conservation holds exactly at all 15 levels, in
+both the pyramid and the D1 source, byte-identical to phase 3 / H3:
+`n_fatal=12,537`, `n_inj_ped=55,659`, `n_inj_other=1,541,178`,
+`n_pdo=3,299,293`, `n_vehs=8,372,869`.
+
+**Level caps bumped in four places** (the spec's step 8 listed two):
+- `www/src/map/useCellsApi.ts` — `S2_MAX` 16 → 18 (request clamp).
+- `cells-api/src/cells.ts` `handleCellsRequestS2` — `[4, 16]` → `[4, 18]`.
+- `www/src/map/s2/index.ts` — `S2_MAX_LEVEL` 17 → 18, **plus an `18: 30`
+  entry in `S2_DIAMETER_METERS`**. The picker iterates that table's keys,
+  so without the new entry it stays capped at l17 no matter what
+  `S2_MAX_LEVEL` says.
+- `www/src/map/StackedHexLayer.tsx` — `S2_EDGE_METERS` is a deliberate
+  *duplicate* of that table (keeps `nodes2ts` out of the shared layer
+  module); l18 columns would size off `undefined` without the entry.
+
+**Picker, before → after** (NJ lat, `S2_DIAMETER_METERS` table):
+the clamp used to bind from z≈11 (everything deeper pinned at l16).
+Now l17 arrives at z=12–13 and l18 from z≈13–14, so the ceiling only
+binds at street zoom. Note the spec's guess above ("z=15 should pick
+l17") is off by one — at z=15 the picker asks for **l18**; l17 is what
+z=13 picks at a 2.5 px target.
+
+**Live-vs-local cell-count delta is expected, not a regression.** The
+worker returns 1/5/13 fewer cells than the pyramid has at l16/l17/l18
+(and `n_vehs` 2/16/33 lower). Those are cells whose crashes all have a
+*blank* severity in the source (e.g. one 2002 crash with 2 vehicles and
+no severity code), which both the D1 and the parquet path deliberately
+skip — nothing to render on a severity-colored map. The l16 case
+predates phase 6. `n_fatal` is unaffected, so the conservation check
+still reconciles exactly.
+
+**Two incidental fixes.**
+- `cells push` mirrored `raw/.gitignore` into R2: the `--exclude
+  .gitignore` matches only the top-level one, not the per-dir ignores DVX
+  writes next to each tracked out. Added `--exclude '*/.gitignore'`.
+- Orphaned `raw/s2_l16/` dropped (base is l18 now) — same cleanup the H3
+  r15 extension did to `raw/h3_r14`.
+

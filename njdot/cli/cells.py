@@ -73,12 +73,14 @@ CELLS_DB_COUNT_COLS = ('n_fatal', 'n_inj_ped', 'n_inj_other', 'n_pdo', 'n_vehs')
 # id at `S2_BASE_LEVEL` (the finest data level); every coarser level's cell
 # is derived by UBIGINT bit-math (`njdot.s2.parent_sql`), byte-identical to
 # both `s2sphere` and the client's `nodes2ts` (see `tests/test_s2.py`).
-S2_BASE_LEVEL_DEFAULT = 16       # finest data level; raw stores cell id here
+S2_BASE_LEVEL_DEFAULT = 18       # finest data level; raw stores cell id here
 S2_SHARD_LEVEL_DEFAULT = 4       # ~15 level-4 tokens cover NJ
 # Levels rolled into cells-s2.db / the pyramid. l4-l5 are near-empty (NJ is
-# ~15 cells at l4) but cheap, and the statewide viewport picks them; l16 is
-# the base. Client picker max is 17 → the worker clamps 17→16 (phase 4).
-S2_LEVELS_DEFAULT = tuple(range(4, 17))
+# ~15 cells at l4) but cheap, and the statewide viewport picks them; l18
+# (~30 m) is the base. Phase 6 extended the base from l16 → l18: at street
+# zoom the picker asked for l17+ and clamped to l16 (~120 m), so S2 rendered
+# visibly blockier than H3's r12/r13 at the same zoom.
+S2_LEVELS_DEFAULT = tuple(range(4, 19))
 R2_BUCKET_DEFAULT = 'nj-crashes'
 R2_PREFIX_DEFAULT = 'cells'
 R2_PROFILE_DEFAULT = 'cf'
@@ -1224,7 +1226,11 @@ def cells_push(bucket: str, no_delete: bool, dry_run: bool, out_dir: Path, prefi
     cmd = [
         'aws', 's3', 'sync', f'{out_dir}/', s3_uri,
         '--exclude', '*.dvc',
+        # Both the top-level ignore and the per-dir ones DVX generates
+        # alongside each tracked out (e.g. `raw/.gitignore`); `--exclude
+        # .gitignore` alone only matches the former.
         '--exclude', '.gitignore',
+        '--exclude', '*/.gitignore',
         # cells.db is a D1 import source (loaded via `d1-import.sh`), not
         # worker-served from R2 — keep it out of the bucket mirror.
         '--exclude', '*.db',

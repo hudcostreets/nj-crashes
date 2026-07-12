@@ -52,12 +52,13 @@ export const S2_DIAMETER_METERS: Record<number, number> = {
     15: 239,
     16: 120,          // ~single street segment
     17: 60,           // ~sidewalk-scale
+    18: 30,           // ~single parked car
 }
 
 /** Level range the pyramid supports. Matches H3's r5-r15 for
  *  overlapping viewport coverage. */
 export const S2_MIN_LEVEL = 4
-export const S2_MAX_LEVEL = 17
+export const S2_MAX_LEVEL = 18
 
 /** Convert (lat, lon) → S2 cell token at `level`. Token is a
  *  14-char lowercase hex string, e.g. `"89c25c1"` (leading digits
