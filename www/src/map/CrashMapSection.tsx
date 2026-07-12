@@ -27,8 +27,8 @@ import type { MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel, pickHexResolutionForPixels } from "@/src/map/CrashMap"
 import { H3_RADIUS_METERS } from "@/src/map/StackedHexLayer"
 
-import { circleRadiusPx, hexPxTargetFor, pickRes, BINS_BUDGET } from "@/src/map/picker"
-import { pickS2LevelForPixels } from "@/src/map/s2"
+import { circleRadiusPx, hexPxTargetFor, pick as pickerPick, BINS_BUDGET } from "@/src/map/picker"
+import { pickS2LevelForPixels, S2_DIAMETER_METERS } from "@/src/map/s2"
 import { DebugOverlay } from "@/src/map/DebugOverlay"
 import { YearSelect } from "@/src/lib/year-select"
 
@@ -318,11 +318,16 @@ export function CrashMapSection({
         if (!effectiveView) return null
         const { zoom, latitude } = effectiveView
         const mppx = metersPerPixel(zoom, latitude)
-        const currRes = pickHexResolutionForPixels(hexPxTarget, zoom, latitude)
+        const currRes = grid === "s2"
+            ? pickS2LevelForPixels(hexPxTarget, zoom, latitude)
+            : pickHexResolutionForPixels(hexPxTarget, zoom, latitude)
         const pxAt = (r: number): number | null => {
+            if (grid === "s2") {
+                const dia = S2_DIAMETER_METERS[r]
+                return dia === undefined ? null : dia / mppx
+            }
             const rad = H3_RADIUS_METERS[r]
-            if (rad === undefined) return null
-            return (2 * rad) / mppx
+            return rad === undefined ? null : (2 * rad) / mppx
         }
         const levels: { res: number, px: number, isCurrent: boolean }[] = []
         for (const res of [currRes - 1, currRes, currRes + 1]) {
@@ -330,7 +335,7 @@ export function CrashMapSection({
             if (px !== null) levels.push({ res, px, isCurrent: res === currRes })
         }
         return { levels }
-    }, [effectiveView, hexPxTarget])
+    }, [effectiveView, hexPxTarget, grid])
 
     // S2 counterpart to `pickerInfo.currRes` — computed regardless of
     // active grid so the widget can show what an S2 fetch WOULD pick,
@@ -838,7 +843,26 @@ export function CrashMapSection({
                                         fontSize: "0.78em",
                                         flex: 1,
                                     }}
-                                >{v === "hex" ? "Hex" : "Circle"}</button>
+                                >{v === "hex" ? (grid === "s2" ? "Squares" : "Hex") : "Circle"}</button>
+                            ))}
+                        </div>
+                        <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
+                            {(["h3", "s2"] as const).map(g => (
+                                <button
+                                    key={g}
+                                    onClick={() => setGrid(g)}
+                                    title={g === "h3" ? "H3 hex grid (default)" : "S2 quad grid (opt-in)"}
+                                    style={{
+                                        cursor: "pointer",
+                                        background: grid === g ? activeBg : "transparent",
+                                        color: grid === g ? "#fff" : fg,
+                                        border: `1px solid ${grid === g ? activeBg : fg}`,
+                                        borderRadius: 3,
+                                        padding: "2px 8px",
+                                        fontSize: "0.78em",
+                                        flex: 1,
+                                    }}
+                                >{g.toUpperCase()}</button>
                             ))}
                         </div>
                         <HexPxTargetSlider
@@ -848,6 +872,7 @@ export function CrashMapSection({
                             onAutoChange={setHexAuto}
                             pickerInfo={pickerInfo}
                             zoom={effectiveView?.zoom}
+                            grid={grid}
                         />
                         <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
                             <span style={{ fontSize: "0.78em" }}>Height scale: <b>{heightScale.toFixed(2)}</b></span>
@@ -1187,11 +1212,19 @@ function ZoomResChart({
     const zMax = currentZoom + halfWin
     const yFor = (z: number) => ((zMax - z) / (zMax - zMin)) * H
     const cosLat = Math.cos(currentLat * Math.PI / 180)
+    // Cell "diameter" at a given res: H3 uses `2 × radius`; the S2 table
+    // is already stored as diameter. Consumers derive the zoom-for-px
+    // relation from this so the chart geometry matches the picker.
+    const diaMeters = (r: number): number | undefined => grid === "s2"
+        ? S2_DIAMETER_METERS[r]
+        : (H3_RADIUS_METERS[r] === undefined ? undefined : 2 * H3_RADIUS_METERS[r])
     const zForPxRes = (px: number, r: number): number =>
-        Math.log2((px * 156543 * cosLat) / (2 * H3_RADIUS_METERS[r]))
+        Math.log2((px * 156543 * cosLat) / (diaMeters(r) ?? 1))
 
     const roundPx = [0.5, 1, 2, 4, 8, 16, 32]
-    const resCols = [currentRes - 1, currentRes, currentRes + 1].filter(r => r in H3_RADIUS_METERS)
+    const resTable = grid === "s2" ? S2_DIAMETER_METERS : H3_RADIUS_METERS
+    const resCols = [currentRes - 1, currentRes, currentRes + 1].filter(r => r in resTable)
+    const resLabel = (r: number) => grid === "s2" ? `l${r}` : `r${r}`
     const intZooms: number[] = []
     for (let z = Math.ceil(zMin); z <= Math.floor(zMax); z++) intZooms.push(z)
 
@@ -1202,14 +1235,17 @@ function ZoomResChart({
     // transition is detected to nail the boundary to ~0.005-zoom precision.
     const transitions: { z: number; from: number; to: number }[] = []
     const coarseStep = 0.1
-    let prevRes = pickRes(viz, zMin, currentLat, viewportAreaPx, budget)
+    const pickAt = (z: number): number => pickerPick(
+        grid ?? "h3", viz, z, currentLat, viewportAreaPx, budget,
+    ).res
+    let prevRes = pickAt(zMin)
     for (let z = zMin + coarseStep; z <= zMax + 1e-9; z += coarseStep) {
-        const r = pickRes(viz, z, currentLat, viewportAreaPx, budget)
+        const r = pickAt(z)
         if (r !== prevRes) {
             let lo = z - coarseStep, hi = z
             for (let i = 0; i < 8; i++) {
                 const mid = (lo + hi) / 2
-                if (pickRes(viz, mid, currentLat, viewportAreaPx, budget) === prevRes) lo = mid
+                if (pickAt(mid) === prevRes) lo = mid
                 else hi = mid
             }
             transitions.push({ z: (lo + hi) / 2, from: prevRes, to: r })
@@ -1267,13 +1303,12 @@ function ZoomResChart({
                         {s2Level != null && (
                             <>{" · s2 l"}<span style={{ fontWeight: 600 }}>{s2Level}</span></>
                         )}
-                        {grid === "s2" && (
-                            <span style={{ color: "#e0803a", marginLeft: 6 }}>(fetch: h3 — pending)</span>
-                        )}
                     </div>
                 )}
             </div>
-            <div style={{ opacity: 0.55, marginBottom: 2, fontSize: "0.9em" }}>Zoom × hex px</div>
+            <div style={{ opacity: 0.55, marginBottom: 2, fontSize: "0.9em" }}>
+                Zoom × {grid === "s2" ? "S2" : "hex"} px
+            </div>
             <svg width={W} height={H + 18} style={{ overflow: "visible", display: "block" }}>
                 {/* Column headers */}
                 {resCols.map((r, i) => (
@@ -1286,7 +1321,7 @@ function ZoomResChart({
                         fill="currentColor"
                         fontWeight={r === currentRes ? 700 : 400}
                         opacity={r === currentRes ? 1 : 0.7}
-                    >r{r}</text>
+                    >{resLabel(r)}</text>
                 ))}
                 {/* Integer zoom labels + horizontal guide lines */}
                 {intZooms.map(z => (
@@ -1337,7 +1372,7 @@ function ZoomResChart({
                             x={W - 2} y={-2}
                             fontSize={8.5} textAnchor="end"
                             fill="#4dd0e1" opacity={0.9}
-                        >↑ r{t.to}</text>
+                        >↑ {resLabel(t.to)}</text>
                     </g>
                 ))}
                 {/* Current-zoom marker */}
@@ -1360,7 +1395,7 @@ function ZoomResChart({
  *  scale (so each tick is a constant log-px ratio), but always shows the
  *  actual px value alongside. Defaults to 1.2 px on first session use. */
 function HexPxTargetSlider({
-    value, onChange, auto, onAutoChange, pickerInfo, zoom,
+    value, onChange, auto, onAutoChange, pickerInfo, zoom, grid = "h3",
 }: {
     value: number
     onChange: (n: number) => void
@@ -1370,7 +1405,11 @@ function HexPxTargetSlider({
         levels: { res: number, px: number, isCurrent: boolean }[],
     } | null
     zoom: number | undefined
+    /** When `"s2"`, snap-buttons render as `l{level}` (matching the S2
+     *  pyramid's naming). Otherwise `r{res}` for H3. */
+    grid?: "h3" | "s2"
 }) {
+    const resLabel = (res: number) => grid === "s2" ? `l${res}` : `r${res}`
     const MIN = 0.5, MAX = 30
     const toScale = (v: number) => 100 * (Math.log2(v / MIN) / Math.log2(MAX / MIN))
     const fromScale = (s: number) => MIN * Math.pow(MAX / MIN, s / 100)
@@ -1384,10 +1423,10 @@ function HexPxTargetSlider({
                         type="checkbox"
                         checked={auto}
                         onChange={e => onAutoChange(e.target.checked)}
-                        title="Auto: grow hex px target with zoom (bigger hexes when zoomed in). Uncheck for manual control."
+                        title={`Auto: grow ${grid === "s2" ? "S2 cell" : "hex"} px target with zoom (bigger cells when zoomed in). Uncheck for manual control.`}
                         style={{ margin: 0 }}
                     />
-                    Hex px: <b>{value < 5 ? value.toFixed(1) : Math.round(value)}</b>
+                    {grid === "s2" ? "S2 px" : "Hex px"}: <b>{value < 5 ? value.toFixed(1) : Math.round(value)}</b>
                     {auto && <span style={{ opacity: 0.55, marginLeft: 2 }}>(auto)</span>}
                     {zoom !== undefined && (
                         <span style={{ opacity: 0.55, marginLeft: 4 }}>· z={zoom.toFixed(1)}</span>
@@ -1411,7 +1450,7 @@ function HexPxTargetSlider({
                     display: "flex", gap: 8, alignItems: "center",
                 }}>
                     {pickerInfo.levels.map(({ res, px, isCurrent }) => isCurrent ? (
-                        <span key={res}><b>r{res} · {fmtPx(px)}px</b></span>
+                        <span key={res}><b>{resLabel(res)} · {fmtPx(px)}px</b></span>
                     ) : (
                         <button
                             key={res}
@@ -1432,9 +1471,9 @@ function HexPxTargetSlider({
                                 cursor: "pointer", textDecoration: "underline dotted",
                                 font: "inherit", opacity: 0.75,
                             }}
-                            title={`Snap to r${res} (turns auto off)`}
+                            title={`Snap to ${resLabel(res)} (turns auto off)`}
                         >
-                            r{res} · {fmtPx(px)}px
+                            {resLabel(res)} · {fmtPx(px)}px
                         </button>
                     ))}
                 </div>

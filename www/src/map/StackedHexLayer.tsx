@@ -256,11 +256,22 @@ export function buildStackedHexLayer({
         : (H3_RADIUS_METERS[resolution] ?? 174)
     let diskResolution: number
     let radius: number
+    // Inscribed-circle radius of the cell (used as the no-overlap ceiling):
+    // `edge × √3/2` for a hex (H3), `edge / 2` for a square (S2).
+    const inscribed = grid === "s2" ? edge / 2 : edge * Math.sqrt(3) / 2
     if (viz === "circle") {
         diskResolution = 24
-        const inscribed = edge * Math.sqrt(3) / 2
+        radius = Math.min(overrideRadiusMeters ?? inscribed, inscribed)
+    } else if (grid === "s2") {
+        // "Squares" viz on S2 — matches Circle viz sizing so toggling
+        // shape doesn't jump area, just changes the column footprint
+        // from round to square (4-sided disk).
+        diskResolution = 4
         radius = Math.min(overrideRadiusMeters ?? inscribed, inscribed)
     } else {
+        // "Hex" viz on H3 — cell-fill tessellation. `radius = edge` puts
+        // the six vertices on a circle-of-radius-edge, so the hex has
+        // side = edge (matches the H3 cell) and neighbours touch.
         diskResolution = 6
         radius = edge
     }

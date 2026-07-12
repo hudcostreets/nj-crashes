@@ -486,6 +486,9 @@ export function CrashMap({
     const hexes = useMemo<StackedHex[] | null>(() => {
         if (mode !== "hexbin") return null
         if (prebinnedHexes) {
+            if (grid === "s2") {
+                return prebinnedHexes
+            }
             const t0 = perfEnabled() ? performance.now() : 0
             const out = coarsenHexes(prebinnedHexes, effectiveHexRes)
             if (perfEnabled()) {
@@ -531,7 +534,7 @@ export function CrashMap({
             }
         }
         return bins
-    }, [mode, prebinnedHexes, effectiveCrashes, effectiveHexRes])
+    }, [mode, prebinnedHexes, effectiveCrashes, effectiveHexRes, grid])
 
     // Idle prewarm: after data is loaded, bin all common resolutions in
     // chained idle callbacks. Subsequent zoom-driven res transitions hit the
@@ -784,7 +787,12 @@ export function CrashMap({
         // *once* per layer build, using the current camera. The layer
         // itself clamps to the cell's inscribed radius, guaranteeing no
         // cross-cell overlap even if the caller passes an oversized target.
-        const overrideRadiusMeters = viz === "circle" && circleRadiusPx != null
+        // Always compute the target-px radius when the caller supplies
+        // `circleRadiusPx`. The layer decides whether to use it: Circle
+        // viz always, and Hex viz on the S2 grid (S2 quads follow the
+        // circle-size curve so viz-mode swaps don't jump area). H3 hex
+        // viz keeps its native cell-fill behavior.
+        const overrideRadiusMeters = circleRadiusPx != null
             ? circleRadiusPx * metersPerPixel(viewState.zoom, viewState.latitude)
             : undefined
         const result = [...base,
