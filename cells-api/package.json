@@ -14,12 +14,12 @@
     "fflate": "^0.8.2",
     "fzstd": "^0.1.1",
     "h3-js": "^4.2.1",
-    "hyparquet": "^1.20.1"
+    "hyparquet": "^1.20.1",
+    "nodes2ts": "^4.0.2"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250401.0",
     "@types/node": "^26.1.0",
-    "nodes2ts": "^4.0.2",
     "typescript": "^5.7.0",
     "vitest": "^2.1.9",
     "wrangler": "^4.0.0"

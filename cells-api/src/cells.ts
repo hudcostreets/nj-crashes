@@ -33,6 +33,7 @@
  *      }
  */
 import { cellToLatLng, cellToParent, getResolution } from "h3-js"
+import { S2CellId, S2LatLng } from "nodes2ts"
 import { descendantRange, mergeRanges, type CellRange } from "./h3-range"
 import { loadManifest } from "./manifest"
 import { readParquetFromR2 } from "./parquet"
@@ -545,16 +546,14 @@ async function queryPyramid(
     return cells
 }
 
-/** Point-in-polygon variant for S2 cells. Reuses `pointInPolygon`
- *  after resolving the cell's centroid via S2 bit math (`nodes2ts` is
- *  used in tests but not the shipping bundle — we can compute the
- *  centroid from an id without the lib once the S2 cell arithmetic
- *  lands in phase 4b2b). For now, this is a no-op: the pyramid path
- *  passes null for `clipPoly` from the initial S2 wiring since the
- *  client hasn't yet learned to send S2-specific polygon clips.
- *  Real per-cell centroid resolution comes in phase 4e (client render). */
-function cellInPolygonS2(_token: string, poly: LonLatPolygon | null): boolean {
-    return !poly
+/** Point-in-polygon test for an S2 cell, keyed by its token. Resolves
+ *  the cell's centroid on the sphere via `nodes2ts.S2CellId.toPoint`,
+ *  projects to (lng, lat), then reuses `pointInPolygon`. Same
+ *  semantics as the H3 variant. */
+function cellInPolygonS2(token: string, poly: LonLatPolygon | null): boolean {
+    if (!poly) return true
+    const ll = S2LatLng.fromPoint(S2CellId.fromToken(token).toPoint())
+    return pointInPolygon([ll.lngDegrees, ll.latDegrees], poly)
 }
 
 /** S2 handler mirroring `handleCellsRequest`'s H3 body. Reads the
