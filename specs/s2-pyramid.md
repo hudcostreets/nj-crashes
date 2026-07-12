@@ -1,8 +1,8 @@
 # S2 Pyramid: Migrating Off H3
 
-Status: **phases 1–3 landed** (client cell math + picker + `?grid=` param;
-pyramid + D1 rollup built on `e`). Phase 4 (worker query support) is next.
-See §Impl progress below.
+Status: **phases 1–5 landed**. Worker + client + prod D1 all live; the
+`?grid=s2` opt-in renders end-to-end. Phase 6 (extend pyramid past `l16`
+for street-zoom detail) is next — `e` picks up. See §Impl progress below.
 
 ## Motivation
 
@@ -374,4 +374,122 @@ to S3; the `.dvc` files + code are committed for pickup.
   1–2 ship independently (H3 keeps working). Phase 3 unblocks the
   worker (phase 4); phase 4 unblocks the client render (phase 5).
   Only once phase 5 lands does `?grid=s2` produce meaningful output.
+
+#### Phase 4 — landed (worker + prod D1)
+
+Deploy verified as of 2026-07-10; `crashes-cells-api` version
+`6a60dfae-008d-45f3-941f-3e5d081399ff` serves `/v1/cells?grid=s2` from
+the `CELLS_S2_DB` binding (`ed836697-…`), 13-level rollup (l4–l16),
+`n_fatal=12,537` grand total matches the phase-3 conservation check.
+See `cells-api/src/{cells,s2-range,index}.ts` + `cells-api/wrangler.toml`.
+
+Bug found + fixed during CIC (**phase 4f**): the initial
+`cellInPolygonS2` was left as a `return !poly` stub, dropping every
+cell whenever the client sent a viewport polygon. Real implementation
+uses `nodes2ts.S2CellId.toPoint` → `S2LatLng.fromPoint` →
+`pointInPolygon`. `nodes2ts` promoted `devDep → dep`
+(worker bundle 163 KiB gzip, well under the 1 MB CFW limit).
+
+#### Phase 5 — landed (client render + widget polish)
+
+- `useCellsApi` fetches at `grid=s2` and rolls up per-shard responses
+  the same way it does for H3 (parent-match filter uses
+  `s2TokenToParent(c.h3, tier)`).
+- `CrashMap.tsx`: skips `coarsenHexes` when `grid === "s2"` (h3-js
+  would throw on S2 tokens); reads `dataRes` prop instead of
+  `getResolution(hexesArr[0].h3)` for the render-res inference.
+- `StackedHexLayer.tsx`: `diskResolution: 4` for S2, `6` for H3;
+  Circle + Squares viz share the target-px sizing curve
+  (`overrideRadiusMeters`), clamped by the S2 cell's inscribed
+  radius (`edge / 2`). Both modes now render at the same footprint,
+  differing only in shape — the toggle label reads "Squares" in S2
+  mode, "Hex" in H3 mode.
+- `CrashMapSection.tsx`: **H3 / S2 toggle** in the settings panel
+  (mirrors Hex/Circle), plus grid-aware `pickerInfo`,
+  `HexPxTargetSlider` (`l{N}`/`r{N}` labels; "S2 px:"/"Hex px:"
+  auto-target label), and `ZoomResChart` (`Zoom × S2 px` /
+  `Zoom × hex px` title, `l{N}`/`r{N}` column headers, `↑ l{N}`/`↑
+  r{N}` transition markers).
+
+Known follow-up: S2 Squares viz visibly overlaps at some zooms — the
+`S2_EDGE_METERS` table appears to store something closer to a diagonal
+than an edge length. Circle viz is unaffected (the inscribed clamp keeps
+adjacent circles apart). Deferred as a table-recalibration task, not a
+blocker.
+
+### Phase 6 — Extend pyramid past l16 (`e` picks up)
+
+**Motivation.** Current pyramid maxes at level 16 (`edge` ≈ 120 m,
+inscribed circle ≈ 60 m). At street zoom (z ≥ 14 for embed / z ≥ 15
+for full-screen), the client picker asks for `l17` (≈ 60 m) or finer
+but clamps to the pyramid's `l16` ceiling. Side-by-side vs H3 at the
+same zoom: H3 picks `r12` (≈ 19 m) or `r13` (≈ 9 m), so H3 fills the
+viewport with fine cells and S2 looks blocky. Users notice.
+
+Parallel: this is the exact shape of the H3 `r15` extension
+(`specs/done/cells-api-r15-pyramid.md`, landed 2026-07-07 as worker
+`1cbb2a4f`). Same script, different `--grid`.
+
+**Target levels.** Ship **l17 + l18** initially. `l19` might be over-fine
+for the file-size vs. useful-detail trade (l19 ≈ 15 m edge; individual
+crashes are usually resolvable at that scale, so a per-cell "cluster
+count" may add little vs. a scatterplot). Land l17/l18, then decide on
+l19 based on numbers.
+
+**Sizing estimate.** Naively scaling from phase 3's l16 = 210 k rows:
+- l17 ≈ 4 × l16 = 840 k rows
+- l18 ≈ 4 × l17 = 3.4 M rows
+- l19 ≈ 4 × l18 = 13.4 M rows (defer)
+
+But NJ crashes cluster (Camden, Newark, JC, Trenton), so growth slows
+below the naïve 4×. Expect l17 pyramid ≈ 50 MB, l18 ≈ 150 MB, on top
+of the current 157 MB (26 files). Total after l17+l18 ≈ 360 MB pyramid
++ ~150 MB `cells-s2.db` growth (still tiny by D1 standards; D1's per-DB
+limit is 10 GB).
+
+**Concrete steps.**
+
+1. `njdot compute cells raw --grid s2 -b 18` — rebuild the raw S2
+   index at `l18` (the new pyramid base). H3's phase used `raw -b 15`
+   for the same reason: pyramid levels below the base can roll up from
+   it, but you can't synthesize finer than the base.
+2. `njdot compute cells sld --grid s2` — regenerate `s2-sld.parquet`.
+   Own-token join at every published level (l4..l18).
+3. `njdot compute cells pyramid --grid s2 -b 18 -l 4..17 -s 4` (or
+   `-s 6` if per-file granularity matters; deferred flag from phase 3).
+   Emits `pyramid/s2_pyramid/s2_l{4..18}/*.parquet`.
+4. `njdot compute cells db --grid s2 -b 18` — rebuilds
+   `cells-s2.db` with `cells_s2_l{4..18}` tables (currently 4..16).
+5. `njdot compute cells manifest --grid s2 -b 18 -l 4..17` if the
+   manifest command needs the grid arg; else check whether `cells
+   manifest` covers both grids in one invocation. (Phase 3 built the
+   S2 manifest alongside the H3 one — verify one shot still works.)
+6. Push R2: `njdot compute cells push` — mirrors `data/cells/` to R2
+   at `nj-crashes/cells/`. Use `-n` (dry-run) first to eyeball the
+   diff, then live.
+7. D1 re-import: `bash api/scripts/d1-import.sh --inplace cells-s2`.
+   Reads `data/cells/cells-s2.db`, drops + recreates the D1 tables in
+   place. Brief inconsistency window (H3 unaffected — different DB).
+8. Bump `S2_MAX` client-side + `handleCellsRequestS2` level-range cap:
+   - `www/src/map/useCellsApi.ts`: `const S2_MIN = 4, S2_MAX = 16` →
+     `S2_MAX = 18`.
+   - `cells-api/src/cells.ts` `handleCellsRequestS2`: extend the
+     `[4, 16]` clamp to `[4, 18]`.
+   These changes ship together with the deploy; the pyramid must be
+   pushed to R2 + imported to D1 first so the worker has data to
+   serve.
+9. Deploy the worker: `cd cells-api && wrangler deploy`.
+10. `git push h main` to publish the client `S2_MAX` bump + trigger
+    `daily.yml`'s www deploy.
+
+**Validation.** Phase 3's count-conservation invariant still applies:
+`sum(n_fatal)` across every level of the S2 pyramid = 12,537 =
+`sum(n_fatal)` across every level of H3. Rebuild → verify → push.
+Spot-check picker: at z=15 street zoom, S2 should now pick `l17`
+(unclamped, since ceiling is `l18`), and the map should populate at
+~19 m cells matching H3 r12's density.
+
+**Deferred (still).** `-s 6` shard rebuild (finer file-level fetch
+granularity) — only worth doing if measured latency at l18 justifies
+the extra file count.
 
