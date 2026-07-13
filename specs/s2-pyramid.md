@@ -1,8 +1,9 @@
 # S2 Pyramid: Migrating Off H3
 
-Status: **phases 1–5 landed**. Worker + client + prod D1 all live; the
-`?grid=s2` opt-in renders end-to-end. Phase 6 (extend pyramid past `l16`
-for street-zoom detail) is next — `e` picks up. See §Impl progress below.
+Status: **phases 1–6 landed**. Prod worker serves S2 from D1 across
+`l4..l18`; client defaults to S2 with `?h3` opt-in for the legacy grid.
+Phase 7 (extend pyramid to `l19` for street-zoom crash-cluster detail)
+is next — `e` picks up. See §Impl progress below.
 
 ## Motivation
 
@@ -561,4 +562,56 @@ still reconciles exactly.
   writes next to each tracked out. Added `--exclude '*/.gitignore'`.
 - Orphaned `raw/s2_l16/` dropped (base is l18 now) — same cleanup the H3
   r15 extension did to `raw/h3_r14`.
+
+### Phase 7 — Extend pyramid to `l19` (`e` picks up)
+
+**Motivation.** Phase 6's l18 (~30 m edge) resolves neighborhood-scale
+clusters but doesn't distinguish individual intersection *quadrants*.
+At street zoom (z ≥ 15) the picker snaps to l18 and the snap-buttons
+show only `l17 · 24px l18 · 12px` — no finer option. User request
+after CIC of the street-zoom flow: **l19 (~15 m edge)** is where
+crosswalk / half-intersection detail appears.
+
+Phase 6's spec explicitly deferred l19 pending demand and predicted
+its size from the observed 1.52× step (l17→l18): l19 ≈ **1.3× l18**
+≈ 726 k rows in D1, ~360 MB pyramid growth. Still under D1's per-DB
+10 GB limit and reasonable for R2 sync.
+
+**Scope.** Just l19. Skip l20 (~7.5 m) — crash count per l20 cell
+converges to ≤2 for typical NJ intersections; the tail flattens (many
+cells with count=1). Point mode does that better.
+
+**Concrete steps** (mirror of phase 6):
+
+1. Bump `S2_BASE_LEVEL_DEFAULT` / `S2_LEVELS_DEFAULT` in
+   `njdot/cli/cells.py` from **18 → 19** (same one-line change phase 6
+   made). Keeps `.dvc` `meta.computation.cmd`s identical so DVX
+   picks up the code change as `git_deps`.
+2. Rebuild artifacts (DVX re-runs each once the base level bumps):
+   `raw/s2_l19` → `s2-sld.parquet` → `s2_pyramid` (16 levels l4..l19)
+   → `cells-s2.db` (16 tables).
+3. Push to R2: `njdot compute cells push` (dry-run first — expect a
+   few added `s2_l19` shard files, no deletes on the H3 side).
+4. Re-import D1 in place: `bash api/scripts/d1-import.sh --inplace
+   cells-s2`. Same brief-inconsistency window as phase 6.
+5. Bump level caps in **four** places (phase 6 flagged the count):
+   - `www/src/map/useCellsApi.ts`: `S2_MAX = 18` → `19`
+   - `cells-api/src/cells.ts` (`handleCellsRequestS2` clamp): 18 → 19
+   - `www/src/map/s2/index.ts` (`S2_DIAMETER_METERS`): add `19: 15`
+     (average diameter meters)
+   - `www/src/map/StackedHexLayer.tsx` (`S2_EDGE_METERS` duplicate):
+     add `19: 7.5` (half-diameter for the column-radius lookup)
+6. `cd cells-api && wrangler deploy`.
+7. `git push h main` (only after m3 has fetched + fast-forwarded; the
+   m3 `www` client that lands the level-cap bump ships via daily.yml's
+   deploy).
+
+**Validation.** Same count-conservation invariant as phase 6 (sums
+byte-identical across all levels 4..19). Spot-check picker at z=15
+default view: should pick `l19` (was l18) and render cells at ~15 m
+that visibly resolve intersection legs / crosswalks.
+
+**Explicit non-goal.** No l20 in this phase. Revisit only if the l19
+cell counts show a lot of headroom at intersections (unlikely for NJ
+crash density; typical cluster peaks at 20–100 crashes per l19 cell).
 
