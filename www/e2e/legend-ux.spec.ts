@@ -23,6 +23,61 @@ async function waitForPlots(page: Page, { count, timeout = 15_000 }: { count?: n
 const legendItems = (plot: Locator): Locator => plot.locator('.legend .traces')
 const legendTexts = (plot: Locator): Locator => plot.locator('.legend .traces .legendtext')
 
+/** Click a Plotly-native legend item, with a synthesized `mouseup`
+ *  fallback for a Playwright/Chromium quirk. Plotly's legend-toggle
+ *  routes single-click via a `mouseup` handler on the `.legendtoggle`
+ *  overlay (draw.js:544); on some plots (observed on `YtdDeathsPlot`,
+ *  which auto-scrolls its legend on mount via a synthetic wheel event
+ *  through Plotly's own scroll handler) Playwright's `.click()` fires
+ *  `mousedown` + `click` but skips the intermediate `mouseup`, so
+ *  `plotly_legendclick` never fires and the pin/unpin toggle silently
+ *  no-ops. Detect via a `plotly_legendclick` counter installed on the
+ *  plot; if the count didn't advance, dispatch the missing `mouseup`
+ *  on the toggle. The counter approach is conditional so plots where
+ *  `mouseup` does fire natively (e.g. FBM) don't get a duplicate that
+ *  pltly's toggle-on-second-click would interpret as an unpin. */
+async function clickNativeLegendItem(item: Locator): Promise<void> {
+  // Capture the plot's plotly_legendclick count before the click, then
+  // check after — if Playwright's .click() didn't cause it to fire (the
+  // YtdDeathsPlot quirk where mouseup gets swallowed), synthesize the
+  // missing mouseup on the `.legendtoggle` overlay. Conditional so plots
+  // where mouseup fires natively (e.g. FBM) don't get a duplicate that
+  // pltly's toggle-on-second-click would interpret as unpin.
+  await item.evaluate(el => {
+    // Walk up to the plot div; install a persistent counter + listener.
+    let plot: Element | null = el
+    while (plot && !plot.classList.contains('js-plotly-plot')) plot = plot.parentElement
+    if (!plot) return
+    const p = plot as any
+    if (!p.__lcInstalled) {
+      p.__lcInstalled = true
+      p.__lcCount = 0
+      p.on?.('plotly_legendclick', () => { p.__lcCount++ })
+    }
+    p.__lcSnapshot = p.__lcCount
+  })
+  // `force: true` — skip Playwright's actionability check. The sticky
+  // `GeoNavBar` / `NjspSection controlsWrapper` occasionally intercepts
+  // pointer events at the scroll-target position of a scrolled-into-view
+  // LI (a slow-CI-runner flake previously seen in GHA). The click's actual
+  // event target is fine — we synthesize the missing mouseup below anyway.
+  await item.click({ force: true })
+  await item.evaluate(el => {
+    let plot: Element | null = el
+    while (plot && !plot.classList.contains('js-plotly-plot')) plot = plot.parentElement
+    if (!plot) return
+    const p = plot as any
+    if (p.__lcCount > p.__lcSnapshot) return  // native mouseup did fire — done
+    const toggle = el.querySelector('.legendtoggle') as SVGGraphicsElement | null
+    if (!toggle) return
+    const b = toggle.getBoundingClientRect()
+    toggle.dispatchEvent(new MouseEvent('mouseup', {
+      bubbles: true, cancelable: true, view: window, button: 0,
+      clientX: b.x + b.width / 2, clientY: b.y + b.height / 2,
+    }))
+  })
+}
+
 /** `pltly` custom-HTML-legend items, scoped to a plot section by its `<h2 id>`. */
 const customLegendItems = (page: Page, sectionId: string): Locator =>
   page.locator(`div:has(> h2[id="${sectionId}"]) .pltly-legend-item`)
@@ -223,7 +278,7 @@ test.describe('YTD legend', () => {
 
     expect(await lineWidth()).toBe(2)
     await items.nth(idx).evaluate(el => el.scrollIntoView({ block: 'center' }))
-    await items.nth(idx).click()
+    await clickNativeLegendItem(items.nth(idx))
     await expect.poll(lineWidth).toBe(5)
 
     // Pinned — move away; should STAY at width 5 (vs hover test which reverts to 2).
@@ -232,7 +287,7 @@ test.describe('YTD legend', () => {
     expect(await lineWidth()).toBe(5)
 
     // Click again to unpin.
-    await items.nth(idx).click()
+    await clickNativeLegendItem(items.nth(idx))
     await page.mouse.move(0, 0)
     await expect.poll(lineWidth).toBe(2)
   })
@@ -247,7 +302,7 @@ test.describe('FBM pin', () => {
     const texts = legendTexts(plot)
     if (await items.count() < 2) return
 
-    await items.first().click()
+    await clickNativeLegendItem(items.first())
     await page.waitForTimeout(200)
     expect(isBold(await fontWeight(texts.first()))).toBe(true)
 
