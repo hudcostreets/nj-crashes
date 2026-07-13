@@ -33,11 +33,12 @@
  *      }
  */
 import { cellToLatLng, cellToParent, getResolution } from "h3-js"
-import { S2CellId, S2LatLng } from "nodes2ts"
+import { S2CellId, S2LatLng, S2LatLngRect, S2RegionCoverer } from "nodes2ts"
 import { descendantRange, mergeRanges, type CellRange } from "./h3-range"
 import { loadManifest } from "./manifest"
 import { readParquetFromR2 } from "./parquet"
 import {
+    type S2CellRange,
     s2IdToToken,
     s2LevelOf,
     s2Parent,
@@ -556,6 +557,46 @@ function cellInPolygonS2(token: string, poly: LonLatPolygon | null): boolean {
     return pointInPolygon([ll.lngDegrees, ll.latDegrees], poly)
 }
 
+/** Cell-id ranges at `level` covering a clip polygon.
+ *
+ *  Covers the polygon's bounding rect, not the polygon itself — the
+ *  per-row `cellInPolygonS2` still does the exact clip, so a loose cover
+ *  only costs a few extra row groups. */
+export function s2RangesForPolygon(poly: LonLatPolygon, level: number, maxCells = 32): S2CellRange[] {
+    let latLo = 90, latHi = -90, lngLo = 180, lngHi = -180
+    for (const [lng, lat] of poly) {
+        if (lat < latLo) latLo = lat
+        if (lat > latHi) latHi = lat
+        if (lng < lngLo) lngLo = lng
+        if (lng > lngHi) lngHi = lng
+    }
+    const coverer = new S2RegionCoverer()
+    coverer.setMaxCells(maxCells)
+    coverer.setMinLevel(0)
+    // Never cover finer than the level we're querying — `s2RangeForCell`
+    // needs each cover cell to be an ancestor of (or equal to) it.
+    coverer.setMaxLevel(level)
+    const covering = coverer.getCoveringCells(S2LatLngRect.fromLatLng(
+        S2LatLng.fromDegrees(latLo, lngLo),
+        S2LatLng.fromDegrees(latHi, lngHi),
+    ))
+    return covering.map(c => s2RangeForCell(s2TokenToId(c.toToken()), level))
+}
+
+/** Pairwise intersection of two range sets. Both are small (≤ a few
+ *  dozen), so the quadratic scan is cheaper than sorting. */
+export function intersectRanges(a: S2CellRange[], b: S2CellRange[]): S2CellRange[] {
+    const out: S2CellRange[] = []
+    for (const x of a) {
+        for (const y of b) {
+            const lo = x.lo > y.lo ? x.lo : y.lo
+            const hi = x.hi < y.hi ? x.hi : y.hi
+            if (lo <= hi) out.push({ lo, hi })
+        }
+    }
+    return out
+}
+
 /** S2 handler mirroring `handleCellsRequest`'s H3 body. Reads the
  *  manifest for `data_version` + `year_range` (both grid-agnostic
  *  — the pipeline stamps the same values on both grids), computes
@@ -573,11 +614,11 @@ async function handleCellsRequestS2(
     if (requestedShards.length === 0) {
         throw new HttpError(400, "cells must list ≥1 shard")
     }
-    // S2 level range mirrors the pyramid build (phase 6): data
-    // levels 4-18, base 18. Reject outside this envelope up front so
+    // S2 level range mirrors the pyramid build (phase 7): data
+    // levels 4-19, base 19. Reject outside this envelope up front so
     // the R2 fetch doesn't 404 on us.
     const S2_MIN_LEVEL = 4
-    const S2_MAX_LEVEL = 18
+    const S2_MAX_LEVEL = 19
     if (requestedLevel < S2_MIN_LEVEL || requestedLevel > S2_MAX_LEVEL) {
         throw new HttpError(400, `s2 level ${requestedLevel} out of range [${S2_MIN_LEVEL}, ${S2_MAX_LEVEL}]`)
     }
@@ -588,11 +629,10 @@ async function handleCellsRequestS2(
     const clipPoly = req.clipPolygon && req.clipPolygon.length >= 3 ? req.clipPolygon : null
     const labels = req.labels ?? "full"
 
-    // Build cellid ranges at the target level from the shard tokens.
-    // Each shard's `[lo, hi]` is a bigint pair; we serialize to
-    // 16-char zero-padded hex for parquet TEXT-column comparison
-    // (matches how `njdot/s2.py` stores tokens on disk).
-    const ranges: Array<{ lo: string; hi: string }> = []
+    // Build cellid ranges at the target level. These drive both the D1
+    // `cellid BETWEEN` scan and the parquet row-group pruning, so they
+    // want to be as tight as the request allows.
+    const shardRanges: S2CellRange[] = []
     for (const shard of requestedShards) {
         const parentId = s2TokenToId(shard)
         const parentLevel = s2LevelOf(parentId)
@@ -602,29 +642,56 @@ async function handleCellsRequestS2(
         }
         // At parentLevel == requestedLevel, `s2RangeForCell` collapses
         // to a single cell — still a valid (degenerate) range.
-        const { lo, hi } = s2RangeForCell(parentId, requestedLevel)
-        // Zero-pad to 16 chars — that's the canonical sort order for
-        // the D1 TEXT column and the parquet stats min/max. The token
-        // format on wire strips trailing zeros; padding restores the
-        // full lex order.
-        ranges.push({
-            lo: lo === 0n ? "".padStart(16, "0") : lo.toString(16).padStart(16, "0"),
-            hi: hi === 0n ? "".padStart(16, "0") : hi.toString(16).padStart(16, "0"),
-        })
+        shardRanges.push(s2RangeForCell(parentId, requestedLevel))
     }
+
+    // Tighten to the viewport. NJ is only two l4 cells (`89b`/`89d`), which
+    // the client hardcodes as its whole S2 cover — so a shard-derived range
+    // spans an entire shard file and prunes *nothing*, and a street-zoom
+    // request that misses the D1 fast path decodes all 63 MB of
+    // `s2_l19/89d.parquet` (→ CF 1102, "exceeded resource limits"). Covering
+    // the clip polygon instead touches ~6 of that file's 549 row groups. H3
+    // never hit this because its client sends a viewport-sized cover of many
+    // small shards; S2's cover is the whole state at every zoom.
+    const polyRanges = clipPoly ? s2RangesForPolygon(clipPoly, requestedLevel) : null
+    const idRanges = mergeRanges(polyRanges ? intersectRanges(shardRanges, polyRanges) : shardRanges)
+
+    // Viewport disjoint from the requested shards ⇒ nothing to return. Bail
+    // before the queries: an empty range list means "no filter" to both of
+    // them, which would scan the whole shard instead of none of it.
+    if (!idRanges.length) {
+        return {
+            res: requestedLevel, year_range: yearRange,
+            data_version: manifest.data_version, source: "d1", cells: [],
+        }
+    }
+
+    // Tokens, not zero-padded hex. The stored `cellid` (D1 column and parquet
+    // value alike) is the S2 token — 16 hex chars with *trailing zeros
+    // stripped* — and lex order over stripped tokens is isomorphic to numeric
+    // cell-id order, so `BETWEEN` works directly on them. Padding the bounds
+    // back to 16 chars breaks that at the low end: a cell sitting exactly on
+    // `range_min` (token `89c04532`) sorts *below* the padded bound
+    // (`89c0453200000000`) and gets dropped. Invisible while the range covered
+    // the whole shard; every tight range above has such a boundary.
+    const ranges = idRanges.map(r => ({ lo: s2IdToToken(r.lo), hi: s2IdToToken(r.hi) }))
 
     // D1 fast path: default (all-years, all-severity, full-labels)
     // query hits `cells_s2_l{level}` — one indexed lex-range scan.
     // Falls through to the parquet path on any failure (binding
     // absent, table missing, oversized result). Mirrors the H3 path.
-    const allSev = !sevSet || (sevSet.has("f") && sevSet.has("i") && sevSet.has("p"))
+    // A *severity* filter does not need the parquet: severity is pure
+    // column-selection (the rollup stores `n_fatal` / `n_inj_ped` /
+    // `n_inj_other` / `n_pdo` separately, and both query paths just gate
+    // which counters accumulate), so D1 can serve it. Only a *year*
+    // sub-range genuinely needs the per-year rows the pyramid has and the
+    // rollup doesn't.
     const coversAllYears = req.yearRange == null
         || (req.yearRange[0] <= manifest.year_range[0] && req.yearRange[1] >= manifest.year_range[1])
-    const isDefault = allSev && coversAllYears
-    if (db && isDefault && labels === "full") {
+    if (db && coversAllYears && labels === "full") {
         try {
             const t0 = Date.now()
-            let cells = await queryCellsS2D1(db, requestedLevel, ranges, clipPoly)
+            let cells = await queryCellsS2D1(db, requestedLevel, ranges, clipPoly, sevSet)
             const t1 = Date.now()
             let level = requestedLevel
             while (maxCells != null && cells.length > maxCells && level > S2_MIN_LEVEL) {
@@ -797,7 +864,14 @@ async function queryCellsS2D1(
     level: number,
     tokenRanges: Array<{ lo: string; hi: string }>,
     clipPoly: LonLatPolygon | null,
+    severities?: Set<"f" | "i" | "p">,
 ): Promise<CellOut[]> {
+    // Severity gating mirrors `queryPyramidS2` exactly — same counters, same
+    // "drop cells with no hit in a requested severity" rule — so the two
+    // paths agree cell-for-cell on a severity-filtered request.
+    const wantF = !severities || severities.has("f")
+    const wantI = !severities || severities.has("i")
+    const wantP = !severities || severities.has("p")
     const where = tokenRanges.length
         ? tokenRanges.map(r => `(cellid BETWEEN '${r.lo}' AND '${r.hi}')`).join(" OR ")
         : "1=1"
@@ -811,14 +885,21 @@ async function queryCellsS2D1(
     }>()
     const cells: CellOut[] = []
     for (const row of results) {
-        if (!(row.n_fatal > 0 || row.n_inj_ped > 0 || row.n_inj_other > 0 || row.n_pdo > 0)) continue
+        const n_fatal = wantF ? row.n_fatal : 0
+        const n_inj_ped = wantI ? row.n_inj_ped : 0
+        const n_inj_other = wantI ? row.n_inj_other : 0
+        const n_pdo = wantP ? row.n_pdo : 0
+        // Nothing to render on a severity-colored map. Also drops the handful
+        // of cells whose crashes all carry a *blank* severity in the source
+        // (~13 statewide at l18) — the parquet path drops them too.
+        if (!(n_fatal > 0 || n_inj_ped > 0 || n_inj_other > 0 || n_pdo > 0)) continue
         if (!cellInPolygonS2(row.cellid, clipPoly)) continue
         const c: CellOut = {
             h3: row.cellid,
-            n_fatal: row.n_fatal, n_inj_ped: row.n_inj_ped, n_inj_other: row.n_inj_other,
-            n_pdo: row.n_pdo, n_vehs: row.n_vehs,
+            n_fatal, n_inj_ped, n_inj_other, n_pdo,
+            n_vehs: row.n_vehs,  // severity-blind, same as the parquet path
         }
-        if (row.fatal_years) {
+        if (wantF && row.fatal_years) {
             try {
                 const parsed = JSON.parse(row.fatal_years)
                 if (Array.isArray(parsed) && parsed.length) c.fatal_years = parsed as number[]

@@ -213,7 +213,7 @@ export type VizMode = "hex" | "circle"
 const S2_EDGE_METERS: Record<number, number> = {
     4: 490_000, 5: 245_000, 6: 122_500, 7: 61_250, 8: 30_625,
     9: 15_312, 10: 7_656, 11: 3_828, 12: 1_914, 13: 957,
-    14: 478, 15: 239, 16: 120, 17: 60, 18: 30,
+    14: 478, 15: 239, 16: 120, 17: 60, 18: 30, 19: 15,
 }
 
 export function buildStackedHexLayer({

@@ -92,7 +92,9 @@ describe("S2 picker (`pickS2LevelForPixels`)", () => {
         [2.5, 7,  11],  // statewide — S2 finer than H3 r7 (level 11 edge 3828m ≥ 2320m; level 12 edge 1914m < 2320m)
         [2.5, 10, 14],  // county-ish (level 14 edge 478m ≥ 290m; level 15 edge 239m < 290m)
         [2.5, 13, 17],  // city block (level 17 edge 60m ≥ 36m; level 18 edge 30m < 36m)
-        [2.5, 16, 18],  // sidewalk-scale, at the S2_MAX_LEVEL cap
+        [2.5, 14, 18],  // street segment (level 18 edge 30m ≥ 18m; level 19 edge 15m < 18m)
+        [2.5, 15, 19],  // street zoom — phase 7's target (level 19 edge 15m ≥ 9m)
+        [2.5, 16, 19],  // crosswalk-scale, at the S2_MAX_LEVEL cap
     ]
     for (const [target, zoom, expected] of cases) {
         it(`target=${target}px z=${zoom} lat=${NJ_LAT} → l${expected}`, () => {

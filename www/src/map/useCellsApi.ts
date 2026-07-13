@@ -679,9 +679,9 @@ export function useCellsApi(filter: CellsApiFilter | null):
             const level = filter.resOverride != null
                 ? filter.resOverride
                 : pickS2LevelForPixels(filter.hexPxTarget ?? 1.2, filter.zoom, filter.viewportLat)
-            // Level clamp mirrors the worker's pyramid envelope (phase 6:
-            // base l18, data levels 4-18).
-            const S2_MIN = 4, S2_MAX = 18
+            // Level clamp mirrors the worker's pyramid envelope (phase 7:
+            // base l19, data levels 4-19).
+            const S2_MIN = 4, S2_MAX = 19
             const clamped = Math.max(S2_MIN, Math.min(S2_MAX, level))
             const S2_STATEWIDE_SHARDS = ["89b", "89d"]
             const cover: CoverCell[] = S2_STATEWIDE_SHARDS.map(h3 => ({ h3, shard_res: 4 }))

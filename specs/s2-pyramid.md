@@ -615,3 +615,114 @@ that visibly resolve intersection legs / crosswalks.
 cell counts show a lot of headroom at intersections (unlikely for NJ
 crash density; typical cluster peaks at 20–100 crashes per l19 cell).
 
+
+#### Phase 7 — landed (on `e`), but see the blocker below
+
+Base level 18 → **19**; data levels **4–19**. Same one-line mechanism as
+phase 6 (`S2_BASE_LEVEL_DEFAULT` / `S2_LEVELS_DEFAULT` in
+`njdot/cli/cells.py`), so the `.dvc` `cmd`s were untouched and DVX
+picked the rebuild up as a `git_deps` bump.
+
+**Sizing.** l19 = **775,085** cells, 1.39× l18 — the plan guessed 1.3×
+(726 k), and the decay continues (2.43 → 2.07 → 1.74 → 1.52 → 1.39), so
+the cell count keeps converging on the number of distinct crash
+*locations*. The pyramid grew 274 → **338 MB** (32 files, 16 levels),
+nowhere near the plan's "+360 MB"; `cells-s2.db` 118 → **191 MB**
+(205 MB in D1); `s2-sld.parquet` 10.8 → **16.3 MB** (2,076,867 cells).
+
+**Validation.** Count-conservation holds exactly at all 16 levels, in
+both the pyramid and the D1 source, byte-identical to phases 3/6:
+`n_fatal=12,537`, `n_inj_ped=55,659`, `n_inj_other=1,541,178`,
+`n_pdo=3,299,293`, `n_vehs=8,372,869`. All 16 D1 tables row-count-verified
+on import (`cells_s2_l19: 775085 ✓`). The picker now picks l19 at z=15,
+as the plan predicted (phase 6's equivalent guess was off by one; this
+one is right).
+
+**Correction to the plan's step 5.** It asked for `19: 15` in
+`S2_DIAMETER_METERS` but `19: 7.5` in `S2_EDGE_METERS`, calling the
+latter a "half-diameter for the column-radius lookup". That's wrong: the
+two tables are *the same series* (identical at every shared level — both
+have `18: 30`), and `StackedHexLayer` already halves it itself
+(`inscribed = edge / 2` for S2). `7.5` would double-halve and render l19
+columns at half the radius of every other level. Both tables got `19: 15`.
+
+##### Fixed en route: non-default filters 503'd at l17+ (a phase-6 bug)
+
+Phase 7's own goal worked immediately — the **default** view (full year
+range, all severities) serves l19 from D1. But **any non-default filter —
+a year sub-range *or* a deselected severity — returned 503** (CF error
+1102, "worker exceeded resource limits") at l17, l18 and l19. l16 and
+below were fine. **This landed with phase 6**, which added l17/l18; phase
+7 only extended the broken range to l19. Phase 6's validation missed it
+because it only exercised the default path.
+
+**Root cause.** A non-default filter falls off the D1 fast path onto the
+R2 pyramid path, which decoded a whole statewide shard parquet in the
+worker (l16 51.9 MB → l17 56.9 → l18 60.4 → l19 63.0 — l16 just fit,
+l17+ didn't). `queryPyramidS2` *does* pass a hyparquet row-group filter,
+but built its `cellid` ranges from the requested **shards** — and S2's
+shard level is l4, of which NJ is only **two** cells (`89b`/`89d`), which
+the client hardcodes as `S2_STATEWIDE_SHARDS`. So the range spanned the
+entire file and pruned nothing, at every zoom. H3 never hit this because
+its client sends a viewport-sized cover of many small shards; S2's cover
+is the whole state always. The clip polygon didn't save it either — it's
+applied *per row, after* the decode, so it shrinks the response, not the
+work.
+
+**Fix 1 — severity filters never needed the parquet.** Severity is pure
+*column-selection*: both paths just gate which counters accumulate
+(`wantF`/`wantI`/`wantP`), and the D1 rollup already stores `n_fatal`,
+`n_inj_ped`, `n_inj_other`, `n_pdo` separately. Only a *year* sub-range
+genuinely needs the per-year rows the pyramid has and the rollup doesn't.
+So `isDefault` dropped its `allSev` term and `queryCellsS2D1` took over
+the same gating — every severity filter now serves from D1, at every
+level.
+
+**Fix 2 — cover the viewport, not the shard.** The pyramid parquet is
+`cellid`-sorted (549 row groups × 4,096 rows, non-overlapping min/max), so
+it prunes beautifully *if you ask it to*. `s2RangesForPolygon` covers the
+clip polygon's bounding rect with ≤32 S2 cells and intersects that with
+the shard ranges:
+
+| filter range passed to hyparquet | row groups read | rows decoded |
+|---|---|---|
+| shard-derived (`89d` @ l4) — before | 549 / 549 | 2,245,453 |
+| viewport-derived (z=15 bbox, 29 cover cells) | **6** / 549 | **24,576** |
+
+~1% of the rows, 91× less decode. No re-shard, no rebuild, no client change.
+
+**Fix 3 (latent, exposed by fix 2) — bounds are tokens, not padded hex.**
+The handler zero-padded its range bounds to 16 chars, but the stored
+`cellid` (D1 column and parquet value alike) is the *token* — 16 hex chars
+with **trailing zeros stripped**. Lex order over stripped tokens is
+isomorphic to numeric cell-id order (verified over 200 k pairs), so
+`BETWEEN` works on them directly; but padding the bounds breaks it at the
+low end — a cell sitting exactly on `range_min` (token `89c04532`) sorts
+*below* the padded bound (`89c0453200000000`) and gets dropped. Invisible
+while the range covered the whole shard (its `lo` was never a real cell);
+every tight range from fix 2 has such a boundary. `s2RangeForCellToken`
+already did this right — the handler just wasn't using it.
+
+**Validation.** The whole filter matrix is 200 at l16–l19 (was 503 at
+l17+). And the two paths — D1 rollup vs. row-group-pruned parquet — return
+**identical** cells for the same query, which is what proves the tightened
+ranges lose nothing:
+
+| query (z=15 JC viewport) | D1 | pruned parquet | agreement |
+|---|---|---|---|
+| l17, all sevs | 1,142 cells | 1,142 | cell-for-cell identical |
+| l18, all sevs | 2,099 | 2,099 | identical |
+| l19, all sevs | 3,133 | 3,133 | identical |
+| l18, sevs=`fi` | 849 | 849 | identical |
+| l19, sevs=`fi` | 1,067 | 1,067 | identical |
+
+Regression tests in `cells-api/src/s2-cover.test.ts` pin all three fixes
+(pruning ratio, boundary inclusion, token/id order isomorphism, and the
+empty-intersection case — a viewport off the shards must return *no*
+ranges, since an empty range list reads as "no filter" and would scan the
+whole shard instead of none of it).
+
+**The H3 path has the same `allSev` term** in its `isDefault`, so an H3
+severity filter also takes the parquet path unnecessarily. It doesn't blow
+up there (many small shards ⇒ real pruning), so it's a perf nit, not a
+bug — left alone.
