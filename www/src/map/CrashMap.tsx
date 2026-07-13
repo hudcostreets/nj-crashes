@@ -768,14 +768,20 @@ export function CrashMap({
         // as the user explores. Once the max at a given res has been seen
         // during this session, it's stable — no cliff from small vp
         // changes moving tall cells in/out of the fetched set.
-        // Cache max by the *rendered* grid+res, not the H3-derived
-        // `effectiveHexRes`. In S2 mode the H3 pick can be the same
-        // (e.g. r8) for both l13 and l14 targets, so a single cache
-        // key would mix their maxes and let the l13 max keep normalizing
-        // l14 bars after a level switch (bars appear too short at the
-        // finer level). `dataRes` is the true rendered res; grid is
-        // needed to keep h3 r{N} distinct from s2 l{N}.
-        const cacheRes = grid === "s2" ? (dataRes ?? effectiveHexRes) : effectiveHexRes
+        // Cache max by the *actual data's* grid+res, not the picker's
+        // desired `effectiveHexRes`. When the picker flips res (e.g.
+        // r7→r8), `effectiveHexRes` updates immediately but the
+        // useCellsApi fetch takes ~debounce+network to return new
+        // cells. During that window `hexesArr` is still the *old* res's
+        // data (with its bigger fetchMax), and keying by the *new* res
+        // writes the old max to the new res's cache slot — the new
+        // fetch then normalizes against the stale, too-big max and bars
+        // render disproportionately short. Read the res off the data
+        // itself: `getResolution(hex[0].h3)` for H3, `dataRes` for S2
+        // (h3-js can't parse S2 tokens).
+        const cacheRes = grid === "s2"
+            ? (dataRes ?? effectiveHexRes)
+            : getResolution(hexesArr[0].h3)
         const scopeKey = `${initialBounds?.join(",") ?? "nj"}_${grid}${cacheRes}`
         const fetchMax = hexesArr.reduce((m, h) => Math.max(m, h.total), 1)
         const stableMax = Math.max(fetchMax, scopeMaxRef.current[scopeKey] ?? 0)
