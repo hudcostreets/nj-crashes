@@ -206,17 +206,7 @@ test.describe('YTD legend', () => {
     await expect.poll(lineWidth).toBe(2)
   })
 
-  // PLTLY GAP: clicking a Plotly-native legend item runs Plotly's default
-  // toggle-visibility handler; pltly's `onActiveTrace` only fires on hover,
-  // so click-to-pin doesn't carry over to plotly-native legends like YTD.
-  // FBM (#by-month-bars) also uses a plotly-native legend but its
-  // click-to-pin works (see the FBM test below) — that's actually Plotly's
-  // own click-to-isolate behavior, not pltly's pin. For YTD's pin to work
-  // like the Homicides custom legend, pltly needs to add a click handler
-  // for native legends that sets activeTrace alongside Plotly's default.
-  // Marking this test `fail` (xfail-style) so it documents the missing
-  // behavior and the CI stays green until pltly grows the feature.
-  test.fail('clicking a legend item pins it (stays thickened after unhover)', async ({ page }) => {
+  test('clicking a legend item pins it (stays thickened after unhover)', async ({ page }) => {
     await page.goto('/#ytd')
     await waitForPlots(page)
     const plot = page.locator('.js-plotly-plot').nth(1)
