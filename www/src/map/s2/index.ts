@@ -130,26 +130,31 @@ export function tokenCenterLngLat(token: S2Token): [number, number] {
  *  `S2_DIAMETER_METERS`); actual cell diameters vary ~15% within a
  *  level, so the picker's boundaries are approximate. For NJ latitudes
  *  the average is close to the actual, so this drift is small. */
-/** S2 target scale — how much smaller than the caller's `pixelTarget`
- *  the picker will accept a cell to be. Values < 1 bias toward finer
- *  levels; 1.0 is the strict "cells never smaller than target" rule.
+/** S2 target scale — how much smaller than the H3-equivalent target
+ *  we drive the S2 picker. Values < 1 bias toward finer S2 levels.
  *
- *  Two reasons S2 wants a smaller factor than H3:
+ *  Two reasons S2 wants a smaller target than H3 at the same zoom:
  *  1. S2 levels step 2× per level (vs H3's 2.65×), so the strict `≥
  *     target` rule lands one level coarser than log-closest on half of
  *     zooms — e.g. at z=7 embed default, target 2.5px sits just above
- *     l12's 2.0px, and picker returns l11 (4.0px, sparse-looking).
- *  2. S2 cells tessellate at 100% coverage (H3 hexes are ~91%), so
- *     coarse S2 cells look blockier than same-diameter H3 cells and
- *     benefit from one extra level of fineness at the aesthetic default.
+ *     l12's 2.0px, and picker would return l11 (4.0px, sparse-looking).
+ *  2. S2 cells tessellate at 100% coverage (H3 hexes ~91%), so coarse
+ *     S2 cells look blockier than same-diameter H3 cells and benefit
+ *     from one extra level of fineness at the aesthetic default.
+ *
+ *  Applied in `hexPxTargetFor` (`picker.ts`) — the picker itself still
+ *  uses the strict `diameter ≥ target` rule so snap-buttons land exactly
+ *  on their labelled level (a factor in the picker would push clicks one
+ *  level past the labelled target).
  *
  *  0.4 empirically hits the trajectory l12→l13→l14 at z=6→7→8 for the
- *  embed viewport (1280×480 clamp, 100k bins-budget target ≈ 2.5px). */
-const S2_TARGET_FACTOR = 0.4
+ *  embed viewport (1280×480 clamp, 100k bins-budget → auto target ≈ 2.5px,
+ *  scaled to ≈ 1.0px for S2). */
+export const S2_TARGET_FACTOR = 0.4
 
 export function pickS2LevelForPixels(pixelTarget: number, zoom: number, lat: number): number {
     const mppx = metersPerPixel(zoom, lat)
-    const targetMeters = pixelTarget * mppx * S2_TARGET_FACTOR
+    const targetMeters = pixelTarget * mppx
     const levels = Object.keys(S2_DIAMETER_METERS).map(Number).sort((a, b) => a - b)
     let best = levels[0]
     for (const l of levels) {

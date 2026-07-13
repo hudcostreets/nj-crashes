@@ -16,7 +16,7 @@
  *  Companion to `pickHexResolutionForPixels` in `CrashMap.tsx` (the
  *  low-level "finest r whose diameter ≥ threshold" walk). */
 import { pickHexResolutionForPixels } from "./CrashMap"
-import { pickS2LevelForPixels } from "./s2"
+import { pickS2LevelForPixels, S2_TARGET_FACTOR } from "./s2"
 
 export type VizMode = "hex" | "circle"
 
@@ -65,19 +65,25 @@ export function autoHexPxTarget(
     return Math.min(30, Math.max(1.0, diaPx))
 }
 
-/** Effective `hexPxTarget` fed into `pickHexResolutionForPixels`.
- *  Circle mode uses the identical picker as hex mode — same res, same
- *  cell count, same fetch. Circle is a pure rendering swap: each cell
- *  is drawn as a circular column clamped to the cell's inscribed
- *  radius. Bandwidth optimizations belong elsewhere (worker-side
- *  aggregation, parquet transport). */
+/** Effective `hexPxTarget` fed into the grid's picker.
+ *
+ *  - Circle mode uses the identical picker as hex mode — same res, same
+ *    cell count, same fetch. Circle is a pure rendering swap.
+ *  - **Grid factor** — when `grid === "s2"`, we scale the target by
+ *    `S2_TARGET_FACTOR` (~0.4) so S2 lands one level finer than H3 at
+ *    the same zoom (see the constant's doc for rationale). Applied here
+ *    rather than inside `pickS2LevelForPixels` so snap-buttons that set
+ *    `target = level.diameter_in_px` cleanly land on their labelled
+ *    level — the picker's strict `≥ target` rule stays a valid inverse. */
 export function hexPxTargetFor(
     viz: VizMode,
     viewportAreaPx: number,
     budget: number = BINS_BUDGET,
+    grid: Grid = "h3",
 ): number {
     void viz  // parity with hex mode
-    return autoHexPxTarget(viewportAreaPx, budget)
+    const target = autoHexPxTarget(viewportAreaPx, budget)
+    return grid === "s2" ? target * S2_TARGET_FACTOR : target
 }
 
 /** End-to-end: given (viz, zoom, lat, viewportAreaPx, budget), return
@@ -109,7 +115,7 @@ export function pick(
     viewportAreaPx: number,
     budget: number = BINS_BUDGET,
 ): PickerOutput {
-    const target = hexPxTargetFor(viz, viewportAreaPx, budget)
+    const target = hexPxTargetFor(viz, viewportAreaPx, budget, grid)
     const res = grid === "s2"
         ? pickS2LevelForPixels(target, zoom, lat)
         : pickHexResolutionForPixels(target, zoom, lat)

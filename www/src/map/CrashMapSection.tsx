@@ -308,8 +308,8 @@ export function CrashMapSection({
     const hexPxTarget = useMemo(() => {
         if (!hexAuto) return manualHexPx
         const [vpw, vph] = viewportDims(fullScreen)
-        return hexPxTargetFor(viz, vpw * vph, binsBudget)
-    }, [viz, hexAuto, manualHexPx, fullScreen, binsBudget])
+        return hexPxTargetFor(viz, vpw * vph, binsBudget, grid)
+    }, [viz, hexAuto, manualHexPx, fullScreen, binsBudget, grid])
 
     // Picker-state snapshot: current H3 resolution + adjacent levels
     // (one coarser, one finer) as clickable jump targets. Neighbors that
@@ -1473,9 +1473,13 @@ function HexPxTargetSlider({
                                 // the target to this level's floored px so the
                                 // floor picker locks onto it, and drop out
                                 // of auto — otherwise the manual value gets
-                                // ignored on the next render.
-                                onChange(Math.max(MIN, Math.min(MAX, snap)))
+                                // ignored on the next render. Order matters:
+                                // flip auto OFF first (immediate URL write),
+                                // then set the target (debounced 100ms).
+                                // Swapping this order lets the debounced
+                                // `hpx` write race the `ha` write and lose.
                                 if (auto) onAutoChange(false)
+                                onChange(Math.max(MIN, Math.min(MAX, snap)))
                             }}
                             style={{
                                 background: "none", border: "none", padding: 0, color: "inherit",
