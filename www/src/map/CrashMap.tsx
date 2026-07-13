@@ -768,7 +768,15 @@ export function CrashMap({
         // as the user explores. Once the max at a given res has been seen
         // during this session, it's stable — no cliff from small vp
         // changes moving tall cells in/out of the fetched set.
-        const scopeKey = `${initialBounds?.join(",") ?? "nj"}_r${effectiveHexRes}`
+        // Cache max by the *rendered* grid+res, not the H3-derived
+        // `effectiveHexRes`. In S2 mode the H3 pick can be the same
+        // (e.g. r8) for both l13 and l14 targets, so a single cache
+        // key would mix their maxes and let the l13 max keep normalizing
+        // l14 bars after a level switch (bars appear too short at the
+        // finer level). `dataRes` is the true rendered res; grid is
+        // needed to keep h3 r{N} distinct from s2 l{N}.
+        const cacheRes = grid === "s2" ? (dataRes ?? effectiveHexRes) : effectiveHexRes
+        const scopeKey = `${initialBounds?.join(",") ?? "nj"}_${grid}${cacheRes}`
         const fetchMax = hexesArr.reduce((m, h) => Math.max(m, h.total), 1)
         const stableMax = Math.max(fetchMax, scopeMaxRef.current[scopeKey] ?? 0)
         scopeMaxRef.current[scopeKey] = stableMax
