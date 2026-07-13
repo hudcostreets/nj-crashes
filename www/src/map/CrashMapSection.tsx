@@ -1449,8 +1449,19 @@ function HexPxTargetSlider({
                     fontSize: "0.88em", opacity: 0.85, paddingLeft: 22, lineHeight: 1.3,
                     display: "flex", gap: 8, alignItems: "center",
                 }}>
-                    {pickerInfo.levels.map(({ res, px, isCurrent }) => isCurrent ? (
-                        <span key={res}><b>{resLabel(res)} · {fmtPx(px)}px</b></span>
+                    {pickerInfo.levels.map(({ res, px, isCurrent }) => {
+                        // Snap value must be `≤` the level's actual px in the
+                        // picker's meter-space, so the "finest whose diameter
+                        // ≥ target" rule locks onto *this* level rather than
+                        // the next coarser one. `Math.round` can nudge above
+                        // the actual px (e.g. 1.46 → 1.5) and skip the level;
+                        // `Math.floor` (to 0.1 for values <5, to 1 for values
+                        // ≥5) is safe on both sides.
+                        const snap = px < 5
+                            ? Math.floor(px * 10) / 10
+                            : Math.floor(px)
+                        return isCurrent ? (
+                        <span key={res}><b>{resLabel(res)} · {fmtPx(snap)}px</b></span>
                     ) : (
                         <button
                             key={res}
@@ -1459,11 +1470,11 @@ function HexPxTargetSlider({
                                 // Under bins-budget the auto picker is
                                 // deterministic from viewport area + budget,
                                 // so per-zoom pinning doesn't compose. Set
-                                // the target to this level's own px so the
+                                // the target to this level's floored px so the
                                 // floor picker locks onto it, and drop out
                                 // of auto — otherwise the manual value gets
                                 // ignored on the next render.
-                                onChange(Math.max(MIN, Math.min(MAX, px < 5 ? Math.round(px * 10) / 10 : Math.round(px))))
+                                onChange(Math.max(MIN, Math.min(MAX, snap)))
                                 if (auto) onAutoChange(false)
                             }}
                             style={{
@@ -1473,9 +1484,10 @@ function HexPxTargetSlider({
                             }}
                             title={`Snap to ${resLabel(res)} (turns auto off)`}
                         >
-                            {resLabel(res)} · {fmtPx(px)}px
+                            {resLabel(res)} · {fmtPx(snap)}px
                         </button>
-                    ))}
+                    )
+                    })}
                 </div>
             )}
         </div>

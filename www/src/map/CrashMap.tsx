@@ -376,6 +376,19 @@ export function CrashMap({
     // `initialView` (per-scope override) takes precedence over `initialBounds`
     // auto-fit; lerps by container width.
     const fitKeyRef = React.useRef<string>("")
+    // When the parent transitions from controlled → uncontrolled (e.g. reset
+    // button clears `?llz=`), invalidate the fit key so the auto-fit effect
+    // below re-runs from the default view rather than sticking on whatever
+    // pan/zoom the user just did. Otherwise deck.gl's internal viewState is
+    // latched onto the last controlled push and never snaps back.
+    const prevControlledRef = React.useRef<ViewState | undefined>(controlledView)
+    useEffect(() => {
+        if (prevControlledRef.current !== undefined && controlledView === undefined) {
+            fitKeyRef.current = ""
+            setLocalViewState(defaultView(initialBounds, initialCenter, initialView, mode))
+        }
+        prevControlledRef.current = controlledView
+    }, [controlledView, initialBounds, initialCenter, initialView, mode])
     useEffect(() => {
         if (controlledView !== undefined) return
         if (!initialView && !initialBounds) return

@@ -130,9 +130,26 @@ export function tokenCenterLngLat(token: S2Token): [number, number] {
  *  `S2_DIAMETER_METERS`); actual cell diameters vary ~15% within a
  *  level, so the picker's boundaries are approximate. For NJ latitudes
  *  the average is close to the actual, so this drift is small. */
+/** S2 target scale — how much smaller than the caller's `pixelTarget`
+ *  the picker will accept a cell to be. Values < 1 bias toward finer
+ *  levels; 1.0 is the strict "cells never smaller than target" rule.
+ *
+ *  Two reasons S2 wants a smaller factor than H3:
+ *  1. S2 levels step 2× per level (vs H3's 2.65×), so the strict `≥
+ *     target` rule lands one level coarser than log-closest on half of
+ *     zooms — e.g. at z=7 embed default, target 2.5px sits just above
+ *     l12's 2.0px, and picker returns l11 (4.0px, sparse-looking).
+ *  2. S2 cells tessellate at 100% coverage (H3 hexes are ~91%), so
+ *     coarse S2 cells look blockier than same-diameter H3 cells and
+ *     benefit from one extra level of fineness at the aesthetic default.
+ *
+ *  0.4 empirically hits the trajectory l12→l13→l14 at z=6→7→8 for the
+ *  embed viewport (1280×480 clamp, 100k bins-budget target ≈ 2.5px). */
+const S2_TARGET_FACTOR = 0.4
+
 export function pickS2LevelForPixels(pixelTarget: number, zoom: number, lat: number): number {
     const mppx = metersPerPixel(zoom, lat)
-    const targetMeters = pixelTarget * mppx
+    const targetMeters = pixelTarget * mppx * S2_TARGET_FACTOR
     const levels = Object.keys(S2_DIAMETER_METERS).map(Number).sort((a, b) => a - b)
     let best = levels[0]
     for (const l of levels) {
