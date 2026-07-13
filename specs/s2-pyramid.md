@@ -1,9 +1,9 @@
 # S2 Pyramid: Migrating Off H3
 
-Status: **phases 1–6 landed**. Prod worker serves S2 from D1 across
-`l4..l18`; client defaults to S2 with `?h3` opt-in for the legacy grid.
-Phase 7 (extend pyramid to `l19` for street-zoom crash-cluster detail)
-is next — `e` picks up. See §Impl progress below.
+Status: **phases 1–7 landed**. Prod worker serves S2 from D1 across
+`l4..l19`; client defaults to S2 with `?h3` opt-in for the legacy grid.
+Phase 8 (extend to **l20 + l21** for H3-r14/r15 street-zoom parity) is
+next — `e` picks up. See §Impl progress below.
 
 ## Motivation
 
@@ -726,3 +726,58 @@ whole shard instead of none of it).
 severity filter also takes the parquet path unnecessarily. It doesn't blow
 up there (many small shards ⇒ real pruning), so it's a perf nit, not a
 bug — left alone.
+
+### Phase 8 — Extend to `l20 + l21` for H3 street-zoom parity (`e` picks up)
+
+**Motivation.** At street zoom (z=16-17) H3 lands on r14 (~4 m edge,
+~2.6 px cells) with r15 (~1.5 m) as headroom. S2 currently caps at l19
+(~14 m edge, ~13 px cells) — user-visible ~5× coarser than H3 at the
+same zoom. To close the gap: l20 (~7 m) sits between H3 r13 & r14; **l21
+(~3.5 m) matches H3 r14** which is where the picker lands by default at
+street zoom, so l21 is the natural stopping point.
+
+Skip **l22** — the phase-7 "point-mode territory" argument finally kicks
+in. At l22 (~1.7 m edge) most NJ intersections have exactly 1 crash per
+cell, so the aggregation stops paying for itself. Rendering the point
+mode directly is a better tool at that scale.
+
+**Sizing** (extrapolating from phase 7's 82 B/row pyramid / 94 B/row
+D1, with the observed convergence factor):
+
+- l20 ≈ 1.05 M rows (1.35× l19). Pyramid +86 MB; D1 +99 MB.
+- l21 ≈ 1.3 M rows (1.24× l20; converging as cells approach 1 crash
+  each). Pyramid +106 MB; D1 +122 MB.
+- **Total after l21: pyramid ≈ 530 MB, `cells-s2.db` ≈ 410 MB.**
+  D1 at 4% of the 10 GB per-DB limit; R2 storage is a rounding error.
+  No infra concerns.
+
+**Concrete steps** (mirror of phases 6/7):
+
+1. `njdot/cli/cells.py`: `S2_BASE_LEVEL_DEFAULT` 19 → **21**. Same
+   one-line change; DVX picks up the code as `git_deps`.
+2. Rebuild artifacts: `raw/s2_l21` → `s2-sld.parquet` (own-token
+   join at every level 4..21) → `s2_pyramid` (18 levels) →
+   `cells-s2.db` (18 tables l4..l21).
+3. Push R2: `njdot compute cells push` (dry-run first).
+4. D1: `bash api/scripts/d1-import.sh --inplace cells-s2`.
+5. Bump level caps in **four** places (phase 6 flagged; phase 7
+   confirmed):
+   - `www/src/map/useCellsApi.ts`: `S2_MAX = 19` → **21**
+   - `cells-api/src/cells.ts` (`handleCellsRequestS2` clamp): 19 → 21
+   - `www/src/map/s2/index.ts` (`S2_DIAMETER_METERS`): add
+     `20: 7.5, 21: 3.5`
+   - `www/src/map/StackedHexLayer.tsx` (`S2_EDGE_METERS` duplicate):
+     add `20: 7.5, 21: 3.5` — verify phase 7's l19 entry uses the same
+     series (l19 is `15` in both tables, so `edge = radius`, halving
+     happens in the layer via `inscribed = edge / 2`).
+6. `wrangler deploy` cells-api.
+7. `git push h main` — client `S2_MAX` bump ships via `daily.yml`.
+
+**Validation.** Count-conservation invariant across all 18 levels
+(`n_fatal = 12,537`). Spot-check picker at z=16.8 default street view:
+should pick **l21** (was l19-capped), rendering cells at ~3.5 px —
+visually matching the H3 r14 default at the same zoom.
+
+**Explicit non-goal.** l22 and beyond. Beyond l21 the picker would
+degenerate to scatterplot behavior (~1 crash per cell), and point mode
+is the right tool at that granularity.
