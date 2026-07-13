@@ -103,7 +103,7 @@ const LLZ_OVERRIDES: Record<number, { mobile: ViewState; desktop: ViewState }> =
  *  dragging to taste at mobile + desktop widths and copying `?llz=`. */
 const STATEWIDE_VIEW: { mobile: ViewState; desktop: ViewState } = {
     mobile:  { latitude: 39.90, longitude: -74.60, zoom: 7.85, pitch: 45, bearing: 0 },
-    desktop: { latitude: 39.83, longitude: -74.55, zoom: 8.95, pitch: 45, bearing: 0 },
+    desktop: { latitude: 39.9695, longitude: -74.6721, zoom: 7.18, pitch: 36, bearing: -1 },
 }
 
 /** `llz` URL param: "lat lng zoom pitch bearing" (signed-delim — `+` or
@@ -193,7 +193,12 @@ export function CrashMapSection({
     // `specs/s2-pyramid.md`). Client plumbing landed ahead of pyramid + worker
     // support: `?grid=s2` computes S2 levels for display in the widget, but
     // the actual /v1/cells fetch still uses H3 until phases 3-4 land.
-    const [grid, setGrid] = useUrlState("grid", enumParam("h3" as const, ["h3", "s2"] as const))
+    // Grid selection via a boolean `?h3` param: present → H3, absent → S2 (the
+    // shipping default). Cleaner URL for the common case; opt-in for the
+    // legacy grid via just `?h3` on the URL (no value needed).
+    const [h3Url, setH3Url] = useUrlState("h3", boolParam)
+    const grid: "h3" | "s2" = h3Url ? "h3" : "s2"
+    const setGrid = (g: "h3" | "s2") => setH3Url(g === "h3")
     void setGrid
     // `hexAuto` — when true (default), hexPxTarget grows with zoom so
     // close-up views get chunkier, more-pickable cells; when false, the
@@ -211,8 +216,8 @@ export function CrashMapSection({
     // when the user is on the default (auto=on). `?ha=1` when disabled.
     const hexAuto = !hexAutoUrl
     const setHexAuto = (v: boolean) => setHexAutoUrl(!v)
-    const heightScale = heightScaleUrl ?? 0.3
-    const setHeightScale = (v: number) => setHeightScaleUrl(v === 0.3 ? null : v)
+    const heightScale = heightScaleUrl ?? 0.2
+    const setHeightScale = (v: number) => setHeightScaleUrl(v === 0.2 ? null : v)
     const manualHexPx = hexPxTargetUrl ?? 1.7
     const setHexPxTarget = (v: number) => setHexPxTargetUrl(v === 1.7 ? null : v)
     // Drawer defaults open on the full-screen route (room to spare) and
@@ -476,20 +481,22 @@ export function CrashMapSection({
     // Level-change detection for the loading fade. Fade/desaturate the prior
     // bins only when the picker's *target* res actually changed (a zoom that
     // crossed a level boundary) — never on a pure pan (same res, new
-    // viewport; the bins mostly stay put, so muting them is just noise). We
-    // compare the live target res against the target res of the data
-    // currently shown (tracked in a ref), so budget-coarsening (rendered res
-    // < target res) doesn't read as a level change on every refetch.
+    // viewport; the bins mostly stay put, so muting them is just noise).
+    // Track the res of the *rendered data* (`result.plan.res`), not the
+    // picker's target: the picker's target updates synchronously on scroll,
+    // so keying off `targetRes` would clobber `shownTargetRes` to the new
+    // value before `refetching` even flips true, and the res-change window
+    // would never open.
     const targetRes = pickerInfo?.levels.find(l => l.isCurrent)?.res ?? null
-    const shownTargetRes = useRef<number | null>(null)
+    const shownDataRes = useRef<number | null>(null)
     useEffect(() => {
-        if (result.status === "ready" && !result.refetching && targetRes !== null) {
-            shownTargetRes.current = targetRes
+        if (result.status === "ready" && !result.refetching && result.plan?.kind === "hex") {
+            shownDataRes.current = result.plan.res
         }
-    }, [result, targetRes])
+    }, [result])
     const resChanging = result.status === "ready" && result.refetching
-        && shownTargetRes.current !== null && targetRes !== null
-        && shownTargetRes.current !== targetRes
+        && shownDataRes.current !== null && targetRes !== null
+        && shownDataRes.current !== targetRes
 
     // Worker handles budget enforcement via `?maxCells=`: dense shards
     // come back at a coarser res than requested. Client-side fallback
