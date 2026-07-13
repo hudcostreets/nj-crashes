@@ -94,7 +94,8 @@ describe("S2 picker (`pickS2LevelForPixels`)", () => {
         [2.5, 13, 17],  // city block (level 17 edge 60m ≥ 36m; level 18 edge 30m < 36m)
         [2.5, 14, 18],  // street segment (level 18 edge 30m ≥ 18m; level 19 edge 15m < 18m)
         [2.5, 15, 19],  // street zoom — phase 7's target (level 19 edge 15m ≥ 9m)
-        [2.5, 16, 19],  // crosswalk-scale, at the S2_MAX_LEVEL cap
+        [2.5, 16, 20],  // crosswalk-scale (level 20 edge 7.5m ≥ 4.5m; level 21 3.75m < 4.5m)
+        [2.5, 17, 21],  // phase 8's target: H3 r14 parity (level 21 edge 3.75m ≥ 2.3m)
     ]
     for (const [target, zoom, expected] of cases) {
         it(`target=${target}px z=${zoom} lat=${NJ_LAT} → l${expected}`, () => {
@@ -104,6 +105,13 @@ describe("S2 picker (`pickS2LevelForPixels`)", () => {
             expect(Math.abs(picked - expected)).toBeLessThanOrEqual(1)
         })
     }
+
+    it("lands exactly on l21 at the z=16.8 street-zoom default (phase 8's target)", () => {
+        // No ±1 slack here: the point of phase 8 is that the default street
+        // view reaches l21 (~3.75 m, H3 r14 parity) instead of capping at
+        // l19. mppx(16.8, 40.7°) ≈ 1.04 → target ≈ 2.6 m → l21 (3.75 ≥ 2.6).
+        expect(pickS2LevelForPixels(2.5, 16.8, NJ_LAT)).toBe(21)
+    })
 
     it("is monotone-non-decreasing across the zoom range", () => {
         let prev = -1

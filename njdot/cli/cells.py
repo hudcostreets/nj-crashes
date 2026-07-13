@@ -73,14 +73,15 @@ CELLS_DB_COUNT_COLS = ('n_fatal', 'n_inj_ped', 'n_inj_other', 'n_pdo', 'n_vehs')
 # id at `S2_BASE_LEVEL` (the finest data level); every coarser level's cell
 # is derived by UBIGINT bit-math (`njdot.s2.parent_sql`), byte-identical to
 # both `s2sphere` and the client's `nodes2ts` (see `tests/test_s2.py`).
-S2_BASE_LEVEL_DEFAULT = 19       # finest data level; raw stores cell id here
+S2_BASE_LEVEL_DEFAULT = 21       # finest data level; raw stores cell id here
 S2_SHARD_LEVEL_DEFAULT = 4       # ~15 level-4 tokens cover NJ
 # Levels rolled into cells-s2.db / the pyramid. l4-l5 are near-empty (NJ is
-# ~15 cells at l4) but cheap, and the statewide viewport picks them; l19
-# (~15 m) is the base. Phase 6 took the base 16 → 18 (l16's ~120 m rendered
-# blockier than H3 r12 at street zoom); phase 7 took it 18 → 19, where a cell
-# is half an intersection and crosswalk-scale clusters separate.
-S2_LEVELS_DEFAULT = tuple(range(4, 20))
+# ~15 cells at l4) but cheap, and the statewide viewport picks them; l21
+# (~3.75 m) is the base. Phase 6 took the base 16 → 18, phase 7 18 → 19, and
+# phase 8 19 → 21: the picker lands on l21 at street zoom, where an S2 cell
+# finally matches H3 r14 (~4 m) instead of rendering ~5× coarser. l22+ is
+# point-mode territory (~1 crash/cell), so aggregation stops paying for itself.
+S2_LEVELS_DEFAULT = tuple(range(4, 22))
 R2_BUCKET_DEFAULT = 'nj-crashes'
 R2_PREFIX_DEFAULT = 'cells'
 R2_PROFILE_DEFAULT = 'cf'

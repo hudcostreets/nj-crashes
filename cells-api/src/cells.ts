@@ -614,11 +614,11 @@ async function handleCellsRequestS2(
     if (requestedShards.length === 0) {
         throw new HttpError(400, "cells must list ≥1 shard")
     }
-    // S2 level range mirrors the pyramid build (phase 7): data
-    // levels 4-19, base 19. Reject outside this envelope up front so
+    // S2 level range mirrors the pyramid build (phase 8): data
+    // levels 4-21, base 21. Reject outside this envelope up front so
     // the R2 fetch doesn't 404 on us.
     const S2_MIN_LEVEL = 4
-    const S2_MAX_LEVEL = 19
+    const S2_MAX_LEVEL = 21
     if (requestedLevel < S2_MIN_LEVEL || requestedLevel > S2_MAX_LEVEL) {
         throw new HttpError(400, `s2 level ${requestedLevel} out of range [${S2_MIN_LEVEL}, ${S2_MAX_LEVEL}]`)
     }

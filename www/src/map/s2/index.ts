@@ -54,6 +54,8 @@ export const S2_DIAMETER_METERS: Record<number, number> = {
     17: 60,           // ~sidewalk-scale
     18: 30,           // ~single parked car
     19: 15,           // ~half an intersection / crosswalk-scale
+    20: 7.5,          // ~crosswalk width
+    21: 3.75,         // ~H3 r14 (the street-zoom default) — finest level we build
 }
 
 /** Level range the pyramid supports. Matches H3's r5-r15 for
@@ -61,7 +63,7 @@ export const S2_DIAMETER_METERS: Record<number, number> = {
  *  the largest key in `S2_DIAMETER_METERS`, so raising this alone is
  *  not enough — the table has to grow too. */
 export const S2_MIN_LEVEL = 4
-export const S2_MAX_LEVEL = 19
+export const S2_MAX_LEVEL = 21
 
 /** Convert (lat, lon) → S2 cell token at `level`. Token is a
  *  14-char lowercase hex string, e.g. `"89c25c1"` (leading digits

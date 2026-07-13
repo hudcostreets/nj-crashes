@@ -1,9 +1,10 @@
 # S2 Pyramid: Migrating Off H3
 
-Status: **phases 1–7 landed**. Prod worker serves S2 from D1 across
-`l4..l19`; client defaults to S2 with `?h3` opt-in for the legacy grid.
-Phase 8 (extend to **l20 + l21** for H3-r14/r15 street-zoom parity) is
-next — `e` picks up. See §Impl progress below.
+Status: **phases 1–8 landed**. Prod worker serves S2 from D1 across
+`l4..l21`; client defaults to S2 with `?h3` opt-in for the legacy grid.
+The pyramid is complete at l21 (~3.75 m, H3-r14 parity at street zoom);
+l22+ is an explicit non-goal — cells are saturating toward one per
+distinct crash coordinate. See §Impl progress below.
 
 ## Motivation
 
@@ -727,7 +728,7 @@ severity filter also takes the parquet path unnecessarily. It doesn't blow
 up there (many small shards ⇒ real pruning), so it's a perf nit, not a
 bug — left alone.
 
-### Phase 8 — Extend to `l20 + l21` for H3 street-zoom parity (`e` picks up)
+### Phase 8 — Extend to `l20 + l21` for H3 street-zoom parity — landed
 
 **Motivation.** At street zoom (z=16-17) H3 lands on r14 (~4 m edge,
 ~2.6 px cells) with r15 (~1.5 m) as headroom. S2 currently caps at l19
@@ -741,43 +742,69 @@ in. At l22 (~1.7 m edge) most NJ intersections have exactly 1 crash per
 cell, so the aggregation stops paying for itself. Rendering the point
 mode directly is a better tool at that scale.
 
-**Sizing** (extrapolating from phase 7's 82 B/row pyramid / 94 B/row
-D1, with the observed convergence factor):
+Mechanically a repeat of phases 6/7: `S2_BASE_LEVEL_DEFAULT` 19 → **21**
+in `njdot/cli/cells.py` (one line; DVX picks the code up as `git_deps`),
+rebuild `raw/s2_l21` → `s2-sld.parquet` → `s2_pyramid` (18 levels) →
+`cells-s2.db` (18 tables), push R2, `d1-import.sh --inplace cells-s2`,
+bump the four level caps, `wrangler deploy`.
 
-- l20 ≈ 1.05 M rows (1.35× l19). Pyramid +86 MB; D1 +99 MB.
-- l21 ≈ 1.3 M rows (1.24× l20; converging as cells approach 1 crash
-  each). Pyramid +106 MB; D1 +122 MB.
-- **Total after l21: pyramid ≈ 530 MB, `cells-s2.db` ≈ 410 MB.**
-  D1 at 4% of the 10 GB per-DB limit; R2 storage is a rounding error.
-  No infra concerns.
+**Sizing came in well under estimate — cells are saturating.** The plan
+extrapolated the l17→l19 growth rate and predicted l21 ≈ 1.3 M rows /
+530 MB pyramid. Actual:
 
-**Concrete steps** (mirror of phases 6/7):
+| level | cells | vs. prev | pyramid | `cells-s2.db` |
+|---|---|---|---|---|
+| l19 (phase 7) | 775,085 | 1.39× | 338 MB | 191 MB |
+| l20 | 928,561 | **1.20×** | | |
+| l21 | 1,033,149 | **1.11×** | | |
+| total | | | **467 MB** | **377 MB** |
 
-1. `njdot/cli/cells.py`: `S2_BASE_LEVEL_DEFAULT` 19 → **21**. Same
-   one-line change; DVX picks up the code as `git_deps`.
-2. Rebuild artifacts: `raw/s2_l21` → `s2-sld.parquet` (own-token
-   join at every level 4..21) → `s2_pyramid` (18 levels) →
-   `cells-s2.db` (18 tables l4..l21).
-3. Push R2: `njdot compute cells push` (dry-run first).
-4. D1: `bash api/scripts/d1-import.sh --inplace cells-s2`.
-5. Bump level caps in **four** places (phase 6 flagged; phase 7
-   confirmed):
-   - `www/src/map/useCellsApi.ts`: `S2_MAX = 19` → **21**
-   - `cells-api/src/cells.ts` (`handleCellsRequestS2` clamp): 19 → 21
-   - `www/src/map/s2/index.ts` (`S2_DIAMETER_METERS`): add
-     `20: 7.5, 21: 3.5`
-   - `www/src/map/StackedHexLayer.tsx` (`S2_EDGE_METERS` duplicate):
-     add `20: 7.5, 21: 3.5` — verify phase 7's l19 entry uses the same
-     series (l19 is `15` in both tables, so `edge = radius`, halving
-     happens in the layer via `inscribed = edge / 2`).
-6. `wrangler deploy` cells-api.
-7. `git push h main` — client `S2_MAX` bump ships via `daily.yml`.
+Growth is decaying fast (2.43 → 2.07 → 1.74 → 1.52 → 1.39 → 1.20 →
+1.11) because the cell count is converging on the number of **distinct
+crash coordinates** — geometry stops mattering once cells are smaller
+than the spacing between geocoded points. Two consequences:
 
-**Validation.** Count-conservation invariant across all 18 levels
-(`n_fatal = 12,537`). Spot-check picker at z=16.8 default street view:
-should pick **l21** (was l19-capped), rendering cells at ~3.5 px —
-visually matching the H3 r14 default at the same zoom.
+- Each finer level buys less than the last, so extrapolating the
+  geometric trend overshoots badly (predicted +228 MB of pyramid for
+  l20+l21; actual +129 MB).
+- It independently confirms the **skip-l22** call: at l21 we're already
+  near one cell per distinct location, so l22 would mostly split
+  singleton cells. Nothing left for aggregation to buy.
 
-**Explicit non-goal.** l22 and beyond. Beyond l21 the picker would
-degenerate to scatterplot behavior (~1 crash per cell), and point mode
-is the right tool at that granularity.
+`s2-sld.parquet` grew 16.3 → **28.3 MB** (4,038,577 labelled cells across
+the 18 levels, up from 2,076,867). D1 sits at ~4% of the 10 GB per-DB
+limit; R2 is 39 objects / 577 MB. No infra concerns.
+
+**`S2_EDGE_METERS`/`S2_DIAMETER_METERS` are `21: 3.75`, not `3.5`.** Both
+client tables hold the same halving series (`7_842_000 / 2^level`), and
+`StackedHexLayer` already derives the S2 inscribed radius as `edge / 2`.
+`3.5` would have been off-series; `3.75` keeps l21 consistent with every
+other level.
+
+**Validation.**
+
+- Count-conservation exact at **all 18 levels** in both the pyramid and
+  the D1 rollup, and byte-identical to phases 3/6/7 (`n_fatal` = 12,537,
+  `n_inj_ped` = 55,659, `n_inj_other` = 1,541,178, `n_pdo` = 3,299,293,
+  `n_vehs` = 8,372,869). All 18 D1 tables row-count-verified on import.
+- Live filter matrix (z=15 JC viewport) is 200 across l19/l20/l21 ×
+  {default, `severity=fi`, `years=2015-2020`, both} — exercising both the
+  D1 fast path and the pruned-parquet path. l19 default still returns
+  3,133 cells, unchanged from phase 7.
+- D1 vs. row-group-pruned parquet agree **cell-for-cell** at the new
+  levels (l20: 3,977 v 3,977; l21: 4,617 v 4,617; l21 `fi`: 1,371 v
+  1,371 — `only_d1=0 only_pyr=0 count_diffs=0`), so phase 7's viewport
+  covering still loses nothing two levels finer.
+- Picker reaches l21 at the z=16.8 street-zoom default, pinned as an
+  exact (no-slack) assertion in `www/src/map/s2/s2.test.ts`.
+
+**A statewide request at l19+ still OOMs the worker (by design).** A
+query with no clip polygon spans the whole shard — at l21 that's 1.03 M
+cells, far past the worker's response budget, so it 503s (CF 1102). The
+client never does this: it always sends the viewport polygon, and the
+picker only selects l19+ at zooms where the viewport is a few thousand
+cells. Worth knowing when hand-probing the API — a bare
+`?grid=s2&res=21&cells=89b,89d` will fail, and that is not a regression.
+
+**Explicit non-goal.** l22 and beyond (see the saturation argument
+above). Point mode is the right tool at that granularity.
