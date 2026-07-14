@@ -158,26 +158,18 @@ export function tokenCenterLngLat(token: S2Token): [number, number] {
  *  (raised from an earlier 0.4 that pre-dated the l20/l21 extension —
  *  those levels render 1-2 css px wide, invisibly small, at the same
  *  1.0px auto target the 0.4 factor produced). */
-export const S2_TARGET_FACTOR = 0.7
+import tuning from "../tuning.json"
 
-/** Per-level pick-diameter fudge. The picker walks coarsest → finest and
- *  keeps the finest level whose diameter ≥ target-meters. For the very
- *  finest levels, the geometric diameter is small enough (3.75-7.5m) that
- *  even a modest auto target picks them at zooms where the resulting
- *  columns still render 1-2 css px wide — visually unreadable. Hand-tuned
- *  by vibes from CIC screenshots at z=6/14.58/16.8:
- *
- *  - l21 (3.75m geom, effective 1.5m): only picked when target ≤ 1.5m,
- *    i.e. z ≳ 17 in the embed viewport. Below street zoom you'd rather
- *    see l20 (7.5m) rendered at 4px than l21 shown as invisible dots.
- *  - l20 (7.5m geom, effective 4.1m): entry point for street-zoom; the
- *    modest fudge makes z=15 still fall back to l19.
- *
- *  Coarser levels (l19 and below) use the geometric diameter unchanged. */
-export const S2_PICK_MULT: Record<number, number> = {
-    20: 0.55,
-    21: 0.40,
-}
+/** S2 picker constants. Values come from `../tuning.json` — that file is
+ *  the single source of truth, editable at `/tune` in dev mode (writes
+ *  back via a Vite middleware) and committed as the shipped defaults.
+ *  See docs on `S2_TARGET_FACTOR` and `S2_PICK_MULT` in the tuning JSON
+ *  itself; the module keeps the exported names + types for callers. */
+export const S2_TARGET_FACTOR: number = tuning.s2.targetFactor
+
+export const S2_PICK_MULT: Record<number, number> = Object.fromEntries(
+    Object.entries(tuning.s2.pickMult).map(([k, v]) => [Number(k), v as number]),
+)
 
 export function pickS2LevelForPixels(pixelTarget: number, zoom: number, lat: number): number {
     const mppx = metersPerPixel(zoom, lat)

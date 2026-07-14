@@ -8,7 +8,7 @@
  *  No editing yet — displays current shipped constants and computed
  *  boundaries for visual inspection. v2 will add editable inputs +
  *  JSON persistence via a Vite dev middleware (see task #131 desc). */
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import type { Bbox } from "@/src/map/v2"
 import { CrashMap, type ViewState, metersPerPixel, pickHexResolutionForPixels } from "@/src/map/CrashMap"
 import { H3_RADIUS_METERS } from "@/src/map/StackedHexLayer"
@@ -18,9 +18,8 @@ import {
     S2_MIN_LEVEL,
     S2_PICK_MULT,
     S2_TARGET_FACTOR,
-    pickS2LevelForPixels,
 } from "@/src/map/s2"
-import { BINS_BUDGET, hexPxTargetFor } from "@/src/map/picker"
+import { BINS_BUDGET, autoHexPxTarget } from "@/src/map/picker"
 import { useCellsApi, type CellsApiFilter } from "@/src/map/useCellsApi"
 
 type Grid = "h3" | "s2"
@@ -37,6 +36,27 @@ const DEFAULT_LON = -74.0595
 
 const MINI_HEIGHT = 380
 
+/** Local S2 picker parameterized by the TunePage's editable state, so
+ *  edits preview before Save. Mirrors `pickS2LevelForPixels` in
+ *  `map/s2/index.ts` — keep the walk logic in sync. */
+function pickS2WithOverrides(
+    pixelTarget: number,
+    zoom: number,
+    lat: number,
+    pickMult: Record<number, number>,
+): number {
+    const mppx = metersPerPixel(zoom, lat)
+    const targetMeters = pixelTarget * mppx
+    const levels = Object.keys(S2_DIAMETER_METERS).map(Number).sort((a, b) => a - b)
+    let best = levels[0]
+    for (const l of levels) {
+        const diaMeters = S2_DIAMETER_METERS[l] * (pickMult[l] ?? 1)
+        if (diaMeters >= targetMeters) best = l
+        else break
+    }
+    return best
+}
+
 /** Sweep zoom in small steps, find [lowZ, highZ] where the picker
  *  returns the target level. Returns null if the level is unreachable
  *  with the current constants (which is a useful signal — e.g. the
@@ -47,10 +67,17 @@ const MINI_HEIGHT = 380
  *  "highest MZ" mini-map shows a viewport with actual content rather
  *  than a sub-meter empty scene at z=22. */
 const MAX_PRACTICAL_ZOOM = 19
-function zoomRangeForLevel(grid: Grid, level: number, lat: number): [number, number] | null {
-    const target = hexPxTargetFor("circle", PICK_VP_AREA, BINS_BUDGET, grid)
+function zoomRangeForLevel(
+    grid: Grid,
+    level: number,
+    lat: number,
+    s2TargetFactor: number,
+    s2PickMult: Record<number, number>,
+): [number, number] | null {
+    const baseTarget = autoHexPxTarget(PICK_VP_AREA, BINS_BUDGET)
+    const target = grid === "s2" ? baseTarget * s2TargetFactor : baseTarget
     const pick = grid === "s2"
-        ? (z: number) => pickS2LevelForPixels(target, z, lat)
+        ? (z: number) => pickS2WithOverrides(target, z, lat, s2PickMult)
         : (z: number) => pickHexResolutionForPixels(target, z, lat)
     let low = -1, high = -1
     for (let z = 2; z <= MAX_PRACTICAL_ZOOM; z += 0.02) {
@@ -139,13 +166,45 @@ function MiniMap({
     )
 }
 
+type SaveStatus = "idle" | "saving" | "saved" | "error"
+
 export default function TunePage() {
     const [grid, setGrid] = useState<Grid>("s2")
     const [level, setLevel] = useState(19)
     const [lat, setLat] = useState(DEFAULT_LAT)
     const [lon, setLon] = useState(DEFAULT_LON)
 
-    const range = useMemo(() => zoomRangeForLevel(grid, level, lat), [grid, level, lat])
+    // Editable tuning state — initialized from the imported (shipped)
+    // constants. All picker previews use these; Save writes back to
+    // `src/map/tuning.json` and Vite HMR reloads the app.
+    const [s2Factor, setS2Factor] = useState<number>(S2_TARGET_FACTOR)
+    const [s2Mult, setS2Mult] = useState<Record<number, number>>({ ...S2_PICK_MULT })
+    const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle")
+    const [saveMsg, setSaveMsg] = useState<string>("")
+
+    // Track whether the local state has drifted from the imported
+    // (last-saved) values, so the Save button can indicate "dirty".
+    const dirty = useMemo(() => {
+        if (s2Factor !== S2_TARGET_FACTOR) return true
+        const keys = new Set([...Object.keys(s2Mult), ...Object.keys(S2_PICK_MULT).map(String)])
+        for (const k of keys) {
+            if ((s2Mult[+k] ?? 1) !== (S2_PICK_MULT[+k] ?? 1)) return true
+        }
+        return false
+    }, [s2Factor, s2Mult])
+
+    // When the imported constants change (HMR after a save), re-sync
+    // local state — otherwise the "dirty" indicator would show forever.
+    useEffect(() => {
+        setS2Factor(S2_TARGET_FACTOR)
+        setS2Mult({ ...S2_PICK_MULT })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])  // Only on mount; HMR does a fresh mount.
+
+    const range = useMemo(
+        () => zoomRangeForLevel(grid, level, lat, s2Factor, s2Mult),
+        [grid, level, lat, s2Factor, s2Mult],
+    )
 
     const levels = grid === "s2"
         ? Array.from({ length: S2_MAX_LEVEL - S2_MIN_LEVEL + 1 }, (_, i) => S2_MIN_LEVEL + i)
@@ -158,15 +217,51 @@ export default function TunePage() {
 
     const onGridChange = useCallback((newGrid: Grid) => {
         setGrid(newGrid)
-        // Clamp level to the new grid's range so we don't sit on an
-        // invalid choice (e.g. l21 doesn't exist for H3).
         if (newGrid === "s2") setLevel(l => Math.max(S2_MIN_LEVEL, Math.min(S2_MAX_LEVEL, l)))
         else setLevel(l => Math.max(5, Math.min(15, l)))
     }, [])
 
+    const onMultChange = useCallback((lvl: number, v: string) => {
+        const n = parseFloat(v)
+        setS2Mult(prev => {
+            const next = { ...prev }
+            if (!v || isNaN(n)) delete next[lvl]
+            else next[lvl] = n
+            return next
+        })
+    }, [])
+
+    const onSave = useCallback(async () => {
+        setSaveStatus("saving")
+        setSaveMsg("")
+        try {
+            const body = {
+                s2: {
+                    targetFactor: s2Factor,
+                    pickMult: Object.fromEntries(Object.entries(s2Mult).map(([k, v]) => [k, v])),
+                },
+            }
+            const r = await fetch("/__tune/write", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+            })
+            const json = await r.json()
+            if (!r.ok || !json.ok) throw new Error(json.error ?? `HTTP ${r.status}`)
+            setSaveStatus("saved")
+            setSaveMsg(`wrote ${json.file}`)
+        } catch (err) {
+            setSaveStatus("error")
+            setSaveMsg(String(err))
+        }
+    }, [s2Factor, s2Mult])
+
     const geomDia = grid === "s2" ? S2_DIAMETER_METERS[level] : 2 * H3_RADIUS_METERS[level]
-    const effMult = grid === "s2" ? (S2_PICK_MULT[level] ?? 1) : 1
+    const effMult = grid === "s2" ? (s2Mult[level] ?? 1) : 1
     const effDia = geomDia * effMult
+    const previewMultLevels = grid === "s2"
+        ? Array.from({ length: S2_MAX_LEVEL - S2_MIN_LEVEL + 1 }, (_, i) => S2_MIN_LEVEL + i)
+        : []
 
     return (
         <div style={{
@@ -215,8 +310,8 @@ export default function TunePage() {
             ) : (
                 <div style={{ padding: 24, color: "#e88", fontFamily: "monospace" }}>
                     Picker never selects {grid === "s2" ? `l${level}` : `r${level}`} in a {PICK_VP_AREA / 1000}k-px² viewport at lat={lat.toFixed(2)}.
-                    {grid === "s2" && S2_PICK_MULT[level] != null && (
-                        <> Try lowering <code>S2_PICK_MULT[{level}]</code> (currently {S2_PICK_MULT[level]}).</>
+                    {grid === "s2" && s2Mult[level] != null && (
+                        <> Try lowering <code>s2.pickMult[{level}]</code> (currently {s2Mult[level]}).</>
                     )}
                 </div>
             )}
@@ -240,19 +335,67 @@ export default function TunePage() {
                 {grid === "s2" && effMult !== 1 && (
                     <div>{`l${level}`} effective diameter (pick fudge {effMult}): {effDia.toFixed(2)} m</div>
                 )}
-                <hr style={{ border: "none", borderTop: "1px solid #333", margin: "8px 0" }} />
+                <div>picker vp (clamped): 1280 × 480 = {PICK_VP_AREA.toLocaleString()} px²</div>
+                <div>auto target: {autoHexPxTarget(PICK_VP_AREA, BINS_BUDGET).toFixed(2)} px · S2 auto target: {(autoHexPxTarget(PICK_VP_AREA, BINS_BUDGET) * s2Factor).toFixed(2)} px</div>
+                <hr style={{ border: "none", borderTop: "1px solid #333", margin: "12px 0" }} />
                 {grid === "s2" ? (
-                    <>
-                        <div>S2_TARGET_FACTOR = {S2_TARGET_FACTOR}</div>
-                        <div>S2_PICK_MULT = {JSON.stringify(S2_PICK_MULT)}</div>
-                        <div>picker vp (clamped): 1280 × 480 = {PICK_VP_AREA.toLocaleString()} px²</div>
-                        <div>auto target: {hexPxTargetFor("circle", PICK_VP_AREA, BINS_BUDGET, "s2").toFixed(2)} px</div>
-                    </>
+                    <div>
+                        <div style={{ marginBottom: 8, fontSize: 13 }}>
+                            <b>edit S2 tuning</b> (previews live; Save writes to <code>src/map/tuning.json</code>)
+                        </div>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+                            <label>targetFactor:</label>
+                            <input
+                                type="number"
+                                step="0.05"
+                                min="0.1"
+                                max="3"
+                                value={s2Factor}
+                                onChange={e => setS2Factor(parseFloat(e.target.value) || 0)}
+                                style={{ width: 80, fontFamily: "monospace" }}
+                            />
+                            <span style={{ color: "#888" }}>(shipped: {S2_TARGET_FACTOR})</span>
+                        </div>
+                        <div style={{ marginBottom: 6 }}>pickMult (leave blank for default 1.0):</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, auto)", gap: "4px 12px", marginLeft: 12 }}>
+                            {previewMultLevels.map(l => (
+                                <label key={l} style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                                    l{l}:
+                                    <input
+                                        type="number"
+                                        step="0.05"
+                                        min="0.05"
+                                        max="2"
+                                        placeholder="1.0"
+                                        value={s2Mult[l] ?? ""}
+                                        onChange={e => onMultChange(l, e.target.value)}
+                                        style={{ width: 60, fontFamily: "monospace" }}
+                                    />
+                                </label>
+                            ))}
+                        </div>
+                        <div style={{ marginTop: 12, display: "flex", gap: 8, alignItems: "center" }}>
+                            <button
+                                onClick={onSave}
+                                disabled={saveStatus === "saving" || !dirty}
+                                style={{
+                                    padding: "4px 12px",
+                                    background: dirty ? "#2a4" : "#333",
+                                    color: "#eee",
+                                    border: "1px solid #555",
+                                    borderRadius: 3,
+                                    cursor: dirty ? "pointer" : "default",
+                                }}
+                            >
+                                {dirty ? "Save to tuning.json" : "no changes"}
+                            </button>
+                            {saveStatus === "saving" && <span>saving…</span>}
+                            {saveStatus === "saved" && <span style={{ color: "#7d7" }}>✓ {saveMsg}</span>}
+                            {saveStatus === "error" && <span style={{ color: "#e77" }}>✗ {saveMsg}</span>}
+                        </div>
+                    </div>
                 ) : (
-                    <>
-                        <div>picker vp (clamped): 1280 × 480 = {PICK_VP_AREA.toLocaleString()} px²</div>
-                        <div>auto target: {hexPxTargetFor("circle", PICK_VP_AREA, BINS_BUDGET, "h3").toFixed(2)} px</div>
-                    </>
+                    <div style={{ color: "#888" }}>H3 tuning: no editable knobs yet.</div>
                 )}
             </div>
         </div>
