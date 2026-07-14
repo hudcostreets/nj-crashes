@@ -24,6 +24,8 @@ import { useCellsApi, type CellsApiFilter } from "@/src/map/useCellsApi"
 
 type Grid = "h3" | "s2"
 
+const label = (grid: Grid, level: number) => (grid === "s2" ? `l${level}` : `r${level}`)
+
 /** Picker viewport used for boundary computation — matches the shipped
  *  embed clamp so tuning reflects what a homepage user sees. Mini-map
  *  DOM sizes are separate. */
@@ -34,7 +36,7 @@ const PICK_VP_AREA = 1280 * 480
 const DEFAULT_LAT = 40.7203
 const DEFAULT_LON = -74.0595
 
-const MINI_HEIGHT = 380
+const MINI_HEIGHT = 300
 
 /** Local S2 picker parameterized by the TunePage's editable state, so
  *  edits preview before Save. Mirrors `pickS2LevelForPixels` in
@@ -142,8 +144,7 @@ function MiniMap({
                 grid={grid}
                 dataRes={level}
                 mode="hexbin"
-                viz="circle"
-                circleRadiusPx={5}
+                viz="hex"
                 showInternalControls={false}
                 theme="dark"
                 height={MINI_HEIGHT}
@@ -209,6 +210,21 @@ export default function TunePage() {
     const levels = grid === "s2"
         ? Array.from({ length: S2_MAX_LEVEL - S2_MIN_LEVEL + 1 }, (_, i) => S2_MIN_LEVEL + i)
         : [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+
+    // Flanking levels: prior = one coarser step, finer = one finer step.
+    // The 2×2 transition view renders `prior @ its max MZ` alongside
+    // `current @ its min MZ` (should look ≈ same in on-screen px if the
+    // picker is well-tuned), and similarly `current @ max` vs `finer @ min`.
+    const priorLevel = level - 1
+    const finerLevel = level + 1
+    const priorRange = useMemo(
+        () => (priorLevel >= levels[0] ? zoomRangeForLevel(grid, priorLevel, lat, s2Factor, s2Mult) : null),
+        [grid, priorLevel, lat, s2Factor, s2Mult, levels],
+    )
+    const finerRange = useMemo(
+        () => (finerLevel <= levels[levels.length - 1] ? zoomRangeForLevel(grid, finerLevel, lat, s2Factor, s2Mult) : null),
+        [grid, finerLevel, lat, s2Factor, s2Mult, levels],
+    )
 
     const onLatLon = useCallback((newLat: number, newLon: number) => {
         setLat(newLat)
@@ -293,19 +309,47 @@ export default function TunePage() {
                 </span>
             </div>
             {range ? (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-                    <div>
-                        <div style={{ fontSize: 12, marginBottom: 4, color: "#aaa" }}>
-                            lowest MZ (just entered {grid === "s2" ? `l${level}` : `r${level}`})
+                <div style={{ display: "grid", gap: 12, marginBottom: 12 }}>
+                    {/* Coarse→current transition. Left = prior level at its
+                        highest MZ (picker about to switch up); right =
+                        current level at its lowest MZ (just switched).
+                        Zooms differ by the sweep step (~0.02); on-screen cell
+                        sizes SHOULD look ~equal if the picker's well-tuned. */}
+                    {priorRange && (
+                        <div>
+                            <div style={{ fontSize: 12, marginBottom: 4, color: "#aaa" }}>
+                                <b>coarse → current</b>: {label(grid, priorLevel)} → {label(grid, level)} near z≈{priorRange[1].toFixed(2)}
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                                <MiniMap lat={lat} lon={lon} zoom={priorRange[1]} grid={grid} level={priorLevel} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} onLatLonChange={onLatLon} />
+                            </div>
                         </div>
-                        <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} onLatLonChange={onLatLon} />
-                    </div>
-                    <div>
-                        <div style={{ fontSize: 12, marginBottom: 4, color: "#aaa" }}>
-                            highest MZ (about to leave for finer)
+                    )}
+                    {/* Current→finer transition. Left = current at its
+                        highest MZ; right = finer at its lowest MZ. Same
+                        px-equivalence check as above. */}
+                    {finerRange && (
+                        <div>
+                            <div style={{ fontSize: 12, marginBottom: 4, color: "#aaa" }}>
+                                <b>current → finer</b>: {label(grid, level)} → {label(grid, finerLevel)} near z≈{range[1].toFixed(2)}
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                                <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={finerRange[0]} grid={grid} level={finerLevel} onLatLonChange={onLatLon} />
+                            </div>
                         </div>
-                        <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} onLatLonChange={onLatLon} />
-                    </div>
+                    )}
+                    {/* If both flanking ranges are missing (level is at both
+                        the top and bottom of the pyramid — impossible in
+                        practice, but code-safe), fall back to the standalone
+                        pair like v1. */}
+                    {!priorRange && !finerRange && (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                            <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} onLatLonChange={onLatLon} />
+                            <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} onLatLonChange={onLatLon} />
+                        </div>
+                    )}
                 </div>
             ) : (
                 <div style={{ padding: 24, color: "#e88", fontFamily: "monospace" }}>
