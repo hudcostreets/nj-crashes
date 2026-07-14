@@ -28,6 +28,7 @@ const DevAb = lazy(() => import('./routes/DevAb'))
 const HarmonizationPage = lazy(() => import('./routes/HarmonizationPage'))
 const MuniSlugRoute = lazy(() => import('./routes/MuniSlugRoute'))
 const CanonicalizeMuni = lazy(() => import('./routes/CanonicalizeMuni'))
+const TunePage = lazy(() => import('./routes/TunePage'))
 
 /** Register sections-jump omnibar endpoint. Sits at the App level so any
  *  route with `<h2 id="…">` anchors gets jumpable from Cmd+K. */
@@ -66,6 +67,7 @@ export default function App() {
                 <Route path="/og" element={<OgImage />} />
                 <Route path="/match-review" element={<MatchReview />} />
                 <Route path="/dev/ab" element={<DevAb />} />
+                <Route path="/tune" element={<TunePage />} />
                 <Route path="/map/hudson/diffs" element={<HudsonDiffs />} />
                 <Route path="/map/hudson/legacy" element={<HudsonMap />} />
                 <Route path="/map" element={<CrashMapPage />} />
