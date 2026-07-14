@@ -19,10 +19,11 @@ import {
     S2_PICK_MULT,
     S2_TARGET_FACTOR,
 } from "@/src/map/s2"
-import { BINS_BUDGET, autoHexPxTarget } from "@/src/map/picker"
+import { BINS_BUDGET, autoHexPxTarget, circleRadiusPx as circleRadiusPxCurve } from "@/src/map/picker"
 import { useCellsApi, type CellsApiFilter } from "@/src/map/useCellsApi"
 
 type Grid = "h3" | "s2"
+type Viz = "hex" | "circle"
 
 const label = (grid: Grid, level: number) => (grid === "s2" ? `l${level}` : `r${level}`)
 
@@ -107,6 +108,7 @@ function MiniMap({
     zoom,
     grid,
     level,
+    viz,
     onLatLonChange,
 }: {
     lat: number
@@ -114,6 +116,7 @@ function MiniMap({
     zoom: number
     grid: Grid
     level: number
+    viz: Viz
     onLatLonChange: (lat: number, lon: number) => void
 }) {
     const [pitch, setPitch] = useState(20)
@@ -144,7 +147,8 @@ function MiniMap({
                 grid={grid}
                 dataRes={level}
                 mode="hexbin"
-                viz="hex"
+                viz={viz}
+                circleRadiusPx={viz === "circle" ? circleRadiusPxCurve(zoom) : undefined}
                 showInternalControls={false}
                 theme="dark"
                 height={MINI_HEIGHT}
@@ -162,6 +166,7 @@ function MiniMap({
                 pointerEvents: "none",
             }}>
                 z={zoom.toFixed(2)} · {grid === "s2" ? `l${level}` : `r${level}`} · {cells.length} cells
+                {viz === "circle" && ` · r=${circleRadiusPxCurve(zoom).toFixed(2)}px`}
             </div>
         </div>
     )
@@ -171,6 +176,7 @@ type SaveStatus = "idle" | "saving" | "saved" | "error"
 
 export default function TunePage() {
     const [grid, setGrid] = useState<Grid>("s2")
+    const [viz, setViz] = useState<Viz>("hex")
     const [level, setLevel] = useState(19)
     const [lat, setLat] = useState(DEFAULT_LAT)
     const [lon, setLon] = useState(DEFAULT_LON)
@@ -304,6 +310,13 @@ export default function TunePage() {
                         ))}
                     </select>
                 </label>
+                <label>
+                    Viz:{" "}
+                    <select value={viz} onChange={e => setViz(e.target.value as Viz)}>
+                        <option value="hex">hex</option>
+                        <option value="circle">circle (curve)</option>
+                    </select>
+                </label>
                 <span style={{ fontFamily: "monospace", fontSize: 12 }}>
                     lat={lat.toFixed(4)} · lon={lon.toFixed(4)}
                 </span>
@@ -321,8 +334,8 @@ export default function TunePage() {
                                 <b>coarse → current</b>: {label(grid, priorLevel)} → {label(grid, level)} near z≈{priorRange[1].toFixed(2)}
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                                <MiniMap lat={lat} lon={lon} zoom={priorRange[1]} grid={grid} level={priorLevel} onLatLonChange={onLatLon} />
-                                <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={priorRange[1]} grid={grid} level={priorLevel} viz={viz} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} viz={viz} onLatLonChange={onLatLon} />
                             </div>
                         </div>
                     )}
@@ -335,8 +348,8 @@ export default function TunePage() {
                                 <b>current → finer</b>: {label(grid, level)} → {label(grid, finerLevel)} near z≈{range[1].toFixed(2)}
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                                <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} onLatLonChange={onLatLon} />
-                                <MiniMap lat={lat} lon={lon} zoom={finerRange[0]} grid={grid} level={finerLevel} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} viz={viz} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={finerRange[0]} grid={grid} level={finerLevel} viz={viz} onLatLonChange={onLatLon} />
                             </div>
                         </div>
                     )}
@@ -346,8 +359,8 @@ export default function TunePage() {
                         pair like v1. */}
                     {!priorRange && !finerRange && (
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                            <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} onLatLonChange={onLatLon} />
-                            <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} onLatLonChange={onLatLon} />
+                            <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} viz={viz} onLatLonChange={onLatLon} />
+                            <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} viz={viz} onLatLonChange={onLatLon} />
                         </div>
                     )}
                 </div>
