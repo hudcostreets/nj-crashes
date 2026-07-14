@@ -106,11 +106,13 @@ describe("S2 picker (`pickS2LevelForPixels`)", () => {
         })
     }
 
-    it("lands exactly on l21 at the z=16.8 street-zoom default (phase 8's target)", () => {
-        // No ±1 slack here: the point of phase 8 is that the default street
-        // view reaches l21 (~3.75 m, H3 r14 parity) instead of capping at
-        // l19. mppx(16.8, 40.7°) ≈ 1.04 → target ≈ 2.6 m → l21 (3.75 ≥ 2.6).
-        expect(pickS2LevelForPixels(2.5, 16.8, NJ_LAT)).toBe(21)
+    it("reaches l21 at deep street zoom (phase 8's target — H3 r14 parity)", () => {
+        // Phase 8 built out the l21 pyramid so the picker could reach that
+        // level at street zoom. The `S2_PICK_MULT` fudge (l21: 0.4) later
+        // shifted the exact crossover from z=16.8 to z≈17 — at z=16.8 the
+        // picker prefers l20 (7.5m, 7px effective) over l21 rendered as
+        // invisible 1-2px dots. l21 stays reachable a hair deeper.
+        expect(pickS2LevelForPixels(2.5, 18, NJ_LAT)).toBe(21)
     })
 
     it("is monotone-non-decreasing across the zoom range", () => {
