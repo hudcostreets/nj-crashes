@@ -152,10 +152,32 @@ export function tokenCenterLngLat(token: S2Token): [number, number] {
  *  on their labelled level (a factor in the picker would push clicks one
  *  level past the labelled target).
  *
- *  0.4 empirically hits the trajectory l12→l13→l14 at z=6→7→8 for the
- *  embed viewport (1280×480 clamp, 100k bins-budget → auto target ≈ 2.5px,
- *  scaled to ≈ 1.0px for S2). */
-export const S2_TARGET_FACTOR = 0.4
+ *  0.7 keeps the wide-zoom trajectory (still lands l12 at z=6 in the embed
+ *  viewport — 2.5px × 0.7 × mppx@z6 ≈ 3.2km ≥ l12's 4.9km-avg, l13 2.5km <)
+ *  while ensuring l20/l21 don't get picked at every deep-zoom viewport
+ *  (raised from an earlier 0.4 that pre-dated the l20/l21 extension —
+ *  those levels render 1-2 css px wide, invisibly small, at the same
+ *  1.0px auto target the 0.4 factor produced). */
+export const S2_TARGET_FACTOR = 0.7
+
+/** Per-level pick-diameter fudge. The picker walks coarsest → finest and
+ *  keeps the finest level whose diameter ≥ target-meters. For the very
+ *  finest levels, the geometric diameter is small enough (3.75-7.5m) that
+ *  even a modest auto target picks them at zooms where the resulting
+ *  columns still render 1-2 css px wide — visually unreadable. Hand-tuned
+ *  by vibes from CIC screenshots at z=6/14.58/16.8:
+ *
+ *  - l21 (3.75m geom, effective 1.5m): only picked when target ≤ 1.5m,
+ *    i.e. z ≳ 17 in the embed viewport. Below street zoom you'd rather
+ *    see l20 (7.5m) rendered at 4px than l21 shown as invisible dots.
+ *  - l20 (7.5m geom, effective 4.1m): entry point for street-zoom; the
+ *    modest fudge makes z=15 still fall back to l19.
+ *
+ *  Coarser levels (l19 and below) use the geometric diameter unchanged. */
+export const S2_PICK_MULT: Record<number, number> = {
+    20: 0.55,
+    21: 0.40,
+}
 
 export function pickS2LevelForPixels(pixelTarget: number, zoom: number, lat: number): number {
     const mppx = metersPerPixel(zoom, lat)
@@ -163,7 +185,7 @@ export function pickS2LevelForPixels(pixelTarget: number, zoom: number, lat: num
     const levels = Object.keys(S2_DIAMETER_METERS).map(Number).sort((a, b) => a - b)
     let best = levels[0]
     for (const l of levels) {
-        const diaMeters = S2_DIAMETER_METERS[l]
+        const diaMeters = S2_DIAMETER_METERS[l] * (S2_PICK_MULT[l] ?? 1)
         if (diaMeters >= targetMeters) best = l
         else break
     }
