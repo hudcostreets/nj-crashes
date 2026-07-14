@@ -1,16 +1,50 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin'
 import { pdsPlugin } from 'pnpm-dep-source/vite'
 import path from 'path'
+import fs from 'fs'
 
 const allowedHosts = process.env.VITE_ALLOWED_HOSTS?.split(',') ?? []
+
+/** Dev-only endpoint for the `/tune` page: POST a JSON body to
+ *  `/__tune/write` and it's written to `src/map/tuning.json` (indented,
+ *  trailing newline). The picker imports that file, so Vite HMR reloads
+ *  the app with the new constants. Committed as the shipped defaults. */
+function tuneWriterPlugin(): Plugin {
+  return {
+    name: 'tune-writer',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use('/__tune/write', (req, res, next) => {
+        if (req.method !== 'POST') return next()
+        const chunks: Buffer[] = []
+        req.on('data', (c: Buffer) => chunks.push(c))
+        req.on('end', () => {
+          try {
+            const body = Buffer.concat(chunks).toString('utf8')
+            const parsed = JSON.parse(body)
+            const file = path.resolve(__dirname, 'src/map/tuning.json')
+            fs.writeFileSync(file, JSON.stringify(parsed, null, 4) + '\n')
+            res.setHeader('Content-Type', 'application/json')
+            res.statusCode = 200
+            res.end(JSON.stringify({ ok: true, file }))
+          } catch (err) {
+            res.statusCode = 400
+            res.end(JSON.stringify({ ok: false, error: String(err) }))
+          }
+        })
+      })
+    },
+  }
+}
 
 export default defineConfig({
   plugins: [
     react(),
     vanillaExtractPlugin(),
     pdsPlugin(),
+    tuneWriterPlugin(),
   ],
 
   resolve: {
