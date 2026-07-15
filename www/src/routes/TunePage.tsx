@@ -111,29 +111,34 @@ function zoomRangeForLevel(
 }
 
 /** DF (drawn fraction) mechanic — proposed #132 render curve. Linear
- *  interpolation from `1.0` at the level's min-MZ down to
- *  `CONTINUITY_RATIO[grid]` at its max-MZ. At each crossover:
- *    render(zHi, L)   = DF(zHi,   L)   × inscribed_L
+ *  interpolation from `dfStart` at the level's min-MZ to `dfEnd` at its
+ *  max-MZ. Continuity at crossovers is by convention when
+ *  `dfEnd = CONTINUITY_RATIO[grid]`:
+ *    render(zHi, L)   = dfEnd × inscribed_L
  *                     = ratio × inscribed_L
  *                     = inscribed_{L+1}                (by ratio definition)
- *                     = 1.0 × inscribed_{L+1}
- *                     = DF(zLo, L+1) × inscribed_{L+1}
+ *                     = dfStart × inscribed_{L+1}     (when dfStart = 1.0)
  *                     = render(zLo, L+1)
- *  so the drawn size is continuous. Returns undefined if the level's
- *  picker zoom range isn't known (e.g. finest level with no successor);
- *  callers fall back to the layer's own inscribed cap. */
+ *  Raising `dfEnd` above `ratio` trades continuity for less shrinkage
+ *  within a level (fewer visible pointillism gaps at deep zoom). Values
+ *  > 1.0 deliberately overlap adjacent cells — useful at sparse-cell
+ *  levels but visually noisy at dense ones. Returns undefined if the
+ *  level's picker zoom range isn't known (e.g. finest level with no
+ *  successor); callers fall back to the layer's own inscribed cap. */
 function dfOverridePx(
     zoom: number,
     lat: number,
     grid: Grid,
     level: number,
     range: [number, number] | null,
+    dfStart: number,
+    dfEnd: number,
 ): number | undefined {
     if (!range) return undefined
     const [zLo, zHi] = range
     const span = zHi - zLo
     const t = span > 0 ? Math.max(0, Math.min(1, (zoom - zLo) / span)) : 0
-    const df = 1 + (CONTINUITY_RATIO[grid] - 1) * t
+    const df = dfStart + (dfEnd - dfStart) * t
     const cellMeters = grid === "s2"
         ? (S2_DIAMETER_METERS[level] ?? 0)
         : 2 * (H3_RADIUS_METERS[level] ?? 0)
@@ -160,6 +165,8 @@ function MiniMap({
     viz,
     renderMode,
     range,
+    dfStart,
+    dfEnd,
     onLatLonChange,
 }: {
     lat: number
@@ -173,6 +180,11 @@ function MiniMap({
      *  `dfOverridePx`. Null if unreachable in the current picker
      *  config (rare; DF mode then falls back to inscribed). */
     range: [number, number] | null
+    /** DF endpoints in effect (both = 1.0 collapses to `inscribed` mode
+     *  behavior; dfEnd = CONTINUITY_RATIO[grid] is the smooth-crossover
+     *  default). */
+    dfStart: number
+    dfEnd: number
     onLatLonChange: (lat: number, lon: number) => void
 }) {
     const [pitch, setPitch] = useState(20)
@@ -196,7 +208,7 @@ function MiniMap({
     const overridePx = renderMode === "curve"
         ? circleRadiusPxCurve(zoom)
         : renderMode === "df"
-            ? dfOverridePx(zoom, lat, grid, level, range)
+            ? dfOverridePx(zoom, lat, grid, level, range, dfStart, dfEnd)
             : undefined
     // Compute the numbers surfaced in the corner label:
     //   geom   — cell's geometric on-screen size (edge / mppx). Halves per
@@ -260,6 +272,12 @@ export default function TunePage() {
     const [grid, setGrid] = useState<Grid>("s2")
     const [viz, setViz] = useState<Viz>("hex")
     const [renderMode, setRenderMode] = useState<RenderMode>("curve")
+    // DF endpoints — see `dfOverridePx`. Default `dfEnd` follows the
+    // grid's continuity ratio; user can push it toward 1.0 to trade
+    // continuity for less pointillism, or over 1.0 for deliberate
+    // overlap at sparse-cell zooms.
+    const [dfStart, setDfStart] = useState(1.0)
+    const [dfEnd, setDfEnd] = useState(0.5)
     const [level, setLevel] = useState(19)
     const [lat, setLat] = useState(DEFAULT_LAT)
     const [lon, setLon] = useState(DEFAULT_LON)
@@ -324,6 +342,10 @@ export default function TunePage() {
         setGrid(newGrid)
         if (newGrid === "s2") setLevel(l => Math.max(S2_MIN_LEVEL, Math.min(S2_MAX_LEVEL, l)))
         else setLevel(l => Math.max(5, Math.min(15, l)))
+        // Reset dfEnd to the new grid's continuity ratio, unless user
+        // has diverged from the S2 default (in which case they've made
+        // an intentional choice and we don't clobber it).
+        setDfEnd(prev => prev === 0.5 ? CONTINUITY_RATIO[newGrid] : prev)
     }, [])
 
     const onMultChange = useCallback((lvl: number, v: string) => {
@@ -408,6 +430,31 @@ export default function TunePage() {
                         <option value="inscribed">inscribed (no override)</option>
                     </select>
                 </label>
+                {renderMode === "df" && (
+                    <>
+                        <label style={{ fontFamily: "monospace", fontSize: 12 }}>
+                            dfStart:{" "}
+                            <input
+                                type="number" step="0.05" min="0.1" max="2"
+                                value={dfStart}
+                                onChange={e => setDfStart(parseFloat(e.target.value) || 0)}
+                                style={{ width: 60, fontFamily: "monospace" }}
+                            />
+                        </label>
+                        <label style={{ fontFamily: "monospace", fontSize: 12 }}>
+                            dfEnd:{" "}
+                            <input
+                                type="number" step="0.05" min="0.1" max="2"
+                                value={dfEnd}
+                                onChange={e => setDfEnd(parseFloat(e.target.value) || 0)}
+                                style={{ width: 60, fontFamily: "monospace" }}
+                            />
+                            <span style={{ color: "#888", marginLeft: 4 }}>
+                                (continuity: {CONTINUITY_RATIO[grid].toFixed(3)})
+                            </span>
+                        </label>
+                    </>
+                )}
                 <span style={{ fontFamily: "monospace", fontSize: 12 }}>
                     lat={lat.toFixed(4)} · lon={lon.toFixed(4)}
                 </span>
@@ -425,8 +472,8 @@ export default function TunePage() {
                                 <b>coarse → current</b>: {label(grid, priorLevel)} → {label(grid, level)} near z≈{priorRange[1].toFixed(2)}
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                                <MiniMap lat={lat} lon={lon} zoom={priorRange[1]} grid={grid} level={priorLevel} viz={viz} renderMode={renderMode} range={priorRange} onLatLonChange={onLatLon} />
-                                <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} viz={viz} renderMode={renderMode} range={range} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={priorRange[1]} grid={grid} level={priorLevel} viz={viz} renderMode={renderMode} range={priorRange} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} viz={viz} renderMode={renderMode} range={range} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
                             </div>
                         </div>
                     )}
@@ -439,8 +486,8 @@ export default function TunePage() {
                                 <b>current → finer</b>: {label(grid, level)} → {label(grid, finerLevel)} near z≈{range[1].toFixed(2)}
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                                <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} viz={viz} renderMode={renderMode} range={range} onLatLonChange={onLatLon} />
-                                <MiniMap lat={lat} lon={lon} zoom={finerRange[0]} grid={grid} level={finerLevel} viz={viz} renderMode={renderMode} range={finerRange} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} viz={viz} renderMode={renderMode} range={range} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={finerRange[0]} grid={grid} level={finerLevel} viz={viz} renderMode={renderMode} range={finerRange} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
                             </div>
                         </div>
                     )}
@@ -450,8 +497,8 @@ export default function TunePage() {
                         pair like v1. */}
                     {!priorRange && !finerRange && (
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                            <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} viz={viz} renderMode={renderMode} range={range} onLatLonChange={onLatLon} />
-                            <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} viz={viz} renderMode={renderMode} range={range} onLatLonChange={onLatLon} />
+                            <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} viz={viz} renderMode={renderMode} range={range} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
+                            <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} viz={viz} renderMode={renderMode} range={range} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
                         </div>
                     )}
                 </div>
