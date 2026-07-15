@@ -133,15 +133,28 @@ function MiniMap({
     const result = useCellsApi(filter)
     const cells = result.status === "ready" ? result.data : []
     const viewState: ViewState = { longitude: lon, latitude: lat, zoom, pitch, bearing }
-    // Cell diameter in on-screen pixels — the load-bearing number for the
-    // "does the transition look smooth?" eyeball. S2 halves per level, so
-    // paired maps in the 2×2 view will always show a 2:1 ratio in this
-    // number; `pickMult` moves *where* the crossover lands (and thus the
-    // absolute size on both sides), not the ratio.
+    // Two "cell size" numbers to distinguish:
+    //   geom = the cell's actual geometric on-screen size (edge/mppx).
+    //          Always steps 2:1 at every S2 crossover (level halves).
+    //   render = what the layer actually draws (see `StackedHexLayer`):
+    //     - viz=circle (any grid): min(curve_target_m, inscribed_m)
+    //     - viz=hex, S2: min(curve_target_m, inscribed_m) (same as circle)
+    //     - viz=hex, H3: full edge (no smoothing — H3 hex tessellates)
+    //   So the "rendered" cell size at S2 crossovers matches on both sides
+    //   (dictated by the continuous curve), even though geom steps 2:1.
+    //   `pickMult` moves *where* the crossover lands; the curve fixes what
+    //   it looks like on screen.
+    const mppx = metersPerPixel(zoom, lat)
     const cellMeters = grid === "s2"
         ? (S2_DIAMETER_METERS[level] ?? 0)
         : 2 * (H3_RADIUS_METERS[level] ?? 0)
-    const cellPx = cellMeters / metersPerPixel(zoom, lat)
+    const geomPx = cellMeters / mppx
+    const curveMeters = circleRadiusPxCurve(zoom) * mppx
+    const inscribedMeters = grid === "s2" ? cellMeters / 2 : cellMeters * Math.sqrt(3) / 4
+    const usesCurve = viz === "circle" || grid === "s2"
+    const renderPx = usesCurve
+        ? Math.min(curveMeters, inscribedMeters) / mppx
+        : geomPx  // H3 hex — full edge
     const onViewStateChange = useCallback((v: ViewState) => {
         setPitch(v.pitch)
         setBearing(v.bearing)
@@ -157,7 +170,7 @@ function MiniMap({
                 dataRes={level}
                 mode="hexbin"
                 viz={viz}
-                circleRadiusPx={viz === "circle" ? circleRadiusPxCurve(zoom) : undefined}
+                circleRadiusPx={circleRadiusPxCurve(zoom)}
                 showInternalControls={false}
                 theme="dark"
                 height={MINI_HEIGHT}
@@ -175,8 +188,8 @@ function MiniMap({
                 pointerEvents: "none",
             }}>
                 z={zoom.toFixed(2)} · {grid === "s2" ? `l${level}` : `r${level}`} · {cells.length} cells
-                {" · cell="}{cellPx.toFixed(2)}{"px"}
-                {viz === "circle" && ` · r=${circleRadiusPxCurve(zoom).toFixed(2)}px`}
+                {" · geom="}{geomPx.toFixed(2)}{"px"}
+                {" · render="}{renderPx.toFixed(2)}{"px"}
             </div>
         </div>
     )
