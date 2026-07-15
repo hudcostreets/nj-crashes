@@ -24,8 +24,25 @@ import { useCellsApi, type CellsApiFilter } from "@/src/map/useCellsApi"
 
 type Grid = "h3" | "s2"
 type Viz = "hex" | "circle"
+/** Which curve drives `circleRadiusPx` (the per-frame render-size override).
+ *  - `curve`: production `circleRadiusPx(zoom)` curve from `picker.ts`.
+ *  - `df`: linear DF sweep within the level's picker zoom range (see
+ *    `dfOverridePx`) — target of #132.
+ *  - `inscribed`: no override; layer falls back to full inscribed (2:1 step
+ *    at every crossover, matches TunePage v1's `viz="circle"` behavior). */
+type RenderMode = "curve" | "df" | "inscribed"
 
 const label = (grid: Grid, level: number) => (grid === "s2" ? `l${level}` : `r${level}`)
+
+/** DF continuity ratio: at level L's max-MZ, we want the drawn radius to
+ *  equal the finer level's inscribed radius, so the crossover looks
+ *  continuous. That ratio is `new_inscribed / old_inscribed = new_edge /
+ *  old_edge`. S2 halves per level (0.5); H3 shrinks by √(1/7). Same DF
+ *  math; different endpoint. */
+const CONTINUITY_RATIO: Record<Grid, number> = {
+    s2: 0.5,
+    h3: 1 / Math.sqrt(7),
+}
 
 /** Picker viewport used for boundary computation — matches the shipped
  *  embed clamp so tuning reflects what a homepage user sees. Mini-map
@@ -93,6 +110,38 @@ function zoomRangeForLevel(
     return [low, high]
 }
 
+/** DF (drawn fraction) mechanic — proposed #132 render curve. Linear
+ *  interpolation from `1.0` at the level's min-MZ down to
+ *  `CONTINUITY_RATIO[grid]` at its max-MZ. At each crossover:
+ *    render(zHi, L)   = DF(zHi,   L)   × inscribed_L
+ *                     = ratio × inscribed_L
+ *                     = inscribed_{L+1}                (by ratio definition)
+ *                     = 1.0 × inscribed_{L+1}
+ *                     = DF(zLo, L+1) × inscribed_{L+1}
+ *                     = render(zLo, L+1)
+ *  so the drawn size is continuous. Returns undefined if the level's
+ *  picker zoom range isn't known (e.g. finest level with no successor);
+ *  callers fall back to the layer's own inscribed cap. */
+function dfOverridePx(
+    zoom: number,
+    lat: number,
+    grid: Grid,
+    level: number,
+    range: [number, number] | null,
+): number | undefined {
+    if (!range) return undefined
+    const [zLo, zHi] = range
+    const span = zHi - zLo
+    const t = span > 0 ? Math.max(0, Math.min(1, (zoom - zLo) / span)) : 0
+    const df = 1 + (CONTINUITY_RATIO[grid] - 1) * t
+    const cellMeters = grid === "s2"
+        ? (S2_DIAMETER_METERS[level] ?? 0)
+        : 2 * (H3_RADIUS_METERS[level] ?? 0)
+    const inscribedMeters = grid === "s2" ? cellMeters / 2 : cellMeters * Math.sqrt(3) / 4
+    const inscribedPx = inscribedMeters / metersPerPixel(zoom, lat)
+    return df * inscribedPx
+}
+
 function bboxAround(lat: number, lon: number, zoom: number, wPx: number, hPx: number): Bbox {
     const mppx = metersPerPixel(zoom, lat)
     const wM = wPx * mppx
@@ -109,6 +158,8 @@ function MiniMap({
     grid,
     level,
     viz,
+    renderMode,
+    range,
     onLatLonChange,
 }: {
     lat: number
@@ -117,6 +168,11 @@ function MiniMap({
     grid: Grid
     level: number
     viz: Viz
+    renderMode: RenderMode
+    /** Picker's [min-MZ, max-MZ] for THIS map's level — used by
+     *  `dfOverridePx`. Null if unreachable in the current picker
+     *  config (rare; DF mode then falls back to inscribed). */
+    range: [number, number] | null
     onLatLonChange: (lat: number, lon: number) => void
 }) {
     const [pitch, setPitch] = useState(20)
@@ -133,28 +189,31 @@ function MiniMap({
     const result = useCellsApi(filter)
     const cells = result.status === "ready" ? result.data : []
     const viewState: ViewState = { longitude: lon, latitude: lat, zoom, pitch, bearing }
-    // Two "cell size" numbers to distinguish:
-    //   geom = the cell's actual geometric on-screen size (edge/mppx).
-    //          Always steps 2:1 at every S2 crossover (level halves).
-    //   render = what the layer actually draws (see `StackedHexLayer`):
-    //     - viz=circle (any grid): min(curve_target_m, inscribed_m)
-    //     - viz=hex, S2: min(curve_target_m, inscribed_m) (same as circle)
-    //     - viz=hex, H3: full edge (no smoothing — H3 hex tessellates)
-    //   So the "rendered" cell size at S2 crossovers matches on both sides
-    //   (dictated by the continuous curve), even though geom steps 2:1.
-    //   `pickMult` moves *where* the crossover lands; the curve fixes what
-    //   it looks like on screen.
+    // The `circleRadiusPx` prop picked based on the current `renderMode`:
+    //   curve     — production `circleRadiusPx(zoom)` from picker.ts
+    //   df        — linear DF sweep within level's picker range (task #132)
+    //   inscribed — no override; layer falls back to inscribed cap
+    const overridePx = renderMode === "curve"
+        ? circleRadiusPxCurve(zoom)
+        : renderMode === "df"
+            ? dfOverridePx(zoom, lat, grid, level, range)
+            : undefined
+    // Compute the numbers surfaced in the corner label:
+    //   geom   — cell's geometric on-screen size (edge / mppx). Halves per
+    //            S2 level regardless of render mode.
+    //   render — what the layer will actually draw, per StackedHexLayer's
+    //            `min(overrideRadiusMeters ?? inscribed, inscribed)` rule.
+    //            H3 hex mode with no override falls back to full edge.
     const mppx = metersPerPixel(zoom, lat)
     const cellMeters = grid === "s2"
         ? (S2_DIAMETER_METERS[level] ?? 0)
         : 2 * (H3_RADIUS_METERS[level] ?? 0)
     const geomPx = cellMeters / mppx
-    const curveMeters = circleRadiusPxCurve(zoom) * mppx
-    const inscribedMeters = grid === "s2" ? cellMeters / 2 : cellMeters * Math.sqrt(3) / 4
+    const inscribedPx = grid === "s2" ? geomPx / 2 : geomPx * Math.sqrt(3) / 4
     const usesCurve = viz === "circle" || grid === "s2"
     const renderPx = usesCurve
-        ? Math.min(curveMeters, inscribedMeters) / mppx
-        : geomPx  // H3 hex — full edge
+        ? Math.min(overridePx ?? inscribedPx, inscribedPx)
+        : geomPx  // H3 hex — full edge, ignores override
     const onViewStateChange = useCallback((v: ViewState) => {
         setPitch(v.pitch)
         setBearing(v.bearing)
@@ -170,7 +229,7 @@ function MiniMap({
                 dataRes={level}
                 mode="hexbin"
                 viz={viz}
-                circleRadiusPx={circleRadiusPxCurve(zoom)}
+                circleRadiusPx={overridePx}
                 showInternalControls={false}
                 theme="dark"
                 height={MINI_HEIGHT}
@@ -200,6 +259,7 @@ type SaveStatus = "idle" | "saving" | "saved" | "error"
 export default function TunePage() {
     const [grid, setGrid] = useState<Grid>("s2")
     const [viz, setViz] = useState<Viz>("hex")
+    const [renderMode, setRenderMode] = useState<RenderMode>("curve")
     const [level, setLevel] = useState(19)
     const [lat, setLat] = useState(DEFAULT_LAT)
     const [lon, setLon] = useState(DEFAULT_LON)
@@ -337,7 +397,15 @@ export default function TunePage() {
                     Viz:{" "}
                     <select value={viz} onChange={e => setViz(e.target.value as Viz)}>
                         <option value="hex">hex</option>
-                        <option value="circle">circle (curve)</option>
+                        <option value="circle">circle</option>
+                    </select>
+                </label>
+                <label>
+                    Render:{" "}
+                    <select value={renderMode} onChange={e => setRenderMode(e.target.value as RenderMode)}>
+                        <option value="curve">curve (shipped)</option>
+                        <option value="df">DF (proposed #132)</option>
+                        <option value="inscribed">inscribed (no override)</option>
                     </select>
                 </label>
                 <span style={{ fontFamily: "monospace", fontSize: 12 }}>
@@ -357,8 +425,8 @@ export default function TunePage() {
                                 <b>coarse → current</b>: {label(grid, priorLevel)} → {label(grid, level)} near z≈{priorRange[1].toFixed(2)}
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                                <MiniMap lat={lat} lon={lon} zoom={priorRange[1]} grid={grid} level={priorLevel} viz={viz} onLatLonChange={onLatLon} />
-                                <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} viz={viz} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={priorRange[1]} grid={grid} level={priorLevel} viz={viz} renderMode={renderMode} range={priorRange} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} viz={viz} renderMode={renderMode} range={range} onLatLonChange={onLatLon} />
                             </div>
                         </div>
                     )}
@@ -371,8 +439,8 @@ export default function TunePage() {
                                 <b>current → finer</b>: {label(grid, level)} → {label(grid, finerLevel)} near z≈{range[1].toFixed(2)}
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                                <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} viz={viz} onLatLonChange={onLatLon} />
-                                <MiniMap lat={lat} lon={lon} zoom={finerRange[0]} grid={grid} level={finerLevel} viz={viz} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} viz={viz} renderMode={renderMode} range={range} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={finerRange[0]} grid={grid} level={finerLevel} viz={viz} renderMode={renderMode} range={finerRange} onLatLonChange={onLatLon} />
                             </div>
                         </div>
                     )}
@@ -382,8 +450,8 @@ export default function TunePage() {
                         pair like v1. */}
                     {!priorRange && !finerRange && (
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                            <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} viz={viz} onLatLonChange={onLatLon} />
-                            <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} viz={viz} onLatLonChange={onLatLon} />
+                            <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} viz={viz} renderMode={renderMode} range={range} onLatLonChange={onLatLon} />
+                            <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} viz={viz} renderMode={renderMode} range={range} onLatLonChange={onLatLon} />
                         </div>
                     )}
                 </div>
