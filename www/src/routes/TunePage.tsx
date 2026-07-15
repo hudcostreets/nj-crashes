@@ -133,6 +133,15 @@ function MiniMap({
     const result = useCellsApi(filter)
     const cells = result.status === "ready" ? result.data : []
     const viewState: ViewState = { longitude: lon, latitude: lat, zoom, pitch, bearing }
+    // Cell diameter in on-screen pixels — the load-bearing number for the
+    // "does the transition look smooth?" eyeball. S2 halves per level, so
+    // paired maps in the 2×2 view will always show a 2:1 ratio in this
+    // number; `pickMult` moves *where* the crossover lands (and thus the
+    // absolute size on both sides), not the ratio.
+    const cellMeters = grid === "s2"
+        ? (S2_DIAMETER_METERS[level] ?? 0)
+        : 2 * (H3_RADIUS_METERS[level] ?? 0)
+    const cellPx = cellMeters / metersPerPixel(zoom, lat)
     const onViewStateChange = useCallback((v: ViewState) => {
         setPitch(v.pitch)
         setBearing(v.bearing)
@@ -166,6 +175,7 @@ function MiniMap({
                 pointerEvents: "none",
             }}>
                 z={zoom.toFixed(2)} · {grid === "s2" ? `l${level}` : `r${level}`} · {cells.length} cells
+                {" · cell="}{cellPx.toFixed(2)}{"px"}
                 {viz === "circle" && ` · r=${circleRadiusPxCurve(zoom).toFixed(2)}px`}
             </div>
         </div>
