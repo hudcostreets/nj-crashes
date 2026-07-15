@@ -1,6 +1,6 @@
 outs:
-- md5: 96bd4a3e80481fc462e37a73fc1722ee
-  size: 425307
+- md5: b4ddc14a110ad2904cfb251e177b84d1
+  size: 425510
   hash: md5
   path: crashes.parquet
 meta:
@@ -8,5 +8,5 @@ meta:
     cmd: njsp update_pqts --s3
     git_deps:
       /data/FAUQStats2024.xml: e6ece47084bc6d58e8d8aa5a40d0d85f028c1ac3
-      /data/FAUQStats2025.xml: f10b62e984a9989548e533a654c2831637e02963
-      /data/FAUQStats2026.xml: d9b92f2d5f496b45a6f60b4fe57b3c48bffc4753
+      /data/FAUQStats2025.xml: cd4897431ec499405a78349c0b53ccabace2f264
+      /data/FAUQStats2026.xml: 696664d17b80c78e4dee768d52f50a9af96fc5b1
