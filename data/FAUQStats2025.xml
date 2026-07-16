@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Jul 15 10:00:05 EDT 2026</RUNDATE>
+  <RUNDATE>Thu Jul 16 10:00:02 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1594,7 +1594,7 @@
   </COUNTY>
   <COUNTY CCODE="06" CNAME="Cumberland">
     <MUNICIPALITY MCODE="0601" MNAME="Bridgeton City">
-      <ACCIDENT ACCID="14208" DATE="10/12/2025" TIME="1929">
+      <ACCIDENT ACCID="14208" DATE="10/12/2025" TIME="1943">
         <HIGHWAY>552</HIGHWAY>
         <LOCATION>County 552 MP .18</LOCATION>
         <FATALITIES>1</FATALITIES>
@@ -2720,8 +2720,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="14099" DATE="08/26/2025" TIME="1220">
-        <STREET>647 Newark Ave</STREET>
-        <LOCATION>647 Newark Ave</LOCATION>
+        <STREET>647 Newark Ave.</STREET>
+        <LOCATION>647 Newark Ave.</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -2865,6 +2865,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3706,8 +3707,8 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2012" MNAME="Plainfield City">
       <ACCIDENT ACCID="14206" DATE="07/14/2025" TIME="1825">
-        <STREET>Stelle Ave</STREET>
-        <LOCATION>Stelle Ave</LOCATION>
+        <STREET>Stelle Ave.</STREET>
+        <LOCATION>Stelle Ave.</LOCATION>
         <FATALITIES>2</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>1</FATAL_P>
