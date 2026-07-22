@@ -2,8 +2,8 @@ meta:
   computation:
     cmd: njsp update_projections
     deps:
-      /njsp/data/crashes.parquet: 4a4f3e448a4beadf34cb0b70230db726
-      /njsp/data/crash-log.parquet: d33597a3075e6cc3a1f9526aa825cbac
+      /njsp/data/crashes.parquet: f587991a50c08e69613c3f9c0b41ea9c
+      /njsp/data/crash-log.parquet: 7c765e5eab35da8fec9c095d54ea8e54
     git_deps:
       /njsp/cli/update_projections.py: bd1c1621e5f36b08c68ef7968a53194a05b23486
       /njsp/ytd.py: b24ce393783741cf767231d680d5404846379df9
