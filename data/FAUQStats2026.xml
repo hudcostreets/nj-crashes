@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Jul 24 10:00:05 EDT 2026</RUNDATE>
+  <RUNDATE>Sat Jul 25 10:00:01 EDT 2026</RUNDATE>
   <STATSYEAR>2026</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,19 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="13" CNAME="Monmouth">
+    <MUNICIPALITY MCODE="1342" MNAME="Rumson Boro">
+      <ACCIDENT ACCID="14713" DATE="07/23/2026" TIME="1237">
+        <HIGHWAY>34</HIGHWAY>
+        <LOCATION>County 34</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="03" CNAME="Burlington">
     <MUNICIPALITY MCODE="0337" MNAME="Washington Twsp">
@@ -2124,20 +2137,6 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="03" CNAME="Burlington">
-    <MUNICIPALITY MCODE="0319" MNAME="Mansfield Twsp">
-      <ACCIDENT ACCID="14512" DATE="04/11/2026" TIME="1459">
-        <HIGHWAY>295</HIGHWAY>
-        <LOCATION>Interstate 295 MP 52.6</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
