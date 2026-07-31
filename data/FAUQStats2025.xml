@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Jul 30 10:00:03 EDT 2026</RUNDATE>
+  <RUNDATE>Fri Jul 31 10:00:04 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2052,12 +2052,13 @@
     <MUNICIPALITY MCODE="1304" MNAME="Colts Neck Twsp">
       <ACCIDENT ACCID="14165" DATE="09/26/2025" TIME="2312">
         <HIGHWAY>18</HIGHWAY>
-        <LOCATION>State Highway 18</LOCATION>
+        <LOCATION>State Highway 18 MP 16.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2258,6 +2259,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2375,12 +2377,13 @@
     <MUNICIPALITY MCODE="0232" MNAME="Lyndhurst Twsp">
       <ACCIDENT ACCID="14122" DATE="09/09/2025" TIME="1748">
         <HIGHWAY>17</HIGHWAY>
-        <LOCATION>State Highway 17 MP 1.4</LOCATION>
+        <LOCATION>State Highway 17 MP 1.5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
