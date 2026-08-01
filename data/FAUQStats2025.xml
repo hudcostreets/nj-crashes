@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Jul 31 10:00:04 EDT 2026</RUNDATE>
+  <RUNDATE>Sat Aug 01 10:00:03 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2541,13 +2541,14 @@
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="14108" DATE="09/03/2025" TIME="0229">
-        <STREET>Brunswick Ave</STREET>
-        <LOCATION>Brunswick Ave</LOCATION>
+        <HIGHWAY>616</HIGHWAY>
+        <LOCATION>County 616 MP .1</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
