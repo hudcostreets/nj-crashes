@@ -4,21 +4,21 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Burlington,,38,0,28,6,7,37,26,6,8,1
 ,,Camden,,29,2,12,3,13,30,13,3,14,1
 ,,Cape May,,5,0,5,1,0,6,5,2,0,0
-,,Cumberland,,19,0,11,2,6,20,11,2,7,0
-,,Essex,,37,0,11,4,26,39,12,3,26,0
-,,Gloucester,,32,2,20,7,3,30,20,7,3,2
+,,Cumberland,,21,1,11,2,6,21,11,2,7,1
+,,Essex,,37,0,11,4,26,40,12,3,27,0
+,,Gloucester,,30,2,19,7,3,29,19,7,3,2
 ,,Hudson,,31,0,14,0,21,25,11,0,15,0
 ,,Hunterdon,,5,0,2,0,2,6,3,1,2,0
 ,,Mercer,,23,1,11,6,8,25,13,6,8,1
-,,Middlesex,,46,2,30,6,10,46,29,5,11,2
-,,Monmouth,,49,2,23,4,26,37,20,3,11,3
-,,Morris,,20,0,12,0,9,20,12,1,6,1
-,,Ocean,,41,2,29,5,7,44,31,6,9,2
+,,Middlesex,,45,2,28,6,10,46,29,5,11,2
+,,Monmouth,,50,2,23,4,26,37,20,3,11,3
+,,Morris,,19,0,11,0,9,19,11,1,6,1
+,,Ocean,,43,2,31,5,7,45,32,6,9,2
 ,,Passaic,,19,0,12,3,6,19,12,3,6,0
 ,,Salem,,12,0,10,2,0,14,11,5,1,0
 ,,Somerset,,18,0,14,0,3,16,12,1,3,0
 ,,Sussex,,19,0,25,0,3,14,11,0,3,0
-,,Union,,46,0,21,4,23,37,16,4,17,1
+,,Union,,46,0,21,4,23,36,16,4,17,0
 ,,Warren,,7,0,5,0,2,7,5,0,2,0
 1,1,Atlantic,Absecon City,0,0,0,0,0,1,0,0,1,0
 1,2,Atlantic,Atlantic City,7,1,2,1,2,5,2,1,2,1
@@ -112,7 +112,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 5,7,Cape May,North Wildwood City,0,0,0,0,0,1,1,0,0,0
 5,11,Cape May,Upper Twsp,0,0,0,0,0,0,0,0,0,0
 5,16,Cape May,Woodbine Boro,0,0,0,0,0,1,0,1,0,0
-6,1,Cumberland,Bridgeton City,4,0,1,0,1,4,1,0,3,0
+6,1,Cumberland,Bridgeton City,7,1,1,0,1,5,1,0,3,1
 6,3,Cumberland,Deerfield Twsp,0,0,0,0,0,1,0,1,0,0
 6,5,Cumberland,Fairfield Twsp,4,0,3,0,1,3,2,0,1,0
 6,7,Cumberland,Hopewell Twsp,0,0,0,0,0,1,1,0,0,0
@@ -122,9 +122,10 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 6,14,Cumberland,Vineland City,9,0,10,1,1,8,6,1,1,0
 7,1,Essex,Belleville Town,0,0,0,0,0,0,0,0,0,0
 7,3,Essex,Caldwell Boro,1,0,0,0,1,1,0,0,1,0
-7,5,Essex,East Orange City,3,0,1,0,2,3,1,0,2,0
+7,5,Essex,East Orange City,4,0,1,0,2,4,1,0,3,0
 7,9,Essex,Irvington Town,0,0,0,0,0,0,0,0,0,0
 7,10,Essex,Livingston Twsp,0,0,0,0,0,0,0,0,0,0
+7,11,Essex,Maplewood Twsp,0,0,0,0,0,0,0,0,0,0
 7,12,Essex,Millburn Twsp,2,0,0,0,3,2,0,0,2,0
 7,13,Essex,Montclair Town,0,0,0,0,0,0,0,0,0,0
 7,14,Essex,Newark City,28,0,8,5,20,28,9,3,18,0
@@ -136,7 +137,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 8,2,Gloucester,Deptford Twsp,4,1,3,1,0,4,3,1,0,1
 8,4,Gloucester,Elk Twsp,4,0,4,0,0,3,3,0,0,0
 8,5,Gloucester,Franklin Twsp,0,0,0,0,0,1,1,0,0,0
-8,6,Gloucester,Glassboro Boro,0,0,0,0,0,1,1,0,0,0
+8,6,Gloucester,Glassboro Boro,0,0,0,0,0,0,0,0,0,0
 8,7,Gloucester,Greenwich Twsp,1,0,0,0,1,1,0,0,1,0
 8,8,Gloucester,Harrison Twsp,2,0,1,2,0,2,1,2,0,0
 8,9,Gloucester,Logan Twsp,2,0,2,0,0,3,3,0,0,0
@@ -177,7 +178,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 12,1,Middlesex,Carteret Boro,2,0,2,0,0,2,2,0,0,0
 12,2,Middlesex,Cranbury Twsp,1,0,1,0,0,1,1,0,0,0
 12,4,Middlesex,East Brunswick Twsp,0,0,0,0,0,0,0,0,0,0
-12,5,Middlesex,Edison Twsp,7,0,4,0,2,8,4,1,3,0
+12,5,Middlesex,Edison Twsp,6,0,3,0,2,8,4,1,3,0
 12,8,Middlesex,Jamesburg Boro,2,0,1,0,0,2,1,0,0,1
 12,9,Middlesex,Metuchen Boro,1,0,1,1,0,1,1,1,0,0
 12,13,Middlesex,New Brunswick City,4,1,3,0,0,4,3,0,0,1
@@ -223,7 +224,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 14,16,Morris,Lincoln Park Bo,1,0,1,0,0,1,1,0,0,0
 14,21,Morris,Montville Twsp,0,0,0,0,0,0,0,0,0,0
 14,24,Morris,Morristown Town,3,0,1,0,1,2,1,0,1,0
-14,27,Morris,Mount Olive Twsp,5,0,5,0,0,4,4,0,0,0
+14,27,Morris,Mount Olive Twsp,3,0,3,0,0,3,3,0,0,0
 14,29,Morris,Parsippany-Troy Hil,1,0,0,0,1,1,0,0,1,0
 14,32,Morris,Randolph Twsp,0,0,0,0,0,0,0,0,0,0
 14,34,Morris,Rockaway Boro,0,0,0,0,0,0,0,0,0,0
@@ -234,7 +235,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 15,2,Ocean,Barnegat Light Boro,0,0,0,0,0,0,0,0,0,0
 15,6,Ocean,Berkeley Twsp,0,0,0,0,0,1,1,1,0,0
 15,7,Ocean,Brick Twsp,5,1,2,0,1,4,2,0,1,1
-15,8,Ocean,Toms River,6,0,5,0,1,9,7,1,3,0
+15,8,Ocean,Toms River,7,0,7,0,1,10,8,1,3,0
 15,12,Ocean,Jackson Twsp,9,0,7,1,1,7,6,1,1,0
 15,13,Ocean,Lacey Twsp,4,0,2,1,0,4,2,1,1,0
 15,14,Ocean,Lakehurst Boro,0,0,0,0,0,0,0,0,0,0
@@ -300,7 +301,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 20,16,Union,Scotch Plains Twsp,2,0,1,0,0,2,1,0,1,0
 20,17,Union,Springfield Twsp,1,0,1,0,0,1,1,0,0,0
 20,19,Union,Union Twsp,8,0,3,1,4,7,3,1,4,0
-20,20,Union,Westfield Town,0,0,0,0,0,1,0,0,0,1
+20,20,Union,Westfield Town,0,0,0,0,0,0,0,0,0,0
 21,1,Warren,Allamuchy Twsp,0,0,0,0,0,0,0,0,0,0
 21,4,Warren,Blairstown Twsp,0,0,0,0,0,0,0,0,0,0
 21,6,Warren,Frelinghuysen Twsp,0,0,0,0,0,1,0,0,1,0
