@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Aug 04 10:00:04 EDT 2026</RUNDATE>
+  <RUNDATE>Wed Aug 05 10:00:04 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1811,6 +1811,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2173,12 +2174,13 @@
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
       <ACCIDENT ACCID="14142" DATE="09/18/2025" TIME="0155">
         <HIGHWAY>27</HIGHWAY>
-        <LOCATION>State Highway 27</LOCATION>
+        <LOCATION>State Highway 27 MP 35.8</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2213,12 +2215,13 @@
     <MUNICIPALITY MCODE="2014" MNAME="Roselle Boro">
       <ACCIDENT ACCID="14140" DATE="09/17/2025" TIME="0900">
         <HIGHWAY>610</HIGHWAY>
-        <LOCATION>County 610</LOCATION>
+        <LOCATION>County 610 MP 6.57</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2553,7 +2556,7 @@
   </COUNTY>
   <COUNTY CCODE="20" CNAME="Union">
     <MUNICIPALITY MCODE="2004" MNAME="Elizabeth City">
-      <ACCIDENT ACCID="14108" DATE="09/03/2025" TIME="0229">
+      <ACCIDENT ACCID="14108" DATE="09/03/2025" TIME="0130">
         <HIGHWAY>616</HIGHWAY>
         <LOCATION>County 616 MP .1</LOCATION>
         <FATALITIES>1</FATALITIES>
