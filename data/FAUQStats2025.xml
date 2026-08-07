@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Aug 05 10:00:04 EDT 2026</RUNDATE>
+  <RUNDATE>Fri Aug 07 10:00:07 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2855,6 +2855,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3024,14 +3025,15 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="14079" DATE="08/11/2025" TIME="0550">
-        <STREET>334 West Market St</STREET>
-        <LOCATION>334 West Market St</LOCATION>
+      <ACCIDENT ACCID="14079" DATE="08/11/2025" TIME="0548">
+        <STREET>334 Bergen Street</STREET>
+        <LOCATION>334 Bergen Street</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3200,13 +3202,14 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="14066" DATE="08/04/2025" TIME="1953">
-        <STREET>Franklin St</STREET>
-        <LOCATION>Franklin St</LOCATION>
+        <STREET>North 6th Street</STREET>
+        <LOCATION>North 6th Street</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3509,8 +3512,8 @@
       <ACCIDENT ACCID="14044" DATE="07/24/2025" TIME="2030">
         <HIGHWAY>37</HIGHWAY>
         <LOCATION>State Highway 37 MP 1.77</LOCATION>
-        <FATALITIES>2</FATALITIES>
-        <FATAL_D>2</FATAL_D>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
@@ -7559,6 +7562,6 @@
     </MUNICIPALITY>
   </COUNTY>
   <TOTACCIDENTS>548</TOTACCIDENTS>
-  <TOTFATALITIES>584</TOTFATALITIES>
+  <TOTFATALITIES>583</TOTFATALITIES>
   <TOTINJURIES>337</TOTINJURIES>
 </FAUQSTATS>
