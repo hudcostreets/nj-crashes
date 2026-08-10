@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Aug 09 10:00:04 EDT 2026</RUNDATE>
+  <RUNDATE>Mon Aug 10 10:00:05 EDT 2026</RUNDATE>
   <STATSYEAR>2026</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -52,12 +52,25 @@
   <COUNTY CCODE="06" CNAME="Cumberland">
     <MUNICIPALITY MCODE="0614" MNAME="Vineland City">
       <ACCIDENT ACCID="14734" DATE="08/08/2026" TIME="2114">
-        <STREET>West Landis Avenue</STREET>
-        <LOCATION>West Landis Avenue</LOCATION>
+        <STREET>West Landis Ave</STREET>
+        <LOCATION>West Landis Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="07" CNAME="Essex">
+    <MUNICIPALITY MCODE="0701" MNAME="Belleville Town">
+      <ACCIDENT ACCID="14737" DATE="08/08/2026" TIME="1333">
+        <STREET>Brookside Dr</STREET>
+        <LOCATION>Brookside Dr</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -87,6 +100,17 @@
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
+    <MUNICIPALITY MCODE="1512" MNAME="Lacey Twsp">
+      <ACCIDENT ACCID="14736" DATE="08/07/2026" TIME="1457">
+        <HIGHWAY>444</HIGHWAY>
+        <LOCATION>Garden State Parkway</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="14" CNAME="Morris">
     <MUNICIPALITY MCODE="1421" MNAME="Montville Twsp">
@@ -98,6 +122,19 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2010" MNAME="Mountainside Boro">
+      <ACCIDENT ACCID="14735" DATE="08/06/2026" TIME="2004">
+        <HIGHWAY>22</HIGHWAY>
+        <LOCATION>State Highway 22</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>1</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3970,7 +4007,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>301</TOTACCIDENTS>
-  <TOTFATALITIES>314</TOTFATALITIES>
+  <TOTACCIDENTS>304</TOTACCIDENTS>
+  <TOTFATALITIES>317</TOTFATALITIES>
   <TOTINJURIES>33</TOTINJURIES>
 </FAUQSTATS>
