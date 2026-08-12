@@ -41,7 +41,7 @@ dependencies = [
     "shapely>=2.1",
     "simplejson>=3.20",
     "slack-sdk>=3.37.0",
-    "thrds @ git+https://github.com/runsascoded/thrds@41ca769",
+    "thrds>=0.5.0",
     "SQLAlchemy>=2.0",
     "tabula-py>=2.10",
     "utz>=0.21",
