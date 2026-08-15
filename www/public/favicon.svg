@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- two vehicles converging -->
+  <path d="M3 10 H13" stroke="#3b82f6" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M15 10 l-4.5 -3 v6 z" fill="#3b82f6"/>
+  <path d="M29 22 H19" stroke="#a855f7" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M17 22 l4.5 -3 v6 z" fill="#a855f7"/>
+  <!-- impact spark where they meet -->
+  <path d="M16 11 l1.6 4 4 1.6 -4 1.6 -1.6 4 -1.6 -4 -4 -1.6 4 -1.6 z" fill="#f5a623"/>
+  <path d="M16 14.6 l0.7 1.7 1.7 0.7 -1.7 0.7 -0.7 1.7 -0.7 -1.7 -1.7 -0.7 1.7 -0.7 z" fill="#fff"/>
+</svg>
