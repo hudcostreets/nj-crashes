@@ -2,24 +2,24 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Atlantic,,28,1,14,4,9,28,14,4,10,1
 ,,Bergen,,29,0,16,0,13,28,16,1,11,0
 ,,Burlington,,37,0,26,8,5,37,26,7,7,1
-,,Camden,,33,2,13,3,17,32,12,3,17,1
-,,Cape May,,4,0,4,0,0,4,4,1,0,0
+,,Camden,,35,2,13,3,18,33,12,3,18,1
+,,Cape May,,3,0,3,0,0,4,4,1,0,0
 ,,Cumberland,,23,1,11,2,8,22,11,2,8,1
 ,,Essex,,36,0,11,4,24,39,12,3,26,0
-,,Gloucester,,27,2,17,7,3,27,17,7,3,2
-,,Hudson,,32,0,13,1,22,27,12,1,15,0
+,,Gloucester,,26,2,15,7,3,26,16,7,3,2
+,,Hudson,,34,0,15,1,22,28,13,1,15,0
 ,,Hunterdon,,6,0,2,2,2,7,3,2,2,0
 ,,Mercer,,23,1,10,6,10,25,12,6,9,1
-,,Middlesex,,44,2,27,6,10,44,27,5,11,2
+,,Middlesex,,43,2,26,6,10,44,27,5,11,2
 ,,Monmouth,,47,3,20,4,27,38,20,3,11,4
 ,,Morris,,20,0,12,0,9,20,12,1,6,1
-,,Ocean,,43,0,28,5,10,44,30,6,10,2
+,,Ocean,,42,0,27,5,10,43,29,6,10,2
 ,,Passaic,,19,0,13,3,6,18,11,3,6,0
 ,,Salem,,12,0,10,2,0,14,11,5,1,0
 ,,Somerset,,21,0,16,0,4,18,13,1,4,0
 ,,Sussex,,22,0,31,0,3,14,12,0,2,0
 ,,Union,,45,1,21,4,24,37,16,4,17,1
-,,Warren,,7,0,5,0,2,7,5,0,2,0
+,,Warren,,8,0,5,1,2,8,5,1,2,0
 1,1,Atlantic,Absecon City,0,0,0,0,0,1,0,0,1,0
 1,2,Atlantic,Atlantic City,7,1,2,1,2,5,2,1,2,1
 1,5,Atlantic,Buena Vista Twsp,2,0,0,2,0,2,0,2,0,0
@@ -98,7 +98,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 4,16,Camden,Haddon Twsp,1,1,0,0,0,1,0,0,0,1
 4,18,Camden,Haddon Heights Boro,0,0,0,0,0,0,0,0,0,0
 4,21,Camden,Lawnside Boro,1,0,0,1,0,1,0,1,0,0
-4,22,Camden,Lindenwold Boro,0,0,0,0,0,0,0,0,0,0
+4,22,Camden,Lindenwold Boro,1,0,0,0,1,1,0,0,1,0
 4,27,Camden,Pennsauken Twsp,3,0,1,0,2,2,0,0,2,0
 4,28,Camden,Pine Hill Boro,1,0,1,0,0,1,1,0,0,0
 4,30,Camden,Runnemede Boro,0,0,0,0,0,0,0,0,0,0
@@ -144,12 +144,12 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 8,11,Gloucester,Monroe Twsp,5,0,2,1,1,5,2,1,1,1
 8,13,Gloucester,Newfield Boro,0,0,0,0,0,1,0,0,1,0
 8,18,Gloucester,Washington Twsp,0,0,0,0,0,1,0,1,0,0
-8,20,Gloucester,West Deptford Twsp,5,0,5,0,0,4,4,0,0,0
+8,20,Gloucester,West Deptford Twsp,4,0,4,0,0,3,3,0,0,0
 8,24,Gloucester,Woolwich Twsp,1,0,0,1,0,1,0,1,0,0
 9,1,Hudson,Bayonne City,1,0,1,0,0,1,1,0,0,0
 9,3,Hudson,Guttenberg Town,0,0,0,0,0,1,0,0,1,0
 9,4,Hudson,Harrison Town,3,0,0,1,1,2,0,1,1,0
-9,6,Hudson,Jersey City,3,0,0,0,3,4,1,0,3,0
+9,6,Hudson,Jersey City,4,0,2,0,3,5,2,0,3,0
 9,7,Hudson,Kearny Town,2,0,1,0,1,2,1,0,1,0
 9,8,Hudson,North Bergen Twsp,6,0,3,0,1,6,4,0,3,0
 9,9,Hudson,Secaucus Town,1,0,0,0,1,3,2,0,1,0
@@ -177,7 +177,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 12,1,Middlesex,Carteret Boro,2,0,2,0,0,2,2,0,0,0
 12,2,Middlesex,Cranbury Twsp,1,0,1,0,0,1,1,0,0,0
 12,4,Middlesex,East Brunswick Twsp,0,0,0,0,0,0,0,0,0,0
-12,5,Middlesex,Edison Twsp,6,0,3,0,2,7,3,1,3,0
+12,5,Middlesex,Edison Twsp,5,0,2,0,2,7,3,1,3,0
 12,8,Middlesex,Jamesburg Boro,2,0,1,0,0,2,1,0,0,1
 12,9,Middlesex,Metuchen Boro,1,0,1,1,0,1,1,1,0,0
 12,13,Middlesex,New Brunswick City,4,1,3,0,0,4,3,0,0,1
@@ -237,7 +237,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 15,7,Ocean,Brick Twsp,5,1,2,0,1,4,2,0,1,1
 15,8,Ocean,Toms River,8,0,7,0,3,11,8,1,4,0
 15,12,Ocean,Jackson Twsp,9,0,7,1,1,7,6,1,1,0
-15,13,Ocean,Lacey Twsp,5,0,2,3,0,4,2,2,0,0
+15,13,Ocean,Lacey Twsp,4,0,0,3,0,3,1,2,0,0
 15,14,Ocean,Lakehurst Boro,0,0,0,0,0,0,0,0,0,0
 15,15,Ocean,Lakewood Twsp,3,1,1,0,0,4,2,0,1,1
 15,17,Ocean,Little Egg Harbor T,2,0,1,0,0,2,1,0,1,0
@@ -306,7 +306,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 21,4,Warren,Blairstown Twsp,0,0,0,0,0,0,0,0,0,0
 21,6,Warren,Frelinghuysen Twsp,0,0,0,0,0,1,0,0,1,0
 21,8,Warren,Hackettstown Town,0,0,0,0,0,0,0,0,0,0
-21,11,Warren,Hope Twsp,1,0,1,0,0,1,1,0,0,0
+21,11,Warren,Hope Twsp,3,0,1,1,0,2,1,1,0,0
 21,12,Warren,Independence Twsp,1,0,1,0,0,1,1,0,0,0
 21,13,Warren,Knowlton Twsp,1,0,1,0,0,1,1,0,0,0
 21,16,Warren,Mansfield Twsp,1,0,1,0,0,1,1,0,0,0
