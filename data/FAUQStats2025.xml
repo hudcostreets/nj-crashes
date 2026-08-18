@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Aug 17 10:00:03 EDT 2026</RUNDATE>
+  <RUNDATE>Tue Aug 18 10:00:05 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1663,12 +1663,13 @@
     <MUNICIPALITY MCODE="1328" MNAME="Marlboro Twsp">
       <ACCIDENT ACCID="14202" DATE="10/11/2025" TIME="0735">
         <HIGHWAY>9</HIGHWAY>
-        <LOCATION>State Highway 9</LOCATION>
+        <LOCATION>State Highway 9 MP 121</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2156,12 +2157,13 @@
     <MUNICIPALITY MCODE="1304" MNAME="Colts Neck Twsp">
       <ACCIDENT ACCID="14137" DATE="09/19/2025" TIME="1208">
         <HIGHWAY>537</HIGHWAY>
-        <LOCATION>County 537</LOCATION>
+        <LOCATION>County 537 MP 55.87</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2421,6 +2423,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
