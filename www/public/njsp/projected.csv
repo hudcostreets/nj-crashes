@@ -1,13 +1,13 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_365,trailing_365_driver,trailing_365_passenger,trailing_365_pedestrian,trailing_365_cyclist
-,,Atlantic,,28,1,14,4,9,28,14,4,10,1
+,,Atlantic,,26,1,13,4,9,28,14,4,10,1
 ,,Bergen,,29,0,16,0,13,28,16,1,11,0
 ,,Burlington,,37,0,26,8,5,37,26,7,7,1
-,,Camden,,35,2,13,3,18,33,12,3,18,1
+,,Camden,,33,2,12,3,18,33,12,3,18,1
 ,,Cape May,,3,0,3,0,0,4,4,1,0,0
 ,,Cumberland,,23,1,11,2,8,22,11,2,8,1
 ,,Essex,,36,0,11,4,24,39,12,3,26,0
 ,,Gloucester,,26,2,15,7,3,26,16,7,3,2
-,,Hudson,,34,0,15,1,22,28,13,1,15,0
+,,Hudson,,34,0,13,1,24,28,12,1,16,0
 ,,Hunterdon,,6,0,2,2,2,7,3,2,2,0
 ,,Mercer,,23,1,10,6,10,25,12,6,9,1
 ,,Middlesex,,43,2,26,6,10,44,27,5,11,2
@@ -99,7 +99,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 4,18,Camden,Haddon Heights Boro,0,0,0,0,0,0,0,0,0,0
 4,21,Camden,Lawnside Boro,1,0,0,1,0,1,0,1,0,0
 4,22,Camden,Lindenwold Boro,1,0,0,0,1,1,0,0,1,0
-4,27,Camden,Pennsauken Twsp,3,0,1,0,2,2,0,0,2,0
+4,27,Camden,Pennsauken Twsp,2,0,0,0,2,2,0,0,2,0
 4,28,Camden,Pine Hill Boro,1,0,1,0,0,1,1,0,0,0
 4,30,Camden,Runnemede Boro,0,0,0,0,0,0,0,0,0,0
 4,34,Camden,Voorhees Twsp,2,0,0,0,2,3,0,1,2,0
@@ -151,9 +151,9 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 9,4,Hudson,Harrison Town,3,0,0,1,1,2,0,1,1,0
 9,6,Hudson,Jersey City,4,0,2,0,3,5,2,0,3,0
 9,7,Hudson,Kearny Town,2,0,1,0,1,2,1,0,1,0
-9,8,Hudson,North Bergen Twsp,6,0,3,0,1,6,4,0,3,0
+9,8,Hudson,North Bergen Twsp,8,0,3,0,3,7,4,0,4,0
 9,9,Hudson,Secaucus Town,1,0,0,0,1,3,2,0,1,0
-9,10,Hudson,Union City,5,0,2,0,3,6,2,0,4,0
+9,10,Hudson,Union City,4,0,0,0,3,5,1,0,4,0
 9,11,Hudson,Weehawken Twsp,0,0,0,0,0,1,1,0,0,0
 9,12,Hudson,West New York Town,1,0,0,0,1,1,0,0,1,0
 10,1,Hunterdon,Alexandria Twsp,0,0,0,0,0,0,0,0,0,0
