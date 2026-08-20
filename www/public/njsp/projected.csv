@@ -7,18 +7,18 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Cumberland,,23,1,11,2,8,22,11,2,8,1
 ,,Essex,,36,0,11,4,24,39,12,3,26,0
 ,,Gloucester,,26,2,15,7,3,26,16,7,3,2
-,,Hudson,,34,0,13,1,24,28,12,1,16,0
+,,Hudson,,36,0,13,2,24,29,12,2,16,0
 ,,Hunterdon,,6,0,2,2,2,7,3,2,2,0
 ,,Mercer,,23,1,10,6,10,25,12,6,9,1
 ,,Middlesex,,43,2,26,6,10,44,27,5,11,2
-,,Monmouth,,47,3,20,4,27,38,20,3,11,4
-,,Morris,,20,0,12,0,9,20,12,1,6,1
+,,Monmouth,,49,3,22,4,27,39,21,3,11,4
+,,Morris,,21,0,12,0,11,21,12,1,7,1
 ,,Ocean,,42,0,27,5,10,43,29,6,10,2
 ,,Passaic,,19,0,13,3,6,18,11,3,6,0
 ,,Salem,,12,0,10,2,0,14,11,5,1,0
 ,,Somerset,,21,0,16,0,4,18,13,1,4,0
 ,,Sussex,,22,0,31,0,3,14,12,0,2,0
-,,Union,,45,1,21,4,24,37,16,4,17,1
+,,Union,,46,1,21,4,24,37,16,4,17,1
 ,,Warren,,8,0,5,1,2,8,5,1,2,0
 1,1,Atlantic,Absecon City,0,0,0,0,0,1,0,0,1,0
 1,2,Atlantic,Atlantic City,7,1,2,1,2,5,2,1,2,1
@@ -149,7 +149,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 9,1,Hudson,Bayonne City,1,0,1,0,0,1,1,0,0,0
 9,3,Hudson,Guttenberg Town,0,0,0,0,0,1,0,0,1,0
 9,4,Hudson,Harrison Town,3,0,0,1,1,2,0,1,1,0
-9,6,Hudson,Jersey City,4,0,2,0,3,5,2,0,3,0
+9,6,Hudson,Jersey City,6,0,2,1,3,6,2,1,3,0
 9,7,Hudson,Kearny Town,2,0,1,0,1,2,1,0,1,0
 9,8,Hudson,North Bergen Twsp,8,0,3,0,3,7,4,0,4,0
 9,9,Hudson,Secaucus Town,1,0,0,0,1,3,2,0,1,0
@@ -213,7 +213,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 13,37,Monmouth,Ocean Twsp,2,0,1,0,0,2,1,0,1,0
 13,41,Monmouth,Rumson Boro,1,1,0,0,0,1,0,0,0,1
 13,49,Monmouth,Tinton Falls Boro,1,0,0,1,0,1,0,1,0,0
-13,51,Monmouth,Upper Freehold Twsp,0,0,0,0,0,0,0,0,0,0
+13,51,Monmouth,Upper Freehold Twsp,1,0,1,0,0,1,1,0,0,0
 13,52,Monmouth,Wall Twsp,9,0,5,0,0,6,5,0,1,0
 14,4,Morris,Chatham Boro,1,0,0,0,1,1,0,0,1,0
 14,7,Morris,Chester Twsp,0,0,0,0,0,1,1,0,0,0
@@ -224,6 +224,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 14,16,Morris,Lincoln Park Bo,1,0,1,0,0,1,1,0,0,0
 14,21,Morris,Montville Twsp,1,0,1,0,0,1,1,0,0,0
 14,24,Morris,Morristown Town,3,0,1,0,1,2,1,0,1,0
+14,26,Morris,Mount Arlington Bor,1,0,0,0,1,1,0,0,1,0
 14,27,Morris,Mount Olive Twsp,3,0,3,0,0,3,3,0,0,0
 14,29,Morris,Parsippany-Troy Hil,1,0,0,0,1,1,0,0,1,0
 14,32,Morris,Randolph Twsp,0,0,0,0,0,0,0,0,0,0
