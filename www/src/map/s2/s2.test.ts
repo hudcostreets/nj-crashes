@@ -6,12 +6,14 @@ import { describe, it, expect } from "vitest"
 import {
     S2_DIAMETER_METERS,
     S2_MAX_LEVEL,
+    binIntoS2Cells,
     latLngToToken,
     pickS2LevelForPixels,
     tokenLevel,
     tokenToLatLng,
     tokenToParent,
 } from "./index"
+import type { StackableCrash } from "../StackedHexLayer"
 
 const JC = { lat: 40.7178, lng: -74.0431 }  // Jersey City centroid
 
@@ -128,5 +130,49 @@ describe("S2 picker (`pickS2LevelForPixels`)", () => {
         // Extreme wide zoom → coarsest end; extreme deep → finest.
         expect(pickS2LevelForPixels(2.5, 3, NJ_LAT)).toBeGreaterThanOrEqual(0)
         expect(pickS2LevelForPixels(2.5, 22, NJ_LAT)).toBeLessThanOrEqual(S2_MAX_LEVEL)
+    })
+})
+
+describe("binIntoS2Cells", () => {
+    // Fixture: 2 co-located crashes on JFK Blvd (plus a near-neighbor
+    // that shares their l16 cell) + 1 at the JC centroid. Expected
+    // tokens/centers computed directly via nodes2ts and pinned.
+    const crash = (lat: number, lon: number, severity: "i" | "f" | "p", extra: Partial<StackableCrash> = {}): StackableCrash =>
+        ({ lat, lon, severity, tk: severity === "f" ? 1 : 0, pk: 0, pi: 0, ...extra })
+    const crashes: StackableCrash[] = [
+        crash(40.7441, -74.0585, "f", { road: "ROUTE 501" }),
+        crash(40.7441, -74.0585, "i", { road: "ROUTE 501" }),
+        crash(40.7442, -74.0586, "p"),
+        crash(40.7178, -74.0431, "i"),
+    ]
+
+    it("bins into S2 tokens at the requested level, with exact centers", () => {
+        const bins = binIntoS2Cells(crashes, 16).sort((a, b) => a.h3.localeCompare(b.h3))
+        expect(bins.map(b => ({
+            h3: b.h3,
+            center: b.center.map(x => x.toFixed(10)),
+            fatal: b.fatal,
+            otherInj: b.otherInj,
+            pdo: b.pdo,
+            total: b.total,
+            topRoute: b.topRoute,
+        }))).toEqual([
+            {
+                h3: "89c250b1d",
+                center: ["-74.0424971533", "40.7171943818"],
+                fatal: 0, otherInj: 1, pdo: 0, total: 1,
+                topRoute: undefined,
+            },
+            {
+                h3: "89c2573e7",
+                center: ["-74.0586528693", "40.7441928613"],
+                fatal: 1, otherInj: 1, pdo: 1, total: 3,
+                topRoute: "ROUTE 501",
+            },
+        ])
+        // Every bin's token really is an S2 token at the requested level
+        // (the regression this API exists to prevent: H3 tokens under an
+        // "S2" label).
+        expect(bins.map(b => tokenLevel(b.h3))).toEqual([16, 16])
     })
 })

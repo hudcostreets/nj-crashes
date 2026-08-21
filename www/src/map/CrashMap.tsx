@@ -14,6 +14,7 @@ import type { PickingInfo } from "@deck.gl/core"
 import type { FeatureCollection } from "geojson"
 import { useTouchPitch } from "./hooks/useTouchPitch"
 import { binIntoHexes, coarsenHexes, hexesToSegments, buildStackedHexLayer, Segment, StackedHex, H3_RADIUS_METERS, type VizMode } from "./StackedHexLayer"
+import { binIntoS2Cells, pickS2LevelForPixels } from "./s2"
 import { getResolution, cellToBoundary, polygonToCellsExperimental, POLYGON_TO_CELLS_FLAGS } from "h3-js"
 
 export type MapMode = "scatter" | "heatmap" | "hexbin"
@@ -485,6 +486,14 @@ export function CrashMap({
         () => pickHexResolutionForPixels(hexPxTarget, viewState.zoom, viewState.latitude),
         [hexPxTarget, viewState.zoom, viewState.latitude],
     )
+    // S2 counterpart, used when `grid === "s2"` and the fetch plan gave us
+    // raw points (no prebins): client-side bins land on S2 cells at this
+    // level, and the layer's radius lookup uses it (an H3 res number would
+    // index `S2_EDGE_METERS` wrong).
+    const effectiveS2Level = useMemo(
+        () => pickS2LevelForPixels(hexPxTarget, viewState.zoom, viewState.latitude),
+        [hexPxTarget, viewState.zoom, viewState.latitude],
+    )
 
     // Per-resolution bin cache: re-binning ~250k rows takes ~330ms on a fast
     // M1, blocking the main thread. Cache by H3 resolution so once we've
@@ -519,35 +528,40 @@ export function CrashMap({
             return out
         }
         const cache = binCache
-        let bins = cache.get(effectiveHexRes)
+        // S2 bins share the per-crashes-array cache with H3 bins; offset
+        // the key (S2 levels 4-21 collide numerically with H3 res 0-15).
+        const cacheKey = grid === "s2" ? 1000 + effectiveS2Level : effectiveHexRes
+        let bins = cache.get(cacheKey)
         if (!bins) {
             const t0 = perfEnabled() ? performance.now() : 0
-            bins = binIntoHexes(effectiveCrashes, effectiveHexRes)
-            cache.set(effectiveHexRes, bins)
+            bins = grid === "s2"
+                ? binIntoS2Cells(effectiveCrashes, effectiveS2Level)
+                : binIntoHexes(effectiveCrashes, effectiveHexRes)
+            cache.set(cacheKey, bins)
             if (perfEnabled()) {
                 const ms = performance.now() - t0
                 const w = window as any
                 w.__crashMapDebug = {
                     ...(w.__crashMapDebug ?? {}),
                     hexCount: bins.length,
-                    resolution: effectiveHexRes,
+                    resolution: grid === "s2" ? effectiveS2Level : effectiveHexRes,
                     crashCount: effectiveCrashes.length,
                     lastBinMs: ms,
                 }
-                console.log(`[perf] binIntoHexes r${effectiveHexRes}: ${ms.toFixed(1)}ms `
-                    + `(${effectiveCrashes.length} rows → ${bins.length} hexes)`)
+                console.log(`[perf] ${grid === "s2" ? `binIntoS2Cells l${effectiveS2Level}` : `binIntoHexes r${effectiveHexRes}`}: ${ms.toFixed(1)}ms `
+                    + `(${effectiveCrashes.length} rows → ${bins.length} bins)`)
             }
         } else if (perfEnabled()) {
             const w = window as any
             w.__crashMapDebug = {
                 ...(w.__crashMapDebug ?? {}),
                 hexCount: bins.length,
-                resolution: effectiveHexRes,
+                resolution: grid === "s2" ? effectiveS2Level : effectiveHexRes,
                 lastBinMs: 0,  // cached
             }
         }
         return bins
-    }, [mode, prebinnedHexes, effectiveCrashes, effectiveHexRes, grid])
+    }, [mode, prebinnedHexes, effectiveCrashes, effectiveHexRes, effectiveS2Level, grid])
 
     // Idle prewarm: after data is loaded, bin all common resolutions in
     // chained idle callbacks. Subsequent zoom-driven res transitions hit the
@@ -555,6 +569,11 @@ export function CrashMap({
     // canonical resolution; coarsenHexes is fast).
     useEffect(() => {
         if (mode !== "hexbin" || prebinnedHexes || effectiveCrashes.length === 0) return
+        // H3-only: the prewarm list is H3 resolutions. S2 points-mode data
+        // sets are small (≤`maxPointShards` shards) — on-demand binning is
+        // cheap, and prewarmed H3 bins would never be read (cache key
+        // namespace differs).
+        if (grid === "s2") return
         if (perfEnabled()) console.log(`[perf] prewarm scheduled (${effectiveCrashes.length} rows)`)
         const cache = binCache
         const COMMON_RES = [6, 7, 8, 9, 10]
@@ -583,7 +602,7 @@ export function CrashMap({
         }
         handle = ric(tick)
         return () => { cancelled = true; if (handle) cic(handle) }
-    }, [mode, prebinnedHexes, effectiveCrashes])
+    }, [mode, prebinnedHexes, effectiveCrashes, grid])
 
     // Hex-grid overlay (debug feature): outline-only h3 cells at the
     // hovered res, covering the current viewport.
@@ -780,7 +799,7 @@ export function CrashMap({
         // itself: `getResolution(hex[0].h3)` for H3, `dataRes` for S2
         // (h3-js can't parse S2 tokens).
         const cacheRes = grid === "s2"
-            ? (dataRes ?? effectiveHexRes)
+            ? (dataRes ?? effectiveS2Level)
             : getResolution(hexesArr[0].h3)
         const scopeKey = `${initialBounds?.join(",") ?? "nj"}_${grid}${cacheRes}`
         const fetchMax = hexesArr.reduce((m, h) => Math.max(m, h.total), 1)
@@ -805,10 +824,12 @@ export function CrashMap({
         // prebinned response may be one coarser than the picker asked
         // for if the worker coarsened. For S2, tokens don't parse with
         // `h3-js`; the caller passes `dataRes` explicitly (from the
-        // response plan.res). Falls back to `effectiveHexRes` if not
-        // supplied.
+        // response plan.res). Falls back to `effectiveS2Level` when not
+        // supplied (the client-binned points path — bins were made at
+        // that level, and an H3 res number would index `S2_EDGE_METERS`
+        // wrong).
         const renderRes = grid === "s2"
-            ? (dataRes ?? effectiveHexRes)
+            ? (dataRes ?? effectiveS2Level)
             : Math.min(effectiveHexRes, getResolution(hexesArr[0].h3))
         // `viz=circle` translates the caller-owned px target into meters
         // *once* per layer build, using the current camera. The layer
@@ -841,7 +862,7 @@ export function CrashMap({
             console.log(`[perf] layers: ${ms.toFixed(1)}ms (mode=${mode}, segments=${segments.length})`)
         }
         return result
-    }, [hexes, effectiveCrashes, mode, effectiveHexRes, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, viz, circleRadiusPx, hexOpacity, hexDesaturate, grid, dataRes])
+    }, [hexes, effectiveCrashes, mode, effectiveHexRes, effectiveS2Level, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, viz, circleRadiusPx, hexOpacity, hexDesaturate, grid, dataRes])
 
     // Only bubble user-driven changes. DeckGL also echoes back programmatic
     // viewState updates (from the fit effect, mode-switch tilt, etc.) via

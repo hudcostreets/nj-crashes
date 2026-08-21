@@ -17,6 +17,7 @@
  */
 import { S2LatLng, S2CellId } from "nodes2ts"
 import { metersPerPixel } from "../CrashMap"
+import { binIntoCells, type StackableCrash, type StackedHex } from "../StackedHexLayer"
 
 export type S2Token = string
 
@@ -123,6 +124,23 @@ export function tokenBoundary(token: S2Token): [number, number][] {
 export function tokenCenterLngLat(token: S2Token): [number, number] {
     const [lat, lng] = tokenToLatLng(token)
     return [lng, lat]
+}
+
+/** Client-side binning of raw crash points into S2 cells at `level`.
+ *  S2 counterpart of `binIntoHexes` — used by the points-mode fetch
+ *  path (`kind: "points"`) when the map is on the S2 grid, so client
+ *  bins land on the same lattice as server-side pyramid cells (the
+ *  H3 binner here would silently produce a hex lattice under an
+ *  "S2" label). Aggregation logic is shared via `binIntoCells`. */
+export function binIntoS2Cells<T extends StackableCrash>(
+    crashes: T[],
+    level: number,
+): StackedHex[] {
+    return binIntoCells(
+        crashes,
+        (lat, lon) => latLngToToken(lat, lon, level),
+        tokenCenterLngLat,
+    )
 }
 
 /** Given a target cell-diameter (px), a zoom, and a latitude, return

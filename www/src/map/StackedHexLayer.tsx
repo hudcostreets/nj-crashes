@@ -65,15 +65,21 @@ export type Segment = {
     tier: "fatal" | "injury" | "pdo"
 }
 
-export function binIntoHexes<T extends StackableCrash>(
+/** Grid-agnostic client-side binner. `toCell` maps a crash's lat/lon to
+ *  its cell token at the desired resolution; `toCenter` maps a token to
+ *  its [lon, lat] center. `binIntoHexes` (H3) and `binIntoS2Cells`
+ *  (`map/s2`) are thin wrappers — the aggregation (severity tiers,
+ *  per-bin `topRoute` mode) lives here once. */
+export function binIntoCells<T extends StackableCrash>(
     crashes: T[],
-    resolution: number = 9,
+    toCell: (lat: number, lon: number) => string,
+    toCenter: (cell: string) => [number, number],
 ): StackedHex[] {
     const bins = new Map<string, StackedHex>()
     // Per-bin route counts to pick the mode after aggregation.
     const routeCounts = new Map<string, Map<string, number>>()
     for (const c of crashes) {
-        const h3 = latLngToCell(c.lat, c.lon, resolution)
+        const h3 = toCell(c.lat, c.lon)
         let b = bins.get(h3)
         if (!b) {
             b = { h3, center: [0, 0], fatal: 0, pedInj: 0, otherInj: 0, pdo: 0, total: 0 }
@@ -92,10 +98,7 @@ export function binIntoHexes<T extends StackableCrash>(
         }
     }
     for (const b of bins.values()) {
-        const boundary = cellToBoundary(b.h3, true)
-        let lon = 0, lat = 0
-        for (const [ln, la] of boundary) { lon += ln; lat += la }
-        b.center = [lon / boundary.length, lat / boundary.length]
+        b.center = toCenter(b.h3)
         const m = routeCounts.get(b.h3)
         if (m && m.size > 0) {
             let topR = "", topN = 0
@@ -104,6 +107,24 @@ export function binIntoHexes<T extends StackableCrash>(
         }
     }
     return [...bins.values()]
+}
+
+export function binIntoHexes<T extends StackableCrash>(
+    crashes: T[],
+    resolution: number = 9,
+): StackedHex[] {
+    return binIntoCells(
+        crashes,
+        (lat, lon) => latLngToCell(lat, lon, resolution),
+        // Boundary centroid (not h3-js `cellToLatLng`) for parity with
+        // the server-cells path in `useCellsApi`.
+        h3 => {
+            const boundary = cellToBoundary(h3, true)
+            let lon = 0, lat = 0
+            for (const [ln, la] of boundary) { lon += ln; lat += la }
+            return [lon / boundary.length, lat / boundary.length]
+        },
+    )
 }
 
 /** Re-aggregate a finer-resolution hex set into coarser parents.
