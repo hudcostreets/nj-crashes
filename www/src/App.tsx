@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { HotkeysProvider, Omnibar, ShortcutsModal, LookupModal } from 'use-kbd'
 import 'use-kbd/styles.css'
 import GeoHome from './routes/GeoHome'
@@ -16,7 +16,6 @@ import { useDomainToggle } from './lib/useDomainToggle'
 const NotFound = lazy(() => import('./routes/NotFound'))
 const SqlPage = lazy(() => import('./routes/SqlPage'))
 const DuckDbPage = lazy(() => import('./routes/DuckDbPage'))
-const HudsonMap = lazy(() => import('./routes/HudsonMap'))
 const HudsonDiffs = lazy(() => import('./routes/HudsonDiffs'))
 const OgImage = lazy(() => import('./routes/OgImage'))
 const MatchReview = lazy(() => import('./routes/MatchReview'))
@@ -69,7 +68,9 @@ export default function App() {
                 <Route path="/dev/ab" element={<DevAb />} />
                 <Route path="/tune" element={<TunePage />} />
                 <Route path="/map/hudson/diffs" element={<HudsonDiffs />} />
-                <Route path="/map/hudson/legacy" element={<HudsonMap />} />
+                {/* Legacy Leaflet-era Hudson map — superseded by the generic
+                    county-scoped map page. */}
+                <Route path="/map/hudson/legacy" element={<Navigate to="/map/hudson" replace />} />
                 <Route path="/map" element={<CrashMapPage />} />
                 {/* short form */}
                 <Route path="/map/:county" element={<CrashMapPage />} />

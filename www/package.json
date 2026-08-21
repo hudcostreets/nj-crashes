@@ -40,7 +40,6 @@
     "@react-leaflet/core": "^2.1.0",
     "@vanilla-extract/css": "^1.14.0",
     "fp-ts": "^2.16.2",
-    "h3-js": "^4.4.0",
     "hyparquet": "https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz",
     "leaflet": "^1.9.4",
     "leaflet-edgebuffer": "^1",

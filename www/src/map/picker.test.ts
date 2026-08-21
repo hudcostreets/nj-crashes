@@ -1,24 +1,27 @@
-/** Pin the hexbin picker's output across a matrix of (viz, zoom, lat,
+/** Pin the cell-bin picker's output across a matrix of (zoom, lat,
  *  viewport, budget).
  *
  *  Guards two things this project has landed and is likely to keep
  *  iterating on:
  *
  *  1. **Bins-per-viewport budget** (`autoHexPxTarget`) — solves for the
- *     hex vertex-diameter that yields ~`budget` bins filling a viewport
- *     of area `A_px`: `d_px = sqrt(A_px / budget)`. See
+ *     cell diameter that yields ~`budget` bins filling a viewport of
+ *     area `A_px`: `d_px = sqrt(A_px / budget)`. See
  *     `specs/autores-bins-budget.md`. Any drift in the formula → these
  *     goldens flag it.
  *
- *  2. **Circle mode == hex mode** for the picker itself (rendering-only
- *     swap). Bandwidth wins live elsewhere (worker-side coarsening,
- *     parquet transport, res-budget calibration).
+ *  2. **The shipped tuning values** (`map/tuning.json`:
+ *     `targetFactor` + per-level `pickMult`) — the zoom→level anchors
+ *     below bake them in, so an accidental tuning.json edit fails here
+ *     and a deliberate one updates the goldens consciously (via
+ *     `/tune`'s Save + a test run).
  *
- *  Zoom sweep also enforces monotonicity — as zoom deepens, res never
- *  goes coarser (equivalently, `res(z+ε) ≥ res(z)`).
+ *  Zoom sweep also enforces monotonicity — as zoom deepens, the level
+ *  never goes coarser (equivalently, `level(z+ε) ≥ level(z)`).
  */
 import { describe, it, expect } from "vitest"
 import { pickRes, circleRadiusPx, hexPxTargetFor, autoHexPxTarget, BINS_BUDGET } from "./picker"
+import { S2_TARGET_FACTOR } from "./s2"
 
 const NJ_LAT = 40.7
 // Two canonical canvases, matching `viewportDims` in CrashMapSection:
@@ -56,72 +59,57 @@ describe("picker: autoHexPxTarget = sqrt(A/budget), clamped [1, 30]", () => {
 
 describe("picker: pickRes @ default budget across the zoom range", () => {
     // Anchor points at the module-default budget (`BINS_BUDGET`), for the
-    // embed viewport at NJ latitude. Any drift → this test flags it and
-    // the user gets to decide whether to update the golden or revert.
-    //
-    // The formula: hex_px(z, r) = 2 × H3_RADIUS_METERS[r] × 2^z / (156543 × cos(lat)),
-    // and `pickHexResolutionForPixels` picks the finest r whose diameter ≥
-    // target_px. Target_px is constant per (area, budget) — so the picked
-    // res grows with zoom because the on-screen hex diameter shrinks per
-    // res as we zoom out (and grows as we zoom in).
+    // embed viewport at NJ latitude, with the shipped tuning
+    // (targetFactor 0.85; pickMult l20=0.55, l21=0.4). Any drift → this
+    // test flags it and the user decides golden-update vs revert.
     const cases: Array<[number, number]> = [
-        // [zoom, expected_res] at BINS_BUDGET=100k, embed viewport (614400 px²)
-        [7.0, 7],    // statewide — ~4k bins / 0.73MB / ~3.4s per e's curve
-        [8.5, 8],    // regional — one coarser than the old table's r9
-        [10.0, 9],   // county-ish — matches old table
-        [12.0, 10],  // urban
-        [14.0, 12],
-        [16.0, 13],
-        [17.0, 14],  // street-level — one finer than old r13
-        [19.0, 15],  // deep-zoom
+        // [zoom, expected_s2_level] at BINS_BUDGET=100k, embed viewport
+        [7.0, 11],   // statewide
+        [8.5, 13],   // regional
+        [10.0, 14],  // county-ish
+        [12.0, 16],  // urban
+        [14.0, 18],  // muni
+        [16.0, 20],  // near-street (l21 gated by pickMult 0.4 until ~z17+)
+        [17.0, 20],
+        [19.0, 21],  // deep street zoom
     ]
     for (const [zoom, expected] of cases) {
-        it(`z=${zoom} → r${expected}`, () => {
-            expect(pickRes("hex", zoom, NJ_LAT, EMBED_AREA)).toBe(expected)
+        it(`z=${zoom} → l${expected}`, () => {
+            expect(pickRes(zoom, NJ_LAT, EMBED_AREA)).toBe(expected)
         })
     }
 })
 
-describe("picker: circle mode == hex mode (pure rendering swap)", () => {
-    it("hex and circle pick identical res across z=7 → 20", () => {
-        for (let z = 7; z <= 20; z += 0.25) {
-            expect(pickRes("circle", z, NJ_LAT, EMBED_AREA)).toBe(pickRes("hex", z, NJ_LAT, EMBED_AREA))
+describe("picker: monotone in zoom (never coarser as we zoom in)", () => {
+    it("level non-decreasing across z=7 → 20", () => {
+        let prev = -1
+        for (let z = 7; z <= 20; z += 0.1) {
+            const l = pickRes(z, NJ_LAT, EMBED_AREA)
+            expect(l).toBeGreaterThanOrEqual(prev)
+            prev = l
         }
     })
 })
 
-describe("picker: monotone in zoom (never coarser as we zoom in)", () => {
-    for (const viz of ["hex", "circle"] as const) {
-        it(`${viz} mode: res non-decreasing across z=7 → 20`, () => {
-            let prev = -1
-            for (let z = 7; z <= 20; z += 0.1) {
-                const r = pickRes(viz, z, NJ_LAT, EMBED_AREA)
-                expect(r).toBeGreaterThanOrEqual(prev)
-                prev = r
-            }
-        })
-    }
-})
-
-describe("picker: lower budget → coarser res at wide zoom", () => {
+describe("picker: lower budget → coarser level at wide zoom", () => {
     // The whole point of the budget knob: at statewide zoom, dropping
-    // from 8k → 3k pushes the picker to a coarser res (smaller data
+    // from 8k → 3k pushes the picker to a coarser level (smaller data
     // volume, faster /cells). This encodes that direction as an
     // invariant so a broken formula that inverted it would fail here.
     const embed = EMBED_AREA
-    it("z=8 embed: budget 8k → 5k → 3k picks progressively coarser r", () => {
-        const r8k = pickRes("hex", 8, NJ_LAT, embed, 8000)
-        const r5k = pickRes("hex", 8, NJ_LAT, embed, 5000)
-        const r3k = pickRes("hex", 8, NJ_LAT, embed, 3000)
-        expect(r8k).toBeGreaterThanOrEqual(r5k)
-        expect(r5k).toBeGreaterThanOrEqual(r3k)
+    it("z=8 embed: budget 8k → 5k → 3k picks progressively coarser levels", () => {
+        const l8k = pickRes(8, NJ_LAT, embed, 8000)
+        const l5k = pickRes(8, NJ_LAT, embed, 5000)
+        const l3k = pickRes(8, NJ_LAT, embed, 3000)
+        expect(l8k).toBeGreaterThanOrEqual(l5k)
+        expect(l5k).toBeGreaterThanOrEqual(l3k)
     })
     it("z=13 embed: same directional invariant", () => {
-        const r8k = pickRes("hex", 13, NJ_LAT, embed, 8000)
-        const r5k = pickRes("hex", 13, NJ_LAT, embed, 5000)
-        const r3k = pickRes("hex", 13, NJ_LAT, embed, 3000)
-        expect(r8k).toBeGreaterThanOrEqual(r5k)
-        expect(r5k).toBeGreaterThanOrEqual(r3k)
+        const l8k = pickRes(13, NJ_LAT, embed, 8000)
+        const l5k = pickRes(13, NJ_LAT, embed, 5000)
+        const l3k = pickRes(13, NJ_LAT, embed, 3000)
+        expect(l8k).toBeGreaterThanOrEqual(l5k)
+        expect(l5k).toBeGreaterThanOrEqual(l3k)
     })
 })
 
@@ -138,17 +126,14 @@ describe("picker: circleRadiusPx curve", () => {
     })
 })
 
-describe("picker: hexPxTargetFor stays in usable range", () => {
-    // Both viz modes → same passthrough target. Both canvases + a range
-    // of budgets → target should sit inside the picker's usable window.
+describe("picker: hexPxTargetFor = autoHexPxTarget × S2_TARGET_FACTOR", () => {
     for (const area of [EMBED_AREA, FULL_AREA]) {
         for (const budget of [3000, 5000, 8000]) {
-            it(`A=${area} bins=${budget}: 1 ≤ target ≤ 30 in both modes`, () => {
-                for (const viz of ["hex", "circle"] as const) {
-                    const t = hexPxTargetFor(viz, area, budget)
-                    expect(t).toBeGreaterThanOrEqual(1)
-                    expect(t).toBeLessThanOrEqual(30)
-                }
+            it(`A=${area} bins=${budget}: exact scale + usable range`, () => {
+                const t = hexPxTargetFor(area, budget)
+                expect(t).toBeCloseTo(autoHexPxTarget(area, budget) * S2_TARGET_FACTOR, 6)
+                expect(t).toBeGreaterThanOrEqual(1 * S2_TARGET_FACTOR)
+                expect(t).toBeLessThanOrEqual(30)
             })
         }
     }

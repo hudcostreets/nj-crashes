@@ -9,11 +9,8 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { useUrlState, viewStateParam, cleanUrl, optFloatParam, boolParam, enumParam } from "use-prms"
 import { usePageFilters, YEAR_RANGE_DEFAULT } from "@/src/PageFiltersContext"
-import type { CrashFilter } from "@/src/map/useCrashData"
 import { useCellsApi, CELLS_BUDGET } from "@/src/map/useCellsApi"
 import type { CellsApiFilter } from "@/src/map/useCellsApi"
-import { coarsenHexes } from "@/src/map/StackedHexLayer"
-import { getResolution } from "h3-js"
 import { MAP_BASE_URL } from "@/src/map/config"
 import type { MapMode, ViewState } from "@/src/map/CrashMap"
 import type { StackedHex } from "@/src/map/StackedHexLayer"
@@ -23,11 +20,10 @@ import { FiMaximize2, FiMinimize2 } from "react-icons/fi"
 import useSessionStorageState from "use-session-storage-state"
 import { useToolboxOpen } from "@/src/map/useToolboxOpen"
 import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
-import type { MapManifestV2 } from "@/src/map/v2"
-import { fitBoundsToView, lerpView, metersPerPixel, pickHexResolutionForPixels } from "@/src/map/CrashMap"
-import { H3_RADIUS_METERS } from "@/src/map/StackedHexLayer"
+import type { Bbox, MapManifestV2 } from "@/src/map/v2"
+import { fitBoundsToView, lerpView, metersPerPixel } from "@/src/map/CrashMap"
 
-import { circleRadiusPx, hexPxTargetFor, pick as pickerPick, BINS_BUDGET } from "@/src/map/picker"
+import { circleRadiusPx, hexPxTargetFor, pickRes as pickerPick, BINS_BUDGET } from "@/src/map/picker"
 import { pickS2LevelForPixels, S2_DIAMETER_METERS } from "@/src/map/s2"
 import { DebugOverlay } from "@/src/map/DebugOverlay"
 import { YearSelect } from "@/src/lib/year-select"
@@ -158,6 +154,19 @@ export type Props = {
     onOutlineClick?: (feature: any) => void
 }
 
+/** Geo + time filter state assembled by the section. `viewport`-less
+ *  when the view hasn't initialized yet. */
+type CrashFilter = {
+    yearRange: [number, number]
+    ccs?: number[]
+    mc?: number
+    severities?: Set<"f" | "i" | "p">
+    viewport?: Bbox
+    viewportLat?: number
+    zoom?: number
+    hexPxTarget?: number
+}
+
 export function CrashMapSection({
     cc, mc, height: defaultHeight = 600, fullScreenHref, scopeLabel,
     fullScreen = false, detailsHref, onOutlineClick,
@@ -183,23 +192,6 @@ export function CrashMapSection({
     //           consistent visual weight regardless of zoom / muni size.
     const [hexPxTargetUrl, setHexPxTargetUrl] = useUrlState("hpx", optFloatParam(), { debounce: 100 })
     const [heightScaleUrl, setHeightScaleUrl] = useUrlState("hs", optFloatParam(), { debounce: 100 })
-    // `viz=circle` — prototype circle-column mode. Radius follows a
-    // smooth `target_px(z)` curve, capped at each cell's inscribed
-    // circle, so res transitions don't visually pop and we get
-    // density-scaled dots (small at wide zoom, chunkier deep-zoom).
-    const [viz, setViz] = useUrlState("viz", enumParam("circle" as const, ["hex", "circle"] as const))
-    // `grid=h3|s2` — which cell grid the picker + fetch layer operate on.
-    // H3 stays the default; S2 is the alternate stack (see
-    // `specs/s2-pyramid.md`). Client plumbing landed ahead of pyramid + worker
-    // support: `?grid=s2` computes S2 levels for display in the widget, but
-    // the actual /v1/cells fetch still uses H3 until phases 3-4 land.
-    // Grid selection via a boolean `?h3` param: present → H3, absent → S2 (the
-    // shipping default). Cleaner URL for the common case; opt-in for the
-    // legacy grid via just `?h3` on the URL (no value needed).
-    const [h3Url, setH3Url] = useUrlState("h3", boolParam)
-    const grid: "h3" | "s2" = h3Url ? "h3" : "s2"
-    const setGrid = (g: "h3" | "s2") => setH3Url(g === "h3")
-    void setGrid
     // `hexAuto` — when true (default), hexPxTarget grows with zoom so
     // close-up views get chunkier, more-pickable cells; when false, the
     // manual slider value wins. `?ha=false` to opt out of adaptive.
@@ -226,9 +218,6 @@ export function CrashMapSection({
     const [debugOpen, setDebugOpen] = useSessionStorageState<boolean>("hccs.crashmap.debugOpen", { defaultValue: false })
     // Picker-threshold knobs (debug section). SS-persisted so a debugging
     // session survives page reloads. Defaults match `pickFetchPlanV2`.
-    const [pointZoomThreshold, setPointZoomThreshold] = useSessionStorageState<number>("hccs.crashmap.pointZoomThreshold", { defaultValue: 11 })
-    const [maxPointShards, setMaxPointShards] = useSessionStorageState<number>("hccs.crashmap.maxPointShards", { defaultValue: 10 })
-    const [maxHexShards, setMaxHexShards] = useSessionStorageState<number>("hccs.crashmap.maxHexShards", { defaultValue: 100 })
     // User-resizable map height (drag bottom edge of the wrapper; CSS
     // `resize: vertical`). Persisted per session. Reset (↺) restores the
     // caller-provided default.
@@ -313,8 +302,8 @@ export function CrashMapSection({
     const hexPxTarget = useMemo(() => {
         if (!hexAuto) return manualHexPx
         const [vpw, vph] = viewportDims(fullScreen)
-        return hexPxTargetFor(viz, vpw * vph, binsBudget, grid)
-    }, [viz, hexAuto, manualHexPx, fullScreen, binsBudget, grid])
+        return hexPxTargetFor(vpw * vph, binsBudget)
+    }, [hexAuto, manualHexPx, fullScreen, binsBudget])
 
     // Picker-state snapshot: current H3 resolution + adjacent levels
     // (one coarser, one finer) as clickable jump targets. Neighbors that
@@ -323,16 +312,10 @@ export function CrashMapSection({
         if (!effectiveView) return null
         const { zoom, latitude } = effectiveView
         const mppx = metersPerPixel(zoom, latitude)
-        const currRes = grid === "s2"
-            ? pickS2LevelForPixels(hexPxTarget, zoom, latitude)
-            : pickHexResolutionForPixels(hexPxTarget, zoom, latitude)
+        const currRes = pickS2LevelForPixels(hexPxTarget, zoom, latitude)
         const pxAt = (r: number): number | null => {
-            if (grid === "s2") {
-                const dia = S2_DIAMETER_METERS[r]
-                return dia === undefined ? null : dia / mppx
-            }
-            const rad = H3_RADIUS_METERS[r]
-            return rad === undefined ? null : (2 * rad) / mppx
+            const dia = S2_DIAMETER_METERS[r]
+            return dia === undefined ? null : dia / mppx
         }
         const levels: { res: number, px: number, isCurrent: boolean }[] = []
         for (const res of [currRes - 1, currRes, currRes + 1]) {
@@ -340,12 +323,10 @@ export function CrashMapSection({
             if (px !== null) levels.push({ res, px, isCurrent: res === currRes })
         }
         return { levels }
-    }, [effectiveView, hexPxTarget, grid])
+    }, [effectiveView, hexPxTarget])
 
-    // S2 counterpart to `pickerInfo.currRes` — computed regardless of
-    // active grid so the widget can show what an S2 fetch WOULD pick,
-    // even while `?grid=h3` is still driving the actual fetch. Costs
-    // nothing to compute (pure math on the `S2_DIAMETER_METERS` table).
+    // The picker's S2 level for the current view — shown in the toolbox
+    // widget. Pure math on the `S2_DIAMETER_METERS` table.
     const s2Level = useMemo(() => {
         if (!effectiveView) return null
         return pickS2LevelForPixels(hexPxTarget, effectiveView.zoom, effectiveView.latitude)
@@ -357,9 +338,6 @@ export function CrashMapSection({
             ccs: cc !== null ? [cc] : undefined,
             mc: mc ?? undefined,
             severities,
-            pointZoomThreshold,
-            maxPointShards,
-            maxHexShards,
         }
         if (!effectiveView) return base
         const [w, h] = viewportDims(fullScreen)
@@ -370,7 +348,7 @@ export function CrashMapSection({
             zoom: effectiveView.zoom,
             hexPxTarget,
         }
-    }, [yearRange, cc, mc, severities, effectiveView, hexPxTarget, pointZoomThreshold, maxPointShards, maxHexShards, fullScreen])
+    }, [yearRange, cc, mc, severities, effectiveView, hexPxTarget, fullScreen])
 
     const [outline, setOutline] = useState<FeatureCollection | null>(null)
     useEffect(() => {
@@ -426,9 +404,8 @@ export function CrashMapSection({
             zoom: filter.zoom,
             hexPxTarget: filter.hexPxTarget,
             clipPolygon,
-            grid,
         }
-    }, [filter, cc, mc, outline, muniOutline, grid])
+    }, [filter, cc, mc, outline, muniOutline])
     const apiResult = useCellsApi(apiFilter)
     const result = useMemo(() => {
         // Adapt the cells-api result into the shape consumers below expect.
@@ -515,11 +492,9 @@ export function CrashMapSection({
         if (result.status !== "ready" || result.dataKind !== "hex") return null
         const data = result.data as StackedHex[]
         if (data.length === 0) return { hexes: data, res: result.plan?.kind === "hex" ? result.plan.res : 9, coarsenedFrom: null }
-        // Grid guard: h3-js can't parse S2 tokens. The worker already
-        // does `maxCells` coarsening server-side, so on the S2 path we
-        // trust the plan's res + skip client-side coarsening entirely.
-        // Downstream render uses `dataRes` prop instead of the inferred
-        // `sourceRes` when grid=s2.
+        // The worker does `maxCells` coarsening server-side, so we trust
+        // the plan's res — no client-side coarsening. Downstream render
+        // uses the `dataRes` prop (from the plan).
         const vp = filter.viewport
         const clip = (xs: StackedHex[]) => {
             if (!vp) return xs
@@ -529,23 +504,10 @@ export function CrashMapSection({
             const lo1 = vp[1] - padLat, hi1 = vp[3] + padLat
             return xs.filter(h => h.center[0] >= lo0 && h.center[0] <= hi0 && h.center[1] >= lo1 && h.center[1] <= hi1)
         }
-        if (grid === "s2") {
-            const inViewport = clip(data)
-            const res = result.plan?.kind === "hex" ? result.plan.res : 9
-            return { hexes: inViewport, res, coarsenedFrom: null }
-        }
-        const sourceRes = getResolution(data[0].h3)
-        let inViewport = clip(data)
-        if (inViewport.length <= CELLS_BUDGET) return { hexes: inViewport, res: sourceRes, coarsenedFrom: null }
-        let res = sourceRes
-        let out = data
-        while (inViewport.length > CELLS_BUDGET && res > 5) {
-            res--
-            out = coarsenHexes(data, res)
-            inViewport = clip(out)
-        }
-        return { hexes: inViewport, res, coarsenedFrom: sourceRes }
-    }, [result, filter.viewport, grid])
+        const inViewport = clip(data)
+        const res = result.plan?.kind === "hex" ? result.plan.res : 9
+        return { hexes: inViewport, res, coarsenedFrom: null }
+    }, [result, filter.viewport])
 
     const initialBounds: [number, number, number, number] = useMemo(() => {
         const m = result.manifest
@@ -740,12 +702,10 @@ export function CrashMapSection({
                         onHeightScaleChange={setHeightScale}
                         gridOverlayRes={drawerOpen ? gridOverlayRes : null}
                         coverCells={drawerOpen && debugOpen ? apiResult.plan?.cover ?? null : null}
-                        viz={viz}
                         circleRadiusPx={circleRadiusPxValue}
                         hexOpacity={resChanging ? 0.35 : 1}
                         hexDesaturate={resChanging ? 0.55 : 0}
-                        grid={grid}
-                        dataRes={grid === "s2" ? apiResult.plan?.res : undefined}
+                        dataRes={apiResult.plan?.res}
                     />
                 </Suspense>
                 )
@@ -830,48 +790,11 @@ export function CrashMapSection({
                                 fontSize: "0.85em",
                                 flex: 1,
                             }}
-                        >{m === "scatter" ? "Points" : m === "heatmap" ? "Heatmap" : "Hexbin"}</button>
+                        >{m === "scatter" ? "Points" : m === "heatmap" ? "Heatmap" : "Bins"}</button>
                     ))}
                 </div>
                 {mode === "hexbin" && (
                     <>
-                        <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
-                            {(["hex", "circle"] as const).map(v => (
-                                <button
-                                    key={v}
-                                    onClick={() => setViz(v)}
-                                    style={{
-                                        cursor: "pointer",
-                                        background: viz === v ? activeBg : "transparent",
-                                        color: viz === v ? "#fff" : fg,
-                                        border: `1px solid ${viz === v ? activeBg : fg}`,
-                                        borderRadius: 3,
-                                        padding: "2px 8px",
-                                        fontSize: "0.78em",
-                                        flex: 1,
-                                    }}
-                                >{v === "hex" ? (grid === "s2" ? "Squares" : "Hex") : "Circle"}</button>
-                            ))}
-                        </div>
-                        <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
-                            {(["h3", "s2"] as const).map(g => (
-                                <button
-                                    key={g}
-                                    onClick={() => setGrid(g)}
-                                    title={g === "h3" ? "H3 hex grid (default)" : "S2 quad grid (opt-in)"}
-                                    style={{
-                                        cursor: "pointer",
-                                        background: grid === g ? activeBg : "transparent",
-                                        color: grid === g ? "#fff" : fg,
-                                        border: `1px solid ${grid === g ? activeBg : fg}`,
-                                        borderRadius: 3,
-                                        padding: "2px 8px",
-                                        fontSize: "0.78em",
-                                        flex: 1,
-                                    }}
-                                >{g.toUpperCase()}</button>
-                            ))}
-                        </div>
                         <HexPxTargetSlider
                             value={hexPxTarget}
                             onChange={setHexPxTarget}
@@ -879,7 +802,6 @@ export function CrashMapSection({
                             onAutoChange={setHexAuto}
                             pickerInfo={pickerInfo}
                             zoom={effectiveView?.zoom}
-                            grid={grid}
                         />
                         <label style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
                             <span style={{ fontSize: "0.78em" }}>Height scale: <b>{heightScale.toFixed(2)}</b></span>
@@ -904,9 +826,7 @@ export function CrashMapSection({
                             currentZoom={effectiveView?.zoom ?? 7}
                             currentLat={effectiveView?.latitude ?? 40.7}
                             currentRes={pickerInfo?.levels.find(l => l.isCurrent)?.res ?? 11}
-                            grid={grid}
                             s2Level={s2Level}
-                            viz={viz}
                             viewportAreaPx={(() => { const [w, h] = viewportDims(fullScreen); return w * h })()}
                             budget={binsBudget}
                             fetched={result.status === "ready" && result.plan?.kind === "hex" ? result.plan.cellCount : undefined}
@@ -933,11 +853,11 @@ export function CrashMapSection({
                         color: actualTheme === "dark" ? "#6db3f2" : "#0066cc",
                     }}>
                         cells-api — {apiResult.plan
-                            ? `${apiResult.plan.source} r${apiResult.plan.res}, ${apiResult.plan.cellCount ?? "—"} cells`
+                            ? `${apiResult.plan.source} l${apiResult.plan.res}, ${apiResult.plan.cellCount ?? "—"} cells`
                             : apiResult.status}
                     </div>
                     {effectiveView && (() => {
-                        const renderRes = pickHexResolutionForPixels(hexPxTarget, effectiveView.zoom, effectiveView.latitude)
+                        const renderRes = pickS2LevelForPixels(hexPxTarget, effectiveView.zoom, effectiveView.latitude)
                         const planRes = result.plan?.res ?? null
                         // `coarsenHexes` no-ops when target ≥ source (can't
                         // refine), so what we actually display is `min` of
@@ -971,22 +891,6 @@ export function CrashMapSection({
                             />
                         )
                     })()}
-                    <div style={{ marginTop: 6, color: actualTheme === "dark" ? "#888" : "#666", fontSize: "0.78em" }}>picker knobs</div>
-                    <NumberSlider
-                        label="point z-thresh" min={8} max={15} step={0.5}
-                        value={pointZoomThreshold} onChange={setPointZoomThreshold}
-                        defaultValue={11} reset={() => setPointZoomThreshold(11)}
-                    />
-                    <NumberSlider
-                        label="max pt shards" min={1} max={50} step={1}
-                        value={maxPointShards} onChange={setMaxPointShards}
-                        defaultValue={10} reset={() => setMaxPointShards(10)}
-                    />
-                    <NumberSlider
-                        label="max hex shards" min={1} max={200} step={1}
-                        value={maxHexShards} onChange={setMaxHexShards}
-                        defaultValue={100} reset={() => setMaxHexShards(100)}
-                    />
                 </DebugSection>
             </div>
             )}
@@ -1172,22 +1076,14 @@ function Legend({
  *  Horizontal orange line: the camera's current zoom, so users see
  *  where they are in the mapping at a glance. */
 function ZoomResChart({
-    currentZoom, currentLat, currentRes, grid, s2Level, viz, viewportAreaPx, budget,
+    currentZoom, currentLat, currentRes, s2Level, viewportAreaPx, budget,
     fetched, fetchedBytes, inViewport, actualVp, clampedVp, targetPx,
 }: {
     currentZoom: number
     currentLat: number
     currentRes: number
-    /** Active grid (`h3`/`s2`) from the `?grid=` URL param. When `s2`
-     *  the H3 zoom×res chart still renders (as the shipping fetch path),
-     *  and a small S2 row is appended below showing what an S2 fetch
-     *  WOULD pick. Fetch swap is phase 4. */
-    grid?: "h3" | "s2"
-    /** S2 level the picker would select at this zoom/vp/budget. Shown
-     *  next to the grid indicator when `grid === "s2"` (or always, as
-     *  a preview even when H3 is active — decided by the widget). */
+    /** S2 level the picker would select at this zoom/vp/budget. */
     s2Level?: number | null
-    viz: "hex" | "circle"
     viewportAreaPx: number
     budget: number
     /** Total cells returned across all `/v1/cells` shards for this view
@@ -1222,16 +1118,14 @@ function ZoomResChart({
     // Cell "diameter" at a given res: H3 uses `2 × radius`; the S2 table
     // is already stored as diameter. Consumers derive the zoom-for-px
     // relation from this so the chart geometry matches the picker.
-    const diaMeters = (r: number): number | undefined => grid === "s2"
-        ? S2_DIAMETER_METERS[r]
-        : (H3_RADIUS_METERS[r] === undefined ? undefined : 2 * H3_RADIUS_METERS[r])
+    const diaMeters = (r: number): number | undefined => S2_DIAMETER_METERS[r]
     const zForPxRes = (px: number, r: number): number =>
         Math.log2((px * 156543 * cosLat) / (diaMeters(r) ?? 1))
 
     const roundPx = [0.5, 1, 2, 4, 8, 16, 32]
-    const resTable = grid === "s2" ? S2_DIAMETER_METERS : H3_RADIUS_METERS
+    const resTable = S2_DIAMETER_METERS
     const resCols = [currentRes - 1, currentRes, currentRes + 1].filter(r => r in resTable)
-    const resLabel = (r: number) => grid === "s2" ? `l${r}` : `r${r}`
+    const resLabel = (r: number) => `l${r}`
     const intZooms: number[] = []
     for (let z = Math.ceil(zMin); z <= Math.floor(zMax); z++) intZooms.push(z)
 
@@ -1243,8 +1137,8 @@ function ZoomResChart({
     const transitions: { z: number; from: number; to: number }[] = []
     const coarseStep = 0.1
     const pickAt = (z: number): number => pickerPick(
-        grid ?? "h3", viz, z, currentLat, viewportAreaPx, budget,
-    ).res
+        z, currentLat, viewportAreaPx, budget,
+    )
     let prevRes = pickAt(zMin)
     for (let z = zMin + coarseStep; z <= zMax + 1e-9; z += coarseStep) {
         const r = pickAt(z)
@@ -1303,18 +1197,14 @@ function ZoomResChart({
                         </>
                     )}
                 </div>
-                {(grid || s2Level != null) && (
+                {s2Level != null && (
                     <div style={{ opacity: 0.7 }}>
-                        grid: <span style={{ fontWeight: 600 }}>{grid ?? "h3"}</span>
-                        {" · h3 r"}<span style={{ fontWeight: 600 }}>{currentRes}</span>
-                        {s2Level != null && (
-                            <>{" · s2 l"}<span style={{ fontWeight: 600 }}>{s2Level}</span></>
-                        )}
+                        s2 l<span style={{ fontWeight: 600 }}>{s2Level}</span>
                     </div>
                 )}
             </div>
             <div style={{ opacity: 0.55, marginBottom: 2, fontSize: "0.9em" }}>
-                Zoom × {grid === "s2" ? "S2" : "hex"} px
+                Zoom × S2 px
             </div>
             <svg width={W} height={H + 18} style={{ overflow: "visible", display: "block" }}>
                 {/* Column headers */}
@@ -1402,7 +1292,7 @@ function ZoomResChart({
  *  scale (so each tick is a constant log-px ratio), but always shows the
  *  actual px value alongside. Defaults to 1.2 px on first session use. */
 function HexPxTargetSlider({
-    value, onChange, auto, onAutoChange, pickerInfo, zoom, grid = "h3",
+    value, onChange, auto, onAutoChange, pickerInfo, zoom,
 }: {
     value: number
     onChange: (n: number) => void
@@ -1414,9 +1304,8 @@ function HexPxTargetSlider({
     zoom: number | undefined
     /** When `"s2"`, snap-buttons render as `l{level}` (matching the S2
      *  pyramid's naming). Otherwise `r{res}` for H3. */
-    grid?: "h3" | "s2"
 }) {
-    const resLabel = (res: number) => grid === "s2" ? `l${res}` : `r${res}`
+    const resLabel = (res: number) => `l${res}`
     const MIN = 0.5, MAX = 30
     const toScale = (v: number) => 100 * (Math.log2(v / MIN) / Math.log2(MAX / MIN))
     const fromScale = (s: number) => MIN * Math.pow(MAX / MIN, s / 100)
@@ -1430,10 +1319,10 @@ function HexPxTargetSlider({
                         type="checkbox"
                         checked={auto}
                         onChange={e => onAutoChange(e.target.checked)}
-                        title={`Auto: grow ${grid === "s2" ? "S2 cell" : "hex"} px target with zoom (bigger cells when zoomed in). Uncheck for manual control.`}
+                        title={"Auto: grow S2 cell px target with zoom (bigger cells when zoomed in). Uncheck for manual control."}
                         style={{ margin: 0 }}
                     />
-                    {grid === "s2" ? "S2 px" : "Hex px"}: <b>{value < 5 ? value.toFixed(1) : Math.round(value)}</b>
+                    S2 px: <b>{value < 5 ? value.toFixed(1) : Math.round(value)}</b>
                     {auto && <span style={{ opacity: 0.55, marginLeft: 2 }}>(auto)</span>}
                     {zoom !== undefined && (
                         <span style={{ opacity: 0.55, marginLeft: 4 }}>· z={zoom.toFixed(1)}</span>

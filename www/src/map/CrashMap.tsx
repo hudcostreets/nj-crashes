@@ -13,9 +13,8 @@ import { HeatmapLayer } from "@deck.gl/aggregation-layers"
 import type { PickingInfo } from "@deck.gl/core"
 import type { FeatureCollection } from "geojson"
 import { useTouchPitch } from "./hooks/useTouchPitch"
-import { binIntoHexes, coarsenHexes, hexesToSegments, buildStackedHexLayer, Segment, StackedHex, H3_RADIUS_METERS, type VizMode } from "./StackedHexLayer"
-import { binIntoS2Cells, pickS2LevelForPixels } from "./s2"
-import { getResolution, cellToBoundary, polygonToCellsExperimental, POLYGON_TO_CELLS_FLAGS } from "h3-js"
+import { hexesToSegments, buildStackedHexLayer, Segment, StackedHex } from "./StackedHexLayer"
+import { binIntoS2Cells, pickS2LevelForPixels, tokenBoundary, latLngToToken, S2_DIAMETER_METERS } from "./s2"
 
 export type MapMode = "scatter" | "heatmap" | "hexbin"
 
@@ -93,23 +92,17 @@ export type Props = {
     mode?: MapMode
     theme?: "light" | "dark"
     height?: number | string
-    /** When set, draw an outline-only h3 grid at this resolution covering
-     *  the current viewport. Used by the debug drawer's "hover an `rL`
+    /** When set, draw an outline-only S2 cell grid at this level covering
+     *  the current viewport. Used by the debug drawer's "hover an `lN`
      *  row" feature for visual reference. */
     gridOverlayRes?: number | null
     /** When set (debug toggle on), draw an outline for each cell in the
      *  cells-api cover. Color-coded by `shard_res` so a heterogeneous
      *  cover reads at a glance — coarser cells one hue, finer another. */
     coverCells?: Array<{ h3: string; shard_res: number }> | null
-    /** Hexbin visual mode. `hex` (default) tessellates full h3 cells.
-     *  `circle` renders circular columns bounded by each cell's
-     *  inscribed circle; the caller-supplied `circleRadiusPx` drives
-     *  the actual radius (smoothly, per zoom), so transitions between
-     *  H3 resolutions don't visually pop. */
-    viz?: VizMode
-    /** In `viz=circle` mode, the target circle radius in screen pixels.
+    /** Target circle radius in screen pixels for the binned columns.
      *  Converted to meters via the layer's viewport; capped at the
-     *  current cell's inscribed radius. Ignored in `hex` mode. */
+     *  current cell's inscribed radius. */
     circleRadiusPx?: number
     /** Multiplies the hex/circle layer's alpha. The section sets this
      *  ~0.35 while a fresh /cells fetch is in flight so the stale
@@ -121,15 +114,9 @@ export type Props = {
      *  fetch — the tier signal stays readable but is de-emphasized so
      *  the difference between stale and fresh reads at a glance. */
     hexDesaturate?: number
-    /** Which cell grid the `prebinnedHexes` come from. `h3` (default)
-     *  parses tokens via `h3-js`; `s2` short-circuits the
-     *  `getResolution`-based render-res inference and passes `grid`
-     *  through to `buildStackedHexLayer` for the S2 edge lookup. See
-     *  `specs/s2-pyramid.md` phase 4e. */
-    grid?: "h3" | "s2"
-    /** When `grid === "s2"`, the picker's actual S2 level for the
-     *  currently-rendered cells (used in place of the H3-only
-     *  `getResolution(cells[0].h3)` inference). Ignored for H3. */
+    /** The picker's actual S2 level for the currently-rendered
+     *  `prebinnedHexes` (the render radius can't be inferred from the
+     *  tokens cheaply, so the caller passes it from the response plan). */
     dataRes?: number
 }
 
@@ -167,32 +154,6 @@ function severityRgba(sev: Crash["severity"], alpha = 200): [number, number, num
 /** Web-mercator meters-per-pixel at given zoom + latitude. */
 export function metersPerPixel(zoom: number, lat: number): number {
     return 156543.03 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom)
-}
-
-/** Pick integer H3 resolution — floor semantics: `pixelTarget` is a
- *  *minimum* cell size, so we return the finest resolution whose
- *  vertex-to-vertex diameter still meets or exceeds the target at the
- *  current zoom+latitude. Ensures cells never render smaller than the
- *  user's target, so pickability doesn't silently degrade at cell-size
- *  boundaries the way "closest-on-log2" would (halfway between two
- *  levels, closest picks the finer one, dropping below target).
- *
- *  If no resolution qualifies (target > coarsest cell), returns r0
- *  (globe-scale). */
-export function pickHexResolutionForPixels(pixelTarget: number, zoom: number, lat: number): number {
-    const mppx = metersPerPixel(zoom, lat)
-    const targetMeters = pixelTarget * mppx
-    // Sort resolutions ascending (coarsest → finest). Walk until a cell
-    // dips below the target; the last resolution that passed is the
-    // finest resolution whose cell still meets the min.
-    const resolutions = Object.keys(H3_RADIUS_METERS).map(Number).sort((a, b) => a - b)
-    let best = resolutions[0]  // fallback: coarsest
-    for (const r of resolutions) {
-        const diaMeters = 2 * H3_RADIUS_METERS[r]
-        if (diaMeters >= targetMeters) best = r
-        else break
-    }
-    return best
 }
 
 /** SRIs in NJDOT data are zero-padded route numbers (e.g. "00000525__") —
@@ -354,11 +315,9 @@ export function CrashMap({
     height = "100%",
     gridOverlayRes,
     coverCells,
-    viz = "hex",
     circleRadiusPx,
     hexOpacity = 1,
     hexDesaturate = 0,
-    grid = "h3",
     dataRes,
 }: Props) {
     const effectiveCrashes = crashes ?? []
@@ -480,25 +439,17 @@ export function CrashMap({
 
     const isPitchingRef = useTouchPitch({ setViewState, maxPitch: MAX_PITCH })
 
-    // H3 resolution picked from pixel target + current zoom+latitude.
+    // S2 level picked from pixel target + current zoom+latitude.
     // Purely derived — no data binning, no viewport filter → pan is stable.
-    const effectiveHexRes = useMemo(
-        () => pickHexResolutionForPixels(hexPxTarget, viewState.zoom, viewState.latitude),
-        [hexPxTarget, viewState.zoom, viewState.latitude],
-    )
-    // S2 counterpart, used when `grid === "s2"` and the fetch plan gave us
-    // raw points (no prebins): client-side bins land on S2 cells at this
-    // level, and the layer's radius lookup uses it (an H3 res number would
-    // index `S2_EDGE_METERS` wrong).
+    // Drives client-side binning when the caller passes raw crashes (no
+    // prebins), and the layer's radius lookup in that path.
     const effectiveS2Level = useMemo(
         () => pickS2LevelForPixels(hexPxTarget, viewState.zoom, viewState.latitude),
         [hexPxTarget, viewState.zoom, viewState.latitude],
     )
 
-    // Per-resolution bin cache: re-binning ~250k rows takes ~330ms on a fast
-    // M1, blocking the main thread. Cache by H3 resolution so once we've
-    // binned at r6 / r7 / r8, navigating zoom levels back through them is
-    // O(1). Cache lives at module scope (keyed by the crashes array
+    // Per-level bin cache: re-binning large crash sets blocks the main
+    // thread. Cache lives at module scope (keyed by the crashes array
     // reference via WeakMap) so it survives Suspense / data-loading
     // remounts of CrashMap itself.
     const binCache = getBinCache(effectiveCrashes)
@@ -507,48 +458,25 @@ export function CrashMap({
     // unrelated layer deps — outline geojson, mode-tilt, etc. — change).
     const hexes = useMemo<StackedHex[] | null>(() => {
         if (mode !== "hexbin") return null
-        if (prebinnedHexes) {
-            if (grid === "s2") {
-                return prebinnedHexes
-            }
-            const t0 = perfEnabled() ? performance.now() : 0
-            const out = coarsenHexes(prebinnedHexes, effectiveHexRes)
-            if (perfEnabled()) {
-                const w = window as any
-                w.__crashMapDebug = {
-                    ...(w.__crashMapDebug ?? {}),
-                    hexCount: out.length,
-                    resolution: effectiveHexRes,
-                    crashCount: prebinnedHexes.length,
-                    lastBinMs: performance.now() - t0,
-                }
-                console.log(`[perf] coarsenHexes r${effectiveHexRes}: ${(performance.now() - t0).toFixed(1)}ms `
-                    + `(${prebinnedHexes.length} prebins → ${out.length} hexes)`)
-            }
-            return out
-        }
+        // Server cells are fetched at the plan's resolution — render as-is.
+        if (prebinnedHexes) return prebinnedHexes
         const cache = binCache
-        // S2 bins share the per-crashes-array cache with H3 bins; offset
-        // the key (S2 levels 4-21 collide numerically with H3 res 0-15).
-        const cacheKey = grid === "s2" ? 1000 + effectiveS2Level : effectiveHexRes
-        let bins = cache.get(cacheKey)
+        let bins = cache.get(effectiveS2Level)
         if (!bins) {
             const t0 = perfEnabled() ? performance.now() : 0
-            bins = grid === "s2"
-                ? binIntoS2Cells(effectiveCrashes, effectiveS2Level)
-                : binIntoHexes(effectiveCrashes, effectiveHexRes)
-            cache.set(cacheKey, bins)
+            bins = binIntoS2Cells(effectiveCrashes, effectiveS2Level)
+            cache.set(effectiveS2Level, bins)
             if (perfEnabled()) {
                 const ms = performance.now() - t0
                 const w = window as any
                 w.__crashMapDebug = {
                     ...(w.__crashMapDebug ?? {}),
                     hexCount: bins.length,
-                    resolution: grid === "s2" ? effectiveS2Level : effectiveHexRes,
+                    resolution: effectiveS2Level,
                     crashCount: effectiveCrashes.length,
                     lastBinMs: ms,
                 }
-                console.log(`[perf] ${grid === "s2" ? `binIntoS2Cells l${effectiveS2Level}` : `binIntoHexes r${effectiveHexRes}`}: ${ms.toFixed(1)}ms `
+                console.log(`[perf] binIntoS2Cells l${effectiveS2Level}: ${ms.toFixed(1)}ms `
                     + `(${effectiveCrashes.length} rows → ${bins.length} bins)`)
             }
         } else if (perfEnabled()) {
@@ -556,92 +484,47 @@ export function CrashMap({
             w.__crashMapDebug = {
                 ...(w.__crashMapDebug ?? {}),
                 hexCount: bins.length,
-                resolution: grid === "s2" ? effectiveS2Level : effectiveHexRes,
+                resolution: effectiveS2Level,
                 lastBinMs: 0,  // cached
             }
         }
         return bins
-    }, [mode, prebinnedHexes, effectiveCrashes, effectiveHexRes, effectiveS2Level, grid])
+    }, [mode, prebinnedHexes, effectiveCrashes, effectiveS2Level])
 
-    // Idle prewarm: after data is loaded, bin all common resolutions in
-    // chained idle callbacks. Subsequent zoom-driven res transitions hit the
-    // cache and are O(1). Skipped for prebin mode (we already have one
-    // canonical resolution; coarsenHexes is fast).
-    useEffect(() => {
-        if (mode !== "hexbin" || prebinnedHexes || effectiveCrashes.length === 0) return
-        // H3-only: the prewarm list is H3 resolutions. S2 points-mode data
-        // sets are small (≤`maxPointShards` shards) — on-demand binning is
-        // cheap, and prewarmed H3 bins would never be read (cache key
-        // namespace differs).
-        if (grid === "s2") return
-        if (perfEnabled()) console.log(`[perf] prewarm scheduled (${effectiveCrashes.length} rows)`)
-        const cache = binCache
-        const COMMON_RES = [6, 7, 8, 9, 10]
-        let i = 0
-        let cancelled = false
-        const ric: (cb: () => void) => any =
-            (window as any).requestIdleCallback ?? ((cb) => setTimeout(cb, 50))
-        const cic: (h: any) => void =
-            (window as any).cancelIdleCallback ?? ((h) => clearTimeout(h))
-        let handle: any
-        const tick = () => {
-            if (cancelled) return
-            // Skip resolutions already cached.
-            while (i < COMMON_RES.length && cache.has(COMMON_RES[i])) i++
-            if (i >= COMMON_RES.length) {
-                if (perfEnabled()) console.log(`[perf] prewarm done`)
-                return
-            }
-            const res = COMMON_RES[i++]
-            const t0 = perfEnabled() ? performance.now() : 0
-            cache.set(res, binIntoHexes(effectiveCrashes, res))
-            if (perfEnabled()) {
-                console.log(`[perf] prewarm r${res}: ${(performance.now() - t0).toFixed(1)}ms`)
-            }
-            handle = ric(tick)
-        }
-        handle = ric(tick)
-        return () => { cancelled = true; if (handle) cic(handle) }
-    }, [mode, prebinnedHexes, effectiveCrashes, grid])
-
-    // Hex-grid overlay (debug feature): outline-only h3 cells at the
-    // hovered res, covering the current viewport.
+    // Cell-grid overlay (debug feature): outline-only S2 cells at the
+    // hovered level, covering the current viewport. S2 has no direct
+    // polygon→cells helper in `nodes2ts`, so we sample a point lattice at
+    // half-cell spacing and dedupe tokens — exact enough for a reference
+    // overlay (a cell is included iff a sample lands in it; half-cell
+    // spacing guarantees every cell intersecting the sampled rect hits).
     const gridOverlayLayer = useMemo(() => {
         if (gridOverlayRes == null) return null
         const { latitude, longitude, zoom } = viewState
         const mppx = 156543.03 * Math.cos((latitude * Math.PI) / 180) / Math.pow(2, zoom)
-        const halfW = (mppx * 600) / 111000 / Math.cos((latitude * Math.PI) / 180)
-        const halfH = (mppx * 400) / 111000
-        const ring: [number, number][] = [
-            [latitude + halfH, longitude - halfW],
-            [latitude + halfH, longitude + halfW],
-            [latitude - halfH, longitude + halfW],
-            [latitude - halfH, longitude - halfW],
-            [latitude + halfH, longitude - halfW],
-        ]
-        let cellIds: string[]
-        try {
-            cellIds = polygonToCellsExperimental(ring, gridOverlayRes, POLYGON_TO_CELLS_FLAGS.containmentOverlapping) as unknown as string[]
-        } catch {
-            return null
-        }
-        // Cap at 50k cells to avoid pathological cases (too-fine res at too-wide bbox).
-        if (cellIds.length > 50000) cellIds = cellIds.slice(0, 50000)
-        const features = cellIds.map(h3 => {
-            const boundary = cellToBoundary(h3, true)  // [lng, lat]
-            return {
-                type: "Feature" as const,
-                geometry: {
-                    type: "Polygon" as const,
-                    coordinates: [boundary],
-                },
-                properties: { h3 },
+        const halfWm = mppx * 600, halfHm = mppx * 400
+        const edge = S2_DIAMETER_METERS[gridOverlayRes]
+        if (!edge) return null
+        // Cap cell count (≈ viewport area / cell area) to avoid pathological
+        // fine-level × wide-viewport combos.
+        if ((2 * halfWm / edge) * (2 * halfHm / edge) > 20000) return null
+        const step = edge / 2
+        const mPerDegLat = 111_000
+        const mPerDegLon = 111_000 * Math.cos((latitude * Math.PI) / 180)
+        const seen = new Set<string>()
+        for (let dx = -halfWm; dx <= halfWm; dx += step) {
+            for (let dy = -halfHm; dy <= halfHm; dy += step) {
+                seen.add(latLngToToken(latitude + dy / mPerDegLat, longitude + dx / mPerDegLon, gridOverlayRes))
             }
-        })
+        }
+        const features = [...seen].map(token => ({
+            type: "Feature" as const,
+            geometry: { type: "Polygon" as const, coordinates: [tokenBoundary(token)] },
+            properties: { token },
+        }))
         const fc = { type: "FeatureCollection" as const, features }
         const lineRgb: [number, number, number] = theme === "dark" ? [220, 220, 220] : [60, 60, 60]
         return new GeoJsonLayer({
-            id: `hex-grid-r${gridOverlayRes}`,
+            id: `cell-grid-l${gridOverlayRes}`,
             data: fc,
             getFillColor: [0, 0, 0, 0] as any,
             getLineColor: [...lineRgb, 160] as any,
@@ -662,14 +545,11 @@ export function CrashMap({
             ? [[255, 100, 100], [255, 180, 80], [180, 230, 100], [80, 220, 200], [120, 160, 255], [220, 140, 255]]
             : [[200, 30, 30], [200, 130, 30], [100, 160, 30], [30, 160, 140], [40, 90, 200], [160, 60, 200]]
         const minSr = Math.min(...coverCells.map(c => c.shard_res))
-        const features = coverCells.map(({ h3, shard_res }) => {
-            const boundary = cellToBoundary(h3, true)  // [lon, lat]
-            return {
-                type: "Feature" as const,
-                geometry: { type: "Polygon" as const, coordinates: [boundary] },
-                properties: { h3, shard_res },
-            }
-        })
+        const features = coverCells.map(({ h3, shard_res }) => ({
+            type: "Feature" as const,
+            geometry: { type: "Polygon" as const, coordinates: [tokenBoundary(h3)] },
+            properties: { h3, shard_res },
+        }))
         const fc = { type: "FeatureCollection" as const, features }
         return new GeoJsonLayer({
             id: `cover-overlay`,
@@ -764,18 +644,10 @@ export function CrashMap({
                 }),
             ]
         }
-        // Hexbin: bin crashes into H3 cells; per-cell render a stacked
-        // 3-segment column — bottom = other injuries (yellow), middle = ped/
-        // cyclist injuries (orange), top = fatal (red). Height encodes total
-        // count; color encodes severity breakdown within the stack.
-        // Pick the finest resolution that produces ≤ `maxHexes` hexes; bin
-        // inline (single pass at each candidate resolution; stop when size
-        // limit exceeded).
-        // Detail mode bins fresh at `effectiveHexRes`. Statewide loads a
-        // single fixed-res prebin (e.g. r8) — when the zoom-driven target
-        // is coarser than the prebin, coarsen client-side via H3 parent
-        // (exact, lossless). Finer than the prebin: nothing we can do
-        // without raw rows; cells just render larger than ideal.
+        // Hexbin: per-cell render a stacked 3-segment column — bottom =
+        // other injuries (yellow), middle = ped/cyclist injuries (orange),
+        // top = fatal (red). Height encodes total count; color encodes
+        // severity breakdown within the stack.
         if (!hexes || hexes.length === 0) return base
         const hexesArr = hexes
         // Adaptive bar height. Target: tallest bar = `heightScale × bbMaxDim`
@@ -787,21 +659,17 @@ export function CrashMap({
         // as the user explores. Once the max at a given res has been seen
         // during this session, it's stable — no cliff from small vp
         // changes moving tall cells in/out of the fetched set.
-        // Cache max by the *actual data's* grid+res, not the picker's
-        // desired `effectiveHexRes`. When the picker flips res (e.g.
-        // r7→r8), `effectiveHexRes` updates immediately but the
-        // useCellsApi fetch takes ~debounce+network to return new
-        // cells. During that window `hexesArr` is still the *old* res's
-        // data (with its bigger fetchMax), and keying by the *new* res
-        // writes the old max to the new res's cache slot — the new
-        // fetch then normalizes against the stale, too-big max and bars
-        // render disproportionately short. Read the res off the data
-        // itself: `getResolution(hex[0].h3)` for H3, `dataRes` for S2
-        // (h3-js can't parse S2 tokens).
-        const cacheRes = grid === "s2"
-            ? (dataRes ?? effectiveS2Level)
-            : getResolution(hexesArr[0].h3)
-        const scopeKey = `${initialBounds?.join(",") ?? "nj"}_${grid}${cacheRes}`
+        // Cache max by the *actual data's* level (`dataRes`, from the
+        // response plan), not the picker's desired level. When the picker
+        // flips levels, the desired level updates immediately but the
+        // useCellsApi fetch takes ~debounce+network to return new cells.
+        // During that window `hexesArr` is still the *old* level's data
+        // (with its bigger fetchMax), and keying by the *new* level writes
+        // the old max to the new level's cache slot — the new fetch then
+        // normalizes against the stale, too-big max and bars render
+        // disproportionately short.
+        const cacheRes = dataRes ?? effectiveS2Level
+        const scopeKey = `${initialBounds?.join(",") ?? "nj"}_l${cacheRes}`
         const fetchMax = hexesArr.reduce((m, h) => Math.max(m, h.total), 1)
         const stableMax = Math.max(fetchMax, scopeMaxRef.current[scopeKey] ?? 0)
         scopeMaxRef.current[scopeKey] = stableMax
@@ -814,32 +682,14 @@ export function CrashMap({
         const vpMinDimMeters = Math.min(cw, ch) * metersPerPixel(viewState.zoom, viewState.latitude)
         const effectiveElevation = (heightScale * vpMinDimMeters) / stableMax
         const segments = hexesToSegments(hexesArr, effectiveElevation)
-        // Render columns sized to the data's actual H3 res, not the picker's
-        // desired one. Prebinned data (`prebinnedHexes`) is fetched at a fixed
-        // resolution (r6 fallback or r7/r8/r9 picked by `pickFetchPlanV2`);
-        // when zoom drives `effectiveHexRes` finer than what we have, the
-        // column radius would shrink below the cell's hex-tant and reveal the
-        // underlying lattice as visible gaps between bars.
-        // For H3, infer the data's actual res from the first cell — a
-        // prebinned response may be one coarser than the picker asked
-        // for if the worker coarsened. For S2, tokens don't parse with
-        // `h3-js`; the caller passes `dataRes` explicitly (from the
-        // response plan.res). Falls back to `effectiveS2Level` when not
-        // supplied (the client-binned points path — bins were made at
-        // that level, and an H3 res number would index `S2_EDGE_METERS`
-        // wrong).
-        const renderRes = grid === "s2"
-            ? (dataRes ?? effectiveS2Level)
-            : Math.min(effectiveHexRes, getResolution(hexesArr[0].h3))
-        // `viz=circle` translates the caller-owned px target into meters
-        // *once* per layer build, using the current camera. The layer
-        // itself clamps to the cell's inscribed radius, guaranteeing no
-        // cross-cell overlap even if the caller passes an oversized target.
-        // Always compute the target-px radius when the caller supplies
-        // `circleRadiusPx`. The layer decides whether to use it: Circle
-        // viz always, and Hex viz on the S2 grid (S2 quads follow the
-        // circle-size curve so viz-mode swaps don't jump area). H3 hex
-        // viz keeps its native cell-fill behavior.
+        // Render columns sized to the data's actual level, not the picker's
+        // desired one: `dataRes` from the response plan for server cells,
+        // `effectiveS2Level` for the client-binned raw-crashes path.
+        const renderRes = dataRes ?? effectiveS2Level
+        // Translate the caller-owned px target into meters *once* per layer
+        // build, using the current camera. The layer itself clamps to the
+        // cell's inscribed radius, guaranteeing no cross-cell overlap even
+        // if the caller passes an oversized target.
         const overrideRadiusMeters = circleRadiusPx != null
             ? circleRadiusPx * metersPerPixel(viewState.zoom, viewState.latitude)
             : undefined
@@ -848,10 +698,8 @@ export function CrashMap({
                 id: "crashes-hex-stacked",
                 segments,
                 resolution: renderRes,
-                grid,
                 pickable: true,
                 onHover: (info) => { setHoverInfo(info); return false },
-                viz,
                 overrideRadiusMeters,
                 opacity: hexOpacity,
                 desaturate: hexDesaturate,
@@ -862,7 +710,7 @@ export function CrashMap({
             console.log(`[perf] layers: ${ms.toFixed(1)}ms (mode=${mode}, segments=${segments.length})`)
         }
         return result
-    }, [hexes, effectiveCrashes, mode, effectiveHexRes, effectiveS2Level, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, viz, circleRadiusPx, hexOpacity, hexDesaturate, grid, dataRes])
+    }, [hexes, effectiveCrashes, mode, effectiveS2Level, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, circleRadiusPx, hexOpacity, hexDesaturate, dataRes])
 
     // Only bubble user-driven changes. DeckGL also echoes back programmatic
     // viewState updates (from the fit effect, mode-switch tilt, etc.) via
@@ -907,7 +755,7 @@ export function CrashMap({
             {showInternalControls && <PitchSlider viewState={viewState} setViewState={setViewState} theme={theme} />}
             {showInternalControls && mode === "hexbin" && (
                 <HexControls
-                    effectiveRes={effectiveHexRes}
+                    effectiveRes={effectiveS2Level}
                     pixelTarget={hexPxTarget}
                     setPixelTarget={setHexPxTarget}
                     heightScale={heightScale}

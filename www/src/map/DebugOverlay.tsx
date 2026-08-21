@@ -1,12 +1,12 @@
-/** Picker / hex debug panel for the crash map.
+/** Picker / cell debug panel for the crash map.
  *
  *  Renders inline in the controls drawer (no fixed positioning). Shows the
- *  active picker plan, h3 resolution metrics (a la h3geo.org), zoom +
- *  meters/pixel, and per-resolution edge / diameter / on-screen pixel
- *  size — exactly the observables you need to diagnose a "chunky" zoom
- *  transition without toggling devtools.
+ *  active picker plan, S2 level metrics, zoom + meters/pixel, and
+ *  per-level edge / area / on-screen pixel size — exactly the
+ *  observables you need to diagnose a "chunky" zoom transition without
+ *  toggling devtools.
  */
-import { getHexagonAreaAvg, getHexagonEdgeLengthAvg, UNITS } from "h3-js"
+import { S2_DIAMETER_METERS, S2_MIN_LEVEL, S2_MAX_LEVEL } from "./s2"
 import type { FetchPlan } from "./v2"
 import type { ViewState } from "./CrashMap"
 
@@ -16,10 +16,7 @@ export type Props = {
     /** Picker output (kind, res, shards, reason). May be null while the
      *  manifest is loading. */
     plan: FetchPlan | null
-    /** Render-side resolution choice (`pickHexResolutionForPixels`). For
-     *  hex prebins this is `max(plan.res, renderRes)` — the prebin floor
-     *  bounds how fine the renderer can go. For raw points it's
-     *  unconstrained. Optional. */
+    /** Render-side level choice (`pickS2LevelForPixels`). Optional. */
     renderRes?: number
     /** Effective resolution actually rendered on screen. Optional. */
     effectiveRes?: number
@@ -31,8 +28,8 @@ export type Props = {
      *  newer fetch is in flight while older data is still on screen,
      *  "idle" otherwise. */
     fetchState?: "idle" | "loading" | "refetching"
-    /** Hovered res from the h3-cells table. Caller renders an outline-only
-     *  hex grid at this resolution on the map for visual reference. */
+    /** Hovered level from the cells table. Caller renders an outline-only
+     *  cell grid at this level on the map for visual reference. */
     onHoverRes?: (res: number | null) => void
     /** Light/dark theme toggle. */
     theme: "light" | "dark"
@@ -60,9 +57,8 @@ function fmtRowCount(n: number): string {
 }
 
 function planSummary(plan: FetchPlan): string {
-    if (plan.kind === "points") return `points × ${plan.shards.length}`
-    if (plan.shards === null) return `r${plan.res} single-file`
-    return `r${plan.res} × ${plan.shards.length}`
+    if (plan.shards === null) return `l${plan.res} single-file`
+    return `l${plan.res} × ${plan.shards.length}`
 }
 
 export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTarget, rowCount, fetchState, onHoverRes, theme }: Props) {
@@ -83,7 +79,7 @@ export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTa
         [planRes, renderRes, effectiveRes].filter((r): r is number => typeof r === "number")
     ))
     const ress: number[] = Array.from(new Set(
-        baseRess.flatMap(r => [r - 1, r, r + 1]).filter(r => r >= 5 && r <= 12)
+        baseRess.flatMap(r => [r - 1, r, r + 1]).filter(r => r >= S2_MIN_LEVEL && r <= S2_MAX_LEVEL)
     )).sort((a, b) => a - b)
 
     return (
@@ -117,7 +113,7 @@ export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTa
                     <div style={{ marginTop: 4, color: dim }}>render</div>
                     {rowCount !== undefined && (
                         <div>
-                            {plan?.kind === "hex" ? "hexes" : "rows"}:{" "}
+                            {plan?.kind === "hex" ? "cells" : "rows"}:{" "}
                             <b style={{ color: fg }}>{fmtRowCount(rowCount)}</b>
                         </div>
                     )}
@@ -127,21 +123,21 @@ export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTa
 
             {ress.length > 0 && (
                 <>
-                    <div style={{ marginTop: 4, color: dim }}>h3 cells</div>
+                    <div style={{ marginTop: 4, color: dim }}>s2 cells</div>
                     <table style={{ borderCollapse: "collapse", width: "100%" }}>
                         <thead>
                             <tr style={{ color: dim }}>
                                 <th style={{ textAlign: "left", fontWeight: 400, paddingRight: 6 }}>res</th>
                                 <th style={{ textAlign: "right", fontWeight: 400, paddingRight: 6 }}>edge</th>
                                 <th style={{ textAlign: "right", fontWeight: 400, paddingRight: 6 }}>area</th>
-                                <th style={{ textAlign: "right", fontWeight: 400, paddingRight: 6 }} title="hex width on screen (vertex-to-vertex, = 2× edge px)">⌀ px</th>
+                                <th style={{ textAlign: "right", fontWeight: 400, paddingRight: 6 }} title="cell width on screen (avg edge px)">⌀ px</th>
                             </tr>
                         </thead>
                         <tbody>
                             {ress.map(r => {
-                                const edgeM = getHexagonEdgeLengthAvg(r, UNITS.m)
-                                const areaM2 = getHexagonAreaAvg(r, UNITS.m2)
-                                const diaPx = (2 * edgeM) / mppx
+                                const edgeM = S2_DIAMETER_METERS[r]
+                                const areaM2 = edgeM * edgeM
+                                const diaPx = edgeM / mppx
                                 const isShown = r === showRes
                                 return (
                                     <tr
@@ -149,9 +145,9 @@ export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTa
                                         style={{ color: isShown ? fg : dim, cursor: onHoverRes ? "crosshair" : undefined }}
                                         onMouseEnter={onHoverRes ? () => onHoverRes(r) : undefined}
                                         onMouseLeave={onHoverRes ? () => onHoverRes(null) : undefined}
-                                        title={onHoverRes ? `Show r${r} hex grid on map` : undefined}
+                                        title={onHoverRes ? `Show l${r} cell grid on map` : undefined}
                                     >
-                                        <td style={{ paddingRight: 6 }}>{isShown ? <b>r{r}</b> : `r${r}`}</td>
+                                        <td style={{ paddingRight: 6 }}>{isShown ? <b>l{r}</b> : `l${r}`}</td>
                                         <td style={{ textAlign: "right", paddingRight: 6 }}>{fmtMeters(edgeM)}</td>
                                         <td style={{ textAlign: "right", paddingRight: 6 }}>{fmtArea(areaM2)}</td>
                                         <td style={{ textAlign: "right", paddingRight: 6 }}>{diaPx.toFixed(1)}</td>
@@ -161,7 +157,7 @@ export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTa
                         </tbody>
                     </table>
                     <div style={{ color: dim, fontSize: "0.85em", marginTop: 2 }}>
-                        ⌀ = vertex-to-vertex; render uses radius = edge.
+                        ⌀ = avg cell edge; render radius ≤ inscribed (edge/2).
                     </div>
                 </>
             )}

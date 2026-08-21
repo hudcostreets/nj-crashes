@@ -13,7 +13,6 @@
  *  extrudes from `baseZ` up to `baseZ + height` — which gives us stacked
  *  segments with no shader mods.
  */
-import { latLngToCell, cellToBoundary, cellToParent, getResolution } from "h3-js"
 import { ColumnLayer } from "@deck.gl/layers"
 import type { PickingInfo } from "@deck.gl/core"
 
@@ -109,73 +108,6 @@ export function binIntoCells<T extends StackableCrash>(
     return [...bins.values()]
 }
 
-export function binIntoHexes<T extends StackableCrash>(
-    crashes: T[],
-    resolution: number = 9,
-): StackedHex[] {
-    return binIntoCells(
-        crashes,
-        (lat, lon) => latLngToCell(lat, lon, resolution),
-        // Boundary centroid (not h3-js `cellToLatLng`) for parity with
-        // the server-cells path in `useCellsApi`.
-        h3 => {
-            const boundary = cellToBoundary(h3, true)
-            let lon = 0, lat = 0
-            for (const [ln, la] of boundary) { lon += ln; lat += la }
-            return [lon / boundary.length, lat / boundary.length]
-        },
-    )
-}
-
-/** Re-aggregate a finer-resolution hex set into coarser parents.
- *  H3 parent containment is exact: every cell at res N has exactly one
- *  parent at any res < N, so summing children → parents is lossless.
- *  No-op when `targetRes >= sourceRes` (we can't synthesize finer data).
- *  `topRoute` resolves by weighted vote — each child's topRoute counted
- *  by that child's total. */
-export function coarsenHexes(hexes: StackedHex[], targetRes: number): StackedHex[] {
-    if (hexes.length === 0) return hexes
-    const sourceRes = getResolution(hexes[0].h3)
-    if (targetRes >= sourceRes) return hexes
-    const parents = new Map<string, StackedHex>()
-    const routeVotes = new Map<string, Map<string, number>>()
-    for (const h of hexes) {
-        const ph3 = cellToParent(h.h3, targetRes)
-        let p = parents.get(ph3)
-        if (!p) {
-            p = { h3: ph3, center: [0, 0], fatal: 0, pedInj: 0, otherInj: 0, pdo: 0, total: 0 }
-            parents.set(ph3, p)
-        }
-        p.fatal += h.fatal
-        p.pedInj += h.pedInj
-        p.otherInj += h.otherInj
-        p.pdo += h.pdo
-        p.total += h.total
-        if (h.topRoute) {
-            let m = routeVotes.get(ph3)
-            if (!m) { m = new Map(); routeVotes.set(ph3, m) }
-            m.set(h.topRoute, (m.get(h.topRoute) ?? 0) + h.total)
-        }
-        if (h.fatalYears && h.fatalYears.length > 0) {
-            (p.fatalYears ??= []).push(...h.fatalYears)
-        }
-    }
-    for (const p of parents.values()) {
-        const boundary = cellToBoundary(p.h3, true)
-        let lon = 0, lat = 0
-        for (const [ln, la] of boundary) { lon += ln; lat += la }
-        p.center = [lon / boundary.length, lat / boundary.length]
-        const m = routeVotes.get(p.h3)
-        if (m && m.size > 0) {
-            let topR = "", topN = 0
-            for (const [r, n] of m) { if (n > topN) { topR = r; topN = n } }
-            p.topRoute = topR
-        }
-        if (p.fatalYears) p.fatalYears = [...new Set(p.fatalYears)].sort((a, b) => a - b)
-    }
-    return [...parents.values()]
-}
-
 export function hexesToSegments(
     hexes: StackedHex[],
     elevationPerCount = 15,
@@ -201,36 +133,9 @@ export function hexesToSegments(
     return segs
 }
 
-/** H3 cell edge length by resolution (approx; avg across cells). */
-export const H3_RADIUS_METERS: Record<number, number> = {
-    5: 8544,
-    6: 3229,
-    7: 1220,
-    8: 461,
-    9: 174,
-    10: 66,
-    11: 25,
-    12: 9.4,
-    13: 3.6,
-    14: 1.4,
-    15: 0.54,  // r14 / ~2.6 (per-level H3 radius ratio)
-}
-
-/** `hex` — full h3-hex cross-section, radius = edge length so vertices
- *  touch neighboring cells (classic tessellation).
- *
- *  `circle` — circular cross-section with `overrideRadiusMeters`, clamped
- *  to the current cell's inscribed-circle radius (edge × √3/2) so
- *  adjacent circles never overlap. Combined with a smooth `target_px(z)`
- *  curve at the callsite, this yields no visual jump at res transitions:
- *  transitions happen when the target radius equals the finer cell's
- *  inscribed radius, so before/after both render at the same size. */
-export type VizMode = "hex" | "circle"
-
 /** S2 cell edge length by level, in meters. Matches `S2_DIAMETER_METERS`
- *  in `map/s2/index.ts`; duplicated here to avoid a `map/s2` import from
- *  the shared layer module (no runtime dep on nodes2ts if only h3 mode
- *  is in use). Keep in sync. */
+ *  in `map/s2/index.ts`; duplicated here to keep this layer module free
+ *  of a runtime `nodes2ts` dep. Keep in sync. */
 const S2_EDGE_METERS: Record<number, number> = {
     4: 490_000, 5: 245_000, 6: 122_500, 7: 61_250, 8: 30_625,
     9: 15_312, 10: 7_656, 11: 3_828, 12: 1_914, 13: 957,
@@ -241,26 +146,20 @@ export function buildStackedHexLayer({
     id,
     segments,
     resolution,
-    grid = "h3",
     pickable,
     onHover,
     elevationScale = 1,
-    viz = "hex",
     overrideRadiusMeters,
     opacity = 1,
     desaturate = 0,
 }: {
     id: string
     segments: Segment[]
+    /** S2 level of the cell tokens — drives the column radius lookup. */
     resolution: number
-    /** Which grid the cell tokens belong to. Controls the column
-     *  radius lookup (H3 hex edge vs. S2 average cell edge). H3
-     *  is the default so existing callers don't need to change. */
-    grid?: "h3" | "s2"
     pickable?: boolean
     onHover?: (info: PickingInfo) => boolean | void
     elevationScale?: number
-    viz?: VizMode
     overrideRadiusMeters?: number
     /** Multiplies each column's fill alpha. Used by the section to fade
      *  the currently-rendered layer while a fresh /cells fetch is in
@@ -272,30 +171,16 @@ export function buildStackedHexLayer({
      *  signal remains readable but is clearly de-emphasized. */
     desaturate?: number
 }): ColumnLayer<Segment> {
-    const edge = grid === "s2"
-        ? (S2_EDGE_METERS[resolution] ?? 478)
-        : (H3_RADIUS_METERS[resolution] ?? 174)
-    let diskResolution: number
-    let radius: number
-    // Inscribed-circle radius of the cell (used as the no-overlap ceiling):
-    // `edge × √3/2` for a hex (H3), `edge / 2` for a square (S2).
-    const inscribed = grid === "s2" ? edge / 2 : edge * Math.sqrt(3) / 2
-    if (viz === "circle") {
-        diskResolution = 24
-        radius = Math.min(overrideRadiusMeters ?? inscribed, inscribed)
-    } else if (grid === "s2") {
-        // "Squares" viz on S2 — matches Circle viz sizing so toggling
-        // shape doesn't jump area, just changes the column footprint
-        // from round to square (4-sided disk).
-        diskResolution = 4
-        radius = Math.min(overrideRadiusMeters ?? inscribed, inscribed)
-    } else {
-        // "Hex" viz on H3 — cell-fill tessellation. `radius = edge` puts
-        // the six vertices on a circle-of-radius-edge, so the hex has
-        // side = edge (matches the H3 cell) and neighbours touch.
-        diskResolution = 6
-        radius = edge
-    }
+    // Circular column cross-section, radius from the caller's smooth
+    // `target_px(z)` curve, clamped to the cell's inscribed-circle radius
+    // (edge / 2) so adjacent occupied cells never overlap. We deliberately
+    // never draw raw S2 cell polygons — on the ground they're sheared
+    // parallelograms (~80° axes, ~10° tilt at NJ's spot on the cube face),
+    // which read as visual noise rather than a grid.
+    const edge = S2_EDGE_METERS[resolution] ?? 478
+    const inscribed = edge / 2
+    const diskResolution = 24
+    const radius = Math.min(overrideRadiusMeters ?? inscribed, inscribed)
     const getFillColor = desaturate > 0
         ? (s: Segment): [number, number, number] | [number, number, number, number] => {
             const [r, g, b, a] = s.color as [number, number, number, number]

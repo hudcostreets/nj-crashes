@@ -1,6 +1,6 @@
 /** `/tune` — interactive picker-tuning gallery (dev).
  *
- *  Task #131 v1: side-by-side mini-maps for a chosen (grid, level) pair,
+ *  Task #131 v1: side-by-side mini-maps for a chosen S2 level,
  *  rendered at the low-MZ and high-MZ boundaries of the zoom range where
  *  the picker chooses that level. Panning one mini-map syncs lat/lon to
  *  the other (zoom stays pinned to each boundary).
@@ -10,8 +10,7 @@
  *  JSON persistence via a Vite dev middleware (see task #131 desc). */
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { Bbox } from "@/src/map/v2"
-import { CrashMap, type ViewState, metersPerPixel, pickHexResolutionForPixels } from "@/src/map/CrashMap"
-import { H3_RADIUS_METERS } from "@/src/map/StackedHexLayer"
+import { CrashMap, type ViewState, metersPerPixel } from "@/src/map/CrashMap"
 import {
     S2_DIAMETER_METERS,
     S2_MAX_LEVEL,
@@ -22,27 +21,21 @@ import {
 import { BINS_BUDGET, autoHexPxTarget, circleRadiusPx as circleRadiusPxCurve } from "@/src/map/picker"
 import { useCellsApi, type CellsApiFilter } from "@/src/map/useCellsApi"
 
-type Grid = "h3" | "s2"
-type Viz = "hex" | "circle"
 /** Which curve drives `circleRadiusPx` (the per-frame render-size override).
  *  - `curve`: production `circleRadiusPx(zoom)` curve from `picker.ts`.
  *  - `df`: linear DF sweep within the level's picker zoom range (see
  *    `dfOverridePx`) — target of #132.
  *  - `inscribed`: no override; layer falls back to full inscribed (2:1 step
- *    at every crossover, matches TunePage v1's `viz="circle"` behavior). */
+ *    at every crossover, matches TunePage v1's original behavior). */
 type RenderMode = "curve" | "df" | "inscribed"
 
-const label = (grid: Grid, level: number) => (grid === "s2" ? `l${level}` : `r${level}`)
+const label = (level: number) => `l${level}`
 
 /** DF continuity ratio: at level L's max-MZ, we want the drawn radius to
  *  equal the finer level's inscribed radius, so the crossover looks
  *  continuous. That ratio is `new_inscribed / old_inscribed = new_edge /
- *  old_edge`. S2 halves per level (0.5); H3 shrinks by √(1/7). Same DF
- *  math; different endpoint. */
-const CONTINUITY_RATIO: Record<Grid, number> = {
-    s2: 0.5,
-    h3: 1 / Math.sqrt(7),
-}
+ *  old_edge`; S2 halves per level. */
+const CONTINUITY_RATIO = 0.5
 
 /** Picker viewport used for boundary computation — matches the shipped
  *  embed clamp so tuning reflects what a homepage user sees. Mini-map
@@ -88,17 +81,13 @@ function pickS2WithOverrides(
  *  than a sub-meter empty scene at z=22. */
 const MAX_PRACTICAL_ZOOM = 19
 function zoomRangeForLevel(
-    grid: Grid,
     level: number,
     lat: number,
     s2TargetFactor: number,
     s2PickMult: Record<number, number>,
 ): [number, number] | null {
-    const baseTarget = autoHexPxTarget(PICK_VP_AREA, BINS_BUDGET)
-    const target = grid === "s2" ? baseTarget * s2TargetFactor : baseTarget
-    const pick = grid === "s2"
-        ? (z: number) => pickS2WithOverrides(target, z, lat, s2PickMult)
-        : (z: number) => pickHexResolutionForPixels(target, z, lat)
+    const target = autoHexPxTarget(PICK_VP_AREA, BINS_BUDGET) * s2TargetFactor
+    const pick = (z: number) => pickS2WithOverrides(target, z, lat, s2PickMult)
     let low = -1, high = -1
     for (let z = 2; z <= MAX_PRACTICAL_ZOOM; z += 0.02) {
         if (pick(z) === level) {
@@ -113,7 +102,7 @@ function zoomRangeForLevel(
 /** DF (drawn fraction) mechanic — proposed #132 render curve. Linear
  *  interpolation from `dfStart` at the level's min-MZ to `dfEnd` at its
  *  max-MZ. Continuity at crossovers is by convention when
- *  `dfEnd = CONTINUITY_RATIO[grid]`:
+ *  `dfEnd = CONTINUITY_RATIO`:
  *    render(zHi, L)   = dfEnd × inscribed_L
  *                     = ratio × inscribed_L
  *                     = inscribed_{L+1}                (by ratio definition)
@@ -128,7 +117,6 @@ function zoomRangeForLevel(
 function dfOverridePx(
     zoom: number,
     lat: number,
-    grid: Grid,
     level: number,
     range: [number, number] | null,
     dfStart: number,
@@ -139,10 +127,7 @@ function dfOverridePx(
     const span = zHi - zLo
     const t = span > 0 ? Math.max(0, Math.min(1, (zoom - zLo) / span)) : 0
     const df = dfStart + (dfEnd - dfStart) * t
-    const cellMeters = grid === "s2"
-        ? (S2_DIAMETER_METERS[level] ?? 0)
-        : 2 * (H3_RADIUS_METERS[level] ?? 0)
-    const inscribedMeters = grid === "s2" ? cellMeters / 2 : cellMeters * Math.sqrt(3) / 4
+    const inscribedMeters = (S2_DIAMETER_METERS[level] ?? 0) / 2
     const inscribedPx = inscribedMeters / metersPerPixel(zoom, lat)
     return df * inscribedPx
 }
@@ -160,9 +145,7 @@ function MiniMap({
     lat,
     lon,
     zoom,
-    grid,
     level,
-    viz,
     renderMode,
     range,
     dfStart,
@@ -172,16 +155,14 @@ function MiniMap({
     lat: number
     lon: number
     zoom: number
-    grid: Grid
     level: number
-    viz: Viz
     renderMode: RenderMode
     /** Picker's [min-MZ, max-MZ] for THIS map's level — used by
      *  `dfOverridePx`. Null if unreachable in the current picker
      *  config (rare; DF mode then falls back to inscribed). */
     range: [number, number] | null
     /** DF endpoints in effect (both = 1.0 collapses to `inscribed` mode
-     *  behavior; dfEnd = CONTINUITY_RATIO[grid] is the smooth-crossover
+     *  behavior; dfEnd = CONTINUITY_RATIO is the smooth-crossover
      *  default). */
     dfStart: number
     dfEnd: number
@@ -196,8 +177,7 @@ function MiniMap({
         viewportLat: lat,
         zoom,
         resOverride: level,
-        grid,
-    }), [lat, lon, zoom, grid, level])
+    }), [lat, lon, zoom, level])
     const result = useCellsApi(filter)
     const cells = result.status === "ready" ? result.data : []
     const viewState: ViewState = { longitude: lon, latitude: lat, zoom, pitch, bearing }
@@ -208,7 +188,7 @@ function MiniMap({
     const overridePx = renderMode === "curve"
         ? circleRadiusPxCurve(zoom)
         : renderMode === "df"
-            ? dfOverridePx(zoom, lat, grid, level, range, dfStart, dfEnd)
+            ? dfOverridePx(zoom, lat, level, range, dfStart, dfEnd)
             : undefined
     // Compute the numbers surfaced in the corner label:
     //   geom   — cell's geometric on-screen size (edge / mppx). Halves per
@@ -217,15 +197,10 @@ function MiniMap({
     //            `min(overrideRadiusMeters ?? inscribed, inscribed)` rule.
     //            H3 hex mode with no override falls back to full edge.
     const mppx = metersPerPixel(zoom, lat)
-    const cellMeters = grid === "s2"
-        ? (S2_DIAMETER_METERS[level] ?? 0)
-        : 2 * (H3_RADIUS_METERS[level] ?? 0)
+    const cellMeters = S2_DIAMETER_METERS[level] ?? 0
     const geomPx = cellMeters / mppx
-    const inscribedPx = grid === "s2" ? geomPx / 2 : geomPx * Math.sqrt(3) / 4
-    const usesCurve = viz === "circle" || grid === "s2"
-    const renderPx = usesCurve
-        ? Math.min(overridePx ?? inscribedPx, inscribedPx)
-        : geomPx  // H3 hex — full edge, ignores override
+    const inscribedPx = geomPx / 2
+    const renderPx = Math.min(overridePx ?? inscribedPx, inscribedPx)
     const onViewStateChange = useCallback((v: ViewState) => {
         setPitch(v.pitch)
         setBearing(v.bearing)
@@ -237,10 +212,8 @@ function MiniMap({
                 viewState={viewState}
                 onViewStateChange={onViewStateChange}
                 prebinnedHexes={cells}
-                grid={grid}
                 dataRes={level}
                 mode="hexbin"
-                viz={viz}
                 circleRadiusPx={overridePx}
                 showInternalControls={false}
                 theme="dark"
@@ -258,7 +231,7 @@ function MiniMap({
                 borderRadius: 3,
                 pointerEvents: "none",
             }}>
-                z={zoom.toFixed(2)} · {grid === "s2" ? `l${level}` : `r${level}`} · {cells.length} cells
+                z={zoom.toFixed(2)} · l{level} · {cells.length} cells
                 {" · geom="}{geomPx.toFixed(2)}{"px"}
                 {" · render="}{renderPx.toFixed(2)}{"px"}
             </div>
@@ -269,13 +242,11 @@ function MiniMap({
 type SaveStatus = "idle" | "saving" | "saved" | "error"
 
 export default function TunePage() {
-    const [grid, setGrid] = useState<Grid>("s2")
-    const [viz, setViz] = useState<Viz>("hex")
     const [renderMode, setRenderMode] = useState<RenderMode>("curve")
-    // DF endpoints — see `dfOverridePx`. Default `dfEnd` follows the
-    // grid's continuity ratio; user can push it toward 1.0 to trade
-    // continuity for less pointillism, or over 1.0 for deliberate
-    // overlap at sparse-cell zooms.
+    // DF endpoints — see `dfOverridePx`. Default `dfEnd` is the S2
+    // continuity ratio; user can push it toward 1.0 to trade continuity
+    // for less pointillism, or over 1.0 for deliberate overlap at
+    // sparse-cell zooms.
     const [dfStart, setDfStart] = useState(1.0)
     const [dfEnd, setDfEnd] = useState(0.5)
     const [level, setLevel] = useState(19)
@@ -310,13 +281,11 @@ export default function TunePage() {
     }, [])  // Only on mount; HMR does a fresh mount.
 
     const range = useMemo(
-        () => zoomRangeForLevel(grid, level, lat, s2Factor, s2Mult),
-        [grid, level, lat, s2Factor, s2Mult],
+        () => zoomRangeForLevel(level, lat, s2Factor, s2Mult),
+        [level, lat, s2Factor, s2Mult],
     )
 
-    const levels = grid === "s2"
-        ? Array.from({ length: S2_MAX_LEVEL - S2_MIN_LEVEL + 1 }, (_, i) => S2_MIN_LEVEL + i)
-        : [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    const levels = Array.from({ length: S2_MAX_LEVEL - S2_MIN_LEVEL + 1 }, (_, i) => S2_MIN_LEVEL + i)
 
     // Flanking levels: prior = one coarser step, finer = one finer step.
     // The 2×2 transition view renders `prior @ its max MZ` alongside
@@ -325,27 +294,17 @@ export default function TunePage() {
     const priorLevel = level - 1
     const finerLevel = level + 1
     const priorRange = useMemo(
-        () => (priorLevel >= levels[0] ? zoomRangeForLevel(grid, priorLevel, lat, s2Factor, s2Mult) : null),
-        [grid, priorLevel, lat, s2Factor, s2Mult, levels],
+        () => (priorLevel >= levels[0] ? zoomRangeForLevel(priorLevel, lat, s2Factor, s2Mult) : null),
+        [priorLevel, lat, s2Factor, s2Mult, levels],
     )
     const finerRange = useMemo(
-        () => (finerLevel <= levels[levels.length - 1] ? zoomRangeForLevel(grid, finerLevel, lat, s2Factor, s2Mult) : null),
-        [grid, finerLevel, lat, s2Factor, s2Mult, levels],
+        () => (finerLevel <= levels[levels.length - 1] ? zoomRangeForLevel(finerLevel, lat, s2Factor, s2Mult) : null),
+        [finerLevel, lat, s2Factor, s2Mult, levels],
     )
 
     const onLatLon = useCallback((newLat: number, newLon: number) => {
         setLat(newLat)
         setLon(newLon)
-    }, [])
-
-    const onGridChange = useCallback((newGrid: Grid) => {
-        setGrid(newGrid)
-        if (newGrid === "s2") setLevel(l => Math.max(S2_MIN_LEVEL, Math.min(S2_MAX_LEVEL, l)))
-        else setLevel(l => Math.max(5, Math.min(15, l)))
-        // Reset dfEnd to the new grid's continuity ratio, unless user
-        // has diverged from the S2 default (in which case they've made
-        // an intentional choice and we don't clobber it).
-        setDfEnd(prev => prev === 0.5 ? CONTINUITY_RATIO[newGrid] : prev)
     }, [])
 
     const onMultChange = useCallback((lvl: number, v: string) => {
@@ -383,12 +342,10 @@ export default function TunePage() {
         }
     }, [s2Factor, s2Mult])
 
-    const geomDia = grid === "s2" ? S2_DIAMETER_METERS[level] : 2 * H3_RADIUS_METERS[level]
-    const effMult = grid === "s2" ? (s2Mult[level] ?? 1) : 1
+    const geomDia = S2_DIAMETER_METERS[level]
+    const effMult = s2Mult[level] ?? 1
     const effDia = geomDia * effMult
-    const previewMultLevels = grid === "s2"
-        ? Array.from({ length: S2_MAX_LEVEL - S2_MIN_LEVEL + 1 }, (_, i) => S2_MIN_LEVEL + i)
-        : []
+    const previewMultLevels = Array.from({ length: S2_MAX_LEVEL - S2_MIN_LEVEL + 1 }, (_, i) => S2_MIN_LEVEL + i)
 
     return (
         <div style={{
@@ -401,25 +358,11 @@ export default function TunePage() {
             <h1 style={{ fontSize: 18, marginBottom: 12, fontWeight: 500 }}>Picker Tuning</h1>
             <div style={{ display: "flex", gap: 16, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
                 <label>
-                    Grid:{" "}
-                    <select value={grid} onChange={e => onGridChange(e.target.value as Grid)}>
-                        <option value="s2">S2</option>
-                        <option value="h3">H3</option>
-                    </select>
-                </label>
-                <label>
                     Level:{" "}
                     <select value={level} onChange={e => setLevel(+e.target.value)}>
                         {levels.map(l => (
-                            <option key={l} value={l}>{grid === "s2" ? `l${l}` : `r${l}`}</option>
+                            <option key={l} value={l}>l{l}</option>
                         ))}
-                    </select>
-                </label>
-                <label>
-                    Viz:{" "}
-                    <select value={viz} onChange={e => setViz(e.target.value as Viz)}>
-                        <option value="hex">hex</option>
-                        <option value="circle">circle</option>
                     </select>
                 </label>
                 <label>
@@ -450,7 +393,7 @@ export default function TunePage() {
                                 style={{ width: 60, fontFamily: "monospace" }}
                             />
                             <span style={{ color: "#888", marginLeft: 4 }}>
-                                (continuity: {CONTINUITY_RATIO[grid].toFixed(3)})
+                                (continuity: {CONTINUITY_RATIO.toFixed(3)})
                             </span>
                         </label>
                     </>
@@ -469,11 +412,11 @@ export default function TunePage() {
                     {priorRange && (
                         <div>
                             <div style={{ fontSize: 12, marginBottom: 4, color: "#aaa" }}>
-                                <b>coarse → current</b>: {label(grid, priorLevel)} → {label(grid, level)} near z≈{priorRange[1].toFixed(2)}
+                                <b>coarse → current</b>: {label(priorLevel)} → {label(level)} near z≈{priorRange[1].toFixed(2)}
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                                <MiniMap lat={lat} lon={lon} zoom={priorRange[1]} grid={grid} level={priorLevel} viz={viz} renderMode={renderMode} range={priorRange} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
-                                <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} viz={viz} renderMode={renderMode} range={range} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={priorRange[1]} level={priorLevel} renderMode={renderMode} range={priorRange} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={range[0]} level={level} renderMode={renderMode} range={range} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
                             </div>
                         </div>
                     )}
@@ -483,11 +426,11 @@ export default function TunePage() {
                     {finerRange && (
                         <div>
                             <div style={{ fontSize: 12, marginBottom: 4, color: "#aaa" }}>
-                                <b>current → finer</b>: {label(grid, level)} → {label(grid, finerLevel)} near z≈{range[1].toFixed(2)}
+                                <b>current → finer</b>: {label(level)} → {label(finerLevel)} near z≈{range[1].toFixed(2)}
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                                <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} viz={viz} renderMode={renderMode} range={range} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
-                                <MiniMap lat={lat} lon={lon} zoom={finerRange[0]} grid={grid} level={finerLevel} viz={viz} renderMode={renderMode} range={finerRange} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={range[1]} level={level} renderMode={renderMode} range={range} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
+                                <MiniMap lat={lat} lon={lon} zoom={finerRange[0]} level={finerLevel} renderMode={renderMode} range={finerRange} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
                             </div>
                         </div>
                     )}
@@ -497,15 +440,15 @@ export default function TunePage() {
                         pair like v1. */}
                     {!priorRange && !finerRange && (
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                            <MiniMap lat={lat} lon={lon} zoom={range[0]} grid={grid} level={level} viz={viz} renderMode={renderMode} range={range} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
-                            <MiniMap lat={lat} lon={lon} zoom={range[1]} grid={grid} level={level} viz={viz} renderMode={renderMode} range={range} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
+                            <MiniMap lat={lat} lon={lon} zoom={range[0]} level={level} renderMode={renderMode} range={range} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
+                            <MiniMap lat={lat} lon={lon} zoom={range[1]} level={level} renderMode={renderMode} range={range} dfStart={dfStart} dfEnd={dfEnd} onLatLonChange={onLatLon} />
                         </div>
                     )}
                 </div>
             ) : (
                 <div style={{ padding: 24, color: "#e88", fontFamily: "monospace" }}>
-                    Picker never selects {grid === "s2" ? `l${level}` : `r${level}`} in a {PICK_VP_AREA / 1000}k-px² viewport at lat={lat.toFixed(2)}.
-                    {grid === "s2" && s2Mult[level] != null && (
+                    Picker never selects {`l${level}`} in a {PICK_VP_AREA / 1000}k-px² viewport at lat={lat.toFixed(2)}.
+                    {s2Mult[level] != null && (
                         <> Try lowering <code>s2.pickMult[{level}]</code> (currently {s2Mult[level]}).</>
                     )}
                 </div>
@@ -521,19 +464,19 @@ export default function TunePage() {
             }}>
                 {range && (
                     <div>
-                        picker zoom range for {grid === "s2" ? `l${level}` : `r${level}`}:{" "}
+                        picker zoom range for {`l${level}`}:{" "}
                         <b>z={range[0].toFixed(2)}</b> → <b>z={range[1].toFixed(2)}</b>{" "}
                         (span: {(range[1] - range[0]).toFixed(2)})
                     </div>
                 )}
-                <div>{grid === "s2" ? `l${level}` : `r${level}`} geometric diameter: {geomDia.toFixed(2)} m</div>
-                {grid === "s2" && effMult !== 1 && (
+                <div>{`l${level}`} geometric diameter: {geomDia.toFixed(2)} m</div>
+                {effMult !== 1 && (
                     <div>{`l${level}`} effective diameter (pick fudge {effMult}): {effDia.toFixed(2)} m</div>
                 )}
                 <div>picker vp (clamped): 1280 × 480 = {PICK_VP_AREA.toLocaleString()} px²</div>
                 <div>auto target: {autoHexPxTarget(PICK_VP_AREA, BINS_BUDGET).toFixed(2)} px · S2 auto target: {(autoHexPxTarget(PICK_VP_AREA, BINS_BUDGET) * s2Factor).toFixed(2)} px</div>
                 <hr style={{ border: "none", borderTop: "1px solid #333", margin: "12px 0" }} />
-                {grid === "s2" ? (
+                {(
                     <div>
                         <div style={{ marginBottom: 8, fontSize: 13 }}>
                             <b>edit S2 tuning</b> (previews live; Save writes to <code>src/map/tuning.json</code>)
@@ -589,8 +532,6 @@ export default function TunePage() {
                             {saveStatus === "error" && <span style={{ color: "#e77" }}>✗ {saveMsg}</span>}
                         </div>
                     </div>
-                ) : (
-                    <div style={{ color: "#888" }}>H3 tuning: no editable knobs yet.</div>
                 )}
             </div>
         </div>

@@ -1,29 +1,21 @@
 /** Client hook for the dynamic cells API (`crashes-cells-api`).
  *
- *  **Shard-keyed.** The client computes which `shard_res` parent cells
- *  intersect the viewport (`polygonToCellsExperimental` against the
- *  manifest's `shard_cells`) and fires one request per shard in
- *  parallel. Each shard's response is cached by URL. Panning over
- *  already-fetched shards = zero new requests; you only pay for the
- *  shards newly entering the viewport.
+ *  **Shard-keyed.** NJ spans 2 level-4 S2 shard tokens (`89b`, `89d`);
+ *  the client fires one request per shard in parallel. Each shard's
+ *  response is cached by URL. Panning over already-fetched shards =
+ *  zero new requests.
  *
- *  Spec: `specs/cfw-cells-api.md`. Gated behind `?api=1` until the
- *  worker is deployed and parity is verified at scale.
+ *  Spec: `specs/cfw-cells-api.md`.
  */
 import { useEffect, useMemo, useRef, useState } from "react"
-import {
-    cellToBoundary, cellToChildren, cellToParent, getResolution,
-    polygonToCellsExperimental, POLYGON_TO_CELLS_FLAGS,
-} from "h3-js"
-import { isInRootCover } from "./h3cover"
 import type { StackedHex } from "./StackedHexLayer"
 import { CELLS_API_BASE } from "./config"
 import type { Bbox } from "./v2"
-import { pickHexResolutionForPixels } from "./CrashMap"
 import {
     pickS2LevelForPixels,
     tokenCenterLngLat,
-    tokenToParent as s2TokenToParent,
+    tokenLevel,
+    tokenToParent,
 } from "./s2"
 
 export type CellsApiFilter = {
@@ -33,7 +25,7 @@ export type CellsApiFilter = {
     viewportLat: number
     zoom: number
     hexPxTarget?: number
-    /** Override resolution; bypasses `pickHexResolutionForPixels`. */
+    /** Override S2 level; bypasses `pickS2LevelForPixels`. */
     resOverride?: number
     /** Optional GeoJSON-like polygon (`[lon, lat][]`) to clip the
      *  response to. The worker drops cells whose center isn't in the
@@ -41,12 +33,6 @@ export type CellsApiFilter = {
      *  to scope to the admin boundary instead of the (pitch-inflated)
      *  viewport bbox. */
     clipPolygon?: [number, number][]
-    /** Cell grid to fetch on. Undefined / `"h3"` uses the H3 pyramid
-     *  (shipping default). `"s2"` opts into the S2 pyramid path — the
-     *  client picker's `pickS2LevelForPixels` output is used as `res`,
-     *  and `cells=` is a comma-separated list of S2 shard tokens. See
-     *  `specs/s2-pyramid.md`. */
-    grid?: "h3" | "s2"
 }
 
 type CellRow = {
@@ -99,153 +85,11 @@ type Manifest = {
     shard_cells: string[]
 }
 
-/** H3 cell area in km², res 0-15. Used to pick the combo whose
- *  viewport-shard-count is in target range. (Vertex-to-vertex
- *  diameter would be ~2× the edge, area = 3√3/2 × edge²). */
-const H3_AREA_KM2: Record<number, number> = {
-    0: 4.25e6, 1: 6.07e5, 2: 8.68e4, 3: 1.24e4, 4: 1.77e3,
-    5: 2.53e2, 6: 36.13, 7: 5.16, 8: 0.737, 9: 0.105,
-    10: 0.015, 11: 2.15e-3, 12: 3.07e-4, 13: 4.39e-5,
-}
-
-/** Compute viewport area in km² from a (lon, lat) bbox. */
-function bboxAreaKm2([w, s, e, n]: Bbox): number {
-    const midLat = (s + n) / 2
-    const lonKm = (e - w) * 111.32 * Math.cos((midLat * Math.PI) / 180)
-    const latKm = (n - s) * 110.54
-    return Math.max(0, lonKm) * Math.max(0, latKm)
-}
-
-/** Hard cap on shards in a heterogeneous cover. HTTP/2 keeps ~100
- *  concurrent streams happy; this is the stop-refining ceiling, not a
- *  start-coarse target. Initial covers can exceed it (refinement just
- *  won't kick in then), but explicit boundary-refines stop here. */
-const COVER_MAX_SHARDS = 80
-
-/** Overhang threshold above which a cell is worth splitting. A cell with
- *  ≥30% of its bbox outside the viewport gets refined to its children
- *  that intersect the viewport (smaller cells fit the boundary better,
- *  cutting wasted off-viewport bytes per shard). */
-const OVERHANG_REFINE_THRESHOLD = 0.30
-
 /** One cell of a multi-resolution cover. The pair `(shard_res, h3)`
- *  identifies a specific parquet under `pyramid/s{shard_res}_r{data_res}/`. */
+ *  identifies a specific parquet shard. */
 export type CoverCell = {
     shard_res: number
     h3: string
-}
-
-/** Axis-aligned bbox of an H3 cell's vertex set (lon/lat). Approximate
- *  for picker math; we only need fractional overhang vs viewport, not
- *  exact area. */
-function cellBbox(h3: string): Bbox {
-    const boundary = cellToBoundary(h3, true)  // [lon, lat]
-    let w = Infinity, e = -Infinity, s = Infinity, n = -Infinity
-    for (const [lon, lat] of boundary) {
-        if (lon < w) w = lon
-        if (lon > e) e = lon
-        if (lat < s) s = lat
-        if (lat > n) n = lat
-    }
-    return [w, s, e, n]
-}
-
-function bboxIntersect(a: Bbox, b: Bbox): Bbox | null {
-    const w = Math.max(a[0], b[0]), s = Math.max(a[1], b[1])
-    const e = Math.min(a[2], b[2]), n = Math.min(a[3], b[3])
-    if (w >= e || s >= n) return null
-    return [w, s, e, n]
-}
-
-function bboxArea(b: Bbox): number {
-    return (b[2] - b[0]) * (b[3] - b[1])
-}
-
-/** Fraction of a cell's bbox area outside the viewport bbox. 0 ⇒ cell
- *  is fully inside; 1 ⇒ fully outside (caller drops it). */
-function cellOverhang(h3: string, vp: Bbox): number {
-    const cb = cellBbox(h3)
-    const total = bboxArea(cb)
-    if (total === 0) return 0
-    const ix = bboxIntersect(cb, vp)
-    if (!ix) return 1
-    return 1 - bboxArea(ix) / total
-}
-
-/** Greedy mixed-resolution cover: start from the coarsest available
- *  `shard_res` published for this `dataRes`, then iteratively split the
- *  cell with the worst viewport overhang into its 7 children (dropping
- *  those fully outside the viewport). Stops when the next split would
- *  exceed `maxShards`, no cell exceeds the overhang threshold, or the
- *  finest published `shard_res` is reached.
- *
- *  Returns an array of `{shard_res, h3}` entries. The caller fires one
- *  parquet fetch per entry, each addressed to
- *  `pyramid/s{shard_res}_r{dataRes}/{h3}.parquet`. */
-function pickCover(
-    combos: PyramidCombo[],
-    dataRes: number,
-    viewport: Bbox,
-    maxShards: number,
-    rootShardCells: Set<string>,
-): CoverCell[] {
-    const candidates = combos
-        .filter(c => c.data_res === dataRes)
-        .sort((a, b) => a.shard_res - b.shard_res)  // coarsest first
-    if (candidates.length === 0) return []
-    // Off-NJ cover cells (ocean / NY / PA edges of the viewport ring)
-    // waste the maxShards budget, so filter candidates against the
-    // top-level `manifest.shard_cells` (31 r4 cells covering NJ) via
-    // `isInRootCover`. The per-combo `shard_cells` lists that would let
-    // us filter to known-good shards balloon the manifest to ~5MB and
-    // are stripped server-side; we keep only the `shard_res` set below.
-    const SHARD_ROOT_RES = 4
-    const inNj = (h3: string): boolean => isInRootCover(h3, rootShardCells, SHARD_ROOT_RES)
-    const knownRes = new Set(candidates.map(c => c.shard_res))
-    const minRes = candidates[0].shard_res
-    const maxRes = candidates[candidates.length - 1].shard_res
-
-    // polygonToCells wants [lat, lng] ring; viewport is [w, s, e, n].
-    const ring: [number, number][] = [
-        [viewport[1], viewport[0]],
-        [viewport[1], viewport[2]],
-        [viewport[3], viewport[2]],
-        [viewport[3], viewport[0]],
-        [viewport[1], viewport[0]],
-    ]
-    let initial: string[]
-    try {
-        initial = polygonToCellsExperimental(ring, minRes, POLYGON_TO_CELLS_FLAGS.containmentOverlapping) as unknown as string[]
-    } catch {
-        return []
-    }
-    const cover: CoverCell[] = initial.filter(inNj).map(h => ({ shard_res: minRes, h3: h }))
-
-    // Greedy refinement. Splice the worst-overhang cell with its
-    // viewport-overlapping children. Each iteration is +(children-1)
-    // cells; cap at `maxShards`. Cells whose children are all
-    // off-viewport go in `noRefine` so we don't retry them.
-    const noRefine = new Set<string>()
-    while (cover.length + 6 <= maxShards) {
-        let worstIdx = -1
-        let worstOverhang = OVERHANG_REFINE_THRESHOLD
-        for (let i = 0; i < cover.length; i++) {
-            if (cover[i].shard_res >= maxRes) continue
-            if (noRefine.has(cover[i].h3)) continue
-            const o = cellOverhang(cover[i].h3, viewport)
-            if (o > worstOverhang) { worstOverhang = o; worstIdx = i }
-        }
-        if (worstIdx < 0) break
-        const cell = cover[worstIdx]
-        const childRes = cell.shard_res + 1
-        if (!knownRes.has(childRes)) { noRefine.add(cell.h3); continue }
-        const children = (cellToChildren(cell.h3, childRes) as unknown as string[])
-            .filter(h => cellOverhang(h, viewport) < 1)  // drop fully-outside
-            .filter(inNj)
-        if (children.length === 0) { noRefine.add(cell.h3); continue }
-        cover.splice(worstIdx, 1, ...children.map(h => ({ shard_res: childRes, h3: h })))
-    }
-    return cover
 }
 
 export type CellsApiPlan = {
@@ -336,7 +180,9 @@ function buildBatchUrl(
         severities: sevs,
         shard_res: String(shardRes),
     })
-    if (filter.grid === "s2") params.set("grid", "s2")
+    // Explicit until the worker drops H3 support (h3-removal Phase 2);
+    // after that the param can go entirely.
+    params.set("grid", "s2")
     if (res < LABELS_NUMS_RES_THRESHOLD) params.set("labels", "nums")
     if (polygonStr) params.set("polygon", polygonStr)
     return `${CELLS_API_BASE}/v1/cells?${params}`
@@ -378,15 +224,11 @@ function ensureShardsCached(
                 info.bytes = buf.byteLength
                 return JSON.parse(new TextDecoder().decode(buf)) as CellsResponse
             })()
-            const grid = filter.grid ?? "h3"
             for (const entry of batch) {
                 shardBatch.set(entry.url, info)
                 const shardPromise = batchPromise.then(resp => ({
                     ...resp,
-                    cells: resp.cells.filter(c => {
-                        if (grid === "s2") return s2TokenToParent(c.h3, tier) === entry.h3
-                        return cellToParent(c.h3, tier) === entry.h3
-                    }),
+                    cells: resp.cells.filter(c => tokenToParent(c.h3, tier) === entry.h3),
                 }))
                 shardPromise.catch(() => {
                     if (shardCache.get(entry.url) === shardPromise) shardCache.delete(entry.url)
@@ -397,9 +239,6 @@ function ensureShardsCached(
         }
     }
 }
-
-const MAX_PYRAMID_RES = 14
-const MIN_PYRAMID_RES = 6
 
 /** Refetch debounce in ms. The viewport debounce coalesces a drag's
  *  worth of changes into one shard-set computation. Per-shard fetches
@@ -413,7 +252,7 @@ const DEBOUNCE_MS = 500
 /** Render budget — max hex bins shown on screen. The picker no longer
  *  caps based on theoretical max (`area / hex_area`); it picks res
  *  purely from zoom. The consumer (CrashMapSection) coarsens
- *  client-side via `h3 cellToParent` if a fetch comes back over budget
+ *  client-side via S2 parent rollup if a fetch comes back over budget
  *  (lossless: parent count = sum of children).
  *
  *  Bumped 30k → 60k after multi-res sharding landed: at z~10 over urban
@@ -433,45 +272,6 @@ export const CELLS_BUDGET = 100000
  *  bounded by N × 5000 worst-case but realistically much less. The
  *  client coarsens the union if total still exceeds CELLS_BUDGET. */
 const SHARD_MAX_CELLS = 5000
-
-/** Statewide clip polygon — sent as the worker `polygon=` arg for
- *  views without a county/muni scope. Without it, each r4 shard returns
- *  its full ~5000 km² contents (NJ + offshore Atlantic + slices of NY/PA),
- *  ~5× more cells than the visible NJ data. NJ outline ≈ 22k km² inside a
- *  ~53k km² envelope; this is the envelope rectangle, good enough to drop
- *  most off-state shard area while staying cache-stable (it's a constant).
- *  An accurate NJ polygon would clip a few % more but isn't worth the
- *  extra polygon bytes per request. */
-// CW outer ring (h3 convention; CCW is treated as a hole and explodes
-// the cover at fine res).
-const NJ_CLIP_POLYGON: [number, number][] = [
-    [-75.6, 41.4], [-73.9, 41.4], [-73.9, 38.9], [-75.6, 38.9], [-75.6, 41.4],
-]
-
-function clamp(res: number): number {
-    return Math.max(MIN_PYRAMID_RES, Math.min(MAX_PYRAMID_RES, Math.round(res)))
-}
-
-/** Compute the shard cells (`shard_res` parents) that intersect the
- *  given region. h3-js wants `[lat, lng]` rings and the `Overlapping`
- *  flag so a small region fully inside one big shard still picks it up.
- *  Filters down to cells the manifest actually has data for. */
-function shardsForRegion(
-    ring: [number, number][],  // [lat, lng] order
-    shardRes: number,
-    knownShards: Set<string>,
-): string[] {
-    const cover = polygonToCellsExperimental(ring, shardRes, POLYGON_TO_CELLS_FLAGS.containmentOverlapping)
-    return cover.filter(c => knownShards.has(c))
-}
-
-function bboxToLonLatRing([w, s, e, n]: Bbox): [number, number][] {
-    return [[w, s], [e, s], [e, n], [w, n], [w, s]]
-}
-
-function lonLatToLatLng(ring: [number, number][]): [number, number][] {
-    return ring.map(([lon, lat]) => [lat, lon])
-}
 
 /** Sutherland-Hodgman polygon-vs-axis-aligned-rectangle clip. Input ring
  *  is `[lon, lat]`, bbox is `[w, s, e, n]`. Output is the polygon clipped
@@ -563,9 +363,9 @@ function buildShardUrl(
 function rollupCellsToRes(cells: CellRow[], targetRes: number): CellRow[] {
     const out = new Map<string, CellRow>()
     for (const c of cells) {
-        const sr = getResolution(c.h3)
+        const sr = tokenLevel(c.h3)
         if (sr <= targetRes) { out.set(c.h3, c); continue }
-        const ph = cellToParent(c.h3, targetRes)
+        const ph = tokenToParent(c.h3, targetRes)
         let p = out.get(ph)
         if (!p) {
             p = { h3: ph, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
@@ -587,25 +387,15 @@ function rollupCellsToRes(cells: CellRow[], targetRes: number): CellRow[] {
     return [...out.values()]
 }
 
-function cellsToStackedHex(cells: CellRow[], grid: "h3" | "s2" = "h3"): StackedHex[] {
+function cellsToStackedHex(cells: CellRow[]): StackedHex[] {
     const out: StackedHex[] = []
     for (const c of cells) {
         const total = c.n_fatal + c.n_inj_ped + c.n_inj_other + c.n_pdo
         if (total === 0) continue
-        let center: [number, number]
-        if (grid === "s2") {
-            // S2 tokens go through `nodes2ts` — cell-center in one call,
-            // no boundary polygon needed since the render uses `center`
-            // + an S2-level-derived radius. (H3 path computes center as
-            // boundary centroid for parity with client-side binning; S2
-            // has an exact center accessor.)
-            center = tokenCenterLngLat(c.h3)
-        } else {
-            const boundary = cellToBoundary(c.h3, true)
-            let lon = 0, lat = 0
-            for (const [ln, la] of boundary) { lon += ln; lat += la }
-            center = [lon / boundary.length, lat / boundary.length]
-        }
+        // S2 tokens go through `nodes2ts` — cell-center in one call, no
+        // boundary polygon needed since the render uses `center` + an
+        // S2-level-derived radius.
+        const center: [number, number] = tokenCenterLngLat(c.h3)
         out.push({
             h3: c.h3,
             center,
@@ -667,59 +457,24 @@ export function useCellsApi(filter: CellsApiFilter | null):
 
     const pick = useMemo<{ res: number; cover: CoverCell[]; reason: string } | null>(() => {
         if (!filter || !manifest || !snappedBbox) return null
-        // Grid dispatch. S2 mode short-circuits the H3 shard-cover
-        // machinery: NJ spans only 2 level-4 S2 shard tokens per e's
-        // phase-3 build (`89b`, `89d`), so we hardcode the cover
-        // instead of running `pickCover` against H3-only manifest
-        // fields. Fine-grained viewport pruning still happens
-        // server-side via `s2-range.ts` row-group filtering. Bumping
-        // to `-s 6` or finer would motivate a real S2 cover algorithm
-        // — deferred as an optimization (see `specs/s2-pyramid.md`).
-        if (filter.grid === "s2") {
-            const level = filter.resOverride != null
-                ? filter.resOverride
-                : pickS2LevelForPixels(filter.hexPxTarget ?? 1.2, filter.zoom, filter.viewportLat)
-            // Level clamp mirrors the worker's pyramid envelope (phase 8:
-            // base l21, data levels 4-21).
-            const S2_MIN = 4, S2_MAX = 21
-            const clamped = Math.max(S2_MIN, Math.min(S2_MAX, level))
-            const S2_STATEWIDE_SHARDS = ["89b", "89d"]
-            const cover: CoverCell[] = S2_STATEWIDE_SHARDS.map(h3 => ({ h3, shard_res: 4 }))
-            return { res: clamped, cover, reason: `s2 l${clamped} · ${cover.length} shard${cover.length > 1 ? "s" : ""}` }
-        }
-        const res = filter.resOverride != null
-            ? clamp(filter.resOverride)
-            : clamp(pickHexResolutionForPixels(filter.hexPxTarget ?? 1.2, filter.zoom, filter.viewportLat))
-        const combos = manifest.pyramid_combos ?? []
-        // For county/muni scopes, clip the cover region to the admin polygon
-        // ∩ snappedBbox so we don't fetch shards far outside the visible area.
-        // For statewide, use the snapped bbox directly.
-        let coverBbox = snappedBbox
-        if (usingPoly && filter.clipPolygon) {
-            const clipped = clipPolygonToBbox(filter.clipPolygon, snappedBbox)
-            if (clipped.length >= 3) {
-                let w = Infinity, e = -Infinity, s = Infinity, n = -Infinity
-                for (const [lon, lat] of clipped) {
-                    if (lon < w) w = lon
-                    if (lon > e) e = lon
-                    if (lat < s) s = lat
-                    if (lat > n) n = lat
-                }
-                coverBbox = [w, s, e, n]
-            }
-        }
-        const rootShardCells = new Set(manifest.shard_cells ?? [])
-        const cover = pickCover(combos, res, coverBbox, COVER_MAX_SHARDS, rootShardCells)
-        if (cover.length === 0) {
-            return { res, cover: [], reason: `r${res} · no combo for r${res}` }
-        }
-        // Compact reason: cells per shard_res tier.
-        const tiers = new Map<number, number>()
-        for (const c of cover) tiers.set(c.shard_res, (tiers.get(c.shard_res) ?? 0) + 1)
-        const tierStr = [...tiers.entries()].sort((a, b) => a[0] - b[0]).map(([sr, n]) => `s${sr}×${n}`).join(" + ")
-        return { res, cover, reason: `r${res} · ${tierStr}` }
+        // NJ spans only 2 level-4 S2 shard tokens per e's phase-3 build
+        // (`89b`, `89d`), so the cover is hardcoded. Fine-grained
+        // viewport pruning happens server-side via `s2-range.ts`
+        // row-group filtering. Bumping to `-s 6` or finer would motivate
+        // a real S2 cover algorithm — deferred as an optimization (see
+        // `specs/s2-pyramid.md`).
+        const level = filter.resOverride != null
+            ? filter.resOverride
+            : pickS2LevelForPixels(filter.hexPxTarget ?? 1.2, filter.zoom, filter.viewportLat)
+        // Level clamp mirrors the worker's pyramid envelope (phase 8:
+        // base l21, data levels 4-21).
+        const S2_MIN = 4, S2_MAX = 21
+        const clamped = Math.max(S2_MIN, Math.min(S2_MAX, level))
+        const S2_STATEWIDE_SHARDS = ["89b", "89d"]
+        const cover: CoverCell[] = S2_STATEWIDE_SHARDS.map(h3 => ({ h3, shard_res: 4 }))
+        return { res: clamped, cover, reason: `s2 l${clamped} · ${cover.length} shard${cover.length > 1 ? "s" : ""}` }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filter?.grid, filter?.zoom, filter?.viewportLat, filter?.hexPxTarget, filter?.resOverride, manifest, bboxKey, usingPoly, filter?.clipPolygon])
+    }, [filter?.zoom, filter?.viewportLat, filter?.hexPxTarget, filter?.resOverride, manifest, bboxKey, usingPoly, filter?.clipPolygon])
 
     // `polygonStr` for the worker `polygon=` arg. Tied to the snap-grid
     // bbox so per-URL cache hits across users/sessions at the same
@@ -817,7 +572,7 @@ export function useCellsApi(filter: CellsApiFilter | null):
                         for (const c of rolled) allCells.push(c)
                     }
                 }
-                const data = cellsToStackedHex(allCells, filter.grid ?? "h3")
+                const data = cellsToStackedHex(allCells)
                 const requestedRes = pickAtFire.res
                 const adapted = finalRes !== requestedRes
                 const reason = adapted
