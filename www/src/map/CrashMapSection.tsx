@@ -24,7 +24,7 @@ import type { Bbox, MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel } from "@/src/map/CrashMap"
 
 import { circleRadiusPx, hexPxTargetFor, pickRes as pickerPick, BINS_BUDGET } from "@/src/map/picker"
-import { pickS2LevelForPixels, S2_DIAMETER_METERS } from "@/src/map/s2"
+import { pickS2LevelForPixels, S2_DIAMETER_METERS, S2_SCOPED_TARGET_FACTOR } from "@/src/map/s2"
 import { DebugOverlay } from "@/src/map/DebugOverlay"
 import { YearSelect } from "@/src/lib/year-select"
 
@@ -302,8 +302,13 @@ export function CrashMapSection({
     const hexPxTarget = useMemo(() => {
         if (!hexAuto) return manualHexPx
         const [vpw, vph] = viewportDims(fullScreen)
-        return hexPxTargetFor(vpw * vph, binsBudget)
-    }, [hexAuto, manualHexPx, fullScreen, binsBudget])
+        // County/muni-scoped views go finer (see `S2_SCOPED_TARGET_FACTOR`
+        // doc) — the clip polygon bounds the fetch, so the same zoom
+        // affords levels that would be prohibitive statewide. Applied to
+        // the auto target only; the manual slider stays absolute.
+        const scoped = cc !== null ? S2_SCOPED_TARGET_FACTOR : 1
+        return hexPxTargetFor(vpw * vph, binsBudget) * scoped
+    }, [hexAuto, manualHexPx, fullScreen, binsBudget, cc])
 
     // Picker-state snapshot: current H3 resolution + adjacent levels
     // (one coarser, one finer) as clickable jump targets. Neighbors that

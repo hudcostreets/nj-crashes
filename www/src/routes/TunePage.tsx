@@ -20,6 +20,7 @@ import {
 } from "@/src/map/s2"
 import { BINS_BUDGET, autoHexPxTarget, circleRadiusPx as circleRadiusPxCurve } from "@/src/map/picker"
 import { useCellsApi, type CellsApiFilter } from "@/src/map/useCellsApi"
+import tuning from "@/src/map/tuning.json"
 
 /** Which curve drives `circleRadiusPx` (the per-frame render-size override).
  *  - `curve`: production `circleRadiusPx(zoom)` curve from `picker.ts`.
@@ -321,8 +322,13 @@ export default function TunePage() {
         setSaveStatus("saving")
         setSaveMsg("")
         try {
+            // Spread the shipped object so fields this page doesn't edit
+            // (e.g. `scopedTargetFactor`) round-trip instead of being
+            // clobbered by Save.
             const body = {
+                ...tuning,
                 s2: {
+                    ...tuning.s2,
                     targetFactor: s2Factor,
                     pickMult: Object.fromEntries(Object.entries(s2Mult).map(([k, v]) => [k, v])),
                 },
