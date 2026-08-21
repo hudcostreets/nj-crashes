@@ -9,7 +9,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { useUrlState, viewStateParam, cleanUrl, optFloatParam, boolParam, enumParam } from "use-prms"
 import { usePageFilters, YEAR_RANGE_DEFAULT } from "@/src/PageFiltersContext"
-import { useCellsApi, CELLS_BUDGET } from "@/src/map/useCellsApi"
+import { useCellsApi, CELLS_BUDGET, clipPolygonToBbox, polygonAreaM2 } from "@/src/map/useCellsApi"
 import type { CellsApiFilter } from "@/src/map/useCellsApi"
 import { MAP_BASE_URL } from "@/src/map/config"
 import type { MapMode, ViewState } from "@/src/map/CrashMap"
@@ -24,7 +24,7 @@ import type { Bbox, MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel } from "@/src/map/CrashMap"
 
 import { circleRadiusPx, hexPxTargetFor, pickRes as pickerPick, BINS_BUDGET } from "@/src/map/picker"
-import { pickS2LevelForPixels, S2_DIAMETER_METERS, S2_SCOPED_TARGET_FACTOR } from "@/src/map/s2"
+import { pickS2LevelForPixels, S2_DIAMETER_METERS } from "@/src/map/s2"
 import { DebugOverlay } from "@/src/map/DebugOverlay"
 import { YearSelect } from "@/src/lib/year-select"
 
@@ -294,6 +294,31 @@ export function CrashMapSection({
     //
     // Density-adaptive would feedback-loop (hexPxTarget → picker res →
     // cells → hexPxTarget), so intentionally ignored here.
+    const [outline, setOutline] = useState<FeatureCollection | null>(null)
+    useEffect(() => {
+        const url = cc === null
+            ? `${MAP_BASE_URL}/counties.geojson`
+            : `${MAP_BASE_URL}/counties/${String(cc).padStart(2, "0")}.geojson`
+        fetch(url).then(r => r.ok ? r.json() : null).then(setOutline).catch(() => setOutline(null))
+    }, [cc])
+    // Muni outline: only when a muni is selected. File is ~30-130 KB/county;
+    // filter client-side to the single feature matching our mc.
+    const [muniOutline, setMuniOutline] = useState<FeatureCollection | null>(null)
+    useEffect(() => {
+        if (cc === null || mc === null) { setMuniOutline(null); return }
+        const url = `${MAP_BASE_URL}/munis/${String(cc).padStart(2, "0")}.geojson`
+        let cancelled = false
+        fetch(url)
+            .then(r => r.ok ? r.json() as Promise<FeatureCollection> : null)
+            .then(fc => {
+                if (cancelled || !fc) { if (!cancelled) setMuniOutline(null); return }
+                const feat = fc.features.find(f => f.properties?.mc === mc)
+                setMuniOutline(feat ? { type: "FeatureCollection", features: [feat] } : null)
+            })
+            .catch(() => { if (!cancelled) setMuniOutline(null) })
+        return () => { cancelled = true }
+    }, [cc, mc])
+
     const circleRadiusPxValue = useMemo(
         () => circleRadiusPx(effectiveView?.zoom ?? 7),
         [effectiveView?.zoom],
@@ -302,13 +327,33 @@ export function CrashMapSection({
     const hexPxTarget = useMemo(() => {
         if (!hexAuto) return manualHexPx
         const [vpw, vph] = viewportDims(fullScreen)
-        // County/muni-scoped views go finer (see `S2_SCOPED_TARGET_FACTOR`
-        // doc) — the clip polygon bounds the fetch, so the same zoom
-        // affords levels that would be prohibitive statewide. Applied to
-        // the auto target only; the manual slider stays absolute.
-        const scoped = cc !== null ? S2_SCOPED_TARGET_FACTOR : 1
-        return hexPxTargetFor(vpw * vph, binsBudget) * scoped
-    }, [hexAuto, manualHexPx, fullScreen, binsBudget, cc])
+        // Bins-budget the *scope*, not the viewport: for county/muni
+        // views the fetch is clipped to the admin polygon, so the bin
+        // count a level yields scales with the polygon's on-screen area,
+        // not the screen's. Budget against `area(clip ∩ viewport)` in
+        // px² — at a county-fits-viewport zoom this is a small fraction
+        // of the screen (Hudson at z≈10.8: ~2%), pushing the pick ~2
+        // levels finer; zoomed in until the polygon fills the viewport,
+        // it converges to the unscoped target, so street-level scoped
+        // views behave identically to statewide ones.
+        // `autoHexPxTarget`'s 1px floor bounds how fine this can push
+        // (≲2.5 levels at typical county shares). Geometry-adaptive, not
+        // density-adaptive — no feedback loop through the fetched data.
+        let areaPx = vpw * vph
+        const clipRing = mc !== null && muniOutline
+            ? extractOuterRing(muniOutline)
+            : cc !== null && outline
+              ? extractOuterRing(outline)
+              : undefined
+        if (clipRing && effectiveView) {
+            const vpBbox = bboxFromViewport(effectiveView.latitude, effectiveView.longitude, effectiveView.zoom, vpw, vph, effectiveView.pitch)
+            const visible = clipPolygonToBbox(clipRing, vpBbox)
+            const mppx = metersPerPixel(effectiveView.zoom, effectiveView.latitude)
+            const clipPx = polygonAreaM2(visible) / (mppx * mppx)
+            if (clipPx > 0) areaPx = Math.min(areaPx, clipPx)
+        }
+        return hexPxTargetFor(areaPx, binsBudget)
+    }, [hexAuto, manualHexPx, fullScreen, binsBudget, cc, mc, outline, muniOutline, effectiveView])
 
     // Picker-state snapshot: current H3 resolution + adjacent levels
     // (one coarser, one finer) as clickable jump targets. Neighbors that
@@ -354,31 +399,6 @@ export function CrashMapSection({
             hexPxTarget,
         }
     }, [yearRange, cc, mc, severities, effectiveView, hexPxTarget, fullScreen])
-
-    const [outline, setOutline] = useState<FeatureCollection | null>(null)
-    useEffect(() => {
-        const url = cc === null
-            ? `${MAP_BASE_URL}/counties.geojson`
-            : `${MAP_BASE_URL}/counties/${String(cc).padStart(2, "0")}.geojson`
-        fetch(url).then(r => r.ok ? r.json() : null).then(setOutline).catch(() => setOutline(null))
-    }, [cc])
-    // Muni outline: only when a muni is selected. File is ~30-130 KB/county;
-    // filter client-side to the single feature matching our mc.
-    const [muniOutline, setMuniOutline] = useState<FeatureCollection | null>(null)
-    useEffect(() => {
-        if (cc === null || mc === null) { setMuniOutline(null); return }
-        const url = `${MAP_BASE_URL}/munis/${String(cc).padStart(2, "0")}.geojson`
-        let cancelled = false
-        fetch(url)
-            .then(r => r.ok ? r.json() as Promise<FeatureCollection> : null)
-            .then(fc => {
-                if (cancelled || !fc) { if (!cancelled) setMuniOutline(null); return }
-                const feat = fc.features.find(f => f.properties?.mc === mc)
-                setMuniOutline(feat ? { type: "FeatureCollection", features: [feat] } : null)
-            })
-            .catch(() => { if (!cancelled) setMuniOutline(null) })
-        return () => { cancelled = true }
-    }, [cc, mc])
 
     // Data fetch goes through the cells-api worker (`useCellsApi`).
     // `v2Manifest` (loaded separately above) carries the county/muni

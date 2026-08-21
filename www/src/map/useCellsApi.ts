@@ -284,7 +284,7 @@ const SHARD_MAX_CELLS = 5000
  *  shard selection and the cells-api `polygon=` param when the user has
  *  zoomed into part of a county/muni, so we fetch only the visible
  *  region instead of the full scope. */
-function clipPolygonToBbox(
+export function clipPolygonToBbox(
     poly: [number, number][],
     [w, s, e, n]: Bbox,
 ): [number, number][] {
@@ -315,6 +315,29 @@ function clipPolygonToBbox(
         }
     }
     return output
+}
+
+/** Planar shoelace area of a `[lon, lat]` ring, in m² — local
+ *  equirectangular scaling about the ring's mean latitude. Accurate to
+ *  well under 1% at NJ spans; used for the scoped bins-budget (see
+ *  `CrashMapSection.hexPxTarget`), where only the order of magnitude
+ *  matters. Open or closed rings accepted. */
+export function polygonAreaM2(ring: [number, number][]): number {
+    if (ring.length < 3) return 0
+    // Scale about the lat-extent midpoint (not the vertex mean, which
+    // shifts with vertex density / an explicit closing point).
+    let latMin = Infinity, latMax = -Infinity
+    for (const [, lat] of ring) { if (lat < latMin) latMin = lat; if (lat > latMax) latMax = lat }
+    const lat0 = (latMin + latMax) / 2
+    const kx = 111_320 * Math.cos((lat0 * Math.PI) / 180)
+    const ky = 110_540
+    let acc = 0
+    for (let i = 0; i < ring.length; i++) {
+        const [x1, y1] = ring[i]
+        const [x2, y2] = ring[(i + 1) % ring.length]
+        acc += x1 * kx * (y2 * ky) - x2 * kx * (y1 * ky)
+    }
+    return Math.abs(acc) / 2
 }
 
 function intersectAt(

@@ -28,6 +28,7 @@ const HarmonizationPage = lazy(() => import('./routes/HarmonizationPage'))
 const MuniSlugRoute = lazy(() => import('./routes/MuniSlugRoute'))
 const CanonicalizeMuni = lazy(() => import('./routes/CanonicalizeMuni'))
 const TunePage = lazy(() => import('./routes/TunePage'))
+const TuneAbPage = lazy(() => import('./routes/TuneAbPage'))
 
 /** Register sections-jump omnibar endpoint. Sits at the App level so any
  *  route with `<h2 id="…">` anchors gets jumpable from Cmd+K. */
@@ -67,6 +68,7 @@ export default function App() {
                 <Route path="/match-review" element={<MatchReview />} />
                 <Route path="/dev/ab" element={<DevAb />} />
                 <Route path="/tune" element={<TunePage />} />
+                <Route path="/tune/ab" element={<TuneAbPage />} />
                 <Route path="/map/hudson/diffs" element={<HudsonDiffs />} />
                 {/* Legacy Leaflet-era Hudson map — superseded by the generic
                     county-scoped map page. */}

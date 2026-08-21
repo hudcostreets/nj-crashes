@@ -185,16 +185,6 @@ import tuning from "../tuning.json"
  *  itself; the module keeps the exported names + types for callers. */
 export const S2_TARGET_FACTOR: number = tuning.s2.targetFactor
 
-/** Extra target multiplier for county/muni-scoped views. Scoped pages
- *  cover a small clip polygon, so the same zoom can afford much finer
- *  cells than a statewide sweep: at the Hudson z≈10.8 county view,
- *  0.25 shifts the pick two levels finer (l15 → l17: 13.3k cells /
- *  2.3 MB JSON / ~150 KB wire for the default decade, vs 1.9k / 310 KB
- *  at l15). Statewide is untouched — the same two-level shift there
- *  would be l15 = 96k cells / 16 MB / ~26 s worker. Tuned 2026-08-21
- *  from Ryan's side-by-side eval of the /map/hudson pitch view. */
-export const S2_SCOPED_TARGET_FACTOR: number = tuning.s2.scopedTargetFactor ?? 1
-
 export const S2_PICK_MULT: Record<number, number> = Object.fromEntries(
     Object.entries(tuning.s2.pickMult).map(([k, v]) => [Number(k), v as number]),
 )

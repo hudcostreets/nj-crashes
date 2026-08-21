@@ -48,12 +48,12 @@ const PICK_VP_AREA = 1280 * 480
 const DEFAULT_LAT = 40.7203
 const DEFAULT_LON = -74.0595
 
-const MINI_HEIGHT = 300
+export const MINI_HEIGHT = 300
 
 /** Local S2 picker parameterized by the TunePage's editable state, so
  *  edits preview before Save. Mirrors `pickS2LevelForPixels` in
  *  `map/s2/index.ts` — keep the walk logic in sync. */
-function pickS2WithOverrides(
+export function pickS2WithOverrides(
     pixelTarget: number,
     zoom: number,
     lat: number,
@@ -142,12 +142,13 @@ function bboxAround(lat: number, lon: number, zoom: number, wPx: number, hPx: nu
     return [lon - dLon / 2, lat - dLat / 2, lon + dLon / 2, lat + dLat / 2]
 }
 
-function MiniMap({
+export function MiniMap({
     lat,
     lon,
     zoom,
     level,
     renderMode,
+    showLabel = true,
     range,
     dfStart,
     dfEnd,
@@ -168,6 +169,9 @@ function MiniMap({
     dfStart: number
     dfEnd: number
     onLatLonChange: (lat: number, lon: number) => void
+    /** Hide the corner readout (z / level / cell count) — used by the
+     *  `/tune/ab` blind-vote flow, where the level would unblind. */
+    showLabel?: boolean
 }) {
     const [pitch, setPitch] = useState(20)
     const [bearing, setBearing] = useState(1)
@@ -220,7 +224,7 @@ function MiniMap({
                 theme="dark"
                 height={MINI_HEIGHT}
             />
-            <div style={{
+            {showLabel && <div style={{
                 position: "absolute",
                 top: 6,
                 left: 6,
@@ -235,7 +239,7 @@ function MiniMap({
                 z={zoom.toFixed(2)} · l{level} · {cells.length} cells
                 {" · geom="}{geomPx.toFixed(2)}{"px"}
                 {" · render="}{renderPx.toFixed(2)}{"px"}
-            </div>
+            </div>}
         </div>
     )
 }
