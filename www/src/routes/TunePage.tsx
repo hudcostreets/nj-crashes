@@ -153,6 +153,7 @@ export function MiniMap({
     dfStart,
     dfEnd,
     onLatLonChange,
+    onCellCount,
 }: {
     lat: number
     lon: number
@@ -172,6 +173,11 @@ export function MiniMap({
     /** Hide the corner readout (z / level / cell count) — used by the
      *  `/tune/ab` blind-vote flow, where the level would unblind. */
     showLabel?: boolean
+    /** Reports the number of cells actually fetched for the current
+     *  {lat, lon, zoom, level} — fires each time the cells API resolves.
+     *  Used by `/tune/ab` to record real bins-returned per side in vote
+     *  rows (a feature the picker learner conditions on). */
+    onCellCount?: (n: number) => void
 }) {
     const [pitch, setPitch] = useState(20)
     const [bearing, setBearing] = useState(1)
@@ -185,6 +191,11 @@ export function MiniMap({
     }), [lat, lon, zoom, level])
     const result = useCellsApi(filter)
     const cells = result.status === "ready" ? result.data : []
+    const ready = result.status === "ready"
+    const cellCount = cells.length
+    useEffect(() => {
+        if (ready) onCellCount?.(cellCount)
+    }, [ready, cellCount, onCellCount])
     const viewState: ViewState = { longitude: lon, latitude: lat, zoom, pitch, bearing }
     // The `circleRadiusPx` prop picked based on the current `renderMode`:
     //   curve     — production `circleRadiusPx(zoom)` from picker.ts
