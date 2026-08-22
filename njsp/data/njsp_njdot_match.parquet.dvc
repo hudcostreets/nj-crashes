@@ -7,6 +7,6 @@ meta:
   computation:
     cmd: njsp match_njdot
     deps:
-      crashes.parquet: 6d4a87f440f0001c8c2e3f2972fc1acb
+      crashes.parquet: 4bb249c64f8e9e8ca7b698377653de05
       /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
       /njdot/data/aashto_combined_crashes.parquet: 0ae2595cd33ce71d47ab2d022a22b60e
