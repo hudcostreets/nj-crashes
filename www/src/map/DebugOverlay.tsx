@@ -6,7 +6,7 @@
  *  observables you need to diagnose a "chunky" zoom transition without
  *  toggling devtools.
  */
-import { S2_DIAMETER_METERS, S2_MIN_LEVEL, S2_MAX_LEVEL } from "./s2"
+import { S2_EDGE_METERS, S2_MIN_LEVEL, S2_MAX_LEVEL } from "./s2"
 import type { FetchPlan } from "./v2"
 import type { ViewState } from "./CrashMap"
 
@@ -135,7 +135,7 @@ export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTa
                         </thead>
                         <tbody>
                             {ress.map(r => {
-                                const edgeM = S2_DIAMETER_METERS[r]
+                                const edgeM = S2_EDGE_METERS[r]
                                 const areaM2 = edgeM * edgeM
                                 const diaPx = edgeM / mppx
                                 const isShown = r === showRes

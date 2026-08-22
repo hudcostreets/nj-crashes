@@ -12,7 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { Bbox } from "@/src/map/v2"
 import { CrashMap, type ViewState, metersPerPixel } from "@/src/map/CrashMap"
 import {
-    S2_DIAMETER_METERS,
+    S2_EDGE_METERS,
     S2_MAX_LEVEL,
     S2_MIN_LEVEL,
     S2_PICK_MULT,
@@ -80,10 +80,10 @@ export function pickS2WithOverrides(
 ): number {
     const mppx = metersPerPixel(zoom, lat)
     const targetMeters = pixelTarget * mppx
-    const levels = Object.keys(S2_DIAMETER_METERS).map(Number).sort((a, b) => a - b)
+    const levels = Object.keys(S2_EDGE_METERS).map(Number).sort((a, b) => a - b)
     let best = levels[0]
     for (const l of levels) {
-        const diaMeters = S2_DIAMETER_METERS[l] * (pickMult[l] ?? 1)
+        const diaMeters = S2_EDGE_METERS[l] * (pickMult[l] ?? 1)
         if (diaMeters >= targetMeters) best = l
         else break
     }
@@ -147,7 +147,7 @@ function dfOverridePx(
     const span = zHi - zLo
     const t = span > 0 ? Math.max(0, Math.min(1, (zoom - zLo) / span)) : 0
     const df = dfStart + (dfEnd - dfStart) * t
-    const inscribedMeters = (S2_DIAMETER_METERS[level] ?? 0) / 2
+    const inscribedMeters = (S2_EDGE_METERS[level] ?? 0) / 2
     const inscribedPx = inscribedMeters / metersPerPixel(zoom, lat)
     return df * inscribedPx
 }
@@ -248,7 +248,7 @@ export function MiniMap({
     //            `min(overrideRadiusMeters ?? inscribed, inscribed)` rule.
     //            H3 hex mode with no override falls back to full edge.
     const mppx = metersPerPixel(zoom, lat)
-    const cellMeters = S2_DIAMETER_METERS[level] ?? 0
+    const cellMeters = S2_EDGE_METERS[level] ?? 0
     const geomPx = cellMeters / mppx
     const inscribedPx = geomPx / 2
     const renderPx = Math.min(overridePx ?? inscribedPx, inscribedPx)
@@ -400,7 +400,7 @@ export default function TunePage() {
         }
     }, [s2Factor, s2Mult])
 
-    const geomDia = S2_DIAMETER_METERS[level]
+    const geomDia = S2_EDGE_METERS[level]
     const effMult = s2Mult[level] ?? 1
     const effDia = geomDia * effMult
     const previewMultLevels = Array.from({ length: S2_MAX_LEVEL - S2_MIN_LEVEL + 1 }, (_, i) => S2_MIN_LEVEL + i)

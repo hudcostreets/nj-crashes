@@ -79,6 +79,73 @@ deploy separately — never ship half a coordinated change
 locals, `hexOpacity`/`hexDesaturate` props, `hex-grid` layer ids, comments.
 No behavior change; keeps grep hygiene honest after the functional phases.
 
+### Phase 4a — semantic hazards (done 2026-08-22)
+
+Deferring the naming sweep as "mechanical" turned out to understate it: an
+H3 *value* wearing an S2 label is a live bug, not a cosmetic one. Ryan, on
+finding one: *"from the `res` bug it sounds like you didn't do that
+completely/correctly, maybe worth another pass there?"* — an audit of both
+`www/src` and `cells-api/src` for H3-derived values applied to S2 data
+found twelve. Fixed:
+
+- **`LABELS_NUMS_RES_THRESHOLD = 12`** — an H3 resolution (r12 ≈ 19 m)
+  compared against S2 levels (l12 ≈ 1.9 km), so the label gate never fired
+  and every request paid a 45-50% label tax. Now `LABELS_MIN_S2_LEVEL = 18`.
+  (This is the one that prompted the pass; see
+  `specs/cells-compact-wire-format.md`.)
+- **`pickS2LevelForPixels` returned levels 0-3** — it walked every key of
+  the edge table (which carries the unabridged published stats table)
+  starting at `levels[0]` = 0, with no clamp. `useCellsApi` silently
+  clamped to 4 while every debug readout showed the unclamped value. Now
+  iterates `[S2_MIN_LEVEL, S2_MAX_LEVEL]`.
+- **The picker's early `break`** assumed effective edge decreases
+  monotonically in level, which `S2_PICK_MULT` (0.55 at l20, 0.4 at l21)
+  no longer guarantees — a dip at level N made N+1 unreachable. Now scans
+  the full range.
+- **`S2_DIAMETER_METERS` held edge lengths** — the name was inherited from
+  H3's vertex diameter (`2 × H3_RADIUS_METERS[r]`) while the quantity
+  changed. Every consumer already treated it as an edge, so only the name
+  was wrong, but it's the kind of wrong where the next `area = π(d/2)²` is
+  a silent factor-of-2. Renamed `S2_EDGE_METERS` and moved to a
+  dependency-free `s2/edges.ts`.
+- **A duplicate edge table in `StackedHexLayer`** ("keep in sync") had
+  already drifted — it started at level 4 where the original started at 0,
+  and its `?? 478` fallback drew any out-of-range level as level 14. Both
+  now share `s2/edges.ts`; the fallback is a clamp.
+- **Snap-buttons didn't land on their labelled level**: the snap px was
+  computed from the raw edge while the picker compares against the
+  `pickMult`-scaled edge, so the l20/l21 chips landed one to two levels
+  coarser than their own label. Both sides now go through
+  `s2PickEdgeMeters`. Same fix in `ZoomResChart`'s px ticks, whose
+  transition lines come from the picker.
+- **`res: 9` fallback** in `CrashMapSection` — H3 r9 (≈174 m, the old
+  statewide default) as an S2 level, where l9 is a 15 km cell. Now a named
+  `S2_FALLBACK_LEVEL`.
+- **`hexPxTarget ?? 1.2`** in `useCellsApi` — the H3-era *raw* px target,
+  unscaled by `S2_TARGET_FACTOR`, so the fallback path fetched a different
+  level than the one the section computed and displayed.
+- **`shard_res` validated against `[0, 15]`** (H3's resolution ceiling) on
+  a param the S2 client sends on every request, where levels run to 21.
+  Now grid-dependent.
+- **Nothing bounded a response.** `CELLS_BUDGET = 100000` was justified
+  entirely by H3 cell-count arithmetic ("statewide r9 fits in ~66.5k
+  cells"), *and* was inert: batched requests never sent `maxCells`, and
+  the client-side coarsen was deleted in Phase 1. A Hudson-fit l17
+  viewport measured 168k cells / 30 MB with nothing to stop it. Replaced
+  by `CELLS_MAX = 150_000`, actually sent, documented as a backstop above
+  the picker's target rather than a routine coarsener.
+
+Left for Phase 2/3 (they own the code being deleted): the S2 path's
+dependency on `h3-range.ts` for `mergeRanges` (correct today — it's
+generic over `{lo, hi}` bigints — but it dies with the file, so it wants
+moving to a grid-agnostic module), and `parseCellsRequest` still defaulting
+`grid` to `h3`.
+
+Left for the cosmetic sweep: the `h3` field name on the wire (worker and
+client both carry S2 tokens in it), `StackedHexLayer`/`StackedHex`,
+`hexPxTarget`, `renderHexes`, `kind: "hex"`, and the H3 formulas in
+`ZoomResChart`'s doc comment.
+
 ## Riders (small, same area)
 
 - **Squares viz true boundaries** (optional): Squares mode draws axis-fixed

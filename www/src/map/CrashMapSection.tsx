@@ -9,7 +9,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { useUrlState, viewStateParam, cleanUrl, optFloatParam, boolParam, enumParam } from "use-prms"
 import { usePageFilters, YEAR_RANGE_DEFAULT } from "@/src/PageFiltersContext"
-import { useCellsApi, CELLS_BUDGET, clipPolygonToBbox, polygonAreaM2 } from "@/src/map/useCellsApi"
+import { useCellsApi, CELLS_MAX, clipPolygonToBbox, polygonAreaM2 } from "@/src/map/useCellsApi"
 import type { CellsApiFilter } from "@/src/map/useCellsApi"
 import { MAP_BASE_URL } from "@/src/map/config"
 import type { MapMode, ViewState } from "@/src/map/CrashMap"
@@ -24,9 +24,25 @@ import type { Bbox, MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel } from "@/src/map/CrashMap"
 
 import { circleRadiusPx, hexPxTargetFor, pickRes as pickerPick, BINS_BUDGET } from "@/src/map/picker"
-import { pickS2LevelForPixels, S2_DIAMETER_METERS } from "@/src/map/s2"
+import {
+    pickS2LevelForPixels, s2PickEdgeMeters,
+    S2_EDGE_METERS, S2_MAX_LEVEL, S2_MIN_LEVEL, S2_PICK_MULT,
+} from "@/src/map/s2"
 import { DebugOverlay } from "@/src/map/DebugOverlay"
 import { YearSelect } from "@/src/lib/year-select"
+
+/** Level to report when a response arrives with no picker plan attached.
+ *
+ *  Was `9` — an *H3 resolution* (r9 ≈ 174 m, the old statewide default)
+ *  used as an S2 level after the migration, where l9 is a 15 km cell. It
+ *  only ever surfaced in the debug readout, but it's the same class of
+ *  units confusion that made the label gate a no-op, and if it had reached
+ *  the render layer it would have drawn 7.6 km columns. */
+const S2_FALLBACK_LEVEL = 12
+
+function planRes(result: { plan?: { kind: string; res: number } | null }): number {
+    return result.plan?.kind === "hex" ? result.plan.res : S2_FALLBACK_LEVEL
+}
 
 const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m.CrashMap })))
 
@@ -355,17 +371,22 @@ export function CrashMapSection({
         return hexPxTargetFor(areaPx, binsBudget)
     }, [hexAuto, manualHexPx, fullScreen, binsBudget, cc, mc, outline, muniOutline, effectiveView])
 
-    // Picker-state snapshot: current H3 resolution + adjacent levels
-    // (one coarser, one finer) as clickable jump targets. Neighbors that
-    // don't exist (below r0 / above r15) are omitted from the carousel.
+    // Picker-state snapshot: current S2 level + adjacent levels (one
+    // coarser, one finer) as clickable jump targets. Neighbors outside
+    // [S2_MIN_LEVEL, S2_MAX_LEVEL] are omitted from the carousel.
     const pickerInfo = useMemo(() => {
         if (!effectiveView) return null
         const { zoom, latitude } = effectiveView
         const mppx = metersPerPixel(zoom, latitude)
         const currRes = pickS2LevelForPixels(hexPxTarget, zoom, latitude)
+        // `s2PickEdgeMeters`, not the raw table: clicking a snap chip sets
+        // this px as the picker's target, and the picker compares it against
+        // the *multiplied* edge. Using the raw edge here made the l20/l21
+        // chips (pickMult 0.55/0.4) land one to two levels coarser than
+        // their own label.
         const pxAt = (r: number): number | null => {
-            const dia = S2_DIAMETER_METERS[r]
-            return dia === undefined ? null : dia / mppx
+            if (r < S2_MIN_LEVEL || r > S2_MAX_LEVEL) return null
+            return s2PickEdgeMeters(r, S2_PICK_MULT) / mppx
         }
         const levels: { res: number, px: number, isCurrent: boolean }[] = []
         for (const res of [currRes - 1, currRes, currRes + 1]) {
@@ -376,7 +397,7 @@ export function CrashMapSection({
     }, [effectiveView, hexPxTarget])
 
     // The picker's S2 level for the current view — shown in the toolbox
-    // widget. Pure math on the `S2_DIAMETER_METERS` table.
+    // widget. Pure math on the `S2_EDGE_METERS` table.
     const s2Level = useMemo(() => {
         if (!effectiveView) return null
         return pickS2LevelForPixels(hexPxTarget, effectiveView.zoom, effectiveView.latitude)
@@ -516,7 +537,7 @@ export function CrashMapSection({
     const renderHexes = useMemo<{ hexes: StackedHex[]; res: number; coarsenedFrom: number | null } | null>(() => {
         if (result.status !== "ready" || result.dataKind !== "hex") return null
         const data = result.data as StackedHex[]
-        if (data.length === 0) return { hexes: data, res: result.plan?.kind === "hex" ? result.plan.res : 9, coarsenedFrom: null }
+        if (data.length === 0) return { hexes: data, res: planRes(result), coarsenedFrom: null }
         // The worker does `maxCells` coarsening server-side, so we trust
         // the plan's res — no client-side coarsening. Downstream render
         // uses the `dataRes` prop (from the plan).
@@ -530,7 +551,7 @@ export function CrashMapSection({
             return xs.filter(h => h.center[0] >= lo0 && h.center[0] <= hi0 && h.center[1] >= lo1 && h.center[1] <= hi1)
         }
         const inViewport = clip(data)
-        const res = result.plan?.kind === "hex" ? result.plan.res : 9
+        const res = planRes(result)
         return { hexes: inViewport, res, coarsenedFrom: null }
     }, [result, filter.viewport])
 
@@ -850,7 +871,7 @@ export function CrashMapSection({
                         <ZoomResChart
                             currentZoom={effectiveView?.zoom ?? 7}
                             currentLat={effectiveView?.latitude ?? 40.7}
-                            currentRes={pickerInfo?.levels.find(l => l.isCurrent)?.res ?? 11}
+                            currentRes={pickerInfo?.levels.find(l => l.isCurrent)?.res ?? s2Level ?? S2_FALLBACK_LEVEL}
                             s2Level={s2Level}
                             viewportAreaPx={(() => { const [w, h] = viewportDims(fullScreen); return w * h })()}
                             budget={binsBudget}
@@ -896,7 +917,7 @@ export function CrashMapSection({
                                     if (result.plan.kind !== "hex" || !renderHexes?.coarsenedFrom) return result.plan
                                     return {
                                         ...result.plan,
-                                        reason: `${result.plan.reason ?? `r${result.plan.res}`} · coarsened r${renderHexes.coarsenedFrom}→r${renderHexes.res} (budget ${CELLS_BUDGET / 1000}k)`,
+                                        reason: `${result.plan.reason ?? `r${result.plan.res}`} · coarsened r${renderHexes.coarsenedFrom}→r${renderHexes.res} (cap ${CELLS_MAX / 1000}k)`,
                                     }
                                 })()}
                                 renderRes={renderRes}
@@ -1140,15 +1161,14 @@ function ZoomResChart({
     const zMax = currentZoom + halfWin
     const yFor = (z: number) => ((zMax - z) / (zMax - zMin)) * H
     const cosLat = Math.cos(currentLat * Math.PI / 180)
-    // Cell "diameter" at a given res: H3 uses `2 × radius`; the S2 table
-    // is already stored as diameter. Consumers derive the zoom-for-px
-    // relation from this so the chart geometry matches the picker.
-    const diaMeters = (r: number): number | undefined => S2_DIAMETER_METERS[r]
+    // Effective (pickMult-scaled) edge at a level, so the chart's px ticks
+    // line up with the transition lines it draws from the picker itself.
+    const edgeMeters = (r: number): number => s2PickEdgeMeters(r, S2_PICK_MULT)
     const zForPxRes = (px: number, r: number): number =>
-        Math.log2((px * 156543 * cosLat) / (diaMeters(r) ?? 1))
+        Math.log2((px * 156543 * cosLat) / (edgeMeters(r) || 1))
 
     const roundPx = [0.5, 1, 2, 4, 8, 16, 32]
-    const resTable = S2_DIAMETER_METERS
+    const resTable = S2_EDGE_METERS
     const resCols = [currentRes - 1, currentRes, currentRes + 1].filter(r => r in resTable)
     const resLabel = (r: number) => `l${r}`
     const intZooms: number[] = []

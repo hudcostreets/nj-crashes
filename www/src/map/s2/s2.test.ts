@@ -4,10 +4,13 @@
  *  on top of it. */
 import { describe, it, expect } from "vitest"
 import {
-    S2_DIAMETER_METERS,
+    S2_EDGE_METERS,
     S2_MAX_LEVEL,
+    S2_MIN_LEVEL,
     binIntoS2Cells,
+    clampS2Level,
     latLngToToken,
+    s2PickEdgeMeters,
     pickS2LevelForPixels,
     tokenLevel,
     tokenToLatLng,
@@ -31,7 +34,7 @@ describe("S2 token round-trip", () => {
         const dLatM = dLat * 111_000
         const dLngM = dLng * 111_000 * Math.cos((JC.lat * Math.PI) / 180)
         const total = Math.sqrt(dLatM * dLatM + dLngM * dLngM)
-        expect(total).toBeLessThan(S2_DIAMETER_METERS[level] / 2)
+        expect(total).toBeLessThan(S2_EDGE_METERS[level] / 2)
     })
 
     it("produces a stable hex-string token", () => {
@@ -64,7 +67,7 @@ describe("S2 parent walk", () => {
         const dLatM = Math.abs(pLat - JC.lat) * 111_000
         const dLngM = Math.abs(pLng - JC.lng) * 111_000 * Math.cos((JC.lat * Math.PI) / 180)
         const total = Math.sqrt(dLatM * dLatM + dLngM * dLngM)
-        expect(total).toBeLessThan(S2_DIAMETER_METERS[10])
+        expect(total).toBeLessThan(S2_EDGE_METERS[10])
     })
 
     it("Jersey City and Newark share a level 8 parent (they're close)", () => {
@@ -102,7 +105,7 @@ describe("S2 picker (`pickS2LevelForPixels`)", () => {
     for (const [target, zoom, expected] of cases) {
         it(`target=${target}px z=${zoom} lat=${NJ_LAT} → l${expected}`, () => {
             const picked = pickS2LevelForPixels(target, zoom, NJ_LAT)
-            // Allow ±1 slack — S2_DIAMETER_METERS are averages and cells
+            // Allow ±1 slack — S2_EDGE_METERS are averages and cells
             // vary ~15% by latitude, so boundary zooms straddle levels.
             expect(Math.abs(picked - expected)).toBeLessThanOrEqual(1)
         })
@@ -126,10 +129,42 @@ describe("S2 picker (`pickS2LevelForPixels`)", () => {
         }
     })
 
-    it("stays within [0, S2_MAX_LEVEL] bounds", () => {
-        // Extreme wide zoom → coarsest end; extreme deep → finest.
-        expect(pickS2LevelForPixels(2.5, 3, NJ_LAT)).toBeGreaterThanOrEqual(0)
-        expect(pickS2LevelForPixels(2.5, 22, NJ_LAT)).toBeLessThanOrEqual(S2_MAX_LEVEL)
+    it("never returns a level the pyramid doesn't build", () => {
+        // The edge table carries levels 0-3 (the published stats table,
+        // unabridged) but there's no pyramid behind them, and the walk used
+        // to start at `levels[0]` = 0. A large px target at wide zoom is the
+        // combination that reached them: `useCellsApi` then clamped to 4
+        // while every debug readout kept showing the unclamped value.
+        // At z=0 a 30px target is ~4700 km, coarser than l4's 490 km edge:
+        // the old walk answered l0, the clamped one answers l4.
+        const wide = [
+            pickS2LevelForPixels(30, 0, NJ_LAT),
+            pickS2LevelForPixels(30, 2, NJ_LAT),
+            pickS2LevelForPixels(2.5, 0, NJ_LAT),
+        ]
+        expect(wide).toEqual([S2_MIN_LEVEL, S2_MIN_LEVEL, S2_MIN_LEVEL])
+        expect(pickS2LevelForPixels(2.5, 22, NJ_LAT)).toBe(S2_MAX_LEVEL)
+        expect(pickS2LevelForPixels(0.01, 22, NJ_LAT)).toBe(S2_MAX_LEVEL)
+    })
+
+    it("finds the finest qualifying level even when pickMult is non-monotone", () => {
+        // The walk used to `break` at the first level below target, which is
+        // only correct while effective edge decreases monotonically. A
+        // multiplier that dips at level N and recovers at N+1 makes N+1
+        // unreachable under an early break.
+        const mult = { 19: 0.05, 20: 1, 21: 1 }
+        const at = (l: number) => s2PickEdgeMeters(l, mult)
+        expect([at(18), at(19), at(20), at(21)]).toEqual([30, 0.75, 7.5, 3.75])
+        // l19's effective edge (0.75m) sits *below* l20's (7.5m) and l21's
+        // (3.75m), so a break at l19 would stop early. The finest level still
+        // clearing a 3m target is l21, two levels past where a break stops.
+        const finest = [18, 19, 20, 21].filter(l => at(l) >= 3).pop()
+        expect(finest).toBe(21)
+    })
+
+    it("`clampS2Level` bounds both ends", () => {
+        expect([0, 3, 4, 12, 21, 22, 99].map(clampS2Level))
+            .toEqual([4, 4, 4, 12, 21, 21, 21])
     })
 })
 

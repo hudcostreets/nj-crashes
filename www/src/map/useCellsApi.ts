@@ -12,7 +12,10 @@ import type { StackedHex } from "./StackedHexLayer"
 import { CELLS_API_BASE } from "./config"
 import type { Bbox } from "./v2"
 import {
+    clampS2Level,
     pickS2LevelForPixels,
+    S2_MIN_TARGET_PX,
+    S2_TARGET_FACTOR,
     tokenCenterLngLat,
     tokenLevel,
     tokenToParent,
@@ -176,6 +179,16 @@ function loadManifest(): Promise<Manifest> {
  *  re-requests still hit memory without re-fetching. */
 const BATCH_SIZE = 25
 
+/** Px target used when a caller omits `hexPxTarget`.
+ *
+ *  Was a bare `1.2` — the H3-era *raw* target, unscaled by
+ *  `S2_TARGET_FACTOR`. Every real caller passes a value that has already
+ *  been through `hexPxTargetFor`, so the fallback path silently picked a
+ *  different level than the one `CrashMapSection` computed and displayed.
+ *  Expressed in the same terms as `hexPxTargetFor` at its lower clamp,
+ *  which is where any small-area view lands anyway. */
+const FALLBACK_PX_TARGET = S2_MIN_TARGET_PX * S2_TARGET_FACTOR
+
 /** Level below which the fetch drops the 4 string columns (`sld_name`,
  *  `cross_sld_name`, `mun`, `county`) by sending `labels=nums`.
  *
@@ -211,6 +224,14 @@ function buildBatchUrl(
     // Explicit until the worker drops H3 support (h3-removal Phase 2);
     // after that the param can go entirely.
     params.set("grid", "s2")
+    // Backstop, not routine behavior: the picker already aims at
+    // `BINS_BUDGET` cells, so this only fires when a view's actual cell
+    // count runs well past the model (dense urban scopes at fine levels).
+    // Batched requests never sent *any* cap before, and the client-side
+    // coarsen was removed in h3-removal Phase 1, so nothing bounded a
+    // response at all — a Hudson-fit l17 viewport measured 168k cells /
+    // 30 MB. See `specs/cells-compact-wire-format.md`.
+    params.set("maxCells", String(CELLS_MAX))
     if (res < LABELS_MIN_S2_LEVEL) params.set("labels", "nums")
     if (polygonStr) params.set("polygon", polygonStr)
     return `${CELLS_API_BASE}/v1/cells?${params}`
@@ -282,29 +303,22 @@ function ensureShardsCached(
  *  longer settle. */
 const DEBOUNCE_MS = 500
 
-/** Render budget — max hex bins shown on screen. The picker no longer
- *  caps based on theoretical max (`area / hex_area`); it picks res
- *  purely from zoom. The consumer (CrashMapSection) coarsens
- *  client-side via S2 parent rollup if a fetch comes back over budget
- *  (lossless: parent count = sum of children).
+/** Hard ceiling on cells in one response — the worker walks to a coarser
+ *  level rather than return more.
  *
- *  Bumped 30k → 60k after multi-res sharding landed: at z~10 over urban
- *  NJ the actual in-viewport r10 cell count is ~42k. 30k forced a coarsen
- *  to r9 (defeating the point of finer sharding). Then 60k → 100k:
- *  statewide r9 fits in ~66.5k cells, and 60k was forcing r9 → r8 at
- *  z≈9.6 (the default full-screen view). Deck.gl's HexagonLayer-style
- *  instanced rendering handles 100k+ smoothly. */
-export const CELLS_BUDGET = 100000
-
-/** Per-shard cap sent to the worker as `?maxCells=`. Worker walks
- *  coarser if a shard's cells would exceed this — only triggers
- *  adaptation for genuinely dense shards (e.g. urban Hudson at r10+).
- *  Splitting CELLS_BUDGET / N_shards is too tight: at N=31 every shard
- *  gets ~1k budget and most adapt unnecessarily. A flat 5k means
- *  sparse shards keep requested res; total cells across all shards is
- *  bounded by N × 5000 worst-case but realistically much less. The
- *  client coarsens the union if total still exceeds CELLS_BUDGET. */
-const SHARD_MAX_CELLS = 5000
+ *  Distinct from `BINS_BUDGET` (`picker.ts`), which is the *target* the
+ *  level picker aims at. This is the backstop for when reality overshoots
+ *  the target, so it sits deliberately above it: tripping it changes what
+ *  the user sees (a coarser level than the picker asked for), and that
+ *  should be rare and diagnosable, not the normal path.
+ *
+ *  The previous constant here was `CELLS_BUDGET = 100000`, justified
+ *  entirely by **H3** cell-count arithmetic ("statewide r9 fits in ~66.5k
+ *  cells", "at z~10 over urban NJ the actual in-viewport r10 cell count is
+ *  ~42k") — H3 r9/r10 are 0.1/0.015 km² cells, nothing like the S2 levels
+ *  the picker now selects. It was also inert: nothing sent it to the
+ *  worker and nothing enforced it client-side. */
+export const CELLS_MAX = 150_000
 
 /** Sutherland-Hodgman polygon-vs-axis-aligned-rectangle clip. Input ring
  *  is `[lon, lat]`, bbox is `[w, s, e, n]`. Output is the polygon clipped
@@ -521,11 +535,10 @@ export function useCellsApi(filter: CellsApiFilter | null):
         // `specs/s2-pyramid.md`).
         const level = filter.resOverride != null
             ? filter.resOverride
-            : pickS2LevelForPixels(filter.hexPxTarget ?? 1.2, filter.zoom, filter.viewportLat)
-        // Level clamp mirrors the worker's pyramid envelope (phase 8:
-        // base l21, data levels 4-21).
-        const S2_MIN = 4, S2_MAX = 21
-        const clamped = Math.max(S2_MIN, Math.min(S2_MAX, level))
+            : pickS2LevelForPixels(filter.hexPxTarget ?? FALLBACK_PX_TARGET, filter.zoom, filter.viewportLat)
+        // `pickS2LevelForPixels` already clamps; this covers `resOverride`,
+        // which comes from a URL param and is otherwise unvalidated.
+        const clamped = clampS2Level(level)
         const S2_STATEWIDE_SHARDS = ["89b", "89d"]
         const cover: CoverCell[] = S2_STATEWIDE_SHARDS.map(h3 => ({ h3, shard_res: 4 }))
         return { res: clamped, cover, reason: `s2 l${clamped} · ${cover.length} shard${cover.length > 1 ? "s" : ""}` }
@@ -557,8 +570,7 @@ export function useCellsApi(filter: CellsApiFilter | null):
         }
         // One URL per cover cell. Each cell carries its own shard_res
         // (heterogeneous cover ⇒ different parquet subdirs per cell).
-        const perShardCap = SHARD_MAX_CELLS
-        const urls = pick.cover.map(c => buildShardUrl(c.h3, pick.res, filter, polygonStr, perShardCap, c.shard_res))
+        const urls = pick.cover.map(c => buildShardUrl(c.h3, pick.res, filter, polygonStr, CELLS_MAX, c.shard_res))
         const shards = pick.cover.map(c => c.h3)
         return { shards, urls, polygonStr }
         // The covers themselves are stable across small pans thanks to

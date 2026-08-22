@@ -15,6 +15,9 @@
  */
 import { ColumnLayer } from "@deck.gl/layers"
 import type { PickingInfo } from "@deck.gl/core"
+// `s2/edges` is dependency-free, so sharing the table here doesn't drag
+// `nodes2ts` into the render layer — the reason it was duplicated before.
+import { S2_EDGE_METERS, clampS2Level } from "./s2/edges"
 
 export type StackableCrash = {
     lon: number
@@ -133,15 +136,6 @@ export function hexesToSegments(
     return segs
 }
 
-/** S2 cell edge length by level, in meters. Matches `S2_DIAMETER_METERS`
- *  in `map/s2/index.ts`; duplicated here to keep this layer module free
- *  of a runtime `nodes2ts` dep. Keep in sync. */
-const S2_EDGE_METERS: Record<number, number> = {
-    4: 490_000, 5: 245_000, 6: 122_500, 7: 61_250, 8: 30_625,
-    9: 15_312, 10: 7_656, 11: 3_828, 12: 1_914, 13: 957,
-    14: 478, 15: 239, 16: 120, 17: 60, 18: 30, 19: 15, 20: 7.5, 21: 3.75,
-}
-
 export function buildStackedHexLayer({
     id,
     segments,
@@ -177,7 +171,10 @@ export function buildStackedHexLayer({
     // never draw raw S2 cell polygons — on the ground they're sheared
     // parallelograms (~80° axes, ~10° tilt at NJ's spot on the cube face),
     // which read as visual noise rather than a grid.
-    const edge = S2_EDGE_METERS[resolution] ?? 478
+    // Clamp rather than fall back to a fixed edge: the old `?? 478` quietly
+    // drew *any* out-of-range level as level 14 (239 m radius), so a picker
+    // bug upstream surfaced as columns of the wrong size instead of an error.
+    const edge = S2_EDGE_METERS[clampS2Level(resolution)]
     const inscribed = edge / 2
     const diskResolution = 24
     const radius = Math.min(overrideRadiusMeters ?? inscribed, inscribed)

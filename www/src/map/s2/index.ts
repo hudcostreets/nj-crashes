@@ -1,70 +1,38 @@
-/** S2 cell math for the crash-map's dual-grid support (see
- *  `specs/s2-pyramid.md`). Sits alongside the H3 helpers in
- *  `StackedHexLayer` (H3_RADIUS_METERS) + `CrashMap` (picker) —
- *  same shape, different grid.
+/** S2 cell math for the crash map (see `specs/s2-pyramid.md`). S2 is the
+ *  only grid the client speaks; the H3 helpers this module was written
+ *  alongside are gone (`specs/h3-removal.md`).
  *
- *  S2 vs H3 semantics (relevant to callers):
- *  - S2 cells are square (spherical quads). Level ratio is 4× area /
- *    2× linear per level (H3 is 7× area / ~2.65× linear).
- *  - S2 children exactly tile parents. Multi-level aggregation is
- *    lossless (H3 has "boundary triangle" mismatch of ~5% per level).
- *  - Cell IDs are 64-bit ints. We use `S2CellId.toToken()` (14-char
- *    hex string) as the canonical wire format — sidesteps JS's
- *    `2^53` precision ceiling and D1's lack of int64 bind types.
+ *  Semantics worth knowing as a caller:
+ *  - S2 cells are square (spherical quads); each level is 4× the area /
+ *    2× the linear size of the next.
+ *  - Children exactly tile parents, so multi-level aggregation is
+ *    lossless — the property that motivated leaving H3, whose
+ *    "boundary triangles" mismatch ~5% per level.
+ *  - Cell IDs are 64-bit ints. We use `S2CellId.toToken()` (up to 16
+ *    hex chars, trailing zeros stripped) as the canonical wire format —
+ *    it sidesteps JS's `2^53` precision ceiling and D1's lack of int64
+ *    bind types, and lex order over tokens matches cell-id order.
  *
- *  Levels of interest: 4 (shard tier, ~4200 km² ≈ NJ half) through
- *  16 (~4 m² street-scale). NJ statewide covers ~15 cells at level 4.
+ *  Levels of interest: 4 (shard tier, ~490 km edge — NJ spans two of
+ *  them) through 21 (~3.75 m, the finest the pyramid builds). The
+ *  geometry table itself lives in `./edges` so the render layer can
+ *  share it without pulling in `nodes2ts`.
  */
 import { S2LatLng, S2CellId } from "nodes2ts"
 import { metersPerPixel } from "../CrashMap"
 import { binIntoCells, type StackableCrash, type StackedHex } from "../StackedHexLayer"
+import { S2_EDGE_METERS, S2_MAX_LEVEL, S2_MIN_LEVEL, clampS2Level, s2PickEdgeMeters } from "./edges"
+import tuning from "../tuning.json"
 
 export type S2Token = string
 
-/** Edge length of an average S2 cell, in meters, at each level.
- *  Sourced from Google's published stats table (min/avg/max per
- *  level): https://s2geometry.io/resources/s2cell_statistics.html.
- *  Values below are the AVG column.
- *
- *  We use "edge" here rather than diagonal because it's the natural
- *  on-screen width — a level-N cell occupies roughly `edge/mppx`
- *  pixels wide at a given zoom, mirroring how H3 uses its vertex
- *  diameter (`2 × H3_RADIUS_METERS[r]`) in the picker.
- *
- *  Cells vary ~15% within a level (avg vs actual by latitude); the
- *  picker's boundary zooms therefore straddle levels a bit. Close
- *  enough for hex-vs-S2 aesthetic comparison. */
-export const S2_DIAMETER_METERS: Record<number, number> = {
-    0: 7_842_000,     // 6 faces of the cube — toy scale
-    1: 3_921_000,
-    2: 1_961_000,
-    3: 980_000,
-    4: 490_000,       // ~NJ half
-    5: 245_000,
-    6: 122_500,       // ~county
-    7: 61_250,
-    8: 30_625,        // ~large town
-    9: 15_312,
-    10: 7_656,        // ~urban district
-    11: 3_828,        // ~city grid super-block
-    12: 1_914,        // ~city block
-    13: 957,          // ~half-block
-    14: 478,          // ~intersection cluster
-    15: 239,
-    16: 120,          // ~single street segment
-    17: 60,           // ~sidewalk-scale
-    18: 30,           // ~single parked car
-    19: 15,           // ~half an intersection / crosswalk-scale
-    20: 7.5,          // ~crosswalk width
-    21: 3.75,         // ~H3 r14 (the street-zoom default) — finest level we build
-}
-
-/** Level range the pyramid supports. Matches H3's r5-r15 for
- *  overlapping viewport coverage. Note `pickS2LevelForPixels` caps at
- *  the largest key in `S2_DIAMETER_METERS`, so raising this alone is
- *  not enough — the table has to grow too. */
-export const S2_MIN_LEVEL = 4
-export const S2_MAX_LEVEL = 21
+export {
+    S2_EDGE_METERS,
+    S2_MIN_LEVEL,
+    S2_MAX_LEVEL,
+    clampS2Level,
+    s2PickEdgeMeters,
+} from "./edges"
 
 /** Convert (lat, lon) → S2 cell token at `level`. Token is a
  *  14-char lowercase hex string, e.g. `"89c25c1"` (leading digits
@@ -97,7 +65,7 @@ export function tokenToParent(token: S2Token, level: number): S2Token {
 /** Approximate cell boundary as a small quadrilateral around the
  *  center. S2 cells are geodesic quadrilaterals but for the crash
  *  map's render (columns extruded from a centroid, radius derived
- *  from `S2_DIAMETER_METERS`) we only need `center` to be right —
+ *  from `S2_EDGE_METERS`) we only need `center` to be right —
  *  the true 4-vertex boundary is a nice-to-have. This helper
  *  approximates a small offset-square in lat/lng around the cell
  *  center at edge/2 scale. Consumers that want the exact geodesic
@@ -106,7 +74,7 @@ export function tokenBoundary(token: S2Token): [number, number][] {
     const [lat, lng] = tokenToLatLng(token)
     const level = tokenLevel(token)
     // Half-edge in meters → degrees (approx: 1° lat ≈ 111 km).
-    const halfMeters = S2_DIAMETER_METERS[level] / 2
+    const halfMeters = S2_EDGE_METERS[level] / 2
     const dLat = halfMeters / 111_000
     const dLng = halfMeters / (111_000 * Math.cos((lat * Math.PI) / 180))
     return [
@@ -143,40 +111,6 @@ export function binIntoS2Cells<T extends StackableCrash>(
     )
 }
 
-/** Given a target cell-diameter (px), a zoom, and a latitude, return
- *  the finest S2 level whose *average* cell diameter is ≥ the target.
- *  Same semantics as `pickHexResolutionForPixels`: walk coarsest →
- *  finest, keep updating `best` while cells still meet the target,
- *  break when they drop below.
- *
- *  Cell diameters here are Google's published averages (see
- *  `S2_DIAMETER_METERS`); actual cell diameters vary ~15% within a
- *  level, so the picker's boundaries are approximate. For NJ latitudes
- *  the average is close to the actual, so this drift is small. */
-/** S2 target scale — how much smaller than the H3-equivalent target
- *  we drive the S2 picker. Values < 1 bias toward finer S2 levels.
- *
- *  Two reasons S2 wants a smaller target than H3 at the same zoom:
- *  1. S2 levels step 2× per level (vs H3's 2.65×), so the strict `≥
- *     target` rule lands one level coarser than log-closest on half of
- *     zooms — e.g. at z=7 embed default, target 2.5px sits just above
- *     l12's 2.0px, and picker would return l11 (4.0px, sparse-looking).
- *  2. S2 cells tessellate at 100% coverage (H3 hexes ~91%), so coarse
- *     S2 cells look blockier than same-diameter H3 cells and benefit
- *     from one extra level of fineness at the aesthetic default.
- *
- *  Applied in `hexPxTargetFor` (`picker.ts`) — the picker itself still
- *  uses the strict `diameter ≥ target` rule so snap-buttons land exactly
- *  on their labelled level (a factor in the picker would push clicks one
- *  level past the labelled target).
- *
- *  0.7 keeps the wide-zoom trajectory (still lands l12 at z=6 in the embed
- *  viewport — 2.5px × 0.7 × mppx@z6 ≈ 3.2km ≥ l12's 4.9km-avg, l13 2.5km <)
- *  while ensuring l20/l21 don't get picked at every deep-zoom viewport
- *  (raised from an earlier 0.4 that pre-dated the l20/l21 extension —
- *  those levels render 1-2 css px wide, invisibly small, at the same
- *  1.0px auto target the 0.4 factor produced). */
-import tuning from "../tuning.json"
 
 /** S2 picker constants. Values come from `../tuning.json` — that file is
  *  the single source of truth, editable at `/tune` in dev mode (writes
@@ -194,19 +128,35 @@ export const S2_TARGET_FACTOR: number = tuning.s2.targetFactor
  *  (see `specs/tune-preference-learning.md`). */
 export const S2_MIN_TARGET_PX: number = tuning.s2.minTargetPx
 
+/** Per-level nudge on the picker's effective edge length. Lets a single
+ *  level be biased without moving the whole `targetFactor` curve — used to
+ *  keep l20/l21 (1-2 css px wide, invisibly small) from being selected at
+ *  every deep-zoom viewport. Inverting the picker means applying this too;
+ *  use `s2PickEdgeMeters`. */
 export const S2_PICK_MULT: Record<number, number> = Object.fromEntries(
     Object.entries(tuning.s2.pickMult).map(([k, v]) => [Number(k), v as number]),
 )
 
+/** Finest supported level whose effective edge is still ≥ `pixelTarget`
+ *  on screen.
+ *
+ *  Two things this deliberately does *not* do, both former bugs:
+ *  - It iterates `[S2_MIN_LEVEL, S2_MAX_LEVEL]`, not every key of the edge
+ *    table. The table carries levels 0-3 (continent-scale, no pyramid
+ *    behind them) and the walk used to start at `levels[0]` = 0, so a
+ *    large manual px target at low zoom returned l0-l3 — which
+ *    `useCellsApi` then silently clamped to 4 while every debug readout
+ *    kept showing the unclamped value.
+ *  - It scans the whole range instead of breaking at the first level below
+ *    target. `S2_PICK_MULT` makes the effective edge non-monotone in
+ *    level, so an early break can stop before the finest qualifying level
+ *    (today l21 would become unreachable if l20's multiplier ever dipped
+ *    below l21's). */
 export function pickS2LevelForPixels(pixelTarget: number, zoom: number, lat: number): number {
-    const mppx = metersPerPixel(zoom, lat)
-    const targetMeters = pixelTarget * mppx
-    const levels = Object.keys(S2_DIAMETER_METERS).map(Number).sort((a, b) => a - b)
-    let best = levels[0]
-    for (const l of levels) {
-        const diaMeters = S2_DIAMETER_METERS[l] * (S2_PICK_MULT[l] ?? 1)
-        if (diaMeters >= targetMeters) best = l
-        else break
+    const targetMeters = pixelTarget * metersPerPixel(zoom, lat)
+    let best = S2_MIN_LEVEL
+    for (let l = S2_MIN_LEVEL; l <= S2_MAX_LEVEL; l++) {
+        if (s2PickEdgeMeters(l, S2_PICK_MULT) >= targetMeters) best = l
     }
-    return best
+    return clampS2Level(best)
 }

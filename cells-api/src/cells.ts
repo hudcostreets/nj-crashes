@@ -1178,7 +1178,14 @@ export function parseCellsRequest(url: URL): CellsRequest {
     const sr = url.searchParams.get("shard_res")
     if (sr) {
         const n = parseInt(sr, 10)
-        if (!Number.isFinite(n) || n < 0 || n > 15) throw new HttpError(400, "shard_res must be in [0, 15]")
+        // Upper bound is grid-dependent: H3 resolutions stop at 15, S2 levels
+        // run to 21, and the S2 client sends `shard_res` on every request.
+        // The check was `n > 15` for both, so an S2 shard tier finer than l15
+        // would have 400'd with an H3-worded error.
+        const maxTier = grid === "s2" ? 21 : 15
+        if (!Number.isFinite(n) || n < 0 || n > maxTier) {
+            throw new HttpError(400, `shard_res must be in [0, ${maxTier}] for grid=${grid}`)
+        }
         shardRes = n
     }
 

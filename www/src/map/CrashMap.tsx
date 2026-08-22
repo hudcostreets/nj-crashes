@@ -14,7 +14,7 @@ import type { PickingInfo } from "@deck.gl/core"
 import type { FeatureCollection } from "geojson"
 import { useTouchPitch } from "./hooks/useTouchPitch"
 import { hexesToSegments, buildStackedHexLayer, Segment, StackedHex } from "./StackedHexLayer"
-import { binIntoS2Cells, pickS2LevelForPixels, tokenBoundary, latLngToToken, S2_DIAMETER_METERS } from "./s2"
+import { binIntoS2Cells, pickS2LevelForPixels, tokenBoundary, latLngToToken, S2_EDGE_METERS } from "./s2"
 
 export type MapMode = "scatter" | "heatmap" | "hexbin"
 
@@ -502,7 +502,7 @@ export function CrashMap({
         const { latitude, longitude, zoom } = viewState
         const mppx = 156543.03 * Math.cos((latitude * Math.PI) / 180) / Math.pow(2, zoom)
         const halfWm = mppx * 600, halfHm = mppx * 400
-        const edge = S2_DIAMETER_METERS[gridOverlayRes]
+        const edge = S2_EDGE_METERS[gridOverlayRes]
         if (!edge) return null
         // Cap cell count (≈ viewport area / cell area) to avoid pathological
         // fine-level × wide-viewport combos.
