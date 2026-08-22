@@ -331,50 +331,30 @@ def levels_cmd(view, cache, limit, url):
 
 
 # ---------------------------------------------------------------------------
-# Deck generation
+# Scope table
 #
-# The `/tune/ab` sampler needs a *wide* deck: with 8 hand-written views the
-# stream repeats itself within a session (Ryan: "many of the cases seemed
-# repetitive"), and a corpus that only covers Hudson/Cape May/JC/Hoboken can't
-# say anything about the rest of the state. These are derived from the muni
-# boundary file the site already ships, so centers/areas/fit-zooms are real
-# rather than eyeballed.
+# `/tune/ab` doesn't enumerate views — it *samples* them: pick a geographic
+# scope, a zoom, a viewport, and a center offset, all continuously. This table
+# is just the scope half of that space, one row per thing the real app can be
+# scoped to (`/`, `/c/<county>`, `/c/<county>/<muni>`), so the sampler can draw
+# from the same distribution of scales the site actually renders.
+#
+# Ryan 2026-08-22: "i'm imagining you could just generate views at ~random, not
+# have to list 42 ahead of time" — right, and the reason 42 was wrong isn't
+# only that it's a small number: a hand-picked list encodes a guess about which
+# views matter, which is exactly the guess the corpus is supposed to test.
 # ---------------------------------------------------------------------------
 
 MUNI_GEOJSON = WWW / 'public' / 'Municipal_Boundaries_of_NJ.geojson'
-DECK_JSON = WWW / 'src' / 'map' / 'tune-deck.json'
+SCOPES_JSON = WWW / 'src' / 'map' / 'tune-scopes.json'
 
-# Munis worth their own deck entry: the dense grids where binning is hardest,
-# a couple of sprawling townships (very different crash density per px), and
-# some small ones where the scope clamp bites hardest.
-DECK_MUNIS = [
-    'Jersey City', 'Hoboken', 'Weehawken', 'Newark', 'Paterson', 'Trenton',
-    'Camden', 'Atlantic City', 'Princeton', 'Montclair', 'Toms River',
-    'Hamilton', 'Cherry Hill', 'Vineland', 'Cape May',
-]
-
-# Statewide views: two `vp`s (the homepage embed clamp and full-screen), plus a
-# phone-shaped one — `areaPx` is the picker's main input and it swings 4× across
-# these, so they're distinct regimes, not cosmetic variants.
-STATEWIDE = [
-    ('nj', 'statewide wide (embed)', 40.07, -74.55, 7.5, 0.5, 'embed'),
-    ('njm', 'statewide mid', 40.5, -74.4, 9.0, 0.7, 'full'),
-    ('njp', 'statewide phone', 40.2, -74.5, 7.2, 0.5, 'phone'),
-]
-
-# Street-scale views (the scope clamp no longer binds; `targetFactor` drives).
-STREETS = [
-    ('jcs', 'JC street', 40.7441, -74.0585, 16.5, 1.0, 38),
-    ('nwks', 'Newark street', 40.7357, -74.1724, 16.5, 1.0, 67),
-    ('trns', 'Trenton street', 40.2206, -74.7597, 16.5, 1.0, 20),
-]
+# Statewide pseudo-scopes: no clip polygon, so the picker budgets the whole
+# viewport. Bbox drives the fit zoom like any other scope.
+NJ_NAME = 'New Jersey'
 
 
-def _slug(name: str) -> str:
-    words = re.sub(r'[^a-z ]', '', name.lower()).split()
-    if len(words) == 1:
-        return words[0][:4]
-    return ''.join(w[0] for w in words)
+def _slugify(name: str) -> str:
+    return re.sub(r'-+', '-', re.sub(r'[^a-z0-9]+', '-', name.lower())).strip('-')
 
 
 def _ring_points(geom: dict) -> Iterable[tuple[float, float]]:
@@ -385,8 +365,20 @@ def _ring_points(geom: dict) -> Iterable[tuple[float, float]]:
             yield from ((pt[0], pt[1]) for pt in ring)
 
 
+def _bbox(feats: list[dict]) -> tuple[float, float, float, float]:
+    pts = [pt for f in feats for pt in _ring_points(f['geometry'])]
+    lons = [x for x, _ in pts]
+    lats = [y for _, y in pts]
+    return min(lons), min(lats), max(lons), max(lats)
+
+
 def _fit_zoom(bbox: tuple[float, float, float, float], vp: tuple[int, int]) -> float:
-    """Zoom at which `bbox` just fits `vp` (Web Mercator, small-extent approx)."""
+    """Zoom at which `bbox` just fits `vp` (Web Mercator, small-extent approx).
+
+    The sampler treats this as the *wide* end of a scope's plausible zoom range:
+    zooming past it is what a user does, zooming out from it means the scope no
+    longer fills the frame and the scoped budget stops describing the view.
+    """
     from math import cos, log2, radians
     w, s, e, n = bbox
     lat = (s + n) / 2
@@ -398,64 +390,58 @@ def _fit_zoom(bbox: tuple[float, float, float, float], vp: tuple[int, int]) -> f
     return round(min(zw, zh), 2)
 
 
-VP_DIMS = {'embed': (1280, 480), 'full': (1470, 900), 'phone': (390, 700)}
+# The viewport the fit zoom is computed against. The page re-fits per sampled
+# viewport, so this is just the reference used for the stored `zoom`.
+REF_VP = (1470, 900)
 
 
-@tune.command('deck')
-@flag('-n', '--dry-run', help="Print the deck instead of writing it")
-@opt('-o', '--out', default=str(DECK_JSON), help='Output path')
-def deck_cmd(dry_run, out):
-    """Regenerate `www/src/map/tune-deck.json` from the muni boundary file."""
-    import json as _json
-    feats = _json.loads(MUNI_GEOJSON.read_text())['features']
+@tune.command('scopes')
+@flag('-n', '--dry-run', help="Print a summary instead of writing the table")
+@opt('-o', '--out', default=str(SCOPES_JSON), help='Output path')
+def scopes_cmd(dry_run, out):
+    """Regenerate `www/src/map/tune-scopes.json` from the muni boundary file."""
+    feats = json.loads(MUNI_GEOJSON.read_text())['features']
     counties: dict[str, list[dict]] = {}
-    munis: dict[str, dict] = {}
     for f in feats:
-        p = f['properties']
-        counties.setdefault(p['COUNTY'].title(), []).append(f)
-        munis.setdefault(p['NAME'], f)
+        counties.setdefault(f['properties']['COUNTY'].title(), []).append(f)
 
-    def entry(slug, name, feats_, vp, jitter, kind):
-        xs = [pt for f in feats_ for pt in _ring_points(f['geometry'])]
-        lons = [x for x, _ in xs]
-        lats = [y for _, y in xs]
-        bbox = (min(lons), min(lats), max(lons), max(lats))
-        km2 = round(sum(f['properties']['SQ_MILES'] for f in feats_) * 2.58999, 1)
+    def row(slug, name, kind, feats_, km2=None, pop=None):
+        w, s, e, n = _bbox(feats_)
         return {
             'slug': slug, 'name': name, 'kind': kind,
-            'lat': round((bbox[1] + bbox[3]) / 2, 4),
-            'lon': round((bbox[0] + bbox[2]) / 2, 4),
-            'zoom': _fit_zoom(bbox, VP_DIMS[vp]), 'zoomJitter': jitter,
-            'scopeKm2': km2, 'vp': vp,
+            'lat': round((s + n) / 2, 4), 'lon': round((w + e) / 2, 4),
+            # Half-extents, so the sampler can offset the center without
+            # walking off the scope.
+            'dlat': round((n - s) / 2, 4), 'dlon': round((e - w) / 2, 4),
+            'km2': round(km2 if km2 is not None else sum(f['properties']['SQ_MILES'] for f in feats_) * 2.58999, 1),
+            'zoom': _fit_zoom((w, s, e, n), REF_VP),
+            # Crash density tracks population far better than area does, and an
+            # empty rural frame is a wasted vote — the sampler weights by √pop
+            # so Newark doesn't swamp the draw either.
+            'pop': int(sum(f['properties']['POP2020'] or 0 for f in feats_)),
         }
 
-    deck = []
-    for slug, name, lat, lon, zoom, jitter, vp in STATEWIDE:
-        deck.append({'slug': slug, 'name': name, 'kind': 'statewide', 'lat': lat, 'lon': lon,
-                     'zoom': zoom, 'zoomJitter': jitter, 'scopeKm2': None, 'vp': vp})
-    for county, feats_ in sorted(counties.items()):
-        deck.append(entry(f'c-{_slug(county)}', f'{county} county', feats_, 'full', 0.4, 'county'))
-    for muni in DECK_MUNIS:
-        # `NAME` carries the municipal type ("Hamilton Township"), and a bare
-        # name can be ambiguous statewide (there are several Hamiltons) — take
-        # the largest match, which is the one worth a deck slot.
-        matches = [f for name, f in munis.items() if name == muni or name.startswith(muni + ' ')]
-        if not matches:
-            err(f'muni not found, skipping: {muni}')
-            continue
-        f = max(matches, key=lambda f: f['properties']['SQ_MILES'])
-        deck.append(entry(f'm-{_slug(muni)}', f'{muni} muni', [f], 'full', 0.6, 'muni'))
-    for slug, name, lat, lon, zoom, jitter, km2 in STREETS:
-        deck.append({'slug': slug, 'name': name, 'kind': 'street', 'lat': lat, 'lon': lon,
-                     'zoom': zoom, 'zoomJitter': jitter, 'scopeKm2': km2, 'vp': 'full'})
+    scopes = [row('nj', NJ_NAME, 'statewide', feats, km2=None, pop=None)]
+    scopes[0]['km2'] = None  # statewide = no clip polygon; budget the viewport
+    for county, cfeats in sorted(counties.items()):
+        scopes.append(row(f'c-{_slugify(county)}', f'{county} County', 'county', cfeats))
+    for f in feats:
+        name = f['properties']['NAME']
+        county = f['properties']['COUNTY'].title()
+        scopes.append(row(f'm-{_slugify(county)}-{_slugify(name)}', f'{name}, {county}', 'muni', [f]))
 
-    slugs = [d['slug'] for d in deck]
+    slugs = [s['slug'] for s in scopes]
     dupes = sorted({s for s in slugs if slugs.count(s) > 1})
     if dupes:
-        raise ValueError(f'duplicate deck slugs: {dupes}')
-    body = _json.dumps(deck, indent=4) + '\n'
+        raise ValueError(f'duplicate scope slugs: {dupes}')
+    body = json.dumps(scopes, indent=0, separators=(',', ':')).replace('\n', '') + '\n'
+    by_kind: dict[str, int] = {}
+    for s in scopes:
+        by_kind[s['kind']] = by_kind.get(s['kind'], 0) + 1
+    err(f'{len(scopes)} scopes ({", ".join(f"{v} {k}" for k, v in by_kind.items())}), {len(body) / 1024:.0f} KB')
     if dry_run:
-        print(body)
+        for s in scopes[:5]:
+            print(json.dumps(s))
     else:
         Path(out).write_text(body)
-        err(f'wrote {len(deck)} deck entries to {out}')
+        err(f'wrote {out}')
