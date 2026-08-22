@@ -7,8 +7,8 @@ offline half of that loop, per `specs/tune-preference-learning.md`: read the
 corpus, summarize directional pressure, and grid-search `tuning.json`
 candidates against the recorded preferences.
 
-Single source of truth for the picker math is the frontend: the S2 diameter
-table is parsed out of `www/src/map/s2/index.ts` and the shipped config out of
+Single source of truth for the picker math is the frontend: the S2 edge
+table is parsed out of `www/src/map/s2/edges.ts` and the shipped config out of
 `www/src/map/tuning.json`, so a change there can't silently desync this fit.
 """
 import json
@@ -25,36 +25,36 @@ from nj_crashes.utils.log import err
 from njdot.cli.base import njdot
 
 WWW = Path(__file__).parent.parent.parent / 'www'
-S2_TS = WWW / 'src' / 'map' / 's2' / 'index.ts'
+S2_TS = WWW / 'src' / 'map' / 's2' / 'edges.ts'
 TUNING_JSON = WWW / 'src' / 'map' / 'tuning.json'
 CELLS_API = 'https://crashes-cells-api.ryan-0dc.workers.dev'
 VOTES_URL = f'{CELLS_API}/v1/tune/votes'
 
-# `pickS2LevelForPixels` clamps to the diameter table; the client clamps the
-# result to this envelope (the levels the pyramid actually builds).
+# Levels the pyramid actually builds. `S2_EDGE_METERS` carries 0-3 too (it's
+# the unabridged published stats table); the picker iterates only this range.
 S2_MIN_LEVEL = 4
 S2_MAX_LEVEL = 21
 
 
-def s2_diameters() -> dict[int, float]:
-    """Parse `S2_DIAMETER_METERS` out of the TS module (no Python copy to drift)."""
+def s2_edges() -> dict[int, float]:
+    """Parse `S2_EDGE_METERS` out of the TS module (no Python copy to drift)."""
     src = S2_TS.read_text()
-    m = re.search(r'S2_DIAMETER_METERS: Record<number, number> = \{(.*?)\n\}', src, re.S)
+    m = re.search(r'S2_EDGE_METERS: Record<number, number> = \{(.*?)\n\}', src, re.S)
     if not m:
-        raise ValueError(f"{S2_TS}: couldn't locate S2_DIAMETER_METERS literal")
+        raise ValueError(f"{S2_TS}: couldn't locate S2_EDGE_METERS literal")
     out = {}
     for level, meters in re.findall(r'(\d+):\s*([\d_.]+)', m.group(1)):
         out[int(level)] = float(meters.replace('_', ''))
     if not out:
-        raise ValueError(f"{S2_TS}: S2_DIAMETER_METERS parsed empty")
+        raise ValueError(f"{S2_TS}: S2_EDGE_METERS parsed empty")
     return out
 
 
-DIAMETERS = s2_diameters()
+EDGES = s2_edges()
 
 
 def bins_budget() -> int:
-    """Parse `BINS_BUDGET` out of `picker.ts` (same no-drift rule as the diameters)."""
+    """Parse `BINS_BUDGET` out of `picker.ts` (same no-drift rule as the edges)."""
     src = (WWW / 'src' / 'map' / 'picker.ts').read_text()
     m = re.search(r'export const BINS_BUDGET = (\d+)', src)
     if not m:
@@ -103,16 +103,22 @@ class Cfg:
         return min(MAX_TARGET_PX, max(self.min_target_px, sqrt(area_px / max(1, BINS_BUDGET))))
 
     def pick(self, area_px: float, mppx: float) -> int:
-        """Port of `pickS2LevelForPixels` — finest level still ≥ the px target."""
+        """Port of `pickS2LevelForPixels` — finest supported level still ≥ the px target.
+
+        Mirrors the TS exactly, including the two things it deliberately does
+        *not* do (both former bugs there, and both present in the first cut of
+        this port): it iterates only the supported range rather than every key
+        of the edge table, and it scans the whole range rather than breaking at
+        the first level below target — `pickMult` makes effective edge
+        non-monotone in level, so a break can stop early.
+        """
         target_meters = self.target_px(area_px) * self.target_factor * mppx
         mult = self.mult
-        best = min(DIAMETERS)
-        for lvl in sorted(DIAMETERS):
-            if DIAMETERS[lvl] * mult.get(lvl, 1.0) >= target_meters:
+        best = S2_MIN_LEVEL
+        for lvl in range(S2_MIN_LEVEL, S2_MAX_LEVEL + 1):
+            if EDGES[lvl] * mult.get(lvl, 1.0) >= target_meters:
                 best = lvl
-            else:
-                break
-        return max(S2_MIN_LEVEL, min(S2_MAX_LEVEL, best))
+        return best
 
 
 @dataclass(frozen=True)
