@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Aug 21 10:00:02 EDT 2026</RUNDATE>
+  <RUNDATE>Sat Aug 22 10:00:06 EDT 2026</RUNDATE>
   <STATSYEAR>2026</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -157,7 +157,7 @@
     <MUNICIPALITY MCODE="0909" MNAME="Secaucus Town">
       <ACCIDENT ACCID="14749" DATE="08/14/2026" TIME="0901">
         <HIGHWAY>95</HIGHWAY>
-        <LOCATION>New Jersey Turnpike</LOCATION>
+        <LOCATION>New Jersey Turnpike MP 112.4</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
