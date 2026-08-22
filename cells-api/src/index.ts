@@ -19,6 +19,7 @@ import { createHandlers } from "@rdub/file-tree/server"
 import { handleCellsRequest, HttpError, parseCellsRequest } from "./cells"
 import { loadManifest } from "./manifest"
 import { handleGet, handleList, handleZipEntries, handleZipEntry } from "./raw"
+import { insertVote, listVotes, requireWriteAuth, updateVote } from "./tune"
 
 interface Env {
     CELLS_BUCKET: R2Bucket
@@ -32,13 +33,19 @@ interface Env {
      *  full-labels) predicate, `cells_s2_l{level}` serves the query
      *  directly. Otherwise the parquet pyramid path handles it. */
     CELLS_S2_DB?: D1Database
+    /** Picker-tuning preference votes (`/v1/tune/votes`, see `tune.ts`).
+     *  Optional so a deploy without the binding still serves cells. */
+    TUNE_DB?: D1Database
+    /** Bearer credential required to write votes. Unset ⇒ writes are
+     *  refused (fail closed). Set via `wrangler secret put TUNE_TOKEN`. */
+    TUNE_TOKEN?: string
 }
 
 function corsHeaders(env: Env, extra: HeadersInit = {}): HeadersInit {
     return {
         "Access-Control-Allow-Origin": env.CORS_ORIGIN ?? "*",
-        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, If-None-Match, Range",
+        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS, POST, PATCH",
+        "Access-Control-Allow-Headers": "Content-Type, If-None-Match, Range, Authorization",
         // Browsers strip non-safelisted response headers from JS
         // unless explicitly exposed. The text/CSV viewers parse
         // `Content-Range` to learn total file size from a 1-byte
@@ -82,11 +89,38 @@ export default {
         if (request.method === "OPTIONS") {
             return new Response(null, { status: 204, headers: corsHeaders(env) })
         }
-        if (request.method !== "GET" && request.method !== "HEAD") {
+        // `/v1/tune/votes` is the one writable surface (POST a vote,
+        // PATCH a verdict); everything else is read-only.
+        const isTuneWrite = pathname.startsWith("/v1/tune/votes")
+            && (request.method === "POST" || request.method === "PATCH")
+        if (request.method !== "GET" && request.method !== "HEAD" && !isTuneWrite) {
             return new Response("method not allowed", { status: 405, headers: corsHeaders(env) })
         }
 
         try {
+            if (isTuneWrite) {
+                requireWriteAuth(request, env.TUNE_TOKEN)
+                const body = await request.json()
+                // PATCH /v1/tune/votes/<id> — POST /v1/tune/votes appends.
+                const idPart = pathname.slice("/v1/tune/votes".length).replace(/^\//, "")
+                if (request.method === "PATCH") {
+                    const id = parseInt(idPart, 10)
+                    if (isNaN(id)) throw new HttpError(400, "PATCH requires /v1/tune/votes/<id>")
+                    return new Response(JSON.stringify(await updateVote(env.TUNE_DB, id, body)), {
+                        headers: corsHeaders(env),
+                    })
+                }
+                // Voter identity is NULL until $oa/auth lands; a token
+                // write is by definition the local admin.
+                return new Response(JSON.stringify(await insertVote(env.TUNE_DB, body, null)), {
+                    headers: corsHeaders(env),
+                })
+            }
+            if (pathname === "/v1/tune/votes") {
+                return new Response(JSON.stringify(await listVotes(env.TUNE_DB, url)), {
+                    headers: corsHeaders(env, { "Cache-Control": "no-store" }),
+                })
+            }
             // HEAD is allowed for `/v1/raw/get` (hyparquet's
             // asyncBufferFromUrl probes file size via HEAD before
             // issuing range reads). For other endpoints HEAD is

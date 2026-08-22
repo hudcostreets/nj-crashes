@@ -6,23 +6,26 @@ Picker tuning by "edit a constant, eyeball one view" silently skews other views 
 
 v2 inverts it: the page generates side-by-side comparisons, Ryan only expresses preference, and translating the accumulated "vibes" into picker parameters (thresholds / a decision tree over `{viewport, zoom, bins returned, clip share, …}`) is Claude's offline job.
 
-## Collection (implemented; v2.1)
+## Collection (implemented; v3)
 
 - `/tune/ab` samples a view from a deck (statewide / county / muni / street, with per-view zoom jitter), computes the shipped picker's level `prod`, and renders it against an adjacent level (`prod±1`, direction random, sides randomized).
 - **Informed voting** (v2.1, replacing the original blind design): each side's corner label shows its level, geom/inscribed/render px, cells, body + wire bytes, and perceived load ms — Ryan: "i'll want to take those metrics into account in some cases."
 - Verdicts: `1` left · `2` tie · `3` right · **`4` neither — want finer than both** · **`5` neither — want coarser than both** · `s` skip (not recorded). The directional "neither" verdicts capture sweet-spots outside the shown pair (e.g. statewide-mid where both l12 and l13 read "too griddy"). An optional free-text note rides along with each vote.
 - Voting is gated until both sides' cells have loaded, so recorded metrics are real.
-- Each vote POSTs to the dev middleware `/__tune/vote` (in `www/vite.config.ts`), which appends one row to **`www/tune/votes.jsonl`** — git-tracked, accumulating across sessions. `GET /__tune/votes` returns the corpus.
-- The current pair is URL-encoded (`?p=viewIdx:zoom:left:right`, via `use-prms`) so any case can be revisited or shared.
-- A **history panel** lists all votes (chosen side highlighted); choice is editable in place (`POST /__tune/vote/update` rewrites the row by `ts`, stamping `editedTs`), and `open` reloads that row's exact pair.
-- **Not D1, deliberately**: dev-only, single-user, zero-infra JSONL that git tracks. D1/worker only earns its keep if voting should ever work from prod/mobile.
+- Votes live in the **`tune` D1 database** (`picker_votes` table, schema `cells-api/sql/tune.sql`), served by the cells-api worker: `GET /v1/tune/votes[?limit=&view=]` (public), `POST /v1/tune/votes`, `PATCH /v1/tune/votes/<id>` (both require `Authorization: Bearer $TUNE_TOKEN`). Columns are flat so the corpus is queryable in SQL — analysis is `wrangler d1 execute tune --remote --command "SELECT …"`, not a JSONL parse.
+  - Writes **fail closed**: no `TUNE_TOKEN` secret on the worker ⇒ writes refused. The client sends `VITE_TUNE_TOKEN` from the gitignored `www/.env.local`.
+  - The `voter` column is the seam for **$oa/auth**: token writes record NULL (the local admin); logged-in voters would record their identity, which is what lets others participate in admin-ish actions like this. (v2 kept votes in a git-tracked JSONL; Ryan: "I definitely don't want a Git-tracked jsonl pretending to be a DB" — it is gone.)
+- The current pair is URL-encoded, golfed but readable: **`?v=<deck-slug>&z=<zoom>&l=<level>&r=<level>`** (e.g. `?v=hud&z=11.14&l=18&r=17`). Deck entries carry a stable `slug` so links survive renames/reordering; `z` uses `floatParam`'s string encoding (2 decimals) rather than the default base64 float.
+- A **history panel** lists all votes newest-first (chosen side highlighted); choice is editable in place (PATCH stamps `edited_ts`, shown as a `*`), and `open` reloads that row's exact pair.
 
-### Vote-row schema (v2)
+### Vote wire schema
 
 ```json
 {
-  "v": 2,
+  "id": 1,
   "ts": "2026-08-22T…",
+  "editedTs": null,
+  "voter": null,
   "view": "Hudson county fit",
   "lat": 40.73, "lon": -74.09, "zoom": 10.93,
   "vp": [1470, 900],
@@ -40,13 +43,13 @@ v2 inverts it: the page generates side-by-side comparisons, Ryan only expresses 
 }
 ```
 
-`cfg` snapshots the shipped config at vote time, so rows remain interpretable as `tuning.json` evolves. `chosen: null` ⇔ tie/finer/coarser. `choice ∈ {left, right, tie, finer, coarser}`. `wireBytes: 0` means unknown — it needs the cells-api worker's `Timing-Allow-Origin: *` header (added in `cells-api/src/index.ts`; live after the next `wrangler deploy`).
+`cfg` snapshots the shipped config at vote time, so rows remain interpretable as `tuning.json` evolves. `chosen: null` ⇔ tie/finer/coarser. `choice ∈ {left, right, tie, finer, coarser}`. `wireBytes: 0` means unknown — it needs the cells-api worker's `Timing-Allow-Origin: *` header (`cells-api/src/index.ts`, deployed 2026-08-22).
 
 ## Learning (Claude, offline — the contract)
 
 Periodically (on request, or when the corpus grows meaningfully):
 
-1. Read `www/tune/votes.jsonl`.
+1. Read the corpus: `curl -s $CELLS_API/v1/tune/votes`, or query it directly with `wrangler d1 execute tune --remote --command "SELECT view, choice, count(*) …"` (grouping/filtering in SQL beats pulling every row).
 2. Aggregate per feature region. Useful views of the data:
    - **Prod win rate** overall and per deck view: `chosen == prod` vs `chosen == alt` vs tie. High tie/alt-agnostic regions = boundary insensitivity (don't tune there).
    - **Directional pressure**: among decisive votes, does the preferred side skew finer or coarser than prod, and in which `{zoom, areaPx, bins}` regions?

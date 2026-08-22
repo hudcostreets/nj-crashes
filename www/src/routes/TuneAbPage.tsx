@@ -5,7 +5,7 @@
  *  shipped picker's level vs an adjacent level — and asks which looks
  *  better. No config authoring. Each vote POSTs to the dev middleware
  *  (`/__tune/vote`), appending a JSONL row to git-tracked
- *  `www/tune/votes.jsonl`; rows carry the features a picker learner
+ *  the `tune` D1 database; rows carry the features a picker learner
  *  conditions on (viewport dims, zoom, mppx, clip-share-budgeted areaPx,
  *  per-side level/bins/bytes/latency, config snapshot) plus the choice.
  *  Fitting the corpus into picker thresholds happens offline (see
@@ -16,10 +16,17 @@
  *  take those metrics into account"). Richer verdicts for
  *  outside-the-pair sweet spots: 4 = both too coarse (want finer),
  *  5 = both too fine (want coarser), plus an optional free-text note.
- *  The current pair is URL-encoded (`?p=viewIdx:zoom:left:right`) so a
- *  case can be revisited/shared, and a history panel lists past votes
- *  with in-place editing (choice/note rewrite the row via
- *  `/__tune/vote/update`, stamping `editedTs`).
+ *  The current pair is URL-encoded (`?v=<slug>&z=<zoom>&l=<L>&r=<R>`) so
+ *  a case can be revisited/shared, and a history panel lists past votes
+ *  with in-place editing (stamping `editedTs`).
+ *
+ *  v3: votes live in the `tune` D1 database behind the cells-api worker
+ *  (`GET/POST /v1/tune/votes`, `PATCH /v1/tune/votes/<id>`), not a
+ *  git-tracked JSONL — Ryan: "I definitely don't want a Git-tracked
+ *  jsonl pretending to be a DB", and a real DB is what lets others log
+ *  in and vote once $oa/auth lands. Writes carry `VITE_TUNE_TOKEN` as a
+ *  bearer credential (worker refuses writes when its `TUNE_TOKEN` secret
+ *  is unset); reads are public.
  *
  *  Keys: 1 left · 2 tie · 3 right · 4 finer · 5 coarser · s skip.
  *
@@ -29,13 +36,18 @@
  *  (km²) rather than fetching outlines; close enough for level choice.
  */
 import { useCallback, useEffect, useState } from "react"
-import { useUrlState, stringParam } from "use-prms"
+import { useUrlStates, defStringParam, floatParam, intParam } from "use-prms"
 import { metersPerPixel } from "@/src/map/CrashMap"
+import { CELLS_API_BASE } from "@/src/map/config"
 import { S2_MAX_LEVEL, S2_MIN_LEVEL, S2_PICK_MULT, S2_TARGET_FACTOR } from "@/src/map/s2"
 import { BINS_BUDGET, autoHexPxTarget } from "@/src/map/picker"
 import { MiniMap, fmtBytes, pickS2WithOverrides, type MiniMapStats } from "./TunePage"
 
 type EvalView = {
+    /** URL-param slug — short but readable (`hud`, `jcs`). Stable
+     *  identity for the deck entry: renaming `name` or reordering `DECK`
+     *  doesn't invalidate saved links or vote rows. */
+    slug: string
     name: string
     lat: number
     lon: number
@@ -53,14 +65,14 @@ type EvalView = {
 /** Representative sweep: wide/mid statewide, large + small counties at
  *  county-fits-viewport zooms, big + small munis, street level. */
 const DECK: EvalView[] = [
-    { name: "statewide wide (embed)", lat: 40.07, lon: -74.55, zoom: 7.5, zoomJitter: 0.5, scopeKm2: null, vp: "embed" },
-    { name: "statewide mid", lat: 40.5, lon: -74.4, zoom: 9.0, zoomJitter: 0.7, scopeKm2: null, vp: "full" },
-    { name: "Hudson county fit", lat: 40.73, lon: -74.09, zoom: 10.8, zoomJitter: 0.4, scopeKm2: 120, vp: "full" },
-    { name: "Hudson mid", lat: 40.73, lon: -74.07, zoom: 12.5, zoomJitter: 0.7, scopeKm2: 120, vp: "full" },
-    { name: "Cape May county fit", lat: 39.1, lon: -74.82, zoom: 10.0, zoomJitter: 0.4, scopeKm2: 620, vp: "full" },
-    { name: "Jersey City muni", lat: 40.72, lon: -74.06, zoom: 13.0, zoomJitter: 0.6, scopeKm2: 38, vp: "full" },
-    { name: "Hoboken muni", lat: 40.745, lon: -74.03, zoom: 13.5, zoomJitter: 0.6, scopeKm2: 3.3, vp: "full" },
-    { name: "JC street", lat: 40.7441, lon: -74.0585, zoom: 16.5, zoomJitter: 1.0, scopeKm2: 120, vp: "full" },
+    { slug: "nj", name: "statewide wide (embed)", lat: 40.07, lon: -74.55, zoom: 7.5, zoomJitter: 0.5, scopeKm2: null, vp: "embed" },
+    { slug: "njm", name: "statewide mid", lat: 40.5, lon: -74.4, zoom: 9.0, zoomJitter: 0.7, scopeKm2: null, vp: "full" },
+    { slug: "hud", name: "Hudson county fit", lat: 40.73, lon: -74.09, zoom: 10.8, zoomJitter: 0.4, scopeKm2: 120, vp: "full" },
+    { slug: "hudm", name: "Hudson mid", lat: 40.73, lon: -74.07, zoom: 12.5, zoomJitter: 0.7, scopeKm2: 120, vp: "full" },
+    { slug: "cm", name: "Cape May county fit", lat: 39.1, lon: -74.82, zoom: 10.0, zoomJitter: 0.4, scopeKm2: 620, vp: "full" },
+    { slug: "jc", name: "Jersey City muni", lat: 40.72, lon: -74.06, zoom: 13.0, zoomJitter: 0.6, scopeKm2: 38, vp: "full" },
+    { slug: "hob", name: "Hoboken muni", lat: 40.745, lon: -74.03, zoom: 13.5, zoomJitter: 0.6, scopeKm2: 3.3, vp: "full" },
+    { slug: "jcs", name: "JC street", lat: 40.7441, lon: -74.0585, zoom: 16.5, zoomJitter: 1.0, scopeKm2: 120, vp: "full" },
 ]
 
 const VP_DIMS: Record<EvalView["vp"], [number, number]> = {
@@ -87,7 +99,6 @@ function pickWithFeatures(view: EvalView, zoom: number) {
 }
 
 type Pair = {
-    viewIdx: number
     view: EvalView
     zoom: number
     /** Displayed levels; one of them is `prod` (the shipped pick). */
@@ -97,16 +108,14 @@ type Pair = {
     feats: { mppx: number; areaPx: number; autoTargetPx: number }
 }
 
-function makePair(viewIdx: number, zoom: number, left: number, right: number): Pair {
-    const view = DECK[viewIdx]
+function makePair(view: EvalView, zoom: number, left: number, right: number): Pair {
     const { level: prod, ...feats } = pickWithFeatures(view, zoom)
-    return { viewIdx, view, zoom, left, right, prod, feats }
+    return { view, zoom, left, right, prod, feats }
 }
 
 function genPair(): Pair {
-    const viewIdx = Math.floor(Math.random() * DECK.length)
-    const view = DECK[viewIdx]
-    const zoom = view.zoom + (Math.random() * 2 - 1) * view.zoomJitter
+    const view = DECK[Math.floor(Math.random() * DECK.length)]
+    const zoom = +(view.zoom + (Math.random() * 2 - 1) * view.zoomJitter).toFixed(2)
     const { level: prod } = pickWithFeatures(view, zoom)
     // Challenger: an adjacent level, direction random (flipped at the
     // pyramid's edges). Prod-vs-neighbor is exactly the label the
@@ -114,22 +123,7 @@ function genPair(): Pair {
     const dir = Math.random() < 0.5 ? -1 : 1
     const alt = prod + dir >= S2_MIN_LEVEL && prod + dir <= S2_MAX_LEVEL ? prod + dir : prod - dir
     const leftIsProd = Math.random() < 0.5
-    return makePair(viewIdx, zoom, leftIsProd ? prod : alt, leftIsProd ? alt : prod)
-}
-
-/** `?p=viewIdx:zoom:left:right` — enough to reconstruct the pair
- *  deterministically (prod/features recompute from view+zoom). */
-function encodePair(p: Pair): string {
-    return `${p.viewIdx}:${p.zoom.toFixed(3)}:${p.left}:${p.right}`
-}
-
-function decodePair(s: string | undefined): Pair | null {
-    if (!s) return null
-    const parts = s.split(":").map(Number)
-    if (parts.length !== 4 || parts.some(isNaN)) return null
-    const [viewIdx, zoom, left, right] = parts
-    if (viewIdx < 0 || viewIdx >= DECK.length) return null
-    return makePair(viewIdx, zoom, left, right)
+    return makePair(view, zoom, leftIsProd ? prod : alt, leftIsProd ? alt : prod)
 }
 
 /** left/right preference; tie; or "the sweet spot is outside this pair"
@@ -146,13 +140,14 @@ const CHOICES: { key: string; choice: Choice | "skip"; label: string }[] = [
 
 type SideRec = { level: number; bins: number | null; bodyBytes: number | null; wireBytes: number | null; ms: number | null }
 
-/** One `votes.jsonl` row (v2 schema; v1 rows — plain-number left/right +
- *  a separate `bins` object — still exist at the head of the file and
- *  are normalized on read in `parseRow`). */
+/** One `picker_votes` row, as the worker's `/v1/tune/votes` returns it
+ *  (see `cells-api/src/tune.ts`; SQL columns are flat, the wire shape
+ *  nests per-side stats). */
 type VoteRow = {
-    v: 2
+    id: number
     ts: string
-    editedTs?: string
+    editedTs: string | null
+    voter: string | null
     view: string
     lat: number
     lon: number
@@ -171,29 +166,44 @@ type VoteRow = {
     note: string
 }
 
-function parseRow(line: string): VoteRow | null {
-    try {
-        const raw = JSON.parse(line)
-        if (raw.v === 2) return raw as VoteRow
-        // v1 → v2 normalization (level-only sides).
-        const side = (which: "left" | "right"): SideRec => ({
-            level: raw[which],
-            bins: raw.bins?.[which] ?? null,
-            bodyBytes: null,
-            wireBytes: null,
-            ms: null,
-        })
-        return { ...raw, v: 2, left: side("left"), right: side("right"), note: raw.note ?? "" }
-    } catch {
-        return null
-    }
+const VOTES_URL = `${CELLS_API_BASE}/v1/tune/votes`
+
+/** Bearer credential for vote writes. Dev-only (`www/.env.local`); the
+ *  worker refuses writes when its own `TUNE_TOKEN` secret is unset, so a
+ *  build without this just can't vote. */
+const TUNE_TOKEN = import.meta.env.VITE_TUNE_TOKEN as string | undefined
+
+async function postJson(url: string, method: "POST" | "PATCH", body: unknown): Promise<void> {
+    if (!TUNE_TOKEN) throw new Error("VITE_TUNE_TOKEN unset — see www/.env.local")
+    const r = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${TUNE_TOKEN}` },
+        body: JSON.stringify(body),
+    })
+    const json = await r.json().catch(() => ({}))
+    if (!r.ok || !json.ok) throw new Error(json.error ?? `HTTP ${r.status}`)
 }
 
 type Stats = { left: MiniMapStats | null; right: MiniMapStats | null }
 
+/** URL params, golfed: `v` = deck slug, `z` = zoom, `l`/`r` = levels.
+ *  A missing/unknown `v` means "no pinned pair" — the page samples one.
+ *  `z` uses string encoding (`z=11.92`), not the default base64 float:
+ *  2 decimals is all the picker resolves, and a legible zoom beats 11
+ *  opaque chars for a URL meant to be eyeballed and shared. */
+const URL_PARAMS = {
+    v: defStringParam(""),
+    z: floatParam({ default: 0, encoding: "string", decimals: 2 }),
+    l: intParam(0),
+    r: intParam(0),
+}
+
 export default function TuneAbPage() {
-    const [pParam, setPParam] = useUrlState("p", stringParam())
-    const [pair, setPair] = useState<Pair | null>(() => decodePair(pParam) ?? genPair())
+    const { values: url, setValues: setUrl } = useUrlStates(URL_PARAMS)
+    const [pair, setPair] = useState<Pair | null>(() => {
+        const view = DECK.find(v => v.slug === url.v)
+        return view && url.z && url.l && url.r ? makePair(view, url.z, url.l, url.r) : genPair()
+    })
     const [stats, setStats] = useState<Stats>({ left: null, right: null })
     const [rows, setRows] = useState<VoteRow[]>([])
     const [session, setSession] = useState(0)
@@ -201,16 +211,15 @@ export default function TuneAbPage() {
     const [saveError, setSaveError] = useState<string | null>(null)
 
     useEffect(() => {
-        if (pair) setPParam(encodePair(pair))
-    }, [pair, setPParam])
+        if (!pair) return
+        setUrl({ v: pair.view.slug, z: pair.zoom, l: pair.left, r: pair.right })
+    }, [pair, setUrl])
 
     const refreshRows = useCallback(() => {
-        fetch("/__tune/votes")
-            .then(r => r.text())
-            .then(text => setRows(
-                text.split("\n").filter(Boolean).map(parseRow).filter((r): r is VoteRow => r !== null),
-            ))
-            .catch(() => {})
+        fetch(VOTES_URL)
+            .then(r => r.json())
+            .then(json => setRows(json.votes ?? []))
+            .catch(err => setSaveError(`load: ${err}`))
     }, [])
     useEffect(() => { refreshRows() }, [refreshRows])
 
@@ -221,11 +230,11 @@ export default function TuneAbPage() {
     }, [])
 
     const openRow = useCallback((row: VoteRow) => {
-        const viewIdx = DECK.findIndex(v => v.name === row.view)
-        if (viewIdx < 0) return  // deck entry renamed/removed since the vote
+        const view = DECK.find(v => v.name === row.view)
+        if (!view) return  // deck entry renamed/removed since the vote
         setStats({ left: null, right: null })
         setNote(row.note ?? "")
-        setPair(makePair(viewIdx, row.zoom, row.left.level, row.right.level))
+        setPair(makePair(view, row.zoom, row.left.level, row.right.level))
     }, [])
 
     const onLeftStats = useCallback((s: MiniMapStats) => setStats(prev => ({ ...prev, left: s })), [])
@@ -243,8 +252,7 @@ export default function TuneAbPage() {
             wireBytes: s?.wireBytes ?? null,
             ms: s?.ms ?? null,
         })
-        const rec: VoteRow = {
-            v: 2,
+        const rec = {
             ts: new Date().toISOString(),
             view: pair.view.name,
             lat: pair.view.lat,
@@ -264,33 +272,21 @@ export default function TuneAbPage() {
             note: note.trim(),
         }
         try {
-            const r = await fetch("/__tune/vote", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(rec),
-            })
-            const json = await r.json()
-            if (!r.ok || !json.ok) throw new Error(json.error ?? `HTTP ${r.status}`)
+            await postJson(VOTES_URL, "POST", rec)
             setSaveError(null)
-            setRows(prev => [...prev, rec])
             setSession(s => s + 1)
+            refreshRows()
             next()
         } catch (err) {
             // Leave the pair up — the vote wasn't recorded, so retrying
             // (or skipping) is the user's call.
             setSaveError(String(err))
         }
-    }, [pair, stats, loaded, note, next])
+    }, [pair, stats, loaded, note, next, refreshRows])
 
     const updateRow = useCallback(async (row: VoteRow, patch: Partial<VoteRow>) => {
         try {
-            const r = await fetch("/__tune/vote/update", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ts: row.ts, ...patch }),
-            })
-            const json = await r.json()
-            if (!r.ok || !json.ok) throw new Error(json.error ?? `HTTP ${r.status}`)
+            await postJson(`${VOTES_URL}/${row.id}`, "PATCH", patch)
             setSaveError(null)
             refreshRows()
         } catch (err) {
@@ -322,7 +318,7 @@ export default function TuneAbPage() {
             <p style={{ fontSize: 13, color: "#aaa", marginBottom: 12 }}>
                 Which binning looks better? <b>1</b> left · <b>2</b> tie · <b>3</b> right ·{" "}
                 <b>4</b> neither (finer) · <b>5</b> neither (coarser) · <b>s</b> skip.
-                Votes append to <code>www/tune/votes.jsonl</code>
+                Votes go to the <code>tune</code> D1
                 {" · "}{rows.length} all-time · {session} this session
             </p>
             {saveError && (
@@ -342,7 +338,7 @@ export default function TuneAbPage() {
                             const level = pair[sideName]
                             return (
                                 <MiniMap
-                                    key={`${sideName}-${encodePair(pair)}`}
+                                    key={`${sideName}-${pair.view.slug}-${pair.zoom}-${level}`}
                                     lat={pair.view.lat} lon={pair.view.lon} zoom={pair.zoom} level={level}
                                     renderMode="curve" range={null} dfStart={1} dfEnd={0.5}
                                     onLatLonChange={() => {}}
@@ -380,8 +376,8 @@ export default function TuneAbPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {[...rows].reverse().map(row => (
-                                <tr key={row.ts} style={{ borderTop: "1px solid #2a2a2a" }}>
+                            {rows.map(row => (
+                                <tr key={row.id} style={{ borderTop: "1px solid #2a2a2a" }}>
                                     <td style={{ padding: "3px 10px 3px 0", color: "#888" }} title={row.ts + (row.editedTs ? ` (edited ${row.editedTs})` : "")}>
                                         {row.ts.slice(5, 16).replace("T", " ")}{row.editedTs ? "*" : ""}
                                     </td>

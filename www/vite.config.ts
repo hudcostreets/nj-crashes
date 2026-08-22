@@ -12,7 +12,6 @@ const allowedHosts = process.env.VITE_ALLOWED_HOSTS?.split(',') ?? []
  *  trailing newline). The picker imports that file, so Vite HMR reloads
  *  the app with the new constants. Committed as the shipped defaults. */
 function tuneWriterPlugin(): Plugin {
-  const votesFile = path.resolve(__dirname, 'tune/votes.jsonl')
   return {
     name: 'tune-writer',
     apply: 'serve',
@@ -30,67 +29,6 @@ function tuneWriterPlugin(): Plugin {
             res.setHeader('Content-Type', 'application/json')
             res.statusCode = 200
             res.end(JSON.stringify({ ok: true, file }))
-          } catch (err) {
-            res.statusCode = 400
-            res.end(JSON.stringify({ ok: false, error: String(err) }))
-          }
-        })
-      })
-      // `/tune/ab` preference stream: GET returns the accumulated votes
-      // JSONL verbatim (page counts lines on mount; Claude reads the file
-      // directly when fitting thresholds).
-      server.middlewares.use('/__tune/votes', (req, res, next) => {
-        if (req.method !== 'GET') return next()
-        res.setHeader('Content-Type', 'text/plain')
-        res.statusCode = 200
-        res.end(fs.existsSync(votesFile) ? fs.readFileSync(votesFile, 'utf8') : '')
-      })
-      // POST {ts, ...patch} → rewrite the vote row whose `ts` matches,
-      // merging the patch and stamping `editedTs` (vote-history editing).
-      // Registered before `/__tune/vote` — connect prefix-matching would
-      // otherwise route this path to the append handler.
-      server.middlewares.use('/__tune/vote/update', (req, res, next) => {
-        if (req.method !== 'POST') return next()
-        const chunks: Buffer[] = []
-        req.on('data', (c: Buffer) => chunks.push(c))
-        req.on('end', () => {
-          try {
-            const { ts, ...patch } = JSON.parse(Buffer.concat(chunks).toString('utf8'))
-            if (!ts) throw new Error('ts required')
-            const lines = fs.existsSync(votesFile)
-              ? fs.readFileSync(votesFile, 'utf8').split('\n').filter(Boolean)
-              : []
-            let updated = false
-            const out = lines.map(line => {
-              const row = JSON.parse(line)
-              if (row.ts !== ts) return line
-              updated = true
-              return JSON.stringify({ ...row, ...patch, editedTs: new Date().toISOString() })
-            })
-            if (updated) fs.writeFileSync(votesFile, out.join('\n') + '\n')
-            res.setHeader('Content-Type', 'application/json')
-            res.statusCode = updated ? 200 : 404
-            res.end(JSON.stringify({ ok: updated }))
-          } catch (err) {
-            res.statusCode = 400
-            res.end(JSON.stringify({ ok: false, error: String(err) }))
-          }
-        })
-      })
-      // POST one vote record → appended as a JSONL row. Git-tracked so the
-      // corpus accumulates across sessions/machines.
-      server.middlewares.use('/__tune/vote', (req, res, next) => {
-        if (req.method !== 'POST') return next()
-        const chunks: Buffer[] = []
-        req.on('data', (c: Buffer) => chunks.push(c))
-        req.on('end', () => {
-          try {
-            const parsed = JSON.parse(Buffer.concat(chunks).toString('utf8'))
-            fs.mkdirSync(path.dirname(votesFile), { recursive: true })
-            fs.appendFileSync(votesFile, JSON.stringify(parsed) + '\n')
-            res.setHeader('Content-Type', 'application/json')
-            res.statusCode = 200
-            res.end(JSON.stringify({ ok: true, file: votesFile }))
           } catch (err) {
             res.statusCode = 400
             res.end(JSON.stringify({ ok: false, error: String(err) }))

@@ -28,6 +28,14 @@ binding = "CELLS_S2_DB"
 database_name = "cells-s2"
 database_id = "ed836697-7116-4a92-ae87-c304d616d1cd"
 
+# Picker-tuning preference votes from `/tune/ab` (see `src/tune.ts`,
+# `sql/tune.sql`, `specs/tune-preference-learning.md`). Reads are public;
+# writes need the `TUNE_TOKEN` secret (`wrangler secret put TUNE_TOKEN`).
+[[d1_databases]]
+binding = "TUNE_DB"
+database_name = "tune"
+database_id = "9ffa6e1b-214f-4746-a263-030d5d95f7bf"
+
 [dev]
 port = 51895
 
