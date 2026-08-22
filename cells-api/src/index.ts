@@ -44,6 +44,10 @@ function corsHeaders(env: Env, extra: HeadersInit = {}): HeadersInit {
         // `Content-Range` to learn total file size from a 1-byte
         // range probe; without this, `fetchSize` throws.
         "Access-Control-Expose-Headers": "Content-Range, Content-Length, ETag, Content-Disposition",
+        // Without this, cross-origin Resource Timing entries report 0
+        // for `encodedBodySize`/`transferSize` — `/tune/ab` records
+        // wire bytes per fetch (see `useCellsApi.getWireBytes`).
+        "Timing-Allow-Origin": "*",
         "Content-Type": "application/json",
         ...extra,
     }
@@ -54,6 +58,7 @@ function corsHeaders(env: Env, extra: HeadersInit = {}): HeadersInit {
 function applyCors(headers: Headers, env: Env): void {
     headers.set("Access-Control-Allow-Origin", env.CORS_ORIGIN ?? "*")
     headers.set("Access-Control-Expose-Headers", "Content-Range, Content-Length, ETag, Content-Disposition")
+    headers.set("Timing-Allow-Origin", "*")
 }
 
 async function etagFor(req: Request, dataVersion: string): Promise<string> {

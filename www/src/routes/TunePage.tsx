@@ -8,7 +8,7 @@
  *  No editing yet — displays current shipped constants and computed
  *  boundaries for visual inspection. v2 will add editable inputs +
  *  JSON persistence via a Vite dev middleware (see task #131 desc). */
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { Bbox } from "@/src/map/v2"
 import { CrashMap, type ViewState, metersPerPixel } from "@/src/map/CrashMap"
 import {
@@ -49,6 +49,25 @@ const DEFAULT_LAT = 40.7203
 const DEFAULT_LON = -74.0595
 
 export const MINI_HEIGHT = 300
+
+/** Fetch metrics reported by a `MiniMap` (see `onStats`). `ms` is
+ *  perceived load time (null until measured); byte fields are null until
+ *  the plan resolves, and `wireBytes` 0 means "unknown" (no Resource
+ *  Timing entry), not free. */
+export type MiniMapStats = {
+    cells: number
+    ms: number | null
+    bodyBytes: number | null
+    wireBytes: number | null
+}
+
+export function fmtBytes(b: number | null): string {
+    if (b === null) return "?"
+    if (b === 0) return "0?"
+    if (b >= 1024 * 1024) return `${(b / (1024 * 1024)).toFixed(1)}MB`
+    if (b >= 1024) return `${(b / 1024).toFixed(0)}KB`
+    return `${b}B`
+}
 
 /** Local S2 picker parameterized by the TunePage's editable state, so
  *  edits preview before Save. Mirrors `pickS2LevelForPixels` in
@@ -153,7 +172,7 @@ export function MiniMap({
     dfStart,
     dfEnd,
     onLatLonChange,
-    onCellCount,
+    onStats,
 }: {
     lat: number
     lon: number
@@ -173,11 +192,12 @@ export function MiniMap({
     /** Hide the corner readout (z / level / cell count) — used by the
      *  `/tune/ab` blind-vote flow, where the level would unblind. */
     showLabel?: boolean
-    /** Reports the number of cells actually fetched for the current
-     *  {lat, lon, zoom, level} — fires each time the cells API resolves.
-     *  Used by `/tune/ab` to record real bins-returned per side in vote
-     *  rows (a feature the picker learner conditions on). */
-    onCellCount?: (n: number) => void
+    /** Reports fetch metrics for the current {lat, lon, zoom, level} —
+     *  fires each time the cells API resolves (twice per view: once with
+     *  `ms: null`, again once load time is measured). Used by `/tune/ab`
+     *  to record real bins/bytes/latency per side in vote rows (features
+     *  the picker learner conditions on). */
+    onStats?: (s: MiniMapStats) => void
 }) {
     const [pitch, setPitch] = useState(20)
     const [bearing, setBearing] = useState(1)
@@ -193,9 +213,24 @@ export function MiniMap({
     const cells = result.status === "ready" ? result.data : []
     const ready = result.status === "ready"
     const cellCount = cells.length
+    const plan = result.status === "ready" ? result.plan : undefined
+    // Perceived load time: filter change → cells resolved. Includes the
+    // hook's debounce for uncached views; near-0 for cache hits — which
+    // is the honest user-experienced number in both cases.
+    const t0Ref = useRef(performance.now())
+    const [fetchMs, setFetchMs] = useState<number | null>(null)
     useEffect(() => {
-        if (ready) onCellCount?.(cellCount)
-    }, [ready, cellCount, onCellCount])
+        t0Ref.current = performance.now()
+        setFetchMs(null)
+    }, [filter])
+    useEffect(() => {
+        if (ready && fetchMs === null) setFetchMs(Math.round(performance.now() - t0Ref.current))
+    }, [ready, fetchMs])
+    const bodyBytes = plan?.fetchedBytes ?? null
+    const wireBytes = plan?.wireBytes ?? null
+    useEffect(() => {
+        if (ready) onStats?.({ cells: cellCount, ms: fetchMs, bodyBytes, wireBytes })
+    }, [ready, cellCount, fetchMs, bodyBytes, wireBytes, onStats])
     const viewState: ViewState = { longitude: lon, latitude: lat, zoom, pitch, bearing }
     // The `circleRadiusPx` prop picked based on the current `renderMode`:
     //   curve     — production `circleRadiusPx(zoom)` from picker.ts
@@ -250,6 +285,8 @@ export function MiniMap({
                 z={zoom.toFixed(2)} · l{level} · {cells.length} cells
                 {" · geom="}{geomPx.toFixed(2)}{"px"}
                 {" · render="}{renderPx.toFixed(2)}{"px"}
+                <br />
+                {fmtBytes(bodyBytes)} body · {fmtBytes(wireBytes)} wire · {fetchMs === null ? "…" : `${fetchMs}ms`}
             </div>}
         </div>
     )

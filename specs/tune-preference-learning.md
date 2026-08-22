@@ -6,17 +6,23 @@ Picker tuning by "edit a constant, eyeball one view" silently skews other views 
 
 v2 inverts it: the page generates side-by-side comparisons, Ryan only expresses preference, and translating the accumulated "vibes" into picker parameters (thresholds / a decision tree over `{viewport, zoom, bins returned, clip share, …}`) is Claude's offline job.
 
-## Collection (implemented)
+## Collection (implemented; v2.1)
 
-- `/tune/ab` samples a view from a deck (statewide / county / muni / street, with per-view zoom jitter), computes the shipped picker's level `prod`, and renders it against an adjacent level (`prod±1`, direction random, sides randomized). Level numbers are hidden (no anchoring on which is shipped); the per-side **bins count is shown** — data cost is a legitimate preference input.
-- Keys: `1` left · `2` tie · `3` right · `s` skip (not recorded). Voting is gated until both sides' cells have loaded, so bins counts in the record are real.
-- Each vote POSTs to the dev middleware `/__tune/vote` (in `www/vite.config.ts`), which appends one row to **`www/tune/votes.jsonl`** — git-tracked, accumulating across sessions. `GET /__tune/votes` returns the corpus (page header count).
+- `/tune/ab` samples a view from a deck (statewide / county / muni / street, with per-view zoom jitter), computes the shipped picker's level `prod`, and renders it against an adjacent level (`prod±1`, direction random, sides randomized).
+- **Informed voting** (v2.1, replacing the original blind design): each side's corner label shows its level, geom/inscribed/render px, cells, body + wire bytes, and perceived load ms — Ryan: "i'll want to take those metrics into account in some cases."
+- Verdicts: `1` left · `2` tie · `3` right · **`4` neither — want finer than both** · **`5` neither — want coarser than both** · `s` skip (not recorded). The directional "neither" verdicts capture sweet-spots outside the shown pair (e.g. statewide-mid where both l12 and l13 read "too griddy"). An optional free-text note rides along with each vote.
+- Voting is gated until both sides' cells have loaded, so recorded metrics are real.
+- Each vote POSTs to the dev middleware `/__tune/vote` (in `www/vite.config.ts`), which appends one row to **`www/tune/votes.jsonl`** — git-tracked, accumulating across sessions. `GET /__tune/votes` returns the corpus.
+- The current pair is URL-encoded (`?p=viewIdx:zoom:left:right`, via `use-prms`) so any case can be revisited or shared.
+- A **history panel** lists all votes (chosen side highlighted); choice is editable in place (`POST /__tune/vote/update` rewrites the row by `ts`, stamping `editedTs`), and `open` reloads that row's exact pair.
+- **Not D1, deliberately**: dev-only, single-user, zero-infra JSONL that git tracks. D1/worker only earns its keep if voting should ever work from prod/mobile.
 
-### Vote-row schema
+### Vote-row schema (v2)
 
 ```json
 {
-  "ts": "2026-08-21T…",
+  "v": 2,
+  "ts": "2026-08-22T…",
   "view": "Hudson county fit",
   "lat": 40.73, "lon": -74.09, "zoom": 10.93,
   "vp": [1470, 900],
@@ -26,14 +32,15 @@ v2 inverts it: the page generates side-by-side comparisons, Ryan only expresses 
   "autoTargetPx": 1.04,
   "cfg": { "targetFactor": 0.85, "pickMult": { "20": 0.55, "21": 0.4 } },
   "prod": 17,
-  "left": 17, "right": 16,
-  "bins": { "left": 13300, "right": 5400 },
+  "left":  { "level": 17, "bins": 13300, "bodyBytes": 2300000, "wireBytes": 152000, "ms": 3283 },
+  "right": { "level": 16, "bins": 5400,  "bodyBytes": 930000,  "wireBytes": 78000,  "ms": 2555 },
   "choice": "left",
-  "chosen": 17
+  "chosen": 17,
+  "note": ""
 }
 ```
 
-`cfg` snapshots the shipped config at vote time, so rows remain interpretable as `tuning.json` evolves. `chosen: null` ⇔ tie.
+`cfg` snapshots the shipped config at vote time, so rows remain interpretable as `tuning.json` evolves. `chosen: null` ⇔ tie/finer/coarser. `choice ∈ {left, right, tie, finer, coarser}`. `wireBytes: 0` means unknown — it needs the cells-api worker's `Timing-Allow-Origin: *` header (added in `cells-api/src/index.ts`; live after the next `wrangler deploy`).
 
 ## Learning (Claude, offline — the contract)
 
