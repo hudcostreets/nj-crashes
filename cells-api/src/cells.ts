@@ -154,6 +154,10 @@ export type CellsResponse = {
     year_range: [number, number]
     data_version: string
     source: "pyramid" | "raw" | "d1"
+    /** Label mode actually served, which is not always the one requested:
+     *  `full` degrades to `nums` past `labelMaxCells`. Absent on the H3
+     *  path (h3-removal is retiring it). */
+    labels?: "full" | "nums" | "only"
     cells: CellOut[]
 }
 
@@ -201,6 +205,46 @@ export type CellsRequest = {
      *    client merges into already-painted cells. Year-invariant, so no
      *    year filter; deduped by h3; count fields are 0. */
     labels?: "full" | "nums" | "only"
+    /** Cell-count ceiling above which `labels=full` degrades to `nums`.
+     *
+     *  Labels cost ~90 B/cell on the wire and are useful only when the
+     *  user can hover a specific cell; the bins budget keeps cells at
+     *  1-5 px, so a wide view asks for tens of thousands of them and
+     *  spends megabytes on street names nobody can target. Measured
+     *  2026-08-22: a statewide-mid l14 view is 36k cells / 5.97 MB, of
+     *  which 2.97 MB is the four string columns. Capping here bounds
+     *  that without the client having to predict its own cell count.
+     *  The response reports the mode actually served. */
+    labelMaxCells?: number
+}
+
+/** Default `labelMaxCells`. ~20k cells × ~90 B/cell ≈ 1.8 MB of labels
+ *  worst case, and it lands above the muni/street views (0.5-10k cells)
+ *  where hovering actually works, below the county/statewide ones
+ *  (35-170k) where it doesn't. */
+export const DEFAULT_LABEL_MAX_CELLS = 20_000
+
+const LABEL_KEYS = ["sld_name", "cross_sld_name", "mun", "county"] as const
+
+/** Drop the tooltip strings in place. Cheaper than re-querying, and the
+ *  point is the wire size, not the D1 read. */
+export function stripLabels(cells: CellOut[]): CellOut[] {
+    for (const c of cells) {
+        for (const k of LABEL_KEYS) delete c[k]
+    }
+    return cells
+}
+
+/** Apply the label cap and report the mode actually served. Mutates
+ *  `cells` when it downgrades, so callers can return them directly. */
+export function servedLabels(
+    requested: "full" | "nums" | "only",
+    cells: CellOut[],
+    labelMaxCells: number = DEFAULT_LABEL_MAX_CELLS,
+): "full" | "nums" | "only" {
+    if (requested !== "full" || cells.length <= labelMaxCells) return requested
+    stripLabels(cells)
+    return "nums"
 }
 
 function bigintToHex(b: bigint | number): string {
@@ -628,6 +672,7 @@ async function handleCellsRequestS2(
     // `cellInPolygonS2`); passes through so phase 4e can turn it on.
     const clipPoly = req.clipPolygon && req.clipPolygon.length >= 3 ? req.clipPolygon : null
     const labels = req.labels ?? "full"
+    const labelMaxCells = req.labelMaxCells ?? DEFAULT_LABEL_MAX_CELLS
 
     // Build cellid ranges at the target level. These drive both the D1
     // `cellid BETWEEN` scan and the parquet row-group pruning, so they
@@ -688,19 +733,26 @@ async function handleCellsRequestS2(
     // rollup doesn't.
     const coversAllYears = req.yearRange == null
         || (req.yearRange[0] <= manifest.year_range[0] && req.yearRange[1] >= manifest.year_range[1])
-    if (db && coversAllYears && labels === "full") {
+    //
+    // `labels=nums` used to *disqualify* this path, which made the one
+    // existing byte-saving lever cost 3-20× in latency (measured
+    // 2026-08-22: statewide-mid l14 945ms full → 10.5s nums; Hudson l17
+    // 3.0s → 21.9s). Nothing about dropping four columns needs the
+    // parquet, so `nums` rides the same scan and just selects less.
+    if (db && coversAllYears && labels !== "only") {
         try {
             const t0 = Date.now()
-            let cells = await queryCellsS2D1(db, requestedLevel, ranges, clipPoly, sevSet)
+            let cells = await queryCellsS2D1(db, requestedLevel, ranges, clipPoly, sevSet, labels)
             const t1 = Date.now()
             let level = requestedLevel
             while (maxCells != null && cells.length > maxCells && level > S2_MIN_LEVEL) {
                 level--
                 cells = coarsenCellsS2(cells, level)
             }
+            const served = servedLabels(labels, cells, labelMaxCells)
             const t2 = Date.now()
-            console.log(`[timing] s2 l${requestedLevel} D1 ranges=${ranges.length} cells=${cells.length}: d1=${t1 - t0}ms, coarsen=${t2 - t1}ms, total=${t2 - t0}ms`)
-            return { res: level, year_range: yearRange, data_version: manifest.data_version, source: "d1", cells }
+            console.log(`[timing] s2 l${requestedLevel} D1 labels=${labels}→${served} ranges=${ranges.length} cells=${cells.length}: d1=${t1 - t0}ms, coarsen=${t2 - t1}ms, total=${t2 - t0}ms`)
+            return { res: level, year_range: yearRange, data_version: manifest.data_version, source: "d1", labels: served, cells }
         } catch (e) {
             console.error(`S2 D1 path failed (level ${requestedLevel}), falling back to parquet:`, e)
         }
@@ -720,13 +772,15 @@ async function handleCellsRequestS2(
         level--
         cells = coarsenCellsS2(cells, level)
     }
+    const served = servedLabels(labels, cells, labelMaxCells)
     const t2 = Date.now()
-    console.log(`[timing] s2 l${requestedLevel} labels=${labels} shards=${requestedShards.length} ranges=${ranges.length} cells=${cells.length}: pyramid=${t1 - t0}ms, coarsen=${t2 - t1}ms, total=${t2 - t0}ms`)
+    console.log(`[timing] s2 l${requestedLevel} labels=${labels}→${served} shards=${requestedShards.length} ranges=${ranges.length} cells=${cells.length}: pyramid=${t1 - t0}ms, coarsen=${t2 - t1}ms, total=${t2 - t0}ms`)
     return {
         res: level,
         year_range: yearRange,
         data_version: manifest.data_version,
         source: "pyramid",
+        labels: served,
         cells,
     }
 }
@@ -865,6 +919,7 @@ async function queryCellsS2D1(
     tokenRanges: Array<{ lo: string; hi: string }>,
     clipPoly: LonLatPolygon | null,
     severities?: Set<"f" | "i" | "p">,
+    labels: "full" | "nums" = "full",
 ): Promise<CellOut[]> {
     // Severity gating mirrors `queryPyramidS2` exactly — same counters, same
     // "drop cells with no hit in a requested severity" rule — so the two
@@ -875,13 +930,14 @@ async function queryCellsS2D1(
     const where = tokenRanges.length
         ? tokenRanges.map(r => `(cellid BETWEEN '${r.lo}' AND '${r.hi}')`).join(" OR ")
         : "1=1"
-    const sql = `SELECT cellid, n_fatal, n_inj_ped, n_inj_other, n_pdo, n_vehs, `
-        + `fatal_years, sld_name, cross_sld_name, mun, county FROM cells_s2_l${level} WHERE ${where}`
+    const cols = ["cellid", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "fatal_years"]
+    if (labels === "full") cols.push(...LABEL_KEYS)
+    const sql = `SELECT ${cols.join(", ")} FROM cells_s2_l${level} WHERE ${where}`
     const { results } = await db.prepare(sql).all<{
         cellid: string
         n_fatal: number; n_inj_ped: number; n_inj_other: number; n_pdo: number; n_vehs: number
         fatal_years: string | null
-        sld_name: string | null; cross_sld_name: string | null; mun: string | null; county: string | null
+        sld_name?: string | null; cross_sld_name?: string | null; mun?: string | null; county?: string | null
     }>()
     const cells: CellOut[] = []
     for (const row of results) {
@@ -1135,5 +1191,13 @@ export function parseCellsRequest(url: URL): CellsRequest {
         labels = lb
     }
 
-    return { grid, cells, res, yearRange, severities, clipPolygon, maxCells, shardRes, labels }
+    let labelMaxCells: number | undefined
+    const lmc = url.searchParams.get("label_max_cells")
+    if (lmc) {
+        const n = parseInt(lmc, 10)
+        if (!Number.isFinite(n) || n < 0) throw new HttpError(400, "label_max_cells must be a non-negative integer")
+        labelMaxCells = n
+    }
+
+    return { grid, cells, res, yearRange, severities, clipPolygon, maxCells, shardRes, labels, labelMaxCells }
 }

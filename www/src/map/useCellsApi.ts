@@ -176,14 +176,25 @@ function loadManifest(): Promise<Manifest> {
  *  re-requests still hit memory without re-fetching. */
 const BATCH_SIZE = 25
 
-/** Threshold below which the initial fetch drops the 4 string columns
- *  (`sld_name`, `cross_sld_name`, `mun`, `county`) — sending
- *  `labels=nums` cuts payload by ~65%. r12 is where hexes become
- *  hover-scale (~19 m diameter), so labels earn their keep. At
- *  wide zoom the tooltip degrades gracefully (`CrashTooltip` skips
- *  the label header line when `sld_name` is missing). See
- *  `specs/labels-on-demand.md`. */
-const LABELS_NUMS_RES_THRESHOLD = 12
+/** Level below which the fetch drops the 4 string columns (`sld_name`,
+ *  `cross_sld_name`, `mun`, `county`) by sending `labels=nums`.
+ *
+ *  Was `12` — an **H3 resolution** (r12 ≈ 19 m, hover-scale) left behind
+ *  by the S2 migration and then compared against *S2 levels*, where l12 is
+ *  a 1.9 km cell. Every real pick lands at l12-l20, so the gate never
+ *  fired and every request paid the label tax: measured 2026-08-22, labels
+ *  are 45-50% of the payload (statewide-mid l14: 5.97 MB, of which 2.97 MB
+ *  is strings; Hudson-fit l17: 30 MB / 18 MB).
+ *
+ *  l18 (~30 m) is the S2 analog of the original intent: at l17 and coarser
+ *  a cell spans multiple streets, so its centroid's `sld_name` is a
+ *  misleading label as well as an expensive one. The worker applies a
+ *  second, count-based cap (`label_max_cells`) for views that are fine
+ *  enough to pass this gate but still return tens of thousands of cells.
+ *  The tooltip degrades gracefully (`CrashTooltip` skips the label header
+ *  when `sld_name` is missing). See `specs/labels-on-demand.md` for the
+ *  hover-fetch design that would restore labels everywhere. */
+const LABELS_MIN_S2_LEVEL = 18
 
 function buildBatchUrl(
     shards: string[], res: number, filter: CellsApiFilter, polygonStr: string | null,
@@ -200,7 +211,7 @@ function buildBatchUrl(
     // Explicit until the worker drops H3 support (h3-removal Phase 2);
     // after that the param can go entirely.
     params.set("grid", "s2")
-    if (res < LABELS_NUMS_RES_THRESHOLD) params.set("labels", "nums")
+    if (res < LABELS_MIN_S2_LEVEL) params.set("labels", "nums")
     if (polygonStr) params.set("polygon", polygonStr)
     return `${CELLS_API_BASE}/v1/cells?${params}`
 }

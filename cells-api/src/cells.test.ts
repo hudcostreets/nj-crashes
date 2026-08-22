@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { latLngToCell, cellToParent } from "h3-js"
-import { parseCellsRequest, HttpError, coarsenCells } from "./cells"
+import { parseCellsRequest, HttpError, coarsenCells, servedLabels, DEFAULT_LABEL_MAX_CELLS } from "./cells"
 
 /** Minimal valid query — only the two required params. */
 const BASE = "cells=8c2a100894097ff&res=12"
@@ -103,5 +103,51 @@ describe("coarsenCells", () => {
         const [parent] = coarsenCells([a, b], 9)
         expect(parent.h3).toBe(jcParent)
         expect(parent.fatal_years).toEqual([2018, 2020, 2022])
+    })
+})
+
+describe("label capping", () => {
+    const cell = (i: number) => ({
+        h3: `89c${i}`, n_fatal: 0, n_inj_ped: 0, n_inj_other: 1, n_pdo: 2, n_vehs: 3,
+        sld_name: "JOHN F KENNEDY BLVD", cross_sld_name: "SIP AVE",
+        mun: "Jersey City", county: "Hudson",
+    })
+    const cells = (n: number) => Array.from({ length: n }, (_, i) => cell(i))
+
+    it("serves `full` under the cap, leaving labels intact", () => {
+        const cs = cells(3)
+        expect(servedLabels("full", cs, 10)).toBe("full")
+        expect(cs[0]).toEqual({
+            h3: "89c0", n_fatal: 0, n_inj_ped: 0, n_inj_other: 1, n_pdo: 2, n_vehs: 3,
+            sld_name: "JOHN F KENNEDY BLVD", cross_sld_name: "SIP AVE",
+            mun: "Jersey City", county: "Hudson",
+        })
+    })
+
+    it("degrades `full` to `nums` over the cap, dropping only the 4 strings", () => {
+        const cs = cells(3)
+        expect(servedLabels("full", cs, 2)).toBe("nums")
+        expect(cs.map(c => Object.keys(c))).toEqual([
+            ["h3", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"],
+            ["h3", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"],
+            ["h3", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"],
+        ])
+        expect(cs[0]).toEqual({ h3: "89c0", n_fatal: 0, n_inj_ped: 0, n_inj_other: 1, n_pdo: 2, n_vehs: 3 })
+    })
+
+    it("leaves an explicit `nums`/`only` request alone", () => {
+        expect(servedLabels("nums", cells(50), 2)).toBe("nums")
+        expect(servedLabels("only", cells(50), 2)).toBe("only")
+    })
+
+    it("defaults the cap to DEFAULT_LABEL_MAX_CELLS", () => {
+        expect(servedLabels("full", cells(3))).toBe("full")
+        expect(DEFAULT_LABEL_MAX_CELLS).toBe(20_000)
+    })
+
+    it("parses `label_max_cells`", () => {
+        expect(parse(`${BASE}&label_max_cells=5000`).labelMaxCells).toBe(5000)
+        expect(parse(BASE).labelMaxCells).toBe(undefined)
+        expect(() => parse(`${BASE}&label_max_cells=-1`)).toThrow(HttpError)
     })
 })

@@ -15,7 +15,7 @@
  *
  *  Companion to `pickS2LevelForPixels` in `map/s2` (the low-level
  *  "finest level whose diameter ≥ threshold" walk). */
-import { pickS2LevelForPixels, S2_TARGET_FACTOR } from "./s2"
+import { pickS2LevelForPixels, S2_MIN_TARGET_PX, S2_TARGET_FACTOR } from "./s2"
 
 /** Default target cell-count filling the map viewport (packing constant
  *  and fill factor folded in; not "populated bins/vp" which is 10-30×
@@ -35,14 +35,17 @@ export function circleRadiusPx(zoom: number): number {
 }
 
 /** Target cell diameter (px) that yields ~`budget` cells filling
- *  a viewport of area `viewportAreaPx`. Clamped to [1.0, 30] so the
- *  finest / coarsest ends stay in the picker's usable range. */
+ *  a viewport of area `viewportAreaPx`. Clamped to
+ *  [`S2_MIN_TARGET_PX`, 30] so the finest / coarsest ends stay in the
+ *  picker's usable range. The lower clamp is a tuning knob (not a
+ *  constant) because it *binds* for every scoped view — see
+ *  `S2_MIN_TARGET_PX`. */
 export function autoHexPxTarget(
     viewportAreaPx: number,
     budget: number = BINS_BUDGET,
 ): number {
     const diaPx = Math.sqrt(viewportAreaPx / Math.max(1, budget))
-    return Math.min(30, Math.max(1.0, diaPx))
+    return Math.min(30, Math.max(S2_MIN_TARGET_PX, diaPx))
 }
 
 /** Effective `hexPxTarget` fed into the picker.

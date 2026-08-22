@@ -28,6 +28,14 @@
  *  bearer credential (worker refuses writes when its `TUNE_TOKEN` secret
  *  is unset); reads are public.
  *
+ *  v4: the 8 hand-written deck entries become 42 generated ones (all 21
+ *  counties, 15 munis, 3 statewide viewports, 3 street views — `njdot
+ *  tune deck`, from the muni boundary file), sampling is stratified to
+ *  the least-voted view rather than uniform (the v3 stream repeated
+ *  itself long before it covered anything), the vote's `view` is the
+ *  durable slug rather than a display name, and the history table
+ *  paginates. Fitting is `njdot tune fit`.
+ *
  *  Keys: 1 left · 2 tie · 3 right · 4 finer · 5 coarser · s skip.
  *
  *  Level selection mirrors the prod picker incl. the scoped bins-budget:
@@ -35,52 +43,58 @@
  *  hexPxTarget`) — scoped views use a hardcoded approximate admin-area
  *  (km²) rather than fetching outlines; close enough for level choice.
  */
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useUrlStates, defStringParam, floatParam, intParam } from "use-prms"
 import { metersPerPixel } from "@/src/map/CrashMap"
 import { CELLS_API_BASE } from "@/src/map/config"
-import { S2_MAX_LEVEL, S2_MIN_LEVEL, S2_PICK_MULT, S2_TARGET_FACTOR } from "@/src/map/s2"
+import { S2_MAX_LEVEL, S2_MIN_LEVEL, S2_MIN_TARGET_PX, S2_PICK_MULT, S2_TARGET_FACTOR } from "@/src/map/s2"
 import { BINS_BUDGET, autoHexPxTarget } from "@/src/map/picker"
+import deck from "@/src/map/tune-deck.json"
 import { MiniMap, fmtBytes, pickS2WithOverrides, type MiniMapStats } from "./TunePage"
 
 type EvalView = {
-    /** URL-param slug — short but readable (`hud`, `jcs`). Stable
-     *  identity for the deck entry: renaming `name` or reordering `DECK`
-     *  doesn't invalidate saved links or vote rows. */
+    /** URL-param slug — short but readable (`c-huds`, `jcs`). Stable
+     *  identity for the deck entry, and what's recorded as a vote's
+     *  `view`: renaming `name` or reordering the deck doesn't invalidate
+     *  saved links or past rows. */
     slug: string
     name: string
+    /** Scale band, for stratified sampling and per-band reporting. */
+    kind: "statewide" | "county" | "muni" | "street"
     lat: number
     lon: number
     zoom: number
     /** Uniform zoom jitter half-width applied when sampling this view,
      *  so votes cover the neighborhood rather than one exact zoom. */
     zoomJitter: number
-    /** Approximate admin-polygon area (km²) for scoped views; null =
-     *  statewide (viewport-budgeted). */
+    /** Admin-polygon area (km²) for scoped views; null = statewide
+     *  (viewport-budgeted). */
     scopeKm2: number | null
-    /** Picker viewport: homepage embed clamp vs full-screen-ish. */
-    vp: "embed" | "full"
+    /** Picker viewport: homepage embed clamp, full-screen-ish, phone. */
+    vp: "embed" | "full" | "phone"
 }
 
-/** Representative sweep: wide/mid statewide, large + small counties at
- *  county-fits-viewport zooms, big + small munis, street level. */
-const DECK: EvalView[] = [
-    { slug: "nj", name: "statewide wide (embed)", lat: 40.07, lon: -74.55, zoom: 7.5, zoomJitter: 0.5, scopeKm2: null, vp: "embed" },
-    { slug: "njm", name: "statewide mid", lat: 40.5, lon: -74.4, zoom: 9.0, zoomJitter: 0.7, scopeKm2: null, vp: "full" },
-    { slug: "hud", name: "Hudson county fit", lat: 40.73, lon: -74.09, zoom: 10.8, zoomJitter: 0.4, scopeKm2: 120, vp: "full" },
-    { slug: "hudm", name: "Hudson mid", lat: 40.73, lon: -74.07, zoom: 12.5, zoomJitter: 0.7, scopeKm2: 120, vp: "full" },
-    { slug: "cm", name: "Cape May county fit", lat: 39.1, lon: -74.82, zoom: 10.0, zoomJitter: 0.4, scopeKm2: 620, vp: "full" },
-    { slug: "jc", name: "Jersey City muni", lat: 40.72, lon: -74.06, zoom: 13.0, zoomJitter: 0.6, scopeKm2: 38, vp: "full" },
-    { slug: "hob", name: "Hoboken muni", lat: 40.745, lon: -74.03, zoom: 13.5, zoomJitter: 0.6, scopeKm2: 3.3, vp: "full" },
-    { slug: "jcs", name: "JC street", lat: 40.7441, lon: -74.0585, zoom: 16.5, zoomJitter: 1.0, scopeKm2: 120, vp: "full" },
-]
+/** All 21 counties at county-fits-viewport zoom, 15 munis spanning dense
+ *  grids to sprawling townships, 3 statewide viewports and 3 street views
+ *  — generated from the muni boundary file by `njdot tune deck`, so
+ *  centers/areas/fit-zooms are measured rather than eyeballed.
+ *
+ *  Deck size is itself a fix: with the original 8 hand-written entries the
+ *  stream repeated within a session, and the corpus could only speak to
+ *  Hudson/Cape May/JC/Hoboken. */
+const DECK = deck as EvalView[]
 
 const VP_DIMS: Record<EvalView["vp"], [number, number]> = {
     embed: [1280, 480],
     full: [1470, 900],
+    phone: [390, 700],
 }
 
-const SHIPPED = { targetFactor: S2_TARGET_FACTOR, pickMult: { ...S2_PICK_MULT } }
+const SHIPPED = {
+    targetFactor: S2_TARGET_FACTOR,
+    minTargetPx: S2_MIN_TARGET_PX,
+    pickMult: { ...S2_PICK_MULT },
+}
 
 /** The prod pick for a view+zoom, plus the intermediate features a
  *  learner would condition on — same math as `CrashMapSection.
@@ -113,8 +127,23 @@ function makePair(view: EvalView, zoom: number, left: number, right: number): Pa
     return { view, zoom, left, right, prod, feats }
 }
 
-function genPair(): Pair {
-    const view = DECK[Math.floor(Math.random() * DECK.length)]
+/** Least-sampled deck entry, ties broken at random.
+ *
+ *  Uniform sampling over a 42-entry deck still clumps — the birthday
+ *  problem means repeats show up long before coverage does, which is what
+ *  made the v3 stream feel repetitive. Sampling from the least-voted views
+ *  makes the corpus spread by construction, and matters more than usual
+ *  here because the fit conditions on view-scale regimes: an unvisited
+ *  county contributes nothing to the county band. */
+function leastVoted(counts: Map<string, number>): EvalView {
+    let min = Infinity
+    for (const v of DECK) min = Math.min(min, counts.get(v.slug) ?? 0)
+    const pool = DECK.filter(v => (counts.get(v.slug) ?? 0) === min)
+    return pool[Math.floor(Math.random() * pool.length)]
+}
+
+function genPair(counts: Map<string, number> = new Map()): Pair {
+    const view = leastVoted(counts)
     const zoom = +(view.zoom + (Math.random() * 2 - 1) * view.zoomJitter).toFixed(2)
     const { level: prod } = pickWithFeatures(view, zoom)
     // Challenger: an adjacent level, direction random (flipped at the
@@ -186,6 +215,10 @@ async function postJson(url: string, method: "POST" | "PATCH", body: unknown): P
 
 type Stats = { left: MiniMapStats | null; right: MiniMapStats | null }
 
+/** History rows per page. The corpus is meant to grow into the hundreds;
+ *  rendering all of it under the voting UI buries the pair being judged. */
+const PAGE_SIZE = 25
+
 /** URL params, golfed: `v` = deck slug, `z` = zoom, `l`/`r` = levels.
  *  A missing/unknown `v` means "no pinned pair" — the page samples one.
  *  `z` uses string encoding (`z=11.92`), not the default base64 float:
@@ -209,6 +242,19 @@ export default function TuneAbPage() {
     const [session, setSession] = useState(0)
     const [note, setNote] = useState("")
     const [saveError, setSaveError] = useState<string | null>(null)
+    const [page, setPage] = useState(0)
+
+    /** Votes per deck slug, driving `leastVoted`. Rows from before the
+     *  deck regen recorded a display name rather than a slug; they simply
+     *  don't match any current entry, which is the right answer — those
+     *  views no longer exist at those coordinates. */
+    const voteCounts = useMemo(() => {
+        const counts = new Map<string, number>()
+        for (const row of rows) counts.set(row.view, (counts.get(row.view) ?? 0) + 1)
+        return counts
+    }, [rows])
+    const countsRef = useRef(voteCounts)
+    countsRef.current = voteCounts
 
     useEffect(() => {
         if (!pair) return
@@ -226,12 +272,12 @@ export default function TuneAbPage() {
     const next = useCallback(() => {
         setStats({ left: null, right: null })
         setNote("")
-        setPair(genPair())
+        setPair(genPair(countsRef.current))
     }, [])
 
     const openRow = useCallback((row: VoteRow) => {
-        const view = DECK.find(v => v.name === row.view)
-        if (!view) return  // deck entry renamed/removed since the vote
+        const view = DECK.find(v => v.slug === row.view)
+        if (!view) return  // pre-deck-regen row, or entry since removed
         setStats({ left: null, right: null })
         setNote(row.note ?? "")
         setPair(makePair(view, row.zoom, row.left.level, row.right.level))
@@ -254,7 +300,9 @@ export default function TuneAbPage() {
         })
         const rec = {
             ts: new Date().toISOString(),
-            view: pair.view.name,
+            // Slug, not display name: it's the durable identity, it's what
+            // `?v=` carries, and it's what `leastVoted` counts.
+            view: pair.view.slug,
             lat: pair.view.lat,
             lon: pair.view.lon,
             zoom: +pair.zoom.toFixed(3),
@@ -309,6 +357,11 @@ export default function TuneAbPage() {
     const fmtCount = (n: number | null) =>
         n === null ? "?" : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)
 
+    // Rows arrive newest-first from D1, so page 0 is the most recent.
+    const lastPage = Math.max(0, Math.ceil(rows.length / PAGE_SIZE) - 1)
+    const pageStart = Math.min(page, lastPage) * PAGE_SIZE
+    const pageRows = rows.slice(pageStart, pageStart + PAGE_SIZE)
+
     return (
         <div style={{ padding: 12, fontFamily: "sans-serif", color: "#eee", background: "#111", minHeight: "100vh" }}>
             <h1 style={{ fontSize: 18, marginBottom: 4, fontWeight: 500 }}>
@@ -319,7 +372,8 @@ export default function TuneAbPage() {
                 Which binning looks better? <b>1</b> left · <b>2</b> tie · <b>3</b> right ·{" "}
                 <b>4</b> neither (finer) · <b>5</b> neither (coarser) · <b>s</b> skip.
                 Votes go to the <code>tune</code> D1
-                {" · "}{rows.length} all-time · {session} this session
+                {" · "}{rows.length} all-time · {session} this session ·{" "}
+                {DECK.filter(v => voteCounts.has(v.slug)).length}/{DECK.length} deck views covered
             </p>
             {saveError && (
                 <div style={{ color: "#e77", fontSize: 13, marginBottom: 8 }}>
@@ -332,6 +386,10 @@ export default function TuneAbPage() {
                         <b style={{ color: "#eee" }}>{pair.view.name}</b> · z={pair.zoom.toFixed(2)}
                         {pair.view.scopeKm2 != null && ` · scope ${pair.view.scopeKm2} km²`}
                         {" · budgeted "}{Math.round(pair.feats.areaPx / 1000)}k px²
+                        {" · target "}{pair.feats.autoTargetPx.toFixed(2)}px
+                        {pair.feats.autoTargetPx === SHIPPED.minTargetPx && " (at minTargetPx)"}
+                        {" · vp "}{VP_DIMS[pair.view.vp].join("×")}
+                        {" · "}{voteCounts.get(pair.view.slug) ?? 0} prior votes here
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxWidth: 1400 }}>
                         {(["left", "right"] as const).map(sideName => {
@@ -366,7 +424,14 @@ export default function TuneAbPage() {
             )}
             {rows.length > 0 && (
                 <div style={{ marginTop: 24 }}>
-                    <div style={{ fontSize: 14, marginBottom: 6, color: "#ccc" }}>Vote history ({rows.length})</div>
+                    <div style={{ fontSize: 14, marginBottom: 6, color: "#ccc", display: "flex", gap: 10, alignItems: "center" }}>
+                        <span>Vote history ({rows.length})</span>
+                        <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} style={pageBtn(page > 0)}>‹ newer</button>
+                        <span style={{ fontFamily: "monospace", fontSize: 12, color: "#888" }}>
+                            {pageStart + 1}–{Math.min(rows.length, pageStart + PAGE_SIZE)} of {rows.length}
+                        </span>
+                        <button onClick={() => setPage(p => Math.min(lastPage, p + 1))} disabled={page >= lastPage} style={pageBtn(page < lastPage)}>older ›</button>
+                    </div>
                     <table style={{ borderCollapse: "collapse", fontFamily: "monospace", fontSize: 12 }}>
                         <thead>
                             <tr style={{ color: "#888", textAlign: "left" }}>
@@ -376,12 +441,14 @@ export default function TuneAbPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {rows.map(row => (
+                            {pageRows.map(row => (
                                 <tr key={row.id} style={{ borderTop: "1px solid #2a2a2a" }}>
                                     <td style={{ padding: "3px 10px 3px 0", color: "#888" }} title={row.ts + (row.editedTs ? ` (edited ${row.editedTs})` : "")}>
                                         {row.ts.slice(5, 16).replace("T", " ")}{row.editedTs ? "*" : ""}
                                     </td>
-                                    <td style={{ padding: "3px 10px 3px 0" }}>{row.view}</td>
+                                    <td style={{ padding: "3px 10px 3px 0" }} title={row.view}>
+                                        {DECK.find(v => v.slug === row.view)?.name ?? row.view}
+                                    </td>
                                     <td style={{ padding: "3px 10px 3px 0" }}>{row.zoom.toFixed(2)}</td>
                                     {(["left", "right"] as const).map(s => (
                                         <td key={s} style={{ padding: "3px 10px 3px 0", color: row.chosen === row[s].level ? "#7d7" : undefined }}>
@@ -420,6 +487,10 @@ export default function TuneAbPage() {
             )}
         </div>
     )
+}
+
+function pageBtn(enabled: boolean): React.CSSProperties {
+    return { ...btn(enabled), padding: "1px 8px", fontSize: 12 }
 }
 
 function btn(enabled: boolean): React.CSSProperties {

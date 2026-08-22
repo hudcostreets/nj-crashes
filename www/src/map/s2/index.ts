@@ -185,6 +185,15 @@ import tuning from "../tuning.json"
  *  itself; the module keeps the exported names + types for callers. */
 export const S2_TARGET_FACTOR: number = tuning.s2.targetFactor
 
+/** Lower clamp on `autoHexPxTarget`. Separate knob from `targetFactor`
+ *  because the two act on disjoint regimes: county/muni-scoped views
+ *  budget a small `areaPx`, so `√(areaPx/BINS_BUDGET)` lands *under* the
+ *  clamp and their level is set by this alone; statewide/street views run
+ *  above it and see only `targetFactor`. Fitting them jointly is what let
+ *  `njdot tune fit` move statewide finer without disturbing scoped views
+ *  (see `specs/tune-preference-learning.md`). */
+export const S2_MIN_TARGET_PX: number = tuning.s2.minTargetPx
+
 export const S2_PICK_MULT: Record<number, number> = Object.fromEntries(
     Object.entries(tuning.s2.pickMult).map(([k, v]) => [Number(k), v as number]),
 )
