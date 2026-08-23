@@ -55,22 +55,92 @@ deploy separately — never ship half a coordinated change
 - Tests: `h3cover.test.ts` deleted; `picker.test.ts` H3 cases deleted or
   ported; run the golden/HAR perf tests.
 
-### Phase 2 — worker drops H3 (after Phase-1 client is *deployed*, not just merged)
+### Phase 2 — worker drops H3 (done 2026-08-23; **deploy gated** on Phase 1)
 
-- cells-api: remove `grid=h3` support + H3 pyramid routes. Brief overlap
-  where the worker still accepts `h3` protects stale cached clients; a week
-  is plenty (bundle hashes roll on the next daily deploy).
+`cells-api` is S2-only. Gone: the H3 branch of `handleCellsRequest` (which
+becomes the former `handleCellsRequestS2`), `queryPyramid`, `queryCellsD1`,
+`queryRaw`, `coarsenCells`, `cellInPolygon`, the `bigintToHex`/`hexToBigint`
+int64 encoding pair, `h3-range.ts` + its test, and the `h3-js` dependency.
 
-### Phase 3 — data GC
+Decisions worth recording:
 
-- `map.dvc` cmd: stop generating H3 pyramids (hex shards + `hex-r{6,7,8,9}`
-  single-files). Local re-run, then `map_sync.dvc` `aws s3 sync --delete`
-  (same pattern as the v1 GC, which shrank `map/` 377→127 MB).
-- `hex-sld.parquet` (H3-keyed tooltip sidecar): the S2-keyed
-  `data/cells/s2-sld.parquet` already exists — the worker's sld multiplex
-  already joins per-cell for S2 responses (this session's JC fetch carried
-  `sld_name`/`cross_sld_name`), so client-side `useHexSld` usage should
-  already be vestigial for the map; verify, then GC hook + parquet.
+- **`grid=h3` 400s, it isn't ignored.** The non-goal below ("`?h3` URLs fall
+  through") is about the *client's* URL param. A worker request that says
+  `grid=h3` and gets back S2 tokens would feed them to `cellToLatLng` and
+  render garbage; a 400 fails visibly instead.
+- **`mergeRanges` moved to `s2-range.ts`** — it's generic over `{lo, hi}`
+  bigints, and it was the S2 path's only reason to import `h3-range.ts`. It
+  also stopped mutating its inputs on the way (it widened `top.hi` through a
+  shared reference; every current caller passes freshly-built ranges, so this
+  was latent, not live).
+- **`cells` can no longer be validated by shape alone.** An H3 id is 15
+  lowercase hex chars, which the S2 token regex (1-16 hex) admits. It fails
+  downstream instead — `s2LevelOf` reads it as level 28 and the handler 400s
+  on a shard finer than the requested level. Recorded as a test.
+- `consolidated.test.ts` → `s2-pruning.test.ts`: the H3 range-pruning half was
+  deleted, but the row-group-pruning + footer-cache assertions are the only
+  coverage of the load-bearing optimization on the *surviving* path (the S2
+  shard cover is statewide at every zoom, so range pruning is the only thing
+  keeping a street-zoom request from decoding a whole level file). Ported to
+  `s2_pyramid/s2_l13/89d.parquet` and now actually runs.
+- `CellsResponse.source` loses `"raw"` and the client's copy of the union
+  gains `"d1"` — it had never listed the path that serves most requests, so
+  the debug overlay reported every D1 response as `pyramid`.
+
+**Not yet deployed.** Phase 1 (`a2c646e1624`) is still unpushed, so the
+deployed client is the pre-Phase-1 one. It defaults to S2 and only sends
+`grid=h3` behind the opt-in `?h3` URL param — but the ordering rule stands:
+push + let `deploy.dvc` ship the client, *then* `wrangler deploy`.
+
+### Phase 3 — data GC (code done 2026-08-23; remote GC pending)
+
+Landed:
+
+- **`njdot compute cells` is S2-only.** `--grid` is gone from `raw` / `pyramid`
+  / `db` / `sld`; `pyramid-combos` (H3-only) is deleted along with
+  `_build_pyramid_level`, `_load_sld_lookup`, the three `h3-js` vectorizers,
+  the `_MP_*` fork-pool globals, and `_cells_db_h3`. `cells manifest` is
+  ported to S2 (`base_level` / `shard_level` / `s2_l{N}` row counts, schema 5)
+  — the worker only reads `data_version` + `year_range` from it, but it was
+  still being built by walking `raw/h3_r15`.
+- **The daily job was refreshing the dead grid.** `daily.yml` rebuilt
+  `raw/h3_r15` + `cells.db` and imported `cells` → `CELLS_DB` every day, while
+  `cells-s2.db` → `CELLS_S2_DB` — the binding that actually serves the map —
+  was only ever built by hand. Both stages and `api/d1-import.dvc` now point at
+  the S2 artifacts. **First S2 daily run will produce a large exact-diff**
+  against a D1 that's months stale; consider one `--full` import first.
+- **`export_map_v2` emits only `manifest.v2.json`.** Its `points/{r5}` +
+  `hex-r{6,7,8,9}` tree was the H3-era R2-direct fetch stack; the client reads
+  exactly three fields from that manifest (`year_range`, `county_bboxes`,
+  `muni_bboxes`), so `shards` / `shard_bboxes` / `single_files` / `row_counts`
+  went too (manifest schema 3, and `MapManifestV2` slims to match).
+- **`export_map_data`** — the whole v1 layout, no `.dvc` stage, its outputs
+  `rm -rf`'d by `map.dvc` — is deleted. Its one live export, `_build_base`,
+  moved to `njdot/map_base.py`.
+- **`export_hex_sld` / `reshard_hex_sld`** deleted with `hex-sld.parquet`
+  (git-tracked, 7 MB). Their two grid-agnostic lookups (nearest-milepost,
+  point-in-polygon), which `cells sld` imported across the H3/S2 line, moved
+  to `njdot/sld.py` keyed on a generic `cell` column.
+- `h3` dropped from `pyproject.toml`. No Python H3 dependency remains.
+- The stale `perf-har` goldens were regenerated: they still recorded H3
+  requests (`res=14&shard_res=9` + a 130-cell r9 cover) and a 15 MB
+  `hex-sld.parquet` fetch, so they had been failing since the S2 default
+  flipped. `map-perf.spec.ts` also went green again — its readiness signal
+  (`__crashMapDebug.lastBinMs`) was only published on the client-binning path,
+  which stopped running when cells-api became the sole source of cells, so
+  both its tests burned a 3-minute timeout. `CrashMap` now publishes the hook
+  on the prebinned path too, with `binSource: "server"`.
+
+Still to do — **destructive, needs sign-off**:
+
+- `aws s3 sync --delete` for `njdot/map` (`map_sync.dvc`) — drops the
+  `v2/points` + `v2/hex-r*` + `hex-sld.parquet` objects. Same pattern as the
+  v1 GC, which shrank `map/` 377 → 127 MB; this one should take it to ~1 MB.
+- R2 `cells/pyramid/**` (460 MB) + `cells/raw/h3_r15/**` (89 MB), via
+  `njdot compute cells push` (it syncs `--delete`) or a direct delete.
+- The `cells` D1 database (315 MB) — no longer bound by any worker.
+- `dvx gc` on the S3 remote for the orphaned `pyramid` / `raw/h3_r15` /
+  `cells.db` objects.
 
 ### Phase 4 — naming sweep (mechanical, separate commit)
 

@@ -48,8 +48,8 @@ SMALL_THRESHOLD=$((50 * 1024 * 1024))  # 50MB
 DVC_CACHE=".dvc/cache/files/md5"
 DVC_S3_PREFIX="s3://nj-crashes/.dvc/files/md5"
 # Universal natural-key columns (cmymc-style dims + njsp-crashes id/dt +
-# cells h3). The exact-diff picks whichever are present per table.
-NATURAL_KEYS=(cc mc y m condition id dt h3)
+# cells cellid). The exact-diff picks whichever are present per table.
+NATURAL_KEYS=(cc mc y m condition id dt cellid)
 
 declare -A DB_MAP=(
     [crashes]="$WWW/njdot/crashes.db"
@@ -58,7 +58,6 @@ declare -A DB_MAP=(
     [pedestrians]="$WWW/njdot/pedestrians.db"
     [cmymc]="$WWW/njdot/cmymc.db"
     [njsp-crashes]="$WWW/njsp/crashes.db"
-    [cells]="../data/cells/cells.db"
     [cells-s2]="../data/cells/cells-s2.db"
 )
 
@@ -70,7 +69,6 @@ declare -A BINDING_MAP=(
     [pedestrians]="PEDESTRIANS_DB"
     [cmymc]="CMYMC_DB"
     [njsp-crashes]="NJSP_CRASHES_DB"
-    [cells]="CELLS_DB"
     [cells-s2]="CELLS_S2_DB"
 )
 

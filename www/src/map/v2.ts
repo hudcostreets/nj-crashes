@@ -11,37 +11,20 @@ import { MAP_BASE_URL } from "./config"
 
 export type Bbox = [number, number, number, number]  // [w, s, e, n]
 
+/** `map/v2/manifest.v2.json` — non-spatial map metadata only.
+ *
+ *  Everything spatial comes from the cells-api worker now; this manifest
+ *  lost its H3 fetch metadata (`shards`, `shard_bboxes`, `single_files`,
+ *  per-artifact `row_counts`) in h3-removal Phase 3, along with the
+ *  `points/` + `hex-r{N}` parquet tree they indexed. Schema 3 is what's
+ *  left — and it's all the client ever read. */
 export type MapManifestV2 = {
-    schema_version: 2
-    /** H3 resolution used to shard files (typically 5). */
-    shard_res: number
-    point_severities: ("f" | "i" | "p")[]
-    hex_severities: ("f" | "i" | "p")[]
+    schema_version: number
+    /** Year-slider bounds. */
     year_range: [number, number]
-    /** Cells with non-empty data, per artifact. */
-    shards: {
-        points?: string[]
-        hex_r7?: string[]
-        hex_r8?: string[]
-        hex_r9?: string[]
-    }
-    /** Resolutions for which a single-file `hex-r{N}.parquet` exists at the
-     *  manifest's base URL. The picker uses these as the fallback when the
-     *  visible viewport intersects more shards than `maxHexShards`. Older
-     *  manifests (pre-2026-04-30) only published `r6` here. */
-    single_files?: string[]
-    /** Per-shard bbox for cheap viewport-intersection (avoids
-     *  client-side `cellToBoundary` on every pan). */
-    shard_bboxes: Record<string, Bbox>
-    row_counts?: Record<string, number>
-    /** Legacy fields carried over from the v1 manifest — used by
-     *  non-spatial UIs (year-range slider bounds, county/muni bbox
-     *  fits, geocode-source breakdowns). */
+    /** Fit-bounds when a route scopes the map to a county or municipality. */
     county_bboxes?: Record<number, Bbox>
     muni_bboxes?: Record<string, Bbox>
-    by_geocode_src?: Record<string, number>
-    per_year?: Record<string, number>
-    per_year_county?: Record<string, number>
 }
 
 /** Shape consumed by the debug overlay: the cells-api plan adapted to

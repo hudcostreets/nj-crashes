@@ -27,12 +27,12 @@
   {
     "url": "http://localhost:4006/data/njdot/yms.parquet",
     "status": 200,
-    "body_size": 92567
+    "body_size": 105741
   },
   {
     "url": "http://localhost:4006/data/njdot/yms.parquet",
     "status": 200,
-    "body_size": 92567
+    "body_size": 105741
   },
   {
     "url": "http://localhost:4006/logos/hccs.png",
@@ -42,12 +42,12 @@
   {
     "url": "http://localhost:4006/njdot/cc2mc2mn.json",
     "status": 200,
-    "body_size": 15584
+    "body_size": 15732
   },
   {
     "url": "http://localhost:4006/njdot/cc2mc2mn.json",
     "status": 200,
-    "body_size": 15584
+    "body_size": 15732
   },
   {
     "url": "http://localhost:4006/njdot/map/counties.geojson",
@@ -58,21 +58,6 @@
     "url": "http://localhost:4006/njdot/map/counties.geojson",
     "status": 200,
     "body_size": 399483
-  },
-  {
-    "url": "http://localhost:4006/njdot/map/v2/hex-sld.parquet",
-    "status": 200,
-    "body_size": 0
-  },
-  {
-    "url": "http://localhost:4006/njdot/map/v2/hex-sld.parquet",
-    "status": 206,
-    "body_size": 0
-  },
-  {
-    "url": "http://localhost:4006/njdot/map/v2/hex-sld.parquet",
-    "status": 206,
-    "body_size": 524288
   },
   {
     "url": "http://localhost:4006/njdot/map/v2/manifest.v2.json",
@@ -87,12 +72,12 @@
   {
     "url": "http://localhost:4006/njsp/monthly.parquet",
     "status": 200,
-    "body_size": 98215
+    "body_size": 99322
   },
   {
     "url": "http://localhost:4006/njsp/projected.csv",
     "status": 200,
-    "body_size": 10880
+    "body_size": 15149
   },
   {
     "url": "http://localhost:4006/njsp/rundate.json",
@@ -107,27 +92,17 @@
   {
     "url": "http://localhost:4006/njsp/year-type-county.parquet",
     "status": 200,
-    "body_size": 7343
+    "body_size": 7335
   },
   {
     "url": "http://localhost:4006/njsp/ytd.parquet",
     "status": 200,
-    "body_size": 146935
+    "body_size": 257125
   },
   {
     "url": "http://localhost:4006/styles/globals.css",
     "status": 200,
     "body_size": 2693
-  },
-  {
-    "url": "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/dist/duckdb-browser-eh.worker.js",
-    "status": 200,
-    "body_size": 265771
-  },
-  {
-    "url": "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/dist/duckdb-eh.wasm",
-    "status": 200,
-    "body_size": 0
   },
   {
     "url": "https://crashes-api.ryan-0dc.workers.dev/njdot/crashes/count?before=2026-01-01",
@@ -187,21 +162,31 @@
   {
     "url": "https://crashes-api.ryan-0dc.workers.dev/njsp/crashes?limit=20&offset=0",
     "status": 200,
-    "body_size": 3756
+    "body_size": 3724
   },
   {
     "url": "https://crashes-api.ryan-0dc.workers.dev/njsp/crashes?limit=20&offset=0",
     "status": 200,
-    "body_size": 3756
+    "body_size": 3724
   },
   {
-    "url": "https://crashes-cells-api.ryan-0dc.workers.dev/v1/cells?res=7&years=2016-2025&severities=fip&shard_res=2&polygon=-82.0000%2C44.2500%2C-67.7500%2C44.2500%2C-67.7500%2C35.7500%2C-82.0000%2C35.7500%2C-82.0000%2C44.2500&cells=822a17fffffffff,822a1ffffffffff,822aaffffffffff",
+    "url": "https://crashes-cells-api.ryan-0dc.workers.dev/v1/cells?res=11&years=2001-2026&severities=fip&shard_res=4&grid=s2&maxCells=150000&labels=nums&polygon=-82.0000%2C44.2500%2C-67.7500%2C44.2500%2C-67.7500%2C35.7500%2C-82.0000%2C35.7500%2C-82.0000%2C44.2500&cells=89b,89d",
     "status": 200,
-    "body_size": 431422
+    "body_size": 125436
   },
   {
     "url": "https://crashes-cells-api.ryan-0dc.workers.dev/v1/manifest",
     "status": 200,
-    "body_size": 2939
+    "body_size": 1793
+  },
+  {
+    "url": "https://unpkg.com/@duckdb/duckdb-wasm@1.28.0/dist/duckdb-browser-eh.worker.js",
+    "status": 200,
+    "body_size": 0
+  },
+  {
+    "url": "https://unpkg.com/@duckdb/duckdb-wasm@1.28.0/dist/duckdb-eh.wasm",
+    "status": 200,
+    "body_size": 0
   }
 ]

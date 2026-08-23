@@ -7,8 +7,10 @@ outs:
 meta:
   computation:
     cmd: cd ../../.. && rm -rf www/public/njdot/map/by-year www/public/njdot/map/by-year-county
-      www/public/njdot/map/hex-r7 www/public/njdot/map/hex-r8 www/public/njdot/map/manifest.json
-      && njdot export_map_v2 && njdot export_hex_sld && njdot gen_county_outlines
+      www/public/njdot/map/manifest.json www/public/njdot/map/v2/points www/public/njdot/map/v2/hex-r6.parquet
+      www/public/njdot/map/v2/hex-r7 www/public/njdot/map/v2/hex-r7.parquet www/public/njdot/map/v2/hex-r8
+      www/public/njdot/map/v2/hex-r8.parquet www/public/njdot/map/v2/hex-r9 www/public/njdot/map/v2/hex-r9.parquet
+      www/public/njdot/map/v2/hex-sld.parquet && njdot export_map_v2 && njdot gen_county_outlines
       && njdot gen_muni_outlines
     deps:
       /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
@@ -16,6 +18,5 @@ meta:
       /njdot/data/crashes_geocode_backfill.parquet: 05408a1785e5d1d009d5b62baf7c0968
       /www/public/Municipal_Boundaries_of_NJ.geojson: 54a252d859eea2207da0fb933661dca0
     git_deps:
-      /njdot/cli/export_hex_sld.py: 7b51e7d87b01803cef6be0793ae46438e67c54ef
       /njdot/cli/export_map_v2.py: 8b557e023ee2134bb4dff93d585f8152e9f95b25
       /njdot/load.py: 8631c1995b4badf1856395b9b87ddc334ba68893

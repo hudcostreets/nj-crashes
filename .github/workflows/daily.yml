@@ -159,19 +159,23 @@ jobs:
       - name: Post to Slack
         if: ${{ !inputs.targets }}
         run: $DVX njsp/data/slack_post.dvc
-      # Cells refresh for the map. DVX-gated: the raw H3 index + rollup DB only
-      # rebuild on days the crash data actually changed. `cells.db` (the D1
-      # rollup source) is built straight from the raw index via the duckdb `h3`
-      # extension — no pyramid — so it stays memory-bounded and feeds the
-      # d1-import below. The parquet pyramid (for year/severity-filtered queries)
-      # and its R2 push are deferred: the pyramid build OOMs on the CI runner,
-      # and the push needs R2 creds (see 4b).
-      - name: Rebuild cells raw H3 index
+      # Cells refresh for the map. DVX-gated: the raw S2 index + rollup DB only
+      # rebuild on days the crash data actually changed. `cells-s2.db` (the D1
+      # rollup source behind every all-years `/v1/cells` request) is built
+      # straight from the raw index by duckdb bit-math — no pyramid — so it
+      # stays memory-bounded and feeds the d1-import below. The parquet pyramid
+      # (year-filtered queries) and its R2 push are deferred: the pyramid build
+      # OOMs on the CI runner, and the push needs R2 creds (see 4b).
+      #
+      # These two stages were `raw/h3_r15` + `cells.db` until h3-removal Phase
+      # 3 — i.e. the daily job was refreshing the *dead* grid while the live
+      # one went stale.
+      - name: Rebuild cells raw S2 index
         if: ${{ !inputs.targets }}
-        run: $DVX data/cells/raw/h3_r15.dvc
+        run: $DVX data/cells/raw/s2_l21.dvc
       - name: Rebuild cells rollup DB (D1 source)
         if: ${{ !inputs.targets }}
-        run: $DVX data/cells/cells.db.dvc
+        run: $DVX data/cells/cells-s2.db.dvc
       - name: Install api dependencies
         if: ${{ !inputs.targets }}
         run: cd api && pnpm install

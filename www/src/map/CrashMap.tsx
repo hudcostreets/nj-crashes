@@ -459,7 +459,24 @@ export function CrashMap({
     const hexes = useMemo<StackedHex[] | null>(() => {
         if (mode !== "hexbin") return null
         // Server cells are fetched at the plan's resolution — render as-is.
-        if (prebinnedHexes) return prebinnedHexes
+        if (prebinnedHexes) {
+            // Publish the debug hook here too. It used to be set only on the
+            // client-binning path below, which stopped running once cells-api
+            // became the only source of cells — leaving `e2e/map-perf.spec.ts`
+            // waiting 3 minutes for a `lastBinMs` that could never arrive.
+            // Zero is honest: the binning happened server-side.
+            if (perfEnabled()) {
+                const w = window as any
+                w.__crashMapDebug = {
+                    ...(w.__crashMapDebug ?? {}),
+                    hexCount: prebinnedHexes.length,
+                    resolution: dataRes ?? effectiveS2Level,
+                    lastBinMs: 0,
+                    binSource: "server",
+                }
+            }
+            return prebinnedHexes
+        }
         const cache = binCache
         let bins = cache.get(effectiveS2Level)
         if (!bins) {
@@ -489,7 +506,7 @@ export function CrashMap({
             }
         }
         return bins
-    }, [mode, prebinnedHexes, effectiveCrashes, effectiveS2Level])
+    }, [mode, prebinnedHexes, effectiveCrashes, effectiveS2Level, dataRes])
 
     // Cell-grid overlay (debug feature): outline-only S2 cells at the
     // hovered level, covering the current viewport. S2 has no direct
