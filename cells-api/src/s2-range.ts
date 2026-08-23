@@ -98,6 +98,34 @@ export function s2IdToToken(id: bigint): string {
  *  range collapses to `parent, parent`. */
 export type S2CellRange = { lo: bigint; hi: bigint }
 
+/** Merge overlapping or adjacent ranges; output sorted by `lo`.
+ *
+ *  Grid-agnostic (it only ever compares `{lo, hi}` bigints) — it lived in
+ *  `h3-range.ts` until that file was deleted with the H3 grid.
+ *
+ *  Adjacency check is `a.hi + 1 >= b.lo`. Merging non-adjacent ranges
+ *  would also be *correct* (a gap just reads extra row groups), but both
+ *  consumers — parquet row-group pruning and D1's `BETWEEN … OR …` —
+ *  do less work with minimal, disjoint ranges. */
+export function mergeRanges(ranges: S2CellRange[]): S2CellRange[] {
+    if (ranges.length === 0) return []
+    const sorted = [...ranges].sort((a, b) => (a.lo < b.lo ? -1 : a.lo > b.lo ? 1 : 0))
+    // Copy on the way out: widening `top.hi` in place would otherwise
+    // reach back through the shared reference and mutate the caller's
+    // range objects.
+    const out: S2CellRange[] = [{ ...sorted[0] }]
+    for (let i = 1; i < sorted.length; i++) {
+        const top = out[out.length - 1]
+        const next = sorted[i]
+        if (next.lo <= top.hi + 1n) {
+            if (next.hi > top.hi) top.hi = next.hi
+        } else {
+            out.push({ ...next })
+        }
+    }
+    return out
+}
+
 export function s2RangeForCell(parent: bigint, baseLevel: number): S2CellRange {
     const parentLevel = s2LevelOf(parent)
     if (baseLevel < parentLevel) {

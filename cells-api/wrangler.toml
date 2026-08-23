@@ -7,22 +7,15 @@ compatibility_flags = ["nodejs_compat"]
 binding = "CELLS_BUCKET"
 bucket_name = "nj-crashes"
 
-# Per-cell all-years rollup (counts + labels), one row/cell for r6-r15.
-# Built by `njdot compute cells db`, imported via `api/scripts/d1-import.sh`.
-# Serves the default (all-years, all-severity) `/v1/cells` query as a single
-# indexed `h3 BETWEEN` range scan; year/severity-filtered queries fall back
-# to the R2 parquet pyramid.
-[[d1_databases]]
-binding = "CELLS_DB"
-database_name = "cells"
-database_id = "8d71621d-7b48-4018-b3fe-0db68ec528ad"
-
-# S2 rollup binding — mirrors CELLS_DB but for the S2 grid
-# (`cells_s2_l{level}` tables built from `data/cells/cells-s2.db`,
-# imported via `api/scripts/d1-import.sh cells-s2`). Optional —
-# `handleCellsRequestS2` falls through to the parquet pyramid when
-# absent (so this binding is optional but preferred — the D1 fast
-# path is much cheaper than reading R2 parquet per request).
+# Per-cell all-years rollup (counts + labels), one row per cell per level
+# (`cells_s2_l{level}`, built from `data/cells/cells-s2.db` and imported via
+# `api/scripts/d1-import.sh cells-s2`). Serves any all-years `/v1/cells`
+# query as a single indexed `cellid BETWEEN` range scan; year-filtered
+# queries — and any D1 failure — fall back to the R2 parquet pyramid, so
+# the binding is optional but very much preferred.
+#
+# The H3 `CELLS_DB` binding that used to sit here went away with
+# `specs/h3-removal.md` Phase 2.
 [[d1_databases]]
 binding = "CELLS_S2_DB"
 database_name = "cells-s2"
@@ -46,10 +39,3 @@ CORS_ORIGIN = "*"
 # reads under it. Other crashes-project data (parquets/, csvs/, geo/...)
 # can share the bucket at sibling prefixes.
 CELLS_PREFIX = "cells"
-# Informational only — the worker reads these from `manifest.json` at
-# request time (the res-gate uses `manifest.base_res`); kept here in sync
-# for humans. base is r15 since the pyramid gained the s{7,8,9}_r15 combos.
-BASE_RES = "15"
-SHARD_RES = "4"
-PYRAMID_LEVELS = "6,7,8,9,10,11"
-TOPK = "10"

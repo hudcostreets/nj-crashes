@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest"
-import { latLngToCell, cellToParent } from "h3-js"
-import { parseCellsRequest, HttpError, coarsenCells, servedLabels, DEFAULT_LABEL_MAX_CELLS } from "./cells"
+import { S2CellId, S2LatLng } from "nodes2ts"
+import { parseCellsRequest, HttpError, coarsenCellsS2, servedLabels, DEFAULT_LABEL_MAX_CELLS } from "./cells"
 
-/** Minimal valid query — only the two required params. */
-const BASE = "cells=8c2a100894097ff&res=12"
+/** Minimal valid query — only the two required params. `cells` is an S2
+ *  token (NJ's western l4 shard); `res` is an S2 level. */
+const BASE = "cells=89b&res=12"
 
 function parse(qs: string) {
     return parseCellsRequest(new URL(`https://x/?${qs}`))
@@ -64,45 +65,87 @@ describe("parseCellsRequest labels param", () => {
     })
 })
 
-describe("coarsenCells", () => {
-    // Two distinct r10 cells from geographically-separated lat/lngs so
-    // their r9 parents differ; plus a synthetic sibling of the first
-    // (any other r10 whose r9 parent matches).
-    const jcR10 = latLngToCell(40.7178, -74.0431, 10)      // Jersey City
-    const newarkR10 = latLngToCell(40.7357, -74.1724, 10)  // Newark
-    const jcParent = cellToParent(jcR10, 9)
-    const newarkParent = cellToParent(newarkR10, 9)
-    // sibling of jcR10 (drop resolution and re-index at r10 by nudging lat).
-    // The specific sibling doesn't matter — we just need same r9 parent.
-    const jcSib = latLngToCell(40.7180, -74.0429, 10)
+describe("coarsenCellsS2", () => {
+    /** (lat, lng) → S2 token at `level`. */
+    const tok = (lat: number, lng: number, level: number) =>
+        S2CellId.fromPoint(S2LatLng.fromDegrees(lat, lng).toPoint()).parentL(level).toToken()
+
+    // Two distinct l14 cells far enough apart that their l13 parents differ,
+    // plus a sibling of the first (any other l14 under the same l13).
+    const jc = tok(40.7178, -74.0431, 14)      // Jersey City
+    const newark = tok(40.7357, -74.1724, 14)  // Newark
+    const jcParent = tok(40.7178, -74.0431, 13)
+    const newarkParent = tok(40.7357, -74.1724, 13)
+    // ~700 m SW: a *different* l14 cell (edge ≈ 478 m)
+    // under the *same* l13 parent. Asserted below rather than assumed —
+    // the whole test rests on it.
+    const jcSib = tok(40.7153, -74.0506, 14)
+
+    it("picks l14 cells that do / don't share an l13 parent", () => {
+        expect({
+            distinctChildren: jc !== jcSib,
+            sameParent: tok(40.7153, -74.0506, 13) === jcParent,
+            newarkElsewhere: jcParent !== newarkParent,
+        }).toEqual({ distinctChildren: true, sameParent: true, newarkElsewhere: true })
+    })
 
     it("sums counts across children mapping to the same parent", () => {
-        const a = { h3: jcR10, n_fatal: 1, n_inj_ped: 2, n_inj_other: 3, n_pdo: 4, n_vehs: 5 }
+        const a = { h3: jc, n_fatal: 1, n_inj_ped: 2, n_inj_other: 3, n_pdo: 4, n_vehs: 5 }
         const b = { h3: jcSib, n_fatal: 10, n_inj_ped: 20, n_inj_other: 30, n_pdo: 40, n_vehs: 50 }
-        const c = { h3: newarkR10, n_fatal: 7, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 1 }
-        const out = coarsenCells([a, b, c], 9)
-        // Two distinct parents: jcParent (has a+b) and newarkParent (has c).
-        expect(out.length).toBe(2)
-        expect(new Set(out.map(o => o.h3))).toEqual(new Set([jcParent, newarkParent]))
-        const jc = out.find(o => o.h3 === jcParent)!
-        const nw = out.find(o => o.h3 === newarkParent)!
-        expect(jc.n_fatal).toBe(1 + 10)
-        expect(jc.n_inj_other).toBe(3 + 30)
-        expect(jc.n_pdo).toBe(4 + 40)
-        expect(nw.n_fatal).toBe(7)
-        expect(nw.n_vehs).toBe(1)
+        const c = { h3: newark, n_fatal: 7, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 1 }
+        const out = coarsenCellsS2([a, b, c], 13)
+        expect(out).toEqual([
+            { h3: jcParent, n_fatal: 11, n_inj_ped: 22, n_inj_other: 33, n_pdo: 44, n_vehs: 55 },
+            { h3: newarkParent, n_fatal: 7, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 1 },
+        ])
     })
 
     it("returns empty for empty input", () => {
-        expect(coarsenCells([], 9)).toEqual([])
+        expect(coarsenCellsS2([], 13)).toEqual([])
     })
 
     it("aggregates fatal_years across children, dedup+sort", () => {
-        const a = { h3: jcR10, n_fatal: 1, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0, fatal_years: [2018, 2020] }
+        const a = { h3: jc, n_fatal: 1, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0, fatal_years: [2018, 2020] }
         const b = { h3: jcSib, n_fatal: 1, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0, fatal_years: [2020, 2022] }
-        const [parent] = coarsenCells([a, b], 9)
-        expect(parent.h3).toBe(jcParent)
-        expect(parent.fatal_years).toEqual([2018, 2020, 2022])
+        expect(coarsenCellsS2([a, b], 13)).toEqual([
+            {
+                h3: jcParent, n_fatal: 2, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0,
+                fatal_years: [2018, 2020, 2022],
+            },
+        ])
+    })
+})
+
+describe("parseCellsRequest grid param", () => {
+    it("accepts an explicit `grid=s2`", () => {
+        expect(parse(`${BASE}&grid=s2`).cells).toEqual(["89b"])
+    })
+
+    it("rejects `grid=h3` with a 400 rather than serving S2 tokens to it", () => {
+        let err: HttpError | undefined
+        try { parse(`${BASE}&grid=h3`) } catch (e) { err = e as HttpError }
+        expect(err).toBeInstanceOf(HttpError)
+        expect(err?.status).toBe(400)
+        expect(err?.message).toBe("grid 'h3' is no longer supported — s2 is the only grid")
+    })
+
+    it("cannot reject a 15-char H3 id by shape — it parses as a token", () => {
+        // Documented, not desired: an H3 id is 15 lowercase hex chars, which
+        // the S2 token regex (1-16 hex) admits. It dies downstream instead —
+        // `s2LevelOf` reads it as a level-28 cell, and `handleCellsRequest`
+        // 400s on a shard finer than the requested level.
+        expect(parse("cells=8c2a100894097ff&res=12").cells).toEqual(["8c2a100894097ff"])
+    })
+
+    it("accepts `X` (cell id 0) and rejects a non-hex token", () => {
+        expect(parse("cells=X&res=12").cells).toEqual(["X"])
+        expect(() => parse("cells=zz&res=12")).toThrow(HttpError)
+    })
+
+    it("bounds `shard_res` by the S2 level range, not H3's 15", () => {
+        expect(parse(`${BASE}&shard_res=21`).shardRes).toBe(21)
+        expect(() => parse(`${BASE}&shard_res=22`)).toThrow(HttpError)
+        expect(() => parse(`${BASE}&shard_res=3`)).toThrow(HttpError)
     })
 })
 

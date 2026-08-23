@@ -13,7 +13,6 @@
     "@rdub/file-tree": "https://github.com/runsascoded/file-tree#d3476b0d2cb398197f3a1383f41fe3b0216be39f",
     "fflate": "^0.8.2",
     "fzstd": "^0.1.1",
-    "h3-js": "^4.2.1",
     "hyparquet": "^1.20.1",
     "nodes2ts": "^4.0.2"
   },

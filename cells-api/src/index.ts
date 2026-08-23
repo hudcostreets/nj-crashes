@@ -1,14 +1,14 @@
 /** Cloudflare Worker entrypoint for `crashes-cells-api`.
  *
  *  Endpoints:
- *    GET /v1/cells?cells=h3a,h3b,...&res=N[&years=Y0-Y1][&severities=fip][&polygon=lon,lat,...]
+ *    GET /v1/cells?cells=<s2 tokens>&res=N[&years=Y0-Y1][&severities=fip][&polygon=lon,lat,...]
  *    GET /v1/manifest                   # the cached manifest, for debug
  *    GET /healthz
  *
- *  The `cells` param is the list of `shard_res` parent cells the client
- *  wants. Client computes that set from its viewport bbox via
- *  `polygonToCellsExperimental`. Per-shard responses are cached on the
- *  client by URL — pan over already-fetched shards = no worker calls.
+ *  The `cells` param lists the S2 shard cells the client wants (NJ is two
+ *  l4 cells, so in practice it's a constant); `polygon` is what narrows a
+ *  response to the viewport. Responses are cached on the client by URL —
+ *  pan within already-fetched shards = no worker calls.
  *  Caching: the response carries an ETag derived from the request params
  *  + the manifest's `data_version`. Pipeline pushes new data → bumps
  *  `data_version` → invalidates. Edge cache TTL = 1h unconditional, 24h
@@ -25,13 +25,9 @@ interface Env {
     CELLS_BUCKET: R2Bucket
     CORS_ORIGIN: string
     CELLS_PREFIX: string
-    // Per-cell all-years rollup (counts + labels). Optional so a deploy
-    // without the binding still works (falls back to the R2 parquet path).
-    CELLS_DB?: D1Database
-    /** Optional S2 rollup binding. When present + the request has
-     *  `grid=s2` and matches the default (all-years, all-severity,
-     *  full-labels) predicate, `cells_s2_l{level}` serves the query
-     *  directly. Otherwise the parquet pyramid path handles it. */
+    /** Per-cell all-years rollup (counts + labels), `cells_s2_l{level}`.
+     *  Serves any all-years request directly; a year sub-range, a missing
+     *  binding, or any D1 error falls through to the R2 parquet pyramid. */
     CELLS_S2_DB?: D1Database
     /** Picker-tuning preference votes (`/v1/tune/votes`, see `tune.ts`).
      *  Optional so a deploy without the binding still serves cells. */
@@ -167,7 +163,7 @@ export default {
                 if (request.headers.get("If-None-Match") === tag) {
                     return new Response(null, { status: 304, headers: corsHeaders(env, { ETag: tag }) })
                 }
-                const db = cellsReq.grid === "s2" ? env.CELLS_S2_DB : env.CELLS_DB
+                const db = env.CELLS_S2_DB
                 const body = await handleCellsRequest(env.CELLS_BUCKET, prefix, cellsReq, db)
                 return new Response(JSON.stringify(body, jsonReplacer), {
                     headers: corsHeaders(env, {

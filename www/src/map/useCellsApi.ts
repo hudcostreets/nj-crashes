@@ -59,7 +59,9 @@ type CellsResponse = {
     res: number
     year_range: [number, number]
     data_version: string
-    source: "pyramid" | "raw"
+    /** Which path served it: the `cells_s2_l{level}` D1 rollup, or the R2
+     *  parquet pyramid (year-filtered requests, or a D1 failure). */
+    source: "pyramid" | "d1"
     cells: CellRow[]
 }
 
@@ -98,7 +100,7 @@ export type CoverCell = {
 export type CellsApiPlan = {
     kind: "hex"
     res: number
-    source: "pyramid" | "raw"
+    source: "pyramid" | "d1"
     reason: string
     cellCount?: number
     /** Number of shards that contributed to this response. */
@@ -624,10 +626,12 @@ export function useCellsApi(filter: CellsApiFilter | null):
                 // res. Pick the coarsest returned res; any finer shards
                 // get coarsened locally to match (lossless: parent count =
                 // sum of children).
-                let source: "pyramid" | "raw" = "pyramid"
+                // Report the *slowest* path any shard took — one parquet
+                // read dominates the wall clock even if the rest hit D1.
+                let source: "pyramid" | "d1" = "d1"
                 let minRes = Infinity
                 for (const r of responses) {
-                    if (r.source === "raw") source = "raw"
+                    if (r.source !== "d1") source = "pyramid"
                     if (r.res < minRes) minRes = r.res
                 }
                 const finalRes = minRes === Infinity ? pickAtFire.res : minRes
