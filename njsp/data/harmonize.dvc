@@ -2,7 +2,33 @@ meta:
   computation:
     cmd: njsp harmonize_muni_codes
     deps:
-      crashes.parquet: c6fc778884c3a819fd222b6ae91f9cd0
+      # The NJSP side reads the raw XMLs (`load_sp_data` → `get_crashes_df`),
+      # NOT `crashes.parquet`. This used to dep on `crashes.parquet`, which
+      # invented a `update_pqts` → `harmonize` edge that doesn't exist in the
+      # code — and forced the daily job to run them in that order. A muni's
+      # first-ever NJSP fatal then deadlocked the pipeline: `update_mc` raised
+      # on the unmapped `(cc, mc_sp)` pair, so `crashes.parquet` never built,
+      # so `harmonize` never ran to *add* the pair. (2026-08-25: Delanco Twsp,
+      # `cc=3, mc_sp=9`.) Depping on the XMLs lets `harmonize` run first.
+      /data/FAUQStats2008.xml: 017b63c673518b66eff6dcabf5af4778
+      /data/FAUQStats2009.xml: d61c414148a47318819541e73f27e0de
+      /data/FAUQStats2010.xml: 1208a430c6fa0fd9c1e17e258e92e2f6
+      /data/FAUQStats2011.xml: f908adaba0fff97f0620b235e3ce5a64
+      /data/FAUQStats2012.xml: 0de5c88927d077ef28d19c65320c5fd4
+      /data/FAUQStats2013.xml: f0ac84583cea3c48d126f1bada2f2cfd
+      /data/FAUQStats2014.xml: 48a436130787706790ed7384755df31e
+      /data/FAUQStats2015.xml: bd6f0694d4184a10ee2499231f30ae43
+      /data/FAUQStats2016.xml: 515b1ba6e1603d980f1c2c51da9d4ece
+      /data/FAUQStats2017.xml: 9129a068330199779ef4b284d4276b02
+      /data/FAUQStats2018.xml: 47fe8917c1d486eef915c6e7ce5b30ba
+      /data/FAUQStats2019.xml: 81c3de1a877db4611c328f88f1d958c9
+      /data/FAUQStats2020.xml: 8ed21586e99fc81cdbfb3206536b6de2
+      /data/FAUQStats2021.xml: 3b92c2bdb561684909353484062ac9e0
+      /data/FAUQStats2022.xml: 872307959166c18060f933f441bb1c22
+      /data/FAUQStats2023.xml: 9ea3241749185dbd3ad63c720e03cb0d
+      /data/FAUQStats2024.xml: f1c2bfd666b13deeff89f485cda6da72
+      /data/FAUQStats2025.xml: 2776168cd1b100f7041dd14dcdc19701
+      /data/FAUQStats2026.xml: 35e8d314fab127c8e802921066b8f414
       /njdot/data/2001/NewJersey2001Accidents.pqt: 9e5d8dc82b9a430856622577a8ed077a
       /njdot/data/2002/NewJersey2002Accidents.pqt: e8e4efc4f5f25e6507b42f792450bce6
       /njdot/data/2003/NewJersey2003Accidents.pqt: cd6660487ff0870f3b8bede69e2c46f1

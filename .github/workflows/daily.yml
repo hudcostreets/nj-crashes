@@ -111,12 +111,17 @@ jobs:
       - name: Refresh NJSP data
         if: ${{ !inputs.targets }}
         run: $DVX njsp/data/refresh.dvc
-      - name: Update NJSP parquets
-        if: ${{ !inputs.targets }}
-        run: $DVX njsp/data/crashes.parquet.dvc www/public/njsp/crashes.db.dvc
+      # Harmonize BEFORE update_pqts: `njsp update_pqts` maps NJSP muni codes
+      # to NJGIN via `muni_codes.parquet` and *raises* on an unmapped
+      # `(cc, mc_sp)`, so a muni's first-ever NJSP fatal wedges the pipeline
+      # unless the map is refreshed first. Harmonize reads the raw XMLs, not
+      # `crashes.parquet`, so it can run here. See `njsp/data/harmonize.dvc`.
       - name: Harmonize county/muni codes
         if: ${{ !inputs.targets }}
         run: $DVX njsp/data/harmonize.dvc
+      - name: Update NJSP parquets
+        if: ${{ !inputs.targets }}
+        run: $DVX njsp/data/crashes.parquet.dvc www/public/njsp/crashes.db.dvc
       - name: Update crash log
         if: ${{ !inputs.targets }}
         run: $DVX njsp/data/crash-log.parquet.dvc
