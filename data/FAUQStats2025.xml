@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Aug 24 10:00:03 EDT 2026</RUNDATE>
+  <RUNDATE>Tue Aug 25 10:00:02 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -2284,8 +2284,8 @@
   <COUNTY CCODE="13" CNAME="Monmouth">
     <MUNICIPALITY MCODE="1318" MNAME="Holmdel Twsp">
       <ACCIDENT ACCID="14129" DATE="09/14/2025" TIME="1026">
-        <STREET>Pleasant Valley Rd</STREET>
-        <LOCATION>Pleasant Valley Rd</LOCATION>
+        <STREET>Pleasant Valley Rd.</STREET>
+        <LOCATION>Pleasant Valley Rd.</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
