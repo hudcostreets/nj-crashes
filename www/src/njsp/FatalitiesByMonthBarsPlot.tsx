@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import type { Layout, PlotData } from "plotly.js"
-import { useDb, useQuery } from "@/src/lib/DuckDbContext"
+import { useDb, useQueryState } from "@/src/lib/DuckDbContext"
+import { EmptyRegion } from "./EmptyRegion"
 import { useRegisteredParquetDb } from "@/src/tableData"
 import { MonthlyParquet } from "@/src/paths"
 import PlotWrapper from "@/src/lib/plot-wrapper"
@@ -70,7 +71,8 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
     // Load monthly data
     const monthlyDb = useRegisteredParquetDb({ db, table: "monthly", url: MonthlyParquet })
     const monthlyQueryStr = useMemo(() => monthlyQueryFn(county ?? null, cc ?? null, mc ?? null), [county, cc, mc])
-    const monthlyRowsAll = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
+    const monthly = useQueryState<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
+    const monthlyRowsAll = monthly.data
 
     // Section-scoped filters (NjspSection): year-range + victim-type subset.
     // The victim-type subset drives which `row[t]` values get summed below.
@@ -226,7 +228,8 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
 
 
     if (!data.length) {
-        return <div style={{ height: HEIGHT }}>Loading...</div>
+        if (monthly.loading) return <div style={{ height: HEIGHT }}>Loading...</div>
+        return <EmptyRegion height={HEIGHT} label={regionLabel ?? (county ? `${county} County` : "NJ")} />
     }
 
     return (

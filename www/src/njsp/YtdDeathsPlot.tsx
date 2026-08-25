@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import type { Layout, PlotData } from "plotly.js"
-import { useDb, useQuery } from "@/src/lib/DuckDbContext"
+import { useDb, useQueryState } from "@/src/lib/DuckDbContext"
+import { EmptyRegion } from "./EmptyRegion"
 import { useRegisteredParquetDb } from "@/src/tableData"
 import { YtdParquet } from "@/src/paths"
 import { fadeColor, useCustomHover } from "pltly"
@@ -153,7 +154,8 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
         () => ytdQueryFn(county ?? null, cc ?? null, mc ?? null, selectedTypes),
         [county, cc, mc, selectedTypes],
     )
-    const ytdRowsAll = useQuery<YtdRow>({ db: ytdDb, query: ytdQueryStr, init: [] })
+    const ytd = useQueryState<YtdRow>({ db: ytdDb, query: ytdQueryStr, init: [] })
+    const ytdRowsAll = ytd.data
     const ytdRows = useMemo(
         () => yearRange ? ytdRowsAll.filter(r => r.year >= yearRange[0] && r.year <= yearRange[1]) : ytdRowsAll,
         [ytdRowsAll, yearRange],
@@ -563,7 +565,8 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     })
 
     if (!data.length) {
-        return <div style={{ height: HEIGHT }}>Loading...</div>
+        if (ytd.loading) return <div style={{ height: HEIGHT }}>Loading...</div>
+        return <EmptyRegion height={HEIGHT} label={regionLabel ?? (county ? `${county} County` : "NJ")} />
     }
 
     const selectStyle = {

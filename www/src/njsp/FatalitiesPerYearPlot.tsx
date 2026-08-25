@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import type { Layout, PlotData } from "plotly.js"
-import { useDb, useQuery } from "@/src/lib/DuckDbContext"
+import { useDb, useQuery, useQueryState } from "@/src/lib/DuckDbContext"
 import { useRegisteredDb, useRegisteredParquetDb } from "@/src/tableData"
 import { MonthlyParquet, ProjectedCsv, YtcParquet } from "@/src/paths"
 import { fadeColor, lightenColor } from "pltly"
@@ -19,6 +19,8 @@ import { useUrlState, boolParam } from "use-prms"
 import { getPopulation, usePopulation } from "@/src/census/usePopulation"
 import { usePageFilters } from "@/src/PageFiltersContext"
 import { VICTIM_TYPES } from "./victim-types"
+import { pickYearlyRows } from "./yearlyRows"
+import { EmptyRegion } from "./EmptyRegion"
 import css from "./plot.module.scss"
 
 // Latest ACS5 vintage. Years past this reuse 2023's population as the
@@ -283,14 +285,14 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     // Yearly data: always aggregate from monthly CSV (always up to date)
     // ytc is only used for the county list in the dropdown
     const ytcQueryStr = useMemo(() => ytcQueryFn(county), [county])
-    const ytcRows = useQuery<YtRow>({ db: ytcDb, query: ytcQueryStr, init: [] })
+    const ytc = useQueryState<YtRow>({ db: ytcDb, query: ytcQueryStr, init: [] })
+    const ytcRows = ytc.data
     const yearlyQueryStr = useMemo(
         () => yearlyFromMonthlyQueryForGeo(county, propCc ?? null, propMc ?? null),
         [county, propCc, propMc],
     )
-    const yearlyFromMonthly = useQuery<YtRow>({ db: monthlyDb, query: yearlyQueryStr, init: [] })
-    // Use monthly-aggregated data if available, fall back to ytc
-    const ytRowsAll = yearlyFromMonthly.length > 0 ? yearlyFromMonthly : ytcRows
+    const yearly = useQueryState<YtRow>({ db: monthlyDb, query: yearlyQueryStr, init: [] })
+    const ytRowsAll = pickYearlyRows(yearly.data, ytcRows, propMc ?? null)
 
     // Projected current-year totals (statewide / county / municipality).
     const projectionsQueryStr = useMemo(() => typeCountsQuery(county, propCc ?? null, propMc ?? null), [county, propCc, propMc])
@@ -846,8 +848,20 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
     }, [ytRows, projections])
 
 
+    // No traces. Either the queries haven't settled, or this region really
+    // has no fatalities — Delanco had none until 2026-08-12, and 42 NJ munis
+    // still have none. Conflating the two showed a permanent "Loading...".
     if (!data.length) {
-        return <div style={{ height: `${height}px` }}>Loading...</div>
+        if (ytc.loading || yearly.loading) {
+            return <div style={{ height: `${height}px` }}>Loading...</div>
+        }
+        return (
+            <EmptyRegion
+                height={height}
+                label={regionLabel ?? (county ? `${county} County` : "NJ")}
+                span={yearRange ? `${yearRange[0]}\u2013${yearRange[1]}` : undefined}
+            />
+        )
     }
 
     // Summary text data
