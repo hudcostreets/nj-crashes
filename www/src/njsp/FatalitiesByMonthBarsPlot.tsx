@@ -229,7 +229,7 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
 
     if (!data.length) {
         if (monthly.loading) return <div style={{ height: HEIGHT }}>Loading...</div>
-        return <EmptyRegion height={HEIGHT} label={regionLabel ?? (county ? `${county} County` : "NJ")} />
+        return <EmptyRegion id={id} title="Fatalities by Month" label={regionLabel ?? (county ? `${county} County` : "NJ")} />
     }
 
     return (

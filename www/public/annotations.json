@@ -2,15 +2,27 @@
   {
     "id": "alpine-palisades-ipw-gap",
     "title": "NJDOT crashes under-reported 2013-2018",
-    "body": "Route 445 (Palisades Interstate Parkway) runs along Alpine's eastern border, and crashes on it are typically assigned to Alpine municipality. From 2013-2018, the Palisades Interstate Parkway Police Department stopped filing crash reports with NJDOT — Route 445 crashes dropped from 134/year in 2012 to 1/year during 2013-2018, then returned to 230/year from 2019. This means Alpine's NJDOT crash counts for 2013-2018 under-report actual crashes by roughly 75%. NJSP fatal-crash data is not affected.",
+    "body": "Route 445 (Palisades Interstate Parkway) runs along Alpine's eastern border, and crashes on it are typically assigned to Alpine municipality. From 2013-2018, the Palisades Interstate Parkway Police Department stopped filing crash reports with NJDOT \u2014 Route 445 crashes dropped from 134/year in 2012 to 1/year during 2013-2018, then returned to 230/year from 2019. This means Alpine's NJDOT crash counts for 2013-2018 under-report actual crashes by roughly 75%. NJSP fatal-crash data is not affected.",
     "applies_to": {
-      "geo": { "cc": 2, "mc": 2 },
-      "pages": ["njdot-crash-plot", "annual-stats-table"],
-      "year_range": [2013, 2018],
+      "geo": {
+        "cc": 2,
+        "mc": 2
+      },
+      "pages": [
+        "njdot-crash-plot",
+        "annual-stats-table"
+      ],
+      "year_range": [
+        2013,
+        2018
+      ],
       "data_source": "njdot"
     },
     "severity": "warning",
-    "authored": { "author": "rw", "date": "2026-04-12" },
+    "authored": {
+      "author": "rw",
+      "date": "2026-04-12"
+    },
     "refs": []
   },
   {
@@ -18,14 +30,54 @@
     "title": "2020 Monmouth County homicides likely under-reported",
     "body": "The NJ Uniform Crime Report shows only 1 murder in Monmouth County for 2020, down from 10 in 2019 and recovering to 4 in 2021. Statewide homicides actually increased in 2020 (262 to 329). The sharp drop almost certainly reflects incomplete agency reporting during 2020 (COVID-era disruptions and the nationwide UCR-to-NIBRS transition), not an actual decline in homicides.",
     "applies_to": {
-      "geo": { "cc": 13 },
-      "pages": ["homicides-comparison"],
-      "year_range": [2020, 2020],
+      "geo": {
+        "cc": 13
+      },
+      "pages": [
+        "homicides-comparison"
+      ],
+      "year_range": [
+        2020,
+        2020
+      ],
       "data_source": "ucr",
-      "icon_offset": { "dx": 0.6, "y": 0.97, "anchor": "left" }
+      "icon_offset": {
+        "dx": 0.6,
+        "y": 0.97,
+        "anchor": "left"
+      }
     },
     "severity": "warning",
-    "authored": { "author": "rw+claude", "date": "2026-04-16" },
+    "authored": {
+      "author": "rw+claude",
+      "date": "2026-04-16"
+    },
+    "refs": []
+  },
+  {
+    "id": "delanco-njdot-reporting-gap",
+    "title": "NJDOT crashes under-reported 2005-2014",
+    "body": "Delanco filed almost no crash reports with NJDOT for a decade. 2005-2008 are entirely absent (0 crashes each), and 2009-2014 are sporadic (2, 24, 12, 2, 1, 20) against a 2015-2023 baseline of 42.6/year \u2014 an ~86% undercount over the ten-year window. The gap is specific to this municipality: Burlington County as a whole held steady near 13,000 crashes/year across the same span, and statewide totals barely moved. Nor were the crashes reassigned elsewhere \u2014 on the Delanco stretch of Route 543 (MP 10.8-12.0), 2005-2009 and 2013 have zero records under any municipality, while every other year carries 3-13. 2001-2002 (8 and 15 crashes) also look partial next to 2003-2004 (56 and 48). NJSP fatal-crash data is compiled separately and is not affected.",
+    "applies_to": {
+      "geo": {
+        "cc": 3,
+        "mc": 9
+      },
+      "pages": [
+        "njdot-crash-plot",
+        "annual-stats-table"
+      ],
+      "year_range": [
+        2005,
+        2014
+      ],
+      "data_source": "njdot"
+    },
+    "severity": "warning",
+    "authored": {
+      "author": "rw",
+      "date": "2026-08-25"
+    },
     "refs": []
   }
 ]

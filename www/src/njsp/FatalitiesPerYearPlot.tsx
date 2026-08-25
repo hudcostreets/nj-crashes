@@ -857,7 +857,8 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
         }
         return (
             <EmptyRegion
-                height={height}
+                id={id}
+                title="Car Crash Deaths"
                 label={regionLabel ?? (county ? `${county} County` : "NJ")}
                 span={yearRange ? `${yearRange[0]}\u2013${yearRange[1]}` : undefined}
             />

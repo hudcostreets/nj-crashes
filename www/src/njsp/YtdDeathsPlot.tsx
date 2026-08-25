@@ -566,7 +566,7 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
 
     if (!data.length) {
         if (ytd.loading) return <div style={{ height: HEIGHT }}>Loading...</div>
-        return <EmptyRegion height={HEIGHT} label={regionLabel ?? (county ? `${county} County` : "NJ")} />
+        return <EmptyRegion id={id} title="YTD Deaths" label={regionLabel ?? (county ? `${county} County` : "NJ")} />
     }
 
     const selectStyle = {
