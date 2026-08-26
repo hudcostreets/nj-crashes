@@ -1,0 +1,7 @@
+meta:
+  computation:
+    cmd: pnpm install --frozen-lockfile && pnpm exec wrangler deploy
+    git_deps:
+      src: 9e544c1a3aaffd4cbf99a7adc7e23cd73cf6f633
+      wrangler.toml: a8a0dda0bbb4c7b24d73903ce3661866b2da5243
+      package.json: 40f2c4c8a19be65ec306aad8a16309634e8cd102
