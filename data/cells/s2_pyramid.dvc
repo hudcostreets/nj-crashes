@@ -6,7 +6,7 @@ outs:
   path: s2_pyramid
 meta:
   computation:
-    cmd: cd ../.. && njdot compute cells pyramid --grid s2 -f
+    cmd: cd ../.. && njdot compute cells pyramid -f
     deps:
       raw/s2_l21: 60b5fa59e97e843788405c383fac8f0e
       s2-sld.parquet: dd686d467d7d4146a091b680f79067fc
