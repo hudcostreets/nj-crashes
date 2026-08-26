@@ -6,4 +6,4 @@ meta:
       /www/public/njdot/cmymc.db: 9a59b8fefd7f0559c935d147c4622572
       /data/cells/cells-s2.db: 368ef65d7c9ff5c8cfbc0f3ae92ad17d
     git_deps:
-      scripts/d1-import.sh: bd0f1819d01e6d6617c1125462d9ef7548ef8cd7
+      scripts/d1-import.sh: da25408d5c334940964dd7153683d2cdf8d679e6
