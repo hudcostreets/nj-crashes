@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Aug 25 10:00:02 EDT 2026</RUNDATE>
+  <RUNDATE>Wed Aug 26 10:00:02 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -280,8 +280,8 @@
   <COUNTY CCODE="02" CNAME="Bergen">
     <MUNICIPALITY MCODE="0212" MNAME="East Rutherford Bor">
       <ACCIDENT ACCID="14368" DATE="12/23/2025" TIME="1747">
-        <STREET>Paterson Ave</STREET>
-        <LOCATION>Paterson Ave</LOCATION>
+        <HIGHWAY>120</HIGHWAY>
+        <LOCATION>County 120 MP 1.84</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3043,8 +3043,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="14079" DATE="08/11/2025" TIME="0548">
-        <STREET>334 Bergen Street</STREET>
-        <LOCATION>334 Bergen Street</LOCATION>
+        <STREET>Bergen St</STREET>
+        <LOCATION>Bergen St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3219,8 +3219,8 @@
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
       <ACCIDENT ACCID="14066" DATE="08/04/2025" TIME="1953">
-        <STREET>North 6th Street</STREET>
-        <LOCATION>North 6th Street</LOCATION>
+        <STREET>North 6th St</STREET>
+        <LOCATION>North 6th St</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -4238,6 +4238,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
