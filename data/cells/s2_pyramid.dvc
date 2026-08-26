@@ -1,6 +1,6 @@
 outs:
-- md5: a2a0e60a9c92015ce9b28f5ef06a3e0b.dir
-  size: 489405612
+- md5: 308822ee4e8a7846e7c85c98f4a54764.dir
+  size: 489565820
   hash: md5
   nfiles: 36
   path: s2_pyramid
@@ -8,8 +8,8 @@ meta:
   computation:
     cmd: cd ../.. && njdot compute cells pyramid -f
     deps:
-      raw/s2_l21: 60b5fa59e97e843788405c383fac8f0e
+      raw/s2_l21: 30e9fa5c478b3e1536a19ffd7c500b21
       s2-sld.parquet: dd686d467d7d4146a091b680f79067fc
     git_deps:
-      /njdot/cli/cells.py: 363e8994f143f4dcc201e47c5ff07297f001e633
+      /njdot/cli/cells.py: 97ffd023a765e5a0851b5da05b9493ee434fc169
       /njdot/s2.py: 18b3290b93befcb93f8edcffeb141a8782ccfe7d
