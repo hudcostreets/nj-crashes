@@ -570,6 +570,13 @@ export function CrashMapSection({
     const activeBg = actualTheme === "dark" ? "#6db3f2" : "#0066cc"
 
     const [y0min, y1max] = result.manifest?.year_range ?? [2001, 2023]
+    // The page-level default range runs to `curYear` (2026), but map data
+    // ends at the manifest's `year_range` (2025). Clamp for the header: a
+    // `<select>` whose value isn't among its options silently renders the
+    // first option, so the upper dropdown showed "2001" ("2001 – 2001")
+    // while the actual filter spanned all years.
+    const yr0 = Math.max(yearRange[0], y0min)
+    const yr1 = Math.min(yearRange[1], y1max)
 
     const emptySeverities = severities.size === 0
 
@@ -669,19 +676,19 @@ export function CrashMapSection({
             {fullScreen ? (
                 <>
                     <YearSelect
-                        value={yearRange[0]} min={y0min} max={yearRange[1]}
-                        onChange={y => setYearRange([y, yearRange[1]])}
+                        value={yr0} min={y0min} max={yr1}
+                        onChange={y => setYearRange([y, yr1])}
                         theme={actualTheme}
                     />
                     <span>–</span>
                     <YearSelect
-                        value={yearRange[1]} min={yearRange[0]} max={y1max}
-                        onChange={y => setYearRange([yearRange[0], y])}
+                        value={yr1} min={yr0} max={y1max}
+                        onChange={y => setYearRange([yr0, y])}
                         theme={actualTheme}
                     />
                 </>
             ) : (
-                <span>{yearRange[0]}–{yearRange[1]}</span>
+                <span>{yr0}–{yr1}</span>
             )}
         </>
     )
