@@ -4,7 +4,7 @@
  *  Guards two things this project has landed and is likely to keep
  *  iterating on:
  *
- *  1. **Bins-per-viewport budget** (`autoHexPxTarget`) — solves for the
+ *  1. **Bins-per-viewport budget** (`autoCellPxTarget`) — solves for the
  *     cell diameter that yields ~`budget` bins filling a viewport of
  *     area `A_px`: `d_px = sqrt(A_px / budget)`. See
  *     `specs/autores-bins-budget.md`. Any drift in the formula → these
@@ -20,7 +20,7 @@
  *  never goes coarser (equivalently, `level(z+ε) ≥ level(z)`).
  */
 import { describe, it, expect } from "vitest"
-import { pickRes, circleRadiusPx, hexPxTargetFor, autoHexPxTarget, BINS_BUDGET } from "./picker"
+import { pickRes, circleRadiusPx, cellPxTargetFor, autoCellPxTarget, BINS_BUDGET } from "./picker"
 import { S2_TARGET_FACTOR } from "./s2"
 
 const NJ_LAT = 40.7
@@ -30,7 +30,7 @@ const NJ_LAT = 40.7
 const EMBED_AREA = 1280 * 480
 const FULL_AREA = 1920 * 900
 
-describe("picker: autoHexPxTarget = sqrt(A/budget), clamped [1, 30]", () => {
+describe("picker: autoCellPxTarget = sqrt(A/budget), clamped [1, 30]", () => {
     // Exact formula check at a few grid points. `budget` is a pure
     // divisor; the packing constant + fill factor are folded into it.
     const cases: Array<[number, number, number]> = [
@@ -43,17 +43,17 @@ describe("picker: autoHexPxTarget = sqrt(A/budget), clamped [1, 30]", () => {
     ]
     for (const [area, budget, expected] of cases) {
         it(`A=${area} bins=${budget} → d=${expected.toFixed(2)}px`, () => {
-            expect(autoHexPxTarget(area, budget)).toBeCloseTo(expected, 4)
+            expect(autoCellPxTarget(area, budget)).toBeCloseTo(expected, 4)
         })
     }
     it("clamps to ≥ 1.0 at extreme high budget", () => {
-        expect(autoHexPxTarget(1000, 1_000_000)).toBe(1.0)
+        expect(autoCellPxTarget(1000, 1_000_000)).toBe(1.0)
     })
     it("clamps to ≤ 30 at extreme low budget", () => {
-        expect(autoHexPxTarget(EMBED_AREA, 1)).toBe(30)
+        expect(autoCellPxTarget(EMBED_AREA, 1)).toBe(30)
     })
     it("default budget matches BINS_BUDGET module const", () => {
-        expect(autoHexPxTarget(EMBED_AREA)).toBeCloseTo(Math.sqrt(EMBED_AREA / BINS_BUDGET), 4)
+        expect(autoCellPxTarget(EMBED_AREA)).toBeCloseTo(Math.sqrt(EMBED_AREA / BINS_BUDGET), 4)
     })
 })
 
@@ -126,12 +126,12 @@ describe("picker: circleRadiusPx curve", () => {
     })
 })
 
-describe("picker: hexPxTargetFor = autoHexPxTarget × S2_TARGET_FACTOR", () => {
+describe("picker: cellPxTargetFor = autoCellPxTarget × S2_TARGET_FACTOR", () => {
     for (const area of [EMBED_AREA, FULL_AREA]) {
         for (const budget of [3000, 5000, 8000]) {
             it(`A=${area} bins=${budget}: exact scale + usable range`, () => {
-                const t = hexPxTargetFor(area, budget)
-                expect(t).toBeCloseTo(autoHexPxTarget(area, budget) * S2_TARGET_FACTOR, 6)
+                const t = cellPxTargetFor(area, budget)
+                expect(t).toBeCloseTo(autoCellPxTarget(area, budget) * S2_TARGET_FACTOR, 6)
                 expect(t).toBeGreaterThanOrEqual(1 * S2_TARGET_FACTOR)
                 expect(t).toBeLessThanOrEqual(30)
             })

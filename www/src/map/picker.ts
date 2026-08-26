@@ -40,7 +40,7 @@ export function circleRadiusPx(zoom: number): number {
  *  picker's usable range. The lower clamp is a tuning knob (not a
  *  constant) because it *binds* for every scoped view — see
  *  `S2_MIN_TARGET_PX`. */
-export function autoHexPxTarget(
+export function autoCellPxTarget(
     viewportAreaPx: number,
     budget: number = BINS_BUDGET,
 ): number {
@@ -48,17 +48,17 @@ export function autoHexPxTarget(
     return Math.min(30, Math.max(S2_MIN_TARGET_PX, diaPx))
 }
 
-/** Effective `hexPxTarget` fed into the picker.
+/** Effective `cellPxTarget` fed into the picker.
  *
  *  Scaled by `S2_TARGET_FACTOR` (see `map/tuning.json`). Applied here
  *  rather than inside `pickS2LevelForPixels` so snap-buttons that set
  *  `target = level.diameter_in_px` cleanly land on their labelled
  *  level — the picker's strict `≥ target` rule stays a valid inverse. */
-export function hexPxTargetFor(
+export function cellPxTargetFor(
     viewportAreaPx: number,
     budget: number = BINS_BUDGET,
 ): number {
-    return autoHexPxTarget(viewportAreaPx, budget) * S2_TARGET_FACTOR
+    return autoCellPxTarget(viewportAreaPx, budget) * S2_TARGET_FACTOR
 }
 
 /** End-to-end: given (zoom, lat, viewportAreaPx, budget), return the
@@ -71,6 +71,6 @@ export function pickRes(
     viewportAreaPx: number,
     budget: number = BINS_BUDGET,
 ): number {
-    const target = hexPxTargetFor(viewportAreaPx, budget)
+    const target = cellPxTargetFor(viewportAreaPx, budget)
     return pickS2LevelForPixels(target, zoom, lat)
 }

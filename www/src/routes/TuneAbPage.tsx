@@ -47,7 +47,7 @@
  *
  *  Level selection mirrors the prod picker incl. the scoped bins-budget:
  *  `areaPx = min(vpArea, scopeArea/mppx²)` (see `CrashMapSection.
- *  hexPxTarget`) — scoped views use the scope's full admin area rather
+ *  cellPxTarget`) — scoped views use the scope's full admin area rather
  *  than the true `polygon ∩ viewport`; close enough for level choice.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -55,7 +55,7 @@ import { useUrlStates, defStringParam, floatParam, intParam } from "use-prms"
 import { metersPerPixel } from "@/src/map/CrashMap"
 import { CELLS_API_BASE } from "@/src/map/config"
 import { S2_MAX_LEVEL, S2_MIN_LEVEL, S2_MIN_TARGET_PX, S2_PICK_MULT, S2_TARGET_FACTOR } from "@/src/map/s2"
-import { BINS_BUDGET, autoHexPxTarget } from "@/src/map/picker"
+import { BINS_BUDGET, autoCellPxTarget } from "@/src/map/picker"
 import scopesJson from "@/src/map/tune-scopes.json"
 import { MiniMap, fmtBytes, pickS2WithOverrides, type MiniMapStats } from "./TunePage"
 
@@ -120,7 +120,7 @@ const SHIPPED = {
 
 /** The prod pick for a view+zoom, plus the intermediate features a
  *  learner would condition on — same math as `CrashMapSection.
- *  hexPxTarget` + `pickS2LevelForPixels`. */
+ *  cellPxTarget` + `pickS2LevelForPixels`. */
 function pickWithFeatures(view: EvalView, zoom: number) {
     const [vpw, vph] = VP_DIMS[view.vp]
     const vpArea = vpw * vph
@@ -129,7 +129,7 @@ function pickWithFeatures(view: EvalView, zoom: number) {
     if (view.scope.km2 != null) {
         areaPx = Math.min(vpArea, (view.scope.km2 * 1e6) / (mppx * mppx))
     }
-    const autoTargetPx = autoHexPxTarget(areaPx, BINS_BUDGET)
+    const autoTargetPx = autoCellPxTarget(areaPx, BINS_BUDGET)
     const level = pickS2WithOverrides(autoTargetPx * SHIPPED.targetFactor, zoom, view.lat, SHIPPED.pickMult)
     return { level, mppx, areaPx, autoTargetPx }
 }
@@ -175,7 +175,7 @@ const pick = <T,>(xs: T[]): T => xs[Math.floor(Math.random() * xs.length)]
  *  Stratifying by *kind* rather than by individual scope is the point: with
  *  586 scopes, per-scope coverage is unreachable and not what the fit needs
  *  — it conditions on the scale regime (statewide runs above
- *  `autoHexPxTarget`'s clamp, scoped views sit on it), so what has to stay
+ *  `autoCellPxTarget`'s clamp, scoped views sit on it), so what has to stay
  *  balanced is the regimes, not the geography. */
 function leastVotedKind(counts: Map<string, number>): ScopeKind {
     const votes = (k: ScopeKind) => SCOPES_BY_KIND[k].reduce((n, s) => n + (counts.get(s.slug) ?? 0), 0)

@@ -4,7 +4,7 @@
  *  Scope (cc, mc) comes from the caller. With `fullScreen` set, it fills
  *  the viewport (the `/map` route); otherwise it's an embedded,
  *  drag-resizable panel. Either way: cells-api backend, year-range
- *  selects, severity Legend, hexbin controls, debug drawer.
+ *  selects, severity Legend, bins controls, debug drawer.
  */
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { useUrlState, viewStateParam, cleanUrl, optFloatParam, boolParam, enumParam } from "use-prms"
@@ -13,7 +13,7 @@ import { useCellsApi, CELLS_MAX, clipPolygonToBbox, polygonAreaM2 } from "@/src/
 import type { CellsApiFilter } from "@/src/map/useCellsApi"
 import { MAP_BASE_URL } from "@/src/map/config"
 import type { MapMode, ViewState } from "@/src/map/CrashMap"
-import type { StackedHex } from "@/src/map/StackedHexLayer"
+import type { StackedCell } from "@/src/map/StackedCellLayer"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import type { FeatureCollection } from "geojson"
 import { FiMaximize2, FiMinimize2 } from "react-icons/fi"
@@ -23,7 +23,7 @@ import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
 import type { Bbox, MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel } from "@/src/map/CrashMap"
 
-import { circleRadiusPx, hexPxTargetFor, pickRes as pickerPick, BINS_BUDGET } from "@/src/map/picker"
+import { circleRadiusPx, cellPxTargetFor, pickRes as pickerPick, BINS_BUDGET } from "@/src/map/picker"
 import {
     pickS2LevelForPixels, s2PickEdgeMeters,
     S2_EDGE_METERS, S2_MAX_LEVEL, S2_MIN_LEVEL, S2_PICK_MULT,
@@ -41,7 +41,7 @@ import { YearSelect } from "@/src/lib/year-select"
 const S2_FALLBACK_LEVEL = 12
 
 function planRes(result: { plan?: { kind: string; res: number } | null }): number {
-    return result.plan?.kind === "hex" ? result.plan.res : S2_FALLBACK_LEVEL
+    return result.plan?.kind === "cell" ? result.plan.res : S2_FALLBACK_LEVEL
 }
 
 const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m.CrashMap })))
@@ -49,7 +49,7 @@ const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m
 const STATE_BBOX: [number, number, number, number] = [-75.7, 38.9, -73.9, 41.4]
 
 /** Approximate visible-viewport pixel dims used for the shard-selection
- *  bbox + hex-resolution picking. Full-screen fills the window; the embed
+ *  bbox + cell-level picking. Full-screen fills the window; the embed
  *  is width-capped at 1280 and a fixed 480px tall (its real height varies
  *  with the user's drag-resize, but 480 is a fine picker midpoint). */
 function viewportDims(fullScreen: boolean): [number, number] {
@@ -180,7 +180,7 @@ type CrashFilter = {
     viewport?: Bbox
     viewportLat?: number
     zoom?: number
-    hexPxTarget?: number
+    cellPxTarget?: number
 }
 
 export function CrashMapSection({
@@ -188,7 +188,7 @@ export function CrashMapSection({
     fullScreen = false, detailsHref, onOutlineClick,
 }: Props) {
     const { actualTheme } = useTheme()
-    const [mode, setMode] = useState<MapMode>("hexbin")
+    const [mode, setMode] = useState<MapMode>("bins")
     // Year range comes from the page-level filter provider — same `yr`
     // URL param that drives the NJSP/NJDOT plots + tables below. Fallback
     // to a static default lets the map still render if someone drops the
@@ -197,23 +197,23 @@ export function CrashMapSection({
     const yearRange = filters?.yearRange ?? YEAR_RANGE_DEFAULT
     const setYearRange = filters?.setYearRange ?? (() => {})
     const [severities, setSeverities] = useState<Set<"f" | "i" | "p">>(() => new Set(["f", "i", "p"]))
-    // `hpx` (hex-pixel target) and `hs` (bar height scale) are URL-persisted
+    // `hpx` (cell-pixel target) and `hs` (bar height scale) are URL-persisted
     // so a shared map link reproduces the exact viz — otherwise slider tweaks
     // silently reset on page reload. Defaults chosen to feel neutral across
     // muni + county scopes.
-    // • `hpx` — hex px target. Higher = coarser hexes (fewer, chunkier).
-    // • `hs`  — bar height *scale*: the tallest hexbin's rendered height
+    // • `hpx` — cell px target. Higher = coarser cells (fewer, chunkier).
+    // • `hs`  — bar height *scale*: the tallest bin's rendered height
     //           is `hs × maxDim(regionBbox)` in meters. So `hs=0.3` means
     //           "tallest bar ≈ 30% of the region's largest dimension" —
     //           consistent visual weight regardless of zoom / muni size.
-    const [hexPxTargetUrl, setHexPxTargetUrl] = useUrlState("hpx", optFloatParam(), { debounce: 100 })
+    const [cellPxTargetUrl, setCellPxTargetUrl] = useUrlState("hpx", optFloatParam(), { debounce: 100 })
     const [heightScaleUrl, setHeightScaleUrl] = useUrlState("hs", optFloatParam(), { debounce: 100 })
-    // `hexAuto` — when true (default), hexPxTarget grows with zoom so
+    // `cellAuto` — when true (default), cellPxTarget grows with zoom so
     // close-up views get chunkier, more-pickable cells; when false, the
     // manual slider value wins. `?ha=false` to opt out of adaptive.
-    const [hexAutoUrl, setHexAutoUrl] = useUrlState("ha", boolParam)
-    // Bins-per-viewport budget — target hex count that fills the map
-    // canvas. Lower = coarser hexes = fewer bins = faster /cells. The
+    const [cellAutoUrl, setCellAutoUrl] = useUrlState("ha", boolParam)
+    // Bins-per-viewport budget — target cell count that fills the map
+    // canvas. Lower = coarser cells = fewer bins = faster /cells. The
     // spec (`specs/autores-bins-budget.md`) sweeps {3k, 5k, 8k}; the
     // module default lives in `picker.ts` (`BINS_BUDGET`). URL param
     // `?bins=<N>` for A/B eval via `/dev/ab`.
@@ -222,12 +222,12 @@ export function CrashMapSection({
     void setBinsUrl
     // `boolParam` default is `false`; we invert to keep the URL absent
     // when the user is on the default (auto=on). `?ha=1` when disabled.
-    const hexAuto = !hexAutoUrl
-    const setHexAuto = (v: boolean) => setHexAutoUrl(!v)
+    const cellAuto = !cellAutoUrl
+    const setHexAuto = (v: boolean) => setCellAutoUrl(!v)
     const heightScale = heightScaleUrl ?? 0.2
     const setHeightScale = (v: number) => setHeightScaleUrl(v === 0.2 ? null : v)
-    const manualHexPx = hexPxTargetUrl ?? 1.7
-    const setHexPxTarget = (v: number) => setHexPxTargetUrl(v === 1.7 ? null : v)
+    const manualCellPx = cellPxTargetUrl ?? 1.7
+    const setCellPxTarget = (v: number) => setCellPxTargetUrl(v === 1.7 ? null : v)
     // Drawer defaults open on the full-screen route (room to spare) and
     // closed in the embed (don't occlude the small panel on first paint).
     const [drawerOpen, setDrawerOpen] = useToolboxOpen(fullScreen)
@@ -263,7 +263,7 @@ export function CrashMapSection({
     // Pre-fetch the v2 manifest so we can derive a sensible initial
     // viewport from the county/muni bbox before the user has moved the
     // map. Otherwise the picker's no-viewport fallback (r6 single-file)
-    // gives us only ~14 hexes for Hudson — not granular enough.
+    // gives us only ~14 cells for Hudson — not granular enough.
     const [v2Manifest, setV2Manifest] = useState<MapManifestV2 | null>(null)
     useEffect(() => {
         loadManifestV2().then(m => { if (m) setV2Manifest(m) }).catch(() => {})
@@ -293,10 +293,10 @@ export function CrashMapSection({
             : cc !== null ? v2Manifest?.county_bboxes?.[cc]
             : STATE_BBOX
         if (!bbox) return null
-        return fitBoundsToView(bbox, w, h, mode === "hexbin" ? 45 : 0)
+        return fitBoundsToView(bbox, w, h, mode === "bins" ? 45 : 0)
     }, [llz, cc, mc, mode, v2Manifest, fullScreen, initialView])
 
-    // Effective hex-pixel target. When `hexAuto` is on, look up the
+    // Effective hex-pixel target. When `cellAuto` is on, look up the
     // preferred H3 resolution for the current integer zoom, then set the
     // target to that resolution's on-screen diameter (× 0.99 for slack).
     // This is a `Record<zoom, res>` calibration table — much easier to
@@ -308,8 +308,8 @@ export function CrashMapSection({
     // range 39-41°) varies materially. VP size doesn't factor in —
     // that's what makes this stable across the embed + full-screen.
     //
-    // Density-adaptive would feedback-loop (hexPxTarget → picker res →
-    // cells → hexPxTarget), so intentionally ignored here.
+    // Density-adaptive would feedback-loop (cellPxTarget → picker res →
+    // cells → cellPxTarget), so intentionally ignored here.
     const [outline, setOutline] = useState<FeatureCollection | null>(null)
     useEffect(() => {
         const url = cc === null
@@ -340,8 +340,8 @@ export function CrashMapSection({
         [effectiveView?.zoom],
     )
 
-    const hexPxTarget = useMemo(() => {
-        if (!hexAuto) return manualHexPx
+    const cellPxTarget = useMemo(() => {
+        if (!cellAuto) return manualCellPx
         const [vpw, vph] = viewportDims(fullScreen)
         // Bins-budget the *scope*, not the viewport: for county/muni
         // views the fetch is clipped to the admin polygon, so the bin
@@ -352,7 +352,7 @@ export function CrashMapSection({
         // levels finer; zoomed in until the polygon fills the viewport,
         // it converges to the unscoped target, so street-level scoped
         // views behave identically to statewide ones.
-        // `autoHexPxTarget`'s 1px floor bounds how fine this can push
+        // `autoCellPxTarget`'s 1px floor bounds how fine this can push
         // (≲2.5 levels at typical county shares). Geometry-adaptive, not
         // density-adaptive — no feedback loop through the fetched data.
         let areaPx = vpw * vph
@@ -368,8 +368,8 @@ export function CrashMapSection({
             const clipPx = polygonAreaM2(visible) / (mppx * mppx)
             if (clipPx > 0) areaPx = Math.min(areaPx, clipPx)
         }
-        return hexPxTargetFor(areaPx, binsBudget)
-    }, [hexAuto, manualHexPx, fullScreen, binsBudget, cc, mc, outline, muniOutline, effectiveView])
+        return cellPxTargetFor(areaPx, binsBudget)
+    }, [cellAuto, manualCellPx, fullScreen, binsBudget, cc, mc, outline, muniOutline, effectiveView])
 
     // Picker-state snapshot: current S2 level + adjacent levels (one
     // coarser, one finer) as clickable jump targets. Neighbors outside
@@ -378,7 +378,7 @@ export function CrashMapSection({
         if (!effectiveView) return null
         const { zoom, latitude } = effectiveView
         const mppx = metersPerPixel(zoom, latitude)
-        const currRes = pickS2LevelForPixels(hexPxTarget, zoom, latitude)
+        const currRes = pickS2LevelForPixels(cellPxTarget, zoom, latitude)
         // `s2PickEdgeMeters`, not the raw table: clicking a snap chip sets
         // this px as the picker's target, and the picker compares it against
         // the *multiplied* edge. Using the raw edge here made the l20/l21
@@ -394,14 +394,14 @@ export function CrashMapSection({
             if (px !== null) levels.push({ res, px, isCurrent: res === currRes })
         }
         return { levels }
-    }, [effectiveView, hexPxTarget])
+    }, [effectiveView, cellPxTarget])
 
     // The picker's S2 level for the current view — shown in the toolbox
     // widget. Pure math on the `S2_EDGE_METERS` table.
     const s2Level = useMemo(() => {
         if (!effectiveView) return null
-        return pickS2LevelForPixels(hexPxTarget, effectiveView.zoom, effectiveView.latitude)
-    }, [effectiveView, hexPxTarget])
+        return pickS2LevelForPixels(cellPxTarget, effectiveView.zoom, effectiveView.latitude)
+    }, [effectiveView, cellPxTarget])
 
     const filter: CrashFilter = useMemo(() => {
         const base: CrashFilter = {
@@ -417,9 +417,9 @@ export function CrashMapSection({
             viewport: bboxFromViewport(effectiveView.latitude, effectiveView.longitude, effectiveView.zoom, w, h, effectiveView.pitch),
             viewportLat: effectiveView.latitude,
             zoom: effectiveView.zoom,
-            hexPxTarget,
+            cellPxTarget,
         }
-    }, [yearRange, cc, mc, severities, effectiveView, hexPxTarget, fullScreen])
+    }, [yearRange, cc, mc, severities, effectiveView, cellPxTarget, fullScreen])
 
     // Data fetch goes through the cells-api worker (`useCellsApi`).
     // `v2Manifest` (loaded separately above) carries the county/muni
@@ -448,7 +448,7 @@ export function CrashMapSection({
             viewport: filter.viewport,
             viewportLat: filter.viewportLat,
             zoom: filter.zoom,
-            hexPxTarget: filter.hexPxTarget,
+            cellPxTarget: filter.cellPxTarget,
             clipPolygon,
         }
     }, [filter, cc, mc, outline, muniOutline])
@@ -457,14 +457,14 @@ export function CrashMapSection({
         // Adapt the cells-api result into the shape consumers below expect.
         // `manifest` is the standalone v2-manifest state (loaded above for
         // bboxes/year_range); cells-api owns its own manifest internally.
-        // Synthesize a FetchPlan with `kind:"hex"` + the API's actual res
+        // Synthesize a FetchPlan with `kind:"cell"` + the API's actual res
         // so the debug overlay can highlight the row truly being rendered
         // (avoids the mismatch where renderRes picked finer than what the
         // API delivered under the cells cap).
         const manifest = v2Manifest
         const apiPlan = apiResult.plan
             ? ({
-                kind: "hex" as const,
+                kind: "cell" as const,
                 res: apiResult.plan.res,
                 shards: null,
                 reason: apiResult.plan.reason,
@@ -480,7 +480,7 @@ export function CrashMapSection({
                 return {
                     status: "ready" as const,
                     data: apiResult.data,
-                    dataKind: "hex" as const,
+                    dataKind: "cell" as const,
                     manifest: manifest!,
                     refetching: true,
                     plan: apiPlan,
@@ -494,7 +494,7 @@ export function CrashMapSection({
         return {
             status: "ready" as const,
             data: apiResult.data,
-            dataKind: "hex" as const,
+            dataKind: "cell" as const,
             manifest: manifest!,
             refetching: false,
             plan: apiPlan,
@@ -513,7 +513,7 @@ export function CrashMapSection({
     const targetRes = pickerInfo?.levels.find(l => l.isCurrent)?.res ?? null
     const shownDataRes = useRef<number | null>(null)
     useEffect(() => {
-        if (result.status === "ready" && !result.refetching && result.plan?.kind === "hex") {
+        if (result.status === "ready" && !result.refetching && result.plan?.kind === "cell") {
             shownDataRes.current = result.plan.res
         }
     }, [result])
@@ -534,15 +534,15 @@ export function CrashMapSection({
     // viewport-clipped slice (with a small padding margin to avoid
     // edge pop-in mid-pan) to the renderer so it doesn't iterate the
     // statewide tail each frame.
-    const renderHexes = useMemo<{ hexes: StackedHex[]; res: number; coarsenedFrom: number | null } | null>(() => {
-        if (result.status !== "ready" || result.dataKind !== "hex") return null
-        const data = result.data as StackedHex[]
-        if (data.length === 0) return { hexes: data, res: planRes(result), coarsenedFrom: null }
+    const renderCells = useMemo<{ cells: StackedCell[]; res: number; coarsenedFrom: number | null } | null>(() => {
+        if (result.status !== "ready" || result.dataKind !== "cell") return null
+        const data = result.data as StackedCell[]
+        if (data.length === 0) return { cells: data, res: planRes(result), coarsenedFrom: null }
         // The worker does `maxCells` coarsening server-side, so we trust
         // the plan's res — no client-side coarsening. Downstream render
         // uses the `dataRes` prop (from the plan).
         const vp = filter.viewport
-        const clip = (xs: StackedHex[]) => {
+        const clip = (xs: StackedCell[]) => {
             if (!vp) return xs
             const padLon = (vp[2] - vp[0]) * 0.25
             const padLat = (vp[3] - vp[1]) * 0.25
@@ -552,7 +552,7 @@ export function CrashMapSection({
         }
         const inViewport = clip(data)
         const res = planRes(result)
-        return { hexes: inViewport, res, coarsenedFrom: null }
+        return { cells: inViewport, res, coarsenedFrom: null }
     }, [result, filter.viewport])
 
     const initialBounds: [number, number, number, number] = useMemo(() => {
@@ -601,7 +601,7 @@ export function CrashMapSection({
     // and we leave the drawer open.
     const wrapRef = useRef<HTMLDivElement | null>(null)
     const drawerRef = useRef<HTMLDivElement | null>(null)
-    // Hovered res from the debug drawer's h3-cells table; shows an
+    // Hovered res from the debug drawer's cells table; shows an
     // outline-only hex grid at that res on the map.
     const [gridOverlayRes, setGridOverlayRes] = useState<number | null>(null)
 
@@ -737,7 +737,7 @@ export function CrashMapSection({
                 return (
                 <Suspense fallback={<LoadingOverlay theme={actualTheme} />}>
                     <CrashMap
-                        prebinnedHexes={renderHexes?.hexes ?? (result.data as StackedHex[])}
+                        prebinnedCells={renderCells?.cells ?? (result.data as StackedCell[])}
                         outline={outline ?? undefined}
                         muniOutline={muniOutline ?? undefined}
                         initialBounds={initialBounds}
@@ -745,19 +745,19 @@ export function CrashMapSection({
                         viewState={llz ?? undefined}
                         onViewStateChange={setLlz}
                         onOutlineClick={onOutlineClick}
-                        mode="hexbin"
+                        mode="bins"
                         theme={actualTheme}
                         height={fullScreen ? "100%" : mapHeight}
                         showInternalControls={false}
-                        hexPxTarget={hexPxTarget}
-                        onHexPxTargetChange={setHexPxTarget}
+                        cellPxTarget={cellPxTarget}
+                        onCellPxTargetChange={setCellPxTarget}
                         heightScale={heightScale}
                         onHeightScaleChange={setHeightScale}
                         gridOverlayRes={drawerOpen ? gridOverlayRes : null}
                         coverCells={drawerOpen && debugOpen ? apiResult.plan?.cover ?? null : null}
                         circleRadiusPx={circleRadiusPxValue}
-                        hexOpacity={resChanging ? 0.35 : 1}
-                        hexDesaturate={resChanging ? 0.55 : 0}
+                        cellOpacity={resChanging ? 0.35 : 1}
+                        cellDesaturate={resChanging ? 0.55 : 0}
                         dataRes={apiResult.plan?.res}
                     />
                 </Suspense>
@@ -829,7 +829,7 @@ export function CrashMapSection({
                     >×</button>
                 </div>
                 <div style={{ display: "flex", gap: 4 }}>
-                    {(["scatter", "heatmap", "hexbin"] as MapMode[]).map(m => (
+                    {(["scatter", "heatmap", "bins"] as MapMode[]).map(m => (
                         <button
                             key={m}
                             onClick={() => setMode(m)}
@@ -846,12 +846,12 @@ export function CrashMapSection({
                         >{m === "scatter" ? "Points" : m === "heatmap" ? "Heatmap" : "Bins"}</button>
                     ))}
                 </div>
-                {mode === "hexbin" && (
+                {mode === "bins" && (
                     <>
-                        <HexPxTargetSlider
-                            value={hexPxTarget}
-                            onChange={setHexPxTarget}
-                            auto={hexAuto}
+                        <CellPxTargetSlider
+                            value={cellPxTarget}
+                            onChange={setCellPxTarget}
+                            auto={cellAuto}
                             onAutoChange={setHexAuto}
                             pickerInfo={pickerInfo}
                             zoom={effectiveView?.zoom}
@@ -882,12 +882,12 @@ export function CrashMapSection({
                             s2Level={s2Level}
                             viewportAreaPx={(() => { const [w, h] = viewportDims(fullScreen); return w * h })()}
                             budget={binsBudget}
-                            fetched={result.status === "ready" && result.plan?.kind === "hex" ? result.plan.cellCount : undefined}
-                            fetchedBytes={result.status === "ready" && result.plan?.kind === "hex" ? result.plan.fetchedBytes : undefined}
-                            inViewport={renderHexes?.hexes.length}
+                            fetched={result.status === "ready" && result.plan?.kind === "cell" ? result.plan.cellCount : undefined}
+                            fetchedBytes={result.status === "ready" && result.plan?.kind === "cell" ? result.plan.fetchedBytes : undefined}
+                            inViewport={renderCells?.cells.length}
                             actualVp={typeof window !== "undefined" ? [window.innerWidth, window.innerHeight] : undefined}
                             clampedVp={viewportDims(fullScreen)}
-                            targetPx={hexPxTarget}
+                            targetPx={cellPxTarget}
                         />
                     </>
                 )}
@@ -910,7 +910,7 @@ export function CrashMapSection({
                             : apiResult.status}
                     </div>
                     {effectiveView && (() => {
-                        const renderRes = pickS2LevelForPixels(hexPxTarget, effectiveView.zoom, effectiveView.latitude)
+                        const renderRes = pickS2LevelForPixels(cellPxTarget, effectiveView.zoom, effectiveView.latitude)
                         const planRes = result.plan?.res ?? null
                         // `coarsenHexes` no-ops when target ≥ source (can't
                         // refine), so what we actually display is `min` of
@@ -921,17 +921,17 @@ export function CrashMapSection({
                                 viewState={effectiveView}
                                 plan={(() => {
                                     if (!result.plan) return null
-                                    if (result.plan.kind !== "hex" || !renderHexes?.coarsenedFrom) return result.plan
+                                    if (result.plan.kind !== "cell" || !renderCells?.coarsenedFrom) return result.plan
                                     return {
                                         ...result.plan,
-                                        reason: `${result.plan.reason ?? `r${result.plan.res}`} · coarsened r${renderHexes.coarsenedFrom}→r${renderHexes.res} (cap ${CELLS_MAX / 1000}k)`,
+                                        reason: `${result.plan.reason ?? `r${result.plan.res}`} · coarsened r${renderCells.coarsenedFrom}→r${renderCells.res} (cap ${CELLS_MAX / 1000}k)`,
                                     }
                                 })()}
                                 renderRes={renderRes}
-                                effectiveRes={renderHexes?.res ?? effectiveRes}
-                                hexPxTarget={hexPxTarget}
+                                effectiveRes={renderCells?.res ?? effectiveRes}
+                                cellPxTarget={cellPxTarget}
                                 rowCount={
-                                    renderHexes?.hexes.length
+                                    renderCells?.cells.length
                                     ?? (result.status === "ready" ? result.data.length : undefined)
                                 }
                                 fetchState={
@@ -1154,7 +1154,7 @@ function ZoomResChart({
     /** Post-clamp viewport `[w, h]` used by the picker. Shown alongside
      *  actualVp when they differ (embed mode clamps to `[1280, 480]`). */
     clampedVp?: [number, number]
-    /** The picker's target hex-diameter (px), post-clamp. Surfaced so a
+    /** The picker's target cell-diameter (px), post-clamp. Surfaced so a
      *  wrong render is diagnosable from one screenshot. */
     targetPx?: number
 }) {
@@ -1340,10 +1340,10 @@ function ZoomResChart({
     )
 }
 
-/** Direct-px slider for `hexPxTarget`. Log-spaced on a 0-100 abstract
+/** Direct-px slider for `cellPxTarget`. Log-spaced on a 0-100 abstract
  *  scale (so each tick is a constant log-px ratio), but always shows the
  *  actual px value alongside. Defaults to 1.2 px on first session use. */
-function HexPxTargetSlider({
+function CellPxTargetSlider({
     value, onChange, auto, onAutoChange, pickerInfo, zoom,
 }: {
     value: number

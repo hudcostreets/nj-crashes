@@ -16,7 +16,7 @@ import {
     tokenToLatLng,
     tokenToParent,
 } from "./index"
-import type { StackableCrash } from "../StackedHexLayer"
+import type { StackableCrash } from "../StackedCellLayer"
 
 const JC = { lat: 40.7178, lng: -74.0431 }  // Jersey City centroid
 
@@ -182,9 +182,9 @@ describe("binIntoS2Cells", () => {
     ]
 
     it("bins into S2 tokens at the requested level, with exact centers", () => {
-        const bins = binIntoS2Cells(crashes, 16).sort((a, b) => a.h3.localeCompare(b.h3))
+        const bins = binIntoS2Cells(crashes, 16).sort((a, b) => a.cellid.localeCompare(b.cellid))
         expect(bins.map(b => ({
-            h3: b.h3,
+            cellid: b.cellid,
             center: b.center.map(x => x.toFixed(10)),
             fatal: b.fatal,
             otherInj: b.otherInj,
@@ -193,13 +193,13 @@ describe("binIntoS2Cells", () => {
             topRoute: b.topRoute,
         }))).toEqual([
             {
-                h3: "89c250b1d",
+                cellid: "89c250b1d",
                 center: ["-74.0424971533", "40.7171943818"],
                 fatal: 0, otherInj: 1, pdo: 0, total: 1,
                 topRoute: undefined,
             },
             {
-                h3: "89c2573e7",
+                cellid: "89c2573e7",
                 center: ["-74.0586528693", "40.7441928613"],
                 fatal: 1, otherInj: 1, pdo: 1, total: 3,
                 topRoute: "ROUTE 501",
@@ -208,6 +208,6 @@ describe("binIntoS2Cells", () => {
         // Every bin's token really is an S2 token at the requested level
         // (the regression this API exists to prevent: H3 tokens under an
         // "S2" label).
-        expect(bins.map(b => tokenLevel(b.h3))).toEqual([16, 16])
+        expect(bins.map(b => tokenLevel(b.cellid))).toEqual([16, 16])
     })
 })

@@ -90,13 +90,13 @@ describe("coarsenCellsS2", () => {
     })
 
     it("sums counts across children mapping to the same parent", () => {
-        const a = { h3: jc, n_fatal: 1, n_inj_ped: 2, n_inj_other: 3, n_pdo: 4, n_vehs: 5 }
-        const b = { h3: jcSib, n_fatal: 10, n_inj_ped: 20, n_inj_other: 30, n_pdo: 40, n_vehs: 50 }
-        const c = { h3: newark, n_fatal: 7, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 1 }
+        const a = { cellid: jc, n_fatal: 1, n_inj_ped: 2, n_inj_other: 3, n_pdo: 4, n_vehs: 5 }
+        const b = { cellid: jcSib, n_fatal: 10, n_inj_ped: 20, n_inj_other: 30, n_pdo: 40, n_vehs: 50 }
+        const c = { cellid: newark, n_fatal: 7, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 1 }
         const out = coarsenCellsS2([a, b, c], 13)
         expect(out).toEqual([
-            { h3: jcParent, n_fatal: 11, n_inj_ped: 22, n_inj_other: 33, n_pdo: 44, n_vehs: 55 },
-            { h3: newarkParent, n_fatal: 7, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 1 },
+            { cellid: jcParent, n_fatal: 11, n_inj_ped: 22, n_inj_other: 33, n_pdo: 44, n_vehs: 55 },
+            { cellid: newarkParent, n_fatal: 7, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 1 },
         ])
     })
 
@@ -105,11 +105,11 @@ describe("coarsenCellsS2", () => {
     })
 
     it("aggregates fatal_years across children, dedup+sort", () => {
-        const a = { h3: jc, n_fatal: 1, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0, fatal_years: [2018, 2020] }
-        const b = { h3: jcSib, n_fatal: 1, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0, fatal_years: [2020, 2022] }
+        const a = { cellid: jc, n_fatal: 1, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0, fatal_years: [2018, 2020] }
+        const b = { cellid: jcSib, n_fatal: 1, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0, fatal_years: [2020, 2022] }
         expect(coarsenCellsS2([a, b], 13)).toEqual([
             {
-                h3: jcParent, n_fatal: 2, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0,
+                cellid: jcParent, n_fatal: 2, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0,
                 fatal_years: [2018, 2020, 2022],
             },
         ])
@@ -151,7 +151,7 @@ describe("parseCellsRequest grid param", () => {
 
 describe("label capping", () => {
     const cell = (i: number) => ({
-        h3: `89c${i}`, n_fatal: 0, n_inj_ped: 0, n_inj_other: 1, n_pdo: 2, n_vehs: 3,
+        cellid: `89c${i}`, n_fatal: 0, n_inj_ped: 0, n_inj_other: 1, n_pdo: 2, n_vehs: 3,
         sld_name: "JOHN F KENNEDY BLVD", cross_sld_name: "SIP AVE",
         mun: "Jersey City", county: "Hudson",
     })
@@ -161,7 +161,7 @@ describe("label capping", () => {
         const cs = cells(3)
         expect(servedLabels("full", cs, 10)).toBe("full")
         expect(cs[0]).toEqual({
-            h3: "89c0", n_fatal: 0, n_inj_ped: 0, n_inj_other: 1, n_pdo: 2, n_vehs: 3,
+            cellid: "89c0", n_fatal: 0, n_inj_ped: 0, n_inj_other: 1, n_pdo: 2, n_vehs: 3,
             sld_name: "JOHN F KENNEDY BLVD", cross_sld_name: "SIP AVE",
             mun: "Jersey City", county: "Hudson",
         })
@@ -171,11 +171,11 @@ describe("label capping", () => {
         const cs = cells(3)
         expect(servedLabels("full", cs, 2)).toBe("nums")
         expect(cs.map(c => Object.keys(c))).toEqual([
-            ["h3", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"],
-            ["h3", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"],
-            ["h3", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"],
+            ["cellid", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"],
+            ["cellid", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"],
+            ["cellid", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"],
         ])
-        expect(cs[0]).toEqual({ h3: "89c0", n_fatal: 0, n_inj_ped: 0, n_inj_other: 1, n_pdo: 2, n_vehs: 3 })
+        expect(cs[0]).toEqual({ cellid: "89c0", n_fatal: 0, n_inj_ped: 0, n_inj_other: 1, n_pdo: 2, n_vehs: 3 })
     })
 
     it("leaves an explicit `nums`/`only` request alone", () => {

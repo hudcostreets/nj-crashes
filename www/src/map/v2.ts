@@ -3,7 +3,7 @@
  *  What survives of the H3-era "map v2" R2-direct fetch stack: the
  *  manifest loader (year-range bounds, county/muni bboxes, geocode-src
  *  breakdowns still drive non-spatial UI) and `bboxFromViewport`. The
- *  fetch planner (`pickFetchPlanV2`, point/hex shard plans) was dead
+ *  fetch planner (`pickFetchPlanV2`, point/cell shard plans) was dead
  *  code after the cells-api worker took over data fetching, and was
  *  removed with the H3 grid (`specs/h3-removal.md`).
  */
@@ -30,7 +30,7 @@ export type MapManifestV2 = {
 /** Shape consumed by the debug overlay: the cells-api plan adapted to
  *  the legacy planner's shape. `shards: null` = single-file. */
 export type FetchPlan =
-    { kind: "hex"; res: number; shards: string[] | null; reason?: string }
+    { kind: "cell"; res: number; shards: string[] | null; reason?: string }
 
 const MANIFEST_V2_URL = `${MAP_BASE_URL}/v2/manifest.v2.json`
 

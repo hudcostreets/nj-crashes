@@ -20,7 +20,7 @@
  */
 import { S2LatLng, S2CellId } from "nodes2ts"
 import { metersPerPixel } from "../CrashMap"
-import { binIntoCells, type StackableCrash, type StackedHex } from "../StackedHexLayer"
+import { binIntoCells, type StackableCrash, type StackedCell } from "../StackedCellLayer"
 import { S2_EDGE_METERS, S2_MAX_LEVEL, S2_MIN_LEVEL, clampS2Level, s2PickEdgeMeters } from "./edges"
 import tuning from "../tuning.json"
 
@@ -95,7 +95,7 @@ export function tokenCenterLngLat(token: S2Token): [number, number] {
 }
 
 /** Client-side binning of raw crash points into S2 cells at `level`.
- *  S2 counterpart of `binIntoHexes` — used by the points-mode fetch
+ *  S2 counterpart of the H3-era binner — used by the points-mode fetch
  *  path (`kind: "points"`) when the map is on the S2 grid, so client
  *  bins land on the same lattice as server-side pyramid cells (the
  *  H3 binner here would silently produce a hex lattice under an
@@ -103,7 +103,7 @@ export function tokenCenterLngLat(token: S2Token): [number, number] {
 export function binIntoS2Cells<T extends StackableCrash>(
     crashes: T[],
     level: number,
-): StackedHex[] {
+): StackedCell[] {
     return binIntoCells(
         crashes,
         (lat, lon) => latLngToToken(lat, lon, level),
@@ -119,7 +119,7 @@ export function binIntoS2Cells<T extends StackableCrash>(
  *  itself; the module keeps the exported names + types for callers. */
 export const S2_TARGET_FACTOR: number = tuning.s2.targetFactor
 
-/** Lower clamp on `autoHexPxTarget`. Separate knob from `targetFactor`
+/** Lower clamp on `autoCellPxTarget`. Separate knob from `targetFactor`
  *  because the two act on disjoint regimes: county/muni-scoped views
  *  budget a small `areaPx`, so `√(areaPx/BINS_BUDGET)` lands *under* the
  *  clamp and their level is set by this alone; statewide/street views run

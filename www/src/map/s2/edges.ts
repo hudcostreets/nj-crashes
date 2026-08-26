@@ -1,7 +1,7 @@
 /** S2 cell geometry constants, with no runtime dependencies.
  *
  *  Split out of `s2/index.ts` (which pulls in `nodes2ts`) so
- *  `StackedHexLayer` can share the table instead of keeping its own copy.
+ *  `StackedCellLayer` can share the table instead of keeping its own copy.
  *  The copies had already drifted — the layer's table started at level 4
  *  while `s2/index.ts`'s ran from 0, and the layer's `?? 478` fallback
  *  silently sized any out-of-table level as level 14.

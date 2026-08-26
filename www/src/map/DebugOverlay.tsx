@@ -21,8 +21,8 @@ export type Props = {
     /** Effective resolution actually rendered on screen. Optional. */
     effectiveRes?: number
     /** Hex pixel target driving render-side resolution choice. */
-    hexPxTarget?: number
-    /** Number of rows in the active dataset (Crash[] or StackedHex[]). */
+    cellPxTarget?: number
+    /** Number of rows in the active dataset (Crash[] or StackedCell[]). */
     rowCount?: number
     /** Fetch state — "loading" before first response, "refetching" when a
      *  newer fetch is in flight while older data is still on screen,
@@ -61,7 +61,7 @@ function planSummary(plan: FetchPlan): string {
     return `l${plan.res} × ${plan.shards.length}`
 }
 
-export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTarget, rowCount, fetchState, onHoverRes, theme }: Props) {
+export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, cellPxTarget, rowCount, fetchState, onHoverRes, theme }: Props) {
     const { latitude, longitude, zoom, pitch, bearing } = viewState
     const mppx = metersPerPixel(zoom, latitude)
     const dark = theme === "dark"
@@ -69,7 +69,7 @@ export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTa
     const dim = dark ? "#888" : "#666"
     const accent = dark ? "#6db3f2" : "#0066cc"
 
-    const planRes = plan && plan.kind === "hex" ? plan.res : undefined
+    const planRes = plan && plan.kind === "cell" ? plan.res : undefined
     const showRes = effectiveRes ?? renderRes ?? planRes
 
     // Show the union of plan / render / effective res, plus their
@@ -108,16 +108,16 @@ export function DebugOverlay({ viewState, plan, renderRes, effectiveRes, hexPxTa
                 <div style={{ color: dim }}>—</div>
             )}
 
-            {(rowCount !== undefined || hexPxTarget !== undefined) && (
+            {(rowCount !== undefined || cellPxTarget !== undefined) && (
                 <>
                     <div style={{ marginTop: 4, color: dim }}>render</div>
                     {rowCount !== undefined && (
                         <div>
-                            {plan?.kind === "hex" ? "cells" : "rows"}:{" "}
+                            {plan?.kind === "cell" ? "cells" : "rows"}:{" "}
                             <b style={{ color: fg }}>{fmtRowCount(rowCount)}</b>
                         </div>
                     )}
-                    {hexPxTarget !== undefined && <div>hexPxTarget: <b style={{ color: fg }}>{hexPxTarget}</b> px</div>}
+                    {cellPxTarget !== undefined && <div>cellPxTarget: <b style={{ color: fg }}>{cellPxTarget}</b> px</div>}
                 </>
             )}
 

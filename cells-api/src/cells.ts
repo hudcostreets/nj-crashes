@@ -27,11 +27,11 @@
  *        data_version: string,
  *        source: "pyramid" | "d1",
  *        labels: "full" | "nums" | "only",
- *        cells: [{ h3, n_fatal, n_inj_ped, n_inj_other, n_pdo, n_vehs }]
+ *        cells: [{ cellid, n_fatal, n_inj_ped, n_inj_other, n_pdo, n_vehs }]
  *      }
  *
- *  `h3` is a vestigial *field name* carrying an S2 token — renaming it
- *  is the cosmetic sweep (Phase 4b), since it touches every client op.
+ *  The cell key rode a vestigial `h3` wire field until h3-removal Phase
+ *  4b renamed it to `cellid` (worker + client moved together).
  */
 import { S2CellId, S2LatLng, S2LatLngRect, S2RegionCoverer } from "nodes2ts"
 import { loadManifest } from "./manifest"
@@ -76,8 +76,8 @@ type PyramidRowS2 = {
 }
 
 export type CellOut = {
-    /** S2 token. Field name is H3-era; see the module doc. */
-    h3: string
+    /** S2 token. Wire key was `h3` until h3-removal Phase 4b. */
+    cellid: string
     n_fatal: number
     n_inj_ped: number
     n_inj_other: number
@@ -146,9 +146,9 @@ export type CellsRequest = {
      *  tooltip-only). Default `full` = counts + labels (back-compat).
      *  - `nums`: counts only (drops sld_name/cross_sld_name/mun/county).
      *    Paints the map + bars; ~37% faster decode.
-     *  - `only`: labels only, keyed by h3 — the backfill/hover request the
+     *  - `only`: labels only, keyed by cellid — the backfill/hover request the
      *    client merges into already-painted cells. Year-invariant, so no
-     *    year filter; deduped by h3; count fields are 0. */
+     *    year filter; deduped by cellid; count fields are 0. */
     labels?: "full" | "nums" | "only"
     /** Cell-count ceiling above which `labels=full` degrades to `nums`.
      *
@@ -401,9 +401,8 @@ export async function handleCellsRequest(
  *  year (drops the year filter's row multiplication), and returns
  *  one `CellOut` per unique cell.
  *
- *  Cell keys in the output go in the `h3` field — an H3-era name the
- *  client reads as an S2 token. Renaming it to a grid-agnostic `cell_id`
- *  is Phase 4b (touches every downstream client op). */
+ *  Cell keys in the output go in the `cellid` field (an S2 token; it was
+ *  the H3-era `h3` until Phase 4b). */
 async function queryPyramidS2(
     bucket: R2Bucket,
     prefix: string,
@@ -448,7 +447,7 @@ async function queryPyramidS2(
                 if (out.has(token)) continue
                 if (!row.sld_name && !row.cross_sld_name && !row.mun && !row.county) continue
                 if (!cellInPolygonS2(token, clipPoly)) continue
-                const c: CellOut = { h3: token, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
+                const c: CellOut = { cellid: token, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
                 if (row.sld_name) c.sld_name = row.sld_name
                 if (row.cross_sld_name) c.cross_sld_name = row.cross_sld_name
                 if (row.mun) c.mun = row.mun
@@ -484,7 +483,7 @@ async function queryPyramidS2(
             if (!cellInPolygonS2(token, clipPoly)) continue
             let c = out.get(token)
             if (!c) {
-                c = { h3: token, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
+                c = { cellid: token, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
                 if (row.sld_name) c.sld_name = row.sld_name
                 if (row.cross_sld_name) c.cross_sld_name = row.cross_sld_name
                 if (row.mun) c.mun = row.mun
@@ -560,7 +559,7 @@ async function queryCellsS2D1(
         if (!(n_fatal > 0 || n_inj_ped > 0 || n_inj_other > 0 || n_pdo > 0)) continue
         if (!cellInPolygonS2(row.cellid, clipPoly)) continue
         const c: CellOut = {
-            h3: row.cellid,
+            cellid: row.cellid,
             n_fatal, n_inj_ped, n_inj_other, n_pdo,
             n_vehs: row.n_vehs,  // severity-blind, same as the parquet path
         }
@@ -586,13 +585,13 @@ export function coarsenCellsS2(cells: CellOut[], toLevel: number): CellOut[] {
     if (cells.length === 0) return cells
     const parents = new Map<string, CellOut>()
     for (const c of cells) {
-        const childId = s2TokenToId(c.h3)
+        const childId = s2TokenToId(c.cellid)
         const parentId = s2Parent(childId, toLevel)
         const parentToken = s2IdToToken(parentId)
         let p = parents.get(parentToken)
         if (!p) {
             p = {
-                h3: parentToken,
+                cellid: parentToken,
                 n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0,
             }
             // Labels drop on coarsen — parent cell doesn't have a single

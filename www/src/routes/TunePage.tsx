@@ -18,7 +18,7 @@ import {
     S2_PICK_MULT,
     S2_TARGET_FACTOR,
 } from "@/src/map/s2"
-import { BINS_BUDGET, autoHexPxTarget, circleRadiusPx as circleRadiusPxCurve } from "@/src/map/picker"
+import { BINS_BUDGET, autoCellPxTarget, circleRadiusPx as circleRadiusPxCurve } from "@/src/map/picker"
 import { useCellsApi, type CellsApiFilter } from "@/src/map/useCellsApi"
 import tuning from "@/src/map/tuning.json"
 
@@ -106,7 +106,7 @@ function zoomRangeForLevel(
     s2TargetFactor: number,
     s2PickMult: Record<number, number>,
 ): [number, number] | null {
-    const target = autoHexPxTarget(PICK_VP_AREA, BINS_BUDGET) * s2TargetFactor
+    const target = autoCellPxTarget(PICK_VP_AREA, BINS_BUDGET) * s2TargetFactor
     const pick = (z: number) => pickS2WithOverrides(target, z, lat, s2PickMult)
     let low = -1, high = -1
     for (let z = 2; z <= MAX_PRACTICAL_ZOOM; z += 0.02) {
@@ -244,7 +244,7 @@ export function MiniMap({
     // Compute the numbers surfaced in the corner label:
     //   geom   — cell's geometric on-screen size (edge / mppx). Halves per
     //            S2 level regardless of render mode.
-    //   render — what the layer will actually draw, per StackedHexLayer's
+    //   render — what the layer will actually draw, per StackedCellLayer's
     //            `min(overrideRadiusMeters ?? inscribed, inscribed)` rule.
     //            H3 hex mode with no override falls back to full edge.
     const mppx = metersPerPixel(zoom, lat)
@@ -262,9 +262,9 @@ export function MiniMap({
             <CrashMap
                 viewState={viewState}
                 onViewStateChange={onViewStateChange}
-                prebinnedHexes={cells}
+                prebinnedCells={cells}
                 dataRes={level}
-                mode="hexbin"
+                mode="bins"
                 circleRadiusPx={overridePx}
                 showInternalControls={false}
                 theme="dark"
@@ -532,7 +532,7 @@ export default function TunePage() {
                     <div>{`l${level}`} effective diameter (pick fudge {effMult}): {effDia.toFixed(2)} m</div>
                 )}
                 <div>picker vp (clamped): 1280 × 480 = {PICK_VP_AREA.toLocaleString()} px²</div>
-                <div>auto target: {autoHexPxTarget(PICK_VP_AREA, BINS_BUDGET).toFixed(2)} px · S2 auto target: {(autoHexPxTarget(PICK_VP_AREA, BINS_BUDGET) * s2Factor).toFixed(2)} px</div>
+                <div>auto target: {autoCellPxTarget(PICK_VP_AREA, BINS_BUDGET).toFixed(2)} px · S2 auto target: {(autoCellPxTarget(PICK_VP_AREA, BINS_BUDGET) * s2Factor).toFixed(2)} px</div>
                 <hr style={{ border: "none", borderTop: "1px solid #333", margin: "12px 0" }} />
                 {(
                     <div>

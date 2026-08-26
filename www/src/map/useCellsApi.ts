@@ -8,7 +8,7 @@
  *  Spec: `specs/cfw-cells-api.md`.
  */
 import { useEffect, useMemo, useRef, useState } from "react"
-import type { StackedHex } from "./StackedHexLayer"
+import type { StackedCell } from "./StackedCellLayer"
 import { CELLS_API_BASE } from "./config"
 import type { Bbox } from "./v2"
 import {
@@ -27,7 +27,7 @@ export type CellsApiFilter = {
     viewport: Bbox
     viewportLat: number
     zoom: number
-    hexPxTarget?: number
+    cellPxTarget?: number
     /** Override S2 level; bypasses `pickS2LevelForPixels`. */
     resOverride?: number
     /** Optional GeoJSON-like polygon (`[lon, lat][]`) to clip the
@@ -39,7 +39,7 @@ export type CellsApiFilter = {
 }
 
 type CellRow = {
-    h3: string
+    cellid: string
     n_fatal: number
     n_inj_ped: number
     n_inj_other: number
@@ -90,15 +90,15 @@ type Manifest = {
     shard_cells: string[]
 }
 
-/** One cell of a multi-resolution cover. The pair `(shard_res, h3)`
+/** One cell of a multi-resolution cover. The pair `(shard_res, cellid)`
  *  identifies a specific parquet shard. */
 export type CoverCell = {
     shard_res: number
-    h3: string
+    cellid: string
 }
 
 export type CellsApiPlan = {
-    kind: "hex"
+    kind: "cell"
     res: number
     source: "pyramid" | "d1"
     reason: string
@@ -176,18 +176,18 @@ function loadManifest(): Promise<Manifest> {
  *  filter), but small shards still pay the worker cold-start (~100–500ms)
  *  per request. Batching ≤25 shards amortizes cold-start over many
  *  parquet reads. The batch URL stays well under the 16KB header cap
- *  (25 × 15-char h3 + commas ≈ 400 bytes). Per-shard `shardCache`
+ *  (25 × 15-char token + commas ≈ 400 bytes). Per-shard `shardCache`
  *  entries are seeded from the batch response so future single-shard
  *  re-requests still hit memory without re-fetching. */
 const BATCH_SIZE = 25
 
-/** Px target used when a caller omits `hexPxTarget`.
+/** Px target used when a caller omits `cellPxTarget`.
  *
  *  Was a bare `1.2` — the H3-era *raw* target, unscaled by
  *  `S2_TARGET_FACTOR`. Every real caller passes a value that has already
- *  been through `hexPxTargetFor`, so the fallback path silently picked a
+ *  been through `cellPxTargetFor`, so the fallback path silently picked a
  *  different level than the one `CrashMapSection` computed and displayed.
- *  Expressed in the same terms as `hexPxTargetFor` at its lower clamp,
+ *  Expressed in the same terms as `cellPxTargetFor` at its lower clamp,
  *  which is where any small-area view lands anyway. */
 const FALLBACK_PX_TARGET = S2_MIN_TARGET_PX * S2_TARGET_FACTOR
 
@@ -251,18 +251,18 @@ function ensureShardsCached(
     filter: CellsApiFilter,
     polygonStr: string | null,
 ): void {
-    const missingByTier = new Map<number, { url: string; h3: string }[]>()
+    const missingByTier = new Map<number, { url: string; cellid: string }[]>()
     for (let i = 0; i < cover.length; i++) {
         if (shardCache.has(perShardUrls[i])) continue
         const tier = cover[i].shard_res
         let arr = missingByTier.get(tier)
         if (!arr) { arr = []; missingByTier.set(tier, arr) }
-        arr.push({ url: perShardUrls[i], h3: cover[i].h3 })
+        arr.push({ url: perShardUrls[i], cellid: cover[i].cellid })
     }
     for (const [tier, entries] of missingByTier) {
         for (let i = 0; i < entries.length; i += BATCH_SIZE) {
             const batch = entries.slice(i, i + BATCH_SIZE)
-            const batchUrl = buildBatchUrl(batch.map(e => e.h3), res, filter, polygonStr, tier)
+            const batchUrl = buildBatchUrl(batch.map(e => e.cellid), res, filter, polygonStr, tier)
             // Per-batch metrics: shared across all shard URLs from this
             // fetch. `bytes` is 0 until the fetch resolves; the debug
             // panel reads it via `getFetchedBytes` only after the effect
@@ -278,13 +278,20 @@ function ensureShardsCached(
                 // it's absent the entry reports 0 (treated as unknown).
                 const entry = performance.getEntriesByName(batchUrl).at(-1) as PerformanceResourceTiming | undefined
                 info.wireBytes = entry?.encodedBodySize ?? 0
-                return JSON.parse(new TextDecoder().decode(buf)) as CellsResponse
+                const parsed = JSON.parse(new TextDecoder().decode(buf)) as CellsResponse
+                // The wire key was `h3` until h3-removal Phase 4b renamed
+                // it to `cellid`. Tolerate both so this client works
+                // against a not-yet-redeployed worker.
+                for (const c of parsed.cells as Array<CellRow & { h3?: string }>) {
+                    if (c.cellid === undefined && c.h3 !== undefined) c.cellid = c.h3
+                }
+                return parsed
             })()
             for (const entry of batch) {
                 shardBatch.set(entry.url, info)
                 const shardPromise = batchPromise.then(resp => ({
                     ...resp,
-                    cells: resp.cells.filter(c => tokenToParent(c.h3, tier) === entry.h3),
+                    cells: resp.cells.filter(c => tokenToParent(c.cellid, tier) === entry.cellid),
                 }))
                 shardPromise.catch(() => {
                     if (shardCache.get(entry.url) === shardPromise) shardCache.delete(entry.url)
@@ -369,7 +376,7 @@ export function clipPolygonToBbox(
 /** Planar shoelace area of a `[lon, lat]` ring, in m² — local
  *  equirectangular scaling about the ring's mean latitude. Accurate to
  *  well under 1% at NJ spans; used for the scoped bins-budget (see
- *  `CrashMapSection.hexPxTarget`), where only the order of magnitude
+ *  `CrashMapSection.cellPxTarget`), where only the order of magnitude
  *  matters. Open or closed rings accepted. */
 export function polygonAreaM2(ring: [number, number][]): number {
     if (ring.length < 3) return 0
@@ -435,12 +442,12 @@ function buildShardUrl(
 function rollupCellsToRes(cells: CellRow[], targetRes: number): CellRow[] {
     const out = new Map<string, CellRow>()
     for (const c of cells) {
-        const sr = tokenLevel(c.h3)
-        if (sr <= targetRes) { out.set(c.h3, c); continue }
-        const ph = tokenToParent(c.h3, targetRes)
+        const sr = tokenLevel(c.cellid)
+        if (sr <= targetRes) { out.set(c.cellid, c); continue }
+        const ph = tokenToParent(c.cellid, targetRes)
         let p = out.get(ph)
         if (!p) {
-            p = { h3: ph, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
+            p = { cellid: ph, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
             out.set(ph, p)
         }
         p.n_fatal += c.n_fatal
@@ -459,17 +466,17 @@ function rollupCellsToRes(cells: CellRow[], targetRes: number): CellRow[] {
     return [...out.values()]
 }
 
-function cellsToStackedHex(cells: CellRow[]): StackedHex[] {
-    const out: StackedHex[] = []
+function cellsToStackedHex(cells: CellRow[]): StackedCell[] {
+    const out: StackedCell[] = []
     for (const c of cells) {
         const total = c.n_fatal + c.n_inj_ped + c.n_inj_other + c.n_pdo
         if (total === 0) continue
         // S2 tokens go through `nodes2ts` — cell-center in one call, no
         // boundary polygon needed since the render uses `center` + an
         // S2-level-derived radius.
-        const center: [number, number] = tokenCenterLngLat(c.h3)
+        const center: [number, number] = tokenCenterLngLat(c.cellid)
         out.push({
-            h3: c.h3,
+            cellid: c.cellid,
             center,
             fatal: c.n_fatal,
             pedInj: c.n_inj_ped,
@@ -487,9 +494,9 @@ function cellsToStackedHex(cells: CellRow[]): StackedHex[] {
 }
 
 export function useCellsApi(filter: CellsApiFilter | null):
-    | { status: "loading"; data?: StackedHex[]; plan?: CellsApiPlan; error?: undefined }
-    | { status: "ready"; data: StackedHex[]; plan: CellsApiPlan; error?: undefined; refetching?: boolean }
-    | { status: "error"; error: string; data?: StackedHex[]; plan?: CellsApiPlan } {
+    | { status: "loading"; data?: StackedCell[]; plan?: CellsApiPlan; error?: undefined }
+    | { status: "ready"; data: StackedCell[]; plan: CellsApiPlan; error?: undefined; refetching?: boolean }
+    | { status: "error"; error: string; data?: StackedCell[]; plan?: CellsApiPlan } {
 
     const [manifest, setManifest] = useState<Manifest | null>(null)
     useEffect(() => {
@@ -537,22 +544,22 @@ export function useCellsApi(filter: CellsApiFilter | null):
         // `specs/s2-pyramid.md`).
         const level = filter.resOverride != null
             ? filter.resOverride
-            : pickS2LevelForPixels(filter.hexPxTarget ?? FALLBACK_PX_TARGET, filter.zoom, filter.viewportLat)
+            : pickS2LevelForPixels(filter.cellPxTarget ?? FALLBACK_PX_TARGET, filter.zoom, filter.viewportLat)
         // `pickS2LevelForPixels` already clamps; this covers `resOverride`,
         // which comes from a URL param and is otherwise unvalidated.
         const clamped = clampS2Level(level)
         const S2_STATEWIDE_SHARDS = ["89b", "89d"]
-        const cover: CoverCell[] = S2_STATEWIDE_SHARDS.map(h3 => ({ h3, shard_res: 4 }))
+        const cover: CoverCell[] = S2_STATEWIDE_SHARDS.map(cellid => ({ cellid, shard_res: 4 }))
         return { res: clamped, cover, reason: `s2 l${clamped} · ${cover.length} shard${cover.length > 1 ? "s" : ""}` }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filter?.zoom, filter?.viewportLat, filter?.hexPxTarget, filter?.resOverride, manifest, bboxKey, usingPoly, filter?.clipPolygon])
+    }, [filter?.zoom, filter?.viewportLat, filter?.cellPxTarget, filter?.resOverride, manifest, bboxKey, usingPoly, filter?.clipPolygon])
 
     // `polygonStr` for the worker `polygon=` arg. Tied to the snap-grid
     // bbox so per-URL cache hits across users/sessions at the same
     // viewport remain stable, while shrinking the response from
     // "everything in the requested r9 shard" to "just the cells inside
     // the visible bbox". For scoped views the polygon is
-    // `clipPolygon ∩ snappedBbox` so urban hexes outside the county
+    // `clipPolygon ∩ snappedBbox` so urban cells outside the county
     // outline still get filtered out worker-side.
     const polygonStr = useMemo<string | null>(() => {
         if (!filter || !snappedBbox) return null
@@ -572,8 +579,8 @@ export function useCellsApi(filter: CellsApiFilter | null):
         }
         // One URL per cover cell. Each cell carries its own shard_res
         // (heterogeneous cover ⇒ different parquet subdirs per cell).
-        const urls = pick.cover.map(c => buildShardUrl(c.h3, pick.res, filter, polygonStr, CELLS_MAX, c.shard_res))
-        const shards = pick.cover.map(c => c.h3)
+        const urls = pick.cover.map(c => buildShardUrl(c.cellid, pick.res, filter, polygonStr, CELLS_MAX, c.shard_res))
+        const shards = pick.cover.map(c => c.cellid)
         return { shards, urls, polygonStr }
         // The covers themselves are stable across small pans thanks to
         // snappedBbox. Listing each primitive separately avoids drag-frame
@@ -583,7 +590,7 @@ export function useCellsApi(filter: CellsApiFilter | null):
 
     const [state, setState] = useState<{
         urls: string[]
-        data: StackedHex[]
+        data: StackedCell[]
         status: "loading" | "ready" | "error"
         plan?: CellsApiPlan
         error?: string
@@ -603,7 +610,7 @@ export function useCellsApi(filter: CellsApiFilter | null):
         const pickAtFire = pickRef.current
         if (urls.length === 0) {
             setState({ urls, data: [], status: "ready", plan: {
-                kind: "hex", res: pickAtFire.res, source: "pyramid",
+                kind: "cell", res: pickAtFire.res, source: "pyramid",
                 reason: `${pickAtFire.reason} · 0 shards`, cellCount: 0, shardCount: 0,
                 fetchedBytes: 0,
                 wireBytes: 0,
@@ -654,7 +661,7 @@ export function useCellsApi(filter: CellsApiFilter | null):
                 setState({
                     urls, data, status: "ready",
                     plan: {
-                        kind: "hex", res: finalRes, source,
+                        kind: "cell", res: finalRes, source,
                         reason,
                         cellCount: data.length, shardCount: urls.length,
                         fetchedBytes: getFetchedBytes(urls),

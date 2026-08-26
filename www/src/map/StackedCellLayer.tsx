@@ -1,12 +1,12 @@
-/** Stacked hex-column layer: per-hex cylinder split into colored segments
+/** Stacked cell-column layer: per-cell column split into colored segments
  *  stacked by severity. Fatal on top, injury below.
  *
- *  (The hex data still tracks ped/cyclist vs. other injury separately; that
+ *  (The cell data still tracks ped/cyclist vs. other injury separately; that
  *  distinction is available in tooltips if a caller wants to render it, but
  *  the segments collapse both into a single "injury" tier by default so the
  *  palette lines up with the bar-chart legend.)
  *
- *  Implementation: emit one `ColumnLayer` instance per (hex, severity tier).
+ *  Implementation: emit one `ColumnLayer` instance per (cell, severity tier).
  *  `getPosition` includes a 3D altitude (the segment's base-z), and
  *  `getElevation` is the segment's height. DeckGL's ColumnLayer shader
  *  computes `centroidPosition = vec3(xy, z + elevation)` so the column
@@ -34,8 +34,8 @@ export type StackableCrash = {
     route?: string | null
 }
 
-export type StackedHex = {
-    h3: string
+export type StackedCell = {
+    cellid: string
     center: [number, number]
     fatal: number
     pedInj: number
@@ -63,29 +63,29 @@ export type Segment = {
     center: [number, number, number]  // [lon, lat, baseZ]
     height: number
     color: [number, number, number, number]
-    hex: StackedHex
+    cell: StackedCell
     tier: "fatal" | "injury" | "pdo"
 }
 
 /** Grid-agnostic client-side binner. `toCell` maps a crash's lat/lon to
  *  its cell token at the desired resolution; `toCenter` maps a token to
- *  its [lon, lat] center. `binIntoHexes` (H3) and `binIntoS2Cells`
+ *  its [lon, lat] center. the H3-era `binIntoHexes` and `binIntoS2Cells`
  *  (`map/s2`) are thin wrappers — the aggregation (severity tiers,
  *  per-bin `topRoute` mode) lives here once. */
 export function binIntoCells<T extends StackableCrash>(
     crashes: T[],
     toCell: (lat: number, lon: number) => string,
     toCenter: (cell: string) => [number, number],
-): StackedHex[] {
-    const bins = new Map<string, StackedHex>()
+): StackedCell[] {
+    const bins = new Map<string, StackedCell>()
     // Per-bin route counts to pick the mode after aggregation.
     const routeCounts = new Map<string, Map<string, number>>()
     for (const c of crashes) {
-        const h3 = toCell(c.lat, c.lon)
-        let b = bins.get(h3)
+        const cellid = toCell(c.lat, c.lon)
+        let b = bins.get(cellid)
         if (!b) {
-            b = { h3, center: [0, 0], fatal: 0, pedInj: 0, otherInj: 0, pdo: 0, total: 0 }
-            bins.set(h3, b)
+            b = { cellid, center: [0, 0], fatal: 0, pedInj: 0, otherInj: 0, pdo: 0, total: 0 }
+            bins.set(cellid, b)
         }
         b.total += 1
         if (c.severity === "f" || c.tk > 0) b.fatal += 1
@@ -94,14 +94,14 @@ export function binIntoCells<T extends StackableCrash>(
         else b.pdo += 1
         const rt = (c.road ?? "").trim() || (c.route ? `Route ${c.route}` : "")
         if (rt) {
-            let m = routeCounts.get(h3)
-            if (!m) { m = new Map(); routeCounts.set(h3, m) }
+            let m = routeCounts.get(cellid)
+            if (!m) { m = new Map(); routeCounts.set(cellid, m) }
             m.set(rt, (m.get(rt) ?? 0) + 1)
         }
     }
     for (const b of bins.values()) {
-        b.center = toCenter(b.h3)
-        const m = routeCounts.get(b.h3)
+        b.center = toCenter(b.cellid)
+        const m = routeCounts.get(b.cellid)
         if (m && m.size > 0) {
             let topR = "", topN = 0
             for (const [r, n] of m) { if (n > topN) { topR = r; topN = n } }
@@ -111,8 +111,8 @@ export function binIntoCells<T extends StackableCrash>(
     return [...bins.values()]
 }
 
-export function hexesToSegments(
-    hexes: StackedHex[],
+export function cellsToSegments(
+    cells: StackedCell[],
     elevationPerCount = 15,
     colors = {
         pdo:    [235, 218, 108, 120] as [number, number, number, number],  // pale yellow (matches bar-chart "Prop. Damage")
@@ -121,12 +121,12 @@ export function hexesToSegments(
     },
 ): Segment[] {
     const segs: Segment[] = []
-    for (const h of hexes) {
+    for (const h of cells) {
         let z = 0
         const push = (tier: Segment["tier"], count: number, color: Segment["color"]) => {
             if (count <= 0) return
             const dz = count * elevationPerCount
-            segs.push({ center: [h.center[0], h.center[1], z], height: dz, color, hex: h, tier })
+            segs.push({ center: [h.center[0], h.center[1], z], height: dz, color, cell: h, tier })
             z += dz
         }
         push("pdo", h.pdo, colors.pdo)
@@ -136,7 +136,7 @@ export function hexesToSegments(
     return segs
 }
 
-export function buildStackedHexLayer({
+export function buildStackedCellLayer({
     id,
     segments,
     resolution,
