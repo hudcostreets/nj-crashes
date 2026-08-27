@@ -29,6 +29,12 @@ RUN uv sync --frozen --no-dev
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONFAULTHANDLER=1
 
+# Container-local git identity: `dvx run --commit` (the per-stage cache-
+# flush workaround, see dvx `specs/batch-run-command-cli-mismatch.md`)
+# needs `git commit` to succeed; the commits die with the container.
+RUN git config --global user.name "dvx-batch" && \
+    git config --global user.email "dvx-batch@localhost"
+
 # Match the dvx-batch convention: entrypoint `dvx`, submitted command
 # `["run", ...]` (`dvx batch submit` builds it). Full-DAG runs with the
 # side-effect exclusions pass targets at submit time:
