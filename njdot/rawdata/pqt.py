@@ -1,4 +1,5 @@
 import json
+from os.path import exists
 import pandas as pd
 import re
 from utz import err
@@ -9,6 +10,7 @@ from njdot.tbls import types_opt, TYPE_TO_FIELDS
 from .base import rawdata
 from .utils import regions_opt, years_opt, dry_run_skip, overwrite_opt, dry_run_opt
 from .parse import load, get_2021_dob_fix_fields, get_2023_vehicles_fix_fields
+from .txt import extract_txt
 
 
 D4 = re.compile(r'\d{4}')
@@ -89,6 +91,10 @@ def pqt(regions, types, years, overwrite, dry_run):
                         [ *fields, rest ] = fields
                         fields = [ *fields, { **rest, 'Length': 18 } ]
                         err(f'{pqt_path}: overwrote final field length to 18 (was: {rest})')
+                # The txt is an untracked intermediate of the tracked zip;
+                # extract on demand so this stage runs on a fresh checkout.
+                if not exists(txt_path) and exists(f'{name}.zip') and not dry_run:
+                    extract_txt(region, year, typ)
                 if dry_run_skip(txt_path, pqt_path, dry_run=dry_run, overwrite=overwrite):
                     continue
 

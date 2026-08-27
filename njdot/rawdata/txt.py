@@ -23,6 +23,45 @@ def cmd(*opts, help=None):
     return wrapper
 
 
+def extract_txt(
+    region: str,
+    year: int,
+    table: str,
+) -> str:
+    """Extract `{region}{year}{table}.txt` from its sibling `.zip`; return the txt path.
+
+    The `.txt` is an untracked intermediate (a pure function of the
+    DVC-tracked `.zip`) — `pqt` calls this when the txt is absent, so
+    pqt stages are runnable on a fresh checkout where only the zip has
+    been materialized (surfaced by the Batch-reproc container smokes,
+    `specs/batch-reproc.md`)."""
+    parent_dir = f'{DOT_DATA}/{year}'
+    name = f'{parent_dir}/{region}{year}{table}'
+    zip_path = f'{name}.zip'
+    txt_path = f'{name}.txt'
+    with ZipFile(zip_path, 'r') as zip_ref:
+        namelist = zip_ref.namelist()
+        txt_name = f'{region}{year}{table}.txt'
+        mv = False
+        if txt_name not in namelist:
+            if region == 'CapeMay':
+                txt_name = f'Cape May{year}{table}.txt'
+                mv = True
+                if txt_name not in namelist:
+                    raise RuntimeError(f"{zip_path}: {txt_name} not found in namelist {namelist}\n")
+            else:
+                raise RuntimeError(f"{zip_path}: {txt_name} not found in namelist {namelist}\n")
+        if namelist != [ txt_name ]:
+            err(f"{zip_path}: unexpected namelist {namelist}")
+        print(f'Extracting: {zip_path} → {txt_path}')
+        zip_ref.extract(txt_name, parent_dir)
+        if mv:
+            src = f'{parent_dir}/{txt_name}'
+            print(f'Fixing "Cape ?May" path: {src} → {txt_path}')
+            shutil.move(src, txt_path)
+    return txt_path
+
+
 @cmd(
     overwrite_opt,
     dry_run_opt,
@@ -32,31 +71,9 @@ def txt(regions, types, years, overwrite, dry_run):
     for region in regions:
         for year in years:
             for typ in types:
-                parent_dir = f'{DOT_DATA}/{year}'
-                table = typ
-                name = f'{parent_dir}/{region}{year}{table}'
+                name = f'{DOT_DATA}/{year}/{region}{year}{typ}'
                 zip_path = f'{name}.zip'
                 txt_path = f'{name}.txt'
                 if dry_run_skip(zip_path, txt_path, dry_run=dry_run, overwrite=overwrite):
                     continue
-
-                with ZipFile(zip_path, 'r') as zip_ref:
-                    namelist = zip_ref.namelist()
-                    txt_name = f'{region}{year}{table}.txt'
-                    mv = False
-                    if txt_name not in namelist:
-                        if region == 'CapeMay':
-                            txt_name = f'Cape May{year}{table}.txt'
-                            mv = True
-                            if txt_name not in namelist:
-                                raise RuntimeError(f"{zip_path}: {txt_name} not found in namelist {namelist}\n")
-                        else:
-                            raise RuntimeError(f"{zip_path}: {txt_name} not found in namelist {namelist}\n")
-                    if namelist != [ txt_name ]:
-                        err(f"{zip_path}: unexpected namelist {namelist}")
-                    print(f'Extracting: {zip_path} → {txt_path}')
-                    zip_ref.extract(txt_name, parent_dir)
-                    if mv:
-                        src = f'{parent_dir}/{txt_name}'
-                        print(f'Fixing "Cape ?May" path: {src} → {txt_path}')
-                        shutil.move(src, txt_path)
+                extract_txt(region, year, typ)
