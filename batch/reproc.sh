@@ -8,6 +8,7 @@
 #   batch/reproc.sh -f               # from-scratch: force re-run derived stages
 #   batch/reproc.sh <target.dvc>...  # explicit targets (exclusions still apply)
 # Extra args (-j N, --push each, --dry-run, ...) pass through to `dvx run`.
+# `batch/reproc-targets` prints the filtered list (for `dvx batch submit $(...)`).
 #
 # Leaves (raw zips/XMLs/PDFs) are cmd-less `.dvc`s: `dvx run` can only
 # pull them, never re-download — reproc regenerates *derived* targets

@@ -29,4 +29,8 @@ RUN uv sync --frozen --no-dev
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONFAULTHANDLER=1
 
-ENTRYPOINT ["batch/reproc.sh"]
+# Match the dvx-batch convention: entrypoint `dvx`, submitted command
+# `["run", ...]` (`dvx batch submit` builds it). Full-DAG runs with the
+# side-effect exclusions pass targets at submit time:
+#   dvx batch submit $(batch/reproc-targets)
+ENTRYPOINT ["dvx"]

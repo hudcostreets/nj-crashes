@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Print the repo's data-DAG targets: every tracked `.dvc` minus the
+# side-effect stages (see batch/reproc.sh for the rationale per entry).
+# Usage: dvx batch submit $(batch/reproc-targets)
+set -euo pipefail
+cd "$(dirname "$0")/.."
+git ls-files '*.dvc' | grep -vxF -e api/d1-import.dvc -e cells-api/deploy.dvc \
+  -e www/deploy.dvc -e www/og-image.dvc -e njsp/data/slack_post.dvc \
+  -e njsp/data/refresh.dvc -e njsp/data/summaries.dvc -e www/public/njdot/map_sync.dvc
