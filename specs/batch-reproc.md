@@ -46,6 +46,16 @@ Companion to `~/c/dvx/specs/batch-executor.md` (the reusable `dvx batch` tooling
 - Diverging md5s vs the current remote are *findings*, not failures — each is either a real IDP bug or an undeclared dep (exactly how `crashes_geocode_backfill.parquet` was caught, 2026-08-26).
 - The excluded side-effect targets provably never ran (no D1 writes, no deploys, no Slack posts).
 
+## Status (2026-08-26)
+
+Implemented so far: `batch/Dockerfile` (self-contained; `FROM dvx-batch` swap pending their base image) + `batch/reproc.sh` (target enumeration + side-effect excludes). Local container smokes (arm64 Docker) validated: image build, `git_deps` hashing on a shallow clone, `dvx pull` materialization with static-key creds (`AWS_PROFILE=r`; SSO can't refresh headless). Smokes also surfaced and fixed/filed:
+
+- `cc2mc2mn.json.dvc` co-output declared no deps → fixed (`8ba50782ecf`), and its blob (plus `s2_pyramid`, `cm.pqt`, census, `crashes.db` — 48 total, most git-covered) pushed to the remote after a full blob audit.
+- DVX materialization race on fresh clones + `--force`/auto-pull interaction + incremental-stage self-dep (`crash-log -i`) → filed as "First-smoke findings" in `dvx/specs/batch-executor.md`.
+- The `njdot/data/` S3 mirror (the `pqt_url` fallback in `njdot/data.py`) stops at 2022 — masked-by-fallback failures show up on fresh machines; consider dropping the fallback once reproc materialization is reliable.
+
+Remaining: heavy smokes and the from-scratch run happen **on Fargate** (or `e`), not this laptop — blocked on dvx's `batch push|bootstrap|submit` landing, then: `FROM` swap, ECR push, bootstrap, first `submit --watch`.
+
 ## Open questions
 
 - Where the exclude list lives: submit-wrapper flag vs a `.dvxignore`-style repo file vs a convention (side-effect stages already lack `outs`; "skip side-effect stages unless explicitly targeted" may be the cleanest rule and belongs dvx-side).
