@@ -1131,8 +1131,8 @@ wheels = [
 
 [[package]]
 name = "dvx"
-version = "0.5.1.dev17+ge4896b575"
-source = { git = "https://github.com/runsascoded/dvx?rev=e4896b575#e4896b5756362cced67444b448406d75b6d97d15" }
+version = "0.5.1.dev20+gd507ed3aa"
+source = { git = "https://github.com/runsascoded/dvx?rev=d507ed3aa#d507ed3aa7aec6813862dddde68e72171ec6cf17" }
 dependencies = [
     { name = "click" },
     { name = "dffs" },
@@ -2548,7 +2548,7 @@ requires-dist = [
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "duckdb", specifier = ">=1.5" },
     { name = "dvc", extras = ["s3"], specifier = ">=3.59" },
-    { name = "dvx", git = "https://github.com/runsascoded/dvx?rev=e4896b575" },
+    { name = "dvx", git = "https://github.com/runsascoded/dvx?rev=d507ed3aa" },
     { name = "geopandas", specifier = ">=1.0" },
     { name = "geopy", specifier = ">=2.4" },
     { name = "gitpython", specifier = ">=3.1" },

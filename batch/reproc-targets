@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
-# Print the repo's data-DAG targets: every tracked `.dvc` minus the
-# side-effect stages (see batch/reproc.sh for the rationale per entry).
-# Usage: dvx batch submit $(batch/reproc-targets)
+# Print the repo's *executable* data-DAG targets: tracked `.dvc`s that
+# carry a `cmd:`, minus the side-effect stages (deploys, D1 imports,
+# notifications, and fetch stages that mutate tracked inputs).
+#
+# Cmd-less leaves (raw zips/XMLs/PDFs) are omitted deliberately: `dvx run`
+# can only ever pull them, and dvx materializes them as deps of the
+# stages below. Listing them would just inflate the Batch command.
+#
+# Usage: dvx batch submit --force --remote reproc $(batch/reproc-targets)
 set -euo pipefail
 cd "$(dirname "$0")/.."
-git ls-files '*.dvc' | grep -vxF -e api/d1-import.dvc -e cells-api/deploy.dvc \
+git ls-files '*.dvc' | while read -r f; do
+    grep -q '^    cmd:' "$f" && echo "$f"
+done | grep -vxF -e api/d1-import.dvc -e cells-api/deploy.dvc \
   -e www/deploy.dvc -e www/og-image.dvc -e njsp/data/slack_post.dvc \
   -e njsp/data/refresh.dvc -e njsp/data/summaries.dvc -e www/public/njdot/map_sync.dvc
