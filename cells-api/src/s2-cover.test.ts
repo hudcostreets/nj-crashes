@@ -14,7 +14,7 @@
 import { describe, expect, it } from "vitest"
 import { S2CellId, S2LatLng } from "nodes2ts"
 import { intersectRanges, s2RangesForPolygon } from "./cells"
-import { s2IdToToken, s2RangeForCell, s2TokenToId } from "./s2-range"
+import { s2IdToToken, s2RangeForCell, s2TokenToId } from "pyrmts-geo"
 
 /** A z=15-ish viewport over Jersey City — the zoom at which the picker
  *  asks for l19 and the old code blew the worker's budget. */

@@ -15,7 +15,7 @@ import {
     s2RangeForCell,
     s2RangeForCellToken,
     s2TokenToId,
-} from "./s2-range"
+} from "pyrmts-geo"
 
 /** Range of NJ latitudes + longitudes, sampled coarsely for the
  *  cross-lib checks. Reference points: Jersey City, Camden, Trenton,

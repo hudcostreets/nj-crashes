@@ -14,7 +14,9 @@
     "fflate": "^0.8.2",
     "fzstd": "^0.1.1",
     "hyparquet": "^1.20.1",
-    "nodes2ts": "^4.0.2"
+    "nodes2ts": "^4.0.2",
+    "pyrmts": "https://github.com/runsascoded/pyrmts#3bf5109f04535c4fadfb605c6c29d0d66e170393&path:/js/packages/pyrmts",
+    "pyrmts-geo": "https://github.com/runsascoded/pyrmts#3bf5109f04535c4fadfb605c6c29d0d66e170393&path:/js/packages/pyrmts-geo"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250401.0",

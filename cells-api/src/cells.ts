@@ -38,13 +38,14 @@ import { loadManifest } from "./manifest"
 import { readParquetFromR2 } from "./parquet"
 import {
     type S2CellRange,
+    intersectRanges,
     mergeRanges,
     s2IdToToken,
     s2LevelOf,
     s2Parent,
     s2RangeForCell,
     s2TokenToId,
-} from "./s2-range"
+} from "pyrmts-geo"
 
 /** GeoJSON-like polygon: outer ring as `[lon, lat][]`. We keep just one
  *  ring; multi-ring (holes) doesn't show up for our use cases. */
@@ -243,19 +244,7 @@ export function s2RangesForPolygon(poly: LonLatPolygon, level: number, maxCells 
     return covering.map(c => s2RangeForCell(s2TokenToId(c.toToken()), level))
 }
 
-/** Pairwise intersection of two range sets. Both are small (≤ a few
- *  dozen), so the quadratic scan is cheaper than sorting. */
-export function intersectRanges(a: S2CellRange[], b: S2CellRange[]): S2CellRange[] {
-    const out: S2CellRange[] = []
-    for (const x of a) {
-        for (const y of b) {
-            const lo = x.lo > y.lo ? x.lo : y.lo
-            const hi = x.hi < y.hi ? x.hi : y.hi
-            if (lo <= hi) out.push({ lo, hi })
-        }
-    }
-    return out
-}
+export { intersectRanges }
 
 /** Handle one `/v1/cells` request. Reads the manifest for
  *  `data_version` + `year_range`, computes S2 token ranges from the

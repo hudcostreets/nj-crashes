@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach } from "vitest"
 import { readFileSync, existsSync } from "node:fs"
 import { resolve } from "node:path"
 import { readParquetFromR2, _resetFooterCache } from "./parquet"
-import { s2IdToToken, s2Parent, s2RangeForCellToken, s2TokenToId } from "./s2-range"
+import { s2IdToToken, s2Parent, s2RangeForCellToken, s2TokenToId } from "pyrmts-geo"
 
 /** Real-data validation of the pyramid read path: one shard of
  *  `s2_pyramid/s2_l13/{l4}.parquet` (cellid-sorted, 4096-row groups) is read
