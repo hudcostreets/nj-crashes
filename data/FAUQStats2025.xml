@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Wed Aug 26 10:00:02 EDT 2026</RUNDATE>
+  <RUNDATE>Thu Aug 27 10:00:03 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -725,8 +725,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1221" MNAME="South Brunswick Tws">
       <ACCIDENT ACCID="14283" DATE="11/26/2025" TIME="1624">
-        <STREET>New Rd</STREET>
-        <LOCATION>New Rd</LOCATION>
+        <STREET>New Road</STREET>
+        <LOCATION>New Road</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
