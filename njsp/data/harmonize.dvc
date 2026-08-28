@@ -2,6 +2,9 @@ meta:
   computation:
     cmd: njsp harmonize_muni_codes
     deps:
+      # `update_mc` shells out to `dvc pull` for this when absent —
+      # declare it so dvx materializes it (fresh-machine/Batch runs).
+      /www/public/Municipal_Boundaries_of_NJ.geojson: 54a252d859eea2207da0fb933661dca0
       /data/FAUQStats2008.xml: 017b63c673518b66eff6dcabf5af4778
       /data/FAUQStats2009.xml: d61c414148a47318819541e73f27e0de
       /data/FAUQStats2010.xml: 1208a430c6fa0fd9c1e17e258e92e2f6
