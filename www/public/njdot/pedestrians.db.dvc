@@ -7,4 +7,4 @@ meta:
   computation:
     cmd: njdot compute db -t pedestrians
     deps:
-      njdot/data/pedestrians.parquet: 7f1dc043bbc22ed522115e4adbc911fd
+      /njdot/data/pedestrians.parquet: 7f1dc043bbc22ed522115e4adbc911fd

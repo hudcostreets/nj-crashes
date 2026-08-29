@@ -8,3 +8,4 @@ meta:
     cmd: rawdata pqt -r NJ -y 2023 -t accidents
     deps:
       NewJersey2023Accidents.zip: af1756f11fb5caeab007d9b9683d77b9
+      /www/public/Municipal_Boundaries_of_NJ.geojson: 54a252d859eea2207da0fb933661dca0

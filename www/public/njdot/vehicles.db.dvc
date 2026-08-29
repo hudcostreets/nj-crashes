@@ -7,4 +7,4 @@ meta:
   computation:
     cmd: njdot compute db -t vehicles
     deps:
-      njdot/data/vehicles.parquet: f556fa6424ee67986f1b8f69b0ab7eab
+      /njdot/data/vehicles.parquet: f556fa6424ee67986f1b8f69b0ab7eab

@@ -26,7 +26,7 @@ Companion to `~/c/dvx/specs/batch-executor.md` (the reusable `dvx batch` tooling
 | Harmonize, match, supplement, backfill, crash-log | ~10 | |
 | Aggregates (cmymc, ymccmc*, csvs, projections, summaries) | ~15 | |
 | Cells (s2 raw, cells-s2.db, s2_pyramid) | 3 | Pyramid is the one that OOMs a 7 GB GHA runner; fits easily in 64 GiB |
-| **Excluded: side effects** | ~6 | `api/d1-import`, `cells-api/deploy`, `www/deploy`, `slack_post`, `og-image`, `refresh` (mutates upstream state). These are deploys/notifications, not data — reproc must never fire them. Mechanism: an explicit exclude list in the submit wrapper, or run named data-root targets instead of the bare-`dvx run` everything mode. |
+| **Excluded: side effects** | 8 | `api/d1-import`, `cells-api/deploy`, `www/deploy`, `www/og-image`, `njsp/data/slack_post`, `www/public/njdot/map_sync`, and the two fetch stages `njsp/data/{refresh,summaries}`. Deploys / notifications / upstream fetches, not data — reproc must never fire them. **Mechanism (resolved):** each is marked `meta.computation.side_effect: true`, a dvx-native flag; `batch/reproc-targets` derives the exclusion from it, so a stage's nature is declared once, in the stage. |
 
 ## Redirecting side-effect uploads (`$NJC_S3`)
 
@@ -85,6 +85,7 @@ Remaining: heavy smokes and the from-scratch run happen **on Fargate** (or `e`),
 
 ## Open questions
 
-- Where the exclude list lives: submit-wrapper flag vs a `.dvxignore`-style repo file vs a convention (side-effect stages already lack `outs`; "skip side-effect stages unless explicitly targeted" may be the cleanest rule and belongs dvx-side).
-- Whether `refresh.dvc` (NJSP XML fetch) counts as a leaf-pin or a side effect — it mutates tracked inputs; reproc should pin, daily CI refreshes.
+- ~~Where the exclude list lives~~ **Resolved**: `meta.computation.side_effect: true` on the stage; `batch/reproc-targets` derives from it and `batch/reproc.sh` sources that, so there's one definition rather than two that drift. Note the *inferred* predicate (cmd, no `outs`) is not usable here — it misclassifies the co-output driver stages `njsp/data/harmonize.dvc` and `www/public/njsp/projections.dvc`, whose real outputs live in sibling `.dvc`s. Only the explicit flag distinguishes them. A dvx-side "skip side-effect stages unless explicitly targeted" default would subsume this script entirely; worth proposing once the flag is populated across repos.
+- ~~Whether `refresh.dvc` counts as a leaf-pin or a side effect~~ **Resolved**: side effect. Both it and `summaries.dvc` carry `fetch.schedule`, fetch from upstream, and mutate tracked inputs — reproc pins, the daily refreshes.
+- Whether `.dvc` should support env interpolation in `cmd`. **Answered: no.** dvx runs cmds via `subprocess.run(shell=True)` with the parent env, so `${VAR}` already expands — but `cmd` is not part of dvx's freshness key (`is_output_fresh` = out md5 ∧ recorded dep hashes), so an interpolated var is an entirely unrecorded input: a reproc under a redirected root would read every stage as fresh and silently verify nothing. `.dvc` stays a rendered lockfile; per-environment config lives in code behind `$NJC_S3`, and computation changes are mechanical rewrites reviewed as git diffs. If parameterization is ever genuinely wanted, the principled form is a *declared* `meta.computation.env: [NAME]` whose values hash into the freshness key.
 - ECR account: RAC (where prod CF lives today) vs the new HCCS account — tie to the broader CF/AWS migration decision rather than deciding here.

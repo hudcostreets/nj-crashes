@@ -5,7 +5,7 @@ outs:
   path: crashes.parquet
 meta:
   computation:
-    cmd: njdot/aashto/normalize.py -y 2023 njdot/data/2023/Crash.csv
+    cmd: cd ../../.. && njdot/aashto/normalize.py -y 2023 njdot/data/2023/Crash.csv
     git_deps:
       /njdot/aashto/normalize.py: 7343465980748692c469c4f119c5268204c69837
     deps:
