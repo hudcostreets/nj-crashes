@@ -8,7 +8,11 @@
 #   batch/reproc.sh -f               # from-scratch: force re-run derived stages
 #   batch/reproc.sh <target.dvc>...  # explicit targets (exclusions still apply)
 # Extra args (-j N, --push each, --dry-run, ...) pass through to `dvx run`.
-# `batch/reproc-targets` prints the filtered list (for `dvx batch submit $(...)`).
+#
+# The target list comes from `batch/reproc-targets`, which derives the
+# exclusions from each stage's `meta.computation.side_effect` flag — see
+# that script for why the set is what it is. Both entry points share it so
+# there's one definition of "in scope", not two that drift.
 #
 # Leaves (raw zips/XMLs/PDFs) are cmd-less `.dvc`s: `dvx run` can only
 # pull them, never re-download — reproc regenerates *derived* targets
@@ -16,26 +20,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# Side-effect / outward / input-mutating stages. Structurally these are
-# the outs-less `.dvc`s (`grep -L '^outs:'`), minus the three that are
-# pure data stages whose outputs are tracked by sibling `.dvc`s
-# (harmonize, projections) or that we exclude anyway for fetching
-# (refresh, summaries).
-EXCLUDES=(
-    api/d1-import.dvc        # writes prod D1
-    cells-api/deploy.dvc     # deploys the worker
-    www/deploy.dvc           # deploys the site
-    www/og-image.dvc         # pushes to S3 + reads deployed site
-    njsp/data/slack_post.dvc # posts to Slack
-    njsp/data/refresh.dvc    # fetches + mutates tracked NJSP XMLs
-    njsp/data/summaries.dvc  # fetches NJSP annual-report PDFs
-    www/public/njdot/map_sync.dvc  # syncs to S3
-)
+mapfile -t in_scope < <(batch/reproc-targets)
 
 is_excluded() {
     local t="$1"
-    for e in "${EXCLUDES[@]}"; do [[ "$t" == "$e" ]] && return 0; done
-    return 1
+    for e in "${in_scope[@]}"; do [[ "$t" == "$e" ]] && return 1; done
+    return 0
 }
 
 targets=()
@@ -44,9 +34,7 @@ for a in "$@"; do
     if [[ "$a" == *.dvc ]]; then targets+=("$a"); else args+=("$a"); fi
 done
 if [[ ${#targets[@]} -eq 0 ]]; then
-    while IFS= read -r t; do
-        is_excluded "$t" || targets+=("$t")
-    done < <(git ls-files '*.dvc')
+    targets=("${in_scope[@]}")
 else
     kept=()
     for t in "${targets[@]}"; do
@@ -57,4 +45,4 @@ else
 fi
 
 echo "reproc: ${#targets[@]} targets" >&2
-exec dvx run --commit never "${args[@]}" "${targets[@]}"
+exec dvx run --no-commit "${args[@]}" "${targets[@]}"
