@@ -1,6 +1,12 @@
 meta:
   computation:
     cmd: njsp harmonize_muni_codes
+    # Pure co-output driver: this cmd's four real outputs are recorded in sibling
+    # .dvc files and no `njsp/data/harmonize` artifact exists, so dvx's co-output
+    # wait reported `co-output not produced` every round. Explicit flag rather than
+    # leaning on the cmd-with-no-`outs` inference, which also (wrongly) catches
+    # genuine driver stages like `www/public/njsp/projections`.
+    side_effect: true
     deps:
       # `update_mc` shells out to `dvc pull` for this when absent —
       # declare it so dvx materializes it (fresh-machine/Batch runs).

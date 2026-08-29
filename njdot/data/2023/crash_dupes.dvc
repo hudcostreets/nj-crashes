@@ -1,0 +1,20 @@
+outs:
+- md5: 2d28a23cb5d385ce13e8a2cf777d455c.dir
+  size: 1344278
+  hash: md5
+  path: crash_dupes
+meta:
+  # 2023 duplicate-crash merge analysis. `njdot/crashes.py` reads
+  # `crash_dupes/merged.pqt` during the crashes build, but the dir was excluded in
+  # `.git/info/exclude` (repo-local, uncommitted — so invisible to `git status` and
+  # to anyone inspecting the repo) and tracked nowhere. Reproc round 4 died on it.
+  # Unlike the census/SRI caches this is *derived* from a tracked input and the
+  # script is deterministic (no network, no prompts), so it's a real stage rather
+  # than a tracked snapshot — the audit now verifies it instead of trusting an
+  # Oct-2025 artifact that existed only on one laptop.
+  # Whole dir as one out: the script also writes merges.pqt, merges-all.pqt and
+  # unmerged/*.pqt, which as separate outs would be a co-output group.
+  computation:
+    cmd: cd ../../.. && njdot/merge_2023_dupes.py
+    deps:
+      /njdot/data/2023/NewJersey2023Accidents.pqt: 6e058a16f38835041df9d14485150f57

@@ -6,8 +6,14 @@
 # `FROM dvx-batch:<rev>` + the clone + sync.
 #
 # The clone (not COPY) keeps the build context tiny and gives dvx the
-# `.git` objects it needs for `git_deps` hashing — `--depth 1` suffices
-# (blobs at HEAD are what get hashed). Build arg `REF` pins the rev.
+# `.git` objects it needs for `git_deps` hashing. `--filter=blob:none`
+# (blobless partial clone) rather than `--depth 1`: `njsp crash_log compute`
+# walks the git history of `data/FAUQStats*.xml` (1,348 commits back to the
+# 2022-05-25 root), which a shallow clone doesn't have — it then falls back to
+# per-commit GitHub API fetches, needing a token and ~1.3k round trips.
+# Measured: blobless = 60 MB in 3.2s with full history and blobs fetched
+# lazily (and batched) on demand; a full clone is 3.71 GiB. Build arg `REF`
+# pins the rev.
 #
 # Build (arm64, for Graviton Fargate):
 #   docker build --platform linux/arm64 -t nj-crashes-reproc:$(git rev-parse --short HEAD) \
@@ -19,8 +25,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 ARG REPO=https://github.com/hudcostreets/nj-crashes
 ARG REF=main
-RUN git clone --depth 1 --revision "$REF" "$REPO" /app || \
-    (git clone --depth 1 "$REPO" /app && git -C /app fetch --depth 1 origin "$REF" && git -C /app checkout FETCH_HEAD)
+RUN git clone --filter=blob:none "$REPO" /app && git -C /app checkout "$REF"
 WORKDIR /app
 
 # Flat venv (the multi-version `.venv/<ver>/` layout is a direnv-ism;
