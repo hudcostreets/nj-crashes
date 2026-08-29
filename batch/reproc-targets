@@ -7,6 +7,11 @@
 # can only ever pull them, and dvx materializes them as deps of the
 # stages below. Listing them would just inflate the Batch command.
 #
+# Also excluded: the five `njdot compute db -t <tbl>` stages, which
+# upload their .db to prod S3 as a cmd side effect. They are DAG leaves
+# (nothing consumes their outputs), so dropping them costs only their
+# own verification and keeps the audit from writing to prod.
+#
 # Usage: dvx batch submit --force --remote reproc $(batch/reproc-targets)
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -14,4 +19,7 @@ git ls-files '*.dvc' | while read -r f; do
     grep -q '^    cmd:' "$f" && echo "$f"
 done | grep -vxF -e api/d1-import.dvc -e cells-api/deploy.dvc \
   -e www/deploy.dvc -e www/og-image.dvc -e njsp/data/slack_post.dvc \
-  -e njsp/data/refresh.dvc -e njsp/data/summaries.dvc -e www/public/njdot/map_sync.dvc
+  -e njsp/data/refresh.dvc -e njsp/data/summaries.dvc -e www/public/njdot/map_sync.dvc \
+  -e www/public/njdot/crashes.db.dvc -e www/public/njdot/drivers.db.dvc \
+  -e www/public/njdot/occupants.db.dvc -e www/public/njdot/pedestrians.db.dvc \
+  -e www/public/njdot/vehicles.db.dvc
