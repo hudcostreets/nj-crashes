@@ -8,3 +8,11 @@ meta:
     cmd: njsp crash_log compute -a njsp/data/crash-log.parquet -i -v
     deps:
       crashes.parquet: b9669bb1b0b49860ebb14e04ac36bb83
+    # This stage consumes the FAUQStats XMLs' *history*, not their content at HEAD:
+    # it walks every commit that ever touched them. `git_log_deps` records the tip
+    # commit touching the pathspec, so the stage is stale iff a new commit did — and
+    # dvx exports it as `$DVX_GIT_LOG_SINCE` for the resume cursor. That retires the
+    # self-referential input (its own output was its only record of where it left
+    # off), which is what made it unbuildable on a fresh checkout in reproc round 5.
+    git_log_deps:
+      /data/FAUQStats*.xml: 5c62f9411ad80b235c0faffe321083a114063b58

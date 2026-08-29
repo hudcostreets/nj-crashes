@@ -1,5 +1,6 @@
 from contextlib import nullcontext
 from functools import wraps
+from os import getenv
 from os.path import splitext
 from urllib.parse import urlparse
 
@@ -95,25 +96,37 @@ def crash_log_cmd(fn):
 
         prefix = None
         if append_to:
-            if not root:
-                # Two legitimate states, and the second is not an error:
-                # - the log exists: resume from its latest SHA (the daily's path)
-                # - it doesn't: no prior run on this machine, so build the whole
-                #   log from `DEFAULT_ROOT_SHA_PARENT` and write it to `append_to`.
-                # Without the fallback this stage is unreproducible by
-                # construction — its own output is its input — which is how it
-                # failed on a fresh checkout in the full-DAG reproc.
-                try:
-                    prefix = load(append_to)
-                except FileNotFoundError:
+            # `root` is the exclusive lower bound: the newest FAUQStats-touching commit
+            # already accounted for. Whatever we resume from has to be consistent with
+            # the rows we're concatenating onto, so the *prefix* is the authority.
+            try:
+                prefix = load(append_to)
+            except FileNotFoundError:
+                prefix = None
+
+            since = getenv('DVX_GIT_LOG_SINCE') or None
+            if prefix is None:
+                # No prior log on this machine, so build the whole thing. Note we
+                # deliberately ignore `$DVX_GIT_LOG_SINCE` here: dvx's cursor describes
+                # where the *recorded* output left off, and resuming from it with no
+                # prefix would emit a log missing all of its history — silently, and
+                # fast enough to look like a success.
+                if not root:
                     root = DEFAULT_ROOT_SHA_PARENT
                     err(f"{append_to} not found; building from scratch at root {root}")
-                else:
-                    df_sha = prefix.reset_index(level=0)
-                    latest_prefix_sha = df_sha.rundate.idxmax()
-                    root = latest_prefix_sha
-                    latest_rundate = solo(df_sha.loc[[latest_prefix_sha], 'rundate'])
-                    err(f"Using latest SHA from {append_to} as root: {root} (rundate {latest_rundate})")
+                if since:
+                    err(f"Ignoring $DVX_GIT_LOG_SINCE ({since}): no prefix to append to")
+            elif not root:
+                df_sha = prefix.reset_index(level=0)
+                latest_prefix_sha = df_sha.rundate.idxmax()
+                root = latest_prefix_sha
+                latest_rundate = solo(df_sha.loc[[latest_prefix_sha], 'rundate'])
+                err(f"Using latest SHA from {append_to} as root: {root} (rundate {latest_rundate})")
+                if since and since != root:
+                    # dvx thinks the last run ended somewhere else than the log says.
+                    # The log wins (it's what we're appending to), but the divergence
+                    # means the `.dvc` and the output are out of step.
+                    err(f"WARNING: $DVX_GIT_LOG_SINCE ({since}) != latest SHA in {append_to} ({root})")
             if in_place:
                 out_paths.append(append_to)
         elif in_place:
