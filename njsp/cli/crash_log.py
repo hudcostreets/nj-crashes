@@ -96,12 +96,24 @@ def crash_log_cmd(fn):
         prefix = None
         if append_to:
             if not root:
-                prefix = load(append_to)
-                df_sha = prefix.reset_index(level=0)
-                latest_prefix_sha = df_sha.rundate.idxmax()
-                root = latest_prefix_sha
-                latest_rundate = solo(df_sha.loc[[latest_prefix_sha], 'rundate'])
-                err(f"Using latest SHA from {append_to} as root: {root} (rundate {latest_rundate})")
+                # Two legitimate states, and the second is not an error:
+                # - the log exists: resume from its latest SHA (the daily's path)
+                # - it doesn't: no prior run on this machine, so build the whole
+                #   log from `DEFAULT_ROOT_SHA_PARENT` and write it to `append_to`.
+                # Without the fallback this stage is unreproducible by
+                # construction — its own output is its input — which is how it
+                # failed on a fresh checkout in the full-DAG reproc.
+                try:
+                    prefix = load(append_to)
+                except FileNotFoundError:
+                    root = DEFAULT_ROOT_SHA_PARENT
+                    err(f"{append_to} not found; building from scratch at root {root}")
+                else:
+                    df_sha = prefix.reset_index(level=0)
+                    latest_prefix_sha = df_sha.rundate.idxmax()
+                    root = latest_prefix_sha
+                    latest_rundate = solo(df_sha.loc[[latest_prefix_sha], 'rundate'])
+                    err(f"Using latest SHA from {append_to} as root: {root} (rundate {latest_rundate})")
             if in_place:
                 out_paths.append(append_to)
         elif in_place:

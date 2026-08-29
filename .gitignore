@@ -7,3 +7,4 @@ njsp/data/njsp_njdot_residuals.parquet
 
 # Census API JSON cache; idempotently re-fetched by `python -m census.fetch`.
 census/data/raw/
+/nj_sri_mp.db

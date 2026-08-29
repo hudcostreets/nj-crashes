@@ -30,3 +30,9 @@ meta:
       2021/NewJersey2021Accidents.pqt: d9fade2a2cb1055c6b59314d5bb92475
       2022/NewJersey2022Accidents.pqt: 4b47143695090892656b4bebc0c33334
       2023/NewJersey2023Accidents.pqt: 6e058a16f38835041df9d14485150f57
+      # SRI/milepost -> lat/lon lookup, read via `nj_crashes.sri.mp05.get_mp05_map()`
+      # during geocoding. It is a network-fetched accumulator (`fetch_sri_mps` hits the
+      # NJDOT ArcGIS service per SRI and appends), not derivable from tracked inputs —
+      # and it was caught by the global `*.db` excludesfile, so it never showed as
+      # untracked. Reproc round 3 died here with `ValueError: Table sri_mp not found`.
+      /nj_sri_mp.db: 6c1e4917dcbd23e5ad48d277ae622dc1
