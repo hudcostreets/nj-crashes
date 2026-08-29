@@ -19,9 +19,16 @@ import sys
 from functools import partial
 from pathlib import Path
 
-from njdot.paths import DOT_DATA, raw_pqt_path
-
 err = partial(print, file=sys.stderr)
+
+# Standalone `uv run --script` with its own inline deps: the `njdot` package is
+# not importable here, so these mirror `njdot/paths.py` off this file's own
+# location rather than importing it (cf. `njdot/aashto/normalize.py`).
+DOT_DATA = str(Path(__file__).resolve().parent / 'data')
+
+
+def raw_pqt_path(tpe: str, year: int, county: str = 'NewJersey') -> str:
+    return f'{DOT_DATA}/{year}/{county}{year}{tpe.title()}.pqt'
 
 
 def write_dupe_outputs(

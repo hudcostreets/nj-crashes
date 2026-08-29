@@ -43,9 +43,13 @@ import click
 import pandas as pd
 from tqdm import tqdm
 
-from njdot.paths import DOT_DATA
-
 err = partial(print, file=sys.stderr)
+
+# This runs as a standalone `uv run --script` with its own inline deps, so the
+# `njdot` package is *not* importable here — `from njdot.paths import DOT_DATA`
+# is a `ModuleNotFoundError` (reproc round 7). Derive the same path from this
+# file's own location instead, so the default survives any cwd.
+DOT_DATA = str(Path(__file__).resolve().parents[2] / 'njdot' / 'data')
 
 UNDEFINED = "[object Undefined]"
 SANITY_MAX_VEHICLES = 200

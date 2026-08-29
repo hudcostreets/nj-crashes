@@ -1,0 +1,293 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click", "pyarrow", "numpy"]
+# ///
+"""Classify parquet differences: writer metadata vs encoding vs actual content.
+
+The reproc audit compares regenerated outputs against the md5s recorded in
+`.dvc` files, and a raw md5 can't tell three very different things apart:
+
+    metadata   only the footer moved (`created_by`, the pandas k-v block) --
+               the data pages are byte-identical. Eight months of pyarrow
+               20 -> 21 drift looks exactly like this.
+    encoding   different bytes, same logical rows: codec, dictionary,
+               row-group size, page size.
+    content    the data actually changed. The only one worth chasing.
+
+`content-hash` is computed over *logical* column values, so it survives an
+encoding change but not a value change, a null-mask change, a column
+rename/reorder, or a dtype coercion (parquet `version='2.4'` silently
+demoting `timestamp[ns]` to `[us]`, say). It is reported per column, so a
+mismatch names the column rather than the file.
+"""
+import hashlib
+import os
+import re
+import subprocess
+import sys
+
+import click
+import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+# Bump when the digest definition changes; a stored hash is only comparable
+# against one produced by the same algorithm version.
+ALGO = 'pqt-content-v1'
+
+
+def canon_type(t: pa.DataType) -> str:
+    """Dictionary encoding is a storage choice, not a logical type."""
+    return canon_type(t.value_type) if pa.types.is_dictionary(t) else str(t)
+
+
+def normalize(arr: pa.Array) -> pa.Array:
+    """Cast to a canonical representative of the type's *class*.
+
+    A column can change width or precision without any value changing --
+    `timestamp[us]` -> `[ns]`, `int8` -> `int64`. That is a schema change, not
+    a content change, and reporting it as content sends you looking for a data
+    bug that isn't there. Normalizing here lets the values digest stay equal
+    across such a change, so the dtype difference gets reported on its own.
+    """
+    t = arr.type
+    if pa.types.is_dictionary(t):
+        return normalize(arr.cast(t.value_type))
+    try:
+        if pa.types.is_timestamp(t):
+            return arr.cast(pa.timestamp('ns', tz=t.tz))
+        if pa.types.is_signed_integer(t):
+            return arr.cast(pa.int64())
+        if pa.types.is_unsigned_integer(t):
+            return arr.cast(pa.uint64())
+        if pa.types.is_floating(t):
+            return arr.cast(pa.float64())
+    except (pa.ArrowInvalid, pa.ArrowNotImplementedError):
+        pass  # out of range for the wider type: hash it as it stands
+    return arr
+
+
+def values_hash(arr: pa.Array) -> str:
+    """Digest of a column's logical values, independent of storage."""
+    h = hashlib.blake2b(digest_size=16)
+    arr = normalize(arr)
+    # Validity goes in explicitly: the value slots behind nulls hold undefined
+    # bytes, which must never reach the digest.
+    valid = np.asarray(arr.is_valid())
+    h.update(np.packbits(valid, bitorder='little').tobytes())
+    t = arr.type
+    if pa.types.is_string(t) or pa.types.is_large_string(t) or pa.types.is_binary(t):
+        bufs = arr.buffers()
+        w = 8 if pa.types.is_large_string(t) else 4
+        offs = np.frombuffer(bufs[1], dtype=f'<i{w}', count=len(arr) + 1, offset=arr.offset * w)
+        offs = offs - offs[0]           # a slice must hash like a fresh array
+        h.update(offs.astype('<i8').tobytes())
+        if bufs[2] is not None:
+            h.update(memoryview(bufs[2])[:int(offs[-1])])
+    elif pa.types.is_boolean(t):
+        h.update(np.packbits(np.asarray(arr.fill_null(False)), bitorder='little').tobytes())
+    else:
+        vals = arr.to_numpy(zero_copy_only=False)
+        if vals.dtype == object:        # nested / exotic: fall back to values
+            h.update(repr(arr.to_pylist()).encode())
+        else:
+            vals = np.where(valid, vals, np.zeros((), dtype=vals.dtype))
+            h.update(np.ascontiguousarray(vals).tobytes())
+    return h.hexdigest()
+
+
+def profile(path: str) -> dict:
+    """(dtype, values-digest) per column, plus a whole-file content hash."""
+    t = pq.read_table(path)
+    cols = {
+        n: (canon_type(t[n].type), values_hash(t[n].combine_chunks()))
+        for n in t.column_names
+    }
+    h = hashlib.blake2b(digest_size=16)
+    for n, (dt, vh) in cols.items():
+        h.update(n.encode()); h.update(b'\x00')
+        h.update(dt.encode()); h.update(b'\x00')
+        h.update(bytes.fromhex(vh))
+    h.update(f'rows={t.num_rows}'.encode())
+    return {'content': h.hexdigest(), 'rows': t.num_rows, 'columns': cols}
+
+
+def pages_hash(path: str) -> str:
+    """Digest of everything before the serialized footer.
+
+    Every writer-identity string lives in the footer, so an equal pages hash
+    with an unequal file md5 means *only* metadata moved -- no decode needed.
+    """
+    with open(path, 'rb') as f:
+        f.seek(-8, 2)
+        end = f.tell() - 8 - int.from_bytes(f.read(4), 'little')
+        f.seek(0)
+        h, left = hashlib.md5(), end
+        while left > 0:
+            b = f.read(min(1 << 20, left))
+            if not b:
+                break
+            h.update(b); left -= len(b)
+    return h.hexdigest()
+
+
+def file_md5(path: str) -> str:
+    h = hashlib.md5()
+    with open(path, 'rb') as f:
+        while (b := f.read(1 << 20)):
+            h.update(b)
+    return h.hexdigest()
+
+
+def classify(a: str, b: str) -> tuple[str, list[str]]:
+    """Return (verdict, human-readable notes).
+
+    Verdicts, narrowest cause first: `identical` (same bytes), `metadata`
+    (footer only), `encoding` (same logical table, different storage),
+    `schema` (columns added/dropped/retyped, every shared column's values
+    equal), `content` (values actually differ).
+    """
+    if file_md5(a) == file_md5(b):
+        return 'identical', []
+    pa_, pb = profile(a), profile(b)
+    ca, cb = pa_['columns'], pb['columns']
+
+    notes = []
+    added = [n for n in cb if n not in ca]
+    dropped = [n for n in ca if n not in cb]
+    shared = [n for n in ca if n in cb]
+    retyped = [n for n in shared if ca[n][0] != cb[n][0]]
+    changed = [n for n in shared if ca[n][1] != cb[n][1]]
+
+    if pa_['rows'] != pb['rows']:
+        notes.append(f"rows: {pa_['rows']:,} -> {pb['rows']:,}")
+    notes += [f'+column {n} ({cb[n][0]})' for n in added]
+    notes += [f'-column {n} ({ca[n][0]})' for n in dropped]
+    notes += [f'dtype {n}: {ca[n][0]} -> {cb[n][0]}' + ('' if n in changed else ' (values unchanged)')
+              for n in retyped]
+    notes += [f'values {n}' for n in changed if n not in retyped]
+
+    if changed or pa_['rows'] != pb['rows']:
+        return 'content', notes
+    if added or dropped or retyped:
+        return 'schema', notes
+    return ('metadata' if pages_hash(a) == pages_hash(b) else 'encoding'), notes
+
+
+@click.group()
+def cli():
+    """Parquet content hashing + difference classification."""
+
+
+@cli.command('hash')
+@click.option('-c', '--columns', is_flag=True, help="Also print each column's hash")
+@click.option('-j', '--json', 'as_json', is_flag=True, help="Emit JSON")
+@click.argument('paths', nargs=-1, required=True, type=click.Path(exists=True))
+def hash_cmd(columns: bool, as_json: bool, paths: tuple[str, ...]):
+    """Print the writer-independent content hash of each PATH."""
+    out = {
+        p: {
+            'algo': ALGO,
+            'content': (pr := profile(p))['content'],
+            'pages': pages_hash(p),
+            'md5': file_md5(p),
+            **({'columns': {n: {'dtype': d, 'values': v} for n, (d, v) in pr['columns'].items()}} if columns else {}),
+        }
+        for p in paths
+    }
+    if as_json:
+        import json
+        print(json.dumps(out, indent=2))
+        return
+    for p, d in out.items():
+        print(f"{d['content']}  {p}")
+        for n, c in d.get('columns', {}).items():
+            print(f"  {c['values']}  {n}  ({c['dtype']})")
+
+
+@cli.command('cmp')
+@click.option('-q', '--quiet', is_flag=True, help="Exit status only, no output")
+@click.argument('a', type=click.Path(exists=True))
+@click.argument('b', type=click.Path(exists=True))
+def cmp_cmd(quiet: bool, a: str, b: str):
+    """Classify how two parquet files differ.
+
+    Exits 0 when the logical content matches (identical / metadata / encoding)
+    and 1 when it does not, so this drops into `&&` chains and CI.
+    """
+    verdict, cols = classify(a, b)
+    if not quiet:
+        print(verdict)
+        if verdict != 'identical':
+            wa, wb = (pq.ParquetFile(x).metadata.created_by for x in (a, b))
+            if wa != wb:
+                print(f"  writer: {wa} -> {wb}")
+            za, zb = os.path.getsize(a), os.path.getsize(b)
+            if za != zb:
+                print(f"  size: {za:,} -> {zb:,} ({zb - za:+,}, {100 * (zb - za) / za:+.2f}%)")
+        for n in cols:
+            print(f"  {n}")
+    sys.exit(1 if verdict == 'content' else 0)
+
+
+HASH_CHANGED = re.compile(
+    r'⚠ (?P<path>\S+): output hash changed '
+    r'\(recorded (?P<recorded>[0-9a-f]{32}) → produced (?P<produced>[0-9a-f]{32})\)'
+)
+
+
+def s3_get(url: str, dest: str) -> bool:
+    r = subprocess.run(['aws', 's3', 'cp', url, dest, '--quiet'], capture_output=True, text=True)
+    if r.returncode:
+        click.echo(f"    fetch failed: {url}\n    {r.stderr.strip()}", err=True)
+    return r.returncode == 0
+
+
+def blob_url(remote: str, md5: str) -> str:
+    return f'{remote}/files/md5/{md5[:2]}/{md5[2:]}'
+
+
+@cli.command('run-log')
+@click.option('-d', '--dir', 'workdir', default='tmp/pqt-audit', show_default=True, help="Where to cache fetched blobs")
+@click.option('-n', '--limit', type=int, help="Only classify the first N entries")
+@click.option('-p', '--prod-remote', default='s3://nj-crashes/.dvc', show_default=True)
+@click.option('-r', '--reproc-remote', default='s3://nj-crashes/.dvc-reproc', show_default=True)
+@click.argument('log', type=click.Path(exists=True))
+def run_log_cmd(workdir: str, limit: int | None, prod_remote: str, reproc_remote: str, log: str):
+    """Classify every `output hash changed` warning in a `dvx run` LOG.
+
+    dvx reports the recorded and produced md5s but can't say *why* they differ.
+    Each one addresses a blob in the prod and reproc cache remotes respectively,
+    so fetching both and content-comparing turns 116 scary hash changes into a
+    count of how many are real.
+    """
+    entries = [m.groupdict() for m in HASH_CHANGED.finditer(open(log).read())]
+    entries = [e for e in entries if e['path'].endswith(('.parquet', '.pqt'))]
+    if limit:
+        entries = entries[:limit]
+    os.makedirs(workdir, exist_ok=True)
+    tally: dict[str, int] = {}
+    for e in entries:
+        a = os.path.join(workdir, e['recorded'])
+        b = os.path.join(workdir, e['produced'])
+        ok = (os.path.exists(a) or s3_get(blob_url(prod_remote, e['recorded']), a)) and \
+             (os.path.exists(b) or s3_get(blob_url(reproc_remote, e['produced']), b))
+        if not ok:
+            tally['unavailable'] = tally.get('unavailable', 0) + 1
+            print(f"unavailable  {e['path']}")
+            continue
+        verdict, notes = classify(a, b)
+        tally[verdict] = tally.get(verdict, 0) + 1
+        print(f"{verdict:<10s}   {e['path']}")
+        for n in notes:
+            print(f"               {n}")
+    print()
+    for k in ('identical', 'metadata', 'encoding', 'schema', 'content', 'unavailable'):
+        if k in tally:
+            print(f"  {k:<12s} {tally[k]}")
+    sys.exit(1 if tally.get('content') else 0)
+
+
+if __name__ == '__main__':
+    cli()
