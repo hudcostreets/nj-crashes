@@ -14,3 +14,8 @@ meta:
       # and it was caught by the global `*.db` excludesfile, so it never showed as
       # untracked. Reproc round 3 died here with `ValueError: Table sri_mp not found`.
       /nj_sri_mp.db: 6c1e4917dcbd23e5ad48d277ae622dc1
+      # `njdot/crashes.py` reads `crash_dupes/merged.pqt` when building 2023. Declaring
+      # the producer stage was not enough — without this edge both sat in the same level
+      # and raced (round 5: crash_dupes completed in 14.9s, but crashes.parquet had
+      # already read the missing file).
+      /njdot/data/2023/crash_dupes: 2d28a23cb5d385ce13e8a2cf777d455c.dir
