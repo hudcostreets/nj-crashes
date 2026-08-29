@@ -6,6 +6,7 @@ meta:
     # wait reported `co-output not produced` every round. Explicit flag rather than
     # leaning on the cmd-with-no-`outs` inference, which also (wrongly) catches
     # genuine driver stages like `www/public/njsp/projections`.
+    side_effect: true
     deps:
       # `update_mc` shells out to `dvc pull` for this when absent —
       # declare it so dvx materializes it (fresh-machine/Batch runs).
