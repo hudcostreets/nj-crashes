@@ -172,6 +172,21 @@ normalization pipeline; no UI deps.
   a resume-from-last-chunk mode.
 - Statewide map at zoom 8 fetches r7 across 153 shards instead of
   r6 single-file — covered under Map v2 Phase 2 cleanup above.
+- Replace the per-commit/per-blob GitHub API fallbacks in
+  `njsp/commit_crashes.py` (`GithubCommit.from_sha`,
+  `load_pqt_github`, `git fetch --depth=2` per SHA) with a single
+  partial-clone deepen. `crash_log` walks 1,348 `FAUQStats*.xml`
+  commits; on a shallow clone that becomes ~1.3k API round trips
+  needing a token. `git clone --filter=blob:none` is 60 MB / 3.2s
+  with full history and protocol-batched lazy blob fetches
+  (`batch/Dockerfile` now does this). The stage should deepen its
+  own clone when it runs out of local depth rather than falling
+  back to the API — ideally fetching just `$hwm..HEAD`.
+  Related dvx ask: express "these paths, including history since
+  $sha" as a first-class dep, so the stage records the SHA it ran
+  at and dvx checks for commits touching those paths since. That
+  would let `crash_log` stop reading its own output entirely —
+  freshness key and resume cursor are separate jobs.
 
 ## Done recently
 

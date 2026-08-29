@@ -95,13 +95,32 @@ dvx run
 # Run specific target
 dvx run njdot/data/crashes.parquet.dvc
 
-# Add a file with computation metadata
-dvx add output.parquet --dep input.parquet --cmd "python process.py"
+# Track a file/dir (leaf, or a stage's output). `dvx add` takes no --dep/--cmd:
+# write `meta.computation` into the .dvc by hand afterwards.
+dvx add output.parquet
 
-# Push/pull data from S3
+# Push/pull data from S3 (-r/--remote selects a non-default remote)
 dvx push
 dvx pull
 ```
+
+**Dep-path resolution** (`dvx/run/dvc_files.py`): a dep path with a leading `/`
+is repo-root-relative; one starting with the `.dvc`'s own directory is treated
+as repo-root-relative too (back-compat); **anything else resolves relative to
+the `.dvc`'s directory**. A cross-directory dep written bare therefore resolves
+to a path that doesn't exist, and the ordering edge is dropped silently — the
+stage then runs before its input is built. Always use the `/`-prefixed form for
+deps outside the `.dvc`'s own directory.
+
+**Stage cwd**: `dvx run` executes each cmd with cwd set to the *artifact's*
+directory, not the repo root. Bare script invocations in a nested `.dvc` need a
+`cd ../../.. &&` prefix. (`njsp` cmds are immune — `njsp/cli/base.py` chdirs to
+`ROOT_DIR`; `njdot` cmds use absolute path constants from `njdot/paths.py`.)
+
+**Side-effect stages** carry `meta.computation.side_effect: true` — deploys,
+notifications, upstream fetches, and pure co-output *driver* stages that
+produce no artifact of their own. `batch/reproc-targets` derives the reproc
+exclusion list from that flag, so mark the stage rather than editing a list.
 
 ### Key DVX-tracked Files
 - `njdot/data/crashes.parquet.dvc` - Combined crashes (depends on yearly Accidents.pqt)
