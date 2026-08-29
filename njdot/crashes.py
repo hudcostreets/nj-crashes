@@ -391,6 +391,12 @@ def load(
         export_pk_mapping: bool = False,
         compute_victims: bool = False,
 ) -> pd.DataFrame:
+    # `write_pqt=False` here so `load_tbl` does *not* persist yet: victim counts
+    # (`tk`/`ti` and the 25 VTC columns) are added below, and writing before that
+    # dropped them from `crashes.parquet` — the persisted file lacked `tk`, which
+    # broke every downstream consumer that reads it (the matcher, `three_way`, the
+    # `.db` builds). Reproc round 9 surfaced this: `tk` was computed in-memory
+    # (`tk=12,245`) but never written. We persist once, at the end, with counts.
     df = load_tbl(
         tbl='crashes',
         years=years,
@@ -398,8 +404,11 @@ def load(
         renames=renames,
         astype=astype,
         cols=cols,
-        read_pqt=read_pqt,
-        write_pqt=write_pqt,
+        # Intending to write ⇒ force a recompute: `load_tbl`'s own
+        # "don't read when writing" guard keyed off `write_pqt`, which we now
+        # pass as False (we persist below instead), so carry the guard here.
+        read_pqt=False if write_pqt else read_pqt,
+        write_pqt=False,
         pqt_path=pqt_path,
         n_jobs=n_jobs,
         map_year_df=map_year_df,
@@ -425,6 +434,13 @@ def load(
         loaded_years = sorted(df['year'].unique().tolist())
         err(f"Computing victim counts for years: {loaded_years[0]}-{loaded_years[-1]}")
         df = compute_victim_counts(df, loaded_years)
+
+    # Persist now, after victim counts, so `tk`/`ti`/VTC land in the file.
+    if write_pqt:
+        from njdot.paths import DOT_DATA
+        pqt = pqt_path or f'{DOT_DATA}/crashes.parquet'
+        df.to_parquet(pqt)
+        err(f"Wrote {pqt} ({len(df):,} rows, {len(df.columns)} cols)")
 
     return df
 
