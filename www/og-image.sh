@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Generate the homepage OG mosaic (Plot1 + Recent Fatal Crashes table)
-# and upload to s3://nj-crashes/og.jpg. SE-only DVX stage — no local
+# and upload to $NJC_S3/og.jpg. SE-only DVX stage — no local
 # artifact tracked. The site's <meta og:image> points at the S3 URL,
 # so each daily run overwrites in place.
 #
@@ -24,10 +24,14 @@ TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 JPG="$TMPDIR/og.jpg"
 
+# Mirrors `nj_crashes.paths.S3`; override to publish somewhere other than
+# prod (e.g. a full-DAG reproc audit).
+S3_ROOT="${NJC_S3:-s3://nj-crashes}"
+
 OG_OUT_PATH="$JPG" npx playwright test e2e/og-screenshot.spec.ts --reporter=list
 
-aws s3 cp "$JPG" s3://nj-crashes/og.jpg \
+aws s3 cp "$JPG" "$S3_ROOT/og.jpg" \
     --content-type image/jpeg \
     --cache-control "public, max-age=300"
 
-echo "Uploaded $(wc -c < "$JPG") bytes to s3://nj-crashes/og.jpg" >&2
+echo "Uploaded $(wc -c < "$JPG") bytes to $S3_ROOT/og.jpg" >&2

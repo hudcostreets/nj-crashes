@@ -28,6 +28,33 @@ Companion to `~/c/dvx/specs/batch-executor.md` (the reusable `dvx batch` tooling
 | Cells (s2 raw, cells-s2.db, s2_pyramid) | 3 | Pyramid is the one that OOMs a 7 GB GHA runner; fits easily in 64 GiB |
 | **Excluded: side effects** | ~6 | `api/d1-import`, `cells-api/deploy`, `www/deploy`, `slack_post`, `og-image`, `refresh` (mutates upstream state). These are deploys/notifications, not data — reproc must never fire them. Mechanism: an explicit exclude list in the submit wrapper, or run named data-root targets instead of the bare-`dvx run` everything mode. |
 
+## Redirecting side-effect uploads (`$NJC_S3`)
+
+Some stages publish to S3 as a *command side effect*, not as a tracked `outs`
+— so they can't be excluded by dropping a target. The blocking case is
+`njsp update_pqts --s3` (`njsp/data/crashes.parquet.dvc` +
+`www/public/njsp/crashes.db.dvc`): its co-output parquet is needed by half the
+downstream DAG, so the cmd runs regardless of which co-output is targeted, and
+it would overwrite prod's `njsp/data/{crashes.parquet,crashes.db}`.
+
+Every such URL in the pipeline derives from a single root, so one env var
+redirects them all:
+
+    NJC_S3=s3://nj-crashes/.reproc
+
+`nj_crashes.paths.S3` reads it (default `s3://nj-crashes`); `njsp/paths.py`'s
+`*_S3` constants and `njdot/paths.py`'s `DOT_DATA_S3` derive from it, and
+`www/og-image.sh` mirrors it in shell. Pass it through with
+`dvx batch submit -e NJC_S3=…`.
+
+This redirects **reads** as well as writes, which is deliberate: `pqt_url`'s
+S3 fallback (`njdot/data.py`) resolves under the same root, so a stage with an
+undeclared per-year dep can no longer be silently rescued by the prod mirror —
+it fails loudly instead. That fallback is exactly what masked the two dep-less
+Level-1 stages (`njsp/data/muni_codes.parquet`, `www/public/njdot/crashes.db`)
+on dev machines. Expect the audit to surface any remaining ones as
+`FileNotFoundError` rather than a quiet success.
+
 ## Fanout analysis (EM)
 
 - Per-year `rawdata pqt` ≈ 1–5 min each serially; 125 stage-instances / 16 workers ≈ **20–40 min** for the wide level.

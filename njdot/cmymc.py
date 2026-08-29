@@ -31,6 +31,7 @@ from njdot.paths import (
     AASHTO_SUPPLEMENTED_OCCUPANTS,
     AASHTO_SUPPLEMENTED_PEDESTRIANS,
     CMYMC_DB,
+    DOT_DATA_S3,
 )
 
 err = partial(print, file=sys.stderr)
@@ -352,9 +353,6 @@ def cmymc(occupants_supplement: str, pedestrians_supplement: str,
     yv = sum_idx_col(ymv, 'm', str(out), tbl_suffix='v', page_size=2**16)
 
     if not skip_upload:
-        import boto3
         from os.path import basename
-        err(f'Uploading {out} to s3://nj-crashes/njdot/data/{basename(out)}…')
-        s3 = boto3.client('s3')
-        s3.upload_file(out, Bucket='nj-crashes', Key=f'njdot/data/{basename(out)}')
-        err('Upload complete.')
+        from nj_crashes.utils.s3 import upload
+        upload(str(out), f'{DOT_DATA_S3}/{basename(out)}')

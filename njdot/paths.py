@@ -1,14 +1,16 @@
 from os.path import join
 
-from nj_crashes.paths import PUBLIC_DIR, ROOT_DIR
+from nj_crashes.paths import PUBLIC_DIR, ROOT_DIR, S3
 from njdot.tbls import parse_type
 
 NJDOT_DIR = join(ROOT_DIR, 'njdot')
 DOT_DATA = join(NJDOT_DIR, 'data')
-DOT_DATA_S3 = 's3://nj-crashes/njdot/data'
+DOT_DATA_S3 = f'{S3}/njdot/data'
 
 
 WWW_DOT = join(PUBLIC_DIR, 'njdot')
+MAP_DIR = join(WWW_DOT, 'map')
+MAP_S3 = f'{S3}/njdot/map'
 WWW_DATA_DOT = join(PUBLIC_DIR, 'data', 'njdot')
 CNS = f'{WWW_DOT}/with_cns.parquet'
 CRASHES_PQT = f'{DOT_DATA}/crashes.parquet'

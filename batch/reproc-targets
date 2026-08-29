@@ -1,25 +1,40 @@
 #!/usr/bin/env bash
-# Print the repo's *executable* data-DAG targets: tracked `.dvc`s that
-# carry a `cmd:`, minus the side-effect stages (deploys, D1 imports,
-# notifications, and fetch stages that mutate tracked inputs).
+# Print the repo's *executable* data-DAG targets for a full reproc: every
+# tracked `.dvc` carrying a `cmd:`, minus those explicitly marked
+# `side_effect: true`.
+#
+# The exclusion is derived, not hand-curated. `meta.computation.side_effect`
+# is a dvx-native flag (`dvx.run.dvc_files.DVCFileInfo.is_side_effect`), so
+# marking a stage documents its nature once, in the stage itself, instead of
+# in a list here that drifts. What stays marked is only what a reproc must
+# never fire on semantic grounds:
+#
+#   - publishers / deploys: `www/deploy`, `cells-api/deploy`, `api/d1-import`,
+#     `www/public/njdot/map_sync`, `www/og-image`
+#   - notifications:        `njsp/data/slack_post`
+#   - upstream fetches:     `njsp/data/{refresh,summaries}` (sources, not
+#     computations — a reproc pins them; the daily refreshes them)
+#
+# Everything whose destination was merely *hardcoded* now honours `$NJC_S3`
+# (see `nj_crashes.paths.S3`) and is therefore in scope: the five
+# `njdot compute db -t <tbl>` stages, which used to be excluded only because
+# they uploaded to prod S3 unconditionally.
+#
+# Note `njsp/data/harmonize.dvc` and `www/public/njsp/projections.dvc` have a
+# cmd but no `outs`, so dvx *infers* side-effect for them. They are neither —
+# they're co-output driver stages whose real outputs are recorded in sibling
+# `.dvc`s. Keying off the explicit flag rather than `is_side_effect` keeps
+# them in scope, which is why the two predicates differ here.
 #
 # Cmd-less leaves (raw zips/XMLs/PDFs) are omitted deliberately: `dvx run`
-# can only ever pull them, and dvx materializes them as deps of the
-# stages below. Listing them would just inflate the Batch command.
-#
-# Also excluded: the five `njdot compute db -t <tbl>` stages, which
-# upload their .db to prod S3 as a cmd side effect. They are DAG leaves
-# (nothing consumes their outputs), so dropping them costs only their
-# own verification and keeps the audit from writing to prod.
+# can only ever pull them, and dvx materializes them as deps of the stages
+# below. Listing them would just inflate the Batch command.
 #
 # Usage: dvx batch submit --force --remote reproc $(batch/reproc-targets)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 git ls-files '*.dvc' | while read -r f; do
-    grep -q '^    cmd:' "$f" && echo "$f"
-done | grep -vxF -e api/d1-import.dvc -e cells-api/deploy.dvc \
-  -e www/deploy.dvc -e www/og-image.dvc -e njsp/data/slack_post.dvc \
-  -e njsp/data/refresh.dvc -e njsp/data/summaries.dvc -e www/public/njdot/map_sync.dvc \
-  -e www/public/njdot/crashes.db.dvc -e www/public/njdot/drivers.db.dvc \
-  -e www/public/njdot/occupants.db.dvc -e www/public/njdot/pedestrians.db.dvc \
-  -e www/public/njdot/vehicles.db.dvc
+    grep -q '^    cmd:' "$f" || continue
+    grep -q '^    side_effect: true$' "$f" && continue
+    echo "$f"
+done

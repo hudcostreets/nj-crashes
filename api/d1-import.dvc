@@ -1,6 +1,7 @@
 meta:
   computation:
     cmd: bash scripts/d1-import.sh --inplace njsp-crashes cmymc cells-s2
+    side_effect: true
     deps:
       /www/public/njsp/crashes.db: 210e6a09e1ca30e870a2f865eebbf363
       /www/public/njdot/cmymc.db: 5002662808a1bf389f00eff5b08aee76

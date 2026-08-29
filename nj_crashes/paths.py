@@ -1,4 +1,4 @@
-from os import path
+from os import environ, path
 from os.path import basename, dirname, join
 
 PKG_DIR = dirname(__file__)
@@ -19,8 +19,13 @@ COUNTY_CITY_CODES_PQT = join(DATA_DIR, 'county-city-codes.parquet')
 
 MUNIS_GEOJSON = join(PUBLIC_DIR, "Municipal_Boundaries_of_NJ.geojson")
 
-BKT = 'nj-crashes'
-S3 = f's3://{BKT}'
+# Root for pipeline side-effect artifacts published to S3 (distinct from the
+# DVX cache remote, which `.dvc/config` configures). Every `*_S3` constant in
+# `njsp/paths.py` / `njdot/paths.py` derives from this, for both the uploads
+# and the S3 fallbacks downstream stages read from — so overriding it
+# redirects a whole pipeline run away from prod, e.g. a full-DAG reproc audit
+# under `NJC_S3=s3://nj-crashes/.reproc`.
+S3 = environ.get('NJC_S3', 's3://nj-crashes').rstrip('/')
 
 
 def relpath(dst: str, src: str = ROOT_DIR) -> str:

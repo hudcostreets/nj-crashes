@@ -1,6 +1,7 @@
 meta:
   computation:
     cmd: ./og-image.sh
+    side_effect: true
     deps:
       /njsp/data/crash-log.parquet: 49e25378a49e6da9a4d694c61ed53d02
     git_deps:
