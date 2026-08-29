@@ -25,6 +25,12 @@ CMYMC_DB = f'{WWW_DOT}/cmymc.db'
 
 MC_PQT = join(DOT_DATA, 'muni_codes.parquet')
 
+# 2023-only: `njdot/merge_2023_dupes.py` output, read back by `merge_vo_dupes`
+# when deduping raw V/O. Absolute so it resolves under `dvx run`, which sets cwd
+# to the *artifact's* directory rather than the repo root.
+CRASH_DUPES_DIR = join(DOT_DATA, '2023', 'crash_dupes')
+CRASH_DUPES_MERGED = join(CRASH_DUPES_DIR, 'merged.pqt')
+
 # AASHTO Crash.csv pipeline outputs (`njdot aashto …` subcmds)
 AASHTO_COMBINED_CRASHES = f'{DOT_DATA}/aashto_combined_crashes.parquet'
 AASHTO_SUPPLEMENTED_CRASHES = f'{DOT_DATA}/aashto_supplemented_crashes.parquet'

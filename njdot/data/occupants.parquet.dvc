@@ -31,3 +31,6 @@ meta:
       njdot/data/2022/NewJersey2022Occupants.pqt: cc54563f6f56745588b42d54be3f4adf
       njdot/data/2023/NewJersey2023Occupants.pqt: 55e2f9299f30d45d0435080bcc733af4
       njdot/data/crash_pk_mappings.parquet: ee26174bfdf221040550ce9776e2bcff
+      # `merge_vo_duplicates` (2023 only) reads `crash_dupes/merged.pqt` to prefer V/O
+      # rows from the TCASE (geocoded) crash version.
+      /njdot/data/2023/crash_dupes: 2d28a23cb5d385ce13e8a2cf777d455c.dir

@@ -14,9 +14,10 @@ import pandas as pd
 from typing import Optional
 
 from nj_crashes.utils.log import err
+from njdot.paths import CRASH_DUPES_MERGED
 
 
-def load_crash_version_map(crash_dupes_path: str = 'njdot/data/2023/crash_dupes/merged.pqt') -> dict:
+def load_crash_version_map(crash_dupes_path: str = CRASH_DUPES_MERGED) -> dict:
     """
     Load crash duplicate metadata and classify crashes as UCASE/TCASE.
 

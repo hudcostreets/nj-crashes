@@ -19,12 +19,15 @@ Run:
 import sys
 import time
 from functools import partial
+from os.path import join
 from pathlib import Path
 
 import click
 import pandas as pd
 import requests
 from concurrent.futures import ThreadPoolExecutor
+
+from nj_crashes.paths import ROOT_DIR
 
 err = partial(print, file=sys.stderr)
 
@@ -66,7 +69,7 @@ def fetch_page(offset: int, retries: int = 3) -> list[dict]:
 
 @click.command("bulk-dl")
 @click.option("-c", "--concurrency", default=8, show_default=True, type=int)
-@click.option("-o", "--output", default="njdot/data/nj_mp_tenths.parquet", show_default=True)
+@click.option("-o", "--output", default=join(ROOT_DIR, "njdot/data/nj_mp_tenths.parquet"), show_default=True)
 def main(concurrency: int, output: str):
     """Paginate the MP FeatureServer and write all rows to parquet."""
     err(f"Counting total rows…")

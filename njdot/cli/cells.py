@@ -36,6 +36,7 @@ from njdot import s2
 from njdot.cli.base import compute
 from njdot.map_base import _build_base
 from njdot.load import load_crashes_with_aashto
+from njdot.paths import ROOT_DIR
 
 
 # Subset of crashes.parquet that `_build_base` needs (mirrors export_map_v2).
@@ -54,7 +55,7 @@ SCHEMA_VERSION = 5
 
 SLD_COLS = ('sld_name', 'cross_sld_name', 'mun', 'county')
 
-OUT_DIR_DEFAULT = Path('data/cells')
+OUT_DIR_DEFAULT = Path(ROOT_DIR) / 'data' / 'cells'
 CELLS_DB_COUNT_COLS = ('n_fatal', 'n_inj_ped', 'n_inj_other', 'n_pdo', 'n_vehs')
 
 # S2 steps 4x area / 2x linear per level (vs H3's 7x / 2.65x), so the same

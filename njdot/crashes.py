@@ -54,9 +54,16 @@ def compute_victim_counts(crashes_df: pd.DataFrame, years: list[int]) -> pd.Data
     crash_pk = ['year', 'cc', 'mc', 'case']
 
     # Load raw pedestrians (only map_year_df, not map_df which normalizes with crashes)
+    # `read_pqt=False` is load-bearing: without it `load_tbl` reads
+    # `njdot/data/pedestrians.parquet` whenever that file happens to exist. That file
+    # is *downstream* of this stage (its `map_df` joins against `crashes.load()`), is
+    # keyed by `crash_id` rather than `(year, cc, mc, case)`, and so blows up with
+    # `ArrowInvalid: No match for FieldRef.Name(year)`. The stage then only works on a
+    # machine that doesn't already have it — which is why the reproc audit never saw it.
     err("Loading raw pedestrians for victim counts...")
     peds = load_tbl(
         'pedestrians',
+        read_pqt=False,
         years=years,
         renames=peds_mod.renames,
         astype=peds_mod.astype,
@@ -69,6 +76,7 @@ def compute_victim_counts(crashes_df: pd.DataFrame, years: list[int]) -> pd.Data
     err("Loading raw occupants for victim counts...")
     occs = load_tbl(
         'occupants',
+        read_pqt=False,
         years=years,
         renames=occs_mod.renames,
         astype=occs_mod.astype,

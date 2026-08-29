@@ -19,6 +19,8 @@ import sys
 from functools import partial
 from pathlib import Path
 
+from njdot.paths import DOT_DATA, raw_pqt_path
+
 err = partial(print, file=sys.stderr)
 
 
@@ -37,10 +39,10 @@ def write_dupe_outputs(
         pk_cols: Primary key columns
         entity_name: Entity type name (e.g., "vehicles", "occupants")
         year: Year being processed
-        output_base: Base output directory (default: njdot/data/{year}/{entity_name}_dupes)
+        output_base: Base output directory (default: `{DOT_DATA}/{year}/{entity_name}_dupes`)
     """
     if output_base is None:
-        output_base = f'njdot/data/{year}/{entity_name}_dupes'
+        output_base = f'{DOT_DATA}/{year}/{entity_name}_dupes'
 
     # Find duplicates
     dupe_mask = df.duplicated(pk_cols, keep=False)
@@ -102,7 +104,7 @@ def write_dupe_outputs(
 
 def load_raw_2023(entity_type: str) -> pd.DataFrame:
     """Load raw 2023 parquet before deduplication."""
-    path = f'njdot/data/2023/NewJersey2023{entity_type}.pqt'
+    path = raw_pqt_path(entity_type, 2023)
     return pd.read_parquet(path)
 
 

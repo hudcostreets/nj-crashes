@@ -15,6 +15,8 @@ from typing import Optional
 
 # Import canonical merge logic
 from njdot.merge_dupes import classify_case, merge_ucase_tcase
+from njdot.paths import CRASH_DUPES_DIR, raw_pqt_path
+
 
 def normalize_pd_name(name: str) -> str:
     """Normalize Police Department names for comparison."""
@@ -218,7 +220,7 @@ def main():
 
     # Load duplicates
     err("Loading 2023 crash duplicates...")
-    dupes = pd.read_parquet('njdot/data/2023/NewJersey2023Accidents.pqt')
+    dupes = pd.read_parquet(raw_pqt_path('accidents', 2023))
 
     pk_cols = ['County Code', 'Municipality Code', 'Department Case Number']
     dupe_mask = dupes.duplicated(pk_cols, keep=False)
@@ -332,10 +334,10 @@ def main():
 
     # Write outputs
     import os
-    merges_path = 'njdot/data/2023/crash_dupes/merges.pqt'
-    merges_all_path = 'njdot/data/2023/crash_dupes/merges-all.pqt'
-    merged_path = 'njdot/data/2023/crash_dupes/merged.pqt'
-    unmerged_dir = 'njdot/data/2023/crash_dupes/unmerged'
+    merges_path = f'{CRASH_DUPES_DIR}/merges.pqt'
+    merges_all_path = f'{CRASH_DUPES_DIR}/merges-all.pqt'
+    merged_path = f'{CRASH_DUPES_DIR}/merged.pqt'
+    unmerged_dir = f'{CRASH_DUPES_DIR}/unmerged'
 
     merges_df.to_parquet(merges_path, index=False)
     err(f"Wrote {merges_path}: {len(merges_df)} cleanly merged records")

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Optional
 
 from nj_crashes.utils.log import err
+from njdot.paths import DOT_DATA
 
 
 def analyze_and_write_dupes(
@@ -27,7 +28,7 @@ def analyze_and_write_dupes(
         pk_cols: Primary key columns
         entity_name: Entity type name (e.g., "vehicles", "occupants")
         year: Year being processed
-        output_base: Base output directory (default: njdot/data/{year}/{entity_name}_dupes)
+        output_base: Base output directory (default: `{DOT_DATA}/{year}/{entity_name}_dupes`)
         write_outputs: Whether to write side-output files
 
     Returns:
@@ -87,7 +88,7 @@ def analyze_and_write_dupes(
     # Write side outputs if requested
     if write_outputs:
         if output_base is None:
-            output_base = f'njdot/data/{year}/{entity_name}_dupes'
+            output_base = f'{DOT_DATA}/{year}/{entity_name}_dupes'
 
         output_dir = Path(output_base)
         output_dir.mkdir(parents=True, exist_ok=True)

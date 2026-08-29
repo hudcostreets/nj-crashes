@@ -43,6 +43,8 @@ import click
 import pandas as pd
 from tqdm import tqdm
 
+from njdot.paths import DOT_DATA
+
 err = partial(print, file=sys.stderr)
 
 UNDEFINED = "[object Undefined]"
@@ -429,7 +431,7 @@ def process_row(row_idx: int, row: list[str], header: list[str], acc: Acc):
 
 @click.command()
 @click.option("-y", "--year", type=int, required=True)
-@click.option("-o", "--out-dir", type=click.Path(path_type=Path), default=Path("njdot/data"))
+@click.option("-o", "--out-dir", type=click.Path(path_type=Path), default=Path(DOT_DATA))
 @click.option("-n", "--limit", type=int, help="Stop after N data rows")
 @click.option("-S", "--strict/--lenient", default=False, help="Fatal on any data quality issue (default: only fatal on relational breaks)")
 @click.argument("csv_path", type=click.Path(exists=True, path_type=Path))
