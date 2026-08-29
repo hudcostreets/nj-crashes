@@ -9,7 +9,7 @@ meta:
     cmd: cd ../../.. && njdot compute cells raw -f
     deps:
       /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
-      /njdot/data/aashto_supplemented_crashes.parquet: 92ac7e301eab0f949748c6061317cf9f
+      /njdot/data/aashto_supplemented_crashes.parquet: 3e7ea4b4c1692b2f2f1d88ba699d69cf
       # `load_crashes_with_aashto` merges this sidecar when it exists (fatals
       # recovered via NJSP `LOCATION` parsing, #78). Undeclared, it forked
       # local builds (sidecar present, +616 rows) from CI builds (absent).
