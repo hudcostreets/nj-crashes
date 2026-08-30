@@ -40,8 +40,11 @@ ENV PATH="/app/.venv/bin:$PATH" \
 RUN git config --global user.name "dvx-batch" && \
     git config --global user.email "dvx-batch@localhost"
 
-# Match the dvx-batch convention: entrypoint `dvx`, submitted command
-# `["run", ...]` (`dvx batch submit` builds it). Full-DAG runs with the
-# side-effect exclusions pass targets at submit time:
+# Push-back entrypoint: `git push`es dvx's per-stage `.dvc` commits when
+# $FARGATE_GITHUB_RW_TOKEN is present (see batch/entrypoint.sh), else runs
+# read-only. It `exec dvx "$@"`, so the submitted command stays `["run", ...]`
+# (`dvx batch submit` builds it). Full-DAG runs pass targets at submit time:
 #   dvx batch submit $(batch/reproc-targets)
-ENTRYPOINT ["dvx"]
+# Copied to / (not /app) so the repo clone can't shadow it.
+COPY entrypoint.sh /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
