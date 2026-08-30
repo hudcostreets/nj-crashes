@@ -36,5 +36,13 @@ cd "$(dirname "$0")/.."
 git ls-files '*.dvc' | while read -r f; do
     grep -q '^    cmd:' "$f" || continue
     grep -q '^    side_effect: true$' "$f" && continue
+    # Upstream `fetch:` stages (`njsp/data/{refresh,summaries}`) are sources, not
+    # computations: a reproc *pins* them and reproduces what's downstream; the
+    # daily refreshes them. Re-firing them re-downloads external data (NJSP XML +
+    # the annual-report PDF via tabula/java), which is non-deterministic and pulls
+    # in a java dep the reproc image needn't carry. They have no `outs:` so dvx
+    # infers side-effect, but the explicit-flag exclusion above (kept narrow so
+    # co-output drivers like `harmonize`/`projections` stay in scope) misses them.
+    grep -q '^    fetch:$' "$f" && continue
     echo "$f"
 done
