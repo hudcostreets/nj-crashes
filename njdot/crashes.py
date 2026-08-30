@@ -51,7 +51,21 @@ def compute_victim_counts(crashes_df: pd.DataFrame, years: list[int]) -> pd.Data
     for col in VTC_COLS:
         crashes_df[col] = 0
 
+    # Victims (occupants/pedestrians) carry their *original* (cc, mc); crashes have
+    # since been geocoded (Port Authority + empty-muni fixes in rawdata/pqt.py), which
+    # can change (cc, mc) away from the preserved (cc0, mc0). Aggregating victims by
+    # their raw (cc, mc) is correct, but the *merge* must align them to the crash's
+    # pre-geocode key: victims' (year, cc, mc, case) == crashes' (year, cc0, mc0, case).
+    # Merging on the geocoded (cc, mc) instead silently drops every geocoded crash's
+    # victims (measured: ~149k crashes, -210k `ti`) — the same denormalized-PK failure
+    # that V/D/O/P avoid via `crash_pk_mappings` in their `map_df`.
     crash_pk = ['year', 'cc', 'mc', 'case']
+    if not {'cc0', 'mc0'}.issubset(crashes_df.columns):
+        raise ValueError(
+            "compute_victim_counts requires cc0/mc0 on crashes to align victims to "
+            "pre-geocode PKs; got columns without them"
+        )
+    victim_merge_pk = ['year', 'cc0', 'mc0', 'case']
 
     # Load raw pedestrians (only map_year_df, not map_df which normalizes with crashes)
     # `read_pqt=False` is load-bearing: without it `load_tbl` reads
@@ -113,7 +127,9 @@ def compute_victim_counts(crashes_df: pd.DataFrame, years: list[int]) -> pd.Data
     for col in VTC_COLS:
         if col not in peds_agg.columns:
             peds_agg[col] = 0
-    peds_agg = peds_agg[VTC_COLS].reset_index()
+    # Rename to the crash's pre-geocode key so the merge aligns raw victim (cc, mc)
+    # with crashes' (cc0, mc0).
+    peds_agg = peds_agg[VTC_COLS].reset_index().rename(columns={'cc': 'cc0', 'mc': 'mc0'})
 
     # Aggregate occupants by crash PK and VTC
     err("Aggregating occupant victim counts...")
@@ -121,7 +137,7 @@ def compute_victim_counts(crashes_df: pd.DataFrame, years: list[int]) -> pd.Data
     for col in VTC_COLS:
         if col not in occs_agg.columns:
             occs_agg[col] = 0
-    occs_agg = occs_agg[VTC_COLS].reset_index()
+    occs_agg = occs_agg[VTC_COLS].reset_index().rename(columns={'cc': 'cc0', 'mc': 'mc0'})
 
     # Merge victim counts into crashes
     err("Merging victim counts with crashes...")
@@ -130,7 +146,7 @@ def compute_victim_counts(crashes_df: pd.DataFrame, years: list[int]) -> pd.Data
     # Merge pedestrian counts
     crashes_df = crashes_df.merge(
         peds_agg,
-        on=crash_pk,
+        on=victim_merge_pk,
         how='left',
         suffixes=('', '_peds')
     )
@@ -144,7 +160,7 @@ def compute_victim_counts(crashes_df: pd.DataFrame, years: list[int]) -> pd.Data
     # Merge occupant counts
     crashes_df = crashes_df.merge(
         occs_agg,
-        on=crash_pk,
+        on=victim_merge_pk,
         how='left',
         suffixes=('', '_occs')
     )
