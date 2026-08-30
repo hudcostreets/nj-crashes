@@ -1,6 +1,6 @@
 outs:
-- md5: ebefcf842124ee67c8b0ddcd0c51043d
-  size: 10439922
+- md5: 49608096e7a9ee6931f99b6ba560656d
+  size: 10405439
   hash: md5
   path: aashto_supplemented_vehicles.parquet
 meta:
@@ -12,11 +12,11 @@ meta:
       /njdot/aashto/to_njdot_schema.py: 358a48b822f7e461f9d2ebef97eac0bbff04958f
     deps:
       /njdot/data/2023/vehicles.parquet: 0203a9b9496e90c31c82fd1940bdfd3e
-      /njdot/data/2023/crashes.parquet: 23abc6794e13d6d8b035dfe866de86b9
+      /njdot/data/2023/crashes.parquet: affeb3aa3e962c81702877d29dbd7606
       /njdot/data/2024/vehicles.parquet: 10bd447c2631abc8029b5224a1ed9997
-      /njdot/data/2024/crashes.parquet: fd7cdf13806203af5ddce84ca94d3e23
+      /njdot/data/2024/crashes.parquet: 5944071954005d3430627ddff724764c
       /njdot/data/2025/vehicles.parquet: b2e6d80ce5275d8165494af61733eeef
-      /njdot/data/2025/crashes.parquet: 26e6bc7f841bbaa6b5878e57771869dd
+      /njdot/data/2025/crashes.parquet: cb7e72cacb5773390a1f419793ae1a13
       /www/public/njdot/cc2mc2mn.json: 21626cd6b5ed02264335837141b86984
     note: |
       AASHTO vehicles -> DOTr-style vehicles supplement for 2023-2025.

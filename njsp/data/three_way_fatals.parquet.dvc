@@ -1,6 +1,6 @@
 outs:
-- md5: 04204d4576e3229fadc837ff23e832b6
-  size: 484184
+- md5: 7f452a1d333d20814e03473f0ccce995
+  size: 492281
   hash: md5
   path: three_way_fatals.parquet
 meta:
@@ -11,8 +11,8 @@ meta:
       /njsp/match_njdot.py: 2850afad5efe63641d87dad99a183cc667a41d84
     deps:
       /njsp/data/crashes.parquet: 8e24c545be191978e0fd785da1f33d63
-      /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
-      /njdot/data/aashto_combined_crashes.parquet: 0ae2595cd33ce71d47ab2d022a22b60e
+      /njdot/data/crashes.parquet: 5c780039fc117dd987317cc352dd92f3
+      /njdot/data/aashto_combined_crashes.parquet: 95ed2b9757071fb25ecdb9a46a15481a
     note: |
       3-way fatal-crash table: NJSP (SP) ↔ NJDOT per-table (DOTr) ↔
       NJDOT AASHTO (DOTa). Each row is one canonical fatal-crash event

@@ -3,20 +3,20 @@ outs:
   size: 7459
   hash: md5
   path: crash-homicide.parquet
-- md5: b3e075b3c60d7127520e83b9df042bfd
-  size: 34640
+- md5: ccbf557d90dbc5067f0d46d967944d5d
+  size: 34638
   hash: md5
   path: month-year.parquet
-- md5: 0d57d00dffb76be2ac2af06ae7fd8dfb
-  size: 100879
+- md5: 7265918e97030d4af1c93ce7369dab48
+  size: 100868
   hash: md5
   path: monthly.parquet
-- md5: 763966a942ec62eae7aa9dc7c41404b9
+- md5: d70bc778b5b303d9d19ef79a8ac0fcd8
   size: 7334
   hash: md5
   path: year-type-county.parquet
-- md5: aff5be0b48f25bd2aafc51b1288d4650
-  size: 267182
+- md5: c9b377444bbc330ee261b04d33256042
+  size: 268035
   hash: md5
   path: ytd.parquet
 meta:

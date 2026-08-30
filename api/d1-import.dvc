@@ -4,7 +4,7 @@ meta:
     side_effect: true
     deps:
       /www/public/njsp/crashes.db: 210e6a09e1ca30e870a2f865eebbf363
-      /www/public/njdot/cmymc.db: 5002662808a1bf389f00eff5b08aee76
-      /data/cells/cells-s2.db: 368ef65d7c9ff5c8cfbc0f3ae92ad17d
+      /www/public/njdot/cmymc.db: 30986fd079f29ab1e992c89f5f6b94d7
+      /data/cells/cells-s2.db: 25401b2a8278611de8ecdd654dc6c785
     git_deps:
       scripts/d1-import.sh: da25408d5c334940964dd7153683d2cdf8d679e6

@@ -1,6 +1,6 @@
 outs:
-- md5: 003280da4db79bf13ca4159d75a44cb7.dir
-  size: 176716301
+- md5: 8c4d7e8915706de8e80c588d0a780de7.dir
+  size: 2350760
   hash: md5
   nfiles: 696
   path: map
@@ -13,9 +13,9 @@ meta:
       www/public/njdot/map/v2/hex-sld.parquet && njdot export_map_v2 && njdot gen_county_outlines
       && njdot gen_muni_outlines
     deps:
-      /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
+      /njdot/data/crashes.parquet: 5c780039fc117dd987317cc352dd92f3
       /njdot/data/aashto_supplemented_crashes.parquet: 92ac7e301eab0f949748c6061317cf9f
-      /njdot/data/crashes_geocode_backfill.parquet: 05408a1785e5d1d009d5b62baf7c0968
+      /njdot/data/crashes_geocode_backfill.parquet: ecc8478f22f1396dff22d41dcd3da015
       /www/public/Municipal_Boundaries_of_NJ.geojson: 54a252d859eea2207da0fb933661dca0
     git_deps:
       /njdot/cli/export_map_v2.py: 8b557e023ee2134bb4dff93d585f8152e9f95b25

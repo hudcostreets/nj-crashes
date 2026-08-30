@@ -1,13 +1,13 @@
 outs:
-- md5: 368ef65d7c9ff5c8cfbc0f3ae92ad17d
-  size: 395243520
+- md5: 25401b2a8278611de8ecdd654dc6c785
+  size: 395108352
   hash: md5
   path: cells-s2.db
 meta:
   computation:
     cmd: cd ../.. && njdot compute cells db -f
     deps:
-      raw/s2_l21: 30e9fa5c478b3e1536a19ffd7c500b21
+      raw/s2_l21: d401887bb9e499b552d53b041964e2c4
       s2-sld.parquet: dd686d467d7d4146a091b680f79067fc
     git_deps:
       /njdot/cli/cells.py: 97ffd023a765e5a0851b5da05b9493ee434fc169
