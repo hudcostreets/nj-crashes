@@ -90,3 +90,13 @@ meta:
       /njdot/data/2021/NewJersey2021Pedestrians.pqt: 99883eaa7267ce508ef1bd7a54e3d98d
       /njdot/data/2022/NewJersey2022Pedestrians.pqt: 09909e6185c931f2104760fdd961d223
       /njdot/data/2023/NewJersey2023Pedestrians.pqt: 99493547d6a62fc71d44a25b27eb5797
+    # Source that shapes the crashes build (`njdot compute pqt -t crashes`):
+    # `crashes.load` + `compute_victim_counts` and the loaders/mappers they call.
+    # Undeclared until now, so a code change (e.g. the victim-count PK-join fix)
+    # did not invalidate this output — dvx saw deps unchanged and skipped it.
+    git_deps:
+      /njdot/crashes.py: d7a8fb91dd36096911d74ef830f937668dcb8839
+      /njdot/load.py: 04e81d5e2acd331dea5496d084b37d79f54aa5e2
+      /njdot/merge_dupes.py: a0229baf4ce75dcbac00d46d635fbbd6e72492a8
+      /njdot/occupants.py: 0633a9c004738408bdbac2cf570ef975a5b0f8b1
+      /njdot/pedestrians.py: 0b28ceee300256323b0cd98332a1cd49ea0f73df
