@@ -1,6 +1,6 @@
 outs:
-- md5: 368ef65d7c9ff5c8cfbc0f3ae92ad17d
-  size: 395243520
+- md5: fa0ba94673cb878777df98713be660f9
+  size: 395231232
   hash: md5
   path: cells-s2.db
 meta:
@@ -10,5 +10,5 @@ meta:
       raw/s2_l21: 30e9fa5c478b3e1536a19ffd7c500b21
       s2-sld.parquet: dd686d467d7d4146a091b680f79067fc
     git_deps:
-      /njdot/cli/cells.py: 97ffd023a765e5a0851b5da05b9493ee434fc169
+      /njdot/cli/cells.py: 74de8c41bfb2656663f936701b1b381fa49b508b
       /njdot/s2.py: 18b3290b93befcb93f8edcffeb141a8782ccfe7d
