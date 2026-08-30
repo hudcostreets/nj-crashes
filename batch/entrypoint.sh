@@ -1,33 +1,34 @@
 #!/bin/sh
-# Fargate entrypoint: wire git push-back + supply the reproc target set, then
-# hand off to dvx.
+# Fargate entrypoint: run dvx, then push the regenerated `.dvc`s back as ONE
+# commit.
 #
-# Push-back: `dvx run --commit --push each` commits each regenerated stage's
-# `.dvc` and then `git push`es it (executor.py: `git add -u` + `git commit`,
-# then a commit-gated `git push`). Two things the image alone can't provide:
-#   1. an auth'd push remote — the image clones the public read-only URL;
-#   2. a real branch — `git checkout $REF` leaves a detached HEAD, and
-#      `git push` from detached HEAD fails ("not currently on a branch").
-# Both are set here at *runtime* so the token never lands in an image layer.
+# Why one commit at the end (not `dvx run --commit --push each`): the reproc
+# runs the whole DAG with level-parallelism, so per-stage `git commit`/`git
+# push` race — concurrent pushes to the results branch get "cannot lock ref …
+# is at X but expected Y" and the losing stages' commits never escape. Instead
+# we run dvx with `--no-commit` (it still *writes* the updated `.dvc` md5s into
+# the worktree — it just doesn't commit them), and after the parallel run
+# finishes we `git add -u && commit && push` once. No concurrency, no races,
+# and the whole regenerated `.dvc` set lands as a single reviewable commit.
 #
-# Targets: AWS Batch caps `containerOverrides` at 8192 bytes, and the reproc
-# target list (~160 `.dvc` paths) alone approaches that — no room left for the
-# token/branch env overrides. So the submit command carries only flags, and we
-# append `batch/reproc-targets` here (computed in-container). A `run` that
-# already names explicit `.dvc` targets is left untouched.
+# Token arrives as $FARGATE_GITHUB_RW_TOKEN (AWS Batch injects it from Secrets
+# Manager); absent it, we run read-only. Targets: Batch caps containerOverrides
+# at 8192 bytes and the ~160-path list nears that, so the submit command is
+# flags-only and we append `batch/reproc-targets` here.
 set -e
+push_back=no
 if [ -n "${FARGATE_GITHUB_RW_TOKEN:-}" ]; then
     git -C /app remote set-url --push origin \
         "https://x-access-token:${FARGATE_GITHUB_RW_TOKEN}@github.com/hudcostreets/nj-crashes.git"
-    git -C /app config push.autoSetupRemote true
     branch="${RESULTS_BRANCH:-reproc-results/$(date -u +%Y%m%d-%H%M%S)}"
     git -C /app checkout -B "$branch"
-    echo "entrypoint: regenerated-.dvc commits will push to origin/$branch" >&2
+    push_back=yes
+    echo "entrypoint: will commit+push regenerated .dvc to origin/$branch after the run" >&2
 else
     echo "entrypoint: no FARGATE_GITHUB_RW_TOKEN set; no git push-back" >&2
 fi
 
-# Append the reproc target set to a `run` that has no explicit .dvc targets.
+# Append the reproc target set to a `run` that names no explicit .dvc targets.
 is_run=no; has_target=no
 for a in "$@"; do
     [ "$a" = run ] && is_run=yes
@@ -38,4 +39,28 @@ if [ "$is_run" = yes ] && [ "$has_target" = no ]; then
     set -- "$@" $(cd /app && batch/reproc-targets)
     echo "entrypoint: appended $(cd /app && batch/reproc-targets | wc -l | tr -d ' ') reproc targets" >&2
 fi
-exec dvx "$@"
+
+# Run dvx WITHOUT exec so we can commit+push after it returns.
+set +e
+dvx "$@"
+rc=$?
+set -e
+
+if [ "$push_back" = yes ]; then
+    cd /app
+    git add -u
+    if git diff --cached --quiet; then
+        echo "entrypoint: no .dvc changes — nothing to push (fully reproducible)" >&2
+    else
+        n=$(git diff --cached --name-only | wc -l | tr -d ' ')
+        git commit -q -m "reproc results: $n .dvc regenerated @ $(date -u +%FT%TZ)" \
+            -m "From-scratch \`dvx run --no-commit -f\` in batch/entrypoint.sh; one atomic commit to dodge per-stage push races."
+        if git push -u origin HEAD 2>&1; then
+            echo "entrypoint: pushed $n regenerated .dvc to origin/$branch" >&2
+        else
+            echo "entrypoint: FINAL PUSH FAILED" >&2
+            [ "$rc" -eq 0 ] && rc=1
+        fi
+    fi
+fi
+exit "$rc"
