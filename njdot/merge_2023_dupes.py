@@ -339,6 +339,11 @@ def main():
     merged_path = f'{CRASH_DUPES_DIR}/merged.pqt'
     unmerged_dir = f'{CRASH_DUPES_DIR}/unmerged'
 
+    # Create the output dir before the first write — on a from-scratch (`-f`)
+    # rebuild it doesn't pre-exist (it's a DVX output dir, absent on fresh
+    # checkout), and the `unmerged` makedirs below comes too late for these.
+    os.makedirs(CRASH_DUPES_DIR, exist_ok=True)
+
     merges_df.to_parquet(merges_path, index=False)
     err(f"Wrote {merges_path}: {len(merges_df)} cleanly merged records")
 
