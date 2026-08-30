@@ -534,7 +534,13 @@ def _cells_db_s2(base_level: int | None, force: bool, levels: str | None, out_di
 
     # 2. Aggregate raw → each level via duckdb. Group by the integer parent id
     #    (cheaper than the token string), format the token once per unique
-    #    cell, then LEFT-JOIN labels on that token.
+    #    cell, then LEFT-JOIN labels on that token. The `ORDER BY cellid` on the
+    #    INSERT is load-bearing for reproducibility, not cosmetic: duckdb's
+    #    parallel hash-aggregate emits groups in a non-deterministic order, and
+    #    these are rowid tables (`cellid TEXT PRIMARY KEY`, not WITHOUT ROWID),
+    #    so insertion order becomes the physical rowid layout — and VACUUM
+    #    (step 3) copies rows in rowid order, preserving it. Ordering the insert
+    #    by the PK pins that layout, making the file byte-identical run-to-run.
     con = duckdb.connect()
     con.execute(f"ATTACH '{out}' AS d (TYPE SQLITE)")
     if have_sld:
@@ -572,12 +578,14 @@ def _cells_db_s2(base_level: int | None, force: bool, levels: str | None, out_di
           SELECT t.cellid, {agg_cols}, t.fatal_years, {sld_sel}
           FROM t
           {join}
+          ORDER BY t.cellid
         """)
         n = con.execute(f'SELECT count(*) FROM d.cells_s2_l{lv}').fetchone()[0]
         err(f'  l{lv}: {n:,} cells ({time() - t0:.1f}s)')
     con.close()
 
-    # 3. Compact so the on-disk size (and DVC md5) is stable run-to-run.
+    # 3. Compact so the on-disk size is minimal (VACUUM alone does NOT make the
+    #    md5 stable — it preserves rowid order; the step-2 `ORDER BY` does that).
     s = sqlite3.connect(out)
     s.execute('VACUUM')
     s.close()
