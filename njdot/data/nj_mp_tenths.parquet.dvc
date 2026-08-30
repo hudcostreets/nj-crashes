@@ -7,7 +7,7 @@ meta:
   computation:
     cmd: cd ../.. && nj_crashes/sri/bulk_dl.py
     git_deps:
-      /nj_crashes/sri/bulk_dl.py: 7ef4306c02958c0a7f1686b876ebd5cbbf1e832e
+      /nj_crashes/sri/bulk_dl.py: 5f08e8323fa9c79f255fea2fb65e9081d15ad671
     note: |
       Bulk download of NJDOT's "New Jersey Standard Route Id. And
       Mile Post" ArcGIS FeatureServer (896,077 tenth-mile points).
