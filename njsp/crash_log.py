@@ -76,6 +76,54 @@ def get_commit_crash_updates(
     return prv_fauqstats_blobs, crash_map
 
 
+def _collect_fauqstats_blobs(repo_dir: str, head: str | None, root: str | None) -> dict[str, bytes]:
+    """Bulk-extract every unique `data/FAUQStats*.xml` blob in `root..head` via two
+    `git cat-file --batch` passes (resolve refs -> blob shas, then fetch bytes) —
+    far faster than GitPython per-blob tree access. Returns {blob_sha: raw_xml}.
+    Best-effort: on any git error (e.g. `root` not present in a shallow history)
+    returns {} and the walk parses on demand as before."""
+    import subprocess
+    head = head or 'HEAD'
+    rng = f'{root}..{head}' if root else head
+    try:
+        rev = subprocess.run(['git', '-C', repo_dir, 'rev-list', rng],
+                             capture_output=True, text=True, check=True)
+    except subprocess.CalledProcessError:
+        return {}
+    commits = rev.stdout.split()
+    if not commits:
+        return {}
+    # Resolve `<commit>:data/FAUQStats<year>.xml` for every (commit, plausible year)
+    # to a blob sha; missing paths report "missing" and are skipped.
+    years = range(2008, datetime.now().year + 2)
+    refs = [f'{c}:data/FAUQStats{y}.xml' for c in commits for y in years]
+    bc = subprocess.run(['git', '-C', repo_dir, 'cat-file', '--batch-check=%(objectname) %(objecttype)'],
+                        input='\n'.join(refs) + '\n', capture_output=True, text=True)
+    shas = {
+        parts[0]
+        for line in bc.stdout.splitlines()
+        if len(parts := line.split()) == 2 and parts[1] == 'blob'
+    }
+    if not shas:
+        return {}
+    # Fetch the unique blobs' bytes in one batch pass (binary-safe).
+    proc = subprocess.run(['git', '-C', repo_dir, 'cat-file', '--batch'],
+                          input=('\n'.join(shas) + '\n').encode(), capture_output=True)
+    out, blobs, i = proc.stdout, {}, 0
+    while i < len(out):
+        nl = out.find(b'\n', i)
+        if nl < 0:
+            break
+        parts = out[i:nl].decode('ascii', 'replace').split()
+        if len(parts) != 3 or parts[1] != 'blob':
+            break
+        sha, size = parts[0], int(parts[2])
+        start = nl + 1
+        blobs[sha] = out[start:start + size]
+        i = start + size + 1  # skip the trailing newline cat-file appends
+    return blobs
+
+
 def get_crash_log(
     repo: Repo | None = None,
     head: str | None = None,
@@ -89,6 +137,15 @@ def get_crash_log(
 
     crash_map = {}  # (accid: int) -> list[Series]
     repo = repo or get_repo()
+    # Parallel prewarm: parse every FAUQStats blob in range up front (thread pool,
+    # GIL released in lxml), so the sequential walk below is all cache hits. Skips
+    # cleanly if the range isn't fully local (walk falls back to on-demand parse).
+    try:
+        _blobs = _collect_fauqstats_blobs(repo.working_dir, head, root)
+        if _blobs:
+            FAUQStats.prewarm(_blobs, log=log)
+    except Exception as e:
+        log(f"FAUQStats prewarm skipped: {e}")
     # TODO: pass CRASHES_RELPATH directly here?
     commits = repo.iter_commits(head)
     shas = []

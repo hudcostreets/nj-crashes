@@ -4,6 +4,7 @@ import pandas as pd
 import re
 from dataclasses import dataclass
 from git import Commit, Tree
+from io import BytesIO
 from typing import IO
 
 import git
@@ -12,7 +13,7 @@ from nj_crashes.utils import TZ
 from nj_crashes.utils.github import Blob, GithubBlob, GithubCommit, GithubTree
 from bs4 import BeautifulSoup as bs
 
-from nj_crashes.utils.log import Log, err
+from nj_crashes.utils.log import Log, err, none
 
 
 def get_fauqstats(path: str | IO):
@@ -32,6 +33,10 @@ def get_children(tag):
 
 
 fauqstats_cache = {}
+
+
+def _parse_blob(sha: str, data: bytes) -> tuple[str, 'FAUQStats']:
+    return sha, FAUQStats.parse_bytes(data, sha, none)
 
 
 @dataclass
@@ -66,10 +71,47 @@ class FAUQStats:
                 fauqstats = fauqstats_cache[blob_sha]
                 log(f"{blob_sha}: FAUQStats cache hit: {fauqstats.year}, {fauqstats.rundate}")
                 return fauqstats
-            fauqstats = get_fauqstats(obj.data_stream)
+            return cls._from_soup(get_fauqstats(obj.data_stream), blob_sha, log)
+        return cls._from_soup(get_fauqstats(obj), None, log)
+
+    @classmethod
+    def parse_bytes(cls, data: bytes, blob_sha: str, log: Log = err) -> 'FAUQStats':
+        """Parse raw XML bytes into a cached FAUQStats (for parallel prewarm)."""
+        if blob_sha in fauqstats_cache:
+            return fauqstats_cache[blob_sha]
+        return cls._from_soup(get_fauqstats(BytesIO(data)), blob_sha, log)
+
+    # Below this many uncached blobs, a process pool costs more (startup + pickle)
+    # than it saves — the daily's incremental runs touch only a handful, so parse
+    # them in-process. Full-history reprocs (thousands of blobs) cross it and fan out.
+    PREWARM_MIN = 64
+
+    @classmethod
+    def prewarm(cls, blobs: dict[str, bytes], n_jobs: int | None = None, log: Log = err) -> int:
+        """Populate `fauqstats_cache` by parsing `blobs` (sha -> raw XML) up front.
+
+        bs4 tree construction is GIL-bound (threads measured *slower*), so this fans
+        out across *processes* (loky) — the one path that actually parallelizes the
+        parse (~2.4x measured). Workers return parsed objects; the parent owns the
+        cache. Purely an optimization: a missed/failed blob falls through to an
+        on-demand parse in the walk. Small inputs parse in-process (see PREWARM_MIN)."""
+        todo = [(sha, data) for sha, data in blobs.items() if sha not in fauqstats_cache]
+        if not todo:
+            return 0
+        if len(todo) < cls.PREWARM_MIN:
+            for sha, data in todo:
+                cls.parse_bytes(data, sha, none)
         else:
-            blob_sha = None
-            fauqstats = get_fauqstats(obj)
+            from joblib import Parallel, delayed
+            for sha, fx in Parallel(n_jobs=n_jobs or -1, backend='loky')(
+                delayed(_parse_blob)(sha, data) for sha, data in todo
+            ):
+                fauqstats_cache[sha] = fx
+        log(f"FAUQStats.prewarm: parsed {len(todo)} unique blobs")
+        return len(todo)
+
+    @classmethod
+    def _from_soup(cls, fauqstats, blob_sha: str | None, log: Log = err) -> 'FAUQStats':
         assert fauqstats.name == 'FAUQSTATS', fauqstats.name
         rundate = fauqstats.RUNDATE.text
         year = int(fauqstats.STATSYEAR.text)
