@@ -7,64 +7,56 @@ meta:
   computation:
     cmd: njdot compute pqt -t crashes
     deps:
-      njdot/data/2023/NewJersey2023Accidents.pqt: 6e058a16f38835041df9d14485150f57
-      # SRI/milepost -> lat/lon lookup, read via `nj_crashes.sri.mp05.get_mp05_map()`
-      # during geocoding. It is a network-fetched accumulator (`fetch_sri_mps` hits the
-      # NJDOT ArcGIS service per SRI and appends), not derivable from tracked inputs —
-      # and it was caught by the global `*.db` excludesfile, so it never showed as
-      # untracked. Reproc round 3 died here with `ValueError: Table sri_mp not found`.
       /nj_sri_mp.db: 6c1e4917dcbd23e5ad48d277ae622dc1
       # `njdot/crashes.py` reads `crash_dupes/merged.pqt` when building 2023. Declaring
       # the producer stage was not enough — without this edge both sat in the same level
       # and raced (round 5: crash_dupes completed in 14.9s, but crashes.parquet had
       # already read the missing file).
-      /njdot/data/2023/crash_dupes: 2d28a23cb5d385ce13e8a2cf777d455c.dir
-      # `compute_victim_counts` (`njdot/crashes.py`) loads every year's raw Occupants
-      # and Pedestrians to build the 25 victim-type x condition columns. Same cmd,
-      # same stage, undeclared until reproc round 6.
-      /njdot/data/2001/NewJersey2001Occupants.pqt: 7b3ddc292f6dbb00abc424352e7f37d8
-      /njdot/data/2002/NewJersey2002Occupants.pqt: 56779a3ad3bcfaec812f65ca438a7160
-      /njdot/data/2003/NewJersey2003Occupants.pqt: 622494de6eb72f99aae0bd0125a998f0
-      /njdot/data/2004/NewJersey2004Occupants.pqt: f1a96bf304b1dac3051043e5f667ac34
-      /njdot/data/2005/NewJersey2005Occupants.pqt: 9ab5f294b8693f94b2af2ba6172cbfc6
-      /njdot/data/2006/NewJersey2006Occupants.pqt: bedeba11810482b4934727ba61776080
-      /njdot/data/2007/NewJersey2007Occupants.pqt: ddec2f5288b52d02cd1726bc0f038cc3
-      /njdot/data/2008/NewJersey2008Occupants.pqt: 16bc69f4521637d7488fcc05a21e34b4
-      /njdot/data/2009/NewJersey2009Occupants.pqt: 024bc45844e46b10f274c3b5bd3acdd7
-      /njdot/data/2010/NewJersey2010Occupants.pqt: f2ccee7a479bd8e4a0d11a6611f800ab
-      /njdot/data/2011/NewJersey2011Occupants.pqt: fa673230bb97794d99e33ec7d1ccafaf
-      /njdot/data/2012/NewJersey2012Occupants.pqt: 2f3aa44a3528a032a1c31bb0fa027891
-      /njdot/data/2013/NewJersey2013Occupants.pqt: acf04d56dbbd3680dfae40ab87e3e353
-      /njdot/data/2014/NewJersey2014Occupants.pqt: 22c28e51ca6b9cc5bbf9f044f41633c1
-      /njdot/data/2015/NewJersey2015Occupants.pqt: 63cd9dd070d1e759e7a7e887e6e52fd6
-      /njdot/data/2016/NewJersey2016Occupants.pqt: 89aaa593eec1b3eb01dbc610412a33c3
-      /njdot/data/2017/NewJersey2017Occupants.pqt: f19f504291126166609ec1685ef7afdb
-      /njdot/data/2018/NewJersey2018Occupants.pqt: e869914a7658c73fc860c4fa833552ba
-      /njdot/data/2019/NewJersey2019Occupants.pqt: 4f7c7ef84abab7ab921cbc740703fc8a
-      /njdot/data/2020/NewJersey2020Occupants.pqt: 6dc9b32acaac800cb2791fa8f0f13314
-      /njdot/data/2021/NewJersey2021Occupants.pqt: 7600a8264941c024a5adbd62374d389a
-      /njdot/data/2022/NewJersey2022Occupants.pqt: cc54563f6f56745588b42d54be3f4adf
-      /njdot/data/2023/NewJersey2023Occupants.pqt: 55e2f9299f30d45d0435080bcc733af4
-      /njdot/data/2001/NewJersey2001Pedestrians.pqt: 590e124897eb05b80869c3761254e60a
-      /njdot/data/2002/NewJersey2002Pedestrians.pqt: 60830a8ba2c84ea9db7110ebacdbac18
-      /njdot/data/2003/NewJersey2003Pedestrians.pqt: a15065834e2e3766cae69839dcb07d89
-      /njdot/data/2004/NewJersey2004Pedestrians.pqt: a2fe2cc6b70665f898c3594ac4dbc322
-      /njdot/data/2005/NewJersey2005Pedestrians.pqt: f0ec5cd4775f90cf96575d4288540ae9
-      /njdot/data/2006/NewJersey2006Pedestrians.pqt: dfc5aadf6e78482d177f671a33f6a5d6
-      /njdot/data/2007/NewJersey2007Pedestrians.pqt: 2d1afccc152bd8fce27d43740f5f39eb
-      /njdot/data/2008/NewJersey2008Pedestrians.pqt: 2557cb5d966d2eb339c65a76c4eaebc1
-      /njdot/data/2009/NewJersey2009Pedestrians.pqt: 1ee4cf0e01a1c72b00f6adef2a78d4ca
-      /njdot/data/2010/NewJersey2010Pedestrians.pqt: b6a3b8fa5d7927b9acee7b804cfc0e49
-      /njdot/data/2011/NewJersey2011Pedestrians.pqt: d5f20fd1c0eddcba4ae2468b050bbe94
-      /njdot/data/2012/NewJersey2012Pedestrians.pqt: bb525a0d41ff0658d7012f845a4a276e
-      /njdot/data/2013/NewJersey2013Pedestrians.pqt: 7f8bae3d6b6aff9604bdd554f58354ba
-      /njdot/data/2014/NewJersey2014Pedestrians.pqt: ba82dd65bd0d3a20352d79ea15529a94
-      /njdot/data/2015/NewJersey2015Pedestrians.pqt: 05ce04c99b06595529c00a49d26873e6
-      /njdot/data/2016/NewJersey2016Pedestrians.pqt: 15c4cabf3e5950ad08009fde8dca09ef
-      /njdot/data/2017/NewJersey2017Pedestrians.pqt: 42285a4be5af8935f8578f7c5fdb2f2e
-      /njdot/data/2018/NewJersey2018Pedestrians.pqt: 90e215d9babb5e43a2a843d705a66cf1
-      /njdot/data/2019/NewJersey2019Pedestrians.pqt: ccc2e0fe35f8fd1fa45ebf1cb5e141a5
-      /njdot/data/2020/NewJersey2020Pedestrians.pqt: cc7a826189c5187ab7c05290b5dc9202
-      /njdot/data/2021/NewJersey2021Pedestrians.pqt: 99883eaa7267ce508ef1bd7a54e3d98d
-      /njdot/data/2022/NewJersey2022Pedestrians.pqt: 09909e6185c931f2104760fdd961d223
-      /njdot/data/2023/NewJersey2023Pedestrians.pqt: 99493547d6a62fc71d44a25b27eb5797
+      2023/NewJersey2023Accidents.pqt: 6e058a16f38835041df9d14485150f57
+      2023/crash_dupes: 5727a2b0d74edfe7e82e8e11b0b689c1
+      2001/NewJersey2001Occupants.pqt: 7b3ddc292f6dbb00abc424352e7f37d8
+      2002/NewJersey2002Occupants.pqt: 56779a3ad3bcfaec812f65ca438a7160
+      2003/NewJersey2003Occupants.pqt: 622494de6eb72f99aae0bd0125a998f0
+      2004/NewJersey2004Occupants.pqt: f1a96bf304b1dac3051043e5f667ac34
+      2005/NewJersey2005Occupants.pqt: 9ab5f294b8693f94b2af2ba6172cbfc6
+      2006/NewJersey2006Occupants.pqt: bedeba11810482b4934727ba61776080
+      2007/NewJersey2007Occupants.pqt: ddec2f5288b52d02cd1726bc0f038cc3
+      2008/NewJersey2008Occupants.pqt: 16bc69f4521637d7488fcc05a21e34b4
+      2009/NewJersey2009Occupants.pqt: 024bc45844e46b10f274c3b5bd3acdd7
+      2010/NewJersey2010Occupants.pqt: f2ccee7a479bd8e4a0d11a6611f800ab
+      2011/NewJersey2011Occupants.pqt: fa673230bb97794d99e33ec7d1ccafaf
+      2012/NewJersey2012Occupants.pqt: 2f3aa44a3528a032a1c31bb0fa027891
+      2013/NewJersey2013Occupants.pqt: acf04d56dbbd3680dfae40ab87e3e353
+      2014/NewJersey2014Occupants.pqt: 22c28e51ca6b9cc5bbf9f044f41633c1
+      2015/NewJersey2015Occupants.pqt: 63cd9dd070d1e759e7a7e887e6e52fd6
+      2016/NewJersey2016Occupants.pqt: 89aaa593eec1b3eb01dbc610412a33c3
+      2017/NewJersey2017Occupants.pqt: f19f504291126166609ec1685ef7afdb
+      2018/NewJersey2018Occupants.pqt: e869914a7658c73fc860c4fa833552ba
+      2019/NewJersey2019Occupants.pqt: 4f7c7ef84abab7ab921cbc740703fc8a
+      2020/NewJersey2020Occupants.pqt: 6dc9b32acaac800cb2791fa8f0f13314
+      2021/NewJersey2021Occupants.pqt: 7600a8264941c024a5adbd62374d389a
+      2022/NewJersey2022Occupants.pqt: cc54563f6f56745588b42d54be3f4adf
+      2023/NewJersey2023Occupants.pqt: 55e2f9299f30d45d0435080bcc733af4
+      2001/NewJersey2001Pedestrians.pqt: 590e124897eb05b80869c3761254e60a
+      2002/NewJersey2002Pedestrians.pqt: 60830a8ba2c84ea9db7110ebacdbac18
+      2003/NewJersey2003Pedestrians.pqt: a15065834e2e3766cae69839dcb07d89
+      2004/NewJersey2004Pedestrians.pqt: a2fe2cc6b70665f898c3594ac4dbc322
+      2005/NewJersey2005Pedestrians.pqt: f0ec5cd4775f90cf96575d4288540ae9
+      2006/NewJersey2006Pedestrians.pqt: dfc5aadf6e78482d177f671a33f6a5d6
+      2007/NewJersey2007Pedestrians.pqt: 2d1afccc152bd8fce27d43740f5f39eb
+      2008/NewJersey2008Pedestrians.pqt: 2557cb5d966d2eb339c65a76c4eaebc1
+      2009/NewJersey2009Pedestrians.pqt: 1ee4cf0e01a1c72b00f6adef2a78d4ca
+      2010/NewJersey2010Pedestrians.pqt: b6a3b8fa5d7927b9acee7b804cfc0e49
+      2011/NewJersey2011Pedestrians.pqt: d5f20fd1c0eddcba4ae2468b050bbe94
+      2012/NewJersey2012Pedestrians.pqt: bb525a0d41ff0658d7012f845a4a276e
+      2013/NewJersey2013Pedestrians.pqt: 7f8bae3d6b6aff9604bdd554f58354ba
+      2014/NewJersey2014Pedestrians.pqt: ba82dd65bd0d3a20352d79ea15529a94
+      2015/NewJersey2015Pedestrians.pqt: 05ce04c99b06595529c00a49d26873e6
+      2016/NewJersey2016Pedestrians.pqt: 15c4cabf3e5950ad08009fde8dca09ef
+      2017/NewJersey2017Pedestrians.pqt: 42285a4be5af8935f8578f7c5fdb2f2e
+      2018/NewJersey2018Pedestrians.pqt: 90e215d9babb5e43a2a843d705a66cf1
+      2019/NewJersey2019Pedestrians.pqt: ccc2e0fe35f8fd1fa45ebf1cb5e141a5
+      2020/NewJersey2020Pedestrians.pqt: cc7a826189c5187ab7c05290b5dc9202
+      2021/NewJersey2021Pedestrians.pqt: 99883eaa7267ce508ef1bd7a54e3d98d
+      2022/NewJersey2022Pedestrians.pqt: 09909e6185c931f2104760fdd961d223
+      2023/NewJersey2023Pedestrians.pqt: 99493547d6a62fc71d44a25b27eb5797
