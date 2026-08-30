@@ -1,8 +1,9 @@
 outs:
-- md5: 2d28a23cb5d385ce13e8a2cf777d455c.dir
-  size: 1344278
+- md5: 5727a2b0d74edfe7e82e8e11b0b689c1.dir
+  size: 1356784
   hash: md5
   path: crash_dupes
+  nfiles: 7
 meta:
   # 2023 duplicate-crash merge analysis. `njdot/crashes.py` reads
   # `crash_dupes/merged.pqt` during the crashes build, but the dir was excluded in
@@ -17,4 +18,4 @@ meta:
   computation:
     cmd: cd ../../.. && njdot/merge_2023_dupes.py
     deps:
-      /njdot/data/2023/NewJersey2023Accidents.pqt: 6e058a16f38835041df9d14485150f57
+      NewJersey2023Accidents.pqt: 6e058a16f38835041df9d14485150f57
