@@ -71,8 +71,8 @@ def get_commit_crash_updates(
             for accid, crash in cc.updated_df.to_dict('index').items():
                 save(accid, crash, 'update')
 
-        except Exception:
-            raise RuntimeError(f"Error processing commit {cur_commit.hexsha}")
+        except Exception as e:
+            raise RuntimeError(f"Error processing commit {cur_commit.hexsha}: {e!r}") from e
     return prv_fauqstats_blobs, crash_map
 
 

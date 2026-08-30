@@ -141,8 +141,13 @@ class FAUQStats:
             # per-row `.apply` (which called `pd.to_datetime` once per accident —
             # ~22s of a 120-commit `crash_log` build, profiled). `.sort_values('dt')`
             # below makes row order independent of parse order, so this is identical.
+            # `format='mixed'` infers the format *per element* (like the old per-row
+            # code) rather than locking the whole column to the first element's
+            # inferred format — NJSP's `DATE`/`TIME` strings vary enough across years
+            # (e.g. `10/27/2023 0114`) that a single inferred format misparses others
+            # into `OutOfBoundsDatetime`.
             crashes['dt'] = (
-                pd.to_datetime(crashes['DATE'] + ' ' + crashes['TIME'])
+                pd.to_datetime(crashes['DATE'] + ' ' + crashes['TIME'], format='mixed')
                 .dt.tz_localize(TZ)
             )
             float_cols = [
