@@ -12,7 +12,6 @@ Was `njsp/update-projections.ipynb` — converted to a plain module so the
 daily `projections.dvc` re-run stops churning notebook output cells (the
 same reason `harmonize-muni-codes.ipynb` became `harmonize_muni_codes.py`).
 """
-from datetime import datetime
 from os import chdir
 from os.path import exists
 
@@ -66,14 +65,16 @@ def project(prv_ytd, prv_end, cur_ytd, cur_ytd_frac):
 @command
 def update_projections():
     """Update projected rest-of-year fatalities based on latest NJSP data."""
-    current_year = datetime.now().year
+    chdir(ROOT_DIR)  # `Ytd` walks git history; run from the repo root
+    ytd = Ytd()
+    # `cur_year` is data-derived (crash-log's latest event), not the wall clock,
+    # so the guard skips only when the current year's feed genuinely has no file.
+    current_year = ytd.cur_year
     fauqstats_path = fauqstats_relpath(current_year)
     if not exists(fauqstats_path):
         err(f"Skipping projections: {fauqstats_path} not found (current year data not yet available)")
         return f"Skip NJSP projections ({current_year} data not yet available)"
 
-    chdir(ROOT_DIR)  # `Ytd` walks git history; run from the repo root
-    ytd = Ytd()
     prv_year = ytd.prv_year
     cur_year = ytd.cur_year
     cur_ytd_frac = ytd.cur_year_frac

@@ -8,7 +8,7 @@ from nj_crashes.utils import TZ
 from njsp.crash_log import feed_snapshot
 from njsp.crashes import load
 from njsp.fauqstats import FAUQStats
-from njsp.paths import fauqstats_relpath
+from njsp.paths import CRASH_LOG_PQT, fauqstats_relpath
 from njsp.rundate import Rundate
 
 
@@ -60,8 +60,17 @@ class Ytd:
     type: str = None
 
     @cached_property
+    def crash_log(self):
+        return pd.read_parquet(CRASH_LOG_PQT)
+
+    @cached_property
     def rundate(self) -> Rundate:
-        return Rundate()
+        # Anchor to the crash-log's latest *event* rundate -- the data's own
+        # notion of "now", which advances only when the feed's content changes
+        # (unlike `rundate.json`, which ticks on every daily refresh). This makes
+        # every projection a pure, reproducible function of `crash-log.parquet`
+        # rather than of wall-clock / refresh timing.
+        return Rundate(cur=self.crash_log['rundate'].max())
 
     @cached_property
     def crashes(self):
@@ -112,7 +121,7 @@ class Ytd:
         compare this year's YTD against last year's *equally-incomplete* YTD,
         cancelling NJSP reporting lag."""
         target = f'{self.prv_year}-{self.rundate.cur.strftime("%m-%d")}'
-        return feed_snapshot(self.prv_year, target)
+        return feed_snapshot(self.prv_year, target, self.crash_log)
 
     @cached_property
     def prv_rundate(self):
@@ -225,7 +234,7 @@ class Ytd:
         rundate = self.rundate.cur
         window_start = rundate - pd.Timedelta(days=365)
         # Each call replays the full crash-log; cheap (~14k rows, 0.5 MB).
-        cur = feed_snapshot(self.cur_year, rundate).crashes
-        prv = feed_snapshot(self.prv_year, rundate).crashes
+        cur = feed_snapshot(self.cur_year, rundate, self.crash_log).crashes
+        prv = feed_snapshot(self.prv_year, rundate, self.crash_log).crashes
         crashes = pd.concat([prv, cur])
         return crashes[(crashes.dt >= window_start) & (crashes.dt <= rundate)]

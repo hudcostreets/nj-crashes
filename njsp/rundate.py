@@ -15,8 +15,19 @@ blob_from_commit = partial(git.blob_from_commit, relpaths=RELPATHS)
 
 
 class Rundate:
+    def __init__(self, cur=None):
+        # `cur=None` reads `rundate.json` (the raw NJSP feed timestamp, which
+        # advances on every refresh — even a no-op one). Pass an explicit
+        # timestamp to anchor a `Rundate` to a *data-derived* instant instead
+        # (e.g. `crash-log.parquet`'s latest event), so downstream year/fraction
+        # math is a pure function of the data, not the wall clock.
+        self._cur = cur
+
     @cached_property
     def cur(self):
+        if self._cur is not None:
+            dt = pd.to_datetime(self._cur)
+            return dt if dt.tz else dt.tz_localize(TZ)
         with open(RUNDATE_PATH, 'r') as f:
             dt = pd.to_datetime(json.load(f)['rundate'])
             return dt if dt.tz else dt.tz_localize(TZ)
