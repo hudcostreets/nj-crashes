@@ -1,10 +1,10 @@
 outs:
-- md5: 3dc8cd744e5aaf7fe9148d3f74750955
-  size: 37366
+- md5: 98d51e653cb299c5e16e72770336c68a
+  size: 37370
   hash: md5
   path: cm.pqt
 meta:
   computation:
     cmd: njdot compute cm -f
     deps:
-      njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
+      crashes.parquet: 1211e215284ecc253b64b51dd211dd2c

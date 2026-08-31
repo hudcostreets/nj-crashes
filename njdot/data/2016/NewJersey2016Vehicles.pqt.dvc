@@ -1,10 +1,10 @@
 outs:
-- md5: ec338d7b574f4d0b977063bba763325b
-  size: 10001556
+- md5: 660824cf8b3ad97c914fcfb2529bb0bd
+  size: 9998337
   hash: md5
   path: NewJersey2016Vehicles.pqt
 meta:
   computation:
     cmd: rawdata pqt -r NJ -y 2016 -t vehicles
     deps:
-      njdot/data/2016/NewJersey2016Vehicles.zip: 61ab768646e09716f37ef91435c92ae5
+      NewJersey2016Vehicles.zip: 61ab768646e09716f37ef91435c92ae5

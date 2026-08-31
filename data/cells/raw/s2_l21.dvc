@@ -1,6 +1,6 @@
 outs:
-- md5: 30e9fa5c478b3e1536a19ffd7c500b21.dir
-  size: 87848892
+- md5: 908a567c230b7cca2511d81e9ef8af69.dir
+  size: 87850846
   hash: md5
   nfiles: 2
   path: s2_l21
@@ -8,8 +8,8 @@ meta:
   computation:
     cmd: cd ../../.. && njdot compute cells raw -f
     deps:
-      /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
-      /njdot/data/aashto_supplemented_crashes.parquet: 3e7ea4b4c1692b2f2f1d88ba699d69cf
+      /njdot/data/crashes.parquet: 1211e215284ecc253b64b51dd211dd2c
+      /njdot/data/aashto_supplemented_crashes.parquet: 372d541848b2252a1552a339c234c45a
       # `load_crashes_with_aashto` merges this sidecar when it exists (fatals
       # recovered via NJSP `LOCATION` parsing, #78). Undeclared, it forked
       # local builds (sidecar present, +616 rows) from CI builds (absent).

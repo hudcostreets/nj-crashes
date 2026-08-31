@@ -1,23 +1,22 @@
 outs:
-- md5: d3d913d7d0716ee4b5588e8380bb456a
-  size: 255402
+- md5: cfd9aca8de486c9bca8f982e26aae5ce
+  size: 255374
   hash: md5
   path: aashto_supplemented_pedestrians.parquet
 meta:
   computation:
     cmd: njdot aashto persons -y 2023,2024,2025
     git_deps:
-      /njdot/aashto/to_njdot_persons.py: 
-        21b6405b82bcf6c362c6f73052168a11f5896d48
+      /njdot/aashto/to_njdot_persons.py: 21b6405b82bcf6c362c6f73052168a11f5896d48
       /njdot/aashto/to_njdot_schema.py: 358a48b822f7e461f9d2ebef97eac0bbff04958f
     deps:
-      /njdot/data/2023/persons.parquet: 72625f5a685ceb7489789e886f4f3171
-      /njdot/data/2023/crashes.parquet: 23abc6794e13d6d8b035dfe866de86b9
-      /njdot/data/2024/persons.parquet: e9abd0dc2fcb7fccc2a57e099caba6b6
-      /njdot/data/2024/crashes.parquet: fd7cdf13806203af5ddce84ca94d3e23
-      /njdot/data/2025/persons.parquet: 2c311b054ff1f7fbb27c0c099ae0486b
-      /njdot/data/2025/crashes.parquet: 26e6bc7f841bbaa6b5878e57771869dd
       /www/public/njdot/cc2mc2mn.json: 21626cd6b5ed02264335837141b86984
+      2023/persons.parquet: d25274c313b4bae22b9186741901116f
+      2023/crashes.parquet: affeb3aa3e962c81702877d29dbd7606
+      2024/persons.parquet: ea351c327e61e8103bdf9e8b91f64475
+      2024/crashes.parquet: 5944071954005d3430627ddff724764c
+      2025/persons.parquet: e0bd167538aacbde9546b24b7e88cbf1
+      2025/crashes.parquet: cb7e72cacb5773390a1f419793ae1a13
     note: |
       AASHTO persons → DOTr-style pedestrians supplement for 2023-2025.
       Both pedestrians and cyclists are co-tracked here (`cyclist` bool

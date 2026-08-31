@@ -1,10 +1,10 @@
 outs:
-- md5: 534d8ea9c900a2ab2162107f1b8dbb82
-  size: 1174732800
+- md5: 4189999c90fa5649a8e2257216b46ce6
+  size: 1010565120
   hash: md5
   path: vehicles.db
 meta:
   computation:
     cmd: njdot compute db -t vehicles
     deps:
-      /njdot/data/vehicles.parquet: f556fa6424ee67986f1b8f69b0ab7eab
+      /njdot/data/vehicles.parquet: e668ea8749d74a32cbc98d2e7da1633d

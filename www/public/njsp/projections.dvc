@@ -5,6 +5,6 @@ meta:
       /njsp/data/crashes.parquet: b9669bb1b0b49860ebb14e04ac36bb83
       /njsp/data/crash-log.parquet: 777302a647ed4b5601d246988b3c0ea3
     git_deps:
-      /njsp/cli/update_projections.py: bd1c1621e5f36b08c68ef7968a53194a05b23486
-      /njsp/ytd.py: b24ce393783741cf767231d680d5404846379df9
+      /njsp/cli/update_projections.py: 7a3a9a4a50877a03041d7ecd00a9f9442c61ee82
+      /njsp/ytd.py: 29d48e50594880368c2fdf7ef90be8af988165d2
       /njsp/ytc.py: eca063a0ff9697eac7b29adec16c0d6d3c131cd2

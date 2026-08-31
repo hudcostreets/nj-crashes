@@ -16,4 +16,4 @@ meta:
       # unreproducible from a clean checkout (reproc round 1 + 2 died here). Tracked
       # as a dir leaf (888K, 46 files) so the build is hermetic — no network, no
       # $CENSUS_API_KEY, and no dependence on upstream ACS staying byte-stable.
-      /census/data/raw: 3bfcda582efb4b5110918df07f21ada2.dir
+      /census/data/raw: 3bfcda582efb4b5110918df07f21ada2

@@ -1,10 +1,10 @@
 outs:
-- md5: 9ced99c39dab22fc154ea02741caa49e
-  size: 5874288
+- md5: 49660d9a5013222447f0588c410f7767
+  size: 5873845
   hash: md5
   path: NewJersey2022Drivers.pqt
 meta:
   computation:
     cmd: rawdata pqt -r NJ -y 2022 -t drivers
     deps:
-      njdot/data/2022/NewJersey2022Drivers.zip: b7ebe70b58aece6943e572b443c43c68
+      NewJersey2022Drivers.zip: b7ebe70b58aece6943e572b443c43c68
