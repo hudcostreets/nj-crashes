@@ -1,4 +1,6 @@
 from os.path import exists, join, dirname, basename
+from subprocess import CalledProcessError
+from time import sleep
 
 import click
 import pandas as pd
@@ -94,7 +96,7 @@ def write_db(
         err(f'Uploading {db_path} to {s3_url}')
         db_dir = dirname(db_path)
         s3_dir = dirname(s3_url)
-        process.run(
+        sync_args = (
             'aws', 's3', 'sync',
             *(('--dryrun',) if dry_run else ()),
             '--exclude', '*',
@@ -102,6 +104,21 @@ def write_db(
             f'{db_dir}/',
             f'{s3_dir}/',
         )
+        # Retry the upload with backoff: in the batch reproc several multi-GB
+        # `.db` syncs run concurrently and `aws s3 sync` intermittently exits 2
+        # mid-transfer (bandwidth contention). A terminal-leaf upload flake
+        # shouldn't fail the whole DAG.
+        attempts = 3
+        for attempt in range(1, attempts + 1):
+            try:
+                process.run(*sync_args)
+                break
+            except CalledProcessError:
+                if attempt == attempts:
+                    raise
+                backoff = 5 * 2 ** (attempt - 1)
+                err(f'{basename(db_path)} upload failed (attempt {attempt}/{attempts}); retrying in {backoff}s')
+                sleep(backoff)
 
 
 @compute.command('db')
