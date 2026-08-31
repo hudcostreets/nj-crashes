@@ -1,10 +1,10 @@
 outs:
-- md5: 1a2c61ab3606201d3ab3513a8e577496
-  size: 8495373
+- md5: 5ce10eb3df203d61109a5b464f9c53fe
+  size: 8493611
   hash: md5
   path: NewJersey2005Drivers.pqt
 meta:
   computation:
     cmd: rawdata pqt -r NJ -y 2005 -t drivers
     deps:
-      njdot/data/2005/NewJersey2005Drivers.zip: 6c839396ec73cb184dfa541872682a13
+      NewJersey2005Drivers.zip: 6c839396ec73cb184dfa541872682a13

@@ -1,10 +1,10 @@
 outs:
-- md5: 6616bbd5d3fe5806c6cc3a227aef0b5c
-  size: 5748238
+- md5: 09f1de7576ace7a5815eefc0e537089f
+  size: 5745921
   hash: md5
   path: NewJersey2020Drivers.pqt
 meta:
   computation:
     cmd: rawdata pqt -r NJ -y 2020 -t drivers
     deps:
-      njdot/data/2020/NewJersey2020Drivers.zip: 167537419f80cbe65c7937e8b59476b4
+      NewJersey2020Drivers.zip: 167537419f80cbe65c7937e8b59476b4

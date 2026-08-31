@@ -1,5 +1,5 @@
 outs:
-- md5: 23abc6794e13d6d8b035dfe866de86b9
+- md5: affeb3aa3e962c81702877d29dbd7606
   size: 31193834
   hash: md5
   path: crashes.parquet
@@ -7,7 +7,7 @@ meta:
   computation:
     cmd: cd ../../.. && njdot/aashto/normalize.py -y 2023 njdot/data/2023/Crash.csv
     git_deps:
-      /njdot/aashto/normalize.py: 7343465980748692c469c4f119c5268204c69837
+      /njdot/aashto/normalize.py: 5b3b225cebf6711239ed8e2fdeadbba020e6ddd9
     deps:
       Crash.csv: df2388790112b398a553c0f67a0cf173
     note: |

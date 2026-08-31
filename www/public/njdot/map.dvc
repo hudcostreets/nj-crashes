@@ -1,22 +1,17 @@
 outs:
-- md5: 003280da4db79bf13ca4159d75a44cb7.dir
-  size: 176716301
+- md5: 9522862f8078b4e0b4fb48444c48cdfb.dir
+  size: 2350758
   hash: md5
-  nfiles: 696
+  nfiles: 44
   path: map
 meta:
   computation:
-    cmd: cd ../../.. && rm -rf www/public/njdot/map/by-year www/public/njdot/map/by-year-county
-      www/public/njdot/map/manifest.json www/public/njdot/map/v2/points www/public/njdot/map/v2/hex-r6.parquet
-      www/public/njdot/map/v2/hex-r7 www/public/njdot/map/v2/hex-r7.parquet www/public/njdot/map/v2/hex-r8
-      www/public/njdot/map/v2/hex-r8.parquet www/public/njdot/map/v2/hex-r9 www/public/njdot/map/v2/hex-r9.parquet
-      www/public/njdot/map/v2/hex-sld.parquet && njdot export_map_v2 && njdot gen_county_outlines
-      && njdot gen_muni_outlines
+    cmd: cd ../../.. && rm -rf www/public/njdot/map/by-year www/public/njdot/map/by-year-county www/public/njdot/map/manifest.json www/public/njdot/map/v2/points www/public/njdot/map/v2/hex-r6.parquet www/public/njdot/map/v2/hex-r7 www/public/njdot/map/v2/hex-r7.parquet www/public/njdot/map/v2/hex-r8 www/public/njdot/map/v2/hex-r8.parquet www/public/njdot/map/v2/hex-r9 www/public/njdot/map/v2/hex-r9.parquet www/public/njdot/map/v2/hex-sld.parquet && njdot export_map_v2 && njdot gen_county_outlines && njdot gen_muni_outlines
     deps:
-      /njdot/data/crashes.parquet: cfb770bf205ce85aedb90cc268607540
-      /njdot/data/aashto_supplemented_crashes.parquet: 92ac7e301eab0f949748c6061317cf9f
+      /njdot/data/crashes.parquet: 1211e215284ecc253b64b51dd211dd2c
+      /njdot/data/aashto_supplemented_crashes.parquet: 372d541848b2252a1552a339c234c45a
       /njdot/data/crashes_geocode_backfill.parquet: 05408a1785e5d1d009d5b62baf7c0968
       /www/public/Municipal_Boundaries_of_NJ.geojson: 54a252d859eea2207da0fb933661dca0
     git_deps:
-      /njdot/cli/export_map_v2.py: 8b557e023ee2134bb4dff93d585f8152e9f95b25
-      /njdot/load.py: 8631c1995b4badf1856395b9b87ddc334ba68893
+      /njdot/cli/export_map_v2.py: d67c3f13d850c392bdd29269f0e7bf9bc8803552
+      /njdot/load.py: 04e81d5e2acd331dea5496d084b37d79f54aa5e2

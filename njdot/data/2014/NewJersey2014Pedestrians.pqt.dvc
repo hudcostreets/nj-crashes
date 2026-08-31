@@ -1,10 +1,10 @@
 outs:
-- md5: ba82dd65bd0d3a20352d79ea15529a94
-  size: 222949
+- md5: 36fc8a04fc4efae3449166aae36d2d23
+  size: 220371
   hash: md5
   path: NewJersey2014Pedestrians.pqt
 meta:
   computation:
     cmd: rawdata pqt -r NJ -y 2014 -t pedestrians
     deps:
-      njdot/data/2014/NewJersey2014Pedestrians.zip: 3627ab576bc0bdf3a822888c73b15339
+      NewJersey2014Pedestrians.zip: 3627ab576bc0bdf3a822888c73b15339

@@ -1,10 +1,10 @@
 outs:
-- md5: 024bc45844e46b10f274c3b5bd3acdd7
-  size: 5321272
+- md5: 6aeb4cc3df1a8d5de6675495d9d3033f
+  size: 5319511
   hash: md5
   path: NewJersey2009Occupants.pqt
 meta:
   computation:
     cmd: rawdata pqt -r NJ -y 2009 -t occupants
     deps:
-      njdot/data/2009/NewJersey2009Occupants.zip: fb3cefa3bb815a4ad555605aec7073e3
+      NewJersey2009Occupants.zip: fb3cefa3bb815a4ad555605aec7073e3

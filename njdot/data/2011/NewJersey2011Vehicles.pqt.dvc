@@ -1,10 +1,10 @@
 outs:
-- md5: aa6cc9b280ccfd89a50dec8a0bc17183
-  size: 10485260
+- md5: 277cefe93bb97674d1b8764e0c2eed4d
+  size: 10482033
   hash: md5
   path: NewJersey2011Vehicles.pqt
 meta:
   computation:
     cmd: rawdata pqt -r NJ -y 2011 -t vehicles
     deps:
-      njdot/data/2011/NewJersey2011Vehicles.zip: 5dd5d4938d1956d10ae39e277dc26a64
+      NewJersey2011Vehicles.zip: 5dd5d4938d1956d10ae39e277dc26a64
