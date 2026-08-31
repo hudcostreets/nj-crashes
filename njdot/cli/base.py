@@ -214,6 +214,75 @@ def compute_cm(force, dry_run):
         err(f"Dry run; would write {CM_PQT}")
 
 
+@compute.command('pk-dupes')
+@click.option('-o', '--out-path', default=f'{DOT_DATA}/crash_pk_dupes.csv', help='Write the audit CSV here')
+def compute_pk_dupes(out_path):
+    """Audit crashes whose `(year, cc, mc, case)` logical PK is non-unique.
+
+    The canonical crash key is the integer `id` (children FK via `crash_id`,
+    resolved through the raw `mc_dot`, so joins are unaffected). But the
+    harmonized `(year, cc, mc, case)` tuple is *not* unique: muni-code
+    harmonization collapses distinct raw DOT codes (`mc_dot`) into one canonical
+    `mc`, so two rows can share the 4-field key. Today these are all Princeton
+    Boro/Twp (`mc_dot` 9/10) folded into merged Princeton (`mc=14`).
+
+    Each collision group is classified by whether its rows share a `dt`:
+    - `distinct`: different timestamps → genuinely separate crashes that
+      coincidentally reused a case number across the two pre-merger departments'
+      independent sequences. Keeping both is correct.
+    - `true_dup`: identical `dt` → the same physical crash recorded under two
+      muni codes. These over-count and should eventually be deduped (see the
+      "Non-unique 4-field crash PK" note in CLAUDE.md; punted from the pipeline
+      for now).
+    """
+    from njdot.paths import CRASHES_PQT
+    cols = ['year', 'cc', 'mc', 'mc_dot', 'case', 'dt', 'severity', 'tk', 'ti', 'road', 'cross_street', 'pdn']
+    err(f"Loading {CRASHES_PQT}...")
+    df = pd.read_parquet(CRASHES_PQT, columns=cols)
+    df = df.reset_index()  # expose `id`
+
+    pk = ['year', 'cc', 'mc', 'case']
+    sizes = df.groupby(pk).size()
+    dupe_keys = sizes[sizes > 1].index
+    dupes = df[df.set_index(pk).index.isin(set(dupe_keys))].copy()
+
+    def summarize(g: pd.DataFrame) -> pd.Series:
+        g = g.sort_values('mc_dot')
+        dts = g['dt'].tolist()
+        same_dt = g['dt'].nunique(dropna=False) == 1
+        return pd.Series({
+            'n': len(g),
+            'kind': 'true_dup' if same_dt else 'distinct',
+            'ids': '|'.join(str(i) for i in g['id']),
+            'mc_dots': '|'.join(str(int(m)) for m in g['mc_dot']),
+            'severities': '|'.join(g['severity'].astype(str)),
+            'tks': '|'.join(str(int(t)) for t in g['tk']),
+            'same_dt': same_dt,
+            'dts': '|'.join(str(d) for d in dts),
+            'roads': '|'.join(g['road'].fillna('').astype(str)),
+        })
+
+    audit = (
+        dupes
+        .groupby(pk, sort=True)
+        .apply(summarize, include_groups=False)
+        .reset_index()
+    )
+    audit['mc'] = audit['mc'].astype(int)  # nullable float in crashes.parquet; always populated for dupes
+
+    n_true = int((audit['kind'] == 'true_dup').sum())
+    n_distinct = int((audit['kind'] == 'distinct').sum())
+    err(f"{len(audit)} collision groups ({dupes.shape[0]} rows): {n_distinct} distinct, {n_true} true_dup")
+    if n_true:
+        err("true_dup groups (same crash under two muni codes):")
+        for _, r in audit[audit['kind'] == 'true_dup'].iterrows():
+            err(f"  {r['year']} cc={r['cc']} mc={r['mc']} case={r['case']} "
+                f"mc_dot={r['mc_dots']} sev={r['severities']} tk={r['tks']}")
+
+    err(f"Writing {out_path}")
+    audit.to_csv(out_path, index=False)
+
+
 # Add rawdata subcommand at end to avoid import ordering issues
 try:
     from njdot.rawdata import rawdata

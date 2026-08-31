@@ -28,6 +28,8 @@ There are THREE different municipality coding systems:
 
 **Important**: `(year, case)` is NOT unique - 751,473 duplicates exist across counties/municipalities (11.4% of all crashes). Always use the full 4-field PK.
 
+**The canonical unique crash key is the integer `id`** (crashes' row index; children FK via `crash_id`). The 4-field `(year, cc, mc, case)` tuple is a *near*-unique business key: it has exactly **50 legacy collision pairs**, all Princeton, because muni-code harmonization folds distinct raw DOT codes (`mc_dot` = Boro 9 / Twp 10) into one canonical `mc=14`. The pipeline is internally keyed on the *raw* code throughout (per-year dedup on `(cc, mc_dot, case)`; child→crash join resolves `crash_id` via `(year, cc, mc_dot, case)`), so joins are unaffected — **use `id`/`crash_id` for joins, not the 4-field PK**. See the "Non-unique 4-field crash PK" Known Issue below.
+
 Other types reference crashes via denormalized PK fields:
 - **Vehicles PK**: `(year, cc, mc, case, vn)`
 - **Drivers PK**: `(year, cc, mc, case, vn)` (shares vn with vehicle)
@@ -161,6 +163,16 @@ Note: Use `env -u PYTHONPATH` to avoid shadowing PyGithub package.
 - **2023**: First year with data quality regressions requiring majority voting
 
 ## Known Issues
+
+### Non-unique 4-field crash PK (Princeton Boro/Twp merger)
+
+**Problem**: `(year, cc, mc, case)` is assumed-unique but isn't — there are **50 collision pairs** (100 rows), all Princeton (`cc=11`, `mc=14`), spanning 2001-2016. Muni-code harmonization (`DOT_MN_FIXES` in `harmonize_muni_codes.py`) collapses `'Princeton Boro'`/`'Princeton Twp'` → `'Princeton'` for all years (the 2013 Boro/Twp merger applied retroactively — spatially exact, since the Borough was a doughnut-hole entirely inside the Township, so merged = exact union with no boundary change). The two pre-merger munis ran independent case-number sequences, so a shared case string collides once both fold to `mc=14`.
+
+**Why joins are safe anyway**: the pipeline keys on the *raw* DOT code (`mc_dot`) end-to-end — the per-year dedup uses `(cc, mc_dot, case)` (`crashes.py`), and the child→crash FK join resolves `crash_id` via `(year, cc, mc_dot, case)` (`load.py:normalize`), which *is* globally unique. Children carry only `crash_id` (never a 4-field PK), so structural joins can't cross-match. `mc_dot` (raw 9/10/14) is retained on `crashes.parquet` as provenance. **Use `id`/`crash_id` for joins.** The one canonical-`mc`-keyed path is the NJSP↔NJDOT matcher's Pass-0 manual-override lookup (`match_njdot.py`), hardened to pick the highest-`tk` copy on a collision.
+
+**Audit**: `njdot compute pk-dupes` scans `crashes.parquet` for 4-field-PK collisions, classifies each group, and writes `njdot/data/crash_pk_dupes.csv` (git-tracked snapshot). Classification by `dt` agreement:
+- **47 `distinct`** pairs (different `dt`): genuinely separate crashes (Boro vs Twp, coincidental case reuse). Keeping both is correct.
+- **3 `true_dup`** pairs (same `dt` — same crash under two muni codes): `12-18325` (2012), `13-16-AC` (2013), `16-30259` (2016). These over-count by 3; the 2016 one is fatal under `mc_dot=10` but property under `mc_dot=14` (matcher correctly kept the fatal copy). **Deduping these 3 is punted** (needs a reproc; tracked in `specs/ROADMAP.md`).
 
 ### Denormalized PK Inconsistency (RESOLVED)
 

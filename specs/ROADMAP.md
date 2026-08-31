@@ -164,6 +164,18 @@ normalization pipeline; no UI deps.
 
 ## Known bugs / cleanups (not specced)
 
+- **Dedupe 3 Princeton `true_dup` crashes** (punted 2026-08-31). Of the
+  50 non-unique-4-field-PK Princeton pairs (see CLAUDE.md "Non-unique
+  4-field crash PK" + `njdot compute pk-dupes` / `njdot/data/crash_pk_dupes.csv`),
+  47 are genuinely distinct crashes (keep both) but 3 are the *same*
+  crash recorded under two muni codes (same `dt`): `12-18325` (2012),
+  `13-16-AC` (2013), `16-30259` (2016). They over-count crashes by 3;
+  the 2016 one is fatal under `mc_dot=10` but property under `mc_dot=14`
+  (an inconsistent-severity artifact — matcher already keeps the fatal
+  copy). The fix: dedupe these same-`dt` cross-`mc_dot` groups, keeping
+  the more-complete/higher-`tk` row. Deferred because it removes rows →
+  needs a full reproc + re-baseline; fold into the next reproc cycle
+  rather than triggering one for 3 rows.
 - `wrangler.toml` had duplicate `STAGING_OCCUPANTS_DB` bindings →
   fixed via `d1-import.sh` trap (`c3ad03f39c2`). Watch for
   recurrence.

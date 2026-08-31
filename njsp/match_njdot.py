@@ -559,7 +559,18 @@ def match(
             if pk not in do_pk.index:
                 err(f"  manual-match skipped: NJDOT PK {pk} not found")
                 continue
-            did = int(do_pk.loc[pk])
+            sel = do_pk.loc[pk]
+            if isinstance(sel, pd.Series):
+                # The harmonized `(year, cc, mc, case)` key is non-unique where
+                # muni-code harmonization folds distinct raw codes into one `mc`
+                # (Princeton Boro/Twp → merged Princeton; see `njdot compute
+                # pk-dupes`). Manual matches are fatal-oriented, so pick the
+                # highest-`tk` copy — the fatal record when one copy is fatal.
+                cand = do[do['njdot_idx'].isin(sel.tolist())]
+                did = int(cand.sort_values('tk', ascending=False)['njdot_idx'].iloc[0])
+                err(f"  manual-match PK {pk} → {len(sel)} NJDOT rows (harmonized-PK collision); picking highest-tk njdot_idx={did}")
+            else:
+                did = int(sel)
             _record(sid, did, 0)
             n_manual += 1
         err(f"  pass 0 (manual overrides): {n_manual} pairs")
