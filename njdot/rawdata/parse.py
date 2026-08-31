@@ -64,10 +64,14 @@ def parse_rows(txt_path, fields, return_diagnostics=False, max_records=None, raw
         with open(txt_path, 'rb') as f:
             raw_bytes = f.read()
 
-    # Try UTF-8 first (for 2023+ files), fall back to ISO-8859-1
+    # Try UTF-8 first (2023+ files), fall back to ISO-8859-1 (pre-2023 files).
+    # Decode *strictly* so the fallback is live: with `errors='replace'` the
+    # decode never raises, the `except` is dead code, and every high byte in a
+    # latin-1 file (e.g. `ñ`=0xD1, `ç`=0xE7) becomes U+FFFD — then mapped to a
+    # space below. Strict-then-fallback preserves those characters instead.
     try:
-        text = raw_bytes.decode('utf-8', errors='replace')
-    except:
+        text = raw_bytes.decode('utf-8')
+    except UnicodeDecodeError:
         text = raw_bytes.decode('ISO-8859-1')
 
     # Replace problematic Unicode characters with ASCII equivalents
