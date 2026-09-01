@@ -147,6 +147,17 @@ job_def = aws.batch.JobDefinition(
     name="nj-crashes",
     type="container",
     platform_capabilities=["FARGATE"],
+    # Fargate Spot reclaims are frequent; retry on interruption, exit on any
+    # genuine failure (so a real bug doesn't burn attempts).
+    retry_strategy=aws.batch.JobDefinitionRetryStrategyArgs(
+        attempts=3,
+        evaluate_on_exits=[
+            aws.batch.JobDefinitionRetryStrategyEvaluateOnExitArgs(
+                action="RETRY", on_status_reason="Your Spot Task*"),   # Spot reclaim
+            aws.batch.JobDefinitionRetryStrategyEvaluateOnExitArgs(
+                action="EXIT", on_reason="*"),
+        ],
+    ),
     container_properties=pulumi.Output.all(
         image=IMAGE, exec_arn=execution_role.arn, task_arn=task_role.arn,
     ).apply(_container_props),

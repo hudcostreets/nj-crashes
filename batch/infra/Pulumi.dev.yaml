@@ -2,7 +2,7 @@ config:
   aws:region: us-east-1
   # Full ECR image URI:tag for the job definition. Set per run:
   #   pulumi up -c nj-crashes-batch:image=006196295121.dkr.ecr.us-east-1.amazonaws.com/nj-crashes-reproc:<sha>-pb
-  nj-crashes-batch:image: 006196295121.dkr.ecr.us-east-1.amazonaws.com/nj-crashes-reproc:fbe9aa009fd-amd64
+  nj-crashes-batch:image: 006196295121.dkr.ecr.us-east-1.amazonaws.com/nj-crashes-reproc:a16025228b2-amd64
   nj-crashes-batch:arch: X86_64
   nj-crashes-batch:vcpu: "16"
   nj-crashes-batch:memory_mib: "65536"

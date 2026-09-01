@@ -8,12 +8,21 @@ the `nj-crashes-batch-task` role and gets S3 credentials from the ECS metadata
 endpoint. Image + arch live in the job def (set via `pulumi up -c image=…`), so
 this carries only the container command + per-job env overrides.
 
-Examples:
-  batch/submit audit                       # x86/arm64 reproducibility audit (arch per job def)
-  batch/submit -n dvx-reproc run --no-commit --push each -f -v   # (once job def is arm64 + GH-token secret)
+Modes (which resources back the job is set by Pulumi stack config, not here):
+  # audit — job def is X86_64/ARM64 audit image, no secret:
+  batch/submit audit
+
+  # reproc — after `pulumi up -c image=<arm64-sha>-pb -c arch=ARM64 \
+  #            -c gh_token_secret_arn=<arn>` reconfigures the job def:
+  batch/submit -j nj-crashes-reproc -b reproc-results/$(date -u +%Y%m%d-%H%M%S) \
+    run --no-commit --push each -f -v
+
+The GH-token secret rides in the Pulumi job def (injected by Batch → the
+execution role reads it → `FARGATE_GITHUB_RW_TOKEN` in the container), so it's
+never handled here; `-b/--results-branch` sets the push-back branch
+(`entrypoint.sh` commits+pushes the regenerated `.dvc`s there).
 """
 import sys
-from os import environ
 
 from click import argument, command, option
 
@@ -24,18 +33,22 @@ SCRATCH_S3 = 's3://nj-crashes/.audit-scratch'
 
 
 @command(context_settings=dict(ignore_unknown_options=True))
+@option('-b', '--results-branch', help='RESULTS_BRANCH for reproc push-back (entrypoint commits+pushes here)')
 @option('-j', '--job-name', default='nj-crashes-job', help='Batch job name')
 @option('-s', '--njc-s3', default=SCRATCH_S3, help='NJC_S3 for `--s3` stage side-effects (kept off prod)')
 @option('-O', '--no-watch', is_flag=True, help="Don't tail the log; just print the job id")
 @argument('cmd', nargs=-1, required=True)
-def main(job_name: str, njc_s3: str, no_watch: bool, cmd: tuple[str, ...]):
-    """Submit CMD (the container command, e.g. `audit`) to the `nj-crashes` queue."""
+def main(results_branch: str, job_name: str, njc_s3: str, no_watch: bool, cmd: tuple[str, ...]):
+    """Submit CMD (the container command, e.g. `audit` or `run …`) to the `nj-crashes` queue."""
+    env = {'NJC_S3': njc_s3}   # no AWS_* — task role provides creds
+    if results_branch:
+        env['RESULTS_BRANCH'] = results_branch
     code = submit(
         prefix=PREFIX,
         queue=PREFIX,
         command=list(cmd),
         job_name=job_name,
-        environment={'NJC_S3': njc_s3},   # no AWS_* — task role provides creds
+        environment=env,
         watch=not no_watch,
     )
     sys.exit(code)
