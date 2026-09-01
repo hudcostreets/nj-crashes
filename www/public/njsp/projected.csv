@@ -2,23 +2,23 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Atlantic,,28,1,15,6,9,28,15,5,9,1
 ,,Bergen,,29,0,16,0,13,28,16,1,11,0
 ,,Burlington,,42,0,29,10,5,40,28,8,7,1
-,,Camden,,32,2,11,3,18,32,11,3,18,1
+,,Camden,,32,2,11,3,19,32,11,3,18,1
 ,,Cape May,,4,0,4,0,0,5,5,1,0,0
 ,,Cumberland,,21,1,10,2,8,21,10,2,8,1
-,,Essex,,36,0,12,5,23,39,13,4,25,0
+,,Essex,,37,0,14,5,23,40,14,4,25,0
 ,,Gloucester,,25,2,15,7,2,25,16,7,2,2
-,,Hudson,,38,0,13,2,28,29,11,2,17,0
+,,Hudson,,36,1,11,2,28,30,11,2,17,1
 ,,Hunterdon,,6,0,2,2,2,7,3,2,2,0
 ,,Mercer,,25,1,12,6,10,25,13,6,8,1
 ,,Middlesex,,43,2,27,6,9,44,28,5,10,2
 ,,Monmouth,,53,3,24,4,32,39,21,3,12,3
-,,Morris,,21,0,12,0,11,21,12,1,7,1
-,,Ocean,,43,0,27,7,10,42,27,7,10,2
+,,Morris,,20,0,11,0,11,20,11,1,7,1
+,,Ocean,,42,0,26,6,10,42,27,7,10,2
 ,,Passaic,,18,0,13,3,6,18,11,3,6,0
 ,,Salem,,11,0,10,1,0,13,11,4,1,0
-,,Somerset,,21,0,18,0,6,19,14,0,5,0
-,,Sussex,,17,0,18,0,3,13,11,0,2,0
-,,Union,,46,1,22,4,24,35,16,3,16,1
+,,Somerset,,22,0,18,0,6,19,14,0,5,0
+,,Sussex,,18,0,18,0,3,13,11,0,2,0
+,,Union,,43,1,22,3,24,35,16,3,16,1
 ,,Warren,,8,0,5,1,2,8,5,1,2,0
 1,1,Atlantic,Absecon City,0,0,0,0,0,1,0,0,1,0
 1,2,Atlantic,Atlantic City,7,1,2,1,2,4,2,1,1,1
@@ -126,7 +126,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 7,1,Essex,Belleville Town,1,0,1,0,0,1,1,0,0,0
 7,3,Essex,Caldwell Boro,1,0,0,0,1,1,0,0,1,0
 7,5,Essex,East Orange City,4,0,1,0,2,4,1,0,3,0
-7,9,Essex,Irvington Town,0,0,0,0,0,0,0,0,0,0
+7,9,Essex,Irvington Town,1,0,1,0,0,1,1,0,0,0
 7,10,Essex,Livingston Twsp,0,0,0,0,0,0,0,0,0,0
 7,11,Essex,Maplewood Twsp,0,0,0,0,0,0,0,0,0,0
 7,12,Essex,Millburn Twsp,2,0,0,0,3,2,0,0,2,0
@@ -150,7 +150,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 8,18,Gloucester,Washington Twsp,0,0,0,0,0,1,0,1,0,0
 8,20,Gloucester,West Deptford Twsp,4,0,4,0,0,3,3,0,0,0
 8,24,Gloucester,Woolwich Twsp,1,0,0,1,0,1,0,1,0,0
-9,1,Hudson,Bayonne City,1,0,1,0,0,1,1,0,0,0
+9,1,Hudson,Bayonne City,3,1,1,0,0,2,1,0,0,1
 9,3,Hudson,Guttenberg Town,0,0,0,0,0,1,0,0,1,0
 9,4,Hudson,Harrison Town,3,0,0,1,1,2,0,1,1,0
 9,6,Hudson,Jersey City,8,0,2,1,5,7,2,1,4,0
@@ -181,7 +181,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 12,1,Middlesex,Carteret Boro,2,0,2,0,0,2,2,0,0,0
 12,2,Middlesex,Cranbury Twsp,1,0,1,0,0,1,1,0,0,0
 12,4,Middlesex,East Brunswick Twsp,0,0,0,0,0,0,0,0,0,0
-12,5,Middlesex,Edison Twsp,4,0,2,0,2,6,3,1,2,0
+12,5,Middlesex,Edison Twsp,4,0,2,0,1,6,3,1,2,0
 12,8,Middlesex,Jamesburg Boro,2,0,1,0,0,2,1,0,0,1
 12,9,Middlesex,Metuchen Boro,1,0,1,1,0,1,1,1,0,0
 12,12,Middlesex,Monroe Twsp,1,0,1,0,0,1,1,0,0,0
@@ -221,7 +221,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 13,51,Monmouth,Upper Freehold Twsp,1,0,1,0,0,1,1,0,0,0
 13,52,Monmouth,Wall Twsp,9,0,5,0,0,6,5,0,1,0
 14,4,Morris,Chatham Boro,1,0,0,0,1,1,0,0,1,0
-14,7,Morris,Chester Twsp,0,0,0,0,0,1,1,0,0,0
+14,7,Morris,Chester Twsp,0,0,0,0,0,0,0,0,0,0
 14,8,Morris,Denville Twsp,0,0,0,0,0,1,0,0,1,0
 14,9,Morris,Dover Town,1,0,0,0,1,1,0,0,1,0
 14,13,Morris,Harding Twsp,0,0,0,0,0,0,0,0,0,0
@@ -241,7 +241,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 15,2,Ocean,Barnegat Light Boro,0,0,0,0,0,0,0,0,0,0
 15,6,Ocean,Berkeley Twsp,2,0,0,2,0,2,1,2,0,0
 15,7,Ocean,Brick Twsp,5,1,2,0,1,4,2,0,1,1
-15,8,Ocean,Toms River,8,0,7,0,3,10,7,1,4,0
+15,8,Ocean,Toms River,7,0,6,0,3,10,7,1,4,0
 15,12,Ocean,Jackson Twsp,8,0,6,1,1,7,6,1,1,0
 15,13,Ocean,Lacey Twsp,4,0,0,3,0,3,1,2,0,0
 15,14,Ocean,Lakehurst Boro,0,0,0,0,0,0,0,0,0,0
@@ -298,7 +298,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 19,24,Sussex,Wantage Twsp,1,0,1,0,0,1,1,0,0,0
 20,1,Union,Berkeley Heights Tw,0,0,0,0,0,1,0,0,1,0
 20,4,Union,Elizabeth City,14,0,3,0,11,10,3,0,7,0
-20,7,Union,Hillside Twsp,3,0,3,0,0,2,2,0,0,0
+20,7,Union,Hillside Twsp,2,0,3,0,0,2,2,0,0,0
 20,9,Union,Linden City,4,0,2,0,3,4,2,0,2,0
 20,10,Union,Mountainside Boro,2,1,0,0,0,2,0,1,0,1
 20,12,Union,Plainfield City,5,0,2,2,1,4,2,1,1,0
