@@ -1,0 +1,11 @@
+config:
+  aws:region: us-east-1
+  # Full ECR image URI:tag for the job definition. Set per run:
+  #   pulumi up -c nj-crashes-batch:image=006196295121.dkr.ecr.us-east-1.amazonaws.com/nj-crashes-reproc:<sha>-pb
+  nj-crashes-batch:image: 006196295121.dkr.ecr.us-east-1.amazonaws.com/nj-crashes-reproc:fbe9aa009fd-amd64
+  nj-crashes-batch:arch: X86_64
+  nj-crashes-batch:vcpu: "16"
+  nj-crashes-batch:memory_mib: "65536"
+  # Optional: Secrets Manager ARN of the GH RW token (reproc push-back only).
+  # nj-crashes-batch:gh_token_secret_arn: arn:aws:secretsmanager:us-east-1:006196295121:secret:nj-crashes/fargate-github-rw-token-jVJlSc
+encryptionsalt: v1:MI0r5kBWrcc=:v1:gjrZ9mishg2L6Fkp:ZAD+anfJIvStgQ+e8L+6PvUQCBuqeA==
