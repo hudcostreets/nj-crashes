@@ -16,6 +16,18 @@
 # at 8192 bytes and the ~160-path list nears that, so the submit command is
 # flags-only and we append `batch/reproc-targets` here.
 set -e
+
+# Audit mode: run the reproducibility audit instead of a reproc. No git
+# push-back, no dvx orchestration — `reproc-audit` pins each stage's committed
+# deps and re-runs its cmd itself, then classifies produced-vs-baseline. Used
+# to characterize determinism / x86-vs-arm64 arch-invariance of the daily
+# stages (see specs discussion). Invoked as `audit [targets...]`.
+if [ "${1:-}" = audit ]; then
+    shift
+    cd /app
+    exec batch/reproc-audit "$@"
+fi
+
 push_back=no
 if [ -n "${FARGATE_GITHUB_RW_TOKEN:-}" ]; then
     git -C /app remote set-url --push origin \

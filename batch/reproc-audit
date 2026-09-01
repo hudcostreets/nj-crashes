@@ -1,0 +1,162 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click", "pyyaml"]
+# ///
+"""Reproducibility audit: re-run a stage from its *pinned committed deps* and
+classify the produced output against the recorded (baseline) blob.
+
+Two axes fall out of *where* this runs, against one fixed baseline (the md5s
+committed in the `.dvc` files, produced by the arm64 Fargate reproc):
+
+    same stack, twice   -> determinism   (row order, timestamps, dict
+                                           iteration, parallelism races)
+    x86 vs arm64        -> arch-invariance
+
+Per target: pull each committed dep (so inputs are identical regardless of
+where we run), run the stage cmd, then hand produced-vs-recorded to
+`batch/pqt-audit cmp`, whose verdict is content-level — pyarrow footer churn
+reads as `metadata`, not a false `content` alarm.
+
+Only single-file `.parquet`/`.pqt` outputs are classified here; dir outputs
+(ymccmc/…/s2_l21) and `.db` sqlite outputs are reported as `skipped(<kind>)`
+pending their own comparators.
+"""
+import hashlib
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+import click
+import yaml
+
+ROOT = Path(__file__).resolve().parent.parent
+PQT_AUDIT = ROOT / 'batch' / 'pqt-audit'
+PROD_REMOTE = 's3://nj-crashes/.dvc'
+
+# The daily-recomputed stages (single-parquet subset first). See
+# `.github/workflows/daily.yml` — the stages CI runs each day, which therefore
+# commit their outputs onto the arm64 baseline and are the live drift surface.
+DAILY_PARQUET = [
+    'njsp/data/crash-log.parquet.dvc',
+    'njsp/data/crashes.parquet.dvc',
+    'njsp/data/njsp_njdot_match.parquet.dvc',
+    'njsp/data/njsp_njdot_residuals.parquet.dvc',
+    'njdot/data/aashto_supplemented_crashes.parquet.dvc',
+]
+
+
+def err(*a):
+    print(*a, file=sys.stderr, flush=True)
+
+
+def md5(p: Path) -> str:
+    h = hashlib.md5()
+    with open(p, 'rb') as f:
+        for c in iter(lambda: f.read(1 << 20), b''):
+            h.update(c)
+    return h.hexdigest()
+
+
+def resolve_dep(dvc_dir: Path, path: str) -> Path:
+    """DVX dep-path resolution: leading '/' = repo-root; else relative to the
+    .dvc's own directory."""
+    if path.startswith('/'):
+        return ROOT / path.lstrip('/')
+    return dvc_dir / path
+
+
+def blob_url(md5hex: str) -> str:
+    return f'{PROD_REMOTE}/files/md5/{md5hex[:2]}/{md5hex[2:]}'
+
+
+def s3_cp(url: str, dest: Path) -> bool:
+    r = subprocess.run(['aws', 's3', 'cp', url, str(dest), '--quiet'],
+                       capture_output=True, text=True)
+    if r.returncode:
+        err(f"    fetch failed: {url}\n    {r.stderr.strip()}")
+    return r.returncode == 0
+
+
+def audit_target(dvc_path: str, workdir: Path, no_pull: bool) -> list[tuple[str, str]]:
+    """Return [(out_path, verdict), ...] for one stage."""
+    dvc = ROOT / dvc_path
+    d = yaml.safe_load(open(dvc))
+    comp = d['meta']['computation']
+    cmd = comp['cmd']
+    deps = comp.get('deps', {})
+    outs = d['outs']
+    dvc_dir = dvc.parent
+
+    if not no_pull:
+        # Pin inputs: pull each committed dep blob to disk.
+        dep_paths = [str(resolve_dep(dvc_dir, p).relative_to(ROOT)) for p in deps]
+        if dep_paths:
+            err(f"  pull {len(dep_paths)} deps")
+            subprocess.run(['dvx', 'pull', *dep_paths], cwd=ROOT,
+                           env={**os.environ, 'PYTHONPATH': ''}, check=False,
+                           capture_output=True)
+
+    err(f"  run: {cmd}")
+    r = subprocess.run(cmd, shell=True, cwd=ROOT,
+                       env={**os.environ, 'PYTHONPATH': ''},
+                       capture_output=True, text=True)
+    if r.returncode:
+        err(f"  CMD FAILED (rc={r.returncode}):\n{r.stderr[-2000:]}")
+        return [(o['path'], 'cmd-failed') for o in outs]
+
+    results = []
+    for o in outs:
+        opath, orec = o['path'], o['md5']
+        produced = dvc_dir / opath
+        if orec.endswith('.dir'):
+            results.append((opath, 'skipped(dir)')); continue
+        if not str(opath).endswith(('.parquet', '.pqt')):
+            results.append((opath, f'skipped({Path(opath).suffix or "noext"})')); continue
+        if not produced.exists():
+            results.append((opath, 'produced-missing')); continue
+        prod_md5 = md5(produced)
+        if prod_md5 == orec:
+            results.append((opath, 'identical')); continue
+        recorded_blob = workdir / orec
+        if not recorded_blob.exists() and not s3_cp(blob_url(orec), recorded_blob):
+            results.append((opath, 'baseline-unavailable')); continue
+        cp = subprocess.run([str(PQT_AUDIT), 'cmp', str(recorded_blob), str(produced)],
+                            capture_output=True, text=True)
+        verdict = cp.stdout.strip().split('\n', 1)[0] if cp.stdout else f'cmp-error({cp.returncode})'
+        results.append((opath, verdict))
+    return results
+
+
+@click.command()
+@click.option('-d', '--workdir', default='tmp/reproc-audit', show_default=True, help="Cache dir for baseline blobs")
+@click.option('-P', '--no-pull', is_flag=True, help="Assume deps already pinned on disk; skip dvx pull")
+@click.argument('targets', nargs=-1)
+def main(workdir: str, no_pull: bool, targets: tuple[str, ...]):
+    """Audit TARGETS (default: the daily single-parquet stages)."""
+    wd = ROOT / workdir
+    wd.mkdir(parents=True, exist_ok=True)
+    tgts = list(targets) or DAILY_PARQUET
+    tally: dict[str, int] = {}
+    err(f"auditing {len(tgts)} target(s) against baseline {PROD_REMOTE}\n")
+    rows = []
+    for t in tgts:
+        err(f"=== {t} ===")
+        for opath, verdict in audit_target(t, wd, no_pull):
+            tally[verdict] = tally.get(verdict, 0) + 1
+            rows.append((verdict, opath))
+            err(f"  -> {verdict}: {opath}")
+        err("")
+    print(f"\n{'VERDICT':<22s} OUTPUT")
+    for verdict, opath in rows:
+        print(f"{verdict:<22s} {opath}")
+    print("\nsummary:")
+    for k in sorted(tally):
+        print(f"  {k:<22s} {tally[k]}")
+    # Real drift only if a content/schema difference survived.
+    sys.exit(1 if (tally.get('content') or tally.get('schema')) else 0)
+
+
+if __name__ == '__main__':
+    main()
