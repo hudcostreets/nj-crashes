@@ -14,16 +14,23 @@ committed in the `.dvc` files, produced by the arm64 Fargate reproc):
     x86 vs arm64        -> arch-invariance
 
 Per target: pull each committed dep (so inputs are identical regardless of
-where we run), run the stage cmd, then hand produced-vs-recorded to
-`batch/pqt-audit cmp`, whose verdict is content-level — pyarrow footer churn
-reads as `metadata`, not a false `content` alarm.
+where we run), run the stage cmd (with cwd = the `.dvc`'s dir, matching dvx —
+the cells stages' baked `cd ../../..` depends on it; njsp/njdot cmds are
+cwd-immune), then classify each produced output vs its baseline:
 
-Only single-file `.parquet`/`.pqt` outputs are classified here; dir outputs
-(ymccmc/…/s2_l21) and `.db` sqlite outputs are reported as `skipped(<kind>)`
-pending their own comparators.
+  single-file .parquet/.pqt  ->  `batch/pqt-audit cmp` (content-level: pyarrow
+                                 footer churn reads as `metadata`, not `content`)
+  dir output (.dir)          ->  fetch the `.dir` manifest, compare each shard
+  .db sqlite                 ->  order-independent per-table row digest
+                                 (`db-layout` = same rows, different page bytes)
+
+Verdicts, benign→real: identical / metadata / db-layout / encoding / schema /
+content. Exit nonzero only if a `content`/`schema` difference survives.
 """
 import hashlib
+import json
 import os
+import sqlite3
 import subprocess
 import sys
 from pathlib import Path
@@ -35,9 +42,9 @@ ROOT = Path(__file__).resolve().parent.parent
 PQT_AUDIT = ROOT / 'batch' / 'pqt-audit'
 PROD_REMOTE = 's3://nj-crashes/.dvc'
 
-# The daily-recomputed stages (single-parquet subset first). See
-# `.github/workflows/daily.yml` — the stages CI runs each day, which therefore
-# commit their outputs onto the arm64 baseline and are the live drift surface.
+# The daily-recomputed stages (see `.github/workflows/daily.yml`): the stages CI
+# runs each day, which commit their outputs onto the arm64 baseline — the live
+# drift surface. Grouped by output shape (→ comparator).
 DAILY_PARQUET = [
     'njsp/data/crash-log.parquet.dvc',
     'njsp/data/crashes.parquet.dvc',
@@ -45,6 +52,20 @@ DAILY_PARQUET = [
     'njsp/data/njsp_njdot_residuals.parquet.dvc',
     'njdot/data/aashto_supplemented_crashes.parquet.dvc',
 ]
+DAILY_DIR = [
+    'www/public/data/njdot/ymccmc.dvc',
+    'www/public/data/njdot/ymccmcs.dvc',
+    'data/cells/raw/s2_l21.dvc',
+]
+DAILY_DB = [
+    'www/public/njsp/crashes.db.dvc',
+    'www/public/njdot/cmymc.db.dvc',
+    'data/cells/cells-s2.db.dvc',
+]
+DAILY_ALL = DAILY_PARQUET + DAILY_DIR + DAILY_DB
+
+# Benign → real, for worst-of-shards ranking.
+RANK = {'identical': 0, 'metadata': 1, 'db-layout': 1, 'encoding': 2, 'schema': 3, 'content': 4}
 
 
 def err(*a):
@@ -79,53 +100,126 @@ def s3_cp(url: str, dest: Path) -> bool:
     return r.returncode == 0
 
 
-def audit_target(dvc_path: str, workdir: Path, no_pull: bool) -> list[tuple[str, str]]:
-    """Return [(out_path, verdict), ...] for one stage."""
+def pqt_cmp(a: Path, b: Path) -> str:
+    cp = subprocess.run([str(PQT_AUDIT), 'cmp', str(a), str(b)], capture_output=True, text=True)
+    return cp.stdout.strip().split('\n', 1)[0] if cp.stdout else f'cmp-error({cp.returncode})'
+
+
+def classify_file(produced: Path, orec: str, workdir: Path) -> tuple[str, list[str]]:
+    if not produced.exists():
+        return 'produced-missing', []
+    if md5(produced) == orec:
+        return 'identical', []
+    base = workdir / orec
+    if not base.exists() and not s3_cp(blob_url(orec), base):
+        return 'baseline-unavailable', []
+    if str(produced).endswith(('.parquet', '.pqt')):
+        return pqt_cmp(base, produced), []
+    return 'content', ['bytes differ (non-parquet file)']
+
+
+def classify_dir(produced_dir: Path, dir_md5: str, workdir: Path) -> tuple[str, list[str]]:
+    if not produced_dir.is_dir():
+        return 'produced-missing', []
+    base = dir_md5[:-4]  # strip '.dir'
+    manifest = workdir / f'{dir_md5}.json'
+    if not manifest.exists() and not s3_cp(f'{PROD_REMOTE}/files/md5/{base[:2]}/{base[2:]}.dir', manifest):
+        return 'baseline-unavailable', []
+    base_shards = {e['relpath']: e['md5'] for e in json.load(open(manifest))}
+    prod_shards = {str(p.relative_to(produced_dir)): p
+                   for p in produced_dir.rglob('*') if p.is_file()}
+    notes, worst = [], 'identical'
+    if set(base_shards) != set(prod_shards):
+        notes += [f'+{a}' for a in sorted(set(prod_shards) - set(base_shards))]
+        notes += [f'-{d}' for d in sorted(set(base_shards) - set(prod_shards))]
+        return 'schema', notes
+    for rel, bmd5 in sorted(base_shards.items()):
+        prod = prod_shards[rel]
+        if md5(prod) == bmd5:
+            continue
+        base_blob = workdir / bmd5
+        if not base_blob.exists() and not s3_cp(blob_url(bmd5), base_blob):
+            notes.append(f'{rel}: baseline-unavailable'); continue
+        v = pqt_cmp(base_blob, prod) if rel.endswith(('.parquet', '.pqt')) else 'content'
+        if v != 'identical':
+            notes.append(f'{rel}: {v}')
+            if RANK.get(v, 4) > RANK[worst]:
+                worst = v
+    return worst, notes
+
+
+def sqlite_digest(db: Path) -> dict[str, tuple[int, str]]:
+    """{table: (nrows, order-independent 128-bit row-set digest)}."""
+    con = sqlite3.connect(f'file:{db}?mode=ro', uri=True)
+    con.text_factory = bytes
+    cur = con.cursor()
+    tables = [r[0].decode() if isinstance(r[0], bytes) else r[0] for r in cur.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")]
+    out = {}
+    for t in tables:
+        acc, n = bytearray(16), 0
+        for row in cur.execute(f'SELECT * FROM "{t}"'):
+            h = hashlib.blake2b(repr(row).encode(), digest_size=16).digest()
+            acc = bytearray(a ^ b for a, b in zip(acc, h))
+            n += 1
+        out[t] = (n, bytes(acc).hex())
+    con.close()
+    return out
+
+
+def classify_db(produced: Path, orec: str, workdir: Path) -> tuple[str, list[str]]:
+    if not produced.exists():
+        return 'produced-missing', []
+    if md5(produced) == orec:
+        return 'identical', []
+    base = workdir / orec
+    if not base.exists() and not s3_cp(blob_url(orec), base):
+        return 'baseline-unavailable', []
+    pd_, bd = sqlite_digest(produced), sqlite_digest(base)
+    if pd_ == bd:
+        return 'db-layout', []  # identical rows, different page bytes
+    notes = [f'+table {t}' for t in sorted(set(pd_) - set(bd))]
+    notes += [f'-table {t}' for t in sorted(set(bd) - set(pd_))]
+    if notes:
+        return 'schema', notes
+    for t in sorted(set(pd_) & set(bd)):
+        if pd_[t] != bd[t]:
+            notes.append(f'table {t}: {bd[t][0]}→{pd_[t][0]} rows' if pd_[t][0] != bd[t][0]
+                         else f'table {t}: values')
+    return 'content', notes
+
+
+def audit_target(dvc_path: str, workdir: Path, no_pull: bool) -> list[tuple[str, str, list[str]]]:
     dvc = ROOT / dvc_path
     d = yaml.safe_load(open(dvc))
     comp = d['meta']['computation']
-    cmd = comp['cmd']
-    deps = comp.get('deps', {})
-    outs = d['outs']
-    dvc_dir = dvc.parent
+    cmd, deps, outs, dvc_dir = comp['cmd'], comp.get('deps', {}), d['outs'], dvc.parent
 
     if not no_pull:
-        # Pin inputs: pull each committed dep blob to disk.
         dep_paths = [str(resolve_dep(dvc_dir, p).relative_to(ROOT)) for p in deps]
         if dep_paths:
             err(f"  pull {len(dep_paths)} deps")
             subprocess.run(['dvx', 'pull', *dep_paths], cwd=ROOT,
-                           env={**os.environ, 'PYTHONPATH': ''}, check=False,
-                           capture_output=True)
+                           env={**os.environ, 'PYTHONPATH': ''}, check=False, capture_output=True)
 
-    err(f"  run: {cmd}")
-    r = subprocess.run(cmd, shell=True, cwd=ROOT,
-                       env={**os.environ, 'PYTHONPATH': ''},
-                       capture_output=True, text=True)
+    err(f"  run (cwd={dvc_dir.relative_to(ROOT)}): {cmd}")
+    r = subprocess.run(cmd, shell=True, cwd=dvc_dir,  # dvx runs stage cmds from the artifact's dir
+                       env={**os.environ, 'PYTHONPATH': ''}, capture_output=True, text=True)
     if r.returncode:
         err(f"  CMD FAILED (rc={r.returncode}):\n{r.stderr[-2000:]}")
-        return [(o['path'], 'cmd-failed') for o in outs]
+        return [(o['path'], 'cmd-failed', []) for o in outs]
 
     results = []
     for o in outs:
         opath, orec = o['path'], o['md5']
         produced = dvc_dir / opath
         if orec.endswith('.dir'):
-            results.append((opath, 'skipped(dir)')); continue
-        if not str(opath).endswith(('.parquet', '.pqt')):
-            results.append((opath, f'skipped({Path(opath).suffix or "noext"})')); continue
-        if not produced.exists():
-            results.append((opath, 'produced-missing')); continue
-        prod_md5 = md5(produced)
-        if prod_md5 == orec:
-            results.append((opath, 'identical')); continue
-        recorded_blob = workdir / orec
-        if not recorded_blob.exists() and not s3_cp(blob_url(orec), recorded_blob):
-            results.append((opath, 'baseline-unavailable')); continue
-        cp = subprocess.run([str(PQT_AUDIT), 'cmp', str(recorded_blob), str(produced)],
-                            capture_output=True, text=True)
-        verdict = cp.stdout.strip().split('\n', 1)[0] if cp.stdout else f'cmp-error({cp.returncode})'
-        results.append((opath, verdict))
+            verdict, notes = classify_dir(produced, orec, workdir)
+        elif str(opath).endswith('.db'):
+            verdict, notes = classify_db(produced, orec, workdir)
+        else:
+            verdict, notes = classify_file(produced, orec, workdir)
+        results.append((opath, verdict, notes))
     return results
 
 
@@ -134,19 +228,21 @@ def audit_target(dvc_path: str, workdir: Path, no_pull: bool) -> list[tuple[str,
 @click.option('-P', '--no-pull', is_flag=True, help="Assume deps already pinned on disk; skip dvx pull")
 @click.argument('targets', nargs=-1)
 def main(workdir: str, no_pull: bool, targets: tuple[str, ...]):
-    """Audit TARGETS (default: the daily single-parquet stages)."""
+    """Audit TARGETS (default: all daily-recomputed stages — parquet, dir, db)."""
     wd = ROOT / workdir
     wd.mkdir(parents=True, exist_ok=True)
-    tgts = list(targets) or DAILY_PARQUET
+    tgts = list(targets) or DAILY_ALL
     tally: dict[str, int] = {}
     err(f"auditing {len(tgts)} target(s) against baseline {PROD_REMOTE}\n")
     rows = []
     for t in tgts:
         err(f"=== {t} ===")
-        for opath, verdict in audit_target(t, wd, no_pull):
+        for opath, verdict, notes in audit_target(t, wd, no_pull):
             tally[verdict] = tally.get(verdict, 0) + 1
             rows.append((verdict, opath))
             err(f"  -> {verdict}: {opath}")
+            for n in notes:
+                err(f"       {n}")
         err("")
     print(f"\n{'VERDICT':<22s} OUTPUT")
     for verdict, opath in rows:
@@ -154,7 +250,6 @@ def main(workdir: str, no_pull: bool, targets: tuple[str, ...]):
     print("\nsummary:")
     for k in sorted(tally):
         print(f"  {k:<22s} {tally[k]}")
-    # Real drift only if a content/schema difference survived.
     sys.exit(1 if (tally.get('content') or tally.get('schema')) else 0)
 
 
