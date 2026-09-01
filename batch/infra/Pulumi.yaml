@@ -1,0 +1,10 @@
+name: nj-crashes-batch
+runtime:
+  name: python
+  options:
+    virtualenv: .venv
+description: AWS Batch/Fargate reproc + audit infrastructure for nj-crashes (per-project namespaced; task-role, no baked creds)
+backend:
+  url: s3://nj-crashes/pulumi/batch
+config:
+  aws:region: us-east-1
