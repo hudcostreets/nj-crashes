@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Tue Sep 01 10:00:06 EDT 2026</RUNDATE>
+  <RUNDATE>Wed Sep 02 10:00:06 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -323,12 +323,13 @@
     <MUNICIPALITY MCODE="1305" MNAME="Atlantic Highlands">
       <ACCIDENT ACCID="14421" DATE="12/22/2025" TIME="1744">
         <HIGHWAY>36</HIGHWAY>
-        <LOCATION>State Highway 36</LOCATION>
+        <LOCATION>State Highway 36 MP 15.18</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
