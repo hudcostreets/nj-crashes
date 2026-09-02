@@ -1,6 +1,6 @@
 outs:
-- md5: 5b3b2f351d15c196d17b5e367d455fd6
-  size: 484903
+- md5: 57a7c818359284a2a6205a33bc773ce1
+  size: 484905
   hash: md5
   path: three_way_fatals.parquet
 meta:
@@ -8,11 +8,11 @@ meta:
     cmd: cd ../.. && python njsp/three_way_match.py
     git_deps:
       /njsp/three_way_match.py: 46a1a4af9c735bcf600506e2b12d12f2ece88f0b
-      /njsp/match_njdot.py: 2850afad5efe63641d87dad99a183cc667a41d84
+      /njsp/match_njdot.py: d4b8b82ad7456ad4f2ee0cee7d99a8600b77665a
     deps:
       /njdot/data/crashes.parquet: 1211e215284ecc253b64b51dd211dd2c
       /njdot/data/aashto_combined_crashes.parquet: 95ed2b9757071fb25ecdb9a46a15481a
-      crashes.parquet: b9669bb1b0b49860ebb14e04ac36bb83
+      crashes.parquet: 1f25c6f400442f1c6caabac3706561ce
     note: |
       3-way fatal-crash table: NJSP (SP) ↔ NJDOT per-table (DOTr) ↔
       NJDOT AASHTO (DOTa). Each row is one canonical fatal-crash event

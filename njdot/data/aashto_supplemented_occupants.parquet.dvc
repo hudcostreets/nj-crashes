@@ -11,12 +11,12 @@ meta:
       /njdot/aashto/to_njdot_schema.py: 358a48b822f7e461f9d2ebef97eac0bbff04958f
     deps:
       /www/public/njdot/cc2mc2mn.json: 21626cd6b5ed02264335837141b86984
-      /njdot/data/2023/persons.parquet: 72625f5a685ceb7489789e886f4f3171
-      /njdot/data/2023/crashes.parquet: affeb3aa3e962c81702877d29dbd7606
-      /njdot/data/2024/persons.parquet: e9abd0dc2fcb7fccc2a57e099caba6b6
-      /njdot/data/2024/crashes.parquet: 5944071954005d3430627ddff724764c
-      /njdot/data/2025/persons.parquet: 2c311b054ff1f7fbb27c0c099ae0486b
-      /njdot/data/2025/crashes.parquet: cb7e72cacb5773390a1f419793ae1a13
+      2023/persons.parquet: 72625f5a685ceb7489789e886f4f3171
+      2023/crashes.parquet: affeb3aa3e962c81702877d29dbd7606
+      2024/persons.parquet: e9abd0dc2fcb7fccc2a57e099caba6b6
+      2024/crashes.parquet: 5944071954005d3430627ddff724764c
+      2025/persons.parquet: 2c311b054ff1f7fbb27c0c099ae0486b
+      2025/crashes.parquet: cb7e72cacb5773390a1f419793ae1a13
     note: |
       AASHTO persons -> DOTr-style occupants supplement for 2023-2025.
       "Ghost-Driver" placeholder rows (Person Type=Driver + blank
