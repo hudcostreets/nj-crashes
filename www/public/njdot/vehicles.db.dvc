@@ -6,5 +6,7 @@ outs:
 meta:
   computation:
     cmd: njdot compute db -t vehicles
+    resources:
+      mem_gb: 32
     deps:
       /njdot/data/vehicles.parquet: e668ea8749d74a32cbc98d2e7da1633d

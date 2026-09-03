@@ -6,6 +6,8 @@ outs:
 meta:
   computation:
     cmd: njsp match_njdot
+    resources:
+      mem_gb: 6
     deps:
       crashes.parquet: c9c906a1a91c8fb44f94f72161fde1e8
       /njdot/data/crashes.parquet: 1211e215284ecc253b64b51dd211dd2c

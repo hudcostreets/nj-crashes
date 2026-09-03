@@ -6,5 +6,7 @@ outs:
 meta:
   computation:
     cmd: njdot compute db -t drivers
+    resources:
+      mem_gb: 30
     deps:
       /njdot/data/drivers.parquet: 9d1bcf3b162e709ee753580b8b280f76

@@ -6,5 +6,7 @@ outs:
 meta:
   computation:
     cmd: njdot compute db -t occupants
+    resources:
+      mem_gb: 30
     deps:
       /njdot/data/occupants.parquet: 5ab30c006397f2ca1739f97545519b51

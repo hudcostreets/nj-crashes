@@ -6,6 +6,8 @@ outs:
 meta:
   computation:
     cmd: njdot cmymc --skip-upload
+    resources:
+      mem_gb: 24
     deps:
       /njdot/data/crashes.parquet: 1211e215284ecc253b64b51dd211dd2c
       /njdot/data/vehicles.parquet: e668ea8749d74a32cbc98d2e7da1633d

@@ -41,15 +41,41 @@ else
 fi
 
 # Append the reproc target set to a `run` that names no explicit .dvc targets.
-is_run=no; has_target=no
+is_run=no; has_target=no; has_mem=no
 for a in "$@"; do
     [ "$a" = run ] && is_run=yes
-    case "$a" in *.dvc) has_target=yes;; esac
+    case "$a" in
+        *.dvc) has_target=yes;;
+        -m|--mem) has_mem=yes;;
+    esac
 done
 if [ "$is_run" = yes ] && [ "$has_target" = no ]; then
     # shellcheck disable=SC2046
     set -- "$@" $(cd /app && batch/reproc-targets)
     echo "entrypoint: appended $(cd /app && batch/reproc-targets | wc -l | tr -d ' ') reproc targets" >&2
+fi
+
+# For a `run` with no explicit -m/--mem, inject a level memory budget = 85% of
+# the container's RAM (leaving headroom for unlabeled medium stages) so heavy
+# labeled stages (`meta.computation.resources.mem_gb`) serialize while light
+# ones stay parallel. Auto-adapts to whatever memory Pulumi provisions for the
+# job, so a re-tiered box needs no code change. This is the durable fix for the
+# from-scratch-reproc OOM (16-way level parallelism co-ran the 30-40 GB `.db`
+# builds); `-j` stays at CPU count. Insert right after the `run` token so the
+# variadic target list can't swallow the value.
+if [ "$is_run" = yes ] && [ "$has_mem" = no ]; then
+    mem_total_kb=$(awk '/^MemTotal:/{print $2}' /proc/meminfo 2>/dev/null || echo 0)
+    if [ "${mem_total_kb:-0}" -gt 0 ]; then
+        mem_budget=$(( mem_total_kb * 85 / 100 / 1024 / 1024 ))
+        new=""
+        for a in "$@"; do
+            new="$new $a"
+            [ "$a" = run ] && new="$new -m $mem_budget"
+        done
+        # shellcheck disable=SC2086
+        set -- $new
+        echo "entrypoint: injected -m $mem_budget GB (85% of $((mem_total_kb / 1024 / 1024)) GB RAM)" >&2
+    fi
 fi
 
 # Run dvx WITHOUT exec so we can commit+push after it returns.
