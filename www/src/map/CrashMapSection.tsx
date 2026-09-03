@@ -87,6 +87,16 @@ function extractOuterRing(fc: FeatureCollection): [number, number][] | undefined
     return undefined
 }
 
+/** Closed rectangle ring (`[lng,lat][]`, first==last) from a
+ *  `[minLng,minLat,maxLng,maxLat]` bbox — a stand-in "scope polygon" for
+ *  statewide, which has no single outline feature (its `outline` is the
+ *  21-county collection). Lets the bins-budget clip treat NJ's on-screen
+ *  extent as the scope, so empty ocean/PA letterbox margins stop
+ *  inflating `areaPx`. */
+function bboxRing([w, s, e, n]: [number, number, number, number]): [number, number][] {
+    return [[w, s], [e, s], [e, n], [w, n], [w, s]]
+}
+
 /** Per-county initial view overrides (mobile + desktop pairs, lerped by width).
  *  Keys are numeric county codes (cc). Captured from user-tuned `?llz=` URLs
  *  and used instead of `initialBounds` auto-fit for these scopes. Add entries
@@ -356,11 +366,21 @@ export function CrashMapSection({
         // (≲2.5 levels at typical county shares). Geometry-adaptive, not
         // density-adaptive — no feedback loop through the fetched data.
         let areaPx = vpw * vph
+        // Statewide embed is height-bound (NJ is tall/narrow, the embed is
+        // a fixed 480px tall), so the fit zoom — and thus NJ's on-screen
+        // extent — is width-independent; the surplus width is empty
+        // ocean/PA letterbox. Clipping `areaPx` to the state bbox (∩
+        // viewport) keeps the pick width-independent and stops budgeting
+        // bins over dead margin. Full-screen statewide is excluded: it
+        // rides the hand-tuned `STATEWIDE_VIEW` and its finer levels sit
+        // near the payload cliff, so leave its budget on the raw viewport.
         const clipRing = mc !== null && muniOutline
             ? extractOuterRing(muniOutline)
             : cc !== null && outline
               ? extractOuterRing(outline)
-              : undefined
+              : cc === null && !fullScreen
+                ? bboxRing(STATE_BBOX)
+                : undefined
         if (clipRing && effectiveView) {
             const vpBbox = bboxFromViewport(effectiveView.latitude, effectiveView.longitude, effectiveView.zoom, vpw, vph, effectiveView.pitch)
             const visible = clipPolygonToBbox(clipRing, vpBbox)
