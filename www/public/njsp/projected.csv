@@ -1,23 +1,23 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_365,trailing_365_driver,trailing_365_passenger,trailing_365_pedestrian,trailing_365_cyclist
-,,Atlantic,,28,1,15,6,9,27,15,4,9,1
-,,Bergen,,29,0,16,0,13,28,16,1,11,0
+,,Atlantic,,27,1,15,4,9,27,15,4,9,1
+,,Bergen,,27,0,15,0,13,28,16,1,11,0
 ,,Burlington,,40,0,28,8,5,38,27,7,6,1
 ,,Camden,,33,2,11,3,20,33,11,3,19,1
 ,,Cape May,,4,0,4,0,0,5,5,1,0,0
 ,,Cumberland,,21,1,10,2,8,21,10,2,8,1
 ,,Essex,,37,0,14,5,23,40,14,4,25,0
 ,,Gloucester,,26,2,17,7,2,26,17,7,2,2
-,,Hudson,,35,0,11,2,26,30,11,2,18,0
+,,Hudson,,37,0,11,2,29,30,10,2,19,0
 ,,Hunterdon,,8,0,4,2,2,8,4,2,2,0
 ,,Mercer,,25,1,12,6,10,25,13,6,8,1
 ,,Middlesex,,44,2,28,6,9,45,29,5,10,2
 ,,Monmouth,,53,3,24,4,32,39,21,3,12,3
 ,,Morris,,20,0,11,0,11,20,11,1,7,1
-,,Ocean,,42,0,26,6,10,41,26,7,10,2
+,,Ocean,,42,0,26,6,10,40,25,7,10,2
 ,,Passaic,,18,0,13,3,6,18,11,3,6,0
 ,,Salem,,11,0,10,1,0,13,11,4,1,0
 ,,Somerset,,22,0,18,0,6,19,14,0,5,0
-,,Sussex,,15,0,13,0,3,12,10,0,2,0
+,,Sussex,,16,0,13,1,3,13,10,1,2,0
 ,,Union,,41,1,19,3,24,34,15,3,16,1
 ,,Warren,,8,0,5,1,2,8,5,1,2,0
 1,1,Atlantic,Absecon City,0,0,0,0,0,1,0,0,1,0
@@ -28,7 +28,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 1,9,Atlantic,Estell Manor City,0,0,0,0,0,0,0,0,0,0
 1,10,Atlantic,Folsom Boro,0,0,0,0,0,1,1,0,0,0
 1,11,Atlantic,Galloway Twsp,2,0,2,0,0,3,2,0,1,0
-1,12,Atlantic,Hamilton Twsp,10,0,6,2,4,9,6,1,3,0
+1,12,Atlantic,Hamilton Twsp,9,0,6,1,4,9,6,1,3,0
 1,13,Atlantic,Hammonton Town,1,0,1,0,0,1,1,0,0,0
 1,14,Atlantic,Linwood City,0,0,0,0,0,1,0,0,1,0
 1,19,Atlantic,Pleasantville City,1,0,0,0,1,1,0,0,1,0
@@ -36,7 +36,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 1,23,Atlantic,Weymouth Twsp,1,0,1,0,0,1,1,0,0,0
 2,2,Bergen,Alpine Boro,1,0,1,0,0,1,1,0,0,0
 2,11,Bergen,Elmwood Park Boro,0,0,0,0,0,1,1,0,0,0
-2,12,Bergen,East Rutherford Bor,1,0,0,0,0,1,0,0,1,0
+2,12,Bergen,East Rutherford Bor,0,0,0,0,0,1,0,0,1,0
 2,13,Bergen,Edgewater Boro,0,0,0,0,0,0,0,0,0,0
 2,15,Bergen,Englewood City,0,0,0,0,0,0,0,0,0,0
 2,16,Bergen,Englewood Cliffs Bo,0,0,0,0,0,0,0,0,0,0
@@ -153,11 +153,11 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 9,1,Hudson,Bayonne City,3,0,1,0,1,2,1,0,1,0
 9,3,Hudson,Guttenberg Town,0,0,0,0,0,1,0,0,1,0
 9,4,Hudson,Harrison Town,3,0,0,1,1,2,0,1,1,0
-9,6,Hudson,Jersey City,9,0,2,1,8,8,2,1,5,0
+9,6,Hudson,Jersey City,11,0,2,1,10,9,2,1,6,0
 9,7,Hudson,Kearny Town,2,0,1,0,1,2,1,0,1,0
 9,8,Hudson,North Bergen Twsp,8,0,3,0,3,7,4,0,4,0
 9,9,Hudson,Secaucus Town,1,0,0,0,1,3,2,0,1,0
-9,10,Hudson,Union City,5,0,0,0,4,4,1,0,3,0
+9,10,Hudson,Union City,5,0,0,0,4,3,0,0,3,0
 9,11,Hudson,Weehawken Twsp,0,0,0,0,0,0,0,0,0,0
 9,12,Hudson,West New York Town,1,0,0,0,1,1,0,0,1,0
 10,2,Hunterdon,Bethlehem Twsp,1,0,0,1,0,1,0,1,0,0
@@ -245,7 +245,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 15,12,Ocean,Jackson Twsp,8,0,6,1,1,7,6,1,1,0
 15,13,Ocean,Lacey Twsp,4,0,0,3,0,3,1,2,0,0
 15,14,Ocean,Lakehurst Boro,0,0,0,0,0,0,0,0,0,0
-15,15,Ocean,Lakewood Twsp,3,1,1,0,0,4,2,0,1,1
+15,15,Ocean,Lakewood Twsp,3,1,1,0,0,3,1,0,1,1
 15,17,Ocean,Little Egg Harbor T,2,0,1,0,0,2,1,0,1,0
 15,18,Ocean,Long Beach Twsp,1,0,1,0,0,1,1,0,0,0
 15,19,Ocean,Manchester Twsp,4,0,3,0,1,4,3,0,1,0
@@ -286,6 +286,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 18,14,Somerset,North Plainfield Bo,0,0,0,0,0,0,0,0,0,0
 18,16,Somerset,Raritan Boro,1,0,1,0,0,1,1,0,0,0
 18,21,Somerset,Watchung Boro,3,0,1,0,1,2,1,0,1,0
+19,2,Sussex,Andover Twsp,1,0,0,1,0,1,0,1,0,0
 19,4,Sussex,Byram Twsp,0,0,0,0,0,0,0,0,0,0
 19,5,Sussex,Frankford Twsp,0,0,0,0,0,1,1,0,0,0
 19,6,Sussex,Franklin Boro,1,0,1,0,0,1,1,0,0,0
