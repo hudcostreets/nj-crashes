@@ -2,18 +2,18 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Atlantic,,27,1,15,4,9,27,15,4,9,1
 ,,Bergen,,27,0,15,0,13,28,16,1,11,0
 ,,Burlington,,40,0,28,8,5,38,27,7,6,1
-,,Camden,,33,2,11,3,20,33,11,3,19,1
-,,Cape May,,4,0,4,0,0,5,5,1,0,0
-,,Cumberland,,21,1,10,2,8,21,10,2,8,1
+,,Camden,,32,2,11,3,18,32,11,3,18,1
+,,Cape May,,5,0,5,0,0,6,6,1,0,0
+,,Cumberland,,21,1,10,2,8,19,9,2,7,1
 ,,Essex,,37,0,14,5,23,40,14,4,25,0
 ,,Gloucester,,26,2,17,7,2,26,17,7,2,2
-,,Hudson,,37,0,11,2,29,30,10,2,19,0
-,,Hunterdon,,8,0,4,2,2,8,4,2,2,0
+,,Hudson,,34,0,11,2,24,28,10,2,17,0
+,,Hunterdon,,10,0,4,2,4,9,4,2,3,0
 ,,Mercer,,25,1,12,6,10,25,13,6,8,1
 ,,Middlesex,,44,2,28,6,9,45,29,5,10,2
 ,,Monmouth,,53,3,24,4,32,39,21,3,12,3
 ,,Morris,,20,0,11,0,11,20,11,1,7,1
-,,Ocean,,42,0,26,6,10,40,25,7,10,2
+,,Ocean,,41,0,25,6,10,40,25,7,10,2
 ,,Passaic,,18,0,13,3,6,18,11,3,6,0
 ,,Salem,,11,0,10,1,0,13,11,4,1,0
 ,,Somerset,,22,0,18,0,6,19,14,0,5,0
@@ -93,7 +93,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 3,39,Burlington,Woodland Twsp,1,0,1,0,0,1,1,0,0,0
 4,4,Camden,Bellmawr Boro,0,0,0,0,0,1,1,0,0,0
 4,6,Camden,Berlin Twsp,0,0,0,0,0,1,0,0,1,0
-4,8,Camden,Camden City,8,0,3,0,7,8,3,0,5,0
+4,8,Camden,Camden City,7,0,3,0,4,7,3,0,4,0
 4,9,Camden,Cherry Hill Twsp,4,0,1,0,2,4,1,0,3,0
 4,12,Camden,Collingswood Boro,0,0,0,0,0,0,0,0,0,0
 4,14,Camden,Gloucester City,8,0,3,1,1,4,3,1,1,0
@@ -112,7 +112,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 5,5,Cape May,Lower Twsp,1,0,1,0,0,1,1,0,0,0
 5,6,Cape May,Middle Twsp,2,0,2,0,0,3,3,1,0,0
 5,7,Cape May,North Wildwood City,0,0,0,0,0,0,0,0,0,0
-5,11,Cape May,Upper Twsp,0,0,0,0,0,0,0,0,0,0
+5,11,Cape May,Upper Twsp,1,0,1,0,0,1,1,0,0,0
 5,14,Cape May,Wildwood City,1,0,1,0,0,1,1,0,0,0
 5,16,Cape May,Woodbine Boro,0,0,0,0,0,0,0,0,0,0
 6,1,Cumberland,Bridgeton City,7,1,1,0,1,5,1,0,3,1
@@ -120,7 +120,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 6,5,Cumberland,Fairfield Twsp,4,0,3,0,1,3,2,0,1,0
 6,7,Cumberland,Hopewell Twsp,0,0,0,0,0,0,0,0,0,0
 6,9,Cumberland,Maurice River Twsp,0,0,0,0,0,0,0,0,0,0
-6,10,Cumberland,Millville City,1,0,0,0,1,3,1,0,2,0
+6,10,Cumberland,Millville City,1,0,0,0,1,1,0,0,1,0
 6,13,Cumberland,Upper Deerfield Tws,0,0,0,0,0,0,0,0,0,0
 6,14,Cumberland,Vineland City,10,0,7,1,2,9,6,1,2,0
 7,1,Essex,Belleville Town,1,0,1,0,0,1,1,0,0,0
@@ -153,7 +153,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 9,1,Hudson,Bayonne City,3,0,1,0,1,2,1,0,1,0
 9,3,Hudson,Guttenberg Town,0,0,0,0,0,1,0,0,1,0
 9,4,Hudson,Harrison Town,3,0,0,1,1,2,0,1,1,0
-9,6,Hudson,Jersey City,11,0,2,1,10,9,2,1,6,0
+9,6,Hudson,Jersey City,8,0,2,1,5,7,2,1,4,0
 9,7,Hudson,Kearny Town,2,0,1,0,1,2,1,0,1,0
 9,8,Hudson,North Bergen Twsp,8,0,3,0,3,7,4,0,4,0
 9,9,Hudson,Secaucus Town,1,0,0,0,1,3,2,0,1,0
@@ -165,6 +165,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 10,6,Hunterdon,Clinton Twsp,0,0,0,0,0,0,0,0,0,0
 10,7,Hunterdon,Delaware Twsp,0,0,0,0,0,0,0,0,0,0
 10,8,Hunterdon,East Amwell Tws,0,0,0,0,0,0,0,0,0,0
+10,9,Hunterdon,Flemington Boro,1,0,0,0,1,1,0,0,1,0
 10,16,Hunterdon,Kingwood Twsp,1,0,1,0,0,1,1,0,0,0
 10,19,Hunterdon,Lebanon Twsp,1,0,1,0,0,1,1,0,0,0
 10,21,Hunterdon,Raritan Twsp,3,0,1,0,1,3,1,1,1,0
@@ -245,7 +246,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 15,12,Ocean,Jackson Twsp,8,0,6,1,1,7,6,1,1,0
 15,13,Ocean,Lacey Twsp,4,0,0,3,0,3,1,2,0,0
 15,14,Ocean,Lakehurst Boro,0,0,0,0,0,0,0,0,0,0
-15,15,Ocean,Lakewood Twsp,3,1,1,0,0,3,1,0,1,1
+15,15,Ocean,Lakewood Twsp,2,1,1,0,0,3,1,0,1,1
 15,17,Ocean,Little Egg Harbor T,2,0,1,0,0,2,1,0,1,0
 15,18,Ocean,Long Beach Twsp,1,0,1,0,0,1,1,0,0,0
 15,19,Ocean,Manchester Twsp,4,0,3,0,1,4,3,0,1,0
