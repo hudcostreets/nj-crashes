@@ -361,8 +361,18 @@ def load_crashes_with_aashto(columns: Optional[list[str]] = None) -> pd.DataFram
     `(sri, mp, ilat, ilon)` rows are merged in (filling NaNs only) so
     fatals without an original geocode still get placed on the map.
     """
+    # `id` (the canonical unique crash key) is the *index* of crashes.parquet,
+    # not a column. Surface it as a column so the geocode-backfill join below
+    # can key on it — the 4-field PK is non-unique (see `_apply_geocode_backfill`).
+    # AASHTO rows carry no `id` (they're never backfill targets); after the
+    # concat their `id` is NaN, which matches no backfill row. `id` is dropped
+    # again before returning unless the caller asked for it.
+    want_backfill = exists(CRASHES_GEOCODE_BACKFILL)
+    caller_wants_id = columns is None or 'id' in columns
     err(f'Loading {CRASHES_PQT}...')
     df = read_parquet(CRASHES_PQT, columns=columns)
+    if want_backfill:
+        df = df.reset_index()  # id: index → column (survives the concat below)
     err(f'  per-table: {len(df):,} crashes ({df["year"].min()}–{df["year"].max()})')
     if exists(AASHTO_SUPPLEMENTED_CRASHES):
         aashto = read_parquet(AASHTO_SUPPLEMENTED_CRASHES, columns=columns)
@@ -379,28 +389,50 @@ def load_crashes_with_aashto(columns: Optional[list[str]] = None) -> pd.DataFram
     # Backfill geocodes via NJSP MP-table lookup for rows that lack both
     # `(olat, olon)` and `(ilat, ilon)`. Sidecar produced by
     # `njdot backfill_geocodes`. Only sets columns the caller requested.
-    if exists(CRASHES_GEOCODE_BACKFILL):
+    if want_backfill:
         backfill = read_parquet(CRASHES_GEOCODE_BACKFILL)
         df = _apply_geocode_backfill(df, backfill)
+        if not caller_wants_id:
+            df = df.drop(columns=['id'])
+        elif columns is None:
+            df = df.set_index('id')  # restore the original index for full-frame callers
     return df
 
 
 def _apply_geocode_backfill(df: pd.DataFrame, backfill: pd.DataFrame) -> pd.DataFrame:
-    """Fillna `(sri, mp, ilat, ilon)` on `df` from `backfill`, joining on
-    `(year, cc, mc, case)`. Columns missing from `df` (because the caller
-    didn't request them) are skipped silently."""
-    join_keys = ['year', 'cc', 'mc', 'case']
-    if not all(k in df.columns for k in join_keys):
-        return df
+    """Fillna `(sri, mp, ilat, ilon)` on `df` from `backfill`.
+
+    Joins on `id` (the canonical unique crash key) whenever both frames carry
+    it, falling back to the 4-field PK `(year, cc, mc, case)` only when `id` is
+    unavailable. The 4-field PK is NOT unique — 50 Princeton Boro/Twp collision
+    pairs share it (see CLAUDE.md) — so a 4-field join would apply one backfill
+    geocode to *both* members of a collision pair, and would multiply `df` rows
+    outright if `backfill` ever carried a duplicate key. Both paths therefore
+    assert the backfill is unique on the join key and that the merge preserves
+    row count. Fill columns missing from `df` (caller didn't request them) are
+    skipped silently."""
     fill_cols = [c for c in ('sri', 'mp', 'ilat', 'ilon') if c in df.columns]
     if not fill_cols:
         return df
+    if 'id' in df.columns and 'id' in backfill.columns:
+        join_keys = ['id']
+    else:
+        join_keys = ['year', 'cc', 'mc', 'case']
+        if not all(k in df.columns for k in join_keys):
+            return df
+    # A duplicate join key on the backfill (right) side would multiply matching
+    # `df` rows in the left-merge — fail loudly rather than silently over-count.
+    n_dup = int(backfill.duplicated(join_keys).sum())
+    assert n_dup == 0, f'backfill has {n_dup} duplicate {join_keys} key(s); would multiply crash rows'
     bf = backfill[join_keys + fill_cols].rename(columns={c: f'{c}_bf' for c in fill_cols})
-    # Align dtypes on join keys; backfill writes Python ints, df may use Int8/Int16.
-    for k in ('year', 'cc', 'mc'):
+    # Align dtypes on join keys; backfill writes Python ints, df may use Int8/Int16
+    # (or float64 for `id` after the AASHTO concat leaves those rows NaN).
+    for k in join_keys:
         if k in df.columns:
             bf[k] = bf[k].astype(df[k].dtype)
+    n_before = len(df)
     merged = df.merge(bf, on=join_keys, how='left')
+    assert len(merged) == n_before, f'geocode backfill merge multiplied rows: {n_before} → {len(merged)}'
     n_applied = 0
     for c in fill_cols:
         bf_col = f'{c}_bf'
@@ -409,5 +441,5 @@ def _apply_geocode_backfill(df: pd.DataFrame, backfill: pd.DataFrame) -> pd.Data
         n_applied = max(n_applied, int(mask.sum()))
         merged.loc[mask, c] = merged.loc[mask, bf_col]
         merged = merged.drop(columns=[bf_col])
-    err(f'  geocode backfill: applied to {n_applied:,} rows')
+    err(f'  geocode backfill: applied to {n_applied:,} rows (join={"+".join(join_keys)})')
     return merged

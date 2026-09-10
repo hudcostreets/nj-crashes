@@ -1,6 +1,6 @@
 outs:
-- md5: 05408a1785e5d1d009d5b62baf7c0968
-  size: 28944
+- md5: d1d7d16ebbedf14669361e3b2a6db9f3
+  size: 33355
   hash: md5
   path: crashes_geocode_backfill.parquet
 meta:
@@ -12,4 +12,4 @@ meta:
       /njsp/data/crash-log.parquet: 611a921110f4dc235579dcb16e28a871
       nj_mp_tenths.parquet: 7f409f4625279b8ce87791748d28017c
     git_deps:
-      /njdot/cli/backfill_geocodes.py: 65a65e1d71f14aae9eea3794d7f9865142d98fec
+      /njdot/cli/backfill_geocodes.py: 9cc630d3f519b91da4b86392a076954c67c3008c

@@ -16,3 +16,6 @@
 /aashto_supplemented_pedestrians.parquet
 /aashto_supplemented_vehicles.parquet
 /nj_mp_tenths.parquet
+/crashes_geocode_backfill.parquet
+/cm.pqt
+/muni_codes.parquet

@@ -13,7 +13,9 @@ This stage:
 3. Resolves the corresponding SRI from `STREET` / `HIGHWAY` + `CCODE`,
    then picks the MP-table row whose `MP` is closest.
 4. Writes a sidecar `crashes_geocode_backfill.parquet` with columns
-   `(year, cc, mc, case, sri, mp, ilat, ilon, geocode_source)`.
+   `(id, year, cc, mc, case, sri, mp, ilat, ilon, geocode_source)`. `id`
+   is the canonical unique crash key — `load_crashes_with_aashto` joins on
+   it (the 4-field PK is non-unique; see CLAUDE.md Princeton collisions).
 
 `load_crashes_with_aashto` (or its downstream consumers) merges this
 sidecar to fill the gap. The original `crashes.parquet` is left
@@ -171,7 +173,9 @@ def _lookup_latlon(sri: str, mp_val: float, mp_df: pd.DataFrame) -> tuple[float,
 @click.option("-o", "--output", default=DEFAULT_OUT, show_default=True)
 def backfill_geocodes(crashes_path: str, match_path: str, crash_log_path: str, mp_path: str, output: str):
     err(f"Loading {crashes_path}")
-    crashes = pd.read_parquet(crashes_path, columns=["year", "cc", "mc", "case", "tk", "severity", "sri", "mp", "olat", "olon", "ilat", "ilon"])
+    # `id` (canonical unique crash key) is the parquet index, not a column;
+    # `reset_index` surfaces it so it can be carried into the sidecar output.
+    crashes = pd.read_parquet(crashes_path, columns=["year", "cc", "mc", "case", "tk", "severity", "sri", "mp", "olat", "olon", "ilat", "ilon"]).reset_index()
 
     # Target: fatal crashes (tk > 0 OR severity == 'f') with no usable geocode.
     is_fatal = (crashes["tk"].fillna(0) > 0) | (crashes["severity"] == "f")
@@ -224,6 +228,7 @@ def backfill_geocodes(crashes_path: str, match_path: str, crash_log_path: str, m
             n_latlon_fail += 1
             continue
         out_rows.append({
+            "id": int(row["id"]),
             "year": int(row["year"]),
             "cc": int(row["cc"]),
             "mc": int(row["mc"]),
