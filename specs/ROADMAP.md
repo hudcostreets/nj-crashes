@@ -164,6 +164,45 @@ normalization pipeline; no UI deps.
 
 ## Known bugs / cleanups (not specced)
 
+- **Phantom committed dep/leaf hashes** (found 2026-09-02, during the
+  IaC-path reproc). Some committed `.dvc` files carry md5s that don't
+  match their actual content — a pre-`39062ef09`-dvx artifact baked into
+  the baseline. Two flavors: (1) **49 leaf `.dvc`** under `crime/` +
+  `www/njsp/data/annual-reports/` record a phantom out-hash (e.g.
+  `fatalacc_2001.pdf` HEAD=`2b496c51` but file=`a7e55f82`); their blobs
+  were never in the remote and no in-scope reproc target deps on them, so
+  they don't block reproc but are wrong. (2) **stale dep-hashes** inside
+  computed stages (`njsp_njdot_residuals.parquet.dvc` recorded its
+  `njsp/data/crashes.parquet` dep as `b9669bb1` vs the true `1f25c6f4`;
+  `cc2mc2mn.json.dvc` had phantom FAUQStats2025/2026 dep-hashes) — dvx
+  ≥`39062ef09` auto-corrects these on the next run (the reproc emitted
+  exactly those 2 corrections, outputs byte-identical). Fix for (1): a
+  bulk `dvx add` re-hash + push of the 49 leaves, committed deliberately
+  (it rewrites 49 tracked `.dvc`). Fold into a reproc cycle.
+- **Missing leaf blobs on the prod remote** (fixed 2026-09-02).
+  `census/data/raw` (dir leaf) and `nj_sri_mp.db` were committed as
+  deps but their blobs never `dvx push`ed → every from-scratch reproc
+  died pulling them (`census` rounds 1-2, `sri_mp` "round 3"). Both now
+  pushed. Guard: before a reproc, verify every in-scope leaf dep is
+  either git-tracked or present in the remote (dump `aws s3 ls
+  --recursive .../files/md5/` once, compare locally — one-listing beats
+  per-blob `ls`). Consider a `batch/` subcommand for this preflight.
+- **Reproc OOM = level-parallelism, not per-stage memory** (fixed
+  2026-09-09, `04a45499731`). A from-scratch `dvx run -f` on 16-vCPU
+  Fargate co-runs ~16 stages/level; the heavy trio (`njsp_njdot_match`,
+  its residuals co-output, `crashes.db`) blew the 64 GB limit (exit 137)
+  even though each runs daily on a ~14 GB GHA runner. Fixed with
+  **memory-budget scheduling**, not a global `-j` cap (which would also
+  throttle the many light stages): heavy stages carry
+  `meta.computation.resources.mem_gb` labels (crashes.db 40, vehicles 32,
+  drivers/occupants 30, cmymc 24, match 6, …) and `batch/entrypoint.sh`
+  auto-injects `-m` = 85% of container RAM, so dvx's MemBudget scheduler
+  serializes the heavy labeled stages while light ones stay parallel;
+  `-m N` in `batch/submit` overrides. (The OOM run used a one-off 120 GB
+  bump, since reverted; live job def back to the x86-audit resting
+  default.) Non-crashes weights are buffered size-ratio estimates —
+  refine by measurement. Also note `dvx run -f <target>` forces the
+  target's whole upstream cone, not just the target.
 - **Dedupe 3 Princeton `true_dup` crashes** (punted 2026-08-31). Of the
   50 non-unique-4-field-PK Princeton pairs (see CLAUDE.md "Non-unique
   4-field crash PK" + `njdot compute pk-dupes` / `njdot/data/crash_pk_dupes.csv`),

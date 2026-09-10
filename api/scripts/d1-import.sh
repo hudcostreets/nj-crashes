@@ -242,6 +242,15 @@ natural_key_cols() {
 }
 
 # Exact-diff per-db: read prior md5, fetch prior .db, diff each table, apply.
+#
+# Why exact-diff and not a rundate/time-window incremental filter: EDA on
+# `crash-log.parquet` (2026, abandoned `worktree-agent-abfbdcc` branch) found a
+# time window is unsafe — 5.2% of new NJSP fatal crashes first appear in the XML
+# feed >90 days after the crash date (some >365d), and 74% of *edit* events on
+# existing crashes have rundate-vs-`dt` lag >90 days. A window would silently
+# miss those; we have the actual prior `.db`, so we diff against it exactly.
+# Motivation was D1 free-tier writes: a full daily replay writes ~694k rows/day
+# (~15k njsp-crashes + ~679k cmymc) ≈ 37% of the 50M/mo free ceiling.
 import_db_diff() {
     local db_name="$1" local_path="$2"
     local current_md5 prior_md5
