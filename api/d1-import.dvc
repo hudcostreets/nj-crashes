@@ -5,6 +5,6 @@ meta:
     deps:
       /www/public/njsp/crashes.db: 2583ff7977e11567b2d1e4fa51abc8cc
       /www/public/njdot/cmymc.db: f2c03ec696ebe9bb0d12c910638e4740
-      /data/cells/cells-s2.db: c803a6ea56c1a879009e43ce0093fa86
+      /data/cells/cells-s2.db: 3fa70b06d65b3fb6d00afa5090350c15
     git_deps:
-      scripts/d1-import.sh: da25408d5c334940964dd7153683d2cdf8d679e6
+      scripts/d1-import.sh: 218892f3875f42c954b35fd637ba9477ffada716
