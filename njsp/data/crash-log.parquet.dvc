@@ -15,4 +15,4 @@ meta:
     # self-referential input (its own output was its only record of where it left
     # off), which is what made it unbuildable on a fresh checkout in reproc round 5.
     git_log_deps:
-      /data/FAUQStats*.xml: bb854d955dae8b6003fd5bb1ec0446cd27fa8f64
+      /data/FAUQStats*.xml: c3515d8c616dff15858fe7f14d90bcd3898cafc6
