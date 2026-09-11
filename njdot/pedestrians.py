@@ -96,41 +96,10 @@ def map_year_df(df):
 
 
 def map_df(p, tpe):
-    # Fix pedestrian/driver cc/mc using PK mapping table
-    # Crashes undergo geocoding (Port Authority, empty municipality fixes) that updates cc/mc,
-    # but pedestrians/drivers retain original cc/mc from raw data
-    # Mapping table: (year, cc0, mc0, case) → (cc, mc) tracks all PK transformations
-    from njdot.paths import DOT_DATA
-    import os
-    import pandas as pd
-
-    mapping_path = f'{DOT_DATA}/crash_pk_mappings.parquet'
-    if os.path.exists(mapping_path):
-        err(f"Fixing {tpe} cc/mc using PK mapping table")
-        mapping = pd.read_parquet(mapping_path)
-
-        # Merge on (year, cc, mc, case) to get updated cc/mc
-        # Note: pedestrians/drivers have original cc/mc, which match mapping's cc0/mc0
-        p_with_mapping = p.merge(
-            mapping[['year', 'cc0', 'mc0', 'case', 'cc', 'mc']],
-            left_on=['year', 'cc', 'mc', 'case'],
-            right_on=['year', 'cc0', 'mc0', 'case'],
-            how='left',
-            suffixes=('_old', '')
-        )
-
-        # Update cc/mc where mapping exists
-        # For rows without mapping, cc/mc will be NaN, so fill with original values
-        # Note: mc may be float64 (combined codes like 9901.0 for Port Authority)
-        p['cc'] = p_with_mapping['cc'].fillna(p['cc']).astype('int8')
-        # Convert mc to float to handle combined codes from crashes
-        p['mc'] = p_with_mapping['mc'].fillna(p['mc'].astype('float64'))
-
-        num_updated = p_with_mapping['cc'].notna().sum()
-        err(f"  Updated {num_updated:,} {tpe} PKs from mapping table")
-    else:
-        err(f"Warning: PK mapping table not found at {mapping_path}, skipping cc/mc fix")
-
+    # NB: deliberately NO crash_pk_mappings cc/mc remap — see the occupants.py
+    # note. `normalize` joins the child's raw (year, cc, mc, case) to the crash's
+    # raw `mc_dot`; remapping mc → geocoded (2026 v2 PR) broke that raw join and
+    # orphaned children of every geocoded crash. crash_id is the only key kept.
     err(f"Merging {tpe} with crashes")
     p = normalize(p, 'crash_id', crashes.load)
 

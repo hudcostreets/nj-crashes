@@ -134,40 +134,13 @@ def map_year_df(df):
 
 
 def map_df(df, fix_missing_vid: bool = True, drop: bool = True):
-    # Fix occupant cc/mc using PK mapping table
-    # Crashes undergo geocoding (Port Authority, empty municipality fixes) that updates cc/mc,
-    # but occupants retain original cc/mc from raw data
-    # Mapping table: (year, cc0, mc0, case) → (cc, mc) tracks all PK transformations
-    from njdot.paths import DOT_DATA
-    import os
-
-    mapping_path = f'{DOT_DATA}/crash_pk_mappings.parquet'
-    if os.path.exists(mapping_path):
-        err("Fixing occupant cc/mc using PK mapping table")
-        mapping = pd.read_parquet(mapping_path)
-
-        # Merge on (year, cc, mc, case) to get updated cc/mc
-        # Note: occupants have original cc/mc, which match mapping's cc0/mc0
-        df_with_mapping = df.merge(
-            mapping[['year', 'cc0', 'mc0', 'case', 'cc', 'mc']],
-            left_on=['year', 'cc', 'mc', 'case'],
-            right_on=['year', 'cc0', 'mc0', 'case'],
-            how='left',
-            suffixes=('_old', '')
-        )
-
-        # Update cc/mc where mapping exists
-        # For rows without mapping, cc/mc will be NaN, so fill with original values
-        # Note: mc may be float64 (combined codes like 9901.0 for Port Authority)
-        df['cc'] = df_with_mapping['cc'].fillna(df['cc']).astype('int8')
-        # Convert mc to float to handle combined codes from crashes
-        df['mc'] = df_with_mapping['mc'].fillna(df['mc'].astype('float64'))
-
-        num_updated = df_with_mapping['cc'].notna().sum()
-        err(f"  Updated {num_updated:,} occupant PKs from mapping table")
-    else:
-        err(f"Warning: PK mapping table not found at {mapping_path}, skipping cc/mc fix")
-
+    # NB: deliberately NO crash_pk_mappings cc/mc remap. `normalize` joins the
+    # child's *raw* (year, cc, mc, case) to the crash's raw `mc_dot` (load.py),
+    # which resolves crash_id correctly — incl. Princeton Boro/Twp, via mc_dot's
+    # uniqueness — for geocoded and non-geocoded crashes alike. The 2026 v2 PR
+    # remapped the child `mc` → geocoded here, which no longer matched the raw
+    # `mc_dot` join and silently orphaned ~18% of children (every geocoded crash).
+    # The child output keeps only crash_id (cc/mc are dropped), so no remap is needed.
     err("Merging occupants with crashes...")
     try:
         dfc = normalize(df, 'crash_id', crashes.load, drop=drop)
