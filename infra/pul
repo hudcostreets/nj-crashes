@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+"""Run pulumi (or fetch the hccs.dev zone id) for the crashes CF stack.
+
+Loads creds from ../.envrc in-process (CF_HCCS_INFRA_TOKEN → CLOUDFLARE_API_TOKEN,
+PULUMI_CONFIG_PASSPHRASE) and sets CLOUDFLARE_ACCOUNT_ID, so pulumi runs against
+HCCS without secrets passing through the shell. Usage:
+  ./pul zone-id            # print the hccs.dev zone id (no secret printed)
+  ./pul preview            # pulumi passthrough (any pulumi args)
+  ./pul stack select hccs
+"""
+import json
+import os
+import re
+import sys
+import urllib.request
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ENVRC = os.path.join(HERE, os.pardir, '.envrc')
+HCCS_ACCOUNT = '2363642879f18d37d52dca114059937e'
+
+
+def load_envrc(path):
+    vars = {}
+    pat = re.compile(r'^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$')
+    with open(path) as f:
+        for line in f:
+            m = pat.match(line)
+            if m:
+                k, v = m.group(1), m.group(2).strip()
+                if v and v[0] in "\"'" and v[-1:] == v[0]:
+                    v = v[1:-1]
+                vars[k] = v
+    return vars
+
+
+env = load_envrc(ENVRC)
+token = env.get('CF_HCCS_INFRA_TOKEN')
+if not token:
+    sys.exit('CF_HCCS_INFRA_TOKEN not found in .envrc')
+
+if sys.argv[1:2] == ['zone-id']:
+    req = urllib.request.Request(
+        'https://api.cloudflare.com/client/v4/zones?name=hccs.dev',
+        headers={'Authorization': f'Bearer {token}'},
+    )
+    with urllib.request.urlopen(req, timeout=20) as r:
+        body = json.load(r)
+    if not body.get('success'):
+        sys.exit(f"CF API error: {body.get('errors')}")
+    zones = body.get('result') or []
+    if not zones:
+        sys.exit('no zone named hccs.dev visible to this token')
+    print(zones[0]['id'])
+    sys.exit(0)
+
+# else: pulumi passthrough
+os.environ['CLOUDFLARE_API_TOKEN'] = token
+os.environ['CLOUDFLARE_ACCOUNT_ID'] = HCCS_ACCOUNT
+if env.get('PULUMI_CONFIG_PASSPHRASE'):
+    os.environ['PULUMI_CONFIG_PASSPHRASE'] = env['PULUMI_CONFIG_PASSPHRASE']
+os.chdir(HERE)
+os.execvpe('pulumi', ['pulumi', *sys.argv[1:]], os.environ)

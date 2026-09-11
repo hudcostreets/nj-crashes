@@ -1,0 +1,13 @@
+name: crashes-infra
+description: Cloudflare infra for crashes (R2 + custom domain + CORS + D1); HCCS standup
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+backend:
+  url: file://./state
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: python
