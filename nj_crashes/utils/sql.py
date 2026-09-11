@@ -14,6 +14,28 @@ def add_idx(cur, tbl, *cols):
     return cur.execute(f"CREATE INDEX {name} ON {tbl}({', '.join(cols)})")
 
 
+def make_pk(cur, tbl: str, pk: str):
+    """Rebuild `tbl` so `pk` is `INTEGER PRIMARY KEY` (the rowid).
+
+    `DataFrame.to_sql` can't declare a primary key and, for a named index,
+    auto-creates a redundant `ix_<tbl>_<pk>` index. Making `pk` the rowid drops
+    that index (a real D1 rows-written cost — each index row is billed) and gives
+    O(1) id lookups. No-op if `pk` isn't a column.
+    """
+    cols = [(r[1], r[2]) for r in cur.execute(f'PRAGMA table_info("{tbl}")')]  # (name, type)
+    if pk not in {c for c, _ in cols}:
+        return
+    coldefs = ', '.join(
+        f'"{name}" INTEGER PRIMARY KEY' if name == pk else f'"{name}" {typ}'.rstrip()
+        for name, typ in cols
+    )
+    collist = ', '.join(f'"{c}"' for c, _ in cols)
+    cur.execute(f'ALTER TABLE "{tbl}" RENAME TO "{tbl}__old"')
+    cur.execute(f'CREATE TABLE "{tbl}" ({coldefs})')  # drops the pandas ix_<tbl>_<pk>
+    cur.execute(f'INSERT INTO "{tbl}" ({collist}) SELECT {collist} FROM "{tbl}__old"')
+    cur.execute(f'DROP TABLE "{tbl}__old"')
+
+
 def del_idx(cur, *cols):
     name = '_'.join(cols)
     return cur.execute(f"DROP INDEX {name}")
@@ -45,6 +67,7 @@ def write(
         tbl: str,
         db_path: str,
         idxs: list[Tuple[str]] = None,
+        pk: Optional[str] = None,
         rm: bool = False,
         replace: bool = True,
         page_size: Optional[int] = None,
@@ -59,6 +82,8 @@ def write(
     err(f"Wrote DB: {stat(db_path).st_size} bytes")
     with sqlite3.connect(db_path) as con:
         cur = con.cursor()
+        if pk:
+            make_pk(cur, tbl, pk)
         if idxs:
             for idx_cols in idxs:
                 add_idx(cur, tbl, *idx_cols)

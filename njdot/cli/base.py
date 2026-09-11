@@ -86,6 +86,7 @@ def write_db(
             tbl=tbl,
             db_path=db_path,
             idxs=idxs,
+            pk='id',  # id → INTEGER PRIMARY KEY (rowid); drops the pandas `ix_<tbl>_id`
             rm=not replace,
             replace=replace,
             page_size=page_size,

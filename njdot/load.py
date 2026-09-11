@@ -339,13 +339,17 @@ def load_tbl(
     return df
 
 
+# Only the two indexes the crashes-api worker (`api/src/index.ts`) actually uses,
+# confirmed via EXPLAIN QUERY PLAN (2026-09-11):
+#   - dt_severity: list + count force `INDEXED BY dt_severity` (ORDER BY dt DESC with
+#     severity filter; avoids a TEMP B-TREE sort).
+#   - cc_mc_severity_dt: the crash-detail lookup (`WHERE cc=? AND mc=? ...`).
+# Dropped as dead weight (each index row is a billed D1 write): cc_severity_dt,
+# severity_dt_cc_mc, severity_ilat_ilon (map uses R2 cells, not this DB), severity_icc_dt.
+# Add one back if a query starts needing it (a one-off index build fits a monthly window).
 CRASH_IDXS = [
-    ('severity', 'dt', 'cc', 'mc'),
-    ('cc', 'severity', 'dt'),
     ('cc', 'mc', 'severity', 'dt'),
-    ('severity', 'ilat', 'ilon'),
-    ('severity', 'icc', 'dt'),
-    ('dt', 'severity'),  # enables ORDER BY dt DESC with severity filter, avoids TEMP B-TREE
+    ('dt', 'severity'),
 ]
 
 

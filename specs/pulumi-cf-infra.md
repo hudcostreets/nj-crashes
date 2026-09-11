@@ -119,15 +119,45 @@ Run the `hccs` stack with an **HCCS-scoped** `CLOUDFLARE_API_TOKEN`.
 - `cf.R2BucketCors` — `GET,HEAD`; origins `*`; allow `Range,Authorization`; expose
   `Accept-Ranges,Content-Range,Content-Length,Content-Encoding,ETag` (playbook §3).
 - `cf.D1Database` for **every** D1: `cells-s2`, `tune` (cells-api) + `njsp-crashes`
-  and the njdot DBs (crashes-api). Data migrated via `wrangler d1 export`/import so
-  cutover is transparent (`cells-s2`/njdot are also rebuildable via `d1-import.sh`;
-  `tune` votes must be exported).
+  and the njdot DBs (crashes-api). See **D1 migration strategy** below.
 - `cf.R2ManagedDomain` — keep the interim `pub-f247f516…r2.dev` during transition;
   disable at RAC retirement.
 - `cf.WorkersCustomDomain` — `crashes-cells.hccs.dev` (cells-api),
   `crashes-api.hccs.dev` (njsp API); first-level for Universal-SSL coverage.
   (Provider has `workers_custom_domain`.)
 - Workers scripts: **documented, wrangler-deployed** (bindings reference the above).
+
+## D1 migration strategy (cost-driven; 2026-09-11)
+
+D1 bills **rows written incl. index rows** ($1/M over 50M/mo included, Workers Paid).
+A naive full re-seed = **149M writes ≈ $99**. HCCS is on Workers Paid; **usage resets
+on the 24th** (fresh 50M/window). RAC's allowance can't cover HCCS writes (separate
+accounts) — but HCCS's window starts empty.
+
+**Index audit (EXPLAIN vs `api/src/index.ts` queries):** of `crashes`'s 8 indexes,
+only **2 are used** — `dt_severity` (main list/count, forced `INDEXED BY`) and
+`cc_mc_severity_dt` (crash-detail `cc,mc`). Dead: `cc_severity_dt`, `crashes_if_dt`,
+`severity_dt_cc_mc`, `severity_icc_dt`, `severity_ilat_ilon`, `ix_crashes_id`.
+Child tables (`vehicles`/`occupants`/`pedestrians`) are only queried by `crash_id`,
+so their `ix_*_id` (pandas `to_sql` auto-index on the `id` index) is dead too.
+
+**Refactor (proper, benefits every rebuild + storage):**
+- `njdot/cli/base.py` `CRASH_IDXS` → keep only `dt_severity` + `cc_mc_severity_dt`.
+- `id INTEGER PRIMARY KEY` (rowid) on crashes/vehicles/occupants/pedestrians — needs
+  explicit table DDL (pandas `to_sql` can't declare a PK; `sql.py:58`), which also
+  removes the `ix_*_id` auto-index for free + gives fast id lookups. TFFP: rebuild
+  a DB locally, assert schema (id PK, 2 crashes indexes) + EXPLAIN + row parity.
+- Result: **149M → ~83M** writes (crashes 59→20M, occupants 45→30M, vehicles 37→25M).
+
+**Seeding (transparent, ~$0):** derived DBs rebuilt in HCCS via `d1-import.sh`
+(identical rows — not multi-GB SQL replay); `tune` votes via `wrangler d1 export`→
+import. Split ~83M across **2 reset windows** (≤50M now + ≤50M after Sep 24) = **$0**.
+E.g. window 1: occupants (30M) + crashes (20M); window 2: vehicles (25M) + the rest.
+
+**Staging — keep RAC serving meanwhile:** each worker binds only its own account's
+D1s, and the FE addresses each by its own base URL, so cut over **per worker** as its
+DBs land: `cells-api` (+ R2 data) → HCCS now; `crashes-api` **stays on RAC** (its
+RAC URL, RAC njdot D1s) until its 6 DBs are seeded in HCCS, then flip `VITE_API_URL`.
 
 ## Cutover sequence (prod stays live)
 1. **Finish the data copy:** `njdot/map/` + `og.jpg` (AWS S3 → HCCS `crashes`;
