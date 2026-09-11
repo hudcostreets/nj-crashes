@@ -1,6 +1,6 @@
 outs:
-- md5: 0b9836ad7850251b745ed3a2d32cc948
-  size: 17235968
+- md5: 7d2da84d5d6b3155f416233b09ca7efe
+  size: 16842752
   hash: md5
   path: pedestrians.db
 meta:
@@ -9,4 +9,4 @@ meta:
     resources:
       mem_gb: 4
     deps:
-      /njdot/data/pedestrians.parquet: 6cf2e6bc791530c886a80cf1b1317ea9
+      /njdot/data/pedestrians.parquet: 3c8b7ed90148844402a22e44053fe3d8

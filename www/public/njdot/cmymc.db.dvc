@@ -1,6 +1,6 @@
 outs:
-- md5: f2c03ec696ebe9bb0d12c910638e4740
-  size: 57671680
+- md5: 37fd6c10b4df3c895e07df4fc7e07b4b
+  size: 63569920
   hash: md5
   path: cmymc.db
 meta:
@@ -10,9 +10,9 @@ meta:
       mem_gb: 24
     deps:
       /njdot/data/crashes.parquet: 1211e215284ecc253b64b51dd211dd2c
-      /njdot/data/vehicles.parquet: e668ea8749d74a32cbc98d2e7da1633d
-      /njdot/data/occupants.parquet: 5ab30c006397f2ca1739f97545519b51
-      /njdot/data/pedestrians.parquet: 6cf2e6bc791530c886a80cf1b1317ea9
+      /njdot/data/vehicles.parquet: 2f1d3fdc7037de75187d5551c6152258
+      /njdot/data/occupants.parquet: 9e9d8cf45f8bf3c9b6db6d30530534f8
+      /njdot/data/pedestrians.parquet: 3c8b7ed90148844402a22e44053fe3d8
       /njdot/data/aashto_supplemented_crashes.parquet: 372d541848b2252a1552a339c234c45a
       /njdot/data/aashto_supplemented_occupants.parquet: 12d2f98cfe0f8a0129b4d31001062a88
       /njdot/data/aashto_supplemented_pedestrians.parquet: cfd9aca8de486c9bca8f982e26aae5ce

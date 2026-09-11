@@ -1,6 +1,6 @@
 outs:
-- md5: 6016604376de00d723e78326f4c11cac
-  size: 964100096
+- md5: 60a5cb10fcb51a35cee7f3d820bb55ec
+  size: 933822464
   hash: md5
   path: drivers.db
 meta:
@@ -9,4 +9,4 @@ meta:
     resources:
       mem_gb: 30
     deps:
-      /njdot/data/drivers.parquet: 9d1bcf3b162e709ee753580b8b280f76
+      /njdot/data/drivers.parquet: de7bf91d2172c7cd069f5984a660e973

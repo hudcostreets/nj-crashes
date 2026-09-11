@@ -1,6 +1,6 @@
 outs:
-- md5: 990d88ca5f0d51918d495a43c75a3d43
-  size: 813236224
+- md5: 759810a516c0825eecaf878aeecdaa15
+  size: 714080256
   hash: md5
   path: occupants.db
 meta:
@@ -9,4 +9,4 @@ meta:
     resources:
       mem_gb: 30
     deps:
-      /njdot/data/occupants.parquet: 5ab30c006397f2ca1739f97545519b51
+      /njdot/data/occupants.parquet: 9e9d8cf45f8bf3c9b6db6d30530534f8
