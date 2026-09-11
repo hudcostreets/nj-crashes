@@ -1,6 +1,6 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_365,trailing_365_driver,trailing_365_passenger,trailing_365_pedestrian,trailing_365_cyclist
 ,,Atlantic,,27,1,15,4,9,27,15,4,9,1
-,,Bergen,,27,0,15,0,13,27,15,1,11,0
+,,Bergen,,27,0,15,0,13,26,14,1,11,0
 ,,Burlington,,40,0,28,8,5,38,27,7,6,1
 ,,Camden,,32,2,11,3,18,32,11,3,18,1
 ,,Cape May,,5,0,5,0,0,6,6,1,0,0
@@ -10,15 +10,15 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Hudson,,34,0,11,2,24,28,10,2,17,0
 ,,Hunterdon,,10,0,4,2,4,9,4,2,3,0
 ,,Mercer,,24,1,12,6,8,24,13,6,7,1
-,,Middlesex,,44,2,28,6,9,45,29,5,10,2
-,,Monmouth,,53,3,24,4,33,39,21,3,12,3
+,,Middlesex,,45,2,30,6,9,46,30,5,10,2
+,,Monmouth,,51,3,23,4,33,40,22,3,12,3
 ,,Morris,,20,0,11,0,11,20,11,1,7,1
 ,,Ocean,,42,0,25,6,11,41,25,7,11,2
-,,Passaic,,18,0,13,3,6,18,11,3,6,0
+,,Passaic,,17,0,11,3,6,18,11,3,6,0
 ,,Salem,,11,0,10,1,0,12,10,4,1,0
 ,,Somerset,,22,0,18,0,6,19,14,0,5,0
-,,Sussex,,16,0,13,1,3,12,10,1,1,0
-,,Union,,41,1,19,3,24,34,15,3,16,1
+,,Sussex,,14,0,13,1,2,12,10,1,1,0
+,,Union,,37,1,15,3,24,34,15,3,16,1
 ,,Warren,,8,0,5,1,2,8,5,1,2,0
 1,1,Atlantic,Absecon City,0,0,0,0,0,1,0,0,1,0
 1,2,Atlantic,Atlantic City,7,1,2,1,2,4,2,1,1,1
@@ -48,7 +48,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 2,29,Bergen,Leonia Boro,0,0,0,0,0,0,0,0,0,0
 2,30,Bergen,Little Ferry Boro,0,0,0,0,0,0,0,0,0,0
 2,31,Bergen,Lodi Boro,0,0,0,0,0,1,1,0,0,0
-2,32,Bergen,Lyndhurst Twsp,1,0,0,0,0,2,1,0,1,0
+2,32,Bergen,Lyndhurst Twsp,1,0,0,0,0,1,0,0,1,0
 2,33,Bergen,Mahwah Twsp,0,0,0,0,0,0,0,0,0,0
 2,38,Bergen,New Milford Boro,0,0,0,0,0,1,0,0,1,0
 2,40,Bergen,Northvale Boro,1,0,0,0,1,1,0,0,1,0
@@ -189,7 +189,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 12,13,Middlesex,New Brunswick City,4,1,3,0,0,4,3,0,0,1
 12,14,Middlesex,North Brunswick Tws,1,0,0,1,0,1,0,1,0,0
 12,15,Middlesex,Old Bridge Twsp,3,0,0,0,1,2,1,0,1,0
-12,16,Middlesex,Perth Amboy City,3,0,1,0,1,2,1,0,1,0
+12,16,Middlesex,Perth Amboy City,4,0,3,0,1,3,2,0,1,0
 12,17,Middlesex,Piscataway Twsp,1,0,1,0,0,2,2,0,0,0
 12,18,Middlesex,Plainsboro Twsp,0,0,0,0,0,0,0,0,0,0
 12,19,Middlesex,Sayreville Boro,2,0,2,0,0,2,2,0,0,0
@@ -218,7 +218,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 13,36,Monmouth,Neptune City Boro,1,1,0,0,0,1,0,0,0,1
 13,37,Monmouth,Ocean Twsp,2,0,1,0,0,2,1,0,1,0
 13,41,Monmouth,Rumson Boro,1,1,0,0,0,1,0,0,0,1
-13,49,Monmouth,Tinton Falls Boro,1,0,0,1,0,1,0,1,0,0
+13,49,Monmouth,Tinton Falls Boro,2,0,1,1,0,2,1,1,0,0
 13,51,Monmouth,Upper Freehold Twsp,1,0,1,0,0,1,1,0,0,0
 13,52,Monmouth,Wall Twsp,9,0,5,0,0,6,5,0,1,0
 14,4,Morris,Chatham Boro,1,0,0,0,1,1,0,0,1,0
@@ -259,7 +259,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 16,3,Passaic,Haledon Boro,1,0,0,1,0,1,0,1,0,0
 16,4,Passaic,Hawthorne Boro,0,0,0,0,0,0,0,0,0,0
 16,7,Passaic,Passaic City,2,0,3,0,0,2,2,0,0,0
-16,8,Passaic,Paterson City,3,0,0,0,2,3,0,1,2,0
+16,8,Passaic,Paterson City,2,0,0,0,2,3,0,1,2,0
 16,11,Passaic,Ringwood Boro,0,0,0,0,0,0,0,0,0,0
 16,12,Passaic,Totowa Boro,1,0,1,1,0,1,1,1,0,0
 16,13,Passaic,Wanaque Boro,2,0,1,0,1,2,2,0,1,0
@@ -293,17 +293,17 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 19,6,Sussex,Franklin Boro,1,0,1,0,0,1,1,0,0,0
 19,9,Sussex,Hamburg Boro,0,0,0,0,0,1,1,0,0,0
 19,10,Sussex,Hampton Twsp,1,0,1,0,0,1,1,0,0,0
-19,11,Sussex,Hardyston Twsp,1,0,0,0,1,0,0,0,0,0
+19,11,Sussex,Hardyston Twsp,0,0,0,0,0,0,0,0,0,0
 19,14,Sussex,Montague Twsp,3,0,4,0,0,3,3,0,0,0
 19,17,Sussex,Sandyston Twsp,0,0,0,0,0,1,1,0,0,0
 19,18,Sussex,Sparta Twsp,2,0,1,0,1,2,1,0,1,0
 19,24,Sussex,Wantage Twsp,1,0,1,0,0,1,1,0,0,0
 20,1,Union,Berkeley Heights Tw,0,0,0,0,0,1,0,0,1,0
-20,4,Union,Elizabeth City,11,0,2,0,11,9,2,0,7,0
+20,4,Union,Elizabeth City,9,0,1,0,11,9,2,0,7,0
 20,7,Union,Hillside Twsp,2,0,3,0,0,2,2,0,0,0
 20,9,Union,Linden City,4,0,2,0,3,4,2,0,2,0
 20,10,Union,Mountainside Boro,2,1,0,0,0,2,0,1,0,1
-20,12,Union,Plainfield City,5,0,2,2,1,4,2,1,1,0
+20,12,Union,Plainfield City,4,0,2,2,1,4,2,1,1,0
 20,13,Union,Rahway City,1,0,1,0,0,1,1,0,0,0
 20,14,Union,Roselle Boro,0,0,0,0,0,1,1,0,0,0
 20,16,Union,Scotch Plains Twsp,2,0,1,0,0,2,1,0,1,0
