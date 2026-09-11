@@ -3,26 +3,26 @@ outs:
   size: 7451
   hash: md5
   path: crash-homicide.parquet
-- md5: ae175f132512e148f8ed4afbee54e9c3
-  size: 32867
+- md5: 050b139c0bfa92cc114b060a0dd22c1d
+  size: 32895
   hash: md5
   path: month-year.parquet
-- md5: 62002cfabb0e62e07dcd00f5a4d5e0fe
-  size: 97279
+- md5: c78dc23c4b6676ff841bc9bbad7a11f5
+  size: 96780
   hash: md5
   path: monthly.parquet
-- md5: bf1edb616eaf275eae0d54427d20585c
+- md5: d22412e32734ba3397622d89833dc564
   size: 7334
   hash: md5
   path: year-type-county.parquet
-- md5: b3651062752b04c8c85254c8a304b5af
-  size: 270606
+- md5: f5c4b70f720cfbba7d6ed11fb637b61b
+  size: 253747
   hash: md5
   path: ytd.parquet
 meta:
   computation:
     cmd: njsp update_www_data -f
     deps:
-      /njsp/data/crashes.parquet: 0397b303a36b2e0157d263f4adc5928f
+      /njsp/data/crashes.parquet: f8ad4ec460f48c9e0cb2a27042b216ce
     git_deps:
       /njsp/cli/update_www_data.py: 150b52689e45b5e2f4af5e1f7b60399ddb0a111a
