@@ -40,14 +40,23 @@ def _introspect(db_path, tbl):
 def test_crashes_id_is_pk_and_only_two_indexes():
     with tempfile.TemporaryDirectory() as d:
         db = str(Path(d) / "crashes.db")
+        # page_size triggers VACUUM after make_pk; VACUUM can't run inside a
+        # transaction, so this guards the "commit before VACUUM" ordering (a
+        # regression here silently left the table empty + a stale crashes__old).
         sql.write(df=_crashes_df(), tbl="crashes", db_path=db, idxs=CRASH_IDXS, pk="id",
-                  rm=True, replace=True)
+                  rm=True, replace=True, page_size=2 ** 16)
         cols, indexes, rowid_neq_id, ids = _introspect(db, "crashes")
 
         assert cols["id"] == ("INTEGER", 1)                 # INTEGER PRIMARY KEY (rowid)
         assert indexes == ["cc_mc_severity_dt", "dt_severity"]  # no ix_crashes_id
         assert rowid_neq_id == 0                              # id IS the rowid
-        assert ids == [100, 101, 102]                        # rows preserved
+        assert ids == [100, 101, 102]                        # rows preserved (VACUUM committed)
+        # no lingering temp table from make_pk's rebuild
+        con = sqlite3.connect(db)
+        tables = sorted(r[0] for r in con.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"))
+        con.close()
+        assert tables == ["crashes"]
 
 
 def test_child_table_keeps_crash_id_drops_id_index():

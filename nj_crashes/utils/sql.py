@@ -30,6 +30,7 @@ def make_pk(cur, tbl: str, pk: str):
         for name, typ in cols
     )
     collist = ', '.join(f'"{c}"' for c, _ in cols)
+    cur.execute(f'DROP TABLE IF EXISTS "{tbl}__old"')  # defensive: no stale temp
     cur.execute(f'ALTER TABLE "{tbl}" RENAME TO "{tbl}__old"')
     cur.execute(f'CREATE TABLE "{tbl}" ({coldefs})')  # drops the pandas ix_<tbl>_<pk>
     cur.execute(f'INSERT INTO "{tbl}" ({collist}) SELECT {collist} FROM "{tbl}__old"')
@@ -89,5 +90,8 @@ def write(
                 add_idx(cur, tbl, *idx_cols)
             err(f"After indices: {stat(db_path).st_size} bytes")
 
+        # VACUUM (in resize) cannot run inside a transaction; make_pk's INSERT
+        # leaves one open, so commit the schema/index work first.
+        con.commit()
         if page_size:
             resize(cur, page_size, db_path)
