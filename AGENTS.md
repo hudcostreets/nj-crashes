@@ -1,6 +1,6 @@
 # NJ Crashes Project Context
 
-This document contains important context for Claude Code when working on this project.
+This document contains important context for Codex when working on this project.
 
 ## Project Overview
 
@@ -27,8 +27,6 @@ There are THREE different municipality coding systems:
 - `case`: Department case number (string, NOT unique across cc/mc!)
 
 **Important**: `(year, case)` is NOT unique - 751,473 duplicates exist across counties/municipalities (11.4% of all crashes). Always use the full 4-field PK.
-
-**The canonical unique crash key is the integer `id`** (crashes' row index; children FK via `crash_id`). The 4-field `(year, cc, mc, case)` tuple is a *near*-unique business key: it has exactly **50 legacy collision pairs**, all Princeton, because muni-code harmonization folds distinct raw DOT codes (`mc_dot` = Boro 9 / Twp 10) into one canonical `mc=14`. The pipeline is internally keyed on the *raw* code throughout (per-year dedup on `(cc, mc_dot, case)`; child→crash join resolves `crash_id` via `(year, cc, mc_dot, case)`), so joins are unaffected — **use `id`/`crash_id` for joins, not the 4-field PK**. See the "Non-unique 4-field crash PK" Known Issue below.
 
 Other types reference crashes via denormalized PK fields:
 - **Vehicles PK**: `(year, cc, mc, case, vn)`
@@ -97,32 +95,13 @@ dvx run
 # Run specific target
 dvx run njdot/data/crashes.parquet.dvc
 
-# Track a file/dir (leaf, or a stage's output). `dvx add` takes no --dep/--cmd:
-# write `meta.computation` into the .dvc by hand afterwards.
-dvx add output.parquet
+# Add a file with computation metadata
+dvx add output.parquet --dep input.parquet --cmd "python process.py"
 
-# Push/pull data from S3 (-r/--remote selects a non-default remote)
+# Push/pull data from S3
 dvx push
 dvx pull
 ```
-
-**Dep-path resolution** (`dvx/run/dvc_files.py`): a dep path with a leading `/`
-is repo-root-relative; one starting with the `.dvc`'s own directory is treated
-as repo-root-relative too (back-compat); **anything else resolves relative to
-the `.dvc`'s directory**. A cross-directory dep written bare therefore resolves
-to a path that doesn't exist, and the ordering edge is dropped silently — the
-stage then runs before its input is built. Always use the `/`-prefixed form for
-deps outside the `.dvc`'s own directory.
-
-**Stage cwd**: `dvx run` executes each cmd with cwd set to the *artifact's*
-directory, not the repo root. Bare script invocations in a nested `.dvc` need a
-`cd ../../.. &&` prefix. (`njsp` cmds are immune — `njsp/cli/base.py` chdirs to
-`ROOT_DIR`; `njdot` cmds use absolute path constants from `njdot/paths.py`.)
-
-**Side-effect stages** carry `meta.computation.side_effect: true` — deploys,
-notifications, upstream fetches, and pure co-output *driver* stages that
-produce no artifact of their own. `batch/reproc-targets` derives the reproc
-exclusion list from that flag, so mark the stage rather than editing a list.
 
 ### Key DVX-tracked Files
 - `njdot/data/crashes.parquet.dvc` - Combined crashes (depends on yearly Accidents.pqt)
@@ -163,16 +142,6 @@ Note: Use `env -u PYTHONPATH` to avoid shadowing PyGithub package.
 - **2023**: First year with data quality regressions requiring majority voting
 
 ## Known Issues
-
-### Non-unique 4-field crash PK (Princeton Boro/Twp merger)
-
-**Problem**: `(year, cc, mc, case)` is assumed-unique but isn't — there are **50 collision pairs** (100 rows), all Princeton (`cc=11`, `mc=14`), spanning 2001-2016. Muni-code harmonization (`DOT_MN_FIXES` in `harmonize_muni_codes.py`) collapses `'Princeton Boro'`/`'Princeton Twp'` → `'Princeton'` for all years (the 2013 Boro/Twp merger applied retroactively — spatially exact, since the Borough was a doughnut-hole entirely inside the Township, so merged = exact union with no boundary change). The two pre-merger munis ran independent case-number sequences, so a shared case string collides once both fold to `mc=14`.
-
-**Why joins are safe anyway**: the pipeline keys on the *raw* DOT code (`mc_dot`) end-to-end — the per-year dedup uses `(cc, mc_dot, case)` (`crashes.py`), and the child→crash FK join resolves `crash_id` via `(year, cc, mc_dot, case)` (`load.py:normalize`), which *is* globally unique. Children carry only `crash_id` (never a 4-field PK), so structural joins can't cross-match. `mc_dot` (raw 9/10/14) is retained on `crashes.parquet` as provenance. **Use `id`/`crash_id` for joins.** The one canonical-`mc`-keyed path is the NJSP↔NJDOT matcher's Pass-0 manual-override lookup (`match_njdot.py`), hardened to pick the highest-`tk` copy on a collision.
-
-**Audit**: `njdot compute pk-dupes` scans `crashes.parquet` for 4-field-PK collisions, classifies each group, and writes `njdot/data/crash_pk_dupes.csv` (git-tracked snapshot). Classification by `dt` agreement:
-- **47 `distinct`** pairs (different `dt`): genuinely separate crashes (Boro vs Twp, coincidental case reuse). Keeping both is correct.
-- **3 `true_dup`** pairs (same `dt` — same crash under two muni codes): `12-18325` (2012), `13-16-AC` (2013), `16-30259` (2016). These over-count by 3; the 2016 one is fatal under `mc_dot=10` but property under `mc_dot=14` (matcher correctly kept the fatal copy). **Deduping these 3 is punted** (needs a reproc; tracked in `specs/ROADMAP.md`).
 
 ### Denormalized PK: join children on the crash's RAW `mc_dot`
 
