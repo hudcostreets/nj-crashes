@@ -17,4 +17,4 @@ meta:
     git_deps:
       /njdot/cli/cells.py: 74de8c41bfb2656663f936701b1b381fa49b508b
       /njdot/s2.py: 18b3290b93befcb93f8edcffeb141a8782ccfe7d
-      /njdot/load.py: ab4f322c016359e6b653da06949dc79a353a55e1
+      /njdot/load.py: 77446ab26435ed4c5ef578547367304fb43c42f9
