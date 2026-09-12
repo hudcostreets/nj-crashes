@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+"""Exec a command with HCCS Cloudflare creds from ../.envrc.
+
+Loads CF_HCCS_INFRA_TOKEN → CLOUDFLARE_API_TOKEN and sets CLOUDFLARE_ACCOUNT_ID to
+the HCCS account, then execs argv — so wrangler/pulumi/etc. act on HCCS without the
+token passing through the shell. Usage:
+  ./hccs-run npx wrangler d1 execute <db> --remote --file dump.sql
+"""
+import os
+import re
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ENVRC = os.path.join(HERE, os.pardir, '.envrc')
+HCCS_ACCOUNT = '2363642879f18d37d52dca114059937e'
+
+
+def load_envrc(path):
+    vars = {}
+    pat = re.compile(r'^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$')
+    with open(path) as f:
+        for line in f:
+            m = pat.match(line)
+            if m:
+                k, v = m.group(1), m.group(2).strip()
+                if v and v[0] in "\"'" and v[-1:] == v[0]:
+                    v = v[1:-1]
+                vars[k] = v
+    return vars
+
+
+if len(sys.argv) < 2:
+    sys.exit('usage: hccs-run <cmd> [args...]')
+
+env = load_envrc(ENVRC)
+token = env.get('CF_HCCS_INFRA_TOKEN')
+if not token:
+    sys.exit('CF_HCCS_INFRA_TOKEN not found in .envrc')
+os.environ['CLOUDFLARE_API_TOKEN'] = token
+os.environ['CLOUDFLARE_ACCOUNT_ID'] = HCCS_ACCOUNT
+# wrangler also reads CF_ variants; clear anything stale that could shadow.
+os.environ.pop('CLOUDFLARE_EMAIL', None)
+os.execvpe(sys.argv[1], sys.argv[1:], os.environ)
