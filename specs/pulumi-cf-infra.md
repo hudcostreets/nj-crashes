@@ -159,6 +159,25 @@ D1s, and the FE addresses each by its own base URL, so cut over **per worker** a
 DBs land: `cells-api` (+ R2 data) → HCCS now; `crashes-api` **stays on RAC** (its
 RAC URL, RAC njdot D1s) until its 6 DBs are seeded in HCCS, then flip `VITE_API_URL`.
 
+## Seed progress (2026-09-11/12)
+
+**Window 1 seeded into HCCS D1 + verified** (trimmed schema — `id INTEGER PRIMARY KEY` + minimal indexes):
+- `pedestrians` — 193,109 ✓
+- `occupants` — 14,905,918 ✓
+- `crashes` — 6,567,550 ✓ (2 indexes `cc_mc_severity_dt`,`dt_severity`; 3 writes/row confirmed)
+
+`crashes.db` gotcha (fixed, commit `dc1d9213de7`): it was **stale — the OLD fat schema** (7 indexes, `id BIGINT`). Root cause: `www/public/njdot/crashes.db.dvc` has **no `git_dep` on the builder code**, so the index-trim commit (`bc7b53b8cdb`) never invalidated it (only dep `crashes.parquet` was unchanged). Rebuilt trimmed; `sql.py` `to_sql` gained `chunksize=100_000` (the wide 6.5M-row insert OOM'd a 61 GB box without it). **Gap-closer TODO:** give every `.db` `.dvc` a `git_dep` on its builder (`njdot/cli/base.py`, `nj_crashes/utils/sql.py`) so code changes invalidate them — same class as the missing D1-propagation edge.
+
+Cost note: ~$8 over w1's free 50M — a killed fat-`crashes` attempt burned ~9.6M writes before the stale schema was caught.
+
+**Operational how-to (for window 2 + cutover):**
+- Devbox `e` = EC2 `i-06708b0d46a8ac2a4` ("ctbk", RAC acct, `m6g.4xlarge`), **STOPPED** 2026-09-12 (EBS preserved). Start: `env -u AWS_ACCESS_KEY_ID -u AWS_SECRET_ACCESS_KEY AWS_PROFILE=r aws ec2 start-instances --instance-ids i-06708b0d46a8ac2a4` (HCCS admin creds in `$hccs/.envrc` override `AWS_PROFILE`, so unset them for RAC-account ops — same fix as `ei`).
+- wrangler needs **node ≥22** — `e` default node is 18; use nvm's v24: `export PATH="$HOME/.nvm/versions/node/v24.12.0/bin:$PATH"`.
+- Seed cmd (HCCS creds via wrapper, no token in shell): `python3 infra/hccs-run bash api/scripts/d1-import.sh --inplace --full <db>` — runs from `e` where the `.db`s live.
+- `e`'s `api/wrangler.toml` is **retargeted to HCCS `database_id`s but UNCOMMITTED** — a `grhh` on `e` reverts it, so redo the sed (HCCS ids in "New HCCS D1 database_id`s" above) after any reset before seeding.
+
+**Window 2 (after Sep 24 reset):** `vehicles` (~25M) + `cmymc` + `njsp-crashes`; plus `cells-s2` + `tune` for the cells-api cutover. Then worker deploys → FE/write repoint → per-worker cutover.
+
 ## Cutover sequence (prod stays live)
 1. **Finish the data copy:** `njdot/map/` + `og.jpg` (AWS S3 → HCCS `crashes`;
    cross-account, RAC/AWS-read + HCCS-RW). `raw/`+`cells/` already parity-verified.
