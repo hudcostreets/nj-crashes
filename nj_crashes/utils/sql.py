@@ -79,7 +79,10 @@ def write(
 
     err(f"Writing {len(df)} rows to {db_path} ({tbl})")
     kwargs = dict(if_exists='replace') if replace else dict()
-    df.to_sql(tbl, f'sqlite:///{db_path}', **kwargs)
+    # chunksize bounds the executemany batch: without it, `to_sql` materializes
+    # every row as Python objects at once, which OOMs a ~60 GB box on the wide
+    # 6.5M-row crashes table. Output is identical either way.
+    df.to_sql(tbl, f'sqlite:///{db_path}', chunksize=100_000, **kwargs)
     err(f"Wrote DB: {stat(db_path).st_size} bytes")
     with sqlite3.connect(db_path) as con:
         cur = con.cursor()
