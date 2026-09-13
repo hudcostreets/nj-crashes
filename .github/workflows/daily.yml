@@ -27,6 +27,9 @@ env:
   # cut over (window-2 D1s; Pages→HCCS). Separate cred from the AWS_*/R2 above.
   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  # HCCS Pages token — `deploy.dvc` also deploys HCCS `crashes` (crashes.hccs.dev)
+  # in addition to RAC `nj-crashes` (hudcostreets), until hudcostreets moves to HCCS.
+  CF_HCCS_INFRA_TOKEN: ${{ secrets.CF_HCCS_INFRA_TOKEN }}
   SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
   SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
   SLACK_CI_CHANNEL_ID: ${{ vars.SLACK_CI_CHANNEL_ID }}
