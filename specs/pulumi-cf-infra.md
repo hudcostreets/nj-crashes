@@ -185,7 +185,20 @@ Cost note: ~$8 over w1's free 50M — a killed fat-`crashes` attempt burned ~9.6
 - **Worker deployed** → `crashes-cells-api.hccs-ctbk.workers.dev`; `cells-api/wrangler.toml` retargeted (`bucket_name='crashes'`, HCCS `cells-s2`/`tune` ids).
 - **Custom domain** `crashes-cells.hccs.dev` via Pulumi (`manage_worker_domains=true` + `deployed_workers=crashes-cells-api` gate, so crashes-api's domain waits for window 2).
 - **FE repointed + deployed** (`www/deploy.sh` `VITE_CELLS_API_BASE` → `https://crashes-cells.hccs.dev`); a2a-verified drop-in (manifest/cells/raw byte-identical to RAC) and **CIC prod** (`crashes.hudcostreets.org`: map renders, `/v1/cells`→HCCS 200, `/raw` lists from HCCS R2).
-- **Follow-ups:** (a) set the HCCS worker's `TUNE_TOKEN` secret (`wrangler secret put`, = FE `VITE_TUNE_TOKEN`) to enable votes — reads already work; (b) the daily's `api/d1-import.dvc` still targets RAC, so HCCS `cells-s2` won't get daily deltas until the write-side repoint (#5) — low urgency (cells-s2 rarely changes); (c) retire RAC cells-api worker after green days.
+- **Follow-ups:** (a) `TUNE_TOKEN` secret set on the HCCS worker (2026-09-12) — votes enabled; (b) the daily's `api/d1-import.dvc` still targets RAC, so HCCS `cells-s2` won't get daily deltas until the write-side repoint (#5) — low urgency (cells-s2 rarely changes); (c) retire RAC cells-api worker after green days.
+
+## map → HCCS R2 — DONE (2026-09-12); og deferred
+
+- **`njdot/map/`** (44 objects, 2.4 MB — county/muni geojson outlines + `v2/manifest.v2.json`; static, mtime 2026-05-17, no daily stage rebuilds it) copied RAC S3 → HCCS `crashes` R2 via `wrangler r2 object put`. `www/deploy.sh` + `www/dev-restart.sh` `VITE_MAP_BASE_URL` → `https://crashes.hccs.dev/njdot/map`. Deployed + CIC-verified prod: live bundle carries the HCCS base (0 S3 refs), `/c/hudson` fetched `crashes.hccs.dev/njdot/map/counties/09.geojson` 200, map renders.
+- **`og.jpg` deferred** (copied to R2 already, but FE still reads S3): it's **daily-regenerated** (`og-image.dvc` re-uploads the homepage mosaic to S3 each run), so repointing reads to R2 without repointing the write would freeze it. Migrate og **read+write together** in the write-side batch (#5), once R2 S3-API creds exist.
+
+## DVX cache → HCCS R2 (#4) — planned, blocked on R2 S3-API creds
+
+RAC-retirement driver (not public egress — the cache isn't public-served). Sizes: `.dvc` (main) **6393 objs / 64.3 GB**; `.dvc-reproc` **1642 objs / 26.6 GB**, of which **1563 (95%) already in main** — only **79 reproc-unique** stale-staging blobs. Plan:
+- Migrate **main `.dvc` only** → a **separate private R2 bucket** (e.g. `crashes-dvc`, no public custom domain), ~$8 one-time S3 egress + ~$1/mo storage.
+- **Drop `.dvc-reproc`** (recreate as a prefix on the next reproc run; the 79 unique blobs are stale).
+- Repoint dvx remotes (`s3`, `reproc`) → R2 endpoint.
+- **Prereq (user action):** mint an HCCS R2 API token (Object R&W) → `~/.aws/config` `[profile cfh]` with `endpoint_url = https://2363642879f18d37d52dca114059937e.r2.cloudflarestorage.com` + creds. Same profile unblocks og write-side + the daily write repoint (#5).
 
 ## Cutover sequence (prod stays live)
 1. **Finish the data copy:** `njdot/map/` + `og.jpg` (AWS S3 → HCCS `crashes`;

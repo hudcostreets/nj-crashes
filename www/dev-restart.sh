@@ -26,7 +26,7 @@ for p in "${PORTS[@]}"; do
 done
 sleep 1
 
-export VITE_MAP_BASE_URL="${VITE_MAP_BASE_URL:-https://nj-crashes.s3.amazonaws.com/njdot/map}"
+export VITE_MAP_BASE_URL="${VITE_MAP_BASE_URL:-https://crashes.hccs.dev/njdot/map}"
 export VITE_API_URL="${VITE_API_URL:-https://crashes-api.ryan-0dc.workers.dev}"
 echo "Starting pnpm $MODE (VITE_MAP_BASE_URL=$VITE_MAP_BASE_URL  VITE_API_URL=$VITE_API_URL)"
 exec pnpm "$MODE" "$@"
