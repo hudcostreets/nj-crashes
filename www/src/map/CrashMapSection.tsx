@@ -17,7 +17,7 @@ import type { MapMode, ViewState } from "@/src/map/CrashMap"
 import type { StackedCell } from "@/src/map/StackedCellLayer"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import type { FeatureCollection } from "geojson"
-import { FiMaximize2, FiMinimize2 } from "react-icons/fi"
+import { FiMaximize2, FiMinimize2, FiHome } from "react-icons/fi"
 import useSessionStorageState from "use-session-storage-state"
 import { useToolboxOpen } from "@/src/map/useToolboxOpen"
 import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
@@ -972,10 +972,35 @@ export function CrashMapSection({
                     {fullScreen ? <FiMinimize2 size={14} /> : <FiMaximize2 size={14} />}
                 </a>
             )}
+            {/* Full-screen route has no page-level top nav, so surface a
+             *  brand/home link (top-left, above the Legend) as the universal
+             *  "click the wordmark to get back to the site" affordance. The
+             *  bottom-left minimize button is contextual (up one level to the
+             *  region's charts); this always goes to the homepage. */}
+            {fullScreen && (
+                <a
+                    href="/"
+                    title="Back to NJ Crashes home"
+                    aria-label="Back to NJ Crashes home"
+                    style={{
+                        position: "absolute", top: 8, left: 8, zIndex: 51,
+                        background: bg, color: fg,
+                        padding: "4px 8px", borderRadius: 4,
+                        border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
+                        display: "inline-flex", alignItems: "center", gap: 5,
+                        textDecoration: "none", lineHeight: 1,
+                        fontSize: "0.8em", fontWeight: 600, whiteSpace: "nowrap",
+                    }}
+                >
+                    <FiHome size={13} />
+                    <span>NJ Crashes</span>
+                </a>
+            )}
             <Legend
                 theme={actualTheme}
                 severities={severities}
                 onToggle={toggleSeverity}
+                fullScreen={fullScreen}
             />
             {emptySeverities && result.status === "ready" && (
                 <div style={{
@@ -1067,11 +1092,14 @@ function RefetchSpinner({ theme }: { theme: "light" | "dark" }) {
 }
 
 function Legend({
-    theme, severities, onToggle,
+    theme, severities, onToggle, fullScreen = false,
 }: {
     theme: "light" | "dark"
     severities: Set<"f" | "i" | "p">
     onToggle: (s: "f" | "i" | "p") => void
+    /** In full-screen mode the brand/home link occupies top-left; drop the
+     *  Legend below it so they don't overlap. */
+    fullScreen?: boolean
 }) {
     const bg = theme === "dark" ? "rgba(30,30,30,0.85)" : "rgba(255,255,255,0.9)"
     const fg = theme === "dark" ? "#e0e0e0" : "#333"
@@ -1082,7 +1110,7 @@ function Legend({
     ]
     return (
         <div style={{
-            position: "absolute", top: 8, left: 8, zIndex: 50,
+            position: "absolute", top: fullScreen ? 42 : 8, left: 8, zIndex: 50,
             background: bg, color: fg, padding: "4px 8px", borderRadius: 4,
             fontSize: "0.72em", display: "flex", flexDirection: "column", gap: 2,
             border: `1px solid ${theme === "dark" ? "#444" : "#ccc"}`,
