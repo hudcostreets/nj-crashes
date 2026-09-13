@@ -176,7 +176,16 @@ Cost note: ~$8 over w1's free 50M — a killed fat-`crashes` attempt burned ~9.6
 - Seed cmd (HCCS creds via wrapper, no token in shell): `python3 infra/hccs-run bash api/scripts/d1-import.sh --inplace --full <db>` — runs from `e` where the `.db`s live.
 - `e`'s `api/wrangler.toml` is **retargeted to HCCS `database_id`s but UNCOMMITTED** — a `grhh` on `e` reverts it, so redo the sed (HCCS ids in "New HCCS D1 database_id`s" above) after any reset before seeding.
 
-**Window 2 (after Sep 24 reset):** `vehicles` (~25M) + `cmymc` + `njsp-crashes`; plus `cells-s2` + `tune` for the cells-api cutover. Then worker deploys → FE/write repoint → per-worker cutover.
+**Window 2 (after Sep 24 reset):** `vehicles` (~25M) + `cmymc` + `njsp-crashes` for the **crashes-api** cutover. Then worker deploy → FE `VITE_API_URL` repoint → flip.
+
+## cells-api cutover — DONE + LIVE (2026-09-12)
+
+**First per-worker flip complete.** cells-api (map + `/raw`) now served from HCCS; RAC crashes-api untouched (still serves the njdot/njsp D1s until window 2).
+- **Seeded to HCCS D1** (from RAC-parity sources, verified table-by-table): `cells-s2` (~8M writes; canonical `cells-s2.db` 3fa70b06 pulled from DVC — the worktree copy c803a6ea was a drifted non-canonical build), `tune` (32 votes, `wrangler d1 export` RAC → import HCCS).
+- **Worker deployed** → `crashes-cells-api.hccs-ctbk.workers.dev`; `cells-api/wrangler.toml` retargeted (`bucket_name='crashes'`, HCCS `cells-s2`/`tune` ids).
+- **Custom domain** `crashes-cells.hccs.dev` via Pulumi (`manage_worker_domains=true` + `deployed_workers=crashes-cells-api` gate, so crashes-api's domain waits for window 2).
+- **FE repointed + deployed** (`www/deploy.sh` `VITE_CELLS_API_BASE` → `https://crashes-cells.hccs.dev`); a2a-verified drop-in (manifest/cells/raw byte-identical to RAC) and **CIC prod** (`crashes.hudcostreets.org`: map renders, `/v1/cells`→HCCS 200, `/raw` lists from HCCS R2).
+- **Follow-ups:** (a) set the HCCS worker's `TUNE_TOKEN` secret (`wrangler secret put`, = FE `VITE_TUNE_TOKEN`) to enable votes — reads already work; (b) the daily's `api/d1-import.dvc` still targets RAC, so HCCS `cells-s2` won't get daily deltas until the write-side repoint (#5) — low urgency (cells-s2 rarely changes); (c) retire RAC cells-api worker after green days.
 
 ## Cutover sequence (prod stays live)
 1. **Finish the data copy:** `njdot/map/` + `og.jpg` (AWS S3 → HCCS `crashes`;

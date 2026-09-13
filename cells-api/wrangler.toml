@@ -5,7 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [[r2_buckets]]
 binding = "CELLS_BUCKET"
-bucket_name = "nj-crashes"
+bucket_name = "crashes"
 
 # Per-cell all-years rollup (counts + labels), one row per cell per level
 # (`cells_s2_l{level}`, built from `data/cells/cells-s2.db` and imported via
@@ -19,7 +19,7 @@ bucket_name = "nj-crashes"
 [[d1_databases]]
 binding = "CELLS_S2_DB"
 database_name = "cells-s2"
-database_id = "ed836697-7116-4a92-ae87-c304d616d1cd"
+database_id = "5f3f02b6-4ff6-439d-be66-a9d1436c649b"
 
 # Picker-tuning preference votes from `/tune/ab` (see `src/tune.ts`,
 # `sql/tune.sql`, `specs/tune-preference-learning.md`). Reads are public;
@@ -27,7 +27,7 @@ database_id = "ed836697-7116-4a92-ae87-c304d616d1cd"
 [[d1_databases]]
 binding = "TUNE_DB"
 database_name = "tune"
-database_id = "9ffa6e1b-214f-4746-a263-030d5d95f7bf"
+database_id = "b9eea284-d436-4045-bb3b-c30ebf53f9b7"
 
 [dev]
 port = 51895

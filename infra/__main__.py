@@ -23,7 +23,10 @@ zone_id = config.require('hccs_zone_id')                      # hccs.dev zone (H
 data_domain = config.get('data_domain') or 'crashes.hccs.dev'
 # Worker custom domains can only bind an already-deployed Worker, so they're gated
 # until the cells-api/crashes-api Workers are wrangler-deployed into this account.
+# `deployed_workers` (comma-separated service names) narrows which domains to create,
+# so cells-api's domain can land before crashes-api is seeded/deployed (window 2).
 manage_worker_domains = config.get_bool('manage_worker_domains') is True
+deployed_workers = {s for s in (config.get('deployed_workers') or '').split(',') if s}
 
 # ── R2 bucket (imported; created via dashboard 2026-09-10) ────────────
 bucket = cf.R2Bucket(
@@ -98,6 +101,8 @@ WORKER_DOMAINS = {
 }
 if manage_worker_domains:
     for hostname, service in WORKER_DOMAINS.items():
+        if deployed_workers and service not in deployed_workers:
+            continue
         cf.WorkersCustomDomain(
             f'wcd-{service}',
             account_id=account_id,
