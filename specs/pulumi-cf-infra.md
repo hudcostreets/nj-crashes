@@ -209,7 +209,8 @@ Audit resolved the "mixed-cred hazard": once the cache + the whole `NJC_S3` surf
 - **`daily.yml`:** `AWS_*` → `R2_HCCS_RW_*` secrets + `AWS_ENDPOINT_URL`=R2 + `AWS_DEFAULT_REGION=auto` + `NJC_S3=s3://crashes`; `$DVX` gained `-r r2`.
 - **og:** write follows `NJC_S3` → R2 automatically; FE + `_middleware.ts` og reads → `crashes.hccs.dev/og.jpg`.
 - **Not touched (deliberate):** `api/d1-import.dvc` still → RAC D1 (D1 cutover is window-2); `deploy.dvc` still → RAC Pages (Pages cutover with the dev-env effort). `og-image.sh`/`paths.py` keep `s3://nj-crashes` *defaults* (daily overrides via `NJC_S3`); update when RAC fully retired.
-- **Next:** CI smoke-test via `workflow_dispatch` (`targets=www/og-image.dvc`, `force=true`) — minimal blast radius, exercises public-pull + R2-write + r2-push; then trust the scheduled daily. Leave RAC S3 `.dvc` a few green days, then drop it + `.dvc-reproc`.
+- **DONE + validated (2026-09-13):** full daily dispatch [`34762480139`] green on the R2 flip. All R2 paths verified — public-http `dvx pull` in CI ✓, `dvx push -r r2` ✓, aws-cli→R2 ✓, boto3(`s3.py`)→R2 ✓; prod og:image (normal + crawler/middleware) → `crashes.hccs.dev/og.jpg` serving 200. (A first `targets=og-image` smoke-test failed — isolation starved the screenshot of homepage data, unrelated to R2; the full run has all stages. The quiet full run pushed no new blobs / skipped og because crash-log output was byte-identical — correct.)
+- **Remaining:** leave RAC S3 `.dvc` a few green days, then drop it + `.dvc-reproc`/`njsp`/`njdot/data`. `api/d1-import.dvc` → RAC D1 and `deploy.dvc` → RAC Pages still, pending the D1 (window-2) and Pages/dev-env cutovers.
 
 ## Cutover sequence (prod stays live)
 1. **Finish the data copy:** `njdot/map/` + `og.jpg` (AWS S3 → HCCS `crashes`;
