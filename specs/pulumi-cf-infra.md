@@ -212,6 +212,22 @@ Audit resolved the "mixed-cred hazard": once the cache + the whole `NJC_S3` surf
 - **DONE + validated (2026-09-13):** full daily dispatch [`34762480139`] green on the R2 flip. All R2 paths verified — public-http `dvx pull` in CI ✓, `dvx push -r r2` ✓, aws-cli→R2 ✓, boto3(`s3.py`)→R2 ✓; prod og:image (normal + crawler/middleware) → `crashes.hccs.dev/og.jpg` serving 200. (A first `targets=og-image` smoke-test failed — isolation starved the screenshot of homepage data, unrelated to R2; the full run has all stages. The quiet full run pushed no new blobs / skipped og because crash-log output was byte-identical — correct.)
 - **Remaining:** leave RAC S3 `.dvc` a few green days, then drop it + `.dvc-reproc`/`njsp`/`njdot/data`. `api/d1-import.dvc` → RAC D1 and `deploy.dvc` → RAC Pages still, pending the D1 (window-2) and Pages/dev-env cutovers.
 
+## Pages + dev standup (2026-09-13) — FE on HCCS; last-mile is 2 user actions
+
+**Live now:**
+- HCCS Pages projects `crashes` (prod) + `crashes-dev` (dev), direct-upload (wrangler pages deploy; `--force` needed locally to bypass the delegation scan that trips on the repo `.venv`, not in CI).
+- **`dev.crashes.hccs.dev`** serves the app (nested Pages cert — free; qr proved nested works). Points at **prod BE by default** (cells `crashes-cells.hccs.dev`, api RAC, data `crashes-data.hccs.dev`) — the "dev = code tier" model.
+- **`crashes.hccs.dev`** now serves the **prod FE** (Pages), CIC-verified (map + plots render). Data moved off it → **`crashes-data.hccs.dev`** (R2, one-label; the FE keeps the short name because Pages issues its own cert).
+- Live prod `crashes.hudcostreets.org` (still RAC `nj-crashes` Pages) redeployed to reference `crashes-data` — verified, so freeing `crashes.hccs.dev` didn't break it.
+
+**Domain map:** `crashes.hccs.dev`=prod FE · `dev.crashes.hccs.dev`=dev FE · `crashes-data.hccs.dev`=R2 data (+dvx pull) · `crashes-cells`/`crashes-api`=workers.
+
+**Last mile (2 user actions):**
+1. **Keep `crashes.hccs.dev` fresh via the daily** — `deploy.dvc` must also deploy HCCS `crashes`, which needs **`CF_HCCS_INFRA_TOKEN` as a GH Actions secret** (CI has no `.envrc` for `hccs-run`). Then `deploy.sh` deploys both RAC `nj-crashes` (keeps hudcostreets fresh) + HCCS `crashes` until hudcostreets flips.
+2. **hudcostreets → HCCS** — remove `crashes.hudcostreets.org` from RAC `nj-crashes` Pages, add to HCCS `crashes` Pages, re-CNAME (Google Cloud DNS — **user**). Then drop the RAC deploy + retire RAC Pages.
+
+**Deferred polish:** dev-binding *override* (point dev at standalone dev D1/R2 when testing pyramids/schemas); IaC-import the Pages projects/domains into Pulumi (currently API/wrangler-managed).
+
 ## Cutover sequence (prod stays live)
 1. **Finish the data copy:** `njdot/map/` + `og.jpg` (AWS S3 → HCCS `crashes`;
    cross-account, RAC/AWS-read + HCCS-RW). `raw/`+`cells/` already parity-verified.

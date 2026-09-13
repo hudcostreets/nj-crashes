@@ -20,7 +20,7 @@ config = pulumi.Config()
 # so it can build the R2 import id below. Provider auth is the ambient CLOUDFLARE_API_TOKEN.
 account_id = os.environ.get('CLOUDFLARE_ACCOUNT_ID') or config.require('cloudflare_account_id')
 zone_id = config.require('hccs_zone_id')                      # hccs.dev zone (HCCS acct)
-data_domain = config.get('data_domain') or 'crashes.hccs.dev'
+data_domain = config.get('data_domain') or 'crashes-data.hccs.dev'
 # Worker custom domains can only bind an already-deployed Worker, so they're gated
 # until the cells-api/crashes-api Workers are wrangler-deployed into this account.
 # `deployed_workers` (comma-separated service names) narrows which domains to create,
@@ -40,26 +40,16 @@ bucket = cf.R2Bucket(
     ),
 )
 
-# ── Public custom domain: crashes.hccs.dev (creates the CNAME on the zone) ──
-# TRANSITIONAL: crashes.hccs.dev is being handed to the FE Pages project; the raw
-# R2 data moves to crashes-data.hccs.dev (one-label — R2 Universal SSL can't cover
-# a two-label host cheaply). Both serve during the cutover; this old domain is
-# removed once the FE repoint (map/og/dvx-public → crashes-data) ships.
+# ── R2 data domain: crashes-data.hccs.dev ──
+# crashes.hccs.dev was handed to the FE Pages project; raw R2 data (map/og/.dvc,
+# dvx-pull) lives here. One-label so the zone's Universal SSL covers it (a
+# two-label R2 host would need paid Advanced Cert Manager). The FE Pages custom
+# domain crashes.hccs.dev is managed on the Pages project (not here yet).
 custom_domain = cf.R2CustomDomain(
-    'crashes-hccs-dev',
-    account_id=account_id,
-    bucket_name=bucket.name,
-    domain=data_domain,
-    zone_id=zone_id,
-    enabled=True,
-    min_tls='1.2',
-)
-data_domain_new = config.get('data_domain_new') or 'crashes-data.hccs.dev'
-custom_domain_new = cf.R2CustomDomain(
     'crashes-data-hccs-dev',
     account_id=account_id,
     bucket_name=bucket.name,
-    domain=data_domain_new,
+    domain=data_domain,
     zone_id=zone_id,
     enabled=True,
     min_tls='1.2',
