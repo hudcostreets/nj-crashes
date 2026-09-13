@@ -202,11 +202,14 @@ RAC-retirement driver. Sizes were: `.dvc` (main) **6393 objs / 59.9 GiB**; `.dvc
 - **Steps 2–3 ✓** `.dvc/config` gained `public` (http `https://crashes.hccs.dev/.dvc`, anonymous pull) + `r2` (`s3://crashes/.dvc` + endpoint, authenticated push); `core.remote` still `s3` (daily untouched). Verified: authenticated `dvx push -r r2` (0 to push, all present); **anonymous `dvx pull` with all creds stripped** → correct md5. (`dvx push -r r2` also flagged 2 pre-existing orphan blobs `e3c72d25`,`3863ad0d` — referenced by some `.dvc` but never in the S3 source either; audit later.)
 - **Creds:** `R2_HCCS_RW_*` in `.envrc` (token = R2 Object R&W on `crashes`, verified); wrappers `infra/r2-run` (aws/boto3/dvx) + `infra/rclone-run` (dual-remote rclone) inject them with no secret in argv/global config. GH Actions secrets `R2_HCCS_RW_ACCESS_KEY_ID`/`SECRET` set for CI.
 
-**Step 4 (daily-CI write-side flip = #5) — the delicate part, pending:**
-- Flip `core.remote → public`; change the daily to `dvx run … --push each -r r2`.
-- Repoint og write (`og-image.sh` `aws s3 cp $NJC_S3/og.jpg`) + FE og reads → R2.
-- **Mixed-cred hazard:** the daily uses one cred set (RAC) for *everything* today; R2 ops (`dvx push -r r2`, og upload) need per-command R2 creds (`r2-run` pattern in CI) while other stages may still read RAC S3. **Audit every direct-S3 touchpoint in the daily before flipping.**
-- Then leave S3 `.dvc` a few green days; drop it + `.dvc-reproc`.
+**Step 4 (daily-CI write-side flip = #5) — edits done, CI smoke-test pending (2026-09-13):**
+Audit resolved the "mixed-cred hazard": once the cache + the whole `NJC_S3` surface are on R2, **every** S3 op in the daily targets R2, so the daily uses **R2-only `AWS_*`** — no per-command mixing. `CLOUDFLARE_*` stays RAC (d1-import → RAC D1, deploy → RAC Pages; separate cred).
+- **Migrated S3→R2** (`crashes` bucket): `.dvc` cache (60 GiB ✓), `njsp/` (9 objs ✓), `njdot/data/` (123 objs / 7.5 GiB ✓), `og.jpg` (✓). All byte/count parity.
+- **`.dvc/config`:** `core.remote` → `public` (anonymous pull default).
+- **`daily.yml`:** `AWS_*` → `R2_HCCS_RW_*` secrets + `AWS_ENDPOINT_URL`=R2 + `AWS_DEFAULT_REGION=auto` + `NJC_S3=s3://crashes`; `$DVX` gained `-r r2`.
+- **og:** write follows `NJC_S3` → R2 automatically; FE + `_middleware.ts` og reads → `crashes.hccs.dev/og.jpg`.
+- **Not touched (deliberate):** `api/d1-import.dvc` still → RAC D1 (D1 cutover is window-2); `deploy.dvc` still → RAC Pages (Pages cutover with the dev-env effort). `og-image.sh`/`paths.py` keep `s3://nj-crashes` *defaults* (daily overrides via `NJC_S3`); update when RAC fully retired.
+- **Next:** CI smoke-test via `workflow_dispatch` (`targets=www/og-image.dvc`, `force=true`) — minimal blast radius, exercises public-pull + R2-write + r2-push; then trust the scheduled daily. Leave RAC S3 `.dvc` a few green days, then drop it + `.dvc-reproc`.
 
 ## Cutover sequence (prod stays live)
 1. **Finish the data copy:** `njdot/map/` + `og.jpg` (AWS S3 → HCCS `crashes`;

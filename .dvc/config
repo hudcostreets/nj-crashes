@@ -1,5 +1,7 @@
 [core]
-    remote = s3
+    # Default = anonymous public http pull (clone-and-`dvx pull`, no creds).
+    # Authenticated push/pull uses `-r r2` (the daily; maintainers via `r2-run`).
+    remote = public
     autostage = true
 # Anonymous public pull (no creds) — `crashes` R2 bucket via its custom domain.
 # Default pull target after the write-side flip; http remotes are read-only.
