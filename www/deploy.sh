@@ -15,8 +15,13 @@ find dist -size +25M -delete
 # hudcostreets re-CNAMEs to HCCS.
 npx wrangler pages deploy dist --project-name nj-crashes --commit-dirty=true
 # HCCS crashes (crashes.hccs.dev). CF_HCCS_INFRA_TOKEN: GH secret in CI, .envrc locally.
-CLOUDFLARE_API_TOKEN="$CF_HCCS_INFRA_TOKEN" CLOUDFLARE_ACCOUNT_ID=2363642879f18d37d52dca114059937e \
-    npx wrangler pages deploy dist --project-name crashes --commit-dirty=true
+# Guarded so `set -u` doesn't abort when the token is absent (deploy RAC only).
+if [ -n "${CF_HCCS_INFRA_TOKEN:-}" ]; then
+    CLOUDFLARE_API_TOKEN="$CF_HCCS_INFRA_TOKEN" CLOUDFLARE_ACCOUNT_ID=2363642879f18d37d52dca114059937e \
+        npx wrangler pages deploy dist --project-name crashes --commit-dirty=true
+else
+    echo "CF_HCCS_INFRA_TOKEN unset — skipping HCCS crashes deploy" >&2
+fi
 
 # Signal DVX to commit
 if [ -n "${DVX_COMMIT_MSG_FILE:-}" ]; then

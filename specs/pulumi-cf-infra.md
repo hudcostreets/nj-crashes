@@ -57,10 +57,11 @@ bare `pulumi` picks up the RAC token from `.envrc` → 403.
 
 ## DNS facts (verified 2026-09-11)
 - **`hccs.dev` = CF zone in HCCS.** Use it for all custom domains (data + workers).
-- **`hudcostreets.org` = Google Cloud DNS, NOT Cloudflare.** `crashes.hudcostreets.org`
-  is a Google-DNS CNAME → `nj-crashes.pages.dev`. The FE site domain **stays** — just
-  re-CNAME it to the new HCCS Pages project (no zone move). Don't put data/worker
-  custom domains under `hudcostreets.org` (would need a full zone move).
+- **`hudcostreets.org` DNS = Squarespace (ex-Google Domains), NOT Cloudflare or GCP.**
+  `crashes.hudcostreets.org` is a CNAME → `nj-crashes.pages.dev`. The FE site domain
+  **stays** — just re-CNAME it (in Squarespace DNS) to the new HCCS Pages project (no
+  zone move). Don't put data/worker custom domains under `hudcostreets.org` (would
+  need a full zone move).
 - The two `.claude/`-config hostnames were **stale** (both NXDOMAIN):
   `nj-crashes-cells.hudcostreets.workers.dev`, `www.nj-crashes.com` — delete those refs.
 
@@ -224,7 +225,7 @@ Audit resolved the "mixed-cred hazard": once the cache + the whole `NJC_S3` surf
 
 **Last mile (2 user actions):**
 1. **Keep `crashes.hccs.dev` fresh via the daily** — `deploy.dvc` must also deploy HCCS `crashes`, which needs **`CF_HCCS_INFRA_TOKEN` as a GH Actions secret** (CI has no `.envrc` for `hccs-run`). Then `deploy.sh` deploys both RAC `nj-crashes` (keeps hudcostreets fresh) + HCCS `crashes` until hudcostreets flips.
-2. **hudcostreets → HCCS** — remove `crashes.hudcostreets.org` from RAC `nj-crashes` Pages, add to HCCS `crashes` Pages, re-CNAME (Google Cloud DNS — **user**). Then drop the RAC deploy + retire RAC Pages.
+2. **hudcostreets → HCCS** — `crashes.hudcostreets.org` added to HCCS `crashes` Pages (status *initializing*); re-CNAME → `crashes.pages.dev` in **Squarespace DNS** (**user**); then remove from RAC `nj-crashes` Pages, drop the RAC deploy + retire RAC Pages.
 
 **Deferred polish:** dev-binding *override* (point dev at standalone dev D1/R2 when testing pyramids/schemas); IaC-import the Pages projects/domains into Pulumi (currently API/wrangler-managed).
 
