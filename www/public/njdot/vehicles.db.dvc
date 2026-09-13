@@ -10,3 +10,6 @@ meta:
       mem_gb: 32
     deps:
       /njdot/data/vehicles.parquet: 2f1d3fdc7037de75187d5551c6152258
+    git_deps:
+      /njdot/cli/base.py: 7e648ff962cf04bbbba125fea649a8d5008e1f05
+      /nj_crashes/utils/sql.py: e8ac1897df37719dc8dffd9c4de67489d1737224

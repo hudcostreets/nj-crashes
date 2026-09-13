@@ -10,3 +10,6 @@ meta:
       mem_gb: 4
     deps:
       /njdot/data/pedestrians.parquet: 3c8b7ed90148844402a22e44053fe3d8
+    git_deps:
+      /njdot/cli/base.py: 7e648ff962cf04bbbba125fea649a8d5008e1f05
+      /nj_crashes/utils/sql.py: e8ac1897df37719dc8dffd9c4de67489d1737224
