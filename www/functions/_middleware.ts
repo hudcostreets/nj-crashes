@@ -17,7 +17,7 @@ interface OgMeta {
     url: string
 }
 
-const SITE_URL = 'https://crashes.hudcostreets.org'
+const SITE_URL = 'https://crashes.hccs.dev'
 // Daily-regenerated homepage mosaic — see `www/og-image.dvc` (uploads
 // to `$NJC_S3/og.jpg` = HCCS R2 `crashes` after every daily CI run).
 const OG_IMAGE = 'https://crashes-data.hccs.dev/og.jpg'

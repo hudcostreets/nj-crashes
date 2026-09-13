@@ -1,3 +1,3 @@
-export const domain = "crashes.hudcostreets.org"
+export const domain = "crashes.hccs.dev"
 export const url = `https://${domain}`
 

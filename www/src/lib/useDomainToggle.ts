@@ -1,13 +1,13 @@
 import { useAction } from "use-kbd"
 
 /** `g d` — toggle the current URL's host between the local dev server
- *  (`localhost:4006`) and prod (`crashes.hudcostreets.org`). Preserves
+ *  (`localhost:4006`) and prod (`crashes.hccs.dev`). Preserves
  *  path, query, and hash. Chooses the "other" side based on the
  *  current hostname: any localhost/127.0.0.1/tailscale IP → prod;
  *  anything else → dev. Registered at `App` level so every route
  *  inherits it. */
 const DEV_ORIGIN  = "http://localhost:4006"
-const PROD_ORIGIN = "https://crashes.hudcostreets.org"
+const PROD_ORIGIN = "https://crashes.hccs.dev"
 
 function isDevHost(host: string): boolean {
     return host === "localhost"

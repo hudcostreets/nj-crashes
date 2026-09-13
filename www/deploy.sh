@@ -11,17 +11,15 @@ find dist -name '*.db' -o -name '*.db.bak' | xargs rm -f
 # ship them with the CFP deploy.
 rm -rf dist/njdot/map
 find dist -size +25M -delete
-# RAC nj-crashes (live prod via crashes.hudcostreets.org) — dropped once
-# hudcostreets re-CNAMEs to HCCS.
-npx wrangler pages deploy dist --project-name nj-crashes --commit-dirty=true
-# HCCS crashes (crashes.hccs.dev). CF_HCCS_INFRA_TOKEN: GH secret in CI, .envrc locally.
-# Guarded so `set -u` doesn't abort when the token is absent (deploy RAC only).
-if [ -n "${CF_HCCS_INFRA_TOKEN:-}" ]; then
-    CLOUDFLARE_API_TOKEN="$CF_HCCS_INFRA_TOKEN" CLOUDFLARE_ACCOUNT_ID=2363642879f18d37d52dca114059937e \
-        npx wrangler pages deploy dist --project-name crashes --commit-dirty=true
-else
-    echo "CF_HCCS_INFRA_TOKEN unset — skipping HCCS crashes deploy" >&2
+# HCCS crashes — serves both crashes.hccs.dev and crashes.hudcostreets.org (the
+# latter moved off RAC nj-crashes on 2026-09-13, so this is the sole deploy now).
+# CF_HCCS_INFRA_TOKEN: GH secret in CI, .envrc locally — required.
+if [ -z "${CF_HCCS_INFRA_TOKEN:-}" ]; then
+    echo "CF_HCCS_INFRA_TOKEN unset — cannot deploy to HCCS crashes Pages" >&2
+    exit 1
 fi
+CLOUDFLARE_API_TOKEN="$CF_HCCS_INFRA_TOKEN" CLOUDFLARE_ACCOUNT_ID=2363642879f18d37d52dca114059937e \
+    npx wrangler pages deploy dist --project-name crashes --commit-dirty=true
 
 # Signal DVX to commit
 if [ -n "${DVX_COMMIT_MSG_FILE:-}" ]; then
