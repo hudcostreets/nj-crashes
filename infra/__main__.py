@@ -41,11 +41,25 @@ bucket = cf.R2Bucket(
 )
 
 # ── Public custom domain: crashes.hccs.dev (creates the CNAME on the zone) ──
+# TRANSITIONAL: crashes.hccs.dev is being handed to the FE Pages project; the raw
+# R2 data moves to crashes-data.hccs.dev (one-label — R2 Universal SSL can't cover
+# a two-label host cheaply). Both serve during the cutover; this old domain is
+# removed once the FE repoint (map/og/dvx-public → crashes-data) ships.
 custom_domain = cf.R2CustomDomain(
     'crashes-hccs-dev',
     account_id=account_id,
     bucket_name=bucket.name,
     domain=data_domain,
+    zone_id=zone_id,
+    enabled=True,
+    min_tls='1.2',
+)
+data_domain_new = config.get('data_domain_new') or 'crashes-data.hccs.dev'
+custom_domain_new = cf.R2CustomDomain(
+    'crashes-data-hccs-dev',
+    account_id=account_id,
+    bucket_name=bucket.name,
+    domain=data_domain_new,
     zone_id=zone_id,
     enabled=True,
     min_tls='1.2',

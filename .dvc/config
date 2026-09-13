@@ -6,7 +6,7 @@
 # Anonymous public pull (no creds) — `crashes` R2 bucket via its custom domain.
 # Default pull target after the write-side flip; http remotes are read-only.
 ['remote "public"']
-    url = https://crashes.hccs.dev/.dvc
+    url = https://crashes-data.hccs.dev/.dvc
 # Authenticated push/pull — HCCS R2 S3 API (creds via `infra/r2-run`, or the
 # R2_HCCS_RW_* GitHub secrets in CI). The daily pushes here with `-r r2`.
 ['remote "r2"']

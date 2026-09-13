@@ -20,7 +20,7 @@ interface OgMeta {
 const SITE_URL = 'https://crashes.hudcostreets.org'
 // Daily-regenerated homepage mosaic — see `www/og-image.dvc` (uploads
 // to `$NJC_S3/og.jpg` = HCCS R2 `crashes` after every daily CI run).
-const OG_IMAGE = 'https://crashes.hccs.dev/og.jpg'
+const OG_IMAGE = 'https://crashes-data.hccs.dev/og.jpg'
 const DEFAULT_OG: OgMeta = {
     title: 'NJ Car Crash Data',
     description: 'Analysis & Visualization of car crash data published by NJ State Police and NJ DOT',
