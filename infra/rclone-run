@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+"""Exec `rclone` with two S3 remotes wired up from creds, no global config:
+
+  racs3: → RAC AWS S3 (creds from `aws configure export-credentials --profile r`)
+  hr2:   → HCCS R2      (creds from ../.envrc R2_HCCS_RW_*, R2 S3 endpoint)
+
+Creds are passed via rclone's RCLONE_CONFIG_<NAME>_* env vars (not argv, not a
+config file). Usage:
+  ./rclone-run lsd racs3:nj-crashes
+  ./rclone-run copy racs3:nj-crashes/.dvc hr2:crashes/.dvc --progress --transfers 32
+"""
+import os
+import re
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ENVRC = os.path.join(HERE, os.pardir, '.envrc')
+HCCS_ACCOUNT = '2363642879f18d37d52dca114059937e'
+R2_ENDPOINT = f'https://{HCCS_ACCOUNT}.r2.cloudflarestorage.com'
+
+
+def load_envrc(path):
+    vars = {}
+    pat = re.compile(r'^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$')
+    with open(path) as f:
+        for line in f:
+            m = pat.match(line)
+            if m:
+                k, v = m.group(1), m.group(2).strip()
+                if v and v[0] in "\"'" and v[-1:] == v[0]:
+                    v = v[1:-1]
+                vars[k] = v
+    return vars
+
+
+if len(sys.argv) < 2:
+    sys.exit('usage: rclone-run <rclone-args...>')
+
+# Strip ambient AWS_* (HCCS admin creds shadow profile `r` — the `ei` issue),
+# then point the RAC source remote at profile `r` via rclone's env_auth chain.
+env = {k: v for k, v in os.environ.items() if not k.startswith('AWS_')}
+env['AWS_PROFILE'] = 'r'
+rc = load_envrc(ENVRC)
+r2_ak = rc.get('R2_HCCS_RW_ACCESS_KEY_ID')
+r2_sk = rc.get('R2_HCCS_RW_SECRET_ACCESS_KEY')
+if not (r2_ak and r2_sk):
+    sys.exit('R2_HCCS_RW_ACCESS_KEY_ID / R2_HCCS_RW_SECRET_ACCESS_KEY not found in .envrc')
+
+env['RCLONE_CONFIG_RACS3_TYPE'] = 's3'
+env['RCLONE_CONFIG_RACS3_PROVIDER'] = 'AWS'
+env['RCLONE_CONFIG_RACS3_ENV_AUTH'] = 'true'
+env['RCLONE_CONFIG_RACS3_REGION'] = 'us-east-1'
+
+env['RCLONE_CONFIG_HR2_TYPE'] = 's3'
+env['RCLONE_CONFIG_HR2_PROVIDER'] = 'Cloudflare'
+env['RCLONE_CONFIG_HR2_ACCESS_KEY_ID'] = r2_ak
+env['RCLONE_CONFIG_HR2_SECRET_ACCESS_KEY'] = r2_sk
+env['RCLONE_CONFIG_HR2_ENDPOINT'] = R2_ENDPOINT
+env['RCLONE_CONFIG_HR2_REGION'] = 'auto'
+
+os.execvpe('rclone', ['rclone', *sys.argv[1:]], env)

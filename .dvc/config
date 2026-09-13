@@ -1,6 +1,16 @@
 [core]
     remote = s3
     autostage = true
+# Anonymous public pull (no creds) — `crashes` R2 bucket via its custom domain.
+# Default pull target after the write-side flip; http remotes are read-only.
+['remote "public"']
+    url = https://crashes.hccs.dev/.dvc
+# Authenticated push/pull — HCCS R2 S3 API (creds via `infra/r2-run`, or the
+# R2_HCCS_RW_* GitHub secrets in CI). The daily pushes here with `-r r2`.
+['remote "r2"']
+    url = s3://crashes/.dvc
+    endpointurl = https://2363642879f18d37d52dca114059937e.r2.cloudflarestorage.com
+# RAC S3 — legacy default, kept during transition; removed after green days.
 ['remote "s3"']
     url = s3://nj-crashes/.dvc
 ['remote "reproc"']

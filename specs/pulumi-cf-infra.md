@@ -192,13 +192,21 @@ Cost note: ~$8 over w1's free 50M — a killed fat-`crashes` attempt burned ~9.6
 - **`njdot/map/`** (44 objects, 2.4 MB — county/muni geojson outlines + `v2/manifest.v2.json`; static, mtime 2026-05-17, no daily stage rebuilds it) copied RAC S3 → HCCS `crashes` R2 via `wrangler r2 object put`. `www/deploy.sh` + `www/dev-restart.sh` `VITE_MAP_BASE_URL` → `https://crashes.hccs.dev/njdot/map`. Deployed + CIC-verified prod: live bundle carries the HCCS base (0 S3 refs), `/c/hudson` fetched `crashes.hccs.dev/njdot/map/counties/09.geojson` 200, map renders.
 - **`og.jpg` deferred** (copied to R2 already, but FE still reads S3): it's **daily-regenerated** (`og-image.dvc` re-uploads the homepage mosaic to S3 each run), so repointing reads to R2 without repointing the write would freeze it. Migrate og **read+write together** in the write-side batch (#5), once R2 S3-API creds exist.
 
-## DVX cache → HCCS R2 (#4) — planned, blocked on R2 S3-API creds
+## DVX cache → HCCS R2 (#4) — steps 1–3 DONE (2026-09-13); step 4 (daily flip) pending
 
-RAC-retirement driver (not public egress — the cache isn't public-served). Sizes: `.dvc` (main) **6393 objs / 64.3 GB**; `.dvc-reproc` **1642 objs / 26.6 GB**, of which **1563 (95%) already in main** — only **79 reproc-unique** stale-staging blobs. Plan:
-- Migrate **main `.dvc` only** → a **separate private R2 bucket** (e.g. `crashes-dvc`, no public custom domain), ~$8 one-time S3 egress + ~$1/mo storage.
-- **Drop `.dvc-reproc`** (recreate as a prefix on the next reproc run; the 79 unique blobs are stale).
-- Repoint dvx remotes (`s3`, `reproc`) → R2 endpoint.
-- **Prereq (user action):** mint an HCCS R2 API token (Object R&W) → `~/.aws/config` `[profile cfh]` with `endpoint_url = https://2363642879f18d37d52dca114059937e.r2.cloudflarestorage.com` + creds. Same profile unblocks og write-side + the daily write repoint (#5).
+RAC-retirement driver. Sizes were: `.dvc` (main) **6393 objs / 59.9 GiB**; `.dvc-reproc` **1642 objs**, **95% already in main** (only 79 reproc-unique stale-staging blobs).
+
+**Decision: cache stays PUBLIC** (supports anonymous clone-and-`dvx pull`, no creds) — but on R2 that's cost-free (egress free; only ~$1/mo storage + Class-B ops past 10M/mo). It went in the **same public `crashes` bucket** under `.dvc` (exact parity with the old S3 layout; separate bucket bought nothing once public was required). *Correction to an earlier draft that recommended a private `crashes-dvc` bucket — that was moot once anonymous pull was a requirement.*
+
+- **Step 1 ✓** `rclone copy racs3:nj-crashes/.dvc → hr2:crashes/.dvc` (via `infra/rclone-run`) — **6393 objs / 59.927 GiB, byte-exact** source=dest. (AWS's 100 GB/mo free egress ⇒ ~$0.)
+- **Steps 2–3 ✓** `.dvc/config` gained `public` (http `https://crashes.hccs.dev/.dvc`, anonymous pull) + `r2` (`s3://crashes/.dvc` + endpoint, authenticated push); `core.remote` still `s3` (daily untouched). Verified: authenticated `dvx push -r r2` (0 to push, all present); **anonymous `dvx pull` with all creds stripped** → correct md5. (`dvx push -r r2` also flagged 2 pre-existing orphan blobs `e3c72d25`,`3863ad0d` — referenced by some `.dvc` but never in the S3 source either; audit later.)
+- **Creds:** `R2_HCCS_RW_*` in `.envrc` (token = R2 Object R&W on `crashes`, verified); wrappers `infra/r2-run` (aws/boto3/dvx) + `infra/rclone-run` (dual-remote rclone) inject them with no secret in argv/global config. GH Actions secrets `R2_HCCS_RW_ACCESS_KEY_ID`/`SECRET` set for CI.
+
+**Step 4 (daily-CI write-side flip = #5) — the delicate part, pending:**
+- Flip `core.remote → public`; change the daily to `dvx run … --push each -r r2`.
+- Repoint og write (`og-image.sh` `aws s3 cp $NJC_S3/og.jpg`) + FE og reads → R2.
+- **Mixed-cred hazard:** the daily uses one cred set (RAC) for *everything* today; R2 ops (`dvx push -r r2`, og upload) need per-command R2 creds (`r2-run` pattern in CI) while other stages may still read RAC S3. **Audit every direct-S3 touchpoint in the daily before flipping.**
+- Then leave S3 `.dvc` a few green days; drop it + `.dvc-reproc`.
 
 ## Cutover sequence (prod stays live)
 1. **Finish the data copy:** `njdot/map/` + `og.jpg` (AWS S3 → HCCS `crashes`;

@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+"""Exec a command with HCCS R2 S3-API creds from ../.envrc.
+
+Loads R2_HCCS_RW_ACCESS_KEY_ID / R2_HCCS_RW_SECRET_ACCESS_KEY and sets the AWS S3
+env (endpoint = HCCS R2, region=auto), then execs argv — so aws/boto3/dvx act on
+HCCS R2 without secrets passing through the shell. Mirrors `hccs-run` (CF API).
+Usage:
+  ./r2-run aws s3 ls s3://crashes/
+  ./r2-run aws s3 sync ./local s3://crashes/prefix/
+  ./r2-run dvx push -r r2
+"""
+import os
+import re
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ENVRC = os.path.join(HERE, os.pardir, '.envrc')
+HCCS_ACCOUNT = '2363642879f18d37d52dca114059937e'
+R2_ENDPOINT = f'https://{HCCS_ACCOUNT}.r2.cloudflarestorage.com'
+
+
+def load_envrc(path):
+    vars = {}
+    pat = re.compile(r'^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$')
+    with open(path) as f:
+        for line in f:
+            m = pat.match(line)
+            if m:
+                k, v = m.group(1), m.group(2).strip()
+                if v and v[0] in "\"'" and v[-1:] == v[0]:
+                    v = v[1:-1]
+                vars[k] = v
+    return vars
+
+
+if len(sys.argv) < 2:
+    sys.exit('usage: r2-run <cmd> [args...]')
+
+env = load_envrc(ENVRC)
+ak = env.get('R2_HCCS_RW_ACCESS_KEY_ID')
+sk = env.get('R2_HCCS_RW_SECRET_ACCESS_KEY')
+if not (ak and sk):
+    sys.exit('R2_HCCS_RW_ACCESS_KEY_ID / R2_HCCS_RW_SECRET_ACCESS_KEY not found in .envrc')
+os.environ['AWS_ACCESS_KEY_ID'] = ak
+os.environ['AWS_SECRET_ACCESS_KEY'] = sk
+os.environ['AWS_ENDPOINT_URL'] = R2_ENDPOINT
+os.environ['AWS_ENDPOINT_URL_S3'] = R2_ENDPOINT
+os.environ['AWS_REGION'] = 'auto'
+os.environ['AWS_DEFAULT_REGION'] = 'auto'
+# Explicit creds must win over any ambient profile/session.
+os.environ.pop('AWS_PROFILE', None)
+os.environ.pop('AWS_SESSION_TOKEN', None)
+os.execvpe(sys.argv[1], sys.argv[1:], os.environ)
