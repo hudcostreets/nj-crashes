@@ -704,9 +704,14 @@ export function CrashMap({
                     getPosition: (c) => c.center,
                     getWeight: (c) => c.fatal * HEAT_W_FATAL + (c.pedInj + c.otherInj) * HEAT_W_INJURY + c.pdo * HEAT_W_PDO,
                     aggregation: "SUM",
-                    radiusPixels: 40,
+                    radiusPixels: 30,
                     intensity: 1,
                     threshold: 0.05,
+                    // Mobile GPUs choke on the per-frame density re-aggregation
+                    // during pan/zoom. Defer it until motion pauses (renders the
+                    // last texture meanwhile) to keep interaction smooth on a
+                    // phone.
+                    debounceTimeout: 500,
                     // Fade during a level-change refetch (matches Bins/Points).
                     opacity: cellOpacity,
                 }),

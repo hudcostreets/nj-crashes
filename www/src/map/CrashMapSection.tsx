@@ -459,7 +459,9 @@ export function CrashMapSection({
             clipPolygon,
         }
     }, [filter, cc, mc, outline, muniOutline])
-    const apiResult = useCellsApi(apiFilter)
+    // Adjacent-level prefetch only helps Bins, where zoom crosses S2 levels.
+    // Heatmap/Points don't benefit (and it wastes a level's fetch), so gate it.
+    const apiResult = useCellsApi(apiFilter, { prefetchAdjacentLevels: mode === "bins" })
     const result = useMemo(() => {
         // Adapt the cells-api result into the shape consumers below expect.
         // `manifest` is the standalone v2-manifest state (loaded above for

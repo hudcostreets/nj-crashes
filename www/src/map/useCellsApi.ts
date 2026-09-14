@@ -574,12 +574,16 @@ function cellsToStackedHex(cells: CellRow[]): StackedCell[] {
     return out
 }
 
-export function useCellsApi(filter: CellsApiFilter | null):
+export function useCellsApi(filter: CellsApiFilter | null, opts?: { prefetchAdjacentLevels?: boolean }):
     | { status: "loading"; data?: StackedCell[]; plan?: CellsApiPlan; error?: undefined }
     | { status: "ready"; data: StackedCell[]; plan: CellsApiPlan; error?: undefined; refetching?: boolean }
     | { status: "error"; error: string; data?: StackedCell[]; plan?: CellsApiPlan } {
 
     const [manifest, setManifest] = useState<Manifest | null>(null)
+    // Read the latest prefetch-enabled flag from a ref so toggling it (e.g. a
+    // render-mode switch) doesn't re-run the fetch effect / trigger a refetch.
+    const prefetchEnabledRef = useRef(false)
+    prefetchEnabledRef.current = opts?.prefetchAdjacentLevels ?? false
     useEffect(() => {
         let cancelled = false
         loadManifest().then(m => { if (!cancelled) setManifest(m) }).catch(() => {})
@@ -711,8 +715,7 @@ export function useCellsApi(filter: CellsApiFilter | null):
         const fire = async () => {
             try {
                 ensureShardsCached(pickAtFire.cover, urls, pickAtFire.res, filter, polygonStr)
-                cancelPrefetch()
-                cancelPrefetch = prefetchNeighborLevels(pickAtFire.cover, pickAtFire.res, filter, polygonStr)
+                cancelPrefetch()  // cancel any stale prefetch from a prior fire
                 const responses = await Promise.all(urls.map(u => shardCache.get(u)!))
                 if (cancelled) return
                 // Worker walks coarser when a shard's count would overflow
@@ -756,6 +759,14 @@ export function useCellsApi(filter: CellsApiFilter | null):
                         cover: pickAtFire.cover,
                     },
                 })
+                // Optimistic prefetch of adjacent levels — only in Bins mode
+                // (where zoom crosses S2 levels), and only *now*, after the
+                // primary fetch has resolved and the result is rendered, so it
+                // never competes with the interactive fetch for the connection
+                // pool. prefetchNeighborLevels further defers to requestIdleCallback.
+                if (prefetchEnabledRef.current && !cancelled) {
+                    cancelPrefetch = prefetchNeighborLevels(pickAtFire.cover, finalRes, filter, polygonStr)
+                }
             } catch (e) {
                 if (!cancelled) setState(s => ({ ...s, urls, status: "error", error: String(e) }))
             }
