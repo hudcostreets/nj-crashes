@@ -189,7 +189,10 @@ export function CrashMapSection({
     fullScreen = false, detailsHref, onOutlineClick,
 }: Props) {
     const { actualTheme } = useTheme()
-    const [mode, setMode] = useState<MapMode>("bins")
+    // Persist render mode in the URL (`?mode=`) so it survives reload/nav
+    // and is shareable; default `bins` is omitted from the URL. `scatter`
+    // is the "Points" button's value.
+    const [mode, setMode] = useUrlState<MapMode>("mode", enumParam<MapMode>("bins", ["scatter", "heatmap", "bins"]))
     // Year range comes from the page-level filter provider — same `yr`
     // URL param that drives the NJSP/NJDOT plots + tables below. Fallback
     // to a static default lets the map still render if someone drops the
@@ -749,7 +752,7 @@ export function CrashMapSection({
                         viewState={llz ?? undefined}
                         onViewStateChange={setLlz}
                         onOutlineClick={onOutlineClick}
-                        mode="bins"
+                        mode={mode}
                         theme={actualTheme}
                         height={fullScreen ? "100%" : mapHeight}
                         showInternalControls={false}

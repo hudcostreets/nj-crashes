@@ -151,6 +151,35 @@ function severityRgba(sev: Crash["severity"], alpha = 200): [number, number, num
     return [r, g, b, alpha]
 }
 
+/** Severity weights for the Heatmap-mode `HeatmapLayer` over aggregated
+ *  cells: each cell contributes `fatal·F + injury·I + pdo·P` to the SUM
+ *  aggregation. `HeatmapLayer` auto-normalizes the summed weight to the
+ *  in-view max, so these set the *relative* emphasis of the surface, not
+ *  an absolute scale. */
+const HEAT_W_FATAL = 8
+const HEAT_W_INJURY = 2
+const HEAT_W_PDO = 1
+
+/** Points-mode dot radius range (pixels): the densest in-view cell draws
+ *  at `POINT_MAX_PX`, singletons near `POINT_MIN_PX` (radius ∝ √count). */
+const POINT_MIN_PX = 2
+const POINT_MAX_PX = 22
+
+/** Dominant-severity color for a Points-mode cell dot: the *plurality*
+ *  severity tier by crash count, ties resolving to the more severe tier.
+ *  (Coloring by "any fatal" saturates to red over a multi-year span, since
+ *  almost every populated cell has seen ≥1 fatal — plurality keeps red for
+ *  cells fatal crashes actually dominate.) Reuses the shared
+ *  `SEVERITY_COLOR` palette so Points, Bins, and the legend stay in
+ *  lockstep. */
+function cellDominantRgba(cell: StackedCell, alpha = 210): [number, number, number, number] {
+    const injury = cell.pedInj + cell.otherInj
+    const sev: Crash["severity"] = cell.fatal >= injury && cell.fatal >= cell.pdo ? "f"
+        : injury >= cell.pdo ? "i"
+        : "p"
+    return severityRgba(sev, alpha)
+}
+
 /** Web-mercator meters-per-pixel at given zoom + latitude. */
 export function metersPerPixel(zoom: number, lat: number): number {
     return 156543.03 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom)
@@ -457,7 +486,11 @@ export function CrashMap({
     // Cells (memoized separately from `layers` so it doesn't re-run when
     // unrelated layer deps — outline geojson, mode-tilt, etc. — change).
     const cells = useMemo<StackedCell[] | null>(() => {
-        if (mode !== "bins") return null
+        // Cells feed *all three* render modes now (Points = per-cell dots,
+        // Heatmap = KDE surface over centroids, Bins = 3D columns) — so
+        // derive them regardless of `mode`. The old `mode !== "bins"` early
+        // return dated from when Points/Heatmap consumed raw crash points
+        // (which don't scale statewide); those paths are gone.
         // Server cells are fetched at the plan's resolution — render as-is.
         if (prebinnedCells) {
             // Publish the debug hook here too. It used to be set only on the
@@ -506,7 +539,7 @@ export function CrashMap({
             }
         }
         return bins
-    }, [mode, prebinnedCells, effectiveCrashes, effectiveS2Level, dataRes])
+    }, [prebinnedCells, effectiveCrashes, effectiveS2Level, dataRes])
 
     // Cell-grid overlay (debug feature): outline-only S2 cells at the
     // hovered level, covering the current viewport. S2 has no direct
@@ -630,34 +663,52 @@ export function CrashMap({
         if (gridOverlayLayer) base.push(gridOverlayLayer)
         if (coverOverlayLayer) base.push(coverOverlayLayer)
         if (mode === "scatter") {
+            if (!cells || cells.length === 0) return base
+            // Points: one dot per aggregated cell, area ∝ crash count
+            // (radius ∝ √count), normalized to the densest cell in view so
+            // the symbol scale stays readable at any zoom/scope. Colored by
+            // dominant severity, pickable (shares the cell tooltip). Fed by
+            // the same cells as Bins/Heatmap — scales statewide, unlike the
+            // former raw-point scatter.
+            const maxTotal = cells.reduce((m, c) => Math.max(m, c.total), 1)
             return [...base,
-                new ScatterplotLayer<Crash>({
-                    id: "crashes-scatter",
-                    data: effectiveCrashes,
-                    getPosition: (c) => [c.lon, c.lat],
-                    getFillColor: (c) => severityRgba(c.severity, 200),
-                    getRadius: (c) => 4 + Math.min(c.tk * 4 + c.ti, 20),
-                    radiusUnits: "meters",
-                    radiusMinPixels: 3,
-                    radiusMaxPixels: 20,
-                    stroked: true,
-                    lineWidthMinPixels: 0.5,
-                    getLineColor: [0, 0, 0, 80],
+                new ScatterplotLayer<StackedCell>({
+                    id: "crashes-cell-scatter",
+                    data: cells,
+                    getPosition: (c) => c.center,
+                    getFillColor: (c) => cellDominantRgba(c),
+                    getRadius: (c) => POINT_MIN_PX + (POINT_MAX_PX - POINT_MIN_PX) * Math.sqrt(c.total / maxTotal),
+                    radiusUnits: "pixels",
+                    radiusMinPixels: POINT_MIN_PX,
+                    stroked: false,
+                    // Fade during a level-change refetch (matches Bins) so the
+                    // "new data incoming" cue is consistent across modes.
+                    opacity: cellOpacity,
                     pickable: true,
                     onHover: (info) => { setHoverInfo(info); return false },
+                    updateTriggers: { getRadius: [maxTotal] },
                 }),
             ]
         }
         if (mode === "heatmap") {
+            if (!cells || cells.length === 0) return base
+            // Heatmap: continuous KDE surface over cell centroids, weighted
+            // by severity. Summing pre-aggregated cell weights == summing the
+            // underlying points' weights, so SUM-over-centroids reproduces
+            // the raw-point density up to the cell grid — and scales
+            // statewide, which a raw-point HeatmapLayer can't.
             return [...base,
-                new HeatmapLayer<Crash>({
-                    id: "crashes-heatmap",
-                    data: effectiveCrashes,
-                    getPosition: (c) => [c.lon, c.lat],
-                    getWeight: (c) => (c.severity === "f" ? 5 : 1) + c.tk * 3 + c.ti,
-                    radiusPixels: 30,
-                    intensity: 1.0,
-                    threshold: 0.04,
+                new HeatmapLayer<StackedCell>({
+                    id: "crashes-cell-heatmap",
+                    data: cells,
+                    getPosition: (c) => c.center,
+                    getWeight: (c) => c.fatal * HEAT_W_FATAL + (c.pedInj + c.otherInj) * HEAT_W_INJURY + c.pdo * HEAT_W_PDO,
+                    aggregation: "SUM",
+                    radiusPixels: 40,
+                    intensity: 1,
+                    threshold: 0.05,
+                    // Fade during a level-change refetch (matches Bins/Points).
+                    opacity: cellOpacity,
                 }),
             ]
         }
@@ -727,7 +778,7 @@ export function CrashMap({
             console.log(`[perf] layers: ${ms.toFixed(1)}ms (mode=${mode}, segments=${segments.length})`)
         }
         return result
-    }, [cells, effectiveCrashes, mode, effectiveS2Level, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, circleRadiusPx, cellOpacity, cellDesaturate, dataRes])
+    }, [cells, mode, effectiveS2Level, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, circleRadiusPx, cellOpacity, cellDesaturate, dataRes])
 
     // Only bubble user-driven changes. DeckGL also echoes back programmatic
     // viewState updates (from the fit effect, mode-switch tilt, etc.) via
@@ -936,9 +987,12 @@ function CrashTooltip({ info }: { info: PickingInfo }) {
     if (!obj) return null
     const isPointCluster = Array.isArray(obj.points)
     const isStackedSegment = !!obj && "cell" in obj && "tier" in obj
-    if (isStackedSegment) {
-        const seg = obj as Segment
-        const h = seg.cell
+    // Points mode hovers a bare StackedCell (no `cell`/`tier` wrapper);
+    // Bins hovers a Segment carrying its `.cell`. Render the same per-cell
+    // body for either.
+    const isBareCell = !!obj && "total" in obj && "pedInj" in obj && !("tier" in obj)
+    if (isStackedSegment || isBareCell) {
+        const h: StackedCell = isStackedSegment ? (obj as Segment).cell : (obj as StackedCell)
         const injury = h.pedInj + h.otherInj
         // Sidecar fields are multiplexed onto the cells-api response by
         // the worker (`pyramid_sld/` join). Absent on the client-binned
