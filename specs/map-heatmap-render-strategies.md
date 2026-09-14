@@ -26,11 +26,12 @@ deck.gl layer taxonomy (the deciding fact):
 
 All three consume the **same** aggregated `StackedCell[]` from cells-api and expose the same severity-weighted density. They will be selectable (URL param, see "Harness") so we can A/B/C them live and benchmark.
 
-### B — direct cell geometry (baseline; ~1 day)
-Render cells as GPU geometry with no per-frame aggregation:
-- `ScatterplotLayer` of soft-alpha discs (additive blend), radius ∝ √count, **or** `SolidPolygonLayer` of the actual S2-cell quads, colored by GPU-normalized density.
-- Color via a custom fragment shader reading raw density + a 1-D colormap texture (so clim/ramp are live uniforms).
-- **Smooth:** ✅ (redraw only). **Look:** "celled"/soft-blob; S2 grid faintly visible at low zoom. **Risk:** low; reuses existing StackedCellLayer/Scatterplot machinery. De-risks A.
+### B — direct cell geometry (baseline; ~1 day) — ✅ BUILT (`?hr=b`)
+Render cells as GPU geometry with no per-frame aggregation. As shipped:
+- **`SoftDiscLayer`** (`www/src/map/SoftDiscLayer.ts`) — a `ScatterplotLayer` subclass that injects a **radial Gaussian alpha falloff** (`color.a *= exp(-3·d²)` in `fs:DECKGL_FILTER_COLOR`), so each cell is a soft density *kernel* that blends with its neighbors into a continuous field rather than a flat "bokeh" disc. The disc is drawn at `1.3×` the S2 cell edge (world meters) so kernels overlap.
+- Color from a **sequential colormap** (`www/src/map/colormap.ts`, inferno) sampled at `t = (w/wmax)^0.5` (γ=0.5 tames the heavy tail); severity carried by the `HEAT_W_*` weighting of `w`. Per-cell **alpha ramps to 0 below `t≈0.3`** so sparse low-count cells fade out (like a KDE surface's edges) instead of showing as dark discs. Colors are computed **CPU-side, once per data-load** in the layer-build memo — not per frame — so pan/zoom is a pure GPU redraw.
+- **Smooth:** ✅ (same layer family as Points; verified instant pan/zoom + level-change at statewide and city zoom, no per-frame re-aggregation). **Look:** continuous soft KDE-like surface; faint S2 texture only in mid-density areas at some zooms. **Verdict:** strong — may be *enough*; de-risks A.
+- Colormap is CPU-sampled for B (fine, since it's per-data-load only); A/C upload the same `colormap.ts` stops as a **GPU 1-D texture** so clim/ramp/opacity become free uniforms.
 
 ### A — bake density to a texture, pan a `BitmapLayer` (recommended headline; ~1–2 wk)
 The CarbonPlan playbook minus zarr:
@@ -48,7 +49,7 @@ Rejected — **D: adopt `zarr-layer` literally.** Would force converting sparse 
 
 ## Harness (how we compare + benchmark)
 
-- **Toggle:** an enum URL param (e.g. `?render=heat-b|heat-a|heat-c`, plus the existing deck-native `HeatmapLayer` as `heat-legacy` for a baseline) selectable from the debug drawer. Follows the earlier `?render=` prototype pattern.
+- **Toggle:** a golfed enum URL param `?hr=` (**h**eat-**r**ender strategy), values `a` | `b` | `c`, with the existing deck-native `HeatmapLayer` as the **default** (param omitted) so it's the zero-config benchmark baseline. Selectable from the debug drawer. (Only applies within `mode=heatmap`; orthogonal to `mode`.)
 - **Metrics** (borrowing from `~/c/carbonplan/benchmark-maps`, a Playwright harness):
   - **Interaction FPS / long-frame count** during a scripted pan + zoom sequence (the headline number).
   - **Bytes fetched** per viewport-level and per filter change.
@@ -59,13 +60,13 @@ Rejected — **D: adopt `zarr-layer` literally.** Would force converting sparse 
 ## Sequencing
 
 1. ✅ Cleanup: gate + defer prefetch (`57c0937a87d`); mode buttons live + Points/Heatmap cell-fed (`7d230f1e526`).
-2. **B** first — same-day baseline, may be enough, de-risks A.
-3. **A** — the headline continuous surface.
+2. ✅ **B** — soft-kernel baseline (`SoftDiscLayer` + `colormap.ts`, `?hr=b`). Smooth; strong look; may be enough.
+3. **A** — the headline continuous surface (baked KDE texture + GPU colormap).
 4. Benchmark harness + scrns matrix; compare B/A/(legacy).
 5. **C** if statewide-at-fine-zoom or large filter cross-products justify the cells-api tile endpoint.
 
-## Open questions
+## Decisions (were open questions; resolved to reasonable defaults 2026-09-14)
 
-- Colormap: reuse the Fatal/Injury/Other severity palette as a diverging/sequential ramp, or a dedicated density ramp? (GPU colormap makes this a free toggle.)
-- KDE weighting for A: same `HEAT_W_*` severity weights, exposed as uniforms.
-- For C: tile addressing scheme (`z/x/y` vs S2 token) + how filter state keys the tile cache.
+- **Colormap:** start with a dedicated sequential density ramp (viridis/inferno-style) for the surface strategies — a single-hue-family ramp reads as "density" better than the categorical F/I/O palette, and severity is already carried by the `HEAT_W_*` weighting of the input. The GPU colormap makes this a free later toggle, so B/A will accept a ramp uniform and we can offer a severity-tinted variant if it's wanted after seeing it live.
+- **KDE weighting (A):** reuse the existing `HEAT_W_FATAL/INJURY/PDO` weights, exposed as shader uniforms so they're tunable without a re-bake path change.
+- **C tile addressing:** deferred with C itself — lean toward S2-token addressing (matches the existing pyramid natively, avoids a z/x/y↔S2 remap) with filter state folded into the tile cache key; revisit when C is scheduled.

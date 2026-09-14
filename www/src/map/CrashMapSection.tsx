@@ -13,7 +13,7 @@ import { useCellsApi, CELLS_MAX } from "@/src/map/useCellsApi"
 import { bboxRing, clippedAreaPx } from "@/src/map/areaBudget"
 import type { CellsApiFilter } from "@/src/map/useCellsApi"
 import { MAP_BASE_URL } from "@/src/map/config"
-import type { MapMode, ViewState } from "@/src/map/CrashMap"
+import type { MapMode, HeatRender, ViewState } from "@/src/map/CrashMap"
 import type { StackedCell } from "@/src/map/StackedCellLayer"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import type { FeatureCollection } from "geojson"
@@ -193,6 +193,10 @@ export function CrashMapSection({
     // and is shareable; default `bins` is omitted from the URL. `scatter`
     // is the "Points" button's value.
     const [mode, setMode] = useUrlState<MapMode>("mode", enumParam<MapMode>("bins", ["scatter", "heatmap", "bins"]))
+    // Density-render strategy within Heatmap mode (`?hr=`); default `legacy`
+    // (the deck-native HeatmapLayer) is omitted from the URL. See
+    // `specs/map-heatmap-render-strategies.md`.
+    const [heatRender, setHeatRender] = useUrlState<HeatRender>("hr", enumParam<HeatRender>("legacy", ["legacy", "b", "a", "c"]))
     // Year range comes from the page-level filter provider — same `yr`
     // URL param that drives the NJSP/NJDOT plots + tables below. Fallback
     // to a static default lets the map still render if someone drops the
@@ -755,6 +759,7 @@ export function CrashMapSection({
                         onViewStateChange={setLlz}
                         onOutlineClick={onOutlineClick}
                         mode={mode}
+                        heatRender={heatRender}
                         theme={actualTheme}
                         height={fullScreen ? "100%" : mapHeight}
                         showInternalControls={false}
@@ -855,6 +860,34 @@ export function CrashMapSection({
                         >{m === "scatter" ? "Points" : m === "heatmap" ? "Heatmap" : "Bins"}</button>
                     ))}
                 </div>
+                {mode === "heatmap" && (
+                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                        <span style={{ fontSize: "0.72em", opacity: 0.75, whiteSpace: "nowrap" }}>render</span>
+                        {(["legacy", "b", "a", "c"] as HeatRender[]).map(hr => {
+                            const impl = hr === "legacy" || hr === "b"
+                            const label = hr === "legacy" ? "Legacy" : hr.toUpperCase()
+                            return (
+                                <button
+                                    key={hr}
+                                    onClick={() => impl && setHeatRender(hr)}
+                                    disabled={!impl}
+                                    title={impl ? undefined : "not yet implemented"}
+                                    style={{
+                                        padding: "0.2em 0.5em",
+                                        cursor: impl ? "pointer" : "not-allowed",
+                                        background: heatRender === hr ? activeBg : "transparent",
+                                        color: heatRender === hr ? "#fff" : fg,
+                                        border: `1px solid ${heatRender === hr ? activeBg : fg}`,
+                                        borderRadius: 3,
+                                        fontSize: "0.85em",
+                                        opacity: impl ? 1 : 0.4,
+                                        flex: 1,
+                                    }}
+                                >{label}</button>
+                            )
+                        })}
+                    </div>
+                )}
                 {mode === "bins" && (
                     <>
                         <CellPxTargetSlider
