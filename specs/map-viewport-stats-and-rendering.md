@@ -55,6 +55,8 @@ D1/sqlite serving path (`cells-s2.db`, 377 MB, **4.04M rows** across 18 levels):
 
 ## Part B — rendering a mixed-level cover without leaking the grid
 
+> **Superseded for the rendering question by [`map-heatmap-render-strategies.md`](./map-heatmap-render-strategies.md)** (2026-09-14), which grounds the render options in the CarbonPlan `zarr-layer` approach and lays out A/B/C strategies + a benchmark harness. The framing below is retained for context.
+
 ### The problem
 
 Bins mode (`www/src/map/StackedCellLayer.tsx`) derives column radius from the S2 cell edge (`S2_EDGE_METERS[resolution]`). A **mixed-level cover** (fine where dense, coarse where sparse — the Phase-2 payload optimization) would therefore render as **fat rural bars next to tiny dense bars** — worse grid-leak than today's uniform bins. Rendering the cover verbatim is the wrong move.
