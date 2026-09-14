@@ -864,7 +864,7 @@ export function CrashMapSection({
                     <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                         <span style={{ fontSize: "0.72em", opacity: 0.75, whiteSpace: "nowrap" }}>render</span>
                         {(["legacy", "b", "a", "c"] as HeatRender[]).map(hr => {
-                            const impl = hr === "legacy" || hr === "b"
+                            const impl = hr === "legacy" || hr === "b" || hr === "a"
                             const label = hr === "legacy" ? "Legacy" : hr.toUpperCase()
                             return (
                                 <button
