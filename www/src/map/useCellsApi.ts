@@ -121,8 +121,48 @@ export type CellsApiPlan = {
 
 /** Per-shard response cache. Keyed by full URL — same shard with
  *  different (res, years, sevs, polygon) is a distinct entry. Pan over
- *  already-fetched shards = zero new requests. */
-const shardCache = new Map<string, Promise<CellsResponse>>()
+ *  already-fetched shards = zero new requests.
+ *
+ *  Bounded LRU (was an unbounded `Map`): a long session of panning/zooming
+ *  otherwise grows it without limit. Recency is Map insertion order —
+ *  `has`/`get` hits re-insert to mark MRU; `set` past the cap evicts the
+ *  oldest entry (and its `shardBatch` metric). Retention across level
+ *  changes is deliberate: it's what lets a zoom back across a level
+ *  boundary hit the synchronous `allCached` path. Entries are only evicted
+ *  by a later `set`, and the URLs a fetch awaits are `set` immediately
+ *  before the `await` (so MRU) — an in-flight entry is never evicted out
+ *  from under `fire()`. */
+const SHARD_CACHE_MAX = 400
+class ShardCache {
+    private m = new Map<string, Promise<CellsResponse>>()
+    private touch(k: string): void {
+        const v = this.m.get(k)!
+        this.m.delete(k)
+        this.m.set(k, v)
+    }
+    has(k: string): boolean {
+        if (!this.m.has(k)) return false
+        this.touch(k)
+        return true
+    }
+    get(k: string): Promise<CellsResponse> | undefined {
+        const v = this.m.get(k)
+        if (v !== undefined) this.touch(k)
+        return v
+    }
+    set(k: string, v: Promise<CellsResponse>): void {
+        this.m.delete(k)
+        this.m.set(k, v)
+        while (this.m.size > SHARD_CACHE_MAX) {
+            const oldest = this.m.keys().next().value as string | undefined
+            if (oldest === undefined) break
+            this.m.delete(oldest)
+            shardBatch.delete(oldest)
+        }
+    }
+    delete(k: string): void { this.m.delete(k) }
+}
+const shardCache = new ShardCache()
 
 /** Metrics: for each shard URL, the batch URL it was served from + total
  *  bytes of that batch's response. Multiple shards share one `BatchInfo`
@@ -301,6 +341,47 @@ function ensureShardsCached(
             }
         }
     }
+}
+
+/** Speculative prefetch of the adjacent S2 levels (res ± 1) at the current
+ *  snapped viewport, so a zoom that crosses a level boundary resolves from
+ *  cache (synchronous `allCached`) instead of paying a full round trip —
+ *  the "lag between s2 levels" is largely this per-transition refetch. Cover
+ *  + polygon are the *current* ones, so this warms the common case: a small
+ *  zoom nudge that flips the picked res while the power-of-2 snapped bbox
+ *  (and thus the URLs) stays put. Fire-and-forget on idle; coarser neighbor
+ *  (cheaper) first. Skipped when the level is pinned (`resOverride`) or the
+ *  client is in data-saver mode. Returns a canceller so a superseding
+ *  viewport change drops still-pending idle work. */
+function prefetchNeighborLevels(
+    cover: CoverCell[],
+    res: number,
+    filter: CellsApiFilter,
+    polygonStr: string | null,
+): () => void {
+    if (filter.resOverride != null) return () => {}
+    const conn = (navigator as unknown as { connection?: { saveData?: boolean } }).connection
+    if (conn?.saveData) return () => {}
+    let cancelled = false
+    const run = () => {
+        if (cancelled) return
+        for (const nr of [clampS2Level(res - 1), clampS2Level(res + 1)]) {
+            if (nr === res) continue
+            const urls = cover.map(c => buildShardUrl(c.cellid, nr, filter, polygonStr, CELLS_MAX, c.shard_res))
+            if (urls.every(u => shardCache.has(u))) continue
+            ensureShardsCached(cover, urls, nr, filter, polygonStr)
+        }
+    }
+    const w = window as unknown as {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+        cancelIdleCallback?: (id: number) => void
+    }
+    if (w.requestIdleCallback) {
+        const id = w.requestIdleCallback(run, { timeout: 2000 })
+        return () => { cancelled = true; w.cancelIdleCallback?.(id) }
+    }
+    const t = setTimeout(run, 800)
+    return () => { cancelled = true; clearTimeout(t) }
 }
 
 /** Refetch debounce in ms. The viewport debounce coalesces a drag's
@@ -619,6 +700,10 @@ export function useCellsApi(filter: CellsApiFilter | null):
             return
         }
         let cancelled = false
+        // Reassigned when `fire()` runs (after the current request is
+        // enqueued, so prefetch never jumps ahead of it); cleanup cancels
+        // whatever's pending.
+        let cancelPrefetch: () => void = () => {}
 
         // Hot path: every URL already cached → resolve synchronously
         // (microtask), no debounce, no loading flicker.
@@ -626,6 +711,8 @@ export function useCellsApi(filter: CellsApiFilter | null):
         const fire = async () => {
             try {
                 ensureShardsCached(pickAtFire.cover, urls, pickAtFire.res, filter, polygonStr)
+                cancelPrefetch()
+                cancelPrefetch = prefetchNeighborLevels(pickAtFire.cover, pickAtFire.res, filter, polygonStr)
                 const responses = await Promise.all(urls.map(u => shardCache.get(u)!))
                 if (cancelled) return
                 // Worker walks coarser when a shard's count would overflow
@@ -673,13 +760,13 @@ export function useCellsApi(filter: CellsApiFilter | null):
                 if (!cancelled) setState(s => ({ ...s, urls, status: "error", error: String(e) }))
             }
         }
-        if (allCached) { fire(); return () => { cancelled = true } }
+        if (allCached) { fire(); return () => { cancelled = true; cancelPrefetch() } }
         const t = setTimeout(() => {
             if (cancelled) return
             setState(s => ({ ...s, urls, status: "loading" }))
             fire()
         }, DEBOUNCE_MS)
-        return () => { cancelled = true; clearTimeout(t) }
+        return () => { cancelled = true; clearTimeout(t); cancelPrefetch() }
     }, [shardsKey])
 
     if (state.status === "ready") return { status: "ready", data: state.data, plan: state.plan! }
