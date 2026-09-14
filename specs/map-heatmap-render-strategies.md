@@ -47,22 +47,23 @@ The CarbonPlan playbook minus zarr:
 
 Rejected — **D: adopt `zarr-layer` literally.** Would force converting sparse S2 aggregates into a Mercator/lat-lon zarr array per filter-state (throwing away S2's variable resolution, reintroducing pyramid-build cost) and running a second renderer outside deck.gl. Reference only.
 
-## Harness (how we compare + benchmark)
+## Harness (how we compare + benchmark) — ✅ BUILT
 
-- **Toggle:** a golfed enum URL param `?hr=` (**h**eat-**r**ender strategy), values `a` | `b` | `c`, with the existing deck-native `HeatmapLayer` as the **default** (param omitted) so it's the zero-config benchmark baseline. Selectable from the debug drawer. (Only applies within `mode=heatmap`; orthogonal to `mode`.)
-- **Metrics** (borrowing from `~/c/carbonplan/benchmark-maps`, a Playwright harness):
-  - **Interaction FPS / long-frame count** during a scripted pan + zoom sequence (the headline number).
-  - **Bytes fetched** per viewport-level and per filter change.
-  - **Time-to-first-render** (cold) and **time-to-render after a level change**.
-  - **Aggregation/bake time** per data-load (A/C) — logged via the existing `perf` hook (`__crashMapDebug`).
-- Multi-viewport eval (statewide, county, city) × desktop + mobile widths via the scrns matrix — per the "algo/render changes need multi-vp eval" rule; do not judge on a single CIC.
+- **Toggle:** a golfed enum URL param `?hr=` (**h**eat-**r**ender strategy), values `a` | `b` | `c`, with the existing deck-native `HeatmapLayer` as the **default** (param omitted) so it's the zero-config baseline. Selectable from the Heatmap-mode controls (A/C disabled until built). Orthogonal to `mode`.
+- **Harness:** `www/e2e/heatmap-render-bench.spec.ts` (`pnpm test:bench` / `test:bench:viz`), matrix = 3 viewports (statewide/county/city) × 2 widths (desktop/mobile) × `HR_STRATEGIES` (default `legacy,b`; add `a`/`c` as they land).
+- **What it measures — and what it can't:**
+  - **Bytes fetched** + **cell count / S2 level** (from network + the `perf=1` `__crashMapDebug` hook) — reliable headless. Confirms B/A change only *how* cells draw, never *what* is fetched (legacy≡B bytes at every combo).
+  - **Time-to-first-render** (nav → first cells painted) — reliable headless; already shows B first-rendering ~1.5–2.5× faster than legacy (legacy builds its GPU aggregation textures + heatmap program on first paint).
+  - **Screenshot matrix** (`test:bench:viz`, `BENCH_SHOTS=1 --headed`) → `test-results/heatmap-bench/<vp>-<w>-<hr>.png`. Must be **headed**: headless Chromium's software-GL backend captures the WebGL canvas as blank. This is the repeatable multi-vp look artifact (satisfies the "algo/render change needs multi-vp eval" rule).
+  - **No automated FPS.** Interaction smoothness is the point of B/A, but it's **GPU-bound** (legacy's per-frame KDE re-aggregation runs on the GPU) and headless is software-GL — a headless frame-rate would neither reproduce the mobile pain nor distinguish strategies. Synthetic Playwright drag also doesn't drive deck's controller reliably. **Smoothness is judged on the screenshots (look) + a device/CIC pan (feel)** — desktop CIC already confirms B pans with instant redraw where legacy stalls.
+- CarbonPlan's `~/c/carbonplan/benchmark-maps` was the reference for the Playwright approach; the FPS-under-load metric there assumes a real GPU, which is why ours is device/CIC, not headless.
 
 ## Sequencing
 
 1. ✅ Cleanup: gate + defer prefetch (`57c0937a87d`); mode buttons live + Points/Heatmap cell-fed (`7d230f1e526`).
 2. ✅ **B** — soft-kernel baseline (`SoftDiscLayer` + `colormap.ts`, `?hr=b`). Smooth; strong look; may be enough.
-3. **A** — the headline continuous surface (baked KDE texture + GPU colormap).
-4. Benchmark harness + scrns matrix; compare B/A/(legacy).
+3. ✅ **Benchmark harness** (`heatmap-render-bench.spec.ts`, `test:bench` / `test:bench:viz`) — bytes/ttfr/cells numbers + headed screenshot matrix. Compares legacy vs B today; add `a`/`c` via `HR_STRATEGIES`.
+4. **A** — the headline continuous surface (baked KDE texture + GPU colormap). Re-run the harness with `HR_STRATEGIES=legacy,b,a`.
 5. **C** if statewide-at-fine-zoom or large filter cross-products justify the cells-api tile endpoint.
 
 ## Decisions (were open questions; resolved to reasonable defaults 2026-09-14)

@@ -18,7 +18,9 @@
     "test:unit:watch": "vitest",
     "test:perf": "playwright test e2e/perf-har.spec.ts --reporter=list",
     "test:perf:update": "PERF_UPDATE_GOLDEN=1 playwright test e2e/perf-har.spec.ts --reporter=list",
-    "test:viz": "playwright test e2e/map-viz-matrix.spec.ts --reporter=list"
+    "test:viz": "playwright test e2e/map-viz-matrix.spec.ts --reporter=list",
+    "test:bench": "playwright test e2e/heatmap-render-bench.spec.ts --reporter=list",
+    "test:bench:viz": "BENCH_SHOTS=1 playwright test e2e/heatmap-render-bench.spec.ts --headed --reporter=list"
   },
   "dependencies": {
     "@deck.gl/aggregation-layers": "^9.2.0",
