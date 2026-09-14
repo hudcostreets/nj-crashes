@@ -85,13 +85,14 @@ jobs:
         run: cd www && pnpm install
       - name: Install Playwright (chromium)
         run: cd www && pnpm exec playwright install --with-deps chromium
-      - name: Fetch NJSP parquets from S3
+      - name: Fetch NJSP parquets from R2
         # `csvs.dvc` is multi-out; pull the 5 frontend parquets from the public
-        # DVX S3 cache by md5 so plots have data to render in the dev server.
+        # DVX cache (HCCS R2 via crashes-data.hccs.dev) by md5 so plots have data
+        # to render in the dev server. Mirrors `.dvc/config` remote "public".
         run: |
           cd www/public/njsp
           yq '.outs[] | .md5 + " " + .path' csvs.dvc | while read -r md5 path; do
-            curl -fsSL -o "$path" "https://nj-crashes.s3.amazonaws.com/.dvc/files/md5/${md5:0:2}/${md5:2}"
+            curl -fsSL -o "$path" "https://crashes-data.hccs.dev/.dvc/files/md5/${md5:0:2}/${md5:2}"
           done
           ls -la *.parquet
       - name: e2e — legend-ux
