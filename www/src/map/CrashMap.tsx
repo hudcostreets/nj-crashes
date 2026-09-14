@@ -15,8 +15,17 @@ import type { FeatureCollection } from "geojson"
 import { useTouchPitch } from "./hooks/useTouchPitch"
 import { cellsToSegments, buildStackedCellLayer, Segment, StackedCell } from "./StackedCellLayer"
 import { binIntoS2Cells, pickS2LevelForPixels, tokenBoundary, latLngToToken, S2_EDGE_METERS } from "./s2"
+import { sampleColormap, type ColormapName } from "./colormap"
+import { SoftDiscLayer } from "./SoftDiscLayer"
 
 export type MapMode = "scatter" | "heatmap" | "bins"
+
+/** Density-render strategy for `mode="heatmap"` (URL param `?hr=`). See
+ *  `specs/map-heatmap-render-strategies.md`.
+ *  - `legacy`: deck.gl `HeatmapLayer` (per-frame KDE; the slow baseline).
+ *  - `b`: direct cell geometry — colormapped filled discs, no per-frame
+ *    aggregation. (A/C not yet implemented; they fall through to legacy.) */
+export type HeatRender = "legacy" | "b" | "a" | "c"
 
 export type Crash = {
     dt: Date | number
@@ -90,6 +99,9 @@ export type Props = {
      *  Caller can disable (when it supplies its own consolidated panel). */
     showInternalControls?: boolean
     mode?: MapMode
+    /** Density-render strategy within `mode="heatmap"` (URL `?hr=`). Ignored
+     *  in other modes. Defaults to `"legacy"`. */
+    heatRender?: HeatRender
     theme?: "light" | "dark"
     height?: number | string
     /** When set, draw an outline-only S2 cell grid at this level covering
@@ -164,6 +176,31 @@ const HEAT_W_PDO = 1
  *  at `POINT_MAX_PX`, singletons near `POINT_MIN_PX` (radius ∝ √count). */
 const POINT_MIN_PX = 2
 const POINT_MAX_PX = 22
+
+/** Heatmap strategy B (`?hr=b`) params. Cells render as filled discs sized to
+ *  the S2 cell so they tile the plane into a density field, colored by a
+ *  sequential colormap of the (perceptually-scaled) severity-weighted count.
+ *  No per-frame aggregation — pure GPU redraw, so pan/zoom stays smooth. */
+const HEAT_B_COLORMAP: ColormapName = "inferno"
+/** Disc radius as a fraction of the S2 cell edge. Drawn larger than the cell
+ *  (>1) so each soft kernel's Gaussian tail overlaps its neighbors and the
+ *  field reads continuous rather than as discrete circles. */
+const HEAT_B_RADIUS_FRAC = 1.3
+const HEAT_B_MIN_PX = 4
+/** Severity-weighted density → colormap position, using a power scaling
+ *  (t = (w/wmax)^γ, γ<1) so the heavy-tailed count distribution doesn't
+ *  collapse everything but the densest few cells to the ramp's dark floor. */
+const HEAT_B_GAMMA = 0.5
+/** Density (as colormap position `t`) at/above which a disc is fully opaque;
+ *  below it, alpha ramps linearly to 0. Makes a sparse low-count cell fade
+ *  out instead of showing as a dark disc (the colormap floor is near-black),
+ *  the way a KDE surface fades to transparent at its edges. */
+const HEAT_B_ALPHA_KNEE = 0.3
+
+/** Severity-weighted density for a cell (shared by legacy weight + strategy B). */
+function cellHeatWeight(c: StackedCell): number {
+    return c.fatal * HEAT_W_FATAL + (c.pedInj + c.otherInj) * HEAT_W_INJURY + c.pdo * HEAT_W_PDO
+}
 
 /** Dominant-severity color for a Points-mode cell dot: the *plurality*
  *  severity tier by crash count, ties resolving to the more severe tier.
@@ -340,6 +377,7 @@ export function CrashMap({
     onMapClick,
     showInternalControls = true,
     mode = "scatter",
+    heatRender = "legacy",
     theme = "dark",
     height = "100%",
     gridOverlayRes,
@@ -692,26 +730,58 @@ export function CrashMap({
         }
         if (mode === "heatmap") {
             if (!cells || cells.length === 0) return base
-            // Heatmap: continuous KDE surface over cell centroids, weighted
-            // by severity. Summing pre-aggregated cell weights == summing the
-            // underlying points' weights, so SUM-over-centroids reproduces
-            // the raw-point density up to the cell grid — and scales
-            // statewide, which a raw-point HeatmapLayer can't.
+            // Strategy B (`?hr=b`): direct cell geometry, no per-frame
+            // aggregation. Each cell → a filled disc sized to the S2 cell (so
+            // discs tile into a continuous density field), colored by a
+            // sequential colormap of its perceptually-scaled severity-weighted
+            // count. Colors are computed CPU-side here (once per data-load, in
+            // this memo — not per frame), so pan/zoom is a pure GPU redraw and
+            // stays smooth where legacy's per-frame KDE does not. (A/C will
+            // upload the same colormap as a GPU texture for free clim/ramp.)
+            if (heatRender === "b") {
+                const renderRes = dataRes ?? effectiveS2Level
+                const edge = S2_EDGE_METERS[renderRes] ?? S2_EDGE_METERS[13]
+                const radiusMeters = edge * HEAT_B_RADIUS_FRAC
+                const wMax = cells.reduce((m, c) => Math.max(m, cellHeatWeight(c)), 1)
+                const colorFor = (c: StackedCell): [number, number, number, number] => {
+                    const t = Math.pow(cellHeatWeight(c) / wMax, HEAT_B_GAMMA)
+                    const [r, g, b] = sampleColormap(HEAT_B_COLORMAP, t)
+                    const a = Math.round(255 * Math.min(1, t / HEAT_B_ALPHA_KNEE))
+                    return [r, g, b, a]
+                }
+                return [...base,
+                    new SoftDiscLayer({
+                        id: "crashes-cell-heat-b",
+                        data: cells,
+                        getPosition: (c: StackedCell) => c.center,
+                        getFillColor: colorFor,
+                        getRadius: radiusMeters,
+                        radiusUnits: "meters",
+                        radiusMinPixels: HEAT_B_MIN_PX,
+                        stroked: false,
+                        opacity: cellOpacity,
+                        pickable: true,
+                        onHover: (info) => { setHoverInfo(info); return false },
+                        updateTriggers: { getFillColor: [wMax], getRadius: [radiusMeters] },
+                    }),
+                ]
+            }
+            // Legacy (`?hr` unset): continuous KDE surface over cell centroids,
+            // weighted by severity. Summing pre-aggregated cell weights ==
+            // summing the underlying points' weights, so SUM-over-centroids
+            // reproduces the raw-point density up to the cell grid — and scales
+            // statewide, which a raw-point HeatmapLayer can't. Re-aggregates
+            // per frame, so pan/zoom is sluggish (the reason B/A exist).
             return [...base,
                 new HeatmapLayer<StackedCell>({
                     id: "crashes-cell-heatmap",
                     data: cells,
                     getPosition: (c) => c.center,
-                    getWeight: (c) => c.fatal * HEAT_W_FATAL + (c.pedInj + c.otherInj) * HEAT_W_INJURY + c.pdo * HEAT_W_PDO,
+                    getWeight: cellHeatWeight,
                     aggregation: "SUM",
                     radiusPixels: 30,
                     intensity: 1,
                     threshold: 0.05,
-                    // Mobile GPUs choke on the per-frame density re-aggregation
-                    // during pan/zoom. Defer it until motion pauses (renders the
-                    // last texture meanwhile) to keep interaction smooth on a
-                    // phone.
-                    debounceTimeout: 500,
                     // Fade during a level-change refetch (matches Bins/Points).
                     opacity: cellOpacity,
                 }),
@@ -783,7 +853,7 @@ export function CrashMap({
             console.log(`[perf] layers: ${ms.toFixed(1)}ms (mode=${mode}, segments=${segments.length})`)
         }
         return result
-    }, [cells, mode, effectiveS2Level, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, circleRadiusPx, cellOpacity, cellDesaturate, dataRes])
+    }, [cells, mode, heatRender, effectiveS2Level, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, circleRadiusPx, cellOpacity, cellDesaturate, dataRes])
 
     // Only bubble user-driven changes. DeckGL also echoes back programmatic
     // viewState updates (from the fit effect, mode-switch tilt, etc.) via
