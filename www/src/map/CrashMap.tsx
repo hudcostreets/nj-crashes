@@ -8,7 +8,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Map as MapGl, type MapRef } from "react-map-gl/maplibre"
 import "maplibre-gl/dist/maplibre-gl.css"
 import DeckGL from "@deck.gl/react"
-import { GeoJsonLayer, ScatterplotLayer } from "@deck.gl/layers"
+import { GeoJsonLayer, ScatterplotLayer, BitmapLayer } from "@deck.gl/layers"
 import { HeatmapLayer } from "@deck.gl/aggregation-layers"
 import type { PickingInfo } from "@deck.gl/core"
 import type { FeatureCollection } from "geojson"
@@ -17,6 +17,7 @@ import { cellsToSegments, buildStackedCellLayer, Segment, StackedCell } from "./
 import { binIntoS2Cells, pickS2LevelForPixels, tokenBoundary, latLngToToken, S2_EDGE_METERS } from "./s2"
 import { sampleColormap, type ColormapName } from "./colormap"
 import { SoftDiscLayer } from "./SoftDiscLayer"
+import { bakeDensity } from "./bakeDensity"
 
 export type MapMode = "scatter" | "heatmap" | "bins"
 
@@ -181,21 +182,28 @@ const POINT_MAX_PX = 22
  *  the S2 cell so they tile the plane into a density field, colored by a
  *  sequential colormap of the (perceptually-scaled) severity-weighted count.
  *  No per-frame aggregation — pure GPU redraw, so pan/zoom stays smooth. */
-const HEAT_B_COLORMAP: ColormapName = "inferno"
-/** Disc radius as a fraction of the S2 cell edge. Drawn larger than the cell
- *  (>1) so each soft kernel's Gaussian tail overlaps its neighbors and the
- *  field reads continuous rather than as discrete circles. */
+/** Shared by heatmap strategies B and A. */
+const HEAT_COLORMAP: ColormapName = "inferno"
+/** Density → colormap position uses a power scaling (t = (w/wmax)^γ, γ<1) so
+ *  the heavy-tailed count distribution doesn't collapse everything but the
+ *  densest few cells to the ramp's dark floor. */
+const HEAT_GAMMA = 0.5
+/** Density (as colormap position `t`) at/above which the surface is fully
+ *  opaque; below it, alpha ramps linearly to 0, so sparse low-count areas fade
+ *  out instead of showing the colormap's near-black floor — the way a KDE
+ *  surface fades to transparent at its edges. */
+const HEAT_ALPHA_KNEE = 0.3
+
+/** Strategy B disc radius as a fraction of the S2 cell edge. Drawn larger than
+ *  the cell (>1) so each soft kernel's Gaussian tail overlaps its neighbors and
+ *  the field reads continuous rather than as discrete circles. */
 const HEAT_B_RADIUS_FRAC = 1.3
 const HEAT_B_MIN_PX = 4
-/** Severity-weighted density → colormap position, using a power scaling
- *  (t = (w/wmax)^γ, γ<1) so the heavy-tailed count distribution doesn't
- *  collapse everything but the densest few cells to the ramp's dark floor. */
-const HEAT_B_GAMMA = 0.5
-/** Density (as colormap position `t`) at/above which a disc is fully opaque;
- *  below it, alpha ramps linearly to 0. Makes a sparse low-count cell fade
- *  out instead of showing as a dark disc (the colormap floor is near-black),
- *  the way a KDE surface fades to transparent at its edges. */
-const HEAT_B_ALPHA_KNEE = 0.3
+
+/** Strategy A: KDE kernel σ as a fraction of the S2 cell edge (world meters),
+ *  and the baked image's longest side in pixels. */
+const HEAT_A_SIGMA_FRAC = 0.9
+const HEAT_A_MAX_DIM = 1024
 
 /** Severity-weighted density for a cell (shared by legacy weight + strategy B). */
 function cellHeatWeight(c: StackedCell): number {
@@ -695,6 +703,28 @@ export function CrashMap({
         return layers
     }, [outline, muniOutline, theme, onOutlineClick])
 
+    // Strategy A bake: recompute the KDE image only when the cell set (or its
+    // level) changes — never on pan/zoom/opacity. Skipped unless heatmap+A.
+    const bakedDensity = useMemo(() => {
+        if (mode !== "heatmap" || heatRender !== "a" || !cells || cells.length === 0) return null
+        const res = dataRes ?? effectiveS2Level
+        const edge = S2_EDGE_METERS[res] ?? S2_EDGE_METERS[13]
+        const t0 = perfEnabled() ? performance.now() : 0
+        const baked = bakeDensity(cells, {
+            colormap: HEAT_COLORMAP,
+            sigmaMeters: edge * HEAT_A_SIGMA_FRAC,
+            gamma: HEAT_GAMMA,
+            alphaKnee: HEAT_ALPHA_KNEE,
+            weight: cellHeatWeight,
+            maxDim: HEAT_A_MAX_DIM,
+        })
+        if (perfEnabled() && baked) {
+            console.log(`[perf] bakeDensity: ${(performance.now() - t0).toFixed(1)}ms `
+                + `(${cells.length} cells → ${baked.width}×${baked.height})`)
+        }
+        return baked
+    }, [mode, heatRender, cells, dataRes, effectiveS2Level])
+
     const layers = useMemo(() => {
         const t0 = perfEnabled() ? performance.now() : 0
         const base: any[] = [...outlineLayers]
@@ -744,9 +774,9 @@ export function CrashMap({
                 const radiusMeters = edge * HEAT_B_RADIUS_FRAC
                 const wMax = cells.reduce((m, c) => Math.max(m, cellHeatWeight(c)), 1)
                 const colorFor = (c: StackedCell): [number, number, number, number] => {
-                    const t = Math.pow(cellHeatWeight(c) / wMax, HEAT_B_GAMMA)
-                    const [r, g, b] = sampleColormap(HEAT_B_COLORMAP, t)
-                    const a = Math.round(255 * Math.min(1, t / HEAT_B_ALPHA_KNEE))
+                    const t = Math.pow(cellHeatWeight(c) / wMax, HEAT_GAMMA)
+                    const [r, g, b] = sampleColormap(HEAT_COLORMAP, t)
+                    const a = Math.round(255 * Math.min(1, t / HEAT_ALPHA_KNEE))
                     return [r, g, b, a]
                 }
                 return [...base,
@@ -763,6 +793,23 @@ export function CrashMap({
                         pickable: true,
                         onHover: (info) => { setHoverInfo(info); return false },
                         updateTriggers: { getFillColor: [wMax], getRadius: [radiusMeters] },
+                    }),
+                ]
+            }
+            // Strategy A (`?hr=a`): a true continuous KDE baked to an image once
+            // per data-load (see `bakedDensity` memo + `bakeDensity.ts`), drawn
+            // as a `BitmapLayer` textured quad — so pan/zoom is a free redraw
+            // and the surface is silky with no cell grid. Re-bakes only when the
+            // cell set changes.
+            if (heatRender === "a") {
+                if (!bakedDensity) return base
+                return [...base,
+                    new BitmapLayer({
+                        id: "crashes-cell-heat-a",
+                        image: bakedDensity.image,
+                        bounds: bakedDensity.bounds,
+                        opacity: cellOpacity,
+                        pickable: false,
                     }),
                 ]
             }
@@ -853,7 +900,7 @@ export function CrashMap({
             console.log(`[perf] layers: ${ms.toFixed(1)}ms (mode=${mode}, segments=${segments.length})`)
         }
         return result
-    }, [cells, mode, heatRender, effectiveS2Level, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, circleRadiusPx, cellOpacity, cellDesaturate, dataRes])
+    }, [cells, mode, heatRender, bakedDensity, effectiveS2Level, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, circleRadiusPx, cellOpacity, cellDesaturate, dataRes])
 
     // Only bubble user-driven changes. DeckGL also echoes back programmatic
     // viewState updates (from the fit effect, mode-switch tilt, etc.) via

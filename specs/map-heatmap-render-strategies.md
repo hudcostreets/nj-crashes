@@ -33,12 +33,12 @@ Render cells as GPU geometry with no per-frame aggregation. As shipped:
 - **Smooth:** ✅ (same layer family as Points; verified instant pan/zoom + level-change at statewide and city zoom, no per-frame re-aggregation). **Look:** continuous soft KDE-like surface; faint S2 texture only in mid-density areas at some zooms. **Verdict:** strong — may be *enough*; de-risks A.
 - Colormap is CPU-sampled for B (fine, since it's per-data-load only); A/C upload the same `colormap.ts` stops as a **GPU 1-D texture** so clim/ramp/opacity become free uniforms.
 
-### A — bake density to a texture, pan a `BitmapLayer` (recommended headline; ~1–2 wk)
-The CarbonPlan playbook minus zarr:
-- On each **data-load event** (viewport level change or filter change), splat the fetched cells' severity-weighted counts into an **offscreen framebuffer** (luma.gl `Framebuffer`) covering the current region — a real Gaussian KDE done **once**, not per frame.
-- Hand that texture to a **custom `BitmapLayer` subclass** with `bounds`; its fragment shader reads raw density and applies the 1-D colormap (copy `zarr-layer/src/colormap.ts` + the `shaders.ts` rescale-and-sample snippet).
-- Pan/zoom = free textured-quad redraw. **Ramp / clim / opacity changes = uniform-only, no re-splat.** Only filters/geo/level re-splat.
-- **Smooth:** ✅. **Look:** silky continuous KDE. **Risk:** medium (render-to-texture pass + custom layer shader). We're in Web Mercator already, so no mesh reprojection needed.
+### A — bake density to an image, pan a `BitmapLayer` (recommended headline) — ✅ BUILT (`?hr=a`)
+The CarbonPlan playbook minus zarr — implemented with a **CPU splat** rather than a GPU render-to-texture pass (`www/src/map/bakeDensity.ts`):
+- On each **data-load event** (cell set changes — level/filter/geo), splat each cell's severity-weighted count as a **Gaussian kernel** into an accumulation grid over the cells' world bounds (σ = `0.9×` the S2 cell edge, padded 3σ), normalize, and map through the shared `colormap.ts` ramp → an `ImageData`. Memoized on `[cells, dataRes]`, so it runs **once per data-load**, never on pan/zoom/opacity.
+- Hand that image to a stock **`BitmapLayer`** with the bake's lng/lat `bounds`. Pan/zoom = free textured-quad redraw.
+- **Smooth:** ✅ (BitmapLayer redraw only; verified statewide + city). **Look:** silky continuous KDE — smoother than B (no cell grid) while keeping corridor/intersection structure; the best-looking of the three. **Bake cost:** tens of ms per data-load (TTFR sits between B and legacy). **Resolution:** the image is fixed-res (`maxDim=1024`), but bounds shrink with the viewport's data so deep zoom stays crisp; extreme over-zoom past the bake density would soften.
+- **Why CPU not GPU-framebuffer:** doing render-to-texture *inside* deck.gl (vs CarbonPlan's standalone MapLibre CustomLayer) needs an awkward multi-pass; the CPU splat is fully in-hand, fast enough at these cell counts, and renders identically. **Deferred refinement:** move the colormap to a GPU 1-D texture via a `BitmapLayer` subclass (reusing `colormap.ts` stops), making clim/ramp/opacity free uniforms — worthwhile only if we expose those controls.
 
 ### C — multiscale `TileLayer` over cells-api (scalable end-state; ~3–5 wk)
 `@deck.gl/geo-layers` `TileLayer` whose `getTileData` fetches the S2 shards for a tile at the **screen-matched S2 level** (our l4–l21 maps onto tile z), and whose `renderSubLayers` emits either per-tile geometry (B-per-tile) or a per-tile baked density `BitmapLayer` (A-per-tile). Inherits deck.gl's LRU tile cache + coarse-under-fine fallback for free.
@@ -62,9 +62,10 @@ Rejected — **D: adopt `zarr-layer` literally.** Would force converting sparse 
 
 1. ✅ Cleanup: gate + defer prefetch (`57c0937a87d`); mode buttons live + Points/Heatmap cell-fed (`7d230f1e526`).
 2. ✅ **B** — soft-kernel baseline (`SoftDiscLayer` + `colormap.ts`, `?hr=b`). Smooth; strong look; may be enough.
-3. ✅ **Benchmark harness** (`heatmap-render-bench.spec.ts`, `test:bench` / `test:bench:viz`) — bytes/ttfr/cells numbers + headed screenshot matrix. Compares legacy vs B today; add `a`/`c` via `HR_STRATEGIES`.
-4. **A** — the headline continuous surface (baked KDE texture + GPU colormap). Re-run the harness with `HR_STRATEGIES=legacy,b,a`.
-5. **C** if statewide-at-fine-zoom or large filter cross-products justify the cells-api tile endpoint.
+3. ✅ **Benchmark harness** (`heatmap-render-bench.spec.ts`, `test:bench` / `test:bench:viz`) — bytes/ttfr/cells numbers + headed screenshot matrix. Compares legacy / B / A via `HR_STRATEGIES`.
+4. ✅ **A** — baked-KDE continuous surface (`bakeDensity.ts` + `BitmapLayer`, `?hr=a`). Benchmarked legacy/B/A across the matrix.
+5. **Decide** B vs A as the shipped default (both smooth; A prettier, B lighter/no bake) → scrns/device eval → flip default + retire legacy.
+6. **C** only if statewide-at-fine-zoom or large filter cross-products justify the cells-api tile endpoint.
 
 ## Decisions (were open questions; resolved to reasonable defaults 2026-09-14)
 
