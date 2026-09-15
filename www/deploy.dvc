@@ -3,8 +3,8 @@ meta:
     cmd: ./deploy.sh
     side_effect: true
     git_deps:
-      deploy.sh: 749d946b0fe3867256e5c8e6f96573109131e3f6
-      src: e7a2b27cc095c3881d00057f5b3800d18ad8df11
-      public: edf99db3842c3d2a6b06a16a4c1b9690df3a01fe
+      deploy.sh: 7d34c9b5abbd1c87972442b89e909aeca630a57f
+      src: d807046bc9823e5f81d0395f440925ace4216058
+      public: 1041a05c53532a09c7ff31019fbae0aa5a68963f
       package.json: 985a84dc486cb7aa3a35396df21e31aef7267948
-      functions: db1375951000d43f3997a05972c67b689f5e4d32
+      functions: 48171a2aa21c60fcf33347a3e0b7c04a798e8f4d
