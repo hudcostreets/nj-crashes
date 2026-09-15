@@ -178,21 +178,18 @@ const HEAT_W_PDO = 1
 const POINT_MIN_PX = 2
 const POINT_MAX_PX = 22
 
-/** Heatmap strategy B (`?hr=b`) params. Cells render as filled discs sized to
- *  the S2 cell so they tile the plane into a density field, colored by a
- *  sequential colormap of the (perceptually-scaled) severity-weighted count.
- *  No per-frame aggregation — pure GPU redraw, so pan/zoom stays smooth. */
-/** Shared by heatmap strategies B and A. */
+/** Colormap + tone curve shared by heatmap strategies B and A. */
 const HEAT_COLORMAP: ColormapName = "inferno"
 /** Density → colormap position uses a power scaling (t = (w/wmax)^γ, γ<1) so
  *  the heavy-tailed count distribution doesn't collapse everything but the
  *  densest few cells to the ramp's dark floor. */
 const HEAT_GAMMA = 0.5
 /** Density (as colormap position `t`) at/above which the surface is fully
- *  opaque; below it, alpha ramps linearly to 0, so sparse low-count areas fade
- *  out instead of showing the colormap's near-black floor — the way a KDE
- *  surface fades to transparent at its edges. */
-const HEAT_ALPHA_KNEE = 0.3
+ *  opaque; below it, alpha ramps linearly to 0, so the sparsest areas fade out
+ *  instead of showing the colormap's near-black floor. Kept low so low-density
+ *  (purple) spots stay visible over the dark basemap — only the near-zero tail
+ *  fades. */
+const HEAT_ALPHA_KNEE = 0.12
 
 /** Strategy B disc radius as a fraction of the S2 cell edge. Drawn larger than
  *  the cell (>1) so each soft kernel's Gaussian tail overlaps its neighbors and
