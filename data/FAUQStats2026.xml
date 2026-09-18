@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Sep 17 10:00:02 EDT 2026</RUNDATE>
+  <RUNDATE>Fri Sep 18 10:00:03 EDT 2026</RUNDATE>
   <STATSYEAR>2026</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -48,6 +48,19 @@
   <COUNTY CCODE="20" CNAME="Union">
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
+  </COUNTY>
+  <COUNTY CCODE="20" CNAME="Union">
+    <MUNICIPALITY MCODE="2017" MNAME="Springfield Twsp">
+      <ACCIDENT ACCID="14810" DATE="09/16/2026" TIME="1219">
+        <HIGHWAY>124</HIGHWAY>
+        <LOCATION>State Highway 124</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
   </COUNTY>
   <COUNTY CCODE="11" CNAME="Mercer">
     <MUNICIPALITY MCODE="1103" MNAME="Hamilton Twsp">
@@ -97,6 +110,15 @@
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>0</INJURIES>
+      </ACCIDENT>
+      <ACCIDENT ACCID="14811" DATE="09/13/2026" TIME="2130">
+        <HIGHWAY>40</HIGHWAY>
+        <LOCATION>State Highway 40 (Alternate)</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -159,6 +181,19 @@
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="09" CNAME="Hudson">
+    <MUNICIPALITY MCODE="0906" MNAME="Jersey City">
+      <ACCIDENT ACCID="14809" DATE="09/10/2026" TIME="0513">
+        <HIGHWAY>1</HIGHWAY>
+        <LOCATION>State Highway 1</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -767,21 +802,6 @@
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="05" CNAME="Cape May">
-    <MUNICIPALITY MCODE="0514" MNAME="Wildwood City">
-      <ACCIDENT ACCID="14770" DATE="08/07/2026" TIME="1753">
-        <HIGHWAY>621</HIGHWAY>
-        <LOCATION>County 621</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="15" CNAME="Ocean">
     <MUNICIPALITY MCODE="1512" MNAME="Lacey Twsp">
       <ACCIDENT ACCID="14736" DATE="08/07/2026" TIME="1457">
         <HIGHWAY>444</HIGHWAY>
@@ -1280,14 +1300,15 @@
   </COUNTY>
   <COUNTY CCODE="05" CNAME="Cape May">
     <MUNICIPALITY MCODE="0505" MNAME="Lower Twsp">
-      <ACCIDENT ACCID="14690" DATE="07/10/2026" TIME="2346">
+      <ACCIDENT ACCID="14690" DATE="07/10/2026" TIME="2343">
         <HIGHWAY>47</HIGHWAY>
-        <LOCATION>State Highway 47</LOCATION>
+        <LOCATION>State Highway 47 MP 1.16</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>1</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2419,7 +2440,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
-        <INJURIES>1</INJURIES>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -2763,12 +2784,13 @@
     <MUNICIPALITY MCODE="0250" MNAME="Ridgefield Park Tws">
       <ACCIDENT ACCID="14551" DATE="04/30/2026" TIME="1119">
         <HIGHWAY>95</HIGHWAY>
-        <LOCATION>New Jersey Turnpike</LOCATION>
+        <LOCATION>New Jersey Turnpike MP 118.3</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -4704,7 +4726,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>358</TOTACCIDENTS>
-  <TOTFATALITIES>373</TOTFATALITIES>
+  <TOTACCIDENTS>360</TOTACCIDENTS>
+  <TOTFATALITIES>375</TOTFATALITIES>
   <TOTINJURIES>38</TOTINJURIES>
 </FAUQSTATS>
