@@ -14,6 +14,7 @@ import { bboxRing, clippedAreaPx } from "@/src/map/areaBudget"
 import type { CellsApiFilter } from "@/src/map/useCellsApi"
 import { MAP_BASE_URL } from "@/src/map/config"
 import type { MapMode, HeatRender, ViewState } from "@/src/map/CrashMap"
+import type { HeatTileFilter } from "@/src/map/useHeatTiles"
 import type { StackedCell } from "@/src/map/StackedCellLayer"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import type { FeatureCollection } from "geojson"
@@ -463,6 +464,16 @@ export function CrashMapSection({
             clipPolygon,
         }
     }, [filter, cc, mc, outline, muniOutline])
+    // Strategy C (`?hr=c`) fetches per tile from its own bbox, so it needs only
+    // the year/severity filter (not the viewport — the tile hook derives that).
+    // `clipPolygon` is carried for a later county/muni clip; C currently fetches
+    // by tile bbox only.
+    const heatTileFilter: HeatTileFilter = useMemo(() => ({
+        yearRange,
+        severities,
+        clipPolygon: (mc !== null && muniOutline ? extractOuterRing(muniOutline)
+            : cc !== null && outline ? extractOuterRing(outline) : null) ?? null,
+    }), [yearRange, severities, cc, mc, outline, muniOutline])
     // Adjacent-level prefetch only helps Bins, where zoom crosses S2 levels.
     // Heatmap/Points don't benefit (and it wastes a level's fetch), so gate it.
     const apiResult = useCellsApi(apiFilter, { prefetchAdjacentLevels: mode === "bins" })
@@ -760,6 +771,7 @@ export function CrashMapSection({
                         onOutlineClick={onOutlineClick}
                         mode={mode}
                         heatRender={heatRender}
+                        heatTileFilter={heatTileFilter}
                         theme={actualTheme}
                         height={fullScreen ? "100%" : mapHeight}
                         showInternalControls={false}
@@ -864,7 +876,7 @@ export function CrashMapSection({
                     <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                         <span style={{ fontSize: "0.72em", opacity: 0.75, whiteSpace: "nowrap" }}>render</span>
                         {(["legacy", "b", "a", "c"] as HeatRender[]).map(hr => {
-                            const impl = hr === "legacy" || hr === "b" || hr === "a"
+                            const impl = hr === "legacy" || hr === "b" || hr === "a" || hr === "c"
                             const label = hr === "legacy" ? "Legacy" : hr.toUpperCase()
                             return (
                                 <button
