@@ -18,6 +18,7 @@ import { binIntoS2Cells, pickS2LevelForPixels, tokenBoundary, latLngToToken, S2_
 import { sampleColormap, type ColormapName } from "./colormap"
 import { SoftDiscLayer } from "./SoftDiscLayer"
 import { bakeDensity } from "./bakeDensity"
+import { useHeatTiles, type HeatTileFilter } from "./useHeatTiles"
 
 export type MapMode = "scatter" | "heatmap" | "bins"
 
@@ -103,6 +104,10 @@ export type Props = {
     /** Density-render strategy within `mode="heatmap"` (URL `?hr=`). Ignored
      *  in other modes. Defaults to `"legacy"`. */
     heatRender?: HeatRender
+    /** Filter (years/severities/geo) for strategy C's per-tile fetches, which
+     *  bypass `prebinnedCells` and query `/v1/cells` per tile. Only needed when
+     *  `heatRender === "c"`. */
+    heatTileFilter?: HeatTileFilter
     theme?: "light" | "dark"
     height?: number | string
     /** When set, draw an outline-only S2 cell grid at this level covering
@@ -201,6 +206,9 @@ const HEAT_B_MIN_PX = 4
  *  and the baked image's longest side in pixels. */
 const HEAT_A_SIGMA_FRAC = 0.9
 const HEAT_A_MAX_DIM = 1024
+
+/** Strategy C: target cell size (px) fed to the per-tile S2-level picker. */
+const HEAT_C_PX_TARGET = 4
 
 /** Severity-weighted density for a cell (shared by legacy weight + strategy B). */
 function cellHeatWeight(c: StackedCell): number {
@@ -383,6 +391,7 @@ export function CrashMap({
     showInternalControls = true,
     mode = "scatter",
     heatRender = "legacy",
+    heatTileFilter,
     theme = "dark",
     height = "100%",
     gridOverlayRes,
@@ -396,6 +405,23 @@ export function CrashMap({
     const containerRef = React.useRef<HTMLDivElement | null>(null)
     const [localViewState, setLocalViewState] = useState<ViewState>(() => defaultView(initialBounds, initialCenter, initialView, mode))
     const viewState = controlledView ?? localViewState
+    // Strategy C (`?hr=c`): a mercator-tile pyramid of baked KDE surfaces. The
+    // hook fetches + bakes per visible tile (bypassing `prebinnedCells`) and
+    // returns one BitmapLayer per tile. Enabled only in heatmap+C.
+    const heatTileLayers = useHeatTiles(
+        mode === "heatmap" && heatRender === "c",
+        viewState,
+        { width: containerRef.current?.clientWidth ?? 0, height: containerRef.current?.clientHeight ?? 0 },
+        heatTileFilter ?? null,
+        {
+            colormap: HEAT_COLORMAP,
+            gamma: HEAT_GAMMA,
+            alphaKnee: HEAT_ALPHA_KNEE,
+            sigmaFrac: HEAT_A_SIGMA_FRAC,
+            cellPxTarget: HEAT_C_PX_TARGET,
+            weight: cellHeatWeight,
+        },
+    )
     // Ref mirrors current viewState so `setViewState` can compute `next`
     // without putting a parent-notifying side effect inside the setState
     // updater (which React warns about: "Cannot update a component while
@@ -756,6 +782,10 @@ export function CrashMap({
             ]
         }
         if (mode === "heatmap") {
+            // Strategy C (`?hr=c`): a mercator-tile pyramid of baked KDE
+            // surfaces (see `useHeatTiles`). Self-fetching per tile, so it
+            // doesn't need `prebinnedCells` — handle it before the cells guard.
+            if (heatRender === "c") return [...base, ...heatTileLayers]
             if (!cells || cells.length === 0) return base
             // Strategy B (`?hr=b`): direct cell geometry, no per-frame
             // aggregation. Each cell → a filled disc sized to the S2 cell (so
@@ -897,7 +927,7 @@ export function CrashMap({
             console.log(`[perf] layers: ${ms.toFixed(1)}ms (mode=${mode}, segments=${segments.length})`)
         }
         return result
-    }, [cells, mode, heatRender, bakedDensity, effectiveS2Level, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, circleRadiusPx, cellOpacity, cellDesaturate, dataRes])
+    }, [cells, mode, heatRender, bakedDensity, heatTileLayers, effectiveS2Level, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, circleRadiusPx, cellOpacity, cellDesaturate, dataRes])
 
     // Only bubble user-driven changes. DeckGL also echoes back programmatic
     // viewState updates (from the fit effect, mode-switch tilt, etc.) via

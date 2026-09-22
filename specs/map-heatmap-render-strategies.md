@@ -40,10 +40,14 @@ The CarbonPlan playbook minus zarr — implemented with a **CPU splat** rather t
 - **Smooth:** ✅ (BitmapLayer redraw only; verified statewide + city). **Look:** silky continuous KDE — smoother than B (no cell grid) while keeping corridor/intersection structure; the best-looking of the three. **Bake cost:** tens of ms per data-load (TTFR sits between B and legacy). **Resolution:** the image is fixed-res (`maxDim=1024`), but bounds shrink with the viewport's data so deep zoom stays crisp; extreme over-zoom past the bake density would soften.
 - **Why CPU not GPU-framebuffer:** doing render-to-texture *inside* deck.gl (vs CarbonPlan's standalone MapLibre CustomLayer) needs an awkward multi-pass; the CPU splat is fully in-hand, fast enough at these cell counts, and renders identically. **Deferred refinement:** move the colormap to a GPU 1-D texture via a `BitmapLayer` subclass (reusing `colormap.ts` stops), making clim/ramp/opacity free uniforms — worthwhile only if we expose those controls.
 
-### C — multiscale `TileLayer` over cells-api (scalable end-state; ~3–5 wk)
-`@deck.gl/geo-layers` `TileLayer` whose `getTileData` fetches the S2 shards for a tile at the **screen-matched S2 level** (our l4–l21 maps onto tile z), and whose `renderSubLayers` emits either per-tile geometry (B-per-tile) or a per-tile baked density `BitmapLayer` (A-per-tile). Inherits deck.gl's LRU tile cache + coarse-under-fine fallback for free.
-- Requires cells-api work: a tile-addressed endpoint (`/{z}/{x}/{y}` or S2-token-addressed) with **filter state in the tile key** so TileLayer caches on `(tile, filterState)`.
-- **Smooth:** ✅, and the only option that scales to statewide-at-l21 without ever fetching tens of thousands of rows at once. **Risk:** high; most work. This is the most SOTA/best-practice answer.
+### C — multiscale mercator-tile pyramid of baked KDE surfaces — ✅ BUILT (`?hr=c`)
+The fix for A's blur: bake **per tile at the tile's own zoom** so the raster is always ~screen-resolution. `www/src/map/useHeatTiles.ts` + `tileMath.ts`:
+- **Own tiling, not `@deck.gl/geo-layers`.** Adding geo-layers dragged in a luma.gl peer range that conflicts with our pinned deck 9.3 stack (and silently bumped `use-prms`), so the tile grid (mercator z/x/y ↔ lng/lat, visible-tiles) + per-(tile,level,filter) fetch cache are hand-rolled (~120 lines) instead.
+- `getTileData` per tile: pick the S2 level from the tile z, fetch `/v1/cells?polygon=<tile bbox + margin>&res=<L>` (A-per-tile). `renderSubLayers` = a baked-KDE `BitmapLayer` per tile.
+- **Seamless** via two mechanisms: (1) **kernel bleed** — each tile fetches a margin of neighbor cells and bakes over its *core* bbox, so a neighbor's Gaussian tail contributes without drawing outside the tile (cores tile exactly); (2) **shared normalization** — `splatDensity`/`colorizeDensity` split lets all visible tiles colorize against one `vmax` (max density across them), killing the brightness seam a naive per-tile normalize shows at a density gradient.
+- **Result:** sharp at every zoom (verified z7 / z10.5 / z14 — z10.5 was where A blurred), continuous like A with no B grain, no visible seams, pans correctly (per-tile fetch cache = only newly-exposed tiles hit the network). The best-looking of the four.
+- **Dedicated `/{z}/{x}/{y}` endpoint deferred as unnecessary:** the per-tile `/v1/cells?polygon=` URLs are *already* deterministic per tile and the worker already sets `Cache-Control: public, max-age=3600, swr=86400`, so they edge-cache today. A `/{z}/{x}/{y}` route would only tidy the URL shape — deferred (avoids a worker deploy + skew risk for ~zero user-visible gain).
+- **Follow-ups:** county/muni `clipPolygon` (C currently fetches by tile bbox only, so scoped views show neighbor cells); incremental tile paint (currently awaits all visible tiles before first paint → a brief blur while a zoom settles).
 
 Rejected — **D: adopt `zarr-layer` literally.** Would force converting sparse S2 aggregates into a Mercator/lat-lon zarr array per filter-state (throwing away S2's variable resolution, reintroducing pyramid-build cost) and running a second renderer outside deck.gl. Reference only.
 
@@ -64,8 +68,8 @@ Rejected — **D: adopt `zarr-layer` literally.** Would force converting sparse 
 2. ✅ **B** — soft-kernel baseline (`SoftDiscLayer` + `colormap.ts`, `?hr=b`). Smooth; strong look; may be enough.
 3. ✅ **Benchmark harness** (`heatmap-render-bench.spec.ts`, `test:bench` / `test:bench:viz`) — bytes/ttfr/cells numbers + headed screenshot matrix. Compares legacy / B / A via `HR_STRATEGIES`.
 4. ✅ **A** — baked-KDE continuous surface (`bakeDensity.ts` + `BitmapLayer`, `?hr=a`). Benchmarked legacy/B/A across the matrix.
-5. **Decide** B vs A as the shipped default (both smooth; A prettier, B lighter/no bake) → scrns/device eval → flip default + retire legacy.
-6. **C** only if statewide-at-fine-zoom or large filter cross-products justify the cells-api tile endpoint.
+5. ✅ **C** — tiled baked-KDE (`useHeatTiles.ts` + `tileMath.ts`, `?hr=c`). Sharp at every zoom (fixes A's blur), seamless, best-looking.
+6. **Decide** the shipped default (B lightest / A single-bake / **C sharpest+smoothest**) → device eval → flip default + retire legacy. Then B's low-density alpha knee lowered to `0.12` so purple spots stay visible.
 
 ## Decisions (were open questions; resolved to reasonable defaults 2026-09-14)
 
