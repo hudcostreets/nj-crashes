@@ -8,8 +8,8 @@ meta:
     cmd: njdot backfill_geocodes
     deps:
       crashes.parquet: 1211e215284ecc253b64b51dd211dd2c
-      /njsp/data/njsp_njdot_match.parquet: 49f5f41f3eb6d03977e5576a98913b64
-      /njsp/data/crash-log.parquet: 2639293f4a2c383f0680e553c8f824db
+      /njsp/data/njsp_njdot_match.parquet: f97b45f7519b02bc4e497d0c8aff1e60
+      /njsp/data/crash-log.parquet: 04853f39d2864278dd3edf23fd8361a9
       nj_mp_tenths.parquet: 7f409f4625279b8ce87791748d28017c
     git_deps:
       /njdot/cli/backfill_geocodes.py: 9cc630d3f519b91da4b86392a076954c67c3008c
