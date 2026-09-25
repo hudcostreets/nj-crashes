@@ -108,6 +108,15 @@ export type Props = {
      *  bypass `prebinnedCells` and query `/v1/cells` per tile. Only needed when
      *  `heatRender === "c"`. */
     heatTileFilter?: HeatTileFilter
+    /** Strategy-C sharpness overrides (URL `?hsig=`/`?hcpx=`), for live tuning.
+     *  Fall back to `HEAT_C_SIGMA_FRAC` / `HEAT_C_PX_TARGET` when unset. Smaller
+     *  = crisper (tighter kernel / finer cells), at the cost of more bead-on-a-
+     *  string and more per-tile fetch/bake cost. */
+    heatSigmaFrac?: number
+    heatCellPx?: number
+    /** Strategy-C layer opacity (URL `?hop=`), 0–1. Falls back to
+     *  `HEAT_C_OPACITY`. <1 lets the basemap/borders show through. */
+    heatOpacity?: number
     theme?: "light" | "dark"
     height?: number | string
     /** When set, draw an outline-only S2 cell grid at this level covering
@@ -207,8 +216,16 @@ const HEAT_B_MIN_PX = 4
 const HEAT_A_SIGMA_FRAC = 0.9
 const HEAT_A_MAX_DIM = 1024
 
-/** Strategy C: target cell size (px) fed to the per-tile S2-level picker. */
-const HEAT_C_PX_TARGET = 4
+/** Strategy C: target cell size (px) fed to the per-tile S2-level picker, and
+ *  KDE kernel σ as a fraction of the S2 cell edge. Both are C-scoped (finer +
+ *  tighter than A) now that C bakes each tile at device resolution: a smaller
+ *  px target samples a finer S2 level (continuous filaments, less bead-on-a-
+ *  string), and a smaller σ than A's 0.9 keeps the kernel from over-smoothing
+ *  that finer detail back into blur. */
+export const HEAT_C_PX_TARGET = 3
+export const HEAT_C_SIGMA_FRAC = 0.75
+/** <1 so the basemap + county borders read through the opaque dense core. */
+export const HEAT_C_OPACITY = 0.82
 
 /** Severity-weighted density for a cell (shared by legacy weight + strategy B). */
 function cellHeatWeight(c: StackedCell): number {
@@ -392,6 +409,9 @@ export function CrashMap({
     mode = "scatter",
     heatRender = "legacy",
     heatTileFilter,
+    heatSigmaFrac,
+    heatCellPx,
+    heatOpacity,
     theme = "dark",
     height = "100%",
     gridOverlayRes,
@@ -417,8 +437,9 @@ export function CrashMap({
             colormap: HEAT_COLORMAP,
             gamma: HEAT_GAMMA,
             alphaKnee: HEAT_ALPHA_KNEE,
-            sigmaFrac: HEAT_A_SIGMA_FRAC,
-            cellPxTarget: HEAT_C_PX_TARGET,
+            sigmaFrac: heatSigmaFrac ?? HEAT_C_SIGMA_FRAC,
+            cellPxTarget: heatCellPx ?? HEAT_C_PX_TARGET,
+            opacity: heatOpacity ?? HEAT_C_OPACITY,
             weight: cellHeatWeight,
         },
     )
@@ -785,7 +806,10 @@ export function CrashMap({
             // Strategy C (`?hr=c`): a mercator-tile pyramid of baked KDE
             // surfaces (see `useHeatTiles`). Self-fetching per tile, so it
             // doesn't need `prebinnedCells` — handle it before the cells guard.
-            if (heatRender === "c") return [...base, ...heatTileLayers]
+            // Heat tiles UNDER the reference overlays (county/muni borders,
+            // debug grids) so the borders read on top of the surface rather
+            // than being occluded by it.
+            if (heatRender === "c") return [...heatTileLayers, ...base]
             if (!cells || cells.length === 0) return base
             // Strategy B (`?hr=b`): direct cell geometry, no per-frame
             // aggregation. Each cell → a filled disc sized to the S2 cell (so
