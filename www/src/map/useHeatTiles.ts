@@ -28,11 +28,15 @@ import type { StackedCell } from "./StackedCellLayer"
 import type { ColormapName } from "./colormap"
 import { tilesForBounds, tileToBounds, padBounds, tileKey, type Tile } from "./tileMath"
 
-const { round, min, max } = Math
+const { round, min, max, ceil, pow } = Math
 
-/** Tile bake resolution (px per side). 256 over a screen-sized tile ≈ device
- *  resolution → sharp. */
-const TILE_PX = 256
+/** Each tile is baked at its *displayed* device-pixel size so the `BitmapLayer`
+ *  never up-samples (which is what made a fixed 256px bake look blurry): a
+ *  mercator tile at its native zoom draws at 512 CSS px — ×devicePixelRatio
+ *  device px (2× on retina). We size the grid to that, clamped to [MIN, CAP] to
+ *  bound the CPU splat/colorize cost. */
+const TILE_PX_MIN = 256
+const TILE_PX_CAP = 1024
 /** Fraction of the tile span fetched as margin on each side, for kernel bleed. */
 const MARGIN_FRAC = 0.3
 const SHARDS = "89b,89d"
@@ -52,6 +56,9 @@ export type HeatTileRenderOpts = {
     sigmaFrac: number
     /** Target cell size (px) fed to the S2-level picker. */
     cellPxTarget: number
+    /** Layer opacity (0–1). <1 lets the basemap + county borders show through
+     *  the dense (opaque) core of the surface. */
+    opacity: number
     weight: (c: StackedCell) => number
 }
 
@@ -139,6 +146,11 @@ export function useHeatTiles(
         const t = setTimeout(async () => {
             const level = clampS2Level(pickS2LevelForPixels(opts.cellPxTarget, tileZ, viewState.latitude))
             const sigmaMeters = (S2_EDGE_METERS[level] ?? S2_EDGE_METERS[13]) * opts.sigmaFrac
+            // Bake each tile at its on-screen device-pixel size. A level-`tileZ`
+            // tile draws at 512·2^(zoom−tileZ) CSS px, ×dpr device px.
+            const dpr = min(2, (typeof window !== "undefined" && window.devicePixelRatio) || 1)
+            const displayPx = 512 * pow(2, viewState.zoom - tileZ) * dpr
+            const tilePx = min(TILE_PX_CAP, max(TILE_PX_MIN, ceil(displayPx)))
             const vp = new WebMercatorViewport({
                 width: container.width, height: container.height,
                 longitude: viewState.longitude, latitude: viewState.latitude, zoom: viewState.zoom,
@@ -151,10 +163,8 @@ export function useHeatTiles(
                 visible.map(tile => fetchTileCells(tile, level, filter).catch(() => [] as StackedCell[])),
             )
             if (runId !== runIdRef.current) return
-            if (new URLSearchParams(location.search).get("perf") === "1") {
-                const nCells = cellsPerTile.reduce((s, c) => s + c.length, 0)
-                console.log(`[perf] heatC: zoom=${viewState.zoom.toFixed(2)} tileZ=${tileZ} level=l${level} σ=${sigmaMeters.toFixed(0)}m tiles=${visible.length} cells=${nCells}`)
-            }
+            const perf = new URLSearchParams(location.search).get("perf") === "1"
+            const t0 = perf ? performance.now() : 0
 
             // Two-pass bake: splat every tile over its own core bounds, then
             // colorize all against the shared max so brightness is consistent.
@@ -165,8 +175,8 @@ export function useHeatTiles(
                     sigmaMeters,
                     weight: opts.weight,
                     bounds: tileToBounds(tile.z, tile.x, tile.y),
-                    width: TILE_PX,
-                    height: TILE_PX,
+                    width: tilePx,
+                    height: tilePx,
                 })
             })
             let vmax = 0
@@ -183,15 +193,19 @@ export function useHeatTiles(
                     bounds: g.bounds,
                 })
             }
+            if (perf) {
+                const nCells = cellsPerTile.reduce((s, c) => s + c.length, 0)
+                console.log(`[perf] heatC: zoom=${viewState.zoom.toFixed(2)} tileZ=${tileZ} level=l${level} σ=${sigmaMeters.toFixed(0)}m tilePx=${tilePx} tiles=${visible.length} cells=${nCells} bake=${(performance.now() - t0).toFixed(0)}ms`)
+            }
             if (runId === runIdRef.current) setTiles(baked)
         }, 180)
         return () => clearTimeout(t)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [enabled, tileZ, centerKey, sevKey, yearKey, container.width, container.height])
+    }, [enabled, tileZ, centerKey, sevKey, yearKey, container.width, container.height, opts.sigmaFrac, opts.cellPxTarget])
 
     return useMemo(
-        () => tiles.map(t => new BitmapLayer({ id: `heat-c-${t.id}`, image: t.image, bounds: t.bounds, opacity: 1 })),
-        [tiles],
+        () => tiles.map(t => new BitmapLayer({ id: `heat-c-${t.id}`, image: t.image, bounds: t.bounds, opacity: opts.opacity })),
+        [tiles, opts.opacity],
     )
 }
 

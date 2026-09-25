@@ -23,7 +23,7 @@ import useSessionStorageState from "use-session-storage-state"
 import { useToolboxOpen } from "@/src/map/useToolboxOpen"
 import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
 import type { Bbox, MapManifestV2 } from "@/src/map/v2"
-import { fitBoundsToView, lerpView, metersPerPixel } from "@/src/map/CrashMap"
+import { fitBoundsToView, lerpView, metersPerPixel, HEAT_C_SIGMA_FRAC, HEAT_C_PX_TARGET, HEAT_C_OPACITY } from "@/src/map/CrashMap"
 
 import { circleRadiusPx, cellPxTargetFor, pickRes as pickerPick, BINS_BUDGET } from "@/src/map/picker"
 import {
@@ -227,6 +227,16 @@ export function CrashMapSection({
     // module default lives in `picker.ts` (`BINS_BUDGET`). URL param
     // `?bins=<N>` for A/B eval via `/dev/ab`.
     const [binsUrl, setBinsUrl] = useUrlState("bins", optFloatParam(), { debounce: 100 })
+    // Heatmap strategy-C sharpness knobs, for live tuning across viewports:
+    // `?hsig=` = KDE kernel σ as a fraction of the S2 cell edge (default 0.6),
+    // `?hcpx=` = target cell size in px fed to the per-tile level picker
+    // (default 3). Smaller = crisper (tighter kernel / finer cells) but beadier
+    // + costlier. Undefined → the `HEAT_C_*` defaults in CrashMap.
+    const [heatSigUrl, setHeatSigUrl] = useUrlState("hsig", optFloatParam(), { debounce: 100 })
+    const [heatCpxUrl, setHeatCpxUrl] = useUrlState("hcpx", optFloatParam(), { debounce: 100 })
+    // `?hop=` = strategy-C layer opacity (0–1, default 0.82). <1 lets the
+    // basemap + county borders read through the opaque dense core.
+    const [heatOpUrl, setHeatOpUrl] = useUrlState("hop", optFloatParam(), { debounce: 100 })
     const binsBudget = binsUrl ?? BINS_BUDGET
     void setBinsUrl
     // `boolParam` default is `false`; we invert to keep the URL absent
@@ -772,6 +782,9 @@ export function CrashMapSection({
                         mode={mode}
                         heatRender={heatRender}
                         heatTileFilter={heatTileFilter}
+                        heatSigmaFrac={heatSigUrl ?? undefined}
+                        heatCellPx={heatCpxUrl ?? undefined}
+                        heatOpacity={heatOpUrl ?? undefined}
                         theme={actualTheme}
                         height={fullScreen ? "100%" : mapHeight}
                         showInternalControls={false}
@@ -963,6 +976,26 @@ export function CrashMapSection({
                             ? `${apiResult.plan.source} l${apiResult.plan.res}, ${apiResult.plan.cellCount ?? "—"} cells`
                             : apiResult.status}
                     </div>
+                    {mode === "heatmap" && heatRender === "c" && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
+                            <div style={{ fontSize: "0.72em", opacity: 0.6, textTransform: "uppercase", letterSpacing: 0.5 }}>heatmap C</div>
+                            <NumberSlider
+                                label="σ (↓sharper)" min={0.3} max={1.2} step={0.05}
+                                value={heatSigUrl ?? HEAT_C_SIGMA_FRAC} defaultValue={HEAT_C_SIGMA_FRAC}
+                                onChange={setHeatSigUrl} reset={() => setHeatSigUrl(null)}
+                            />
+                            <NumberSlider
+                                label="cell px" min={1.5} max={6} step={0.5}
+                                value={heatCpxUrl ?? HEAT_C_PX_TARGET} defaultValue={HEAT_C_PX_TARGET}
+                                onChange={setHeatCpxUrl} reset={() => setHeatCpxUrl(null)}
+                            />
+                            <NumberSlider
+                                label="opacity" min={0.2} max={1} step={0.05}
+                                value={heatOpUrl ?? HEAT_C_OPACITY} defaultValue={HEAT_C_OPACITY}
+                                onChange={setHeatOpUrl} reset={() => setHeatOpUrl(null)}
+                            />
+                        </div>
+                    )}
                     {effectiveView && (() => {
                         const renderRes = pickS2LevelForPixels(cellPxTarget, effectiveView.zoom, effectiveView.latitude)
                         const planRes = result.plan?.res ?? null
