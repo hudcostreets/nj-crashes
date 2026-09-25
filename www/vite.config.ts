@@ -40,6 +40,14 @@ function tuneWriterPlugin(): Plugin {
 }
 
 export default defineConfig({
+  // Expose the Stadia Maps key (basemap tiles) to the client. It's a shell
+  // env var (from `.envrc`/direnv), not a `.env` file, so Vite won't pick it
+  // up by prefix — inject it explicitly. Public by design (client-side tile
+  // key); restrict it by domain in the Stadia dashboard.
+  define: {
+    'import.meta.env.VITE_STADIA_TOKEN': JSON.stringify(process.env.STADIA_TOKEN ?? ''),
+  },
+
   plugins: [
     react(),
     vanillaExtractPlugin(),

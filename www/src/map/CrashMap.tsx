@@ -151,14 +151,25 @@ const MAX_PITCH = 85
 
 const STADIA_ATTRIBUTION = '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 
+/** Stadia auth. `api_key` is a *non-browser* credential — it's not domain-
+ *  restrictable, so anyone can lift it from the bundle and reuse it. We
+ *  therefore only ship it in **dev builds** (where it's needed to reach Stadia
+ *  from `m3`; `localhost` "just works" keyless). **Prod relies on browser-
+ *  enforced domain auth** — register the prod hosts in the Stadia dashboard
+ *  (`*.hudcostreets.org` ✓; add `*.hccs.dev` for `crashes.hccs.dev`). */
+const STADIA_TOKEN = import.meta.env.DEV
+    ? ((import.meta.env.VITE_STADIA_TOKEN as string | undefined) || "")
+    : ""
+
 function rasterStyle(theme: "light" | "dark"): any {
     const slug = theme === "dark" ? "alidade_smooth_dark" : "alidade_smooth"
+    const key = STADIA_TOKEN ? `?api_key=${STADIA_TOKEN}` : ""
     return {
         version: 8,
         sources: {
             stadia: {
                 type: "raster",
-                tiles: [`https://tiles.stadiamaps.com/tiles/${slug}/{z}/{x}/{y}@2x.png`],
+                tiles: [`https://tiles.stadiamaps.com/tiles/${slug}/{z}/{x}/{y}@2x.png${key}`],
                 tileSize: 256,
                 attribution: STADIA_ATTRIBUTION,
             },
