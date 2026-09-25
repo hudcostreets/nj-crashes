@@ -1,0 +1,5 @@
+# The Dockerfile clones the repo at `REF` and only COPYs `entrypoint.sh`; keep
+# everything else (notably `infra/.venv`, ~1 GB) out of the build context.
+*
+!Dockerfile
+!entrypoint.sh

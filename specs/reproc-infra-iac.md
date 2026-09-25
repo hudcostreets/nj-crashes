@@ -32,11 +32,11 @@ derivation, so `submit(prefix='nj-crashes')` finds them):
 |---|---|
 | Execution role | `nj-crashes-batch-execution` |
 | Task role (new) | `nj-crashes-batch-task` |
-| Log group | `/nj-crashes/batch` |
+| Log groups | `/<jobdef>/batch` (`/nj-crashes/batch`, `/nj-crashes-reproc/batch`) |
 | Compute env (Fargate Spot) | `nj-crashes-spot` |
 | Job queue (spot) | `nj-crashes` |
-| Job definition | `nj-crashes` |
-| ECR repo (pre-exists) | `nj-crashes-reproc` |
+| Job definitions | `nj-crashes` (x86 audit), `nj-crashes-reproc` (arm64 + GH token) |
+| ECR repo (imported, `protect`ed) | `nj-crashes-reproc` |
 
 ### Roles (the security win)
 
@@ -49,21 +49,35 @@ derivation, so `submit(prefix='nj-crashes')` finds them):
   Scoped S3 access to the `nj-crashes` bucket (read `.dvc` remote for `dvx pull`,
   write `.audit-scratch/` for `--s3` side-effects). **No static keys anywhere.**
 
-### Job definition (image per run)
+### Job definitions + images (all in committed config)
 
-`container_properties` carries `image` from Pulumi **stack config**
-(`pulumi up -c image=<ecr-uri>:<sha>`), `runtimePlatform.cpuArchitecture` from
-config (`ARM64` default; `X86_64` for the audit), the vcpu/mem
-`resourceRequirements`, `executionRoleArn` + **`jobRoleArn`** (task role),
-`awslogs` → `/nj-crashes/batch`, and **no `AWS_*` env**. Reprocs are occasional,
-so a `pulumi up` per run to set the image tag is acceptable (and leaves the
-image in state, reviewable).
+Stack config `jobdefs` declares one Batch job definition per entry (name ==
+the `prefix` that `batch/submit -d` passes to `dvx.batch.submit`, which reads
+logs from `/<prefix>/batch`). Each entry has an `arch` and either:
+
+- `ref`: a git SHA on GitHub. Pulumi (`pulumi-docker-build`) builds
+  `batch/Dockerfile` with `REF=<ref>` for that arch, pushes
+  `nj-crashes-reproc:<ref[:11]>-<arch>` to ECR, and pins the job def to the
+  pushed digest; or
+- `image`: a prebuilt ECR URI (the x86 audit image, from the manual-build era).
+
+`gh_token: true` injects the GH push-back token (`gh_token_secret_arn`, whose
+read grant the execution role gets). Every job def also carries the vcpu/mem
+`resourceRequirements`, `executionRoleArn` + **`jobRoleArn`** (task role), and
+**no `AWS_*` env**.
+
+`Pulumi.dev.yaml` is the live state: no `pulumi up -c` overrides. Running a
+reproc at a new commit = push it to GitHub, bump that jobdef's `ref`, commit,
+`pulumi up` (with `AWS_PROFILE=r` and an empty `PULUMI_CONFIG_PASSPHRASE`).
+Audit and reproc job defs coexist, so switching between them needs no infra
+change. `batch/.dockerignore` keeps the build context to `Dockerfile` +
+`entrypoint.sh`.
 
 ## Submit path (replaces `tmp/*submit*.py` bootstrap calls)
 
 Promote to `batch/`: a submit wrapper that skips `bootstrap` and calls
-`dvx.batch.submit(prefix='nj-crashes', queue='nj-crashes', command=[...],
-watch=True)`. Image/arch are already baked into the Pulumi job def, so submit
+`dvx.batch.submit(prefix=<jobdef>, queue='nj-crashes', command=[...],
+watch=True)`. Image/arch are already baked into the Pulumi job defs, so submit
 carries only the command + per-job env overrides (e.g. `NJC_S3`,
 `RESULTS_BRANCH`). Reproc adds the GH-token secret via `submit(secrets=…)`
 against the execution-role grant Pulumi set up.
@@ -76,9 +90,9 @@ Self-contained Pulumi project under `batch/infra/` (its own venv to keep
 ```
 batch/infra/
   Pulumi.yaml          # name: nj-crashes-batch, runtime python, backend s3://nj-crashes/pulumi/batch
-  Pulumi.dev.yaml      # stack config (image, arch, vcpu/mem, gh-token secret ARN)
+  Pulumi.dev.yaml      # stack config (jobdefs: arch + ref/image; vcpu/mem; gh-token secret ARN)
   __main__.py          # the program
-  requirements.txt     # pulumi, pulumi-aws
+  requirements.txt     # pulumi, pulumi-aws, pulumi-docker-build
 ```
 
 Networking: default-VPC subnets + default SG (matches `dvx.batch` today; a
