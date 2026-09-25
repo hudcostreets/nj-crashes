@@ -1,11 +1,21 @@
 config:
   aws:region: us-east-1
-  # Full ECR image URI:tag for the job definition. Set per run:
-  #   pulumi up -c nj-crashes-batch:image=006196295121.dkr.ecr.us-east-1.amazonaws.com/nj-crashes-reproc:<sha>-pb
-  nj-crashes-batch:image: 006196295121.dkr.ecr.us-east-1.amazonaws.com/nj-crashes-reproc:a16025228b2-amd64
-  nj-crashes-batch:arch: X86_64
   nj-crashes-batch:vcpu: "16"
   nj-crashes-batch:memory_mib: "65536"
-  # Optional: Secrets Manager ARN of the GH RW token (reproc push-back only).
-  # nj-crashes-batch:gh_token_secret_arn: arn:aws:secretsmanager:us-east-1:006196295121:secret:nj-crashes/fargate-github-rw-token-jVJlSc
+  # Secrets Manager ARN of the GH RW token (reproc push-back); the execution role
+  # gets read access to it, and `gh_token: true` jobdefs inject it.
+  nj-crashes-batch:gh_token_secret_arn: arn:aws:secretsmanager:us-east-1:006196295121:secret:nj-crashes/fargate-github-rw-token-jVJlSc
+  # One Batch job definition per entry (`batch/submit -d <name>`). This file is
+  # the live state: to run a reproc at a new commit, push it to GitHub, bump
+  # `ref` here, commit, and `pulumi up` (which builds + pushes the image).
+  nj-crashes-batch:jobdefs:
+    # Reproducibility audit (x86 vs arm64 arch-invariance); prebuilt image.
+    nj-crashes:
+      arch: X86_64
+      image: 006196295121.dkr.ecr.us-east-1.amazonaws.com/nj-crashes-reproc:a16025228b2-amd64
+    # DAG reproc / targeted rebuilds, with push-back to `reproc-results/*`.
+    nj-crashes-reproc:
+      arch: ARM64
+      ref: 3e71f9b705b0802b3646f6e8bb35af7d6ab99267
+      gh_token: true
 encryptionsalt: v1:MI0r5kBWrcc=:v1:gjrZ9mishg2L6Fkp:ZAD+anfJIvStgQ+e8L+6PvUQCBuqeA==
