@@ -56,7 +56,11 @@ SCHEMA_VERSION = 5
 SLD_COLS = ('sld_name', 'cross_sld_name', 'mun', 'county')
 
 OUT_DIR_DEFAULT = Path(ROOT_DIR) / 'data' / 'cells'
-CELLS_DB_COUNT_COLS = ('n_fatal', 'n_inj_ped', 'n_inj_other', 'n_pdo', 'n_vehs')
+# Deaths columns (`n_killed`, `n_killed_ped`) appended for Tier-1 viewport
+# stats (see specs/map-viewport-stats-and-rendering.md). Appended (not
+# interleaved) so existing columns keep their positions; the DDL, insert list,
+# and agg-col list below all derive from this tuple.
+CELLS_DB_COUNT_COLS = ('n_fatal', 'n_inj_ped', 'n_inj_other', 'n_pdo', 'n_vehs', 'n_killed', 'n_killed_ped')
 
 # S2 steps 4x area / 2x linear per level (vs H3's 7x / 2.65x), so the same
 # zoom span spans ~1.4x more levels. The raw index caches each crash's cell
@@ -569,6 +573,8 @@ def _cells_db_s2(base_level: int | None, force: bool, levels: str | None, out_di
               coalesce(sum(greatest(coalesce(ti, 0) - coalesce(pi, 0), 0)), 0) AS n_inj_other,
               count(*) FILTER (WHERE severity = 'p') AS n_pdo,
               coalesce(sum(tv), 0) AS n_vehs,
+              coalesce(sum(tk), 0) AS n_killed,
+              coalesce(sum(pk), 0) AS n_killed_ped,
               nullif(array_to_string(list_sort(list_distinct(list(year) FILTER (WHERE severity = 'f'))), ','), '') AS fatal_years
             FROM read_parquet('{raw_glob}')
             GROUP BY 1
