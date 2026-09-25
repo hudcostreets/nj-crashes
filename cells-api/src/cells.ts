@@ -27,7 +27,7 @@
  *        data_version: string,
  *        source: "pyramid" | "d1",
  *        labels: "full" | "nums" | "only",
- *        cells: [{ cellid, n_fatal, n_inj_ped, n_inj_other, n_pdo, n_vehs }]
+ *        cells: [{ cellid, n_fatal, n_inj_ped, n_inj_other, n_pdo, n_vehs, n_killed, n_killed_ped }]
  *      }
  *
  *  The cell key rode a vestigial `h3` wire field until h3-removal Phase
@@ -70,6 +70,8 @@ type PyramidRowS2 = {
     n_inj_other?: number
     n_pdo?: number
     n_vehs?: number
+    n_killed?: number
+    n_killed_ped?: number
     sld_name?: string | null
     cross_sld_name?: string | null
     mun?: string | null
@@ -84,6 +86,13 @@ export type CellOut = {
     n_inj_other: number
     n_pdo: number
     n_vehs: number
+    /** People killed / pedestrians killed in this cell (broad `tk`/`pk` sums —
+     *  the AASHTO death totals, not the strict `severity='f'` crash count, so
+     *  `n_killed` can differ slightly from `n_fatal`). Severity-blind like
+     *  `n_vehs`. Feeds the Tier-1 viewport "deaths" stat (see
+     *  specs/map-viewport-stats-and-rendering.md). */
+    n_killed: number
+    n_killed_ped: number
     /** Years (ascending) in which this cell had ≥1 fatal crash. Omitted
      *  when n_fatal === 0. Used by the hex tooltip to show "Fatal: 2018,
      *  2020, 2022" instead of just a bare count. */
@@ -436,7 +445,7 @@ async function queryPyramidS2(
                 if (out.has(token)) continue
                 if (!row.sld_name && !row.cross_sld_name && !row.mun && !row.county) continue
                 if (!cellInPolygonS2(token, clipPoly)) continue
-                const c: CellOut = { cellid: token, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
+                const c: CellOut = { cellid: token, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0, n_killed: 0, n_killed_ped: 0 }
                 if (row.sld_name) c.sld_name = row.sld_name
                 if (row.cross_sld_name) c.cross_sld_name = row.cross_sld_name
                 if (row.mun) c.mun = row.mun
@@ -448,8 +457,8 @@ async function queryPyramidS2(
     }
 
     const cols = labels === "nums"
-        ? ["cellid", "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs"]
-        : ["cellid", "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "sld_name", "cross_sld_name", "mun", "county"]
+        ? ["cellid", "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "n_killed", "n_killed_ped"]
+        : ["cellid", "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "n_killed", "n_killed_ped", "sld_name", "cross_sld_name", "mun", "county"]
 
     const yearFilter = { year: { $gte: yearRange[0], $lte: yearRange[1] } }
     const filter = cellidRangeOr ? { $and: [yearFilter, cellidRangeOr] } : yearFilter
@@ -472,7 +481,7 @@ async function queryPyramidS2(
             if (!cellInPolygonS2(token, clipPoly)) continue
             let c = out.get(token)
             if (!c) {
-                c = { cellid: token, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0 }
+                c = { cellid: token, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0, n_killed: 0, n_killed_ped: 0 }
                 if (row.sld_name) c.sld_name = row.sld_name
                 if (row.cross_sld_name) c.cross_sld_name = row.cross_sld_name
                 if (row.mun) c.mun = row.mun
@@ -488,6 +497,10 @@ async function queryPyramidS2(
             if (wantI) { c.n_inj_ped += row.n_inj_ped ?? 0; c.n_inj_other += row.n_inj_other ?? 0 }
             if (wantP) c.n_pdo += row.n_pdo ?? 0
             c.n_vehs += row.n_vehs ?? 0
+            // Deaths are severity-blind (a cell total, like n_vehs), so the two
+            // query paths agree cell-for-cell regardless of the severity filter.
+            c.n_killed += row.n_killed ?? 0
+            c.n_killed_ped += row.n_killed_ped ?? 0
         }
     }
     const cells: CellOut[] = []
@@ -527,12 +540,13 @@ async function queryCellsS2D1(
     const where = tokenRanges.length
         ? tokenRanges.map(r => `(cellid BETWEEN '${r.lo}' AND '${r.hi}')`).join(" OR ")
         : "1=1"
-    const cols = ["cellid", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "fatal_years"]
+    const cols = ["cellid", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "n_killed", "n_killed_ped", "fatal_years"]
     if (labels === "full") cols.push(...LABEL_KEYS)
     const sql = `SELECT ${cols.join(", ")} FROM cells_s2_l${level} WHERE ${where}`
     const { results } = await db.prepare(sql).all<{
         cellid: string
         n_fatal: number; n_inj_ped: number; n_inj_other: number; n_pdo: number; n_vehs: number
+        n_killed: number; n_killed_ped: number
         fatal_years: string | null
         sld_name?: string | null; cross_sld_name?: string | null; mun?: string | null; county?: string | null
     }>()
@@ -551,6 +565,8 @@ async function queryCellsS2D1(
             cellid: row.cellid,
             n_fatal, n_inj_ped, n_inj_other, n_pdo,
             n_vehs: row.n_vehs,  // severity-blind, same as the parquet path
+            n_killed: row.n_killed ?? 0,
+            n_killed_ped: row.n_killed_ped ?? 0,
         }
         if (wantF && row.fatal_years) {
             try {
@@ -582,6 +598,7 @@ export function coarsenCellsS2(cells: CellOut[], toLevel: number): CellOut[] {
             p = {
                 cellid: parentToken,
                 n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0,
+                n_killed: 0, n_killed_ped: 0,
             }
             // Labels drop on coarsen — parent cell doesn't have a single
             // road label. Client tooltip degrades gracefully.
@@ -592,6 +609,8 @@ export function coarsenCellsS2(cells: CellOut[], toLevel: number): CellOut[] {
         p.n_inj_other += c.n_inj_other
         p.n_pdo += c.n_pdo
         p.n_vehs += c.n_vehs
+        p.n_killed += c.n_killed
+        p.n_killed_ped += c.n_killed_ped
         if (c.fatal_years && c.fatal_years.length) {
             (p.fatal_years ??= []).push(...c.fatal_years)
         }
