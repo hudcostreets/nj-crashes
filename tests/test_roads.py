@@ -4,7 +4,7 @@ import pyarrow as pa
 import duckdb
 
 from njdot.cli.roads import (
-    assign_crashes, crashes_by_sri, entity_table, name_key, point_aliases, road_entities, road_runs, sri_geom, sri_hit, sris,
+    alias_candidates, assign_crashes, crashes_by_sri, entity_table, name_key, point_aliases, road_entities, road_runs, sri_geom, sri_hit, sris,
 )
 
 
@@ -101,6 +101,17 @@ def test_name_key():
     ]
 
 
+def test_alias_candidates():
+    road = pd.Series([
+        'US 1 (Tonnelle Avenue)', 'US 1', 'RT 1`', 'I-78 EB', 'DUNCAN AVE / W SIDE AVE', 'W SIDE AVE **',
+        None, 'Kennedy Blvd & Sip Ave', 'NJ 440 (Route 440 Connector)',
+    ])
+    out = alias_candidates(road)
+    assert list(zip(out.index, out)) == [
+        (0, 'TONNELLE AVE'), (5, 'W SIDE AVE'), (8, 'RT 440 CONNECTOR'),
+    ]
+
+
 def test_road_runs_split_on_name():
     runs, point_run = road_runs(wsa_geom())
     assert runs[['sri', 'name', 'mp_lo', 'mp_hi', 'mp_end']].values.tolist() == [
@@ -157,12 +168,17 @@ def test_entity_table():
         crash(1, 'WSA1', 0.1, '2020-01-01', severity='f', tk=1) | {'road': 'West Side Avenue'},
         crash(2, 'WSA2', 0.0, '2020-01-02', severity='i') | {'road': 'JFK BLVD'},
         crash(3, 'WSA1', 0.3, '2020-01-03') | {'road': 'Duncan Ave'},
+        crash(4, 'WSA2', 0.0, '2020-01-04') | {'road': 'JFK Blvd.'},
+        crash(5, 'WSA2', 0.0, '2020-01-05') | {'road': 'US 1 (JFK Boulevard)'},
+        crash(6, 'WSA2', 0.0, '2020-01-06') | {'road': 'WESTSIDE AVE'},  # own name, spelled differently
+        crash(7, 'WSA2', 0.0, '2020-01-07') | {'road': 'SIP AVE / W SIDE AVE'},  # intersection → dropped
+        crash(8, 'WSA2', 0.0, '2020-01-08') | {'road': 'SIP AVE'},  # 1 of 7 < ALIAS_MIN_N
     ]), runs, duckdb.connect())
     out = entity_table(runs, geom, by_entity, duckdb.connect())
     assert out[['entity', 'name', 'route', 'sris', 'n_crashes', 'n_fatal', 'n_injury', 'n_killed', 'aliases']].astype(object).where(out.notna(), None).values.tolist() == [
         # `route` only where the SLD name differs after normalizing ("WEST SIDE AVE" == "W Side Ave").
         [0, 'W Side Ave', None, 'FAR', 0, 0, 0, 0, None],
-        [1, 'W Side Ave', None, 'WSA1,WSA2', 2, 1, 1, 1, 'JFK BLVD'],
+        [1, 'W Side Ave', None, 'WSA1,WSA2', 7, 1, 1, 1, 'JFK BLVD'],
         [2, 'Duncan Ave', 'WEST SIDE AVE', 'WSA1', 1, 0, 0, 0, None],
     ]
 
