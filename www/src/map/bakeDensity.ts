@@ -148,6 +148,27 @@ export function splatDensity(cells: StackedCell[], opts: SplatOpts): DensityGrid
     return { accum, width, height, bounds: [west, south, east, north], localMax }
 }
 
+/** The `q`-quantile of the non-zero densities across `grids` — a robust shared
+ *  `vmax`. Normalizing to the plain max lets one hotspot set the scale, so a
+ *  tighter kernel (which concentrates that hotspot) dims everything else; a
+ *  high quantile keeps contrast stable across σ, and values above it saturate.
+ *  Strided-samples to ≤ `maxSamples` values, so it stays cheap on large tiles. */
+export function densityQuantile(grids: Array<DensityGrid | null>, q: number, maxSamples = 200_000): number {
+    let n = 0
+    for (const g of grids) if (g) n += g.accum.length
+    if (n === 0) return 0
+    const stride = max(1, ceil(n / maxSamples))
+    const vals: number[] = []
+    for (const g of grids) {
+        if (!g) continue
+        const { accum } = g
+        for (let i = 0; i < accum.length; i += stride) if (accum[i] > 0) vals.push(accum[i])
+    }
+    if (vals.length === 0) return 0
+    vals.sort((a, b) => a - b)
+    return vals[min(vals.length - 1, round(q * (vals.length - 1)))]
+}
+
 /** Colormap a density grid into an RGBA image. `vmax` defaults to the grid's
  *  own `localMax`; pass a shared value for cross-tile consistency. */
 export function colorizeDensity(grid: DensityGrid, opts: ColorizeOpts): ImageData {
@@ -159,7 +180,7 @@ export function colorizeDensity(grid: DensityGrid, opts: ColorizeOpts): ImageDat
         const gamma = opts.gamma
         const invKnee = 1 / opts.alphaKnee
         for (let i = 0; i < accum.length; i++) {
-            const t = pow(accum[i] * invVmax, gamma)
+            const t = min(1, pow(accum[i] * invVmax, gamma))
             if (t <= 0) continue
             const [r, g, b] = sampleColormap(opts.colormap, t)
             const a = min(255, round(255 * min(1, t * invKnee)))

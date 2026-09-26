@@ -233,8 +233,8 @@ const HEAT_A_MAX_DIM = 1024
  *  px target samples a finer S2 level (continuous filaments, less bead-on-a-
  *  string), and a smaller σ than A's 0.9 keeps the kernel from over-smoothing
  *  that finer detail back into blur. */
-export const HEAT_C_PX_TARGET = 3
-export const HEAT_C_SIGMA_FRAC = 0.75
+export const HEAT_C_PX_TARGET = 2
+export const HEAT_C_SIGMA_FRAC = 0.5
 /** <1 so the basemap + county borders read through the opaque dense core. */
 export const HEAT_C_OPACITY = 0.82
 
