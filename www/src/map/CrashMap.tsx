@@ -96,7 +96,12 @@ export type Props = {
     /** Click handler for outline polygons (geo drill-down). */
     onOutlineClick?: (feature: any) => void
     /** Fired for any click on the map canvas (used for drawer close-on-click). */
-    onMapClick?: () => void
+    /** Map click, with the clicked `[lon, lat]` (unless a layer handled it). */
+    onMapClick?: (lngLat?: [number, number]) => void
+    /** Pointer hover `[lon, lat]` (null when the pointer leaves the map). */
+    onMapHover?: (lngLat: [number, number] | null) => void
+    /** Layers drawn on top of the map's own (e.g. road highlight/selection). */
+    extraLayers?: any[]
     /** Render the internal PitchSlider / CellControls corner widgets.
      *  Caller can disable (when it supplies its own consolidated panel). */
     showInternalControls?: boolean
@@ -418,6 +423,8 @@ export function CrashMap({
     onHeightScaleChange,
     onOutlineClick,
     onMapClick,
+    onMapHover,
+    extraLayers,
     showInternalControls = true,
     mode = "scatter",
     heatRender = "legacy",
@@ -988,6 +995,7 @@ export function CrashMap({
     }, [isPitchingRef])
 
     const style = useMemo(() => rasterStyle(theme), [theme])
+    const allLayers = useMemo(() => (extraLayers?.length ? [...layers, ...extraLayers] : layers), [layers, extraLayers])
 
     return (
         <div ref={containerRef} style={{ position: "relative", height, width: "100%" }}>
@@ -995,8 +1003,9 @@ export function CrashMap({
                 viewState={viewState}
                 onViewStateChange={onViewStateChange}
                 controller={{ touchRotate: true, dragRotate: true, maxPitch: MAX_PITCH, maxZoom: 20, minZoom: 0 } as any}
-                layers={layers}
-                onClick={onMapClick ? () => { onMapClick() } : undefined}
+                layers={allLayers}
+                onClick={onMapClick ? (info: any) => { onMapClick(info.coordinate as [number, number] | undefined) } : undefined}
+                onHover={onMapHover ? (info: any) => { onMapHover((info.coordinate as [number, number] | undefined) ?? null) } : undefined}
                 style={{ position: "absolute", inset: "0" }}
             >
                 <MapGl

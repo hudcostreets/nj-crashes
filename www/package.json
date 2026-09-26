@@ -40,6 +40,7 @@
     "@rdub/duckdb": "0.0.2",
     "@rdub/file-tree": "https://github.com/runsascoded/file-tree#0ca64f4a22f3aff962f8d64dbd2438d30277dc22",
     "@react-leaflet/core": "^2.1.0",
+    "@tanstack/react-query": "^5.104.0",
     "@vanilla-extract/css": "^1.14.0",
     "fp-ts": "^2.16.2",
     "hyparquet": "https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz",

@@ -36,6 +36,6 @@ cp worker/_headers dist/_headers
 find dist -name '*.db' -o -name '*.db.bak' | xargs rm -f
 # Map shards are served from R2 (VITE_MAP_BASE_URL=crashes-data.hccs.dev); never
 # ship them with the FE.
-rm -rf dist/njdot/map
+rm -rf dist/njdot/map dist/njdot/roads  # served from R2 (`njdot map sync` / `njdot roads sync`)
 find dist -size +25M -delete
 npx wrangler deploy ${env_args[@]+"${env_args[@]}"}
