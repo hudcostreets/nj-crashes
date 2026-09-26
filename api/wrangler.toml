@@ -37,3 +37,43 @@ port = 51894
 
 [vars]
 CORS_ORIGIN = "*"
+
+# Dev tier: `wrangler deploy --env dev` → `crashes-api-dev`, served at
+# `crashes-api-dev.hccs.dev` (domain via `infra/`) for `dev.crashes.hccs.dev`.
+# New worker code against the *prod* D1s (read-only API). Wrangler doesn't
+# inherit bindings/vars into envs, hence the repetition.
+[env.dev]
+name = "crashes-api-dev"
+
+[[env.dev.d1_databases]]
+binding = "CRASHES_DB"
+database_name = "crashes"
+database_id = "2960b2cd-4baa-42ab-aaeb-bf3867ea5433"
+
+[[env.dev.d1_databases]]
+binding = "VEHICLES_DB"
+database_name = "vehicles"
+database_id = "21091342-2c9e-4b69-bf11-2b4ec098e4c6"
+
+[[env.dev.d1_databases]]
+binding = "OCCUPANTS_DB"
+database_name = "occupants"
+database_id = "8fc968db-4a84-4bc2-8130-3359003a0ccc"
+
+[[env.dev.d1_databases]]
+binding = "PEDESTRIANS_DB"
+database_name = "pedestrians"
+database_id = "f06cc3cc-e40e-4a6b-b1dd-64157a9fb6b6"
+
+[[env.dev.d1_databases]]
+binding = "CMYMC_DB"
+database_name = "cmymc"
+database_id = "5afec3ab-91b7-4d1f-a34e-6e81f00c2e6b"
+
+[[env.dev.d1_databases]]
+binding = "NJSP_CRASHES_DB"
+database_name = "njsp-crashes"
+database_id = "d29fda93-ed68-4229-a2b9-da55460e80a1"
+
+[env.dev.vars]
+CORS_ORIGIN = "*"

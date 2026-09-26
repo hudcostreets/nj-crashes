@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "deploy:dev": "wrangler deploy --env dev",
     "d1:create": "bash scripts/d1-create.sh",
     "d1:import": "bash scripts/d1-import.sh"
   },

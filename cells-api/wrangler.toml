@@ -39,3 +39,30 @@ CORS_ORIGIN = "*"
 # reads under it. Other crashes-project data (parquets/, csvs/, geo/...)
 # can share the bucket at sibling prefixes.
 CELLS_PREFIX = "cells"
+
+# Dev tier: `wrangler deploy --env dev` → `crashes-cells-api-dev`, served at
+# `crashes-cells-dev.hccs.dev` (domain via `infra/`) for `dev.crashes.hccs.dev`.
+# New worker code against the *prod* data (it only reads R2 / `cells-s2`), so
+# worker changes can be checked before prod. No `TUNE_TOKEN` secret here, so
+# tune votes are read-only. Wrangler doesn't inherit bindings/vars into envs,
+# hence the repetition.
+[env.dev]
+name = "crashes-cells-api-dev"
+
+[[env.dev.r2_buckets]]
+binding = "CELLS_BUCKET"
+bucket_name = "crashes"
+
+[[env.dev.d1_databases]]
+binding = "CELLS_S2_DB"
+database_name = "cells-s2"
+database_id = "5f3f02b6-4ff6-439d-be66-a9d1436c649b"
+
+[[env.dev.d1_databases]]
+binding = "TUNE_DB"
+database_name = "tune"
+database_id = "b9eea284-d436-4045-bb3b-c30ebf53f9b7"
+
+[env.dev.vars]
+CORS_ORIGIN = "*"
+CELLS_PREFIX = "cells"
