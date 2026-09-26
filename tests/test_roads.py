@@ -1,7 +1,11 @@
 import pandas as pd
 import pyarrow as pa
 
-from njdot.cli.roads import crashes_by_sri, sri_geom, sri_hit, sris
+import duckdb
+
+from njdot.cli.roads import (
+    assign_crashes, crashes_by_sri, entity_table, name_key, point_aliases, road_entities, road_runs, sri_geom, sri_hit, sris,
+)
 
 
 def crash(i, sri, mp, dt, severity='p', tk=0):
@@ -40,19 +44,127 @@ def geom_rows():
         'MP': [0.1, 0.2, 0.0, 0.0, 0.1],
         'SLD_NAME': ['B ST', 'A AVE', 'A AVE', 'B ST', 'A AVENUE'],
         'Second_Name': [''] * 5,
-        'ROUTE_SUBT': [1] * 5,
+        'ROUTE_SUBT': [7] * 5,
         'lon': [-74.0, -74.2, -74.3, -74.01, -74.25],
         'lat': [40.0, 40.2, 40.3, 40.01, 40.25],
     })
 
 
 def test_sri_geom_renames_sorts_and_drops_ungeocoded():
-    rows = pd.concat([geom_rows(), pd.DataFrame([{
-        'SRI': 'A', 'MP': 0.3, 'SLD_NAME': 'A AVE', 'Second_Name': '', 'ROUTE_SUBT': 1, 'lon': None, 'lat': None,
-    }])], ignore_index=True)
+    rows = geom_rows()
+    rows.loc[len(rows)] = {'SRI': 'A', 'MP': 0.3, 'SLD_NAME': 'A AVE', 'Second_Name': '', 'ROUTE_SUBT': 7, 'lon': float('nan'), 'lat': float('nan')}
     out = sri_geom(rows)
-    assert out.columns.tolist() == ['sri', 'mp', 'sld_name', 'lon', 'lat']
-    assert out[['sri', 'mp']].values.tolist() == [['A', 0.0], ['A', 0.1], ['A', 0.2], ['B', 0.0], ['B', 0.1]]
+    assert out.columns.tolist() == ['sri', 'mp', 'sld_name', 'name', 'subt', 'lon', 'lat']
+    assert out[['sri', 'mp', 'name']].values.tolist() == [
+        # A's MP 0.1 "A AVENUE" sits between two "A AVE" points → absorbed as a label blip.
+        ['A', 0.0, 'A AVE'], ['A', 0.1, 'A AVE'], ['A', 0.2, 'A AVE'], ['B', 0.0, 'B ST'], ['B', 0.1, 'B ST'],
+    ]
+
+
+# West Side Ave, Jersey City in miniature: SRI `WSA1` is "W Side Ave" for MP 0–0.2 then turns onto
+# "Duncan Ave"; SRI `WSA2` continues "W Side Ave" north from WSA1's MP 0.2 point; `FAR` is another
+# "W Side Ave" ~11 km away. ~163 m per tenth (0.00147° lat).
+D = 0.00147
+
+
+def wsa_geom():
+    pts = [
+        ('WSA1', 0.0, 'W Side Ave', -74.07, 40.70),
+        ('WSA1', 0.1, 'W Side Ave', -74.07, 40.70 + D),
+        ('WSA1', 0.2, 'W Side Ave', -74.07, 40.70 + 2 * D),
+        ('WSA1', 0.3, 'Duncan Ave', -74.07 + 0.0019, 40.70 + 2 * D),
+        ('WSA1', 0.4, 'Duncan Ave', -74.07 + 0.0038, 40.70 + 2 * D),
+        ('WSA2', 0.0, 'W Side Ave', -74.07, 40.70 + 2 * D + 0.0002),  # ~22 m from WSA1's MP 0.2
+        ('WSA2', 0.1, 'W Side Ave', -74.07, 40.70 + 3 * D),
+        ('FAR', 0.0, 'W Side Ave', -74.07, 40.80),
+        ('FAR', 0.1, 'W Side Ave', -74.07, 40.80 + D),
+    ]
+    return sri_geom(pd.DataFrame([
+        {'SRI': s, 'MP': mp, 'SLD_NAME': 'WEST SIDE AVE', 'Second_Name': n, 'ROUTE_SUBT': 6, 'lon': lon, 'lat': lat}
+        for s, mp, n, lon, lat in pts
+    ]))
+
+
+def test_sri_geom_absorbs_single_point_name_blips():
+    rows = pd.DataFrame([
+        {'SRI': 'X', 'MP': mp, 'SLD_NAME': 'X ST', 'Second_Name': n, 'ROUTE_SUBT': 7, 'lon': -74.0, 'lat': 40.0 + mp / 100}
+        for mp, n in [(0.0, 'W Side Ave'), (0.1, 'Cator Ave'), (0.2, 'Cator Ave'), (0.3, 'Oops St'), (0.4, 'Cator Ave')]
+    ] + [{'SRI': 'Y', 'MP': 0.0, 'SLD_NAME': 'Y ST', 'Second_Name': 'Solo St', 'ROUTE_SUBT': 7, 'lon': -74.1, 'lat': 40.1}])
+    # X's MP 0.0 (named for the road it starts on) and MP 0.3 blips take a neighbor's name; a
+    # single-point SRI keeps its own.
+    assert sri_geom(rows)['name'].tolist() == ['Cator Ave'] * 5 + ['Solo St']
+
+
+def test_name_key():
+    assert name_key(pd.Series(['W Side Ave', 'Westside Ave', 'WEST SIDE AVENUE', 'N Arlington Ave'])).tolist() == [
+        'WESTSIDEAVE', 'WESTSIDEAVE', 'WESTSIDEAVE', 'NORTHARLINGTONAVE',
+    ]
+
+
+def test_road_runs_split_on_name():
+    runs, point_run = road_runs(wsa_geom())
+    assert runs[['sri', 'name', 'mp_lo', 'mp_hi', 'mp_end']].values.tolist() == [
+        ['FAR', 'W Side Ave', 0.0, 0.1, 0.2],
+        ['WSA1', 'W Side Ave', 0.0, 0.2, 0.3],
+        ['WSA1', 'Duncan Ave', 0.3, 0.4, 0.5],
+        ['WSA2', 'W Side Ave', 0.0, 0.1, 0.2],
+    ]
+    assert point_run.tolist() == [0, 0, 1, 1, 1, 2, 2, 3, 3]
+
+
+def test_road_entities_join_touching_same_name_across_sris():
+    runs, _ = road_runs(wsa_geom())
+    # FAR (sri 'FAR' sorts first) → 0; WSA1's W Side Ave + WSA2 → 1; Duncan Ave → 2.
+    assert road_entities(runs).tolist() == [0, 1, 2, 1]
+
+
+def wsa_runs():
+    geom = wsa_geom()
+    runs, point_run = road_runs(geom)
+    runs['entity'] = road_entities(runs)
+    return geom, runs, point_run
+
+
+def test_assign_crashes_uses_run_intervals():
+    _, runs, _ = wsa_runs()
+    by_sri = pd.DataFrame([
+        crash(1, 'WSA1', 0.25, '2020-01-01'),  # [0.0, 0.3) → W Side Ave
+        crash(2, 'WSA1', 0.30, '2020-01-02'),  # [0.3, 0.5) → Duncan Ave
+        crash(3, 'WSA2', 0.05, '2020-01-03'),  # W Side Ave (via WSA2)
+        crash(4, 'WSA1', 9.00, '2020-01-04'),  # past every run → on no entity
+    ])
+    out = assign_crashes(by_sri, runs, duckdb.connect())
+    assert out[['entity', 'run', 'id']].values.tolist() == [[1, 1, 1], [1, 3, 3], [2, 2, 2]]
+
+
+def test_point_aliases_per_run_and_bin():
+    geom, runs, point_run = wsa_runs()
+    by_entity = assign_crashes(pd.DataFrame(
+        [crash(i, 'WSA1', 0.1, '2020-01-01') | {'road': 'WEST SIDE AVENUE'} for i in range(3)]  # == name, abbreviated
+        + [crash(10 + i, 'WSA1', 0.1, '2020-01-01') | {'road': 'Route 440 connector'} for i in range(4)]
+        + [crash(20 + i, 'WSA1', 0.35, '2020-01-01') | {'road': 'duncan  ave.'} for i in range(3)]  # == name
+    ), runs, duckdb.connect())
+    out = point_aliases(geom, point_run, by_entity)
+    # W Side Ave run (WSA1 MP 0–0.2): "RT 440 CONNECTOR" (4) beats the name itself (3); Duncan Ave's
+    # only report is its own name → none; other SRIs have no reports.
+    assert [None if pd.isna(x) else x for x in out] == [None, None, 'RT 440 CONNECTOR', 'RT 440 CONNECTOR', 'RT 440 CONNECTOR', None, None, None, None]
+
+
+def test_entity_table():
+    geom, runs, point_run = wsa_runs()
+    geom['entity'] = runs['entity'].to_numpy()[point_run]
+    by_entity = assign_crashes(pd.DataFrame([
+        crash(1, 'WSA1', 0.1, '2020-01-01', severity='f', tk=1) | {'road': 'West Side Avenue'},
+        crash(2, 'WSA2', 0.0, '2020-01-02', severity='i') | {'road': 'JFK BLVD'},
+        crash(3, 'WSA1', 0.3, '2020-01-03') | {'road': 'Duncan Ave'},
+    ]), runs, duckdb.connect())
+    out = entity_table(runs, geom, by_entity, duckdb.connect())
+    assert out[['entity', 'name', 'route', 'sris', 'n_crashes', 'n_fatal', 'n_injury', 'n_killed', 'aliases']].astype(object).where(out.notna(), None).values.tolist() == [
+        # `route` only where the SLD name differs after normalizing ("WEST SIDE AVE" == "W Side Ave").
+        [0, 'W Side Ave', None, 'FAR', 0, 0, 0, 0, None],
+        [1, 'W Side Ave', None, 'WSA1,WSA2', 2, 1, 1, 1, 'JFK BLVD'],
+        [2, 'Duncan Ave', 'WEST SIDE AVE', 'WSA1', 1, 0, 0, 0, None],
+    ]
 
 
 def test_sri_hit_orders_by_s2_cell():
