@@ -56,6 +56,8 @@ CRASH_COLS = [
     'sri', 'mp', 'id', 'year', 'dt', 'cc', 'mc', 'case', 'severity',
     'tk', 'ti', 'pk', 'pi', 'tv', 'road', 'cross_street', 'route',
 ]
+ALIAS_MIN_N = 3
+ALIAS_MIN_FRAC = 0.02
 ROW_GROUP = {
     'crashes-by-sri': 25_000,
     'crashes-by-entity': 25_000,
@@ -255,12 +257,30 @@ def assign_crashes(by_sri: pd.DataFrame, runs: pd.DataFrame, con: duckdb.DuckDBP
     return out
 
 
+# A bare route designation ("US 1", "RT 1", "NJ 440", "CR 501", "I-78") isn't a local name.
+ROUTE_RE = r'^(US|RT|NJ|SR|CR|I|ROUTE|INTERSTATE|HWY|STATE HWY|COUNTY RD|CO RD)[ -]?\d+[A-Z]?( (N|S|E|W|NB|SB|EB|WB|RAMP|SPUR|BUS))*$'
+
+
+def alias_candidates(road: pd.Series) -> pd.Series:
+    """Local-name candidates in crash-reported `road` strings, normalized, one row per candidate
+    (index = the source row): the parenthetical part where there is one ("US 1 (Tonnelle Avenue)"
+    → "TONNELLE AVE"), else the string itself; junk characters stripped, bare route designations
+    dropped. Intersection-style values ("DUNCAN AVE / W SIDE AVE", "A ST & B ST") are dropped: either
+    part may be the cross street, so they'd make cross streets look like aliases."""
+    r = road.dropna().astype('string')
+    paren = r.str.extract(r'\(([^)]+)\)', expand=False)
+    r = paren.where(paren.notna(), r)
+    parts = r[~r.str.contains(r'[/&]|\bAND\b', case=False, regex=True)]
+    parts = parts.str.replace(r"[^A-Za-z0-9 '\-]", ' ', regex=True)
+    parts = norm_name(parts)
+    return parts[parts.notna() & (parts.str.len() > 2) & ~parts.str.match(ROUTE_RE).fillna(False)]
+
+
 def top_aliases(crashes: pd.DataFrame, keys: list[str], k: int, min_n: int) -> pd.DataFrame:
-    """Top-`k` normalized crash-reported `road` names per `keys` group (seen ≥ `min_n` times), as
-    `keys + [alias, n]` rows, most common first (ties by name)."""
-    c = crashes[keys + ['road']].dropna(subset=['road'])
-    c = c.assign(alias=norm_name(c['road'])).dropna(subset=['alias'])
-    c = c[c['alias'] != '']
+    """Top-`k` local-name candidates (`alias_candidates`) per `keys` group (seen ≥ `min_n` times),
+    as `keys + [alias, n]` rows, most common first (ties by name)."""
+    cand = alias_candidates(crashes['road'])
+    c = crashes[keys].loc[cand.index].assign(alias=cand.to_numpy())
     n = c.groupby(keys + ['alias']).size().rename('n').reset_index()
     n = n[n['n'] >= min_n].sort_values(keys + ['n', 'alias'], ascending=[True] * len(keys) + [False, True])
     return n.groupby(keys, sort=False).head(k).reset_index(drop=True)
@@ -306,9 +326,12 @@ def entity_table(runs: pd.DataFrame, geom: pd.DataFrame, by_entity: pd.DataFrame
         con.unregister(t)
     name_n = norm_name(out['name'])
     out['route'] = out['sld_name'].astype('string').where(norm_name(out['sld_name']) != name_n)
-    al = top_aliases(by_entity[['entity', 'road']], ['entity'], k=4, min_n=1)
-    al = al.merge(pd.DataFrame({'entity': out['entity'], 'name_n': name_n}), on='entity')
-    al = al[al['alias'] != al['name_n']].groupby('entity', sort=False).head(3)
+    # An alias must account for ≥ `ALIAS_MIN_FRAC` of the entity's crashes (and ≥ `ALIAS_MIN_N`), so
+    # one-off mentions don't show; spelling variants of the entity's own name aren't aliases.
+    al = top_aliases(by_entity[['entity', 'road']], ['entity'], k=4, min_n=ALIAS_MIN_N)
+    al = al.merge(pd.DataFrame({'entity': out['entity'], 'name_n': name_n, 'n_crashes': out['n_crashes']}), on='entity')
+    keep = (name_key(al['alias']) != name_key(al['name_n'])) & (al['n'] >= ALIAS_MIN_FRAC * al['n_crashes'])
+    al = al[keep].groupby('entity', sort=False).head(3)
     aliases = al.groupby('entity')['alias'].agg(' · '.join)
     out['aliases'] = out['entity'].map(aliases).astype('string')
     cols = ['entity', 'name', 'route', 'subt', 'sris', 'lon_min', 'lat_min', 'lon_max', 'lat_max',
