@@ -92,6 +92,10 @@ D's shape:
   become dictionary-encoded (`{"dict": ["Hudson", …], "idx": [0, 0, 3, …]}`),
   which is where their 51 B/cell goes to ~2.
 
+## Heatmap C: a single weight column (2026-09-26)
+
+Heatmap C (`useHeatTiles`) uses only `cellid` + one severity-weighted count per cell, but fetches every count column (`n_fatal`, `n_inj_ped`, `n_inj_other`, `n_pdo`, `n_vehs`, `n_killed`, `n_killed_ped`). One z13.7 tile response was 234 KB on the wire / 3.8 MB decoded, a view is ~10–13 tiles, and each zoom step fetches a new tile×level set; a few minutes of zoom/pan measured **35 MB / 749 requests**. A `fields=` (or `weight=`) param returning `[cellid, w]` pairs in the columnar format would cut both the wire bytes and `JSON.parse` time several-fold for C, independent of the general rollout below.
+
 ## Rollout
 
 Content negotiation, not a flag day — the client and worker deploy

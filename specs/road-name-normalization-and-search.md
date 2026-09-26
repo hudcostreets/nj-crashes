@@ -216,6 +216,18 @@ map can filter without a round-trip.
   crashes dimmed. This is *exactly* the artifact Talya asked for, self-serve.
 - **Map click-through**: reuses roadmap item (g)'s table-below-map plumbing.
 
+### Layer 4b — select a road on the map, study a segment (2026-09-26)
+
+The map-side entry point to the same road entities:
+
+- **Hover** highlights the road under the cursor, at a zoom-dependent extent: statewide/county zooms highlight the whole road entity (all of its SRI polyline in view); street zooms highlight a *segment* around the cursor (e.g. between the nearest cross-streets, or a ±N-tenths MP window on SRI roads). Hit-testing uses the `nj_mp_tenths` polylines (SRI roads) plus `sld_name`-labeled cells for non-SRI roads; the geometry is display-only (see "Why not just geometry?"). Crash membership still comes from the SRI/entity keys.
+- **Click** selects it: the road is drawn as a selection, non-corridor crashes dim, and a side panel shows the road's name, route, and severity-by-year table.
+- **Range**: two draggable handles along the selected polyline, mirrored as start/end inputs (MP on SRI roads; cross-streets otherwise), narrow the study to a segment. The URL carries the selection (`?road=<sri or entity id>&mp=<a>-<b>`), so it's shareable.
+- **Crash table + export**: the segment's crashes in the table below the map (roadmap item (g)'s plumbing), with CSV/parquet download and "open in SQL ↗" (`/sql` pre-filled with the `WHERE sri = … AND mp BETWEEN …` query).
+- **Keyboard**: `use-kbd` actions for "select road under cursor", "clear selection", "export segment".
+
+Phasing: (1) click-to-select whole SRI roads + table/export (no handles), since SRI + `mp` are already on every crash; (2) the MP range handles; (3) non-SRI roads, once Layer 1's `roads.parquet` entities exist.
+
 ## Why not just geometry?
 
 Buffer the road's `nj_mp_tenths` polyline and take crashes within N meters —
