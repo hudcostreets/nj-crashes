@@ -2,9 +2,9 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Atlantic,,29,1,16,4,10,29,16,4,10,1
 ,,Bergen,,25,0,13,0,13,26,14,1,11,0
 ,,Burlington,,37,0,28,8,4,37,27,7,5,1
-,,Camden,,30,2,10,3,17,30,11,3,16,1
+,,Camden,,29,2,10,3,15,30,11,3,16,1
 ,,Cape May,,5,0,5,0,0,6,6,1,0,0
-,,Cumberland,,21,1,10,2,8,18,9,2,6,1
+,,Cumberland,,18,1,9,2,6,18,9,2,6,1
 ,,Essex,,33,0,12,5,20,36,13,4,22,0
 ,,Gloucester,,25,2,15,7,2,25,16,7,2,2
 ,,Hudson,,36,0,11,2,27,29,10,2,18,0
@@ -13,7 +13,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Middlesex,,48,2,31,6,10,48,31,5,11,2
 ,,Monmouth,,50,3,22,4,34,39,21,3,12,3
 ,,Morris,,21,0,12,0,11,20,12,1,7,0
-,,Ocean,,40,0,23,6,11,38,23,6,10,2
+,,Ocean,,41,0,23,6,12,39,23,6,11,2
 ,,Passaic,,19,0,11,3,7,19,11,3,7,0
 ,,Salem,,10,0,9,1,0,12,10,4,1,0
 ,,Somerset,,22,0,18,0,5,19,14,0,5,0
@@ -94,7 +94,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 4,4,Camden,Bellmawr Boro,0,0,0,0,0,1,1,0,0,0
 4,6,Camden,Berlin Twsp,0,0,0,0,0,1,0,0,1,0
 4,8,Camden,Camden City,7,0,3,0,4,7,3,0,4,0
-4,9,Camden,Cherry Hill Twsp,4,0,1,0,2,3,1,0,2,0
+4,9,Camden,Cherry Hill Twsp,3,0,1,0,2,3,1,0,2,0
 4,12,Camden,Collingswood Boro,0,0,0,0,0,0,0,0,0,0
 4,14,Camden,Gloucester City,8,0,3,1,1,4,3,1,1,0
 4,15,Camden,Gloucester Twsp,2,0,3,0,0,2,2,0,0,0
@@ -119,7 +119,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 6,5,Cumberland,Fairfield Twsp,4,0,3,0,1,3,2,0,1,0
 6,7,Cumberland,Hopewell Twsp,0,0,0,0,0,0,0,0,0,0
 6,9,Cumberland,Maurice River Twsp,0,0,0,0,0,0,0,0,0,0
-6,10,Cumberland,Millville City,1,0,0,0,1,1,0,0,1,0
+6,10,Cumberland,Millville City,0,0,0,0,0,1,0,0,1,0
 6,13,Cumberland,Upper Deerfield Tws,0,0,0,0,0,0,0,0,0,0
 6,14,Cumberland,Vineland City,10,0,7,1,2,9,6,1,2,0
 7,1,Essex,Belleville Town,1,0,1,0,0,1,1,0,0,0
@@ -247,6 +247,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 15,13,Ocean,Lacey Twsp,5,0,0,3,1,4,1,2,1,0
 15,14,Ocean,Lakehurst Boro,0,0,0,0,0,0,0,0,0,0
 15,15,Ocean,Lakewood Twsp,4,1,1,0,2,4,1,0,2,1
+15,16,Ocean,Lavallette Boro,1,0,0,0,1,1,0,0,1,0
 15,17,Ocean,Little Egg Harbor T,2,0,1,0,0,2,1,0,1,0
 15,18,Ocean,Long Beach Twsp,1,0,1,0,0,1,1,0,0,0
 15,19,Ocean,Manchester Twsp,4,0,3,0,1,4,3,0,1,0
