@@ -24,7 +24,7 @@ import { useToolboxOpen } from "@/src/map/useToolboxOpen"
 import { useMapActions } from "@/src/map/useMapActions"
 import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
 import type { Bbox, MapManifestV2 } from "@/src/map/v2"
-import { fitBoundsToView, lerpView, metersPerPixel, HEAT_C_SIGMA_FRAC, HEAT_C_PX_TARGET, HEAT_C_OPACITY } from "@/src/map/CrashMap"
+import { fitBoundsToView, lerpView, metersPerPixel, HEAT_C_SIGMA_PX, HEAT_C_PX_TARGET, HEAT_C_FLOOR, HEAT_C_OPACITY } from "@/src/map/CrashMap"
 
 import { circleRadiusPx, cellPxTargetFor, pickRes as pickerPick, BINS_BUDGET } from "@/src/map/picker"
 import {
@@ -238,6 +238,8 @@ export function CrashMapSection({
     // `?hop=` = strategy-C layer opacity (0–1, default 0.82). <1 lets the
     // basemap + county borders read through the opaque dense core.
     const [heatOpUrl, setHeatOpUrl] = useUrlState("hop", optFloatParam({ encoding: "string" }), { debounce: 100 })
+    // `?hfl=` = colormap lift for the faintest density (a lone crash), 0–0.6.
+    const [heatFloorUrl, setHeatFloorUrl] = useUrlState("hfl", optFloatParam({ encoding: "string" }), { debounce: 100 })
     const binsBudget = binsUrl ?? BINS_BUDGET
     void setBinsUrl
     // `boolParam` default is `false`; we invert to keep the URL absent
@@ -620,6 +622,26 @@ export function CrashMapSection({
         if (next.has(s)) next.delete(s); else next.add(s)
         setSeverities(next)
     }
+    // Heatmap C's current S2 level + cell size on screen, and the zoom where the
+    // next level kicks in. Mirrors `useHeatTiles`: it picks the level at the
+    // tile zoom `round(zoom)`, so levels switch at the x.5 zoom boundaries.
+    const heatLevelInfo = useMemo(() => {
+        if (mode !== "heatmap" || heatRender !== "c" || !effectiveView) return null
+        const { zoom, latitude } = effectiveView
+        const cpx = heatCpxUrl ?? HEAT_C_PX_TARGET
+        const levelAt = (tz: number) => pickS2LevelForPixels(cpx, Math.max(6, Math.min(18, tz)), latitude)
+        const tz = Math.round(zoom)
+        const level = levelAt(tz)
+        const mpp = 156543.03 * Math.cos(latitude * Math.PI / 180) / Math.pow(2, zoom)
+        const cellPx = (S2_EDGE_METERS[level] ?? 0) / mpp
+        let nextZoom: number | null = null
+        let nextLevel = level
+        for (let z = tz + 1; z <= 18; z++) {
+            if (levelAt(z) !== level) { nextZoom = z - 0.5; nextLevel = levelAt(z); break }
+        }
+        return { level, cellPx, nextZoom, nextLevel }
+    }, [mode, heatRender, effectiveView, heatCpxUrl])
+
     // Omnibar / `m …` hotkeys for the toolbox controls.
     useMapActions({
         mode, setMode, heatRender, setHeatRender, severities, toggleSeverity,
@@ -792,8 +814,9 @@ export function CrashMapSection({
                         mode={mode}
                         heatRender={heatRender}
                         heatTileFilter={heatTileFilter}
-                        heatSigmaFrac={heatSigUrl ?? undefined}
+                        heatSigmaPx={heatSigUrl ?? undefined}
                         heatCellPx={heatCpxUrl ?? undefined}
+                        heatFloor={heatFloorUrl ?? undefined}
                         heatOpacity={heatOpUrl ?? undefined}
                         theme={actualTheme}
                         height={fullScreen ? "100%" : mapHeight}
@@ -926,12 +949,12 @@ export function CrashMapSection({
                 {mode === "heatmap" && heatRender === "c" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
                         <NumberSlider
-                            label="σ (↓sharper)" min={0.2} max={1.2} step={0.05}
-                            value={heatSigUrl ?? HEAT_C_SIGMA_FRAC} defaultValue={HEAT_C_SIGMA_FRAC}
+                            label="blur px" min={0.25} max={4} step={0.25}
+                            value={heatSigUrl ?? HEAT_C_SIGMA_PX} defaultValue={HEAT_C_SIGMA_PX}
                             onChange={setHeatSigUrl} reset={() => setHeatSigUrl(null)}
                         />
                         <NumberSlider
-                            label="cell px (↓finer)" min={0.5} max={6} step={0.25}
+                            label="cell px (↓finer)" min={0.5} max={4} step={0.25}
                             value={heatCpxUrl ?? HEAT_C_PX_TARGET} defaultValue={HEAT_C_PX_TARGET}
                             onChange={setHeatCpxUrl} reset={() => setHeatCpxUrl(null)}
                         />
@@ -940,6 +963,17 @@ export function CrashMapSection({
                             value={heatOpUrl ?? HEAT_C_OPACITY} defaultValue={HEAT_C_OPACITY}
                             onChange={setHeatOpUrl} reset={() => setHeatOpUrl(null)}
                         />
+                        <NumberSlider
+                            label="floor" min={0} max={0.6} step={0.05}
+                            value={heatFloorUrl ?? HEAT_C_FLOOR} defaultValue={HEAT_C_FLOOR}
+                            onChange={setHeatFloorUrl} reset={() => setHeatFloorUrl(null)}
+                        />
+                        {heatLevelInfo && (
+                            <div style={{ fontSize: "0.72em", opacity: 0.7 }}>
+                                S2 l{heatLevelInfo.level} · {heatLevelInfo.cellPx.toFixed(1)} px/cell
+                                {heatLevelInfo.nextZoom !== null && ` · l${heatLevelInfo.nextLevel} at z${heatLevelInfo.nextZoom.toFixed(1)}`}
+                            </div>
+                        )}
                     </div>
                 )}
                 {mode === "bins" && (

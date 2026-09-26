@@ -1,6 +1,6 @@
 import { useActions } from "use-kbd"
 import type { MapMode, HeatRender } from "@/src/map/CrashMap"
-import { HEAT_C_SIGMA_FRAC, HEAT_C_PX_TARGET, HEAT_C_OPACITY } from "@/src/map/CrashMap"
+import { HEAT_C_SIGMA_PX, HEAT_C_PX_TARGET, HEAT_C_OPACITY } from "@/src/map/CrashMap"
 
 type Severity = "f" | "i" | "p"
 
@@ -54,7 +54,7 @@ const orNull = (v: number, dflt: number) => (round(v) === round(dflt) ? null : r
  *  via `m …` key sequences. Mirrors the toolbox drawer's controls. */
 export function useMapActions(s: MapActionsState): void {
     const heatC = s.mode === "heatmap" && s.heatRender === "c"
-    const sig = s.heatSig ?? HEAT_C_SIGMA_FRAC
+    const sig = s.heatSig ?? HEAT_C_SIGMA_PX
     const cpx = s.heatCpx ?? HEAT_C_PX_TARGET
     const op = s.heatOp ?? HEAT_C_OPACITY
 
@@ -93,13 +93,13 @@ export function useMapActions(s: MapActionsState): void {
             label: "Heatmap: sharper",
             group: GROUP,
             keywords: ["heatmap", "sigma", "kernel", "crisp"],
-            handler: () => s.setHeatSig(orNull(sig / STEP, HEAT_C_SIGMA_FRAC)),
+            handler: () => s.setHeatSig(orNull(sig / STEP, HEAT_C_SIGMA_PX)),
         },
         "map:heat-softer": {
             label: "Heatmap: softer",
             group: GROUP,
             keywords: ["heatmap", "sigma", "kernel", "blur", "smooth"],
-            handler: () => s.setHeatSig(orNull(sig * STEP, HEAT_C_SIGMA_FRAC)),
+            handler: () => s.setHeatSig(orNull(sig * STEP, HEAT_C_SIGMA_PX)),
         },
         "map:heat-finer": {
             label: "Heatmap: finer cells",
