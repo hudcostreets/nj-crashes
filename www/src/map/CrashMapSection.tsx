@@ -22,6 +22,8 @@ import { FiMaximize2, FiMinimize2, FiHome } from "react-icons/fi"
 import useSessionStorageState from "use-session-storage-state"
 import { useToolboxOpen } from "@/src/map/useToolboxOpen"
 import { useMapActions } from "@/src/map/useMapActions"
+import { useRoadSelection } from "@/src/map/roads/useRoadSelection"
+import { RoadPanel, RoadHoverChip } from "@/src/map/roads/RoadPanel"
 import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
 import type { Bbox, MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel, HEAT_C_SIGMA_PX, HEAT_C_PX_TARGET, HEAT_C_FLOOR, HEAT_C_OPACITY } from "@/src/map/CrashMap"
@@ -642,6 +644,18 @@ export function CrashMapSection({
         return { level, cellPx, nextZoom, nextLevel }
     }, [mode, heatRender, effectiveView, heatCpxUrl])
 
+    // Road selection (hover/click at street zooms → `?road=<sri>`, panel + table + export).
+    const viewBbox = useMemo(() => {
+        if (!effectiveView) return null
+        const [w, h] = viewportDims(fullScreen)
+        return bboxFromViewport(effectiveView.latitude, effectiveView.longitude, effectiveView.zoom, w, h, effectiveView.pitch)
+    }, [effectiveView, fullScreen])
+    const roadSel = useRoadSelection(effectiveView, viewBbox)
+    const zoomToRoad = (bbox: [number, number, number, number]) => {
+        const [w, h] = viewportDims(fullScreen)
+        setLlz(fitBoundsToView(bbox, w, h, 0))
+    }
+
     // Omnibar / `m …` hotkeys for the toolbox controls.
     useMapActions({
         mode, setMode, heatRender, setHeatRender, severities, toggleSeverity,
@@ -798,6 +812,20 @@ export function CrashMapSection({
             {result.status === "error" && (
                 <div style={{ padding: "1em", color: "red" }}>Error: {result.error}</div>
             )}
+            {roadSel.road && (
+                <RoadPanel
+                    sri={roadSel.road}
+                    info={roadSel.info}
+                    crashes={roadSel.crashes}
+                    loading={roadSel.loading}
+                    onClose={() => roadSel.setRoad(null)}
+                    onZoomTo={zoomToRoad}
+                    theme={actualTheme}
+                />
+            )}
+            {roadSel.hovered && roadSel.hovered.sri !== roadSel.road && (
+                <RoadHoverChip name={roadSel.hovered.sld_name} theme={actualTheme} />
+            )}
             {result.status === "loading" && <LoadingOverlay theme={actualTheme} />}
             {result.status === "ready" && (() => {
                 return (
@@ -810,7 +838,11 @@ export function CrashMapSection({
                         initialView={initialView}
                         viewState={llz ?? undefined}
                         onViewStateChange={setLlz}
-                        onOutlineClick={onOutlineClick}
+                        // At road-hit zooms, clicks select roads rather than drilling into a county.
+                        onOutlineClick={roadSel.active ? undefined : onOutlineClick}
+                        onMapClick={roadSel.onClick}
+                        onMapHover={roadSel.active ? roadSel.onHover : undefined}
+                        extraLayers={roadSel.layers}
                         mode={mode}
                         heatRender={heatRender}
                         heatTileFilter={heatTileFilter}

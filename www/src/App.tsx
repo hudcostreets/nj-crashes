@@ -5,6 +5,7 @@ import 'use-kbd/styles.css'
 import GeoHome from './routes/GeoHome'
 import { AppSpeedDial } from './components/AppSpeedDial'
 import { DuckDbProvider } from './lib/DuckDbContext'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useSectionsActions } from './components/SectionsOmnibar'
 import { useScrollAnchor } from './lib/useScrollAnchor'
 import { useDomainToggle } from './lib/useDomainToggle'
@@ -44,9 +45,12 @@ function DomainToggleRegistrar() {
     return null
 }
 
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, refetchOnWindowFocus: false } } })
+
 export default function App() {
     useScrollAnchor()
     return (
+        <QueryClientProvider client={queryClient}>
         <HotkeysProvider>
         <DuckDbProvider>
             <SectionsRegistrar />
@@ -101,5 +105,6 @@ export default function App() {
             <AppSpeedDial />
         </DuckDbProvider>
         </HotkeysProvider>
+        </QueryClientProvider>
     )
 }

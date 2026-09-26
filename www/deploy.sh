@@ -22,7 +22,7 @@ cp dist/index.html dist/404.html
 find dist -name '*.db' -o -name '*.db.bak' | xargs rm -f
 # Map shards are served from R2 (VITE_MAP_BASE_URL=crashes-data.hccs.dev); never
 # ship them with the CFP deploy.
-rm -rf dist/njdot/map
+rm -rf dist/njdot/map dist/njdot/roads  # served from R2 (`njdot map sync` / `njdot roads sync`)
 find dist -size +25M -delete
 # HCCS crashes — serves both crashes.hccs.dev and crashes.hudcostreets.org (the
 # latter moved off RAC nj-crashes on 2026-09-13, so this is the sole deploy now).
