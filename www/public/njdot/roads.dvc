@@ -13,4 +13,4 @@ meta:
     git_deps:
       /njdot/cli/roads.py: 55de2ba208f6051c141a7873ddb874d4c25b111f
       /njdot/map_base.py: 83c056e31c57526849e6b48914095b474838de31
-      /njdot/load.py: 77446ab26435ed4c5ef578547367304fb43c42f9
+      /njdot/load.py: c07ec1c009aeb3be394fd4ca235860a05bcf8f35
