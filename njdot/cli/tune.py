@@ -27,7 +27,7 @@ from njdot.cli.base import njdot
 WWW = Path(__file__).parent.parent.parent / 'www'
 S2_TS = WWW / 'src' / 'map' / 's2' / 'edges.ts'
 TUNING_JSON = WWW / 'src' / 'map' / 'tuning.json'
-CELLS_API = 'https://crashes-cells-api.ryan-0dc.workers.dev'
+CELLS_API = 'https://crashes-cells.hccs.dev'
 VOTES_URL = f'{CELLS_API}/v1/tune/votes'
 
 # Levels the pyramid actually builds. `S2_EDGE_METERS` carries 0-3 too (it's

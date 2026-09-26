@@ -18,7 +18,7 @@ npx playwright install chromium >&2
 # fetches resolve. Without this, vite's dev proxy targets
 # `localhost:51894` (wrangler dev) which isn't running in CI; the page
 # errors and `og-screenshot.spec.ts` refuses to publish.
-export VITE_API_URL="${VITE_API_URL:-https://crashes-api.ryan-0dc.workers.dev}"
+export VITE_API_URL="${VITE_API_URL:-https://crashes-api.hccs.dev}"
 
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT

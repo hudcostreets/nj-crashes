@@ -19,8 +19,9 @@ jobs:
       - uses: actions/checkout@v5
       - name: "Query CF Workers Analytics + post to Slack on errors"
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # HCCS account (where the live workers are since 2026-09-12).
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_HCCS_INFRA_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 2363642879f18d37d52dca114059937e
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CI_CHANNEL_ID: ${{ vars.SLACK_CI_CHANNEL_ID }}
         run: python3 .github/scripts/cf-worker-errors.py

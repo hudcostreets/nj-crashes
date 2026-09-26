@@ -9,7 +9,7 @@
 #   local    — `wrangler dev` local D1; direct DROP+CREATE+INSERT.
 #   inplace  — remote, existing binding. Default uses exact-diff against
 #              the prior `.db` (fetched via DVC md5 from local cache or
-#              S3) so write volume tracks actual deltas. Pass `--full`
+#              the public remote) so write volume tracks actual deltas. Pass `--full`
 #              to force DROP+CREATE+INSERT (escape hatch for schema
 #              changes or recovery).
 #
@@ -46,7 +46,8 @@ CHUNK_DIR="tmp/chunks"
 CHUNK_SIZE=200000
 SMALL_THRESHOLD=$((50 * 1024 * 1024))  # 50MB
 DVC_CACHE=".dvc/cache/files/md5"
-DVC_S3_PREFIX="s3://nj-crashes/.dvc/files/md5"
+# Public read of the DVX cache (HCCS R2 `crashes`, the `public` remote): no creds.
+DVC_PUBLIC_PREFIX="https://crashes-data.hccs.dev/.dvc/files/md5"
 # Universal natural-key columns (cmymc-style dims + njsp-crashes id/dt +
 # cells cellid). The exact-diff picks whichever are present per table.
 NATURAL_KEYS=(cc mc y m condition id dt cellid)
@@ -214,7 +215,7 @@ except Exception:
 " || echo ""
 }
 
-# Resolve a md5 to a local .db file (cache hit) or fetch from S3.
+# Resolve a md5 to a local .db file (cache hit) or fetch it from the public remote.
 fetch_prior_db() {
     local md5="$1" out_path="$2"
     local rel="${md5:0:2}/${md5:2}"
@@ -222,12 +223,7 @@ fetch_prior_db() {
         cp "$DVC_CACHE/$rel" "$out_path"
         return 0
     fi
-    if command -v aws >/dev/null 2>&1; then
-        if aws s3 cp "$DVC_S3_PREFIX/$rel" "$out_path" 2>/dev/null; then
-            return 0
-        fi
-    fi
-    return 1
+    curl -fsSL -o "$out_path" "$DVC_PUBLIC_PREFIX/$rel"
 }
 
 # Echo comma-separated natural-key columns present in (local_db, table).
@@ -273,7 +269,7 @@ import_db_diff() {
     local prior_db="$CHUNK_DIR/${db_name}_prior.db"
     rm -f "$prior_db"
     if ! fetch_prior_db "$prior_md5" "$prior_db"; then
-        echo "  prior .db ($prior_md5) not available in cache or S3 — falling back to full import"
+        echo "  prior .db ($prior_md5) not available in cache or the public remote — falling back to full import"
         drop_tables "$db_name" "$local_path"
         import_data "$db_name" "$local_path"
         write_metadata "$db_name" "$local_path"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VITE_API_URL=https://crashes-api.ryan-0dc.workers.dev \
+VITE_API_URL=https://crashes-api.hccs.dev \
 VITE_CELLS_API_BASE=https://crashes-cells.hccs.dev \
 VITE_MAP_BASE_URL=https://crashes-data.hccs.dev/njdot/map \
     pnpm build
