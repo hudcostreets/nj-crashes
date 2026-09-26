@@ -1,10 +1,13 @@
 """nj-crashes AWS Batch + Fargate infra (see specs/reproc-infra-iac.md).
 
 Owns the `nj-crashes-*` namespace declaratively so `dvx.batch.submit(
-prefix='nj-crashes')` can run reproc/audit jobs against it with NO `bootstrap`
-call and NO baked static creds (the container runs as a task role). Resource
-names mirror `dvx.batch`'s `prefix='nj-crashes'` derivation exactly, so submit
-finds them.
+prefix=<jobdef>, queue='nj-crashes')` can run reproc/audit jobs against it with
+NO `bootstrap` call. Resource names mirror `dvx.batch`'s prefix derivation, so
+submit finds them.
+
+Stacks: `hccs` (HCCS AWS; data via R2, creds injected from Secrets Manager) and
+`dev` (legacy RAC AWS; data via the task role's S3 grants), being retired per
+specs/rac-to-hccs.md.
 """
 import json
 from pathlib import Path
@@ -16,15 +19,24 @@ import pulumi_docker_build as docker_build
 cfg = pulumi.Config()
 REGION = aws.config.region or "us-east-1"
 PREFIX = "nj-crashes"
-BUCKET = "nj-crashes"                     # dvx remote + scratch live here
 VCPU = cfg.get("vcpu") or "16"
 MEMORY_MIB = cfg.get("memory_mib") or "65536"
-GH_TOKEN_SECRET_ARN = cfg.get("gh_token_secret_arn")  # reproc push-back only
+# S3 bucket the task role may read/write (legacy RAC stack only; HCCS moves data
+# via R2 keys from `secrets`, so its task role gets no S3 grants).
+S3_BUCKET = cfg.get("s3_bucket")
+# Adopt a pre-existing ECR repo instead of creating it (legacy RAC stack).
+IMPORT_ECR = cfg.get_bool("import_ecr") or False
+# Plain env for every job def (e.g. `NJC_S3`, `AWS_ENDPOINT_URL_S3`).
+ENV: dict[str, str] = cfg.get_object("env") or {}
+# Env var → Secrets Manager secret, injected into job defs with `secrets: true`.
+# Each is `{arn: …}` (existing secret) or `{name: …}` (Pulumi creates the empty
+# secret; its value is set out of band, so it never enters Pulumi state).
+SECRETS: dict[str, dict] = cfg.get_object("secrets") or {}
 # One Batch job definition per entry, keyed by name (= the `prefix` that
 # `batch/submit -d` passes to `dvx.batch.submit`). Each has an `arch` and
 # either a `ref` (git SHA on GitHub: Pulumi builds + pushes the image from
-# `batch/Dockerfile`) or a prebuilt `image` URI; `gh_token: true` injects the
-# GH push-back token. All share the `nj-crashes` queue and roles.
+# `batch/Dockerfile`) or a prebuilt `image` URI; `secrets: true` injects
+# `SECRETS`. All share the `nj-crashes` queue and roles.
 JOBDEFS: dict[str, dict] = cfg.require_object("jobdefs")
 BATCH_DIR = Path(__file__).resolve().parent.parent
 PLATFORMS = {
@@ -58,50 +70,65 @@ aws.iam.RolePolicyAttachment(
     role=execution_role.name,
     policy_arn="arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
 )
-if GH_TOKEN_SECRET_ARN:
+
+# --- Secrets: existing ARNs, or Pulumi-created (empty) secrets whose values are
+#     set out of band (`aws secretsmanager put-secret-value`). ---
+secret_arns: dict[str, pulumi.Input[str]] = {}
+for env_var, spec in SECRETS.items():
+    if ("arn" in spec) == ("name" in spec):
+        raise ValueError(f"secret {env_var}: set exactly one of `arn` / `name`")
+    if "arn" in spec:
+        secret_arns[env_var] = spec["arn"]
+    else:
+        secret_arns[env_var] = aws.secretsmanager.Secret(
+            f"secret-{spec['name'].replace('/', '-')}",
+            name=spec["name"],
+            recovery_window_in_days=0,
+        ).arn
+if secret_arns:
     aws.iam.RolePolicy(
         "execution-secrets-policy",
         role=execution_role.id,
-        policy=json.dumps({
+        policy=pulumi.Output.all(*secret_arns.values()).apply(lambda arns: json.dumps({
             "Version": "2012-10-17",
             "Statement": [{
                 "Effect": "Allow",
                 "Action": "secretsmanager:GetSecretValue",
-                "Resource": GH_TOKEN_SECRET_ARN,
+                "Resource": list(arns) if len(arns) > 1 else arns[0],
             }],
-        }),
+        })),
     )
 
-# --- Task role: the identity the CONTAINER runs as. Scoped S3 → no static keys ---
+# --- Task role: the identity the CONTAINER runs as. No static AWS keys ---
 task_role = aws.iam.Role(
     "task-role",
     name="nj-crashes-batch-task",
     assume_role_policy=ECS_TASKS_TRUST,
 )
-aws.iam.RolePolicy(
-    "task-s3-policy",
-    role=task_role.id,
-    policy=json.dumps({
-        "Version": "2012-10-17",
-        "Statement": [
-            {"Effect": "Allow", "Action": ["s3:ListBucket", "s3:GetBucketLocation"],
-             "Resource": f"arn:aws:s3:::{BUCKET}"},
-            {"Effect": "Allow", "Action": ["s3:GetObject", "s3:PutObject"],
-             "Resource": f"arn:aws:s3:::{BUCKET}/*"},
-        ],
-    }),
-)
+if S3_BUCKET:
+    aws.iam.RolePolicy(
+        "task-s3-policy",
+        role=task_role.id,
+        policy=json.dumps({
+            "Version": "2012-10-17",
+            "Statement": [
+                {"Effect": "Allow", "Action": ["s3:ListBucket", "s3:GetBucketLocation"],
+                 "Resource": f"arn:aws:s3:::{S3_BUCKET}"},
+                {"Effect": "Allow", "Action": ["s3:GetObject", "s3:PutObject"],
+                 "Resource": f"arn:aws:s3:::{S3_BUCKET}/*"},
+            ],
+        }),
+    )
 
-# --- ECR repo. Pre-existed this stack (created by the manual-build era), so it's
-#     imported rather than created, and protected so no `pulumi` op deletes the
-#     images in it. ---
+# --- ECR repo. In the legacy RAC stack it pre-existed (manual-build era), so it's
+#     imported there; protected so no `pulumi` op deletes the images in it. ---
 repo = aws.ecr.Repository(
     "repo",
     name="nj-crashes-reproc",
     image_tag_mutability="MUTABLE",
     image_scanning_configuration=aws.ecr.RepositoryImageScanningConfigurationArgs(scan_on_push=False),
     encryption_configurations=[aws.ecr.RepositoryEncryptionConfigurationArgs(encryption_type="AES256")],
-    opts=pulumi.ResourceOptions(import_="nj-crashes-reproc", protect=True),
+    opts=pulumi.ResourceOptions(import_="nj-crashes-reproc" if IMPORT_ECR else None, protect=True),
 )
 ecr_auth = aws.ecr.get_authorization_token_output(registry_id=repo.registry_id)
 
@@ -131,7 +158,7 @@ queue = aws.batch.JobQueue(
 
 
 def _container_props(args: dict) -> str:
-    env = [{"name": "PYTHONFAULTHANDLER", "value": "1"}]
+    env = [{"name": "PYTHONFAULTHANDLER", "value": "1"}, *({"name": k, "value": v} for k, v in ENV.items())]
     props = {
         "image": args["image"],
         "runtimePlatform": {"operatingSystemFamily": "LINUX", "cpuArchitecture": args["arch"]},
@@ -154,10 +181,8 @@ def _container_props(args: dict) -> str:
             },
         },
     }
-    if args["gh_token"]:
-        if not GH_TOKEN_SECRET_ARN:
-            raise ValueError("a jobdef sets `gh_token: true` but `gh_token_secret_arn` is unset")
-        props["secrets"] = [{"name": "FARGATE_GITHUB_RW_TOKEN", "valueFrom": GH_TOKEN_SECRET_ARN}]
+    if args["secrets"]:
+        props["secrets"] = [{"name": k, "valueFrom": v} for k, v in args["secrets"].items()]
     return json.dumps(props)
 
 
@@ -217,7 +242,7 @@ for name, spec in JOBDEFS.items():
         container_properties=pulumi.Output.all(
             image=_image(name, spec, arch),
             arch=arch,
-            gh_token=bool(spec.get("gh_token")),
+            secrets=pulumi.Output.all(**secret_arns) if spec.get("secrets") else {},
             log_group=log_group.name,
             exec_arn=execution_role.arn,
             task_arn=task_role.arn,

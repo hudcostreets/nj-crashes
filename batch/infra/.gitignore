@@ -1,0 +1,5 @@
+# Pulumi local-backend churn: keep only the current stack state, not backups/history.
+state/.pulumi/backups/
+state/.pulumi/history/
+*.bak
+*.bak.attrs
