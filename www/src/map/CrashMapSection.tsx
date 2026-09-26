@@ -21,6 +21,7 @@ import type { FeatureCollection } from "geojson"
 import { FiMaximize2, FiMinimize2, FiHome } from "react-icons/fi"
 import useSessionStorageState from "use-session-storage-state"
 import { useToolboxOpen } from "@/src/map/useToolboxOpen"
+import { useMapActions } from "@/src/map/useMapActions"
 import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
 import type { Bbox, MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel, HEAT_C_SIGMA_FRAC, HEAT_C_PX_TARGET, HEAT_C_OPACITY } from "@/src/map/CrashMap"
@@ -619,6 +620,15 @@ export function CrashMapSection({
         if (next.has(s)) next.delete(s); else next.add(s)
         setSeverities(next)
     }
+    // Omnibar / `m …` hotkeys for the toolbox controls.
+    useMapActions({
+        mode, setMode, heatRender, setHeatRender, severities, toggleSeverity,
+        heightScale, setHeightScale, cellAuto, setCellAuto: setHexAuto, manualCellPx, setCellPxTarget,
+        heatSig: heatSigUrl ?? null, setHeatSig: setHeatSigUrl,
+        heatCpx: heatCpxUrl ?? null, setHeatCpx: setHeatCpxUrl,
+        heatOp: heatOpUrl ?? null, setHeatOp: setHeatOpUrl,
+        drawerOpen, setDrawerOpen, debugOpen, setDebugOpen,
+    })
     const severityPhrase = formatSeverityPhrase(severities)
 
     // Pitch / bearing camera sliders. Read from the effective view; write
