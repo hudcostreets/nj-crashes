@@ -1,0 +1,30 @@
+config:
+  aws:region: us-east-1
+  nj-crashes-batch:vcpu: "16"
+  nj-crashes-batch:memory_mib: "65536"
+  # HCCS AWS (688066488567, `AWS_PROFILE=h`); passphrase = `.envrc`'s
+  # `PULUMI_CONFIG_PASSPHRASE` (as `infra/`). Data lives in HCCS R2: DVX pulls
+  # via `public` and pushes with `-r r2`; boto/`aws` S3 calls hit R2 through
+  # `AWS_ENDPOINT_URL_S3` + the injected R2 keys. No S3 grants on the task role.
+  nj-crashes-batch:env:
+    AWS_ENDPOINT_URL_S3: https://2363642879f18d37d52dca114059937e.r2.cloudflarestorage.com
+    NJC_S3: s3://crashes/.batch-scratch
+  # Pulumi creates these empty; values are set out of band (never in state):
+  #   batch/infra/put-secrets
+  nj-crashes-batch:secrets:
+    FARGATE_GITHUB_RW_TOKEN:
+      name: nj-crashes/github-rw-token
+    AWS_ACCESS_KEY_ID:
+      name: nj-crashes/r2-access-key-id
+    AWS_SECRET_ACCESS_KEY:
+      name: nj-crashes/r2-secret-access-key
+  # One Batch job definition per entry (`batch/submit -d <name>`). This file is
+  # the live state: to run at a new commit, push it to GitHub, bump `ref` here,
+  # commit, and `pulumi up --stack hccs` (which builds + pushes the image).
+  nj-crashes-batch:jobdefs:
+    # DAG reproc / targeted rebuilds, with push-back to `reproc-results/*`.
+    nj-crashes-reproc:
+      arch: ARM64
+      ref: e97ae26b8764ed4eff92e3335addcaf0ca39e792
+      secrets: true
+encryptionsalt: v1:rpjZN+paDWQ=:v1:RHHHDa5nXKjyKcVl:flPS60rJuBrIAaLbufwGcBJIP7CQ+w==

@@ -47,7 +47,11 @@ Both RAC accounts are shared with other projects (ctbk, awair, pyrmts, marin, �
 
 Each phase ends in a verified state; RAC deletions all come last (phase 5), after green days.
 
-### 1. Batch → HCCS AWS
+### 1. Batch → HCCS AWS ✅ (2026-09-26)
+
+**Done.** Stack `hccs` is live: 14 resources in AWS `688066488567`, with state committed under `batch/infra/state/` (passphrase-encrypted; only the ECR login token is a state secret). Secrets `nj-crashes/{github-rw-token,r2-access-key-id,r2-secret-access-key}` were filled by `batch/infra/put-secrets`. Validated with job `7d8f7c1e` (`AWS_PROFILE=h batch/submit … run -r r2 … data/cells/cells-s2.db.dvc`): it pulled from R2, the stale-on-this-branch stages re-ran and pushed to R2, and the results branch pushed back. `cells-s2.db` was up to date, and `njsp_njdot_residuals` came out byte-identical to the RAC run's (`e15cf95f`). Remaining RAC-side cleanup is in phase 5.
+
+Original plan:
 
 Same `batch/infra` program, new stack `hccs` in account `688066488567`:
 
