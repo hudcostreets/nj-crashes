@@ -1,7 +1,7 @@
 """nj-crashes AWS Batch + Fargate infra (see specs/reproc-infra-iac.md).
 
 Owns the `nj-crashes-*` namespace declaratively so `dvx.batch.submit(
-prefix=<jobdef>, queue='nj-crashes')` can run reproc/audit jobs against it with
+prefix=<jobdef>, queue='nj-crashes')` can run reproc jobs against it with
 NO `bootstrap` call. Resource names mirror `dvx.batch`'s prefix derivation, so
 submit finds them.
 
