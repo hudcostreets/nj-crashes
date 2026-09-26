@@ -28,7 +28,7 @@ import type { StackedCell } from "./StackedCellLayer"
 import type { ColormapName } from "./colormap"
 import { tilesForBounds, tileToBounds, padBounds, tileKey, type Tile } from "./tileMath"
 
-const { round, min, max, ceil, pow } = Math
+const { round, min, max, ceil, pow, cos, PI } = Math
 
 /** Each tile is baked at its *displayed* device-pixel size so the `BitmapLayer`
  *  never up-samples (which is what made a fixed 256px bake look blurry): a
@@ -43,6 +43,12 @@ const SHARDS = "89b,89d"
 const MAX_CELLS = 150_000
 /** Shared-`vmax` quantile (see `densityQuantile`): the top 0.5% saturate. */
 const VMAX_QUANTILE = 0.995
+/** Minimum σ as a fraction of the S2 cell edge, so cells never read as a lattice
+ *  of dots (only binds when cells are much larger than `sigmaPx`). */
+const SIGMA_FLOOR_FRAC = 0.35
+/** Web-Mercator meters per CSS px (dup of `CrashMap.metersPerPixel`, which
+ *  imports this module). */
+const metersPerPixel = (zoom: number, lat: number) => 156543.03 * cos(lat * PI / 180) / pow(2, zoom)
 
 export type HeatTileFilter = {
     yearRange: [number, number]
@@ -54,8 +60,12 @@ export type HeatTileRenderOpts = {
     colormap: ColormapName
     gamma: number
     alphaKnee: number
-    /** Kernel σ as a fraction of the S2 cell edge (world meters). */
-    sigmaFrac: number
+    /** Kernel σ in CSS px at the tile's zoom — a constant on-screen blur, so an
+     *  S2-level change swaps in finer data without a visible jump in softness.
+     *  Floored at `SIGMA_FLOOR_FRAC` × the cell edge (past the finest level). */
+    sigmaPx: number
+    /** Colormap lift for the faintest density (see `colorizeDensity`'s `floor`). */
+    floor: number
     /** Target cell size (px) fed to the S2-level picker. */
     cellPxTarget: number
     /** Layer opacity (0–1). <1 lets the basemap + county borders show through
@@ -147,7 +157,8 @@ export function useHeatTiles(
         const runId = ++runIdRef.current
         const t = setTimeout(async () => {
             const level = clampS2Level(pickS2LevelForPixels(opts.cellPxTarget, tileZ, viewState.latitude))
-            const sigmaMeters = (S2_EDGE_METERS[level] ?? S2_EDGE_METERS[13]) * opts.sigmaFrac
+            const edgeMeters = S2_EDGE_METERS[level] ?? S2_EDGE_METERS[13]
+            const sigmaMeters = max(opts.sigmaPx * metersPerPixel(tileZ, viewState.latitude), SIGMA_FLOOR_FRAC * edgeMeters)
             // Bake each tile at its on-screen device-pixel size. A level-`tileZ`
             // tile draws at 512·2^(zoom−tileZ) CSS px, ×dpr device px.
             const dpr = min(2, (typeof window !== "undefined" && window.devicePixelRatio) || 1)
@@ -190,7 +201,7 @@ export function useHeatTiles(
                 if (!g) continue
                 baked.push({
                     id: tileKey(visible[i]),
-                    image: colorizeDensity(g, { colormap: opts.colormap, gamma: opts.gamma, alphaKnee: opts.alphaKnee, vmax }),
+                    image: colorizeDensity(g, { colormap: opts.colormap, gamma: opts.gamma, alphaKnee: opts.alphaKnee, vmax, floor: opts.floor }),
                     bounds: g.bounds,
                 })
             }
@@ -202,7 +213,7 @@ export function useHeatTiles(
         }, 180)
         return () => clearTimeout(t)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [enabled, tileZ, centerKey, sevKey, yearKey, container.width, container.height, opts.sigmaFrac, opts.cellPxTarget])
+    }, [enabled, tileZ, centerKey, sevKey, yearKey, container.width, container.height, opts.sigmaPx, opts.cellPxTarget, opts.floor])
 
     return useMemo(
         () => tiles.map(t => new BitmapLayer({ id: `heat-c-${t.id}`, image: t.image, bounds: t.bounds, opacity: opts.opacity })),

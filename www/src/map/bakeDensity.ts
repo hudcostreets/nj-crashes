@@ -67,6 +67,10 @@ export type ColorizeOpts = {
     /** Normalization ceiling. Defaults to the grid's own `localMax` (A); C
      *  passes the shared max across tiles so brightness is consistent. */
     vmax?: number
+    /** Colormap position for the faintest density (0 = the ramp's darkest end).
+     *  Only the *color* is lifted — alpha still ramps from the raw `t` — so a
+     *  single crash reads brighter without hard-edged halos. */
+    floor?: number
 }
 
 /** Splat `cells` into a density grid. With explicit `bounds`+`width`+`height`
@@ -179,10 +183,11 @@ export function colorizeDensity(grid: DensityGrid, opts: ColorizeOpts): ImageDat
         const invVmax = 1 / vmax
         const gamma = opts.gamma
         const invKnee = 1 / opts.alphaKnee
+        const floor = opts.floor ?? 0
         for (let i = 0; i < accum.length; i++) {
             const t = min(1, pow(accum[i] * invVmax, gamma))
             if (t <= 0) continue
-            const [r, g, b] = sampleColormap(opts.colormap, t)
+            const [r, g, b] = sampleColormap(opts.colormap, floor + (1 - floor) * t)
             const a = min(255, round(255 * min(1, t * invKnee)))
             const o = i * 4
             rgba[o] = r; rgba[o + 1] = g; rgba[o + 2] = b; rgba[o + 3] = a

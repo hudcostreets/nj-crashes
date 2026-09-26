@@ -108,12 +108,13 @@ export type Props = {
      *  bypass `prebinnedCells` and query `/v1/cells` per tile. Only needed when
      *  `heatRender === "c"`. */
     heatTileFilter?: HeatTileFilter
-    /** Strategy-C sharpness overrides (URL `?hsig=`/`?hcpx=`), for live tuning.
-     *  Fall back to `HEAT_C_SIGMA_FRAC` / `HEAT_C_PX_TARGET` when unset. Smaller
-     *  = crisper (tighter kernel / finer cells), at the cost of more bead-on-a-
-     *  string and more per-tile fetch/bake cost. */
-    heatSigmaFrac?: number
+    /** Strategy-C overrides (URL `?hsig=`/`?hcpx=`/`?hfl=`), for live tuning;
+     *  unset → `HEAT_C_SIGMA_PX` / `HEAT_C_PX_TARGET` / `HEAT_C_FLOOR`. σ is the
+     *  on-screen blur (px); cell px picks the S2 level (smaller = finer data,
+     *  more fetch/bake cost); floor lifts the faintest density's color. */
+    heatSigmaPx?: number
     heatCellPx?: number
+    heatFloor?: number
     /** Strategy-C layer opacity (URL `?hop=`), 0–1. Falls back to
      *  `HEAT_C_OPACITY`. <1 lets the basemap/borders show through. */
     heatOpacity?: number
@@ -227,14 +228,15 @@ const HEAT_B_MIN_PX = 4
 const HEAT_A_SIGMA_FRAC = 0.9
 const HEAT_A_MAX_DIM = 1024
 
-/** Strategy C: target cell size (px) fed to the per-tile S2-level picker, and
- *  KDE kernel σ as a fraction of the S2 cell edge. Both are C-scoped (finer +
- *  tighter than A) now that C bakes each tile at device resolution: a smaller
- *  px target samples a finer S2 level (continuous filaments, less bead-on-a-
- *  string), and a smaller σ than A's 0.9 keeps the kernel from over-smoothing
- *  that finer detail back into blur. */
-export const HEAT_C_PX_TARGET = 2
-export const HEAT_C_SIGMA_FRAC = 0.5
+/** Strategy C: target cell size (px) fed to the per-tile S2-level picker (C
+ *  bakes each tile at device resolution, so ~1px cells give continuous
+ *  filaments), and the on-screen blur. σ is in px rather than a fraction of the
+ *  cell edge so the softness doesn't saw-tooth as zoom crosses S2 levels. */
+export const HEAT_C_PX_TARGET = 1
+/** σ in CSS px (see `HeatTileRenderOpts.sigmaPx`): a constant on-screen blur. */
+export const HEAT_C_SIGMA_PX = 1
+/** Colormap lift for a lone crash (see `ColorizeOpts.floor`). */
+export const HEAT_C_FLOOR = 0.25
 /** <1 so the basemap + county borders read through the opaque dense core. */
 export const HEAT_C_OPACITY = 0.82
 
@@ -420,8 +422,9 @@ export function CrashMap({
     mode = "scatter",
     heatRender = "legacy",
     heatTileFilter,
-    heatSigmaFrac,
+    heatSigmaPx,
     heatCellPx,
+    heatFloor,
     heatOpacity,
     theme = "dark",
     height = "100%",
@@ -448,8 +451,9 @@ export function CrashMap({
             colormap: HEAT_COLORMAP,
             gamma: HEAT_GAMMA,
             alphaKnee: HEAT_ALPHA_KNEE,
-            sigmaFrac: heatSigmaFrac ?? HEAT_C_SIGMA_FRAC,
+            sigmaPx: heatSigmaPx ?? HEAT_C_SIGMA_PX,
             cellPxTarget: heatCellPx ?? HEAT_C_PX_TARGET,
+            floor: heatFloor ?? HEAT_C_FLOOR,
             opacity: heatOpacity ?? HEAT_C_OPACITY,
             weight: cellHeatWeight,
         },
