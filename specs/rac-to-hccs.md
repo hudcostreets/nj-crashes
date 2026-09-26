@@ -106,6 +106,12 @@ Original plan:
 - **After phase 1**: `pulumi destroy` the RAC `dev` batch stack (unprotect ECR first); delete secret `nj-crashes/fargate-github-rw-token`; S3 `nj-crashes/.dvc-reproc/`, `.reproc/`, `.audit-scratch/`, `pulumi/`.
 - **After phase 2 + green days**: RAC workers `crashes-api`, `crashes-cells-api`; RAC D1s `crashes`, `vehicles`, `occupants`, `pedestrians`, `cmymc`, `njsp-crashes-staging-20260507-124828` (live NJSP), `njsp-crashes` (orphan), `cells-s2`, `cells`, `tune`; R2 `nj-crashes`.
 - **After phase 3**: IAM user `nj-crashes-GHA`; GH secrets `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`.
+- **Parity check done (2026-09-26)**, so RAC S3 holds nothing needed:
+  - `.dvc/` (6,393 objs, 59.9 GiB): every blob is in R2 `crashes/.dvc/` with matching size (R2 has 84 newer).
+  - `njdot/` (7.53 GiB): full parity. `njsp/` and `og.jpg`: R2 is newer, since the daily writes there.
+  - `.reproc/`, `.audit-scratch/` (8.4 GiB): reproc/audit scratch. `.dvc-reproc/` (1,649 objs, 25 GiB): reproc remote.
+  - Of 1,391 outs in `main`'s `.dvc` files, only 2 lack an R2 blob: `data/FAUQStats{2025,2026}.xml`, which are git-tracked (hashes match their contents) and were never on any remote, RAC included.
+  - `pulumi/`: the RAC `dev` batch stack's state, needed until its `pulumi destroy`.
 - **Last**: S3 `nj-crashes` (100.6 GiB). First, a blob-parity check that every md5 under `.dvc/files/md5/` is in R2 `crashes/.dvc/files/md5/` (the 2026-09-11 copy was 60 GiB; anything in `.dvc` that R2 lacks gets copied or explicitly dropped). `njdot/` and `njsp/` are superseded by R2 (see [s3-to-r2-hccs]).
 
 ## Decisions
