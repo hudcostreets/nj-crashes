@@ -5,32 +5,32 @@ compatibility_date = "2024-12-01"
 [[d1_databases]]
 binding = "CRASHES_DB"
 database_name = "crashes"
-database_id = "1946fe7f-f971-49f0-ad43-671d8cbc534a"
+database_id = "2960b2cd-4baa-42ab-aaeb-bf3867ea5433"
 
 [[d1_databases]]
 binding = "VEHICLES_DB"
 database_name = "vehicles"
-database_id = "80cedca5-c5b4-43b6-9e53-fa4d8326c944"
+database_id = "21091342-2c9e-4b69-bf11-2b4ec098e4c6"
 
 [[d1_databases]]
 binding = "OCCUPANTS_DB"
 database_name = "occupants"
-database_id = "7b8b18d7-7406-483c-b8c5-52edce99d187"
+database_id = "8fc968db-4a84-4bc2-8130-3359003a0ccc"
 
 [[d1_databases]]
 binding = "PEDESTRIANS_DB"
 database_name = "pedestrians"
-database_id = "8c457970-66fb-47cf-8526-5f0c48238195"
+database_id = "f06cc3cc-e40e-4a6b-b1dd-64157a9fb6b6"
 
 [[d1_databases]]
 binding = "CMYMC_DB"
 database_name = "cmymc"
-database_id = "5e10adf8-9503-4ec9-8b1f-9e7b532d07b9"
+database_id = "5afec3ab-91b7-4d1f-a34e-6e81f00c2e6b"
 
 [[d1_databases]]
 binding = "NJSP_CRASHES_DB"
 database_name = "njsp-crashes"
-database_id = "dc1d62db-15b8-4c03-844f-bb7256e6cce4"
+database_id = "d29fda93-ed68-4229-a2b9-da55460e80a1"
 
 [dev]
 port = 51894

@@ -63,7 +63,16 @@ Same `batch/infra` program, new stack `hccs` in account `688066488567`:
 - `batch/submit`: `AWS_PROFILE` per stack (or document `AWS_PROFILE=h`).
 - **Validate**: re-run the `cells-s2.db` target (nothing stale → a no-op run proves pull + push-back), then a forced single-stage rebuild with byte-identical output.
 
-### 2. D1 window 2 + `crashes-api` → HCCS
+### 2. D1 window 2 + `crashes-api` → HCCS (2026-09-26)
+
+**Status:**
+- Window 2 seeded into HCCS: `njsp-crashes` (15,141 rows), `vehicles` (12,375,667 rows), `cmymc` (all 12 tables), 29.3M writes. Window 1's `crashes`/`occupants`/`pedestrians` verified current (their `_metadata.source_md5` = `main`'s `.dvc` md5s). The local `.db`s were stale pre-trim copies; `dvx pull --force` fixed that before seeding.
+- `api/wrangler.toml` → HCCS ids (committed); `crashes-api` deployed to HCCS; `crashes-api.hccs.dev` custom domain via `infra/` Pulumi (`deployed_workers`). Its responses match RAC's for NJSP and child tables; NJDOT crashes are a newer build (+98 rows, +29 per-victim-type columns).
+- `VITE_API_URL` → `https://crashes-api.hccs.dev` (`www/deploy.sh`, `dev-restart.sh`, `og-image.sh`); daily + `cf-worker-errors` `CLOUDFLARE_*` → HCCS (`CF_HCCS_INFRA_TOKEN` + literal account id). The probe had been watching the dead RAC `crashes-cells-api` since 2026-09-12.
+- `d1-import.sh` fetches the prior `.db` from the public remote (was RAC S3, which CI couldn't reach, forcing full re-imports whenever the prior wasn't cached).
+- Cutover lands via a manual `daily.yml` dispatch, so the real pipeline does the FE deploy and the HCCS `d1-import`.
+
+Original plan:
 
 Per [pulumi-cf-infra] "Window 2":
 

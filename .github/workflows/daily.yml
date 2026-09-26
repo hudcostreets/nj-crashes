@@ -23,12 +23,11 @@ env:
   AWS_ENDPOINT_URL: https://2363642879f18d37d52dca114059937e.r2.cloudflarestorage.com
   NJC_S3: s3://crashes
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
-  # CLOUDFLARE_* stay RAC: d1-import → RAC D1 + deploy → RAC Pages until those
-  # cut over (window-2 D1s; Pages→HCCS). Separate cred from the AWS_*/R2 above.
-  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-  # HCCS Pages token — `deploy.dvc` also deploys HCCS `crashes` (crashes.hccs.dev)
-  # in addition to RAC `nj-crashes` (hudcostreets), until hudcostreets moves to HCCS.
+  # Cloudflare = HCCS for everything: d1-import → HCCS D1 (via `api/wrangler.toml`
+  # ids / D1 names in the HCCS account), deploy → HCCS `crashes` Pages. Separate
+  # cred from the AWS_*/R2 above. (The RAC `CLOUDFLARE_*` repo secrets are unused.)
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CF_HCCS_INFRA_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID: 2363642879f18d37d52dca114059937e
   CF_HCCS_INFRA_TOKEN: ${{ secrets.CF_HCCS_INFRA_TOKEN }}
   SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
   SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
