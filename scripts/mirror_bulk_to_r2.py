@@ -3,14 +3,17 @@
 # requires-python = ">=3.11"
 # dependencies = ["boto3", "click", "pyyaml", "tqdm", "utz"]
 # ///
-"""Mirror NJDOT bulk-dump blobs from S3 (DVX cache) → R2 (`raw/` prefix).
+"""Mirror NJDOT bulk-dump blobs from the DVX cache → the `raw/` prefix, in R2.
 
-Reads `.dvc` files in `njdot/data/<year>/`, looks up each blob in the
-DVX cache at `s3://nj-crashes/.dvc/files/md5/<md5[:2]>/<md5[2:]>`, and
-streams it to `r2://nj-crashes/raw/<dvc-path-without-.dvc>`. No disk
-persistence.
+Reads `.dvc` files in `njdot/data/<year>/`, looks up each blob in the DVX
+cache at `r2://crashes/.dvc/files/md5/<md5[:2]>/<md5[2:]>`, and server-side
+copies it to `r2://crashes/raw/<dvc-path-without-.dvc>` (same bucket, so no
+bytes pass through this machine).
 
-See specs/mirror-bulk-to-r2.md.
+Creds + endpoint come from the environment; run under `infra/r2-run`:
+  infra/r2-run scripts/mirror_bulk_to_r2.py -y 2024,2025
+
+See specs/done/mirror-bulk-to-r2.md.
 """
 import fnmatch
 import sys
@@ -29,9 +32,8 @@ err = partial(print, file=sys.stderr)
 DVC_ROOT = Path('njdot/data')
 DEFAULT_YEARS = '2022,2023'
 DEFAULT_INCLUDE = '*.zip,*.pqt,*.txt'
-DEFAULT_BUCKET = 'nj-crashes'
+DEFAULT_BUCKET = 'crashes'  # HCCS R2; holds both the DVX cache and `raw/`
 DEFAULT_PREFIX = 'raw/'
-DEFAULT_PROFILE = 'cf'
 
 
 @dataclass
@@ -90,7 +92,7 @@ def _r2_has(r2, bucket: str, key: str, size: int) -> bool:
 @click.option('-i', '--include-glob', default=DEFAULT_INCLUDE, help='Comma-separated glob filters on the data file name')
 @click.option('-n', '--dry-run', is_flag=True, help='Print plan and exit without uploading')
 @click.option('-p', '--prefix', default=DEFAULT_PREFIX, help='R2 key prefix')
-@click.option('-P', '--profile', default=DEFAULT_PROFILE, help='AWS named profile for R2 (endpoint_url + creds)')
+@click.option('-P', '--profile', help='AWS named profile for R2 (default: env creds + endpoint, e.g. via `infra/r2-run`)')
 @click.option('-y', '--years', default=DEFAULT_YEARS, help='Comma-separated years (ignored with --all)')
 def main(
     all_years: bool,
@@ -126,7 +128,6 @@ def main(
         err('--dry-run: stopping.')
         return
 
-    s3 = boto3.client('s3')  # default profile
     r2 = boto3.Session(profile_name=profile).client('s3')
 
     n_uploaded = 0
@@ -140,10 +141,10 @@ def main(
         if not force and _r2_has(r2, bucket, j.dst_key, j.size):
             n_skipped += 1
             continue
-        body = s3.get_object(Bucket=bucket, Key=j.src_key)['Body'].read()
-        if len(body) != j.size:
-            raise RuntimeError(f'{j.src_key}: size mismatch (got {len(body):,}, expected {j.size:,})')
-        r2.put_object(Bucket=bucket, Key=j.dst_key, Body=body, ContentLength=j.size)
+        src_size = r2.head_object(Bucket=bucket, Key=j.src_key)['ContentLength']
+        if src_size != j.size:
+            raise RuntimeError(f'{j.src_key}: size mismatch (got {src_size:,}, expected {j.size:,})')
+        r2.copy_object(Bucket=bucket, Key=j.dst_key, CopySource={'Bucket': bucket, 'Key': j.src_key})
         n_uploaded += 1
         bytes_uploaded += j.size
 

@@ -84,7 +84,11 @@ Per [pulumi-cf-infra] "Window 2":
 4. The daily: `api/d1-import.dvc` → HCCS `njsp-crashes`. Swap GH secrets `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` to HCCS values (or have the stage use `CF_HCCS_INFRA_TOKEN`, which already exists). The same secrets feed `cf-worker-errors.yml`, which then monitors HCCS workers.
 5. Watch the first daily run go green end to end.
 
-### 3. Code defaults → HCCS
+### 3. Code defaults → HCCS ✅ (2026-09-26)
+
+**Done.** `NJC_S3` / `og-image.sh` defaults → `s3://crashes` (needs the R2 endpoint, which CI, Batch and `infra/r2-run` all set); `d1-import.sh` prior fetch → public remote; `tune.py` → HCCS cells API; `.dvc/config` drops `s3`/`reproc` (config only: the S3 data waits for phase 5's parity check); CLAUDE.md storage notes. **Correction:** the `scripts/mirror_*_to_r2.*` scripts are *reusable* (reruns when new NJDOT years land, per `specs/done/mirror-bulk-to-r2.md`), so they were **repointed** to HCCS R2 rather than deleted. `mirror_bulk_to_r2.py` now server-side-copies within the `crashes` bucket (DVX cache → `raw/`); validated with an idempotent 2023 run (115 skipped) and a forced single-file copy (same size and ETag). The shell ones take env creds via `infra/r2-run`. Left for later: `batch/pqt-audit` / `reproc-audit` still default to RAC S3 remotes; they're only used by the RAC `dev` stack's x86 audit job def and need porting (or retiring) alongside it.
+
+Original plan:
 
 - `nj_crashes/paths.py` `NJC_S3` default and `www/og-image.sh` `S3_ROOT` → R2 (`s3://crashes` + R2 endpoint), so nothing depends on the daily's env override.
 - `api/scripts/d1-import.sh` `DVC_S3_PREFIX` (prior-`.db` fetch for exact-diff) → `public` HTTP.

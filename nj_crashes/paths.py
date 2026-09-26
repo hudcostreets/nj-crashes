@@ -19,13 +19,18 @@ COUNTY_CITY_CODES_PQT = join(DATA_DIR, 'county-city-codes.parquet')
 
 MUNIS_GEOJSON = join(PUBLIC_DIR, "Municipal_Boundaries_of_NJ.geojson")
 
-# Root for pipeline side-effect artifacts published to S3 (distinct from the
-# DVX cache remote, which `.dvc/config` configures). Every `*_S3` constant in
-# `njsp/paths.py` / `njdot/paths.py` derives from this, for both the uploads
-# and the S3 fallbacks downstream stages read from — so overriding it
-# redirects a whole pipeline run away from prod, e.g. a full-DAG reproc audit
-# under `NJC_S3=s3://nj-crashes/.reproc`.
-S3 = environ.get('NJC_S3', 's3://nj-crashes').rstrip('/')
+# Root for pipeline side-effect artifacts published to object storage (distinct
+# from the DVX cache remote, which `.dvc/config` configures). Every `*_S3`
+# constant in `njsp/paths.py` / `njdot/paths.py` derives from this, for both the
+# uploads and the fallbacks downstream stages read from — so overriding it
+# redirects a whole pipeline run away from prod, e.g. Batch runs use
+# `NJC_S3=s3://crashes/.batch-scratch`.
+#
+# The default is the HCCS R2 bucket, reached over the S3 API: callers need
+# `AWS_ENDPOINT_URL` = the HCCS R2 endpoint + R2 keys, which the daily (GHA
+# env), Batch job defs, and `infra/r2-run` all provide. Without them a call
+# hits AWS S3's unrelated `crashes` bucket and fails (AccessDenied).
+S3 = environ.get('NJC_S3', 's3://crashes').rstrip('/')
 
 
 def relpath(dst: str, src: str = ROOT_DIR) -> str:

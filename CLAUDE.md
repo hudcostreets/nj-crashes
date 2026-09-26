@@ -6,7 +6,7 @@ This document contains important context for Claude Code when working on this pr
 
 This repository analyzes NJ car crash data from two sources:
 - **NJSP**: Fatal crashes (2001-present), small datasets, git-tracked, daily updates. XML feed covers 2008+; pre-2008 rows backfilled from annual-report PDFs (`type_source='pdf-only'`).
-- **NJDOT**: All crashes (2001-2023), large datasets, DVC-tracked in S3, annual updates.
+- **NJDOT**: All crashes (2001-2023), large datasets, DVC-tracked in HCCS R2 (`crashes` bucket), annual updates.
 - **Harmonized crash-pair matches** between the two: `njsp/data/njsp_njdot_match.parquet` (NJSP↔NJDOT fatal-crash PKs, produced by `njsp match_njdot`, currently ~93% coverage).
 
 ## Municipality Code Complexity
@@ -101,8 +101,8 @@ dvx run njdot/data/crashes.parquet.dvc
 # write `meta.computation` into the .dvc by hand afterwards.
 dvx add output.parquet
 
-# Push/pull data from S3 (-r/--remote selects a non-default remote)
-dvx push
+# Pull (default remote `public`: anonymous HTTP) / push (`-r r2`: creds via `infra/r2-run`)
+infra/r2-run dvx push -r r2
 dvx pull
 ```
 
