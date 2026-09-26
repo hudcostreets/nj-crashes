@@ -46,8 +46,11 @@ def geom_rows():
     })
 
 
-def test_sri_geom_renames_and_sorts():
-    out = sri_geom(geom_rows())
+def test_sri_geom_renames_sorts_and_drops_ungeocoded():
+    rows = pd.concat([geom_rows(), pd.DataFrame([{
+        'SRI': 'A', 'MP': 0.3, 'SLD_NAME': 'A AVE', 'Second_Name': '', 'ROUTE_SUBT': 1, 'lon': None, 'lat': None,
+    }])], ignore_index=True)
+    out = sri_geom(rows)
     assert out.columns.tolist() == ['sri', 'mp', 'sld_name', 'lon', 'lat']
     assert out[['sri', 'mp']].values.tolist() == [['A', 0.0], ['A', 0.1], ['A', 0.2], ['B', 0.0], ['B', 0.1]]
 
