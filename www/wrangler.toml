@@ -1,0 +1,59 @@
+# FE on Workers + static Assets (W+A), replacing the `crashes` / `crashes-dev`
+# Pages projects (see `specs/workers-assets-and-map-ogi.md`). Deployed by
+# `./deploy-worker.sh [prod|dev]`, which builds `dist/` with the tier's
+# `VITE_*` API URLs first; a bare `wrangler deploy` would ship whatever `dist/`
+# holds.
+#
+# prod: `crashes-www` (not yet deployed; custom domains still on Pages).
+# dev:  `crashes-www-dev` → https://crashes-www-dev.hccs-ctbk.workers.dev
+name = "crashes-www"
+main = "worker/index.ts"
+compatibility_date = "2025-04-01"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+# Unknown paths get `index.html` with a 200 (Pages served the `404.html` copy
+# of it with a 404).
+not_found_handling = "single-page-application"
+# Only SPA navigation routes hit the Worker (for OG-meta rewriting); hashed
+# `/assets/*` and data files are served by the asset server directly. Other
+# SPA paths (e.g. `/:muniSlug`) fall back to `index.html` as built, whose meta
+# already equals the Worker's default OG meta.
+run_worker_first = [
+    "/",
+    "/c",
+    "/c/*",
+    "/crash/*",
+    "/map",
+    "/map/*",
+    "/raw",
+    "/raw/*",
+    "/sql",
+]
+
+# Bindings carried over from the Pages project's middleware (currently unused
+# by the OG logic; reserved for per-county / per-crash / map OG images).
+[[d1_databases]]
+binding = "NJSP_CRASHES_DB"
+database_name = "njsp-crashes"
+database_id = "d29fda93-ed68-4229-a2b9-da55460e80a1"
+
+[[r2_buckets]]
+binding = "OG_BUCKET"
+bucket_name = "crashes"
+
+# Dev tier: new FE code, pointed (at build time) at the `*-dev` API workers,
+# which serve prod data. Wrangler doesn't inherit bindings into envs, hence
+# the repetition.
+[env.dev]
+name = "crashes-www-dev"
+
+[[env.dev.d1_databases]]
+binding = "NJSP_CRASHES_DB"
+database_name = "njsp-crashes"
+database_id = "d29fda93-ed68-4229-a2b9-da55460e80a1"
+
+[[env.dev.r2_buckets]]
+binding = "OG_BUCKET"
+bucket_name = "crashes"

@@ -67,6 +67,7 @@
     "use-session-storage-state": "^18.2.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260702.1",
     "@playwright/test": "^1.58.2",
     "@types/geojson": "^7946",
     "@types/leaflet": "^1",
@@ -83,6 +84,7 @@
     "pnpm-dep-source": "https://github.com/runsascoded/pnpm-dep-source#f93b15258b9e8366de5822221c57fe428a5ee52b",
     "typescript": "^5",
     "vite": "^6.4.3",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "wrangler": "^4.141.0"
   }
 }

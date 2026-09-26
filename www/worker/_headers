@@ -1,0 +1,10 @@
+# Copied into `dist/` by `deploy-worker.sh` (W+A only; the Pages path doesn't
+# ship it). Vite's `/assets/*` filenames are content-hashed, so cache them
+# forever; everything else keeps the asset server's default (revalidate).
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# W+A infers `Content-Type` from the extension and has no mapping for parquet
+# (Pages sent `application/octet-stream`); set it so clients/proxies don't sniff.
+/*.parquet
+  Content-Type: application/octet-stream
