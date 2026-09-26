@@ -15,6 +15,6 @@ meta:
       /njdot/data/crashes_geocode_backfill.parquet: d1d7d16ebbedf14669361e3b2a6db9f3
       /njdot/data/nj_mp_tenths.parquet: 7f409f4625279b8ce87791748d28017c
     git_deps:
-      /njdot/cli/roads.py: ff9995d873e33b1a58eaec491b767bb1e8afeb50
+      /njdot/cli/roads.py: aabd5e5a65289ec8249097be56f4d02c8804f7ad
       /njdot/map_base.py: 83c056e31c57526849e6b48914095b474838de31
       /njdot/load.py: c07ec1c009aeb3be394fd4ca235860a05bcf8f35
