@@ -15,6 +15,6 @@ meta:
       # local builds (sidecar present, +616 rows) from CI builds (absent).
       /njdot/data/crashes_geocode_backfill.parquet: d1d7d16ebbedf14669361e3b2a6db9f3
     git_deps:
-      /njdot/cli/cells.py: 74de8c41bfb2656663f936701b1b381fa49b508b
+      /njdot/cli/cells.py: d308c2c960bf43876fbaaf30973166cb47064bb2
       /njdot/s2.py: 18b3290b93befcb93f8edcffeb141a8782ccfe7d
       /njdot/load.py: 77446ab26435ed4c5ef578547367304fb43c42f9
