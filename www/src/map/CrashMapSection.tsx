@@ -233,11 +233,11 @@ export function CrashMapSection({
     // `?hcpx=` = target cell size in px fed to the per-tile level picker
     // (default 3). Smaller = crisper (tighter kernel / finer cells) but beadier
     // + costlier. Undefined → the `HEAT_C_*` defaults in CrashMap.
-    const [heatSigUrl, setHeatSigUrl] = useUrlState("hsig", optFloatParam(), { debounce: 100 })
-    const [heatCpxUrl, setHeatCpxUrl] = useUrlState("hcpx", optFloatParam(), { debounce: 100 })
+    const [heatSigUrl, setHeatSigUrl] = useUrlState("hsig", optFloatParam({ encoding: "string" }), { debounce: 100 })
+    const [heatCpxUrl, setHeatCpxUrl] = useUrlState("hcpx", optFloatParam({ encoding: "string" }), { debounce: 100 })
     // `?hop=` = strategy-C layer opacity (0–1, default 0.82). <1 lets the
     // basemap + county borders read through the opaque dense core.
-    const [heatOpUrl, setHeatOpUrl] = useUrlState("hop", optFloatParam(), { debounce: 100 })
+    const [heatOpUrl, setHeatOpUrl] = useUrlState("hop", optFloatParam({ encoding: "string" }), { debounce: 100 })
     const binsBudget = binsUrl ?? BINS_BUDGET
     void setBinsUrl
     // `boolParam` default is `false`; we invert to keep the URL absent
@@ -923,6 +923,25 @@ export function CrashMapSection({
                         })}
                     </div>
                 )}
+                {mode === "heatmap" && heatRender === "c" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
+                        <NumberSlider
+                            label="σ (↓sharper)" min={0.2} max={1.2} step={0.05}
+                            value={heatSigUrl ?? HEAT_C_SIGMA_FRAC} defaultValue={HEAT_C_SIGMA_FRAC}
+                            onChange={setHeatSigUrl} reset={() => setHeatSigUrl(null)}
+                        />
+                        <NumberSlider
+                            label="cell px (↓finer)" min={0.5} max={6} step={0.25}
+                            value={heatCpxUrl ?? HEAT_C_PX_TARGET} defaultValue={HEAT_C_PX_TARGET}
+                            onChange={setHeatCpxUrl} reset={() => setHeatCpxUrl(null)}
+                        />
+                        <NumberSlider
+                            label="opacity" min={0.2} max={1} step={0.05}
+                            value={heatOpUrl ?? HEAT_C_OPACITY} defaultValue={HEAT_C_OPACITY}
+                            onChange={setHeatOpUrl} reset={() => setHeatOpUrl(null)}
+                        />
+                    </div>
+                )}
                 {mode === "bins" && (
                     <>
                         <CellPxTargetSlider
@@ -986,26 +1005,6 @@ export function CrashMapSection({
                             ? `${apiResult.plan.source} l${apiResult.plan.res}, ${apiResult.plan.cellCount ?? "—"} cells`
                             : apiResult.status}
                     </div>
-                    {mode === "heatmap" && heatRender === "c" && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
-                            <div style={{ fontSize: "0.72em", opacity: 0.6, textTransform: "uppercase", letterSpacing: 0.5 }}>heatmap C</div>
-                            <NumberSlider
-                                label="σ (↓sharper)" min={0.3} max={1.2} step={0.05}
-                                value={heatSigUrl ?? HEAT_C_SIGMA_FRAC} defaultValue={HEAT_C_SIGMA_FRAC}
-                                onChange={setHeatSigUrl} reset={() => setHeatSigUrl(null)}
-                            />
-                            <NumberSlider
-                                label="cell px" min={1.5} max={6} step={0.5}
-                                value={heatCpxUrl ?? HEAT_C_PX_TARGET} defaultValue={HEAT_C_PX_TARGET}
-                                onChange={setHeatCpxUrl} reset={() => setHeatCpxUrl(null)}
-                            />
-                            <NumberSlider
-                                label="opacity" min={0.2} max={1} step={0.05}
-                                value={heatOpUrl ?? HEAT_C_OPACITY} defaultValue={HEAT_C_OPACITY}
-                                onChange={setHeatOpUrl} reset={() => setHeatOpUrl(null)}
-                            />
-                        </div>
-                    )}
                     {effectiveView && (() => {
                         const renderRes = pickS2LevelForPixels(cellPxTarget, effectiveView.zoom, effectiveView.latitude)
                         const planRes = result.plan?.res ?? null

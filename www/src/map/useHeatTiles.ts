@@ -23,7 +23,7 @@ import { BitmapLayer } from "@deck.gl/layers"
 import { WebMercatorViewport } from "@deck.gl/core"
 import { tokenCenterLngLat, pickS2LevelForPixels, clampS2Level, S2_EDGE_METERS } from "./s2"
 import { CELLS_API_BASE } from "./config"
-import { splatDensity, colorizeDensity, type Bounds } from "./bakeDensity"
+import { splatDensity, colorizeDensity, densityQuantile, type Bounds } from "./bakeDensity"
 import type { StackedCell } from "./StackedCellLayer"
 import type { ColormapName } from "./colormap"
 import { tilesForBounds, tileToBounds, padBounds, tileKey, type Tile } from "./tileMath"
@@ -41,6 +41,8 @@ const TILE_PX_CAP = 1024
 const MARGIN_FRAC = 0.3
 const SHARDS = "89b,89d"
 const MAX_CELLS = 150_000
+/** Shared-`vmax` quantile (see `densityQuantile`): the top 0.5% saturate. */
+const VMAX_QUANTILE = 0.995
 
 export type HeatTileFilter = {
     yearRange: [number, number]
@@ -179,8 +181,7 @@ export function useHeatTiles(
                     height: tilePx,
                 })
             })
-            let vmax = 0
-            for (const g of grids) if (g && g.localMax > vmax) vmax = g.localMax
+            const vmax = densityQuantile(grids, VMAX_QUANTILE)
             if (vmax <= 0) { if (runId === runIdRef.current) setTiles([]); return }
 
             const baked: Array<{ id: string; image: ImageData; bounds: Bounds }> = []
