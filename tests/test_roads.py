@@ -1,4 +1,5 @@
 import pandas as pd
+import pyarrow as pa
 
 from njdot.cli.roads import crashes_by_sri, sri_geom, sri_hit, sris
 
@@ -20,12 +21,17 @@ def test_crashes_by_sri_filters_joins_and_sorts():
         crash(5, 'A', 1.5, '2020-01-04'),
         crash(6, 'B', 2.0, '2020-01-01'),  # same (sri, mp) as 1, earlier dt → first
     ], index=[10, 11, 12, 13, 14, 15])
+    # Per-table years have int `route`, AASHTO years str: mixed after the concat.
+    crashes['route'] = crashes['route'].astype(object)
+    crashes.loc[12, 'route'] = '9'
     # `_build_base` output: only geocoded rows (15 is ungeocoded → lat/lon NaN, kept).
     latlon = pd.DataFrame({'lat': [40.1, 40.3, 40.5], 'lon': [-74.1, -74.3, -74.5]}, index=[10, 12, 14])
     out = crashes_by_sri(crashes, latlon)
     assert out[['sri', 'mp', 'id']].values.tolist() == [['A', 1.5, 5], ['A', 5.0, 3], ['B', 2.0, 6], ['B', 2.0, 1]]
     assert out['lat'].tolist()[:2] == [40.5, 40.3]
     assert out['lat'].isna().tolist() == [False, False, True, False]
+    assert out['route'].tolist() == ['1', '9', '1', '1']
+    assert pa.Table.from_pandas(out, preserve_index=False).schema.field('route').type == pa.string()
 
 
 def geom_rows():
