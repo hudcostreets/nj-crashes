@@ -1,5 +1,9 @@
 outs:
 - path: roads
+  md5: 04aa6eb4eb9601924a8870b3accb358c.dir
+  size: 170499957
+  hash: md5
+  nfiles: 4
 meta:
   computation:
     cmd: njdot roads build
