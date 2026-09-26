@@ -1,0 +1,5 @@
+# Copied into `dist/` by `deploy-worker.sh` (W+A only; the Pages path doesn't
+# ship it). Vite's `/assets/*` filenames are content-hashed, so cache them
+# forever; everything else keeps the asset server's default (revalidate).
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
