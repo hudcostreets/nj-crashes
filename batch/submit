@@ -11,9 +11,6 @@ Pulumi config), so this carries only the container command + per-job env
 overrides.
 
 Job definitions (`batch/infra/Pulumi.<stack>.yaml` `jobdefs`; `-d` picks):
-  # audit — x86 audit image, no secret (legacy RAC stack only):
-  AWS_PROFILE=r batch/submit audit
-
   # reproc — arm64 image built by Pulumi from the committed `ref`, with the GH
   # push-back token; e.g. rebuild one target (plus its stale upstream stages):
   # (HCCS stack: `AWS_PROFILE=h`; `-r r2` = DVX reads + pushes HCCS R2)
@@ -42,7 +39,7 @@ PREFIX = 'nj-crashes'
 @option('-O', '--no-watch', is_flag=True, help="Don't tail the log; just print the job id")
 @argument('cmd', nargs=-1, required=True)
 def main(results_branch: str, job_def: str, job_name: str, njc_s3: str, no_watch: bool, cmd: tuple[str, ...]):
-    """Submit CMD (the container command, e.g. `audit` or `run …`) to the `nj-crashes` queue."""
+    """Submit CMD (the container command, e.g. `run …`) to the `nj-crashes` queue."""
     env = {}
     if njc_s3:
         env['NJC_S3'] = njc_s3

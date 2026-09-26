@@ -3,7 +3,7 @@ runtime:
   name: python
   options:
     virtualenv: .venv
-description: AWS Batch/Fargate reproc + audit infrastructure for nj-crashes (per-project namespaced; task-role, no baked creds)
+description: AWS Batch/Fargate reproc infrastructure for nj-crashes (per-project namespaced; task-role, no baked creds)
 # Committed local state (like `infra/`), for the `hccs` stack. The legacy RAC
 # `dev` stack's state stays in RAC S3: reach it with
 # `PULUMI_BACKEND_URL=s3://nj-crashes/pulumi/batch AWS_PROFILE=r`.

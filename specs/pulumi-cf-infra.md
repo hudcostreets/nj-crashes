@@ -229,6 +229,8 @@ Audit resolved the "mixed-cred hazard": once the cache + the whole `NJC_S3` surf
    - **RAC `nj-crashes` deploy line dropped from `www/deploy.sh` (2026-09-13)** — HCCS `crashes` is now the sole Pages deploy (serves both hostnames). RAC `nj-crashes` project kept (stale deploy = rollback target); delete at RAC account retirement.
    - **Default/canonical domain flipped → `crashes.hccs.dev` everywhere (2026-09-13):** `www/src/site.ts` (`domain`), `www/index.html` (`og:url`), `www/functions/_middleware.ts` (`SITE_URL`), `www/src/lib/useDomainToggle.ts` (`PROD_ORIGIN`), `nj_crashes/utils/__init__.py` (`SITE`, used for `/c/…` links in Slack/Bluesky posts). **NOT changed:** the Bluesky handle `@crashes.hudcostreets.org` (`njsp/cli/bsky/*`) — it's a domain-verified account identity, not a link.
 
+**Dev backend (2026-09-26):** `crashes-cells-api-dev` / `crashes-api-dev` (`[env.dev]` in each `wrangler.toml`; `pnpm deploy:dev`) serve at `crashes-cells-dev.hccs.dev` / `crashes-api-dev.hccs.dev` (first-level, so Universal SSL covers them; domains via `infra/` `WORKER_DOMAINS`). They run new worker code against the prod data (read-only; no `TUNE_TOKEN`, so no tune votes). `www/deploy.sh dev` builds against them and deploys `crashes-dev` (`dev.crashes.hccs.dev`).
+
 **Deferred polish:** dev-binding *override* (point dev at standalone dev D1/R2 when testing pyramids/schemas); IaC-import the Pages projects/domains into Pulumi (currently API/wrangler-managed).
 
 ## Cutover sequence (prod stays live)

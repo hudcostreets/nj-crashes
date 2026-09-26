@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
+# Build + deploy the FE to HCCS Pages.
+#   ./deploy.sh        prod: `crashes` (crashes.hccs.dev, crashes.hudcostreets.org) → prod workers
+#   ./deploy.sh dev    dev:  `crashes-dev` (dev.crashes.hccs.dev) → `*-dev` workers (prod data)
 set -euo pipefail
 
-VITE_API_URL=https://crashes-api.hccs.dev \
-VITE_CELLS_API_BASE=https://crashes-cells.hccs.dev \
+tier="${1:-prod}"
+case "$tier" in
+    prod) project=crashes     api=crashes-api     cells=crashes-cells ;;
+    dev)  project=crashes-dev api=crashes-api-dev cells=crashes-cells-dev ;;
+    *) echo "usage: $0 [prod|dev]" >&2; exit 1 ;;
+esac
+
+VITE_API_URL="https://$api.hccs.dev" \
+VITE_CELLS_API_BASE="https://$cells.hccs.dev" \
 VITE_MAP_BASE_URL=https://crashes-data.hccs.dev/njdot/map \
     pnpm build
 cp dist/index.html dist/404.html
@@ -19,9 +29,9 @@ if [ -z "${CF_HCCS_INFRA_TOKEN:-}" ]; then
     exit 1
 fi
 CLOUDFLARE_API_TOKEN="$CF_HCCS_INFRA_TOKEN" CLOUDFLARE_ACCOUNT_ID=2363642879f18d37d52dca114059937e \
-    npx wrangler pages deploy dist --project-name crashes --commit-dirty=true
+    npx wrangler pages deploy dist --project-name "$project" --commit-dirty=true
 
 # Signal DVX to commit
-if [ -n "${DVX_COMMIT_MSG_FILE:-}" ]; then
+if [ "$tier" = prod ] && [ -n "${DVX_COMMIT_MSG_FILE:-}" ]; then
     echo "Deploy www to CF Pages" > "$DVX_COMMIT_MSG_FILE"
 fi

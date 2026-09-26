@@ -100,8 +100,11 @@ d1_dbs = {
 # First-level under hccs.dev so the `*.hccs.dev` Universal SSL cert covers them
 # (a two-deep `*.crashes.hccs.dev` would need paid Advanced Cert Manager).
 WORKER_DOMAINS = {
-    'crashes-cells.hccs.dev': 'crashes-cells-api',
-    'crashes-api.hccs.dev':   'crashes-api',
+    'crashes-cells.hccs.dev':     'crashes-cells-api',
+    'crashes-api.hccs.dev':       'crashes-api',
+    # Dev tier (`wrangler deploy --env dev`), behind `dev.crashes.hccs.dev`.
+    'crashes-cells-dev.hccs.dev': 'crashes-cells-api-dev',
+    'crashes-api-dev.hccs.dev':   'crashes-api-dev',
 }
 if manage_worker_domains:
     for hostname, service in WORKER_DOMAINS.items():
@@ -119,6 +122,9 @@ if manage_worker_domains:
 WORKERS = {
     'crashes-cells-api': 'cells-api/',   # R2 CELLS_BUCKET=crashes + D1 cells-s2,tune; serves /v1/cells,/v1/raw
     'crashes-api':       'api/',         # D1 crashes/vehicles/occupants/pedestrians/cmymc/njsp-crashes
+    # `[env.dev]` of the above: same bindings (prod data, read-only use), new code.
+    'crashes-cells-api-dev': 'cells-api/ (--env dev)',
+    'crashes-api-dev':       'api/ (--env dev)',
 }
 
 # ── Outputs (feed wrangler.toml bucket_name / database_id) ────────────
