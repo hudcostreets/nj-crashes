@@ -21,11 +21,12 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { BitmapLayer } from "@deck.gl/layers"
 import { WebMercatorViewport } from "@deck.gl/core"
-import { tokenCenterLngLat, pickS2LevelForPixels, clampS2Level, S2_EDGE_METERS } from "./s2"
+import { pickS2LevelForPixels, clampS2Level, S2_EDGE_METERS } from "./s2"
 import { CELLS_API_BASE } from "./config"
 import { splatDensity, colorizeDensity, densityQuantile, type Bounds } from "./bakeDensity"
 import type { StackedCell } from "./StackedCellLayer"
 import type { ColormapName } from "./colormap"
+import { heatCellsFromBody, HEAT_FIELDS, type CellsColsBody, type CellsRowsBody } from "./cellsCols"
 import { tilesForBounds, tileToBounds, padBounds, tileKey, type Tile } from "./tileMath"
 
 const { round, min, max, ceil, pow, cos, PI } = Math
@@ -76,15 +77,6 @@ export type HeatTileRenderOpts = {
 
 type MinimalViewState = { longitude: number; latitude: number; zoom: number }
 
-type CellOutRow = {
-    cellid: string
-    n_fatal: number
-    n_inj_ped: number
-    n_inj_other: number
-    n_pdo: number
-    n_vehs: number
-}
-
 /** Module-scoped per-(tile,level,filter) cell cache — survives remounts. */
 const tileCache = new Map<string, Promise<StackedCell[]>>()
 
@@ -106,27 +98,19 @@ function fetchTileCells(tile: Tile, level: number, filter: HeatTileFilter): Prom
         severities: sevs,
         maxCells: String(MAX_CELLS),
         labels: "nums",
+        // Lean wire shape: sorted parallel arrays of just the four severity
+        // counts `StackedCell` carries — ~3x fewer wire bytes, ~8x fewer
+        // decoded bytes than rows of all seven counts + `fatal_years`
+        // (specs/cells-compact-wire-format.md). A worker predating
+        // `format=cols` ignores it and answers in rows; `heatCellsFromBody`
+        // decodes both.
+        format: "cols",
+        fields: HEAT_FIELDS.join(","),
         polygon: encodePolygon(padded),
     })
     p = fetch(`${CELLS_API_BASE}/v1/cells?${params}`)
         .then(r => r.ok ? r.json() : Promise.reject(new Error(`cells ${r.status}`)))
-        .then((body: { cells: CellOutRow[] }) => {
-            const out: StackedCell[] = []
-            for (const c of body.cells) {
-                const total = c.n_fatal + c.n_inj_ped + c.n_inj_other + c.n_pdo
-                if (total === 0) continue
-                out.push({
-                    cellid: c.cellid,
-                    center: tokenCenterLngLat(c.cellid),
-                    fatal: c.n_fatal,
-                    pedInj: c.n_inj_ped,
-                    otherInj: c.n_inj_other,
-                    pdo: c.n_pdo,
-                    total,
-                })
-            }
-            return out
-        })
+        .then((body: CellsColsBody | CellsRowsBody) => heatCellsFromBody(body))
         .catch(err => { tileCache.delete(key); throw err })
     tileCache.set(key, p)
     return p
