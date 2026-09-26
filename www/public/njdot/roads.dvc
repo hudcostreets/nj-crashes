@@ -1,7 +1,7 @@
 outs:
 - path: roads
-  md5: 9c93dbcad2a7bc10b3bb69fda55ba398.dir
-  size: 308941564
+  md5: 89286804a3a825c73b778a4ec811612e.dir
+  size: 308311937
   hash: md5
   nfiles: 9
 meta:
@@ -15,6 +15,6 @@ meta:
       /njdot/data/crashes_geocode_backfill.parquet: d1d7d16ebbedf14669361e3b2a6db9f3
       /njdot/data/nj_mp_tenths.parquet: 7f409f4625279b8ce87791748d28017c
     git_deps:
-      /njdot/cli/roads.py: ff9995d873e33b1a58eaec491b767bb1e8afeb50
+      /njdot/cli/roads.py: c27650afd4db4adff6120f0bab942c7bac324b69
       /njdot/map_base.py: 83c056e31c57526849e6b48914095b474838de31
       /njdot/load.py: c07ec1c009aeb3be394fd4ca235860a05bcf8f35
