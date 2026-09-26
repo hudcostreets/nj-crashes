@@ -63,9 +63,11 @@ Same `batch/infra` program, new stack `hccs` in account `688066488567`:
 - `batch/submit`: `AWS_PROFILE` per stack (or document `AWS_PROFILE=h`).
 - **Validate**: re-run the `cells-s2.db` target (nothing stale → a no-op run proves pull + push-back), then a forced single-stage rebuild with byte-identical output.
 
-### 2. D1 window 2 + `crashes-api` → HCCS (2026-09-26)
+### 2. D1 window 2 + `crashes-api` → HCCS ✅ (2026-09-26)
 
-**Status:**
+**Done.** Daily run `36240169062` (manual dispatch on `18fffb5a06f`) ran `d1-import` against HCCS; all three stamps (`njsp-crashes`, `cmymc`, `cells-s2`) match `main`'s deps, so it was a no-op import. It also deployed the FE. Checked in the browser on `crashes.hccs.dev`: every API call (8 on `/`, `/njdot/crash` on a crash page) goes to `crashes-api.hccs.dev` with 200s, and the NJSP recent-crashes, year-stats, NJDOT crashes (with vehicle/victim children) and crash-detail views all render. RAC `crashes-api` and its D1s are now unused, so they move to phase 5 after green days. The RAC `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` repo secrets are also unused now; delete them in phase 5.
+
+**Details:**
 - Window 2 seeded into HCCS: `njsp-crashes` (15,141 rows), `vehicles` (12,375,667 rows), `cmymc` (all 12 tables), 29.3M writes. Window 1's `crashes`/`occupants`/`pedestrians` verified current (their `_metadata.source_md5` = `main`'s `.dvc` md5s). The local `.db`s were stale pre-trim copies; `dvx pull --force` fixed that before seeding.
 - `api/wrangler.toml` → HCCS ids (committed); `crashes-api` deployed to HCCS; `crashes-api.hccs.dev` custom domain via `infra/` Pulumi (`deployed_workers`). Its responses match RAC's for NJSP and child tables; NJDOT crashes are a newer build (+98 rows, +29 per-victim-type columns).
 - `VITE_API_URL` → `https://crashes-api.hccs.dev` (`www/deploy.sh`, `dev-restart.sh`, `og-image.sh`); daily + `cf-worker-errors` `CLOUDFLARE_*` → HCCS (`CF_HCCS_INFRA_TOKEN` + literal account id). The probe had been watching the dead RAC `crashes-cells-api` since 2026-09-12.
