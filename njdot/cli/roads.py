@@ -60,8 +60,9 @@ def crashes_by_sri(crashes: pd.DataFrame, latlon: pd.DataFrame) -> pd.DataFrame:
 
 
 def sri_geom(mp: pd.DataFrame) -> pd.DataFrame:
-    """`nj_mp_tenths` → `(sri, mp, sld_name, lon, lat)`, sorted `(sri, mp)`."""
+    """`nj_mp_tenths` → `(sri, mp, sld_name, lon, lat)` (geocoded points only), sorted `(sri, mp)`."""
     df = mp.rename(columns={'SRI': 'sri', 'MP': 'mp', 'SLD_NAME': 'sld_name'})[['sri', 'mp', 'sld_name', 'lon', 'lat']]
+    df = df[df['lat'].notna() & df['lon'].notna()]  # a few hundred ungeocoded tenths: undrawable
     return df.sort_values(['sri', 'mp'], kind='stable').reset_index(drop=True)
 
 
