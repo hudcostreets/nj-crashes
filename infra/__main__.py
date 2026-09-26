@@ -122,6 +122,54 @@ if manage_worker_domains:
             zone_id=zone_id,
         )
 
+# ── Cloudflare for SaaS: FE hostnames in zones we don't control ──
+# `crashes.hudcostreets.org`'s DNS is at Squarespace (not a Cloudflare zone), so
+# it can't be a Workers Custom Domain. Instead it's a SaaS *custom hostname* on
+# `hccs.dev`, routed to the FE Worker by a zone Worker route. Onboarding (manual,
+# at Squarespace): add the ownership + DCV TXT records (`saas_validation`
+# output) so the cert issues first, then CNAME the hostname → `SAAS_FALLBACK`.
+SAAS_FALLBACK = 'crashes-saas.hccs.dev'
+SAAS_HOSTNAMES = {
+    'crashes.hudcostreets.org': 'crashes-www',
+}
+saas_validation = {}
+if SAAS_HOSTNAMES:
+    fallback_rec = cf.DnsRecord(
+        'dns-saas-fallback',
+        zone_id=zone_id,
+        name=SAAS_FALLBACK,
+        type='AAAA',
+        content='100::',
+        proxied=True,
+        ttl=1,
+        comment='CF for SaaS fallback origin; custom hostnames are served by Worker routes',
+    )
+    cf.CustomHostnameFallbackOrigin(
+        'saas-fallback',
+        zone_id=zone_id,
+        origin=SAAS_FALLBACK,
+        opts=pulumi.ResourceOptions(depends_on=[fallback_rec]),
+    )
+    for hostname, script in SAAS_HOSTNAMES.items():
+        ch = cf.CustomHostname(
+            f'ch-{hostname}',
+            zone_id=zone_id,
+            hostname=hostname,
+            ssl=cf.CustomHostnameSslArgs(method='txt', type='dv'),
+        )
+        cf.WorkersRoute(
+            f'route-{hostname}',
+            zone_id=zone_id,
+            pattern=f'{hostname}/*',
+            script=script,
+        )
+        saas_validation[hostname] = {
+            'ownership': ch.ownership_verification,
+            'dcv': ch.ssl.apply(lambda ssl: ssl.validation_records if ssl else None),
+            'status': ch.status,
+            'ssl_status': ch.ssl.apply(lambda ssl: ssl.status if ssl else None),
+        }
+
 # ── Workers (documentation; wrangler-deployed, bindings reference the above) ──
 WORKERS = {
     'crashes-cells-api': 'cells-api/',   # R2 CELLS_BUCKET=crashes + D1 cells-s2,tune; serves /v1/cells,/v1/raw
@@ -137,3 +185,4 @@ pulumi.export('data_domain', data_domain)
 pulumi.export('d1_database_ids', {name: db.id for name, db in d1_dbs.items()})
 pulumi.export('worker_bindings', D1)
 pulumi.export('workers', WORKERS)
+pulumi.export('saas_validation', saas_validation)
