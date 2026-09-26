@@ -51,6 +51,11 @@ def crashes_by_sri(crashes: pd.DataFrame, latlon: pd.DataFrame) -> pd.DataFrame:
     so ungeocoded crashes are kept), sorted `(sri, mp, dt, id)`."""
     df = crashes[crashes['sri'].notna() & (crashes['sri'] != '')]
     df = df[CRASH_COLS].join(latlon[['lat', 'lon']], how='left')
+    # Per-table years and AASHTO disagree on some types (e.g. `route` is int in one, str in the
+    # other), so object columns are mixed after the concat; normalize them to `string` for arrow.
+    for col in df.select_dtypes('object').columns:
+        df[col] = df[col].astype('string')
+    df['id'] = df['id'].astype('Int64')  # AASHTO rows have no `id` → NaN after the concat
     return df.sort_values(['sri', 'mp', 'dt', 'id'], kind='stable', na_position='last').reset_index(drop=True)
 
 
