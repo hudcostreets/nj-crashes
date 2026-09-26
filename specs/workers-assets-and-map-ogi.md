@@ -50,7 +50,13 @@
 - Minor header diffs: `.parquet` has no `content-type` on W+A (Pages: `application/octet-stream`); JS is `text/javascript` (Pages: `application/javascript`). Neither serves byte ranges (parity). DuckDB-WASM plots render.
 - CIC (HCCS profile): `/map` and `/c/hudson` render (map, plots); API calls go to `crashes-api-dev` / `crashes-cells-dev` / `crashes-data`. Stadia basemap tiles 401 on `*.workers.dev` (Stadia's domain allowlist; same tiles 200 with a `dev.crashes.hccs.dev` referer), so the basemap only appears once the Worker has an allowlisted hostname.
 
-### Remaining cutover steps
+### Cutover (2026-09-26)
+
+- **Dev** `dev.crashes.hccs.dev` → `crashes-www-dev` (Pages domain unbound, CNAME deleted, `WORKER_DOMAINS` via `infra/pul up`). ~2m45s gap while its per-hostname cert issued: Workers Custom Domains *do* get free certs for two-label names (Google Trust Services), so the old "needs Advanced Certificate Manager" assumption doesn't apply to them. Stadia basemap tiles 200 on the real hostname; heatmap/cells/API all 200 in the browser.
+- **Prod** `crashes.hccs.dev` → `crashes-www` (deployed from `main` first; data files + OG tags on `/`, `/c/hudson`, `/c/hudson/jersey-city`, `/crash/123`, `/map` byte-identical to prod Pages). No gap (one-label, covered by the `*.hccs.dev` cert). SPA routes now 200 instead of Pages' 404.
+- `www/deploy.dvc`: `./deploy-worker.sh prod && ./deploy.sh` — the Worker plus the `crashes` Pages project, which still serves `crashes.hudcostreets.org` until it moves via CF for SaaS; then drop `./deploy.sh`.
+
+### Remaining cutover steps (as originally planned)
 
 1. **Dev domain**: add `'dev.crashes.hccs.dev': 'crashes-www-dev'` to `infra/` `WORKER_DOMAINS` (+ `deployed_workers`), remove the domain from the `crashes-dev` Pages project, `infra/pul up`. Expect a ~2 min gap (a hostname can only be active on one of Pages / Worker). Note `dev.crashes.hccs.dev` is two labels deep: Pages issued its own cert for it; check a Workers Custom Domain gets one too (Custom Domains issue per-hostname certs, so it should), before relying on it.
 2. Verify dev on its real hostname (OG curl sweep above, basemap tiles, CIC), a few days.

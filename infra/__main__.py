@@ -105,6 +105,10 @@ WORKER_DOMAINS = {
     # Dev tier (`wrangler deploy --env dev`), behind `dev.crashes.hccs.dev`.
     'crashes-cells-dev.hccs.dev': 'crashes-cells-api-dev',
     'crashes-api-dev.hccs.dev':   'crashes-api-dev',
+    # FE on Workers + Assets (`www/wrangler.toml`), replacing the Pages projects.
+    # Two-label: Workers Custom Domains get their own edge cert per hostname.
+    'dev.crashes.hccs.dev':       'crashes-www-dev',
+    'crashes.hccs.dev':           'crashes-www',
 }
 if manage_worker_domains:
     for hostname, service in WORKER_DOMAINS.items():
