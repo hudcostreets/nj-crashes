@@ -95,6 +95,8 @@ export type Props = {
     onHeightScaleChange?: (n: number) => void
     /** Click handler for outline polygons (geo drill-down). */
     onOutlineClick?: (feature: any) => void
+    /** Hovered outline feature (null on leave); highlighted while `onOutlineClick` is set. */
+    onOutlineHover?: (feature: any | null) => void
     /** Fired for any click on the map canvas (used for drawer close-on-click). */
     /** Map click, with the clicked `[lon, lat]` (unless a layer handled it). */
     onMapClick?: (lngLat?: [number, number]) => void
@@ -422,6 +424,7 @@ export function CrashMap({
     heightScale: controlledHeightScale,
     onHeightScaleChange,
     onOutlineClick,
+    onOutlineHover,
     onMapClick,
     onMapHover,
     extraLayers,
@@ -742,11 +745,14 @@ export function CrashMap({
                 getFillColor: onOutlineClick ? [...lineRgb, 12] as any : [0, 0, 0, 0] as any,
                 getLineColor: [...lineRgb, alpha] as any,
                 lineWidthMinPixels: muniOutline ? 0.8 : 1.5,
-                pickable: !!onOutlineClick,
+                pickable: !!onOutlineClick || !!onOutlineHover,
+                autoHighlight: !!onOutlineClick,
+                highlightColor: [...lineRgb, 60] as any,
                 onClick: onOutlineClick ? (info: any) => {
                     if (info.object) { onOutlineClick(info.object); return true }
                     return false
                 } : undefined,
+                onHover: onOutlineHover ? (info: any) => { onOutlineHover(info.object ?? null) } : undefined,
                 updateTriggers: {
                     getFillColor: [theme, !!onOutlineClick],
                     getLineColor: [theme, !!muniOutline],
@@ -767,7 +773,7 @@ export function CrashMap({
             }))
         }
         return layers
-    }, [outline, muniOutline, theme, onOutlineClick])
+    }, [outline, muniOutline, theme, onOutlineClick, onOutlineHover])
 
     // Strategy A bake: recompute the KDE image only when the cell set (or its
     // level) changes — never on pan/zoom/opacity. Skipped unless heatmap+A.

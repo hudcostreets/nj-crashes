@@ -5,14 +5,14 @@ import { useUrlState, stringParam } from "use-prms"
 import { useAction } from "use-kbd"
 import { useDb } from "@/src/lib/DuckDbContext"
 import {
-    fetchHitPoints, fetchRoadCrashes, fetchRoadGeom, fetchRoadInfo, nearestRoad, roadPaths, roadSegments,
-    type Bbox, type RoadPoint,
+    fetchEntity, fetchEntityCrashes, fetchEntityGeom, fetchHitPoints, hitFileForZoom, HIT_TIERS, nearestRoad,
+    roadPaths, roadSegments, type Bbox, type RoadPoint,
 } from "./roadsData"
 
 const { cos, PI, pow } = Math
 
-/** Hover/click select roads only at street-ish zooms (the viewport's hit points stay small). */
-export const ROAD_HIT_MIN_ZOOM = 12
+/** Road hover/click works from the widest hit tier's zoom (major roads only out there). */
+export const ROAD_HIT_MIN_ZOOM = Math.min(...HIT_TIERS.map(t => t.minZoom))
 /** Hit radius in CSS px. */
 const HIT_PX = 10
 /** Fetch hit points for a bbox this much larger than the viewport, so small pans reuse them. */
@@ -31,29 +31,32 @@ function contains([w, s, e, n]: Bbox, [w2, s2, e2, n2]: Bbox): boolean {
     return w <= w2 && s <= s2 && e >= e2 && n >= n2
 }
 
-/** Map road selection (specs/road-name-normalization-and-search.md Layer 4b, phase 1): hover a
- *  road to highlight it, click to select (`?road=<sri>`); the selection's geometry, summary and
- *  crashes load from the `roads/` parquets. `viewBbox` is the current viewport. */
+/** Map road selection (specs/road-name-normalization-and-search.md Layer 4b): hover a road to
+ *  highlight it, click to select it (`?road=<entity>`); the selection's geometry, summary and
+ *  crashes load from the `roads/` parquets. A road is an *entity* (same-named SRI runs joined
+ *  across routes), not an SRI. `viewBbox` is the current viewport. */
 export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
     const db = useDb()
-    const [road, setRoadUrl] = useUrlState("road", stringParam())
-    const setRoad = useCallback((sri: string | null) => setRoadUrl(sri ?? undefined), [setRoadUrl])
-    const active = !!view && view.zoom >= ROAD_HIT_MIN_ZOOM
+    const [roadUrl, setRoadUrl] = useUrlState("road", stringParam())
+    const road = roadUrl && /^\d+$/.test(roadUrl) ? Number(roadUrl) : null
+    const setRoad = useCallback((entity: number | null) => setRoadUrl(entity === null ? undefined : String(entity)), [setRoadUrl])
+    const hitFile = view ? hitFileForZoom(view.zoom) : null
+    const active = !!hitFile
 
-    // Hit points for a padded bbox; refetched only when the viewport leaves it.
-    const [hitBbox, setHitBbox] = useState<Bbox | null>(null)
+    // Hit points for a padded bbox; refetched when the viewport leaves it or the zoom tier changes.
+    const [hitKey, setHitKey] = useState<{ file: string; bbox: Bbox } | null>(null)
     useEffect(() => {
-        if (!active || !viewBbox) return
-        if (hitBbox && contains(hitBbox, viewBbox)) return
-        const t = setTimeout(() => setHitBbox(pad(viewBbox, HIT_PAD)), 250)
+        if (!hitFile || !viewBbox) return
+        if (hitKey && hitKey.file === hitFile && contains(hitKey.bbox, viewBbox)) return
+        const t = setTimeout(() => setHitKey({ file: hitFile, bbox: pad(viewBbox, HIT_PAD) }), 250)
         return () => clearTimeout(t)
-    }, [active, viewBbox, hitBbox])
+    }, [hitFile, viewBbox, hitKey])
     const hit = useQuery({
-        queryKey: ["road-hit", hitBbox],
-        queryFn: () => fetchHitPoints(db!, hitBbox!),
-        enabled: active && !!db && !!hitBbox,
+        queryKey: ["road-hit", hitKey],
+        queryFn: () => fetchHitPoints(db!, hitKey!.file as Parameters<typeof fetchHitPoints>[1], hitKey!.bbox),
+        enabled: active && !!db && !!hitKey,
     })
-    const hitPoints = useMemo(() => (active ? (hit.data ?? []) : []), [active, hit.data])
+    const hitPoints = useMemo(() => (active && hitKey?.file === hitFile ? (hit.data ?? []) : []), [active, hitKey, hitFile, hit.data])
     const hitSegments = useMemo(() => roadSegments(hitPoints), [hitPoints])
 
     const [hovered, setHovered] = useState<RoadPoint | null>(null)
@@ -61,29 +64,34 @@ export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
     const onHover = useCallback((lngLat: [number, number] | null) => {
         setHovered(lngLat && hitSegments.length ? nearestRoad(hitSegments, lngLat, hitMeters) : null)
     }, [hitSegments, hitMeters])
-    /** Returns true if the click selected (or cleared) a road. */
+    // A click selects what's highlighted (so a cursor twitch between hover and click can't land on a
+    // neighbor); only without a hover does it hit-test the click point itself.
     const onClick = useCallback((lngLat?: [number, number]) => {
-        if (!active || !lngLat) return false
-        const p = nearestRoad(hitSegments, lngLat, hitMeters)
-        if (p) { setRoad(p.sri); return true }
+        if (!active) return false
+        const p = hovered ?? (lngLat ? nearestRoad(hitSegments, lngLat, hitMeters) : null)
+        if (p) { setRoad(p.entity); return true }
         return false
-    }, [active, hitSegments, hitMeters, setRoad])
+    }, [active, hovered, hitSegments, hitMeters, setRoad])
 
-    const enabled = !!db && !!road
-    const geom = useQuery({ queryKey: ["road-geom", road], queryFn: () => fetchRoadGeom(db!, road!), enabled })
-    const info = useQuery({ queryKey: ["road-info", road], queryFn: () => fetchRoadInfo(db!, road!), enabled })
-    const crashes = useQuery({ queryKey: ["road-crashes", road], queryFn: () => fetchRoadCrashes(db!, road!), enabled })
+    const enabled = !!db && road !== null
+    const info = useQuery({ queryKey: ["road-entity", road], queryFn: () => fetchEntity(db!, road!), enabled })
+    const sris = info.data?.sris.split(",") ?? []
+    const geom = useQuery({
+        queryKey: ["road-geom", road, info.data?.sris],
+        queryFn: () => fetchEntityGeom(db!, road!, sris),
+        enabled: enabled && sris.length > 0,
+    })
+    const crashes = useQuery({ queryKey: ["road-crashes", road], queryFn: () => fetchEntityCrashes(db!, road!), enabled })
 
     useAction("map:road-clear", {
         label: "Clear road selection",
         group: "Map",
         defaultBindings: ["m x"],
         keywords: ["road", "route", "deselect"],
-        enabled: !!road,
         handler: () => setRoad(null),
     })
 
-    const hoveredSri = hovered && hovered.sri !== road ? hovered.sri : null
+    const hoveredEntity = hovered && hovered.entity !== road ? hovered.entity : null
     const layers = useMemo(() => {
         const out: PathLayer[] = []
         if (geom.data?.length) {
@@ -98,10 +106,10 @@ export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
                 jointRounded: true,
             }))
         }
-        if (hoveredSri) {
+        if (hoveredEntity !== null) {
             out.push(new PathLayer({
                 id: "road-hover",
-                data: roadPaths(hitPoints.filter(p => p.sri === hoveredSri)),
+                data: roadPaths(hitPoints.filter(p => p.entity === hoveredEntity)),
                 getPath: (d: [number, number][]) => d,
                 getColor: [255, 255, 255, 170],
                 getWidth: 3,
@@ -111,12 +119,12 @@ export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
             }))
         }
         return out
-    }, [geom.data, hoveredSri, hitPoints])
+    }, [geom.data, hoveredEntity, hitPoints])
 
     return {
         road, setRoad, active, hovered, onHover, onClick, layers,
         info: info.data ?? null,
         crashes: crashes.data ?? null,
-        loading: geom.isFetching || info.isFetching || crashes.isFetching,
+        loading: info.isFetching || geom.isFetching || crashes.isFetching,
     }
 }
