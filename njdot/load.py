@@ -373,13 +373,17 @@ def load_crashes_with_aashto(columns: Optional[list[str]] = None) -> pd.DataFram
     # again before returning unless the caller asked for it.
     want_backfill = exists(CRASHES_GEOCODE_BACKFILL)
     caller_wants_id = columns is None or 'id' in columns
+    # `id` isn't a stored column (it's crashes.parquet's index; AASHTO has none),
+    # so never ask either read for it.
+    read_cols = None if columns is None else [c for c in columns if c != 'id']
     err(f'Loading {CRASHES_PQT}...')
-    df = read_parquet(CRASHES_PQT, columns=columns)
-    if want_backfill:
+    df = read_parquet(CRASHES_PQT, columns=read_cols)
+    id_col = want_backfill or (columns is not None and caller_wants_id)
+    if id_col:
         df = df.reset_index()  # id: index → column (survives the concat below)
     err(f'  per-table: {len(df):,} crashes ({df["year"].min()}–{df["year"].max()})')
     if exists(AASHTO_SUPPLEMENTED_CRASHES):
-        aashto = read_parquet(AASHTO_SUPPLEMENTED_CRASHES, columns=columns)
+        aashto = read_parquet(AASHTO_SUPPLEMENTED_CRASHES, columns=read_cols)
         err(f'  AASHTO:    {len(aashto):,} crashes ({int(aashto["year"].min())}–{int(aashto["year"].max())})')
         aashto_years = set(aashto['year'].dropna().astype(int))
         overlap = sorted(set(df['year'].dropna().astype(int)) & aashto_years)
@@ -396,6 +400,7 @@ def load_crashes_with_aashto(columns: Optional[list[str]] = None) -> pd.DataFram
     if want_backfill:
         backfill = read_parquet(CRASHES_GEOCODE_BACKFILL)
         df = _apply_geocode_backfill(df, backfill)
+    if id_col:
         if not caller_wants_id:
             df = df.drop(columns=['id'])
         elif columns is None:
