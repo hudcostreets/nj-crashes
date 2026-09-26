@@ -61,17 +61,14 @@ logs from `/<prefix>/batch`). Each entry has an `arch` and either:
   pushed digest; or
 - `image`: a prebuilt ECR URI (the x86 audit image, from the manual-build era).
 
-`gh_token: true` injects the GH push-back token (`gh_token_secret_arn`, whose
-read grant the execution role gets). Every job def also carries the vcpu/mem
-`resourceRequirements`, `executionRoleArn` + **`jobRoleArn`** (task role), and
-**no `AWS_*` env**.
+`secrets: true` injects the stack's `secrets` (env var → Secrets Manager secret; the execution role gets read access). A secret is either an existing `arn` or a `name` that Pulumi creates empty; its value is set out of band by `batch/infra/put-secrets`, so it never enters Pulumi state. Every job def also carries the stack's plain `env`, the vcpu/mem `resourceRequirements`, and `executionRoleArn` + `jobRoleArn` (task role).
 
-`Pulumi.dev.yaml` is the live state: no `pulumi up -c` overrides. Running a
-reproc at a new commit = push it to GitHub, bump that jobdef's `ref`, commit,
-`pulumi up` (with `AWS_PROFILE=r` and an empty `PULUMI_CONFIG_PASSPHRASE`).
-Audit and reproc job defs coexist, so switching between them needs no infra
-change. `batch/.dockerignore` keeps the build context to `Dockerfile` +
-`entrypoint.sh`.
+### Stacks (2026-09-26)
+
+- **`hccs`** (live, HCCS AWS `688066488567`, `AWS_PROFILE=h`): state committed under `batch/infra/state/` (like `infra/`), encrypted with `.envrc`'s `PULUMI_CONFIG_PASSPHRASE`. The repo is public, so the passphrase must be real: the image's ECR login token is a state secret. Data is in HCCS R2: submit with `run -r r2 …` (DVX reads and pushes R2); injected R2 keys + `AWS_ENDPOINT_URL_S3` point boto/`aws` S3 calls at R2; `NJC_S3=s3://crashes/.batch-scratch`. No task-role S3 grants.
+- **`dev`** (legacy RAC AWS `006196295121`, `AWS_PROFILE=r`, empty passphrase): state in RAC S3; reach it with `PULUMI_BACKEND_URL=s3://nj-crashes/pulumi/batch`. Being destroyed per `specs/rac-to-hccs.md`.
+
+Each stack's `Pulumi.<stack>.yaml` is its live state (no `pulumi up -c` overrides). Running at a new commit = push it to GitHub, bump the jobdef's `ref`, commit, `pulumi up --stack hccs`. `batch/.dockerignore` keeps the build context to `Dockerfile` + `entrypoint.sh`.
 
 ## Submit path (replaces `tmp/*submit*.py` bootstrap calls)
 
@@ -89,8 +86,11 @@ Self-contained Pulumi project under `batch/infra/` (its own venv to keep
 
 ```
 batch/infra/
-  Pulumi.yaml          # name: nj-crashes-batch, runtime python, backend s3://nj-crashes/pulumi/batch
-  Pulumi.dev.yaml      # stack config (jobdefs: arch + ref/image; vcpu/mem; gh-token secret ARN)
+  Pulumi.yaml          # name: nj-crashes-batch, runtime python, backend file://./state
+  Pulumi.hccs.yaml     # HCCS stack config (jobdefs, env, secrets, vcpu/mem)
+  Pulumi.dev.yaml      # legacy RAC stack config
+  put-secrets          # fill Pulumi-created secrets' values (never in state)
+  state/               # committed local backend (hccs)
   __main__.py          # the program
   requirements.txt     # pulumi, pulumi-aws, pulumi-docker-build
 ```
