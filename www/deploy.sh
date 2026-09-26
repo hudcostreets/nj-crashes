@@ -6,8 +6,11 @@ set -euo pipefail
 
 tier="${1:-prod}"
 case "$tier" in
-    prod) project=crashes     api=crashes-api     cells=crashes-cells ;;
-    dev)  project=crashes-dev api=crashes-api-dev cells=crashes-cells-dev ;;
+    # prod: Pages takes the branch from git, so a non-`main` checkout only makes a
+    # preview deploy (a guard against shipping a feature branch to prod).
+    prod) project=crashes     api=crashes-api     cells=crashes-cells     branch_args=() ;;
+    # dev: whatever branch is checked out goes live at dev.crashes.hccs.dev.
+    dev)  project=crashes-dev api=crashes-api-dev cells=crashes-cells-dev branch_args=(--branch main) ;;
     *) echo "usage: $0 [prod|dev]" >&2; exit 1 ;;
 esac
 
@@ -29,7 +32,7 @@ if [ -z "${CF_HCCS_INFRA_TOKEN:-}" ]; then
     exit 1
 fi
 CLOUDFLARE_API_TOKEN="$CF_HCCS_INFRA_TOKEN" CLOUDFLARE_ACCOUNT_ID=2363642879f18d37d52dca114059937e \
-    npx wrangler pages deploy dist --project-name "$project" --commit-dirty=true
+    npx wrangler pages deploy dist --project-name "$project" --commit-dirty=true ${branch_args[@]+"${branch_args[@]}"}
 
 # Signal DVX to commit
 if [ "$tier" = prod ] && [ -n "${DVX_COMMIT_MSG_FILE:-}" ]; then
