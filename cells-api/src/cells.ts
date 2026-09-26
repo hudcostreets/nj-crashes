@@ -32,6 +32,10 @@
  *
  *  The cell key rode a vestigial `h3` wire field until h3-removal Phase
  *  4b renamed it to `cellid` (worker + client moved together).
+ *
+ *  `format=cols` (opt-in, additive — the default above is unchanged) returns
+ *  the same cells as sorted parallel arrays of just the requested `fields`
+ *  (`CellsColsResponse`, `toColumnar`); see `specs/cells-compact-wire-format.md`.
  */
 import { S2CellId, S2LatLng, S2LatLngRect, S2RegionCoverer } from "nodes2ts"
 import { loadManifest } from "./manifest"
@@ -123,6 +127,27 @@ export type CellsResponse = {
     cells: CellOut[]
 }
 
+/** Count columns a `format=cols` request may ask for via `fields=`. Labels
+ *  and `fatal_years` are row-format-only. */
+export const COUNT_FIELDS = ["n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "n_killed", "n_killed_ped"] as const
+export type CountField = typeof COUNT_FIELDS[number]
+
+/** `format=cols` response: the row response's envelope, with `cells`
+ *  replaced by sorted parallel arrays.
+ *
+ *  `cols.cellid` is prefix-delta encoded against the previous entry: the
+ *  first char is the shared-prefix length as one hex digit (tokens are ≤16
+ *  chars and distinct, so a shared prefix is ≤15), the rest is the suffix.
+ *  Entry 0 has prefix length 0 (`"0" + token`). Sorted S2 tokens sit on the
+ *  Hilbert curve, so neighbors share long prefixes and the average entry is
+ *  a few chars instead of ~17. Decode: `prev.slice(0, parseInt(e[0], 16)) + e.slice(1)`. */
+export type CellsColsResponse = Omit<CellsResponse, "cells"> & {
+    format: "cols"
+    cellid_enc: "prefix-hex1"
+    n: number
+    cols: { cellid: string[] } & Partial<Record<CountField, number[]>>
+}
+
 export type CellsRequest = {
     /** Parent S2 cells (tokens) the client wants data for; the worker
      *  reads one pyramid file per shard, in order. Unknown shards (no
@@ -171,6 +196,14 @@ export type CellsRequest = {
      *  that without the client having to predict its own cell count.
      *  The response reports the mode actually served. */
     labelMaxCells?: number
+    /** Wire shape. `rows` (default) = `CellsResponse`, unchanged; `cols` =
+     *  `CellsColsResponse`, label-less (`labels` must be unset or `nums`). */
+    format?: "rows" | "cols"
+    /** `format=cols` only: which count columns to ship, in order. Default
+     *  all of `COUNT_FIELDS`. The client names what it needs (heatmap C:
+     *  the four severity counts) rather than the worker computing a
+     *  derived weight, so weighting logic lives in exactly one place. */
+    fields?: CountField[]
 }
 
 /** Default `labelMaxCells`. ~20k cells × ~90 B/cell ≈ 1.8 MB of labels
@@ -200,6 +233,51 @@ export function servedLabels(
     if (requested !== "full" || cells.length <= labelMaxCells) return requested
     stripLabels(cells)
     return "nums"
+}
+
+/** Longest shared prefix of two strings. */
+function sharedPrefixLen(a: string, b: string): number {
+    const n = Math.min(a.length, b.length)
+    let i = 0
+    while (i < n && a.charCodeAt(i) === b.charCodeAt(i)) i++
+    return i
+}
+
+/** Prefix-delta encode sorted, distinct S2 tokens (see `CellsColsResponse`). */
+export function encodeTokens(tokens: string[]): string[] {
+    const out: string[] = new Array(tokens.length)
+    let prev = ""
+    for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i]
+        const k = sharedPrefixLen(prev, t)
+        if (k > 15) throw new Error(`token ${t} shares ${k} chars with its predecessor (duplicate?)`)
+        out[i] = k.toString(16) + t.slice(k)
+        prev = t
+    }
+    return out
+}
+
+/** Inverse of `encodeTokens`. */
+export function decodeTokens(enc: string[]): string[] {
+    const out: string[] = new Array(enc.length)
+    let prev = ""
+    for (let i = 0; i < enc.length; i++) {
+        const e = enc[i]
+        prev = prev.slice(0, parseInt(e[0], 16)) + e.slice(1)
+        out[i] = prev
+    }
+    return out
+}
+
+/** Row response → `format=cols`. Sorts by cellid (lex order of stripped
+ *  tokens = cell-id order at a fixed level), which is what makes the
+ *  prefix-delta encoding bite; the row format's order was never a contract. */
+export function toColumnar(r: CellsResponse, fields: readonly CountField[] = COUNT_FIELDS): CellsColsResponse {
+    const { cells, ...envelope } = r
+    const sorted = [...cells].sort((a, b) => a.cellid < b.cellid ? -1 : a.cellid > b.cellid ? 1 : 0)
+    const cols: CellsColsResponse["cols"] = { cellid: encodeTokens(sorted.map(c => c.cellid)) }
+    for (const f of fields) cols[f] = sorted.map(c => c[f])
+    return { ...envelope, format: "cols", cellid_enc: "prefix-hex1", n: sorted.length, cols }
 }
 
 /** Standard ray-casting point-in-polygon. Polygon as `[lon, lat][]`,
@@ -259,12 +337,30 @@ export { intersectRanges }
  *  `data_version` + `year_range`, computes S2 token ranges from the
  *  request's shards ∩ clip polygon, then serves from D1 (`CELLS_S2_DB`)
  *  when the request is all-years, falling back to the R2 parquet
- *  pyramid otherwise or on any D1 failure. */
+ *  pyramid otherwise or on any D1 failure. `format=cols` runs the same
+ *  query and re-shapes the result (`toColumnar`). */
 export async function handleCellsRequest(
     bucket: R2Bucket,
     prefix: string,
     req: CellsRequest,
     db?: D1Database,
+): Promise<CellsResponse | CellsColsResponse> {
+    if (req.format === "cols") {
+        if (req.labels && req.labels !== "nums") {
+            throw new HttpError(400, "format=cols serves counts only (labels must be unset or nums)")
+        }
+        const r = await queryCells(bucket, prefix, { ...req, labels: "nums" }, db, false)
+        return toColumnar(r, req.fields ?? COUNT_FIELDS)
+    }
+    return queryCells(bucket, prefix, req, db, true)
+}
+
+async function queryCells(
+    bucket: R2Bucket,
+    prefix: string,
+    req: CellsRequest,
+    db: D1Database | undefined,
+    fatalYears: boolean,
 ): Promise<CellsResponse> {
     const manifest = await loadManifest(bucket, prefix)
     const { cells: requestedShards, res: requestedLevel, maxCells } = req
@@ -350,7 +446,7 @@ export async function handleCellsRequest(
     if (db && coversAllYears && labels !== "only") {
         try {
             const t0 = Date.now()
-            let cells = await queryCellsS2D1(db, requestedLevel, ranges, clipPoly, sevSet, labels)
+            let cells = await queryCellsS2D1(db, requestedLevel, ranges, clipPoly, sevSet, labels, fatalYears)
             const t1 = Date.now()
             let level = requestedLevel
             while (maxCells != null && cells.length > maxCells && level > S2_MIN_LEVEL) {
@@ -530,6 +626,9 @@ async function queryCellsS2D1(
     clipPoly: LonLatPolygon | null,
     severities?: Set<"f" | "i" | "p">,
     labels: "full" | "nums" = "full",
+    /** Select + parse `fatal_years`. Off for `format=cols`, which never
+     *  ships it. */
+    fatalYears = true,
 ): Promise<CellOut[]> {
     // Severity gating mirrors `queryPyramidS2` exactly — same counters, same
     // "drop cells with no hit in a requested severity" rule — so the two
@@ -540,7 +639,8 @@ async function queryCellsS2D1(
     const where = tokenRanges.length
         ? tokenRanges.map(r => `(cellid BETWEEN '${r.lo}' AND '${r.hi}')`).join(" OR ")
         : "1=1"
-    const cols = ["cellid", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "n_killed", "n_killed_ped", "fatal_years"]
+    const cols = ["cellid", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "n_killed", "n_killed_ped"]
+    if (fatalYears) cols.push("fatal_years")
     if (labels === "full") cols.push(...LABEL_KEYS)
     const sql = `SELECT ${cols.join(", ")} FROM cells_s2_l${level} WHERE ${where}`
     const { results } = await db.prepare(sql).all<{
@@ -729,5 +829,26 @@ export function parseCellsRequest(url: URL): CellsRequest {
         labelMaxCells = n
     }
 
-    return { cells, res, yearRange, severities, clipPolygon, maxCells, shardRes, labels, labelMaxCells }
+    let format: "rows" | "cols" | undefined
+    const fm = url.searchParams.get("format")
+    if (fm) {
+        if (fm !== "rows" && fm !== "cols") throw new HttpError(400, "format must be one of rows|cols")
+        format = fm
+    }
+
+    let fields: CountField[] | undefined
+    const fs = url.searchParams.get("fields")
+    if (fs != null) {
+        if (format !== "cols") throw new HttpError(400, "fields requires format=cols")
+        const names = fs.split(",").map(f => f.trim()).filter(f => f.length > 0)
+        if (!names.length) throw new HttpError(400, "fields must list ≥1 count column")
+        for (const f of names) {
+            if (!(COUNT_FIELDS as readonly string[]).includes(f)) {
+                throw new HttpError(400, `unknown field '${f}' (expected one of ${COUNT_FIELDS.join("|")})`)
+            }
+        }
+        if (new Set(names).size !== names.length) throw new HttpError(400, "fields must not repeat")
+        fields = names as CountField[]
+    }
+    return { cells, res, yearRange, severities, clipPolygon, maxCells, shardRes, labels, labelMaxCells, format, fields }
 }

@@ -1,7 +1,9 @@
 # Compact wire format for `/v1/cells`
 
-Status: draft, not started. Measured 2026-08-22 against the deployed worker
-(`tmp/audit-cells.py`, `tmp/audit-encoding.py`).
+Status: `format=cols` + `fields=` landed for heatmap C (see "Heatmap C" below;
+dev worker only as of 2026-09-26); the general client rollout is not started.
+Measured 2026-08-22 against the deployed worker (`tmp/audit-cells.py`,
+`tmp/audit-encoding.py`).
 
 ## Problem
 
@@ -92,9 +94,51 @@ D's shape:
   become dictionary-encoded (`{"dict": ["Hudson", …], "idx": [0, 0, 3, …]}`),
   which is where their 51 B/cell goes to ~2.
 
-## Heatmap C: a single weight column (2026-09-26)
+## Heatmap C: `format=cols` + `fields=` (2026-09-26, landed on dev)
 
-Heatmap C (`useHeatTiles`) uses only `cellid` + one severity-weighted count per cell, but fetches every count column (`n_fatal`, `n_inj_ped`, `n_inj_other`, `n_pdo`, `n_vehs`, `n_killed`, `n_killed_ped`). One z13.7 tile response was 234 KB on the wire / 3.8 MB decoded, a view is ~10–13 tiles, and each zoom step fetches a new tile×level set; a few minutes of zoom/pan measured **35 MB / 749 requests**. A `fields=` (or `weight=`) param returning `[cellid, w]` pairs in the columnar format would cut both the wire bytes and `JSON.parse` time several-fold for C, independent of the general rollout below.
+Heatmap C (`useHeatTiles`) uses only `cellid` + the four severity counts `cellHeatWeight` reads, but fetched every count column (`n_fatal`, `n_inj_ped`, `n_inj_other`, `n_pdo`, `n_vehs`, `n_killed`, `n_killed_ped`) plus `fatal_years`, as row objects. A view is ~10–13 tiles, and each zoom step fetches a new tile×level set; a few minutes of zoom/pan measured **35 MB / 749 requests**.
+
+### Design
+
+Opt-in, additive request mode on `/v1/cells` (`cells-api/src/cells.ts`):
+
+- `format=cols` → `CellsColsResponse`: the row response's envelope (`res`, `year_range`, `data_version`, `source`, `labels`) plus `format: "cols"`, `cellid_enc: "prefix-hex1"`, `n`, and `cols: {cellid: [...], <field>: [...], ...}` — this spec's candidate **D**.
+- `fields=n_fatal,n_inj_ped,n_inj_other,n_pdo` (requires `format=cols`; default all seven counts): which count columns ship, in the order given. Unknown/repeated names → 400.
+- Label-less: `format=cols` implies `labels=nums`; `labels=full|only` → 400. `fatal_years` is never shipped, and the D1 scan stops selecting/parsing it in this mode.
+- Rows are sorted by `cellid` (lex order of stripped tokens = cell-id order at a fixed level), and `cols.cellid[i]` is `<one hex digit: prefix length shared with cellid[i-1]><suffix>` (entry 0 has prefix `0`). Tokens are distinct and ≤16 chars, so the shared prefix is ≤15 and one hex digit is unambiguous — no separator needed.
+- Same query code on both paths (D1 and the year-filtered pyramid): `handleCellsRequest` runs the unchanged query and `toColumnar` reshapes the result. The default (`format` unset / `rows`) path is untouched and byte-identical (verified vs prod, below).
+
+Why `fields=` rather than a server-computed weight (`weight=` / `[cellid, w]` pairs): the client names the raw counts it needs and keeps `cellHeatWeight` as the one place the severity weighting lives, so worker and client can't drift, and `fetchTileCells` still builds the same `StackedCell[]` (per-severity breakdown intact) — nothing downstream changes. The cost of that choice is measurable: `fields=n_pdo` (one int column, a proxy for a single `w` column) is ~half the wire bytes of the four-field request (z8: 49 KB vs 94 KB). If that second 2× is wanted later, a client-supplied linear combination (`weight=n_fatal:8,n_inj_ped:2,…`) keeps the weights client-owned — but drops the breakdown from `StackedCell`.
+
+Client (`www/src/map/cellsCols.ts`): `heatCellsFromBody` decodes `cols` into `StackedCell[]` and still accepts the row shape, so the new client works against a worker that predates `format=cols` (it ignores unknown params and answers in rows; the client keeps sending `labels=nums` so that fallback stays label-less).
+
+### Measured (2026-09-26, `crashes-cells-dev.hccs.dev`, `Accept-Encoding: br, gzip`)
+
+Exact `fetchTileCells` query shape (`severities=fip`, `maxCells=150000`, tile bbox + 30% margin), one tile each; parse = median `JSON.parse` in Node; parse+decode adds the per-cell loop to `StackedCell`-equivalent tuples (no `tokenCenterLngLat`).
+
+D1 path (`years=2001-2025`, all years):
+
+| view | tile | level | cells | wire rows → cols | decoded rows → cols | parse ms | parse+decode ms |
+|---|---|---|---|---|---|---|---|
+| statewide z8 | 8/75/96 | l14 | 29,498 | 305 → **94 KB** (3.2×) | 3,384 → **421 KB** (8.0×) | 6.4 → 1.8 | 7.8 → 3.8 |
+| z10.5 | 11/602/769 | l17 | 41,550 | 312 → **108 KB** (2.9×) | 4,786 → **577 KB** (8.3×) | 7.7 → 3.0 | 8.9 → 5.0 |
+| z13.7 | 14/4821/6159 | l19 | 4,202 | 25 → **11 KB** (2.2×) | 486 → **59 KB** (8.3×) | 1.1 → 0.3 | 0.8 → 0.4 |
+
+Pyramid path (`years=2020-2025`):
+
+| view | cells | wire rows → cols | decoded rows → cols | parse ms |
+|---|---|---|---|---|
+| z8 | 27,542 | 242 → **72 KB** | 3,175 → **377 KB** | 6.9 → 1.3 |
+| z10.5 | 37,913 | 247 → **86 KB** | 4,360 → **518 KB** | 6.5 → 1.8 |
+| z13.7 | 3,657 | 20 → **9 KB** | 422 → **51 KB** | 0.6 → 0.2 |
+
+Other `fields` choices at the same tiles (D1, wire / decoded): all seven counts 143 / 625 KB (z8); `n_pdo` only 49 / 231 KB (z8).
+
+In the browser (local `www` dev server → dev worker, `/map?mode=heatmap&hr=c`, default statewide view, 12 tiles at l14; UI years 2001–2023, so the pyramid path): **1,238 → 400 KB wire, 13.4 MB → 1.66 MB decoded, 68 → 12 ms total `JSON.parse`**, same cell counts, surface renders as before.
+
+Checks: decoded per-cell `(cellid, n_fatal, n_inj_ped, n_inj_other, n_pdo)` identical between modes for all six requests above (and the envelope fields); default-mode bodies from the dev worker byte-identical to prod (`crashes-cells.hccs.dev`) for the same six queries. Tests: `cells-api/src/cells-cols.test.ts` (parse, encoding, D1 + pyramid paths in both modes, default-mode goldens produced by the pre-change handler), `www/src/map/cellsCols.test.ts`.
+
+Not addressed here: the heatmap page also fires the regular (non-tile) `useCellsApi` fetch — 2 statewide l13 `labels=nums` row requests, 370 KB wire / 3.4 MB decoded on the default view — which C doesn't render from. That's the general rollout below (or skipping that fetch under `hr=c`).
 
 ## Rollout
 
@@ -103,6 +147,8 @@ independently (`memory/feedback_cells_api_deploy_skew.md`):
 
 1. Worker: `?format=cols` returns D; default stays the current row format.
    Same query paths, new serializer — the D1/parquet code is untouched.
+   **Done** (with `fields=`), deployed to the dev worker; heatmap C is the
+   first client.
 2. Client: send `format=cols`, decode into the existing `CellRow[]` shape at
    the fetch boundary (`useCellsApi.ensureShardsCached`) so nothing downstream
    changes. Keep the row decoder for a release.
