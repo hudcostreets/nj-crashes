@@ -5,9 +5,9 @@
 # READMEs live at their natural repo paths (mirroring the layout
 # under `raw/` 1:1):
 #
-#   njdot/data/README.md                  → r2://nj-crashes/raw/njdot/data/README.md
-#   njdot/data/<year>/README.md           → r2://nj-crashes/raw/njdot/data/<year>/README.md
-#   njsp/data/annual-summaries/README.md  → r2://nj-crashes/raw/njsp/data/annual-summaries/README.md
+#   njdot/data/README.md                  → r2://crashes/raw/njdot/data/README.md
+#   njdot/data/<year>/README.md           → r2://crashes/raw/njdot/data/<year>/README.md
+#   njsp/data/annual-summaries/README.md  → r2://crashes/raw/njsp/data/annual-summaries/README.md
 #
 # The list is hard-coded rather than discovered by `find` so we don't
 # accidentally mirror unrelated READMEs (e.g. njsp/cli/README.md).
@@ -17,9 +17,10 @@
 
 set -euo pipefail
 
-PROFILE="${AWS_PROFILE_R2:-cf}"
-ENDPOINT="${R2_ENDPOINT:-https://0dcad5654e9744de6616f74b8df4af63.r2.cloudflarestorage.com}"
-BUCKET="${R2_BUCKET:-nj-crashes}"
+# Creds: env (run under `infra/r2-run`), or a named profile via AWS_PROFILE_R2.
+PROFILE="${AWS_PROFILE_R2:-}"
+ENDPOINT="${R2_ENDPOINT:-https://2363642879f18d37d52dca114059937e.r2.cloudflarestorage.com}"
+BUCKET="${R2_BUCKET:-crashes}"
 PREFIX="${R2_PREFIX:-raw/}"
 
 READMES=(
@@ -36,7 +37,7 @@ for readme in "${READMES[@]}"; do
         echo "SKIP $readme (not present)" >&2
         continue
     fi
-    AWS_PROFILE="$PROFILE" aws s3 cp \
+    aws ${PROFILE:+--profile "$PROFILE"} s3 cp \
         "$readme" \
         "s3://$BUCKET/${PREFIX}$readme" \
         --endpoint-url "$ENDPOINT" \

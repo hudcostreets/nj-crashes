@@ -12,8 +12,3 @@
 ['remote "r2"']
     url = s3://crashes/.dvc
     endpointurl = https://2363642879f18d37d52dca114059937e.r2.cloudflarestorage.com
-# RAC S3 — legacy default, kept during transition; removed after green days.
-['remote "s3"']
-    url = s3://nj-crashes/.dvc
-['remote "reproc"']
-    url = s3://nj-crashes/.dvc-reproc

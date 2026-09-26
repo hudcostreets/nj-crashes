@@ -6,7 +6,7 @@
 #   - ptccr_YY.pdf  (Preliminary Total Crash Count Report)
 #   - swfcs2_YY.pdf (Statewide Fatal Crash Summary)
 #
-# Target: r2://nj-crashes/raw/njsp/data/annual-summaries/*.pdf
+# Target: r2://crashes/raw/njsp/data/annual-summaries/*.pdf
 # (path mirrors the repo so the file browser shows them at
 #  /raw/njsp/data/annual-summaries/.)
 #
@@ -19,12 +19,13 @@
 
 set -euo pipefail
 
-PROFILE="${AWS_PROFILE_R2:-cf}"
-ENDPOINT="${R2_ENDPOINT:-https://0dcad5654e9744de6616f74b8df4af63.r2.cloudflarestorage.com}"
-BUCKET="${R2_BUCKET:-nj-crashes}"
+# Creds: env (run under `infra/r2-run`), or a named profile via AWS_PROFILE_R2.
+PROFILE="${AWS_PROFILE_R2:-}"
+ENDPOINT="${R2_ENDPOINT:-https://2363642879f18d37d52dca114059937e.r2.cloudflarestorage.com}"
+BUCKET="${R2_BUCKET:-crashes}"
 PREFIX="${R2_PREFIX:-raw/}"
 
-AWS_PROFILE="$PROFILE" aws s3 sync \
+aws ${PROFILE:+--profile "$PROFILE"} s3 sync \
   njsp/data/annual-summaries/ \
   "s3://$BUCKET/${PREFIX}njsp/data/annual-summaries/" \
   --endpoint-url "$ENDPOINT" \

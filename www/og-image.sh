@@ -26,7 +26,7 @@ JPG="$TMPDIR/og.jpg"
 
 # Mirrors `nj_crashes.paths.S3`; override to publish somewhere other than
 # prod (e.g. a full-DAG reproc audit).
-S3_ROOT="${NJC_S3:-s3://nj-crashes}"
+S3_ROOT="${NJC_S3:-s3://crashes}"
 
 OG_OUT_PATH="$JPG" npx playwright test e2e/og-screenshot.spec.ts --reporter=list
 
