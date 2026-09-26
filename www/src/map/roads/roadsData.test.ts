@@ -5,10 +5,12 @@ import { nearestRoad, roadPaths, roadSegments, type RoadPoint } from "./roadsDat
 const DLAT = 0.00147
 const LON = -74.05
 const lat0 = 40.75
+const pt = (sri: string, mp: number, name: string, lon: number, lat: number, entity = 0): RoadPoint =>
+    ({ sri, mp, sld_name: name, name, subt: 6, entity, alias: null, lon, lat })
 
-const longRoad: RoadPoint[] = [0, 1, 2].map(i => ({ sri: "LONG", mp: i / 10, sld_name: "US 1", lon: LON, lat: lat0 + i * DLAT }))
+const longRoad: RoadPoint[] = [0, 1, 2].map(i => pt("LONG", i / 10, "US 1", LON, lat0 + i * DLAT))
 // A short side street whose only point sits 30 m east of the long road's midpoint between MP 0.0 and 0.1.
-const side: RoadPoint = { sri: "SIDE", mp: 0, sld_name: "WALLER ST", lon: LON + 30 / (111_320 * Math.cos(lat0 * Math.PI / 180)), lat: lat0 + DLAT / 2 }
+const side: RoadPoint = pt("SIDE", 0, "WALLER ST", LON + 30 / (111_320 * Math.cos(lat0 * Math.PI / 180)), lat0 + DLAT / 2, 1)
 
 describe("nearestRoad", () => {
     it("picks the road whose segment passes under the cursor, not the nearest MP point", () => {
@@ -27,7 +29,7 @@ describe("nearestRoad", () => {
 
 describe("roadSegments / roadPaths", () => {
     it("joins consecutive MPs and breaks at MP gaps", () => {
-        const gap: RoadPoint = { sri: "LONG", mp: 0.9, sld_name: "US 1", lon: LON, lat: lat0 + 3 * DLAT }
+        const gap: RoadPoint = pt("LONG", 0.9, "US 1", LON, lat0 + 3 * DLAT)
         const segs = roadSegments([...longRoad, gap, side])
         expect(segs.map(({ a, b }) => [a.sri, a.mp, b.mp])).toEqual([
             ["LONG", 0, 0.1],

@@ -6,7 +6,7 @@
  *  drag-resizable panel. Either way: cells-api backend, year-range
  *  selects, severity Legend, bins controls, debug drawer.
  */
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { useUrlState, viewStateParam, cleanUrl, optFloatParam, boolParam, enumParam } from "use-prms"
 import { usePageFilters, YEAR_RANGE_DEFAULT } from "@/src/PageFiltersContext"
 import { useCellsApi, CELLS_MAX } from "@/src/map/useCellsApi"
@@ -651,6 +651,10 @@ export function CrashMapSection({
         return bboxFromViewport(effectiveView.latitude, effectiveView.longitude, effectiveView.zoom, w, h, effectiveView.pitch)
     }, [effectiveView, fullScreen])
     const roadSel = useRoadSelection(effectiveView, viewBbox)
+    // County drill-in: only when no road is under the cursor, and announced on hover.
+    const [hoveredOutline, setHoveredOutline] = useState<string | null>(null)
+    const outlineClick = onOutlineClick && !roadSel.hovered ? onOutlineClick : undefined
+    const onOutlineHover = useCallback((f: any) => setHoveredOutline(f?.properties?.name ?? null), [])
     const zoomToRoad = (bbox: [number, number, number, number]) => {
         const [w, h] = viewportDims(fullScreen)
         setLlz(fitBoundsToView(bbox, w, h, 0))
@@ -812,9 +816,9 @@ export function CrashMapSection({
             {result.status === "error" && (
                 <div style={{ padding: "1em", color: "red" }}>Error: {result.error}</div>
             )}
-            {roadSel.road && (
+            {roadSel.road !== null && (
                 <RoadPanel
-                    sri={roadSel.road}
+                    entity={roadSel.road}
                     info={roadSel.info}
                     crashes={roadSel.crashes}
                     loading={roadSel.loading}
@@ -823,9 +827,11 @@ export function CrashMapSection({
                     theme={actualTheme}
                 />
             )}
-            {roadSel.hovered && roadSel.hovered.sri !== roadSel.road && (
-                <RoadHoverChip name={roadSel.hovered.sld_name} theme={actualTheme} />
-            )}
+            {roadSel.hovered && roadSel.hovered.entity !== roadSel.road ? (
+                <RoadHoverChip name={roadSel.hovered.name} alias={roadSel.hovered.alias} theme={actualTheme} />
+            ) : outlineClick && hoveredOutline ? (
+                <RoadHoverChip name={`${hoveredOutline} County`} action="click to open" theme={actualTheme} />
+            ) : null}
             {result.status === "loading" && <LoadingOverlay theme={actualTheme} />}
             {result.status === "ready" && (() => {
                 return (
@@ -838,8 +844,8 @@ export function CrashMapSection({
                         initialView={initialView}
                         viewState={llz ?? undefined}
                         onViewStateChange={setLlz}
-                        // At road-hit zooms, clicks select roads rather than drilling into a county.
-                        onOutlineClick={roadSel.active ? undefined : onOutlineClick}
+                        onOutlineClick={outlineClick}
+                        onOutlineHover={onOutlineClick ? onOutlineHover : undefined}
                         onMapClick={roadSel.onClick}
                         onMapHover={roadSel.active ? roadSel.onHover : undefined}
                         extraLayers={roadSel.layers}

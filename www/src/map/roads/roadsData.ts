@@ -10,7 +10,11 @@ const { cos, PI, sqrt } = Math
 /** Sibling of the map geometry dir (`…/njdot/map` → `…/njdot/roads`). */
 export const ROADS_BASE_URL = MAP_BASE_URL.replace(/\/map\/?$/, "/roads")
 
-export function roadsUrl(file: "crashes-by-sri" | "sri-geom" | "sri-hit" | "sris"): string {
+export type RoadsFile =
+    | "crashes-by-sri" | "crashes-by-entity" | "sri-geom" | "sri-hit" | "sri-hit-5" | "sri-hit-6"
+    | "sris" | "road-entities" | "road-runs"
+
+export function roadsUrl(file: RoadsFile): string {
     return new URL(`${ROADS_BASE_URL}/${file}.parquet`, window.location.origin).href
 }
 
@@ -19,7 +23,39 @@ export function isSri(s: string): boolean {
     return /^[0-9A-Za-z_-]{1,32}$/.test(s)
 }
 
-export type RoadPoint = { sri: string; mp: number; sld_name: string; lon: number; lat: number }
+/** An `nj_mp_tenths` point: `name` = local street name, `alias` = the top crash-reported road name
+ *  nearby (where it differs), `subt` = road class (1 interstate … 7 local, 8 ramp). */
+export type RoadPoint = {
+    sri: string
+    mp: number
+    sld_name: string
+    name: string
+    subt: number
+    entity: number
+    alias: string | null
+    lon: number
+    lat: number
+}
+
+/** A road entity: same-named SRI runs joined across routes (see `njdot/cli/roads.py`). */
+export type RoadEntity = {
+    entity: number
+    name: string
+    route: string | null
+    subt: number
+    sris: string
+    lon_min: number
+    lat_min: number
+    lon_max: number
+    lat_max: number
+    n_crashes: number
+    n_fatal: number
+    n_injury: number
+    n_killed: number
+    aliases: string | null
+}
+
+export type RoadRun = { entity: number; sri: string; mp_lo: number; mp_end: number }
 
 export type RoadInfo = {
     sri: string
@@ -37,6 +73,7 @@ export type RoadInfo = {
 }
 
 export type RoadCrash = {
+    entity?: number
     sri: string
     mp: number | null
     id: number | null
@@ -60,11 +97,53 @@ export type RoadCrash = {
 
 export type Bbox = [number, number, number, number]
 
-export function fetchHitPoints(db: AsyncDuckDB, [w, s, e, n]: Bbox): Promise<RoadPoint[]> {
+/** Hit file for a zoom: wider views only get bigger roads (classes ≤ 5 / ≤ 6), which keeps a
+ *  viewport's points small. Null below `HIT_TIERS`' lowest zoom. */
+export const HIT_TIERS: { minZoom: number; file: RoadsFile }[] = [
+    { minZoom: 13, file: "sri-hit" },
+    { minZoom: 11, file: "sri-hit-6" },
+    { minZoom: 9, file: "sri-hit-5" },
+]
+
+export function hitFileForZoom(zoom: number): RoadsFile | null {
+    return HIT_TIERS.find(t => zoom >= t.minZoom)?.file ?? null
+}
+
+const POINT_COLS = "sri, mp, sld_name, name, subt, entity, alias, lon, lat"
+
+export function fetchHitPoints(db: AsyncDuckDB, file: RoadsFile, [w, s, e, n]: Bbox): Promise<RoadPoint[]> {
     return runQuery<RoadPoint>(db, `
-        SELECT sri, mp, sld_name, lon, lat FROM read_parquet('${roadsUrl("sri-hit")}')
+        SELECT ${POINT_COLS} FROM read_parquet('${roadsUrl(file)}')
         WHERE lon BETWEEN ${w} AND ${e} AND lat BETWEEN ${s} AND ${n}
     `)
+}
+
+export async function fetchEntity(db: AsyncDuckDB, entity: number): Promise<RoadEntity | null> {
+    const rows = await runQuery<RoadEntity>(db, `SELECT * FROM read_parquet('${roadsUrl("road-entities")}') WHERE entity = ${entity | 0}`)
+    return rows[0] ?? null
+}
+
+export function fetchEntityRuns(db: AsyncDuckDB, entity: number): Promise<RoadRun[]> {
+    return runQuery<RoadRun>(db, `SELECT * FROM read_parquet('${roadsUrl("road-runs")}') WHERE entity = ${entity | 0} ORDER BY sri, mp_lo`)
+}
+
+/** The entity's points: `sri-geom` is sorted by `(sri, mp)`, so filtering on the entity's SRIs
+ *  prunes to a few row groups before the `entity` filter. */
+export function fetchEntityGeom(db: AsyncDuckDB, entity: number, sris: string[]): Promise<RoadPoint[]> {
+    const list = sris.filter(isSri).map(s => `'${s}'`).join(",")
+    if (!list) return Promise.resolve([])
+    return runQuery<RoadPoint>(db, `
+        SELECT ${POINT_COLS} FROM read_parquet('${roadsUrl("sri-geom")}')
+        WHERE sri IN (${list}) AND entity = ${entity | 0} ORDER BY sri, mp
+    `)
+}
+
+export function entityCrashesSql(entity: number): string {
+    return `SELECT * FROM read_parquet('${roadsUrl("crashes-by-entity")}') WHERE entity = ${entity | 0} ORDER BY sri, mp, dt`
+}
+
+export function fetchEntityCrashes(db: AsyncDuckDB, entity: number): Promise<RoadCrash[]> {
+    return runQuery<RoadCrash>(db, `SELECT * EXCLUDE (dt), epoch_ms(dt) AS dt FROM (${entityCrashesSql(entity)})`)
 }
 
 export function fetchRoadGeom(db: AsyncDuckDB, sri: string): Promise<RoadPoint[]> {
@@ -139,12 +218,15 @@ export function nearestRoad(segments: RoadSegment[], [lon, lat]: [number, number
 /** Split a route's points (sorted by MP) into drawable paths, breaking at MP gaps or long jumps
  *  (routes can be discontinuous, and a viewport's hit points can skip out-of-view stretches). */
 export function roadPaths(points: RoadPoint[]): [number, number][][] {
-    const pts = [...points].sort((a, b) => a.mp - b.mp)
+    const pts = [...points].sort((a, b) => (a.sri < b.sri ? -1 : a.sri > b.sri ? 1 : a.mp - b.mp))
     const out: [number, number][][] = []
     let cur: [number, number][] = []
     let prev: RoadPoint | null = null
     for (const p of pts) {
-        if (prev) {
+        if (prev && prev.sri !== p.sri) {
+            if (cur.length > 1) out.push(cur)
+            cur = []
+        } else if (prev) {
             const dx = (p.lon - prev.lon) * 111_320 * cos(p.lat * PI / 180)
             const dy = (p.lat - prev.lat) * 110_540
             if (p.mp - prev.mp > 0.15 || sqrt(dx * dx + dy * dy) > 400) {
