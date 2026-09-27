@@ -1,7 +1,7 @@
 /** Road data (specs/road-data-v4.md): parquets built by `njdot roads build`, read with DuckDB-WASM
  *  ranged reads. Each file is sorted for row-group pruning: `sri-hit` spatially (a viewport bbox
- *  reads a few groups), `sri-geom` / `crashes-by-sri` by `sri`, the rest by `entity` (= `slug`
- *  order, so a county's / muni's roads are contiguous). */
+ *  reads a few groups), `crashes-by-sri` / `sris` by `sri`, the rest (incl. `sri-geom`) by `entity`
+ *  (= `slug` order, so a county's / muni's roads are contiguous). */
 import type { AsyncDuckDB } from "@duckdb/duckdb-wasm"
 import { runQuery } from "@/src/lib/DuckDbContext"
 import { MAP_BASE_URL } from "@/src/map/config"
@@ -28,10 +28,6 @@ export function isSri(s: string): boolean {
 /** Road slugs are `<county>/[<muni>/]<road>`, each segment `[a-z0-9-]` (specs/road-data-v4.md § Slugs). */
 export function isRoadSlug(s: string): boolean {
     return /^[a-z0-9-]+(\/[a-z0-9-]+){1,2}$/.test(s)
-}
-
-function sriList(sris: string[]): string {
-    return sris.filter(isSri).map(s => `'${s}'`).join(",")
 }
 
 /** An MP point (every 0.05 mi along the NJDOT Roadway Network): `name` = local street name (NG9-1-1),
@@ -110,8 +106,6 @@ export type RoadRank = {
     rank_killed: number | null
     rank_per_mi: number | null
 }
-
-export type RoadRun = { entity: number; sri: string; mp_lo: number; mp_end: number }
 
 export type RoadInfo = {
     sri: string
@@ -199,19 +193,12 @@ export function fetchRoadRanks(db: AsyncDuckDB, cc: number, mc: number): Promise
     return runQuery<RoadRank>(db, `SELECT * FROM read_parquet('${roadsUrl("road-ranks")}') WHERE cc = ${cc | 0} AND mc = ${mc | 0}`)
 }
 
-export function fetchEntityRuns(db: AsyncDuckDB, entity: number): Promise<RoadRun[]> {
-    return runQuery<RoadRun>(db, `SELECT * FROM read_parquet('${roadsUrl("road-runs")}') WHERE entity = ${entity | 0} ORDER BY sri, mp_lo`)
-}
-
-/** The entity's points: `sri-geom` is sorted by `(sri, mp)`, so filtering on the entity's SRIs
- *  prunes to a few row groups before the `entity` filter. The `BETWEEN` does the pruning: DuckDB-
- *  WASM's DuckDB (v0.9) doesn't push `IN` lists into row-group stats. */
-export function fetchEntityGeom(db: AsyncDuckDB, entity: number, sris: string[]): Promise<RoadPoint[]> {
-    const ok = sris.filter(isSri).sort()
-    if (!ok.length) return Promise.resolve([])
+/** The entity's points: `sri-geom` is sorted by `(entity, sri, mp)`, so the `entity` filter alone
+ *  prunes to its row groups (no need to wait for its SRI list). */
+export function fetchEntityGeom(db: AsyncDuckDB, entity: number): Promise<RoadPoint[]> {
     return runQuery<RoadPoint>(db, `
         SELECT ${POINT_COLS} FROM read_parquet('${roadsUrl("sri-geom")}')
-        WHERE sri BETWEEN '${ok[0]}' AND '${ok[ok.length - 1]}' AND sri IN (${sriList(ok)}) AND entity = ${entity | 0}
+        WHERE entity = ${entity | 0}
         ORDER BY sri, mp
     `)
 }
@@ -250,14 +237,6 @@ export async function fetchCrashEntity(
         WHERE sri = '${crash.sri}' AND ${match} LIMIT 1
     `)
     return rows[0]?.entity ?? null
-}
-
-export function fetchRoadGeom(db: AsyncDuckDB, sri: string): Promise<RoadPoint[]> {
-    if (!isSri(sri)) return Promise.resolve([])
-    return runQuery<RoadPoint>(db, `
-        SELECT sri, mp, sld_name, lon, lat FROM read_parquet('${roadsUrl("sri-geom")}')
-        WHERE sri = '${sri}' ORDER BY mp
-    `)
 }
 
 export async function fetchRoadInfo(db: AsyncDuckDB, sri: string): Promise<RoadInfo | null> {

@@ -47,11 +47,7 @@ export default function RoadPage() {
         queryFn: () => fetchEntitySummary(db!, entity!, true) as Promise<(RoadSummaryRow & { month: number })[]>,
         enabled,
     })
-    const geom = useQuery({
-        queryKey: ["road-geom", entity, info.data?.sris],
-        queryFn: () => fetchEntityGeom(db!, entity!, sris),
-        enabled: enabled && sris.length > 0,
-    })
+    const geom = useQuery({ queryKey: ["road-geom", entity], queryFn: () => fetchEntityGeom(db!, entity!), enabled })
     const crashes = useQuery({ queryKey: ["road-crashes", entity], queryFn: () => fetchEntityCrashes(db!, entity!), enabled })
 
     const paths = useMemo(() => roadPaths(geom.data ?? []), [geom.data])
