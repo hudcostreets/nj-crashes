@@ -81,7 +81,12 @@ export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
         queryFn: () => fetchEntityGeom(db!, road!, sris),
         enabled: enabled && sris.length > 0,
     })
-    const crashes = useQuery({ queryKey: ["road-crashes", road], queryFn: () => fetchEntityCrashes(db!, road!), enabled })
+    // Waits on the entity's SRIs, which prune `crashes-by-entity` to their row groups.
+    const crashes = useQuery({
+        queryKey: ["road-crashes", road, info.data?.sris],
+        queryFn: () => fetchEntityCrashes(db!, road!, sris),
+        enabled: enabled && sris.length > 0,
+    })
 
     useAction("map:road-clear", {
         label: "Clear road selection",

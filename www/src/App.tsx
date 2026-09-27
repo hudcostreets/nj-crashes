@@ -22,6 +22,7 @@ const OgImage = lazy(() => import('./routes/OgImage'))
 const MatchReview = lazy(() => import('./routes/MatchReview'))
 const CrashMapPage = lazy(() => import('./routes/CrashMapPage'))
 const CrashDetailPage = lazy(() => import('./routes/CrashDetailPage'))
+const RoadPage = lazy(() => import('./routes/RoadPage'))
 const RawFileBrowser = lazy(() => import('./raw/RawFileBrowser'))
 const FilesPage = lazy(() => import('./routes/FilesPage'))
 const DevAb = lazy(() => import('./routes/DevAb'))
@@ -85,6 +86,7 @@ export default function App() {
                 <Route path="/map/c/:county" element={<CrashMapPage />} />
                 <Route path="/map/c/:county/:muni" element={<CrashMapPage />} />
                 <Route path="/crash/:year/:cc/:mc/:case" element={<CrashDetailPage />} />
+                <Route path="/road/:entity" element={<RoadPage />} />
                 <Route path="/raw" element={<RawFileBrowser />} />
                 <Route path="/raw/*" element={<RawFileBrowser />} />
                 <Route path="/harmonization" element={<HarmonizationPage />} />
