@@ -45,7 +45,7 @@ export function loadManifestV2(): Promise<MapManifestV2 | null> {
             const r = await fetch(MANIFEST_V2_URL)
             if (!r.ok) return null
             const m = (await r.json()) as MapManifestV2
-            if (m?.schema_version !== 2) return null
+            if (m?.schema_version !== 2 && m?.schema_version !== 3) return null
             return m
         } catch {
             return null
