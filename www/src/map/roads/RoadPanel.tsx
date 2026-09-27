@@ -1,8 +1,8 @@
 import { useMemo } from "react"
 import { Link } from "react-router-dom"
 import { EndYear, StartYear } from "@/src/constants"
-import { entityCrashesSql, type RoadCrash, type RoadEntity } from "./roadsData"
-import { downloadCsv, RoadCrashTable, roadSlug } from "./RoadCrashTable"
+import { entityCrashesSql, type RoadCrashView, type RoadEntity } from "./roadsData"
+import { ExportCsvButton, RoadCrashTable, roadSlug } from "./RoadCrashTable"
 import { yearStats } from "./roadStats"
 import { YearStrip } from "./YearStrip"
 
@@ -12,7 +12,7 @@ const TABLE_ROWS = 300
 export type RoadPanelProps = {
     entity: number
     info: RoadEntity | null
-    crashes: RoadCrash[] | null
+    crashes: RoadCrashView[] | null
     loading: boolean
     onClose: () => void
     onZoomTo: (bbox: [number, number, number, number]) => void
@@ -27,7 +27,7 @@ export function RoadPanel({ entity, info, crashes, loading, onClose, onZoomTo, t
     const rows = useMemo(() => crashes?.slice(0, TABLE_ROWS) ?? [], [crashes])
     const stats = useMemo(() => (crashes?.length ? yearStats(crashes, StartYear, EndYear) : null), [crashes])
     const sris = info?.sris.split(",") ?? []
-    const sqlHref = `/sql?q=${encodeURIComponent(entityCrashesSql(entity, sris) + ";")}`
+    const sqlHref = `/sql?q=${encodeURIComponent(entityCrashesSql(entity) + ";")}`
     const multiSri = sris.length > 1
     const slug = roadSlug(info?.name, entity)
     const btn = { padding: "2px 8px", fontSize: "0.8em", background: "transparent", color: fg, border: `1px solid ${dim}`, borderRadius: 3, cursor: "pointer" }
@@ -59,7 +59,7 @@ export function RoadPanel({ entity, info, crashes, loading, onClose, onZoomTo, t
                 )}
                 <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
                     {info && <button style={btn} onClick={() => onZoomTo([info.lon_min, info.lat_min, info.lon_max, info.lat_max])}>Zoom to road</button>}
-                    <button style={btn} disabled={!crashes?.length} onClick={() => crashes && downloadCsv(slug, crashes)}>Export CSV</button>
+                    <ExportCsvButton entity={entity} slug={slug} disabled={info?.n_crashes === 0} style={btn} />
                     <a style={{ ...btn, textDecoration: "none" }} href={sqlHref} target="_blank" rel="noreferrer">Open in SQL ↗</a>
                     <Link style={{ ...btn, textDecoration: "none", marginLeft: "auto" }} to={`/road/${entity}`}>Open road page →</Link>
                 </div>

@@ -10,9 +10,9 @@ import { useDb } from "@/src/lib/DuckDbContext"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import { mapViewHref } from "@/src/map/links"
 import {
-    entityCrashesSql, fetchEntity, fetchEntityCrashes, fetchEntityGeom, roadPaths, type RoadCrash,
+    entityCrashesSql, fetchEntity, fetchEntityCrashes, fetchEntityGeom, roadPaths, type RoadCrashView,
 } from "@/src/map/roads/roadsData"
-import { crashHref, downloadCsv, RoadCrashTable, roadSlug } from "@/src/map/roads/RoadCrashTable"
+import { crashHref, ExportCsvButton, RoadCrashTable, roadSlug } from "@/src/map/roads/RoadCrashTable"
 import { RoadPlots } from "@/src/map/roads/RoadPlots"
 import css from "@/src/home.module.scss"
 
@@ -40,14 +40,10 @@ export default function RoadPage() {
         queryFn: () => fetchEntityGeom(db!, entity!, sris),
         enabled: enabled && sris.length > 0,
     })
-    const crashes = useQuery({
-        queryKey: ["road-crashes", entity, info.data?.sris],
-        queryFn: () => fetchEntityCrashes(db!, entity!, sris),
-        enabled: enabled && sris.length > 0,
-    })
+    const crashes = useQuery({ queryKey: ["road-crashes", entity], queryFn: () => fetchEntityCrashes(db!, entity!), enabled })
 
     const paths = useMemo(() => roadPaths(geom.data ?? []), [geom.data])
-    const sorted = useMemo((): RoadCrash[] => {
+    const sorted = useMemo((): RoadCrashView[] => {
         const rows = crashes.data ?? []
         // The query returns (sri, mp, dt) order.
         return order === "mp" ? rows : [...rows].sort((a, b) => b.dt - a.dt)
@@ -77,7 +73,7 @@ export default function RoadPage() {
 
     const bounds: [number, number, number, number] = [road.lon_min, road.lat_min, road.lon_max, road.lat_max]
     const multiSri = sris.length > 1
-    const sqlHref = `/sql?q=${encodeURIComponent(entityCrashesSql(road.entity, sris) + ";")}`
+    const sqlHref = `/sql?q=${encodeURIComponent(entityCrashesSql(road.entity) + ";")}`
     const mapHref = mapViewHref({
         lat: (road.lat_min + road.lat_max) / 2,
         lon: (road.lon_min + road.lon_max) / 2,
@@ -122,7 +118,7 @@ export default function RoadPage() {
 
             <h2 id="crashes">Crashes</h2>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                <button style={btn} disabled={!crashes.data?.length} onClick={() => crashes.data && downloadCsv(roadSlug(road.name, road.entity), crashes.data)}>Export CSV</button>
+                <ExportCsvButton entity={road.entity} slug={roadSlug(road.name, road.entity)} disabled={road.n_crashes === 0} style={btn} />
                 <a style={{ ...btn, textDecoration: "none" }} href={sqlHref} target="_blank" rel="noreferrer">Open in SQL ↗</a>
                 <span style={{ marginLeft: "auto", color: dim, fontSize: "0.85em" }}>
                     Order:{" "}

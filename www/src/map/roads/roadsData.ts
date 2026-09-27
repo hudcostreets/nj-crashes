@@ -168,16 +168,23 @@ export function fetchEntityGeom(db: AsyncDuckDB, entity: number, sris: string[])
     `)
 }
 
-/** `crashes-by-entity` is sorted by `(sri, mp)`, so passing the entity's SRIs lets DuckDB prune to
- *  their row groups (the `entity` column alone has no useful min/max stats). */
-export function entityCrashesSql(entity: number, sris: string[] = []): string {
-    const list = sriList(sris)
-    const sriFilter = list ? `sri IN (${list}) AND ` : ""
-    return `SELECT * FROM read_parquet('${roadsUrl("crashes-by-entity")}') WHERE ${sriFilter}entity = ${entity | 0} ORDER BY sri, mp, dt`
+/** `crashes-by-entity` is sorted by `(entity, sri, mp, dt, id)`, so the `entity` filter alone prunes
+ *  to the road's row groups (no need to wait for its SRI list). */
+export function entityCrashesSql(entity: number): string {
+    return `SELECT * FROM read_parquet('${roadsUrl("crashes-by-entity")}') WHERE entity = ${entity | 0} ORDER BY sri, mp, dt`
 }
 
-export function fetchEntityCrashes(db: AsyncDuckDB, entity: number, sris: string[] = []): Promise<RoadCrash[]> {
-    return runQuery<RoadCrash>(db, `SELECT * EXCLUDE (dt), epoch_ms(dt) AS dt FROM (${entityCrashesSql(entity, sris)})`)
+/** What the road views (table, map, plots) read; Export CSV fetches every column on demand. */
+const VIEW_COLS = ["sri", "mp", "id", "year", "dt", "cc", "mc", "case", "severity", "tk", "ti", "cross_street", "lat", "lon"] as const
+export type RoadCrashView = Pick<RoadCrash, typeof VIEW_COLS[number]>
+
+export function fetchEntityCrashes(db: AsyncDuckDB, entity: number): Promise<RoadCrashView[]> {
+    const cols = VIEW_COLS.filter(c => c !== "dt").map(c => `"${c}"`).join(", ")
+    return runQuery<RoadCrashView>(db, `SELECT ${cols}, epoch_ms(dt) AS dt FROM (${entityCrashesSql(entity)})`)
+}
+
+export function fetchEntityCrashesFull(db: AsyncDuckDB, entity: number): Promise<RoadCrash[]> {
+    return runQuery<RoadCrash>(db, `SELECT * EXCLUDE (dt), epoch_ms(dt) AS dt FROM (${entityCrashesSql(entity)})`)
 }
 
 /** The road entity a crash was matched to (null when it has no SRI match). Filters on the crash's
