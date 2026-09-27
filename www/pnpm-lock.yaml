@@ -68,9 +68,6 @@ importers:
       '@rdub/base':
         specifier: 0.3.0
         version: 0.3.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@rdub/duckdb':
-        specifier: 0.0.2
-        version: 0.0.2(@duckdb/duckdb-wasm@1.28.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@rdub/file-tree':
         specifier: https://github.com/runsascoded/file-tree#0ca64f4a22f3aff962f8d64dbd2438d30277dc22
         version: https://codeload.github.com/runsascoded/file-tree/tar.gz/0ca64f4a22f3aff962f8d64dbd2438d30277dc22(highlight.js@11.11.1)(hyparquet@https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz)(jq-web@0.6.2)(react-dom@18.2.0(react@18.2.0))(react-markdown@10.1.0(@types/react@18.2.48)(react@18.2.0))(react-router-dom@7.18.4(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)(remark-gfm@4.0.1)(use-prms@https://codeload.github.com/runsascoded/use-prms/tar.gz/da21b49c98e1ad372f88c4dee07eca483d17f1c8(react@18.2.0))
@@ -1314,13 +1311,6 @@ packages:
   '@rdub/base@0.3.0':
     resolution: {integrity: sha512-CJER7Hsh3z+TRQZwBGFG/zdHJS3rJhhl7/BxQjiFx/07fMuJdfC3zh6LQqkp9KncqXU3H7ocEQp2xCizEtPaZA==}
     peerDependencies:
-      react: ^18
-      react-dom: ^18
-
-  '@rdub/duckdb@0.0.2':
-    resolution: {integrity: sha512-e2tItk5ZzXiyvtY8NOI4VLodoIOScvbDM0pFq8e3HQq6ymZ61uwtBSvHo3uIpdzFn/9Z/+NzUEYA6RkaF/tVeA==}
-    peerDependencies:
-      '@duckdb/duckdb-wasm': ^1.28.0
       react: ^18
       react-dom: ^18
 
@@ -3847,9 +3837,6 @@ packages:
     resolution: {integrity: sha512-3pRGuxRF5gpuZc0W+EpwQRmCD7gRqcDOMt688KmdlDAgAyaB1XlN0zq2njfDNm44XVdIouE7pZ6GzbdyH47uIQ==}
     engines: {node: '>= 8'}
 
-  web-worker@1.3.0:
-    resolution: {integrity: sha512-BSR9wyRsy/KOValMgd5kMyr3JzpdeoR9KVId8u5GVlTTAtNChlsE4yTxeY7zMdNSyOmoKBv8NH2qeRY9Tg+IaA==}
-
   webgl-context@2.2.0:
     resolution: {integrity: sha512-q/fGIivtqTT7PEoF07axFIlHNk/XCPaYpq64btnepopSWvKNFkoORlQYgqDigBIuGA1ExnFd/GnSUnBNEPQY7Q==}
 
@@ -4964,13 +4951,6 @@ snapshots:
       node-fetch: 3.3.2
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
-
-  '@rdub/duckdb@0.0.2(@duckdb/duckdb-wasm@1.28.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
-    dependencies:
-      '@duckdb/duckdb-wasm': 1.28.0
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-      web-worker: 1.3.0
 
   '@rdub/file-tree@https://codeload.github.com/runsascoded/file-tree/tar.gz/0ca64f4a22f3aff962f8d64dbd2438d30277dc22(highlight.js@11.11.1)(hyparquet@https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz)(jq-web@0.6.2)(react-dom@18.2.0(react@18.2.0))(react-markdown@10.1.0(@types/react@18.2.48)(react@18.2.0))(react-router-dom@7.18.4(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)(remark-gfm@4.0.1)(use-prms@https://codeload.github.com/runsascoded/use-prms/tar.gz/da21b49c98e1ad372f88c4dee07eca483d17f1c8(react@18.2.0))':
     dependencies:
@@ -7940,8 +7920,6 @@ snapshots:
   weak-map@1.0.8: {}
 
   web-streams-polyfill@3.3.2: {}
-
-  web-worker@1.3.0: {}
 
   webgl-context@2.2.0:
     dependencies:
