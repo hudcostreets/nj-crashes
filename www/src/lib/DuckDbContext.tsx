@@ -63,13 +63,24 @@ export function useDb(): AsyncDuckDB | null {
 }
 
 /**
- * Run a query, properly closing the connection afterward.
+ * Run a query, properly closing the connection afterward. With `params`, it runs as a prepared
+ * statement, binding them to the query's `?` placeholders.
  */
-export async function runQuery<T = Record<string, unknown>>(db: AsyncDuckDB, query: string): Promise<T[]> {
+export async function runQuery<T = Record<string, unknown>>(db: AsyncDuckDB, query: string, params?: unknown[]): Promise<T[]> {
     let conn: AsyncDuckDBConnection | null = null
     try {
         conn = await db.connect()
-        const result = await conn.query(query)
+        let result
+        if (params) {
+            const stmt = await conn.prepare(query)
+            try {
+                result = await stmt.query(...params)
+            } finally {
+                await stmt.close()
+            }
+        } else {
+            result = await conn.query(query)
+        }
         const proxies = result.toArray()
         return JSON.parse(JSON.stringify(proxies))
     } finally {
