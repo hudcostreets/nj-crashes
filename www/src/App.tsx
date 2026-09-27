@@ -4,7 +4,6 @@ import { HotkeysProvider, Omnibar, ShortcutsModal, LookupModal } from 'use-kbd'
 import 'use-kbd/styles.css'
 import GeoHome from './routes/GeoHome'
 import { AppSpeedDial } from './components/AppSpeedDial'
-import { DuckDbProvider } from './lib/DuckDbContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useSectionsActions } from './components/SectionsOmnibar'
 import { useScrollAnchor } from './lib/useScrollAnchor'
@@ -14,7 +13,7 @@ import { ActionLogRecorder } from './feedback/ActionLogRecorder'
 
 // Home is eager (the landing page). Everything else lazy — `/sql`,
 // `/duckdb`, `/match-review`, `/map`, `/raw`, `/files`, `/harmonization`
-// each pull in heavy deps (duckdb-wasm, maplibre/deck for the map page,
+// each pull in heavy deps (duckdb-wasm, only on `/sql`; maplibre/deck for the map page,
 // plotly variants) that we don't need on the initial homepage paint.
 const NotFound = lazy(() => import('./routes/NotFound'))
 const SqlPage = lazy(() => import('./routes/SqlPage'))
@@ -55,7 +54,6 @@ export default function App() {
     return (
         <QueryClientProvider client={queryClient}>
         <HotkeysProvider>
-        <DuckDbProvider>
         <FeedbackProvider>
             <ActionLogRecorder />
             <SectionsRegistrar />
@@ -112,7 +110,6 @@ export default function App() {
             <FeedbackButton />
             <AppSpeedDial />
         </FeedbackProvider>
-        </DuckDbProvider>
         </HotkeysProvider>
         </QueryClientProvider>
     )

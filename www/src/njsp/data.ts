@@ -4,7 +4,7 @@
  *  (specs/off-duckdb-wasm.md; parity: `data.parity.test.ts`). */
 import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { groupSum, readRows, sortRows } from "@/src/lib/pq"
+import { groupSum, openParquet, readRows, sortRows } from "@/src/lib/pq"
 import { parseCsvLine } from "@/src/raw/csv"
 import type { VictimType } from "./victim-types"
 
@@ -84,7 +84,12 @@ export type ProjectedRow = {
 
 /** A whole NJSP parquet file's rows (null until loaded). */
 export function useNjspParquet<T>(url: string): { rows: T[] | null; loading: boolean } {
-    const q = useQuery({ queryKey: ["njsp-parquet", url], queryFn: () => readRows<T>(url), staleTime: Infinity })
+    // The footer read covers the whole file: one request.
+    const q = useQuery({
+        queryKey: ["njsp-parquet", url],
+        queryFn: async () => readRows<T>(await openParquet(url, { tail: 1 << 18 })),
+        staleTime: Infinity,
+    })
     if (q.error) console.error(`${url}:`, q.error)
     // Stable across renders (callers memoize on it).
     return useMemo(() => ({ rows: q.data ?? null, loading: q.isPending }), [q.data, q.isPending])
