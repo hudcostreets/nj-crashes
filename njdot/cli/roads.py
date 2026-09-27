@@ -50,7 +50,7 @@ from click import option
 
 from nj_crashes.utils.log import err
 from njdot.load import load_crashes_with_aashto
-from njdot.loc_recovery import PRIVATE_ROAD_SYSTEM, ng_name_index, recover_unassigned, recovery_context
+from njdot.loc_recovery import PRIVATE_ROAD_SYSTEM, ng_name_index, recode_county_routes, recover_unassigned, recovery_context
 from njdot.map_base import _build_base
 from njdot.paths import NG911_DIR, ROADS_DIR, ROADS_S3, ROADWAY_NETWORK
 from njdot.road_audit import audit
@@ -264,6 +264,12 @@ def fold_recovery(crashes: pd.DataFrame, latlon: pd.DataFrame, rec: pd.DataFrame
     ll.loc[pt.index, 'lat'] = pt['lat'].astype('float32')
     ll.loc[pt.index, 'lon'] = pt['lon'].astype('float32')
     ll.loc[unpl.index] = np.nan
+    if 'far_town' in rec:
+        # Coded crashes whose SRI / MP fell towns away (`loc_recovery.far_from_town`), re-located:
+        # NJDOT's point is where the SRI / MP fall, so only the recovered one stands.
+        far = rec[rec['far_town'].astype(bool) & rec['loc_source'].ne('sri_mp')]
+        ll.loc[far.index, 'lat'] = far['lat'].astype('float32')
+        ll.loc[far.index, 'lon'] = far['lon'].astype('float32')
     return c, ll.dropna()
 
 
@@ -299,6 +305,30 @@ def read_crashes_by_sri(path: str) -> pd.DataFrame:
     return df.astype({c: t for c, t in BY_SRI_DTYPES.items() if c in df})
 
 
+def _multi_blips(sri: np.ndarray, key: np.ndarray, n: np.ndarray, max_blip: int) -> np.ndarray:
+    """Blocks (per-block `sri`, name `key`, point count `n`) in runs of ≥ 2 consecutive blocks on
+    one SRI with ≤ `max_blip` points in all, between two blocks of one key that none of the run's
+    blocks has: each such block → the block before the run (`smooth_names`: they take its name);
+    other blocks → -1."""
+    out = np.full(len(sri), -1)
+    i = 1
+    while i < len(sri) - 1:
+        k0 = key[i - 1]
+        if sri[i - 1] != sri[i] or key[i] == k0:
+            i += 1
+            continue
+        tot, j = n[i], i
+        while j + 1 < len(sri) and sri[j + 1] == sri[i] and key[j + 1] != k0 and tot + n[j + 1] <= max_blip:
+            j += 1
+            tot += n[j]
+        if j > i and tot <= max_blip and j + 1 < len(sri) and sri[j + 1] == sri[i] and key[j + 1] == k0:
+            out[i:j + 1] = i - 1
+            i = j + 2
+        else:
+            i += 1
+    return out
+
+
 def smooth_names(df: pd.DataFrame, max_blip: int = MAX_BLIP_PTS) -> pd.DataFrame:
     """Absorb naming blips in `df` (points sorted `(sri, mp)`): a block of ≤ `max_blip` consecutive
     points whose `(name, cc)` differs from the matching blocks on both sides (same SRI) takes
@@ -306,7 +336,8 @@ def smooth_names(df: pd.DataFrame, max_blip: int = MAX_BLIP_PTS) -> pd.DataFrame
     point of a county-line road on the other county's side. A single point at an SRI end takes its
     neighbor's if the next two points agree (a cross street's MP 0.0 point named for the road it
     starts on). Smallest blips go first, repeatedly, so alternating blips resolve to the
-    surrounding name. `seg` / `muni` keep the points' own NG911 facts."""
+    surrounding name; then runs of several differently named blocks, ≤ `max_blip` points in all,
+    between two blocks of one name (`_multi_blips`). `seg` / `muni` keep the points' own NG911 facts."""
     df = df.copy()
     has_cc = 'cc' in df
     for _ in range(4 * max_blip):
@@ -322,19 +353,27 @@ def smooth_names(df: pd.DataFrame, max_blip: int = MAX_BLIP_PTS) -> pd.DataFrame
         first = (ps != b['sri']) & (ns == b['sri']) & (b['n'] == 1) & (nc >= 2) & (b['key'] != nk)
         last = (ns != b['sri']) & (ps == b['sri']) & (b['n'] == 1) & (pc >= 2) & (b['key'] != pk)
         cand = interior | first | last
-        if not cand.any():
-            break
-        k = b['n'][cand].min()
-        take_prev = ((interior | last) & (b['n'] == k)).to_numpy()
-        take_next = (first & (b['n'] == k)).to_numpy()
-        # Each point's source row: the last point of the previous block, or the first of the next.
         bi = blk.to_numpy() - 1
         starts = np.r_[0, np.flatnonzero(np.diff(bi)) + 1]
         ends = np.r_[starts[1:] - 1, len(df) - 1]
+        # Each point's source row: the last point of the previous block, or the first of the next.
         src = np.full(len(df), -1)
-        prev_m, next_m = take_prev[bi], take_next[bi]
-        src[prev_m] = ends[bi[prev_m] - 1]
-        src[next_m] = starts[bi[next_m] + 1]
+        if cand.any():
+            k = b['n'][cand].min()
+            take_prev = ((interior | last) & (b['n'] == k)).to_numpy()
+            take_next = (first & (b['n'] == k)).to_numpy()
+            prev_m, next_m = take_prev[bi], take_next[bi]
+            src[prev_m] = ends[bi[prev_m] - 1]
+            src[next_m] = starts[bi[next_m] + 1]
+        else:
+            # Runs of several blocks, ≤ `max_blip` points in all, between two blocks of one name (on
+            # the SRI; none of the run's): "Somerville Circle", "Easton Turnpike" (a point each)
+            # inside US 206's second carriageway. Each takes the name of the block before the run.
+            from_blk = _multi_blips(b['sri'].to_numpy(), b['key'].to_numpy(), b['n'].to_numpy(), max_blip)
+            if not (from_blk >= 0).any():
+                break
+            mm = from_blk[bi] >= 0
+            src[mm] = ends[from_blk[bi[mm]]]
         m = src >= 0
         cols = ['name', 'cc'] if has_cc else ['name']
         for c in cols:
@@ -782,6 +821,8 @@ def place_crashes(
         # Crashes whose road meets the cross street at several junctions the offset / direction
         # doesn't choose between (`loc_recovery._locate_one`): on the road without a point, or on none.
         err(f'    ambiguous junctions: {int(rec["how"].eq("junctions").sum()):,} crashes')
+        far = rec['far_town'].astype(bool)
+        err(f'    coded on a road towns away: {int(far.sum()):,} crashes, {int((far & rec["loc_source"].ne("sri_mp")).sum()):,} re-located')
         extra = ['loc_source', 'how', '_ent'] + extra
         b['idx'] = ctx['idx']
     else:
@@ -838,6 +879,14 @@ def roads_build(crashes_path: str | None, cc: int | None, ng911_dir: str, networ
     else:
         err('Loading crashes...')
         crashes = load_build_crashes(cc)
+        # 2001–02 county-route crashes NJDOT coded to the same-numbered state route's SRI, and the
+        # curated `recode` rules: before the crashes' points are taken (NJDOT's were computed from
+        # the SRI / MP these replace, so they're dropped).
+        crashes, n_cr = recode_county_routes(crashes)
+        err(f'  county routes coded to state SRIs (2001–02): {n_cr:,} crashes recoded')
+        crashes, recode_counts = apply_recodes(crashes, overrides)
+        for rid, n in recode_counts.items():
+            err(f'  recode override {rid}: {n:,} crashes')
         latlon = _build_base(crashes, keep_severities=set())
         steps('load crashes')
         # Crashes per muni-year-month, for `road_notes.muni_gaps` (towns whose reports are missing
@@ -845,9 +894,6 @@ def roads_build(crashes_path: str | None, cc: int | None, ng911_dir: str, networ
         mcc = crashes.dropna(subset=['cc', 'mc'])
         muni_counts = mcc.groupby([mcc['cc'].astype(int), mcc['mc'].astype(int), 'year', mcc['dt'].dt.month.rename('month')], dropna=False).size().rename('n').reset_index()
         del mcc
-        crashes, recode_counts = apply_recodes(crashes, overrides)
-        for rid, n in recode_counts.items():
-            err(f'  recode override {rid}: {n:,} crashes')
         by_sri, by_entity = place_crashes(crashes, latlon, b, cl, al, con, recover=not no_recover)
         del crashes, latlon
         steps('place crashes (incl. recovery)')

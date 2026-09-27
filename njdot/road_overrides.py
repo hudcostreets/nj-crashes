@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
+from njdot.loc_recovery import drop_coded_points
 from njdot.paths import DOT_DATA
 
 ROAD_OVERRIDES = f'{DOT_DATA}/road_overrides.yml'
@@ -89,8 +90,10 @@ def load_overrides(path: str = ROAD_OVERRIDES) -> list[Override]:
 
 def apply_recodes(crashes: pd.DataFrame, rules: list[Override]) -> tuple[pd.DataFrame, dict[str, int]]:
     """Apply the `recode` rules of `rules`, in order, to raw `crashes` (before recovery): matching
-    crashes' fields are replaced by the rule's `recode` values. Adds `_recode` (the last rule that
-    matched, else NA; the build carries it into `override`). Returns it and each rule's match count."""
+    crashes' fields are replaced by the rule's `recode` values (and, when it rewrites `sri` / `mp`,
+    the points NJDOT computed from them are dropped: `drop_coded_points`). Adds `_recode` (the last rule
+    that matched, else NA; the build carries it into `override`). Returns it and each rule's match
+    count."""
     c = crashes.copy()
     c['_recode'] = pd.Series(pd.NA, index=c.index, dtype='string')
     counts = {}
@@ -107,6 +110,9 @@ def apply_recodes(crashes: pd.DataFrame, rules: list[Override]) -> tuple[pd.Data
             else:
                 c[k] = c[k].astype('string')
                 c.loc[m, k] = pd.NA if v is None else str(v)
+        if {'sri', 'mp'} & set(r.recode):
+            # NJDOT's point was computed from the SRI / MP being replaced.
+            drop_coded_points(c, m)
         c.loc[m, '_recode'] = r.id
     return c, counts
 

@@ -11,7 +11,7 @@ from click import Choice, option
 
 from nj_crashes.utils.log import err
 from njdot.cc2mc2mn import cc2mc2mn
-from njdot.loc_recovery import entity_at, learn_names, recover, recovery_context
+from njdot.loc_recovery import entity_at, learn_names, recode_county_routes, recover, recovery_context
 from njdot.paths import AASHTO_SUPPLEMENTED_CRASHES, CRASHES_PQT, NG911_DIR, ROADS_DIR, ROADWAY_NETWORK
 from njdot.road_net import ng_intervals, ng_segments, rn_features
 
@@ -42,14 +42,16 @@ def load_county(cc: int, ng911_dir: str, network: str, runs_path: str) -> dict:
 
 
 def load_crashes(cc: int) -> pd.DataFrame:
-    """Per-table crashes (≤ 2023, with `id`) + AASHTO 2024+ (no `id`) in county `cc`."""
+    """Per-table crashes (≤ 2023, with `id`) + AASHTO 2024+ (no `id`) in county `cc`, 2001–02
+    county routes' SRIs fixed (`recode_county_routes`, as the build)."""
     cols = ', '.join(f'"{c}"' for c in CRASH_COLS)
-    return duckdb.sql(f"""
+    df = duckdb.sql(f"""
         SELECT "id", {cols}, 'dot' AS src FROM '{CRASHES_PQT}' WHERE cc = {cc}
         UNION ALL BY NAME
         SELECT NULL::BIGINT AS "id", {', '.join(f'"{c}"::VARCHAR AS "{c}"' if c in ('cross_street_distance', 'Unit Of Measurement', 'Direction From Cross Street') else ('NULL::INT AS road_system' if c == 'road_system' else f'"{c}"') for c in CRASH_COLS)}, 'aashto' AS src
         FROM '{AASHTO_SUPPLEMENTED_CRASHES}' WHERE cc = {cc} AND year >= 2024
     """).df()
+    return recode_county_routes(df)[0]
 
 
 def score(ev: pd.DataFrame, runs: pd.DataFrame) -> pd.DataFrame:

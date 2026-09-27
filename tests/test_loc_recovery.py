@@ -81,6 +81,27 @@ def test_route_sri():
     assert route_sri(more, pd.Series([9] * 5), net).tolist() == ['00000095WS', '00000095E_', '00000078_W', '00000001_S', '00000495_W']
 
 
+def test_recode_county_routes():
+    """2001–02 crashes naming a (non-500-series) county route but coded to the same-numbered state
+    SRI get the county route's SRI (MP kept, NJDOT's point dropped); nothing else changes."""
+    from njdot.loc_recovery import recode_county_routes
+    cs = pd.DataFrame([
+        (2002, 2, 'CR 29', '00000029__', 1.0),
+        (2001, 2, 'BERGEN COUNTY 57 **', '00000057__', 2.49),
+        (2002, 2, 'RT 17', '00000017__', 10.0),          # a state route's string
+        (2002, 2, 'CR 503', '00000503__', 5.0),          # 500-series county routes are statewide
+        (2003, 2, 'CR 29', '00000029__', 1.0),           # 2003+: coded right
+        (2002, 2, 'CR 12', '00000029__', 1.0),           # another number
+        (2002, 2, 'CR 29', '02000029__', 1.0),           # already the county route
+        (2002, 4, 'CAMDEN COUNTY 705', '00000705__', None),
+    ], columns=['year', 'cc', 'road', 'sri', 'mp']).assign(ilat=40.2, ilon=-74.7)
+    out, n = recode_county_routes(cs)
+    assert n == 3
+    assert out['sri'].tolist() == ['02000029__', '02000057__', '00000017__', '00000503__', '00000029__', '00000029__', '02000029__', '04000705__']
+    assert na(out['mp']) == [1.0, 2.49, 10.0, 5.0, 1.0, 1.0, 1.0, None]
+    assert na(out['ilat']) == [None, None, 40.2, 40.2, 40.2, 40.2, 40.2, None]
+
+
 def test_route_keys():
     assert route_keys(ROUTES).tolist() == [
         ('R:US1',), ('R:US1', 'R:NJ1', 'R:I1'), ('R:CR617',), ('R:US501', 'R:NJ501', 'R:I501', 'R:CR501'),
@@ -165,6 +186,23 @@ def test_junctions():
     along = np.array([[0.0, 0.0], [100.0, 0.0], [200.0, 0.0], [300.0, 0.0], [400.0, 0.0]])
     assert junctions(along, road).shape == (0, 2)
     assert junctions(np.empty((0, 2)), road).shape == (0, 2)
+
+
+def test_sri_only_near_town():
+    """An SRI without MP is on its one road (`sri_only`) only if that road comes within 2 km of the
+    crash's muni: Elizabeth's "UNION COUNTY 624" crashes aren't on today's CR 624, Horseshoe Rd, 20 km
+    away."""
+    from njdot.loc_recovery import _locate_one
+    town = shapely.multilinestrings([shapely.linestrings([(0, 0), (1000, 0)])])
+    ctx = dict(
+        lines=lines([(0, 0), (1000, 0)]), segs_by={}, segs_named={}, segs_cc={}, seg_ent=np.array([np.nan]), seg_sris=np.array([None], dtype=object),
+        sri_lines={'NEAR': lines([(500, 1500), (500, 3000)]), 'FAR': lines([(20_000, 0), (21_000, 0)])}, ent_sris={}, sri_ent={'NEAR': 5, 'FAR': 6},
+        snapper=None, muni_geoms={(20, 4): town},
+    )
+    assert _locate_one(20, 4, (), None, 'NEAR', pd.NA, 0.0, '', None, False, True, None, **ctx) == ('sri_only', 'NEAR', None, None, 5, None)
+    assert _locate_one(20, 4, (), None, 'FAR', pd.NA, 0.0, '', None, False, True, None, **ctx) == ('none', None, None, None, None, None)
+    # A muni with no streets known: not checked.
+    assert _locate_one(20, 7, (), None, 'FAR', pd.NA, 0.0, '', None, False, True, None, **ctx) == ('sri_only', 'FAR', None, None, 6, None)
 
 
 def test_locate_one_several_junctions():
@@ -254,6 +292,37 @@ def crash(road, cross=None, sri=None, mp=None, dist=None, unit=None, d=None, roa
         'Unit Of Measurement': unit, 'Direction From Cross Street': d, 'road_system': road_system,
         'ilat': None, 'ilon': None, 'olat': None, 'olon': None,
     }
+
+
+def test_snapper_point_and_far_from_town(real):
+    """`Snapper.point` inverts `snap`; `far_from_town` flags coded crashes whose point (NJDOT's, else
+    the SRI / MP's) is > 2 km from their muni's streets: West Side Ave MP 1.2 is in Jersey City (9, 6),
+    not in a muni 50 km away (9, 99); without a point, a muni or an MP, nothing is checked."""
+    from njdot.loc_recovery import far_from_town, muni_geoms
+    p = real.snapper.point('09061684__', 1.2)
+    s, mp, d = real.snapper.snap(p, {'09061684__'})
+    assert (s, round(mp, 3), round(d, 3)) == ('09061684__', 1.2, 0.0)
+    assert real.snapper.point('09061684__', 99.0) is None
+    geoms = muni_geoms(real.seg['line'].to_numpy(), real.idx)
+    far = shapely.multilinestrings([shapely.linestrings([(p[0] + 50_000, p[1]), (p[0] + 51_000, p[1])])])
+    geoms[(9, 99)] = far
+    cs = pd.DataFrame({
+        'cc': [9, 9, 9, 9, 9, 9], 'mc': [6, 99, 99, 99, 98, 6],
+        'sri': ['09061684__', '09061684__', '09061684__', '09061684__', '09061684__', None],
+        'mp': [1.2, 1.2, 1.2, None, 1.2, None],
+        'ilat': [None, None, 40.73, None, None, None], 'ilon': [None, None, -74.07, None, None, None],
+    })
+    # (Row 2 is checked by NJDOT's point, without the snapper too; row 4's muni has no streets known.)
+    assert far_from_town(cs, geoms, real.snapper).tolist() == [False, True, True, False, False, False]
+    assert far_from_town(cs, geoms).tolist() == [False, False, True, False, False, False]
+    assert far_from_town(cs, None, real.snapper).tolist() == [False] * 6
+    # A road that comes through the muni keeps its crashes (the MP is off, not the road): with a
+    # 500 m tolerance, muni 97 is a street crossing West Side Ave at MP 0.3, 0.9 mi from MP 1.2.
+    q = real.snapper.point('09061684__', 0.3)
+    geoms[(9, 97)] = shapely.multilinestrings([shapely.linestrings([(q[0] - 50, q[1]), (q[0] + 50, q[1])])])
+    c97 = cs.assign(mc=[97, 99, 99, 99, 98, 97])
+    assert far_from_town(c97, geoms, real.snapper, town_m=500).tolist() == [True, True, True, False, False, False]
+    assert far_from_town(c97, geoms, real.snapper, real.runs, town_m=500).tolist() == [False, True, True, False, False, False]
 
 
 def test_recover_real(real):
