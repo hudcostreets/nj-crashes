@@ -12,7 +12,7 @@ export const ROADS_BASE_URL = MAP_BASE_URL.replace(/\/map\/?$/, "/roads")
 
 export type RoadsFile =
     | "crashes-by-sri" | "crashes-by-entity" | "sri-geom" | "sri-hit" | "sri-hit-5" | "sri-hit-6"
-    | "sris" | "road-entities" | "road-runs"
+    | "sris" | "road-entities" | "road-runs" | "road-names"
 
 export function roadsUrl(file: RoadsFile): string {
     return new URL(`${ROADS_BASE_URL}/${file}.parquet`, window.location.origin).href
@@ -27,8 +27,9 @@ function sriList(sris: string[]): string {
     return sris.filter(isSri).map(s => `'${s}'`).join(",")
 }
 
-/** An `nj_mp_tenths` point: `name` = local street name, `alias` = the top crash-reported road name
- *  nearby (where it differs), `subt` = road class (1 interstate … 7 local, 8 ramp). */
+/** An MP point (every 0.05 mi along the NJDOT Roadway Network): `name` = local street name (NG9-1-1),
+ *  else the SLD name; `alias` = the top crash-reported road name nearby (where it differs), `subt` =
+ *  road class (1 interstate … 7 local, 8 ramp). */
 export type RoadPoint = {
     sri: string
     mp: number
@@ -41,7 +42,9 @@ export type RoadPoint = {
     lat: number
 }
 
-/** A road entity: same-named SRI runs joined across routes (see `njdot/cli/roads.py`). */
+/** A road entity: same-named SRI runs joined across routes, within a county (see `njdot/road_net.py`).
+ *  `name` = the local (NG9-1-1) name, `route` = route designation(s) ("CR 501", "US 1 / US 9"),
+ *  `aliases` = NG9-1-1 local aliases then crash-reported names, " · "-joined. */
 export type RoadEntity = {
     entity: number
     name: string
@@ -57,6 +60,29 @@ export type RoadEntity = {
     n_injury: number
     n_killed: number
     aliases: string | null
+    cc: number | null
+    /** " · "-joined, most-covered first. */
+    munis: string | null
+}
+
+/** A ⌘K search-index row (`road-names.parquet`): one searchable name of an entity. Span-scoped NG9-1-1
+ *  names (an alias used on part of a road) carry that span's point / bbox, not the whole entity's. */
+export type RoadName = {
+    name_display: string
+    /** Upper-case, abbreviated ("J F KENNEDY BLVD"), for matching. */
+    name_norm: string
+    kind: "primary" | "alias" | "route"
+    entity: number
+    cc: number | null
+    munis: string | null
+    subt: number
+    n_crashes: number
+    lon: number
+    lat: number
+    lon_min: number
+    lat_min: number
+    lon_max: number
+    lat_max: number
 }
 
 export type RoadRun = { entity: number; sri: string; mp_lo: number; mp_end: number }

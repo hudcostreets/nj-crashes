@@ -19,3 +19,5 @@
 /crashes_geocode_backfill.parquet
 /cm.pqt
 /muni_codes.parquet
+/roadway_network.parquet
+/ng911

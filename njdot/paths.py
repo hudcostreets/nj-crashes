@@ -13,6 +13,12 @@ MAP_DIR = join(WWW_DOT, 'map')
 MAP_S3 = f'{S3}/njdot/map'
 ROADS_DIR = join(WWW_DOT, 'roads')
 ROADS_S3 = f'{S3}/njdot/roads'
+# Road-network sources (`njdot roads fetch-network` / `fetch-ng911`): NJDOT's LRS lines (SRI +
+# milepost geometry) and NJOGIS's NG9-1-1 centerlines + alias table (local names).
+ROADWAY_NETWORK = join(DOT_DATA, 'roadway_network.parquet')
+NG911_DIR = join(DOT_DATA, 'ng911')
+NG911_CENTERLINES = join(NG911_DIR, 'centerlines.parquet')
+NG911_ALIASES = join(NG911_DIR, 'aliases.parquet')
 WWW_DATA_DOT = join(PUBLIC_DIR, 'data', 'njdot')
 CNS = f'{WWW_DOT}/with_cns.parquet'
 CRASHES_PQT = f'{DOT_DATA}/crashes.parquet'
