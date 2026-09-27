@@ -2,11 +2,12 @@
 import { useState, type CSSProperties } from "react"
 import { Link } from "react-router-dom"
 import { useDb } from "@/src/lib/DuckDbContext"
-import { fetchEntityCrashesFull, type RoadCrash, type RoadCrashView } from "./roadsData"
+import { Tooltip } from "@/src/tooltip"
+import { fetchEntityCrashesFull, isUnplaced, type LocSource, type RoadCrash, type RoadCrashView } from "./roadsData"
 
 const CSV_COLS: (keyof RoadCrash)[] = [
     "sri", "mp", "dt", "year", "cc", "mc", "case", "severity", "tk", "ti", "pk", "pi", "tv",
-    "road", "cross_street", "route", "lat", "lon", "id",
+    "road", "cross_street", "route", "lat", "lon", "id", "loc_source",
 ]
 export const SEVERITY: Record<string, string> = { f: "Fatal", i: "Injury", p: "Property" }
 
@@ -50,6 +51,40 @@ export function crashHref(r: Pick<RoadCrash, "year" | "cc" | "mc" | "case">): st
     return `/crash/${r.year}/${r.cc}/${r.mc}/${encodeURIComponent(r.case)}`
 }
 
+const UNPLACED_TIP: Partial<Record<LocSource, string>> = {
+    name_only: "NJDOT didn't locate this crash (no route / milepost, as for most local-street crashes before 2018). The police report names this road, and no other road here by that name, so it's counted on this road, but its position along it is unknown: it's not on the map.",
+    sri_only: "NJDOT coded this crash's route but no milepost. The route is this road here, so it's counted on this road, but its position along it is unknown: it's not on the map.",
+}
+
+/** "street name only" badge for crashes on the road without a map point, explained in a tooltip. */
+export function UnplacedBadge({ source, theme }: { source: LocSource; theme: "light" | "dark" }) {
+    const color = theme === "dark" ? "#bbb" : "#666"
+    return (
+        <Tooltip title={UNPLACED_TIP[source] ?? ""}>
+            <span style={{
+                display: "inline-block", padding: "0 5px", border: `1px dashed ${color}`, borderRadius: 8,
+                color, fontSize: "0.85em", whiteSpace: "nowrap", cursor: "help",
+            }}>
+                {source === "sri_only" ? "route only" : "street name only"}
+            </span>
+        </Tooltip>
+    )
+}
+
+/** "N crashes located by street name or route only (no map point)", when N > 0 (road page, map panel). */
+export function UnplacedNote({ n, dim, style }: { n: number; dim: string; style?: CSSProperties }) {
+    if (!n) return null
+    return (
+        <div style={{ color: dim, fontSize: "0.85em", ...style }}>
+            <Tooltip title="Mostly local-street crashes before 2018, which NJDOT didn't locate: the police report's road name puts them on this road, but not at a point along it. They count in the totals and plots, and are listed last in the table.">
+                <span style={{ borderBottom: `1px dotted ${dim}`, cursor: "help" }}>
+                    {n.toLocaleString()} crash{n === 1 ? "" : "es"} located by street name or route only (no map point)
+                </span>
+            </Tooltip>
+        </div>
+    )
+}
+
 export type RoadCrashTableProps = {
     rows: RoadCrashView[]
     /** Show the SRI column (roads spanning several SRIs). */
@@ -78,8 +113,10 @@ export function RoadCrashTable({ rows, multiSri, theme, headerBg }: RoadCrashTab
             <tbody>
                 {rows.map((r, i) => (
                     <tr key={`${r.id ?? r.case}-${i}`} style={{ borderTop: `1px solid ${theme === "dark" ? "#333" : "#eee"}` }}>
-                        {multiSri && <td style={{ ...cell, color: dim }}>{r.sri.replace(/_+$/, "")}</td>}
-                        <td style={cell}>{r.mp?.toFixed(2) ?? "—"}</td>
+                        {multiSri && <td style={{ ...cell, color: dim }}>{r.sri?.replace(/_+$/, "") ?? ""}</td>}
+                        <td style={cell}>
+                            {isUnplaced(r) && r.loc_source ? <UnplacedBadge source={r.loc_source} theme={theme} /> : (r.mp?.toFixed(2) ?? "—")}
+                        </td>
                         <td style={{ ...cell, whiteSpace: "nowrap" }}>
                             <Link to={crashHref(r)} style={{ color: fg }}>
                                 {new Date(r.dt).toISOString().slice(0, 10)}

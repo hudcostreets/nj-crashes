@@ -74,7 +74,8 @@ export type RoadEntity = {
 }
 
 /** Crash counts of one road per `(year[, month], severity)` (`road-summary[-monthly]`); only
- *  non-zero cells have a row. */
+ *  non-zero cells have a row. `n` counts every crash on the road, `n_unplaced` those of them
+ *  located by street name / route only (no map point; absent in builds before location recovery). */
 export type RoadSummaryRow = {
     year: number
     /** 1–12 (monthly file only). */
@@ -83,6 +84,7 @@ export type RoadSummaryRow = {
     n: number
     tk: number
     ti: number
+    n_unplaced?: number
 }
 
 /** A county's (`mc` = 0) or muni's top road (`road-ranks`): counts and miles *within that area*;
@@ -122,9 +124,23 @@ export type RoadInfo = {
     n_killed: number
 }
 
+/** How `njdot roads build` put a crash on its road (specs/crash-location-recovery.md): its coded
+ *  SRI / milepost (`sri_mp`), or, recovered from police-reported strings, the road ∩ cross street
+ *  (`intersection` / `route_xs`), a reported point snapped to the road (`latlon_snap`), or, with no
+ *  point, an SRI without milepost (`sri_only`) or the road name alone (`name_only`). */
+export type LocSource = "sri_mp" | "intersection" | "route_xs" | "latlon_snap" | "sri_only" | "name_only" | "none"
+
+/** Sources that put a crash on a road without a map point (no milepost, no lat / lon). */
+export const UNPLACED_SOURCES: readonly LocSource[] = ["sri_only", "name_only"]
+
+export function isUnplaced(c: { loc_source?: LocSource | null }): boolean {
+    return !!c.loc_source && UNPLACED_SOURCES.includes(c.loc_source)
+}
+
 export type RoadCrash = {
     entity?: number
-    sri: string
+    /** Null for crashes located by street name only. */
+    sri: string | null
     mp: number | null
     id: number | null
     year: number
@@ -143,6 +159,8 @@ export type RoadCrash = {
     route: number | null
     lat: number | null
     lon: number | null
+    /** Absent in builds before location recovery (all crashes were `sri_mp`). */
+    loc_source?: LocSource | null
 }
 
 export type Bbox = [number, number, number, number]
@@ -183,8 +201,8 @@ export async function fetchEntityBySlug(db: AsyncDuckDB, slug: string): Promise<
 export function fetchEntitySummary(db: AsyncDuckDB, entity: number, monthly: boolean): Promise<RoadSummaryRow[]> {
     const file = monthly ? "road-summary-monthly" : "road-summary"
     return runQuery<RoadSummaryRow>(db, `
-        SELECT year, ${monthly ? "month, " : ""}severity, n, tk, ti FROM read_parquet('${roadsUrl(file)}')
-        WHERE entity = ${entity | 0}
+        SELECT ${presentCols(["year", ...(monthly ? ["month"] : []), "severity", "n", "tk", "ti", "n_unplaced"])}
+        FROM read_parquet('${roadsUrl(file)}') WHERE entity = ${entity | 0}
     `)
 }
 
@@ -203,19 +221,28 @@ export function fetchEntityGeom(db: AsyncDuckDB, entity: number): Promise<RoadPo
     `)
 }
 
-/** `crashes-by-entity` is sorted by `(entity, sri, mp, dt, id)`, so the `entity` filter alone prunes
- *  to the road's row groups (no need to wait for its SRI list). */
+/** A DuckDB `COLUMNS(…)` selecting whichever of `cols` the file has: columns added by newer builds
+ *  (`loc_source`, `n_unplaced`) are just absent from rows of older ones, rather than failing the
+ *  query (road data and the site deploy separately). */
+function presentCols(cols: readonly string[]): string {
+    return `COLUMNS('^(${cols.join("|")})$')`
+}
+
+/** `crashes-by-entity` is sorted by `(entity, unplaced, sri, mp, dt, id)`, so the `entity` filter
+ *  alone prunes to the road's row groups (no need to wait for its SRI list). Crashes without a
+ *  milepost (located by street name / route only) sort last. */
 export function entityCrashesSql(entity: number): string {
-    return `SELECT * FROM read_parquet('${roadsUrl("crashes-by-entity")}') WHERE entity = ${entity | 0} ORDER BY sri, mp, dt`
+    return `SELECT * FROM read_parquet('${roadsUrl("crashes-by-entity")}') WHERE entity = ${entity | 0} ORDER BY mp IS NULL, sri, mp, dt`
 }
 
 /** What the road views (table, map, plots) read; Export CSV fetches every column on demand. */
-const VIEW_COLS = ["sri", "mp", "id", "year", "dt", "cc", "mc", "case", "severity", "tk", "ti", "cross_street", "lat", "lon"] as const
+const VIEW_COLS = [
+    "sri", "mp", "id", "year", "dt", "cc", "mc", "case", "severity", "tk", "ti", "cross_street", "lat", "lon", "loc_source",
+] as const
 export type RoadCrashView = Pick<RoadCrash, typeof VIEW_COLS[number]>
 
 export function fetchEntityCrashes(db: AsyncDuckDB, entity: number): Promise<RoadCrashView[]> {
-    const cols = VIEW_COLS.filter(c => c !== "dt").map(c => `"${c}"`).join(", ")
-    return runQuery<RoadCrashView>(db, `SELECT ${cols}, epoch_ms(dt) AS dt FROM (${entityCrashesSql(entity)})`)
+    return runQuery<RoadCrashView>(db, `SELECT ${presentCols(VIEW_COLS.filter(c => c !== "dt"))}, epoch_ms(dt) AS dt FROM (${entityCrashesSql(entity)})`)
 }
 
 export function fetchEntityCrashesFull(db: AsyncDuckDB, entity: number): Promise<RoadCrash[]> {

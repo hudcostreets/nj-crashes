@@ -11,18 +11,16 @@ from click import Choice, option
 
 from nj_crashes.utils.log import err
 from njdot.cc2mc2mn import cc2mc2mn
-from njdot.loc_recovery import Snapper, entity_at, learn_names, ng_name_index, recover, seg_entities
+from njdot.loc_recovery import entity_at, learn_names, recover, recovery_context
 from njdot.paths import AASHTO_SUPPLEMENTED_CRASHES, CRASHES_PQT, NG911_DIR, ROADS_DIR, ROADWAY_NETWORK
 from njdot.road_net import ng_intervals, ng_segments, rn_features
 
-from .roads import roads
+from .roads import county_subset, roads
 
 CRASH_COLS = [
     'year', 'cc', 'mc', 'sri', 'mp', 'road', 'cross_street', 'cross_street_distance', 'Unit Of Measurement',
     'Direction From Cross Street', 'road_system', 'ilat', 'ilon', 'olat', 'olon', 'severity', 'tk',
 ]
-# Bbox margin (degrees) around the county's NG911 segments when subsetting the NJDOT network.
-BBOX_PAD = 0.02
 EVAL_MODES = {
     # Coded 2021+ crashes, names learned from ≤ 2020; SRI / MP / points blanked.
     'new': dict(years=(2021, 9999), learn=(0, 2020), keep_points=False, drop_cross=False),
@@ -34,25 +32,13 @@ EVAL_MODES = {
 
 
 def load_county(cc: int, ng911_dir: str, network: str, runs_path: str) -> dict:
-    cl = pd.read_parquet(join(ng911_dir, 'centerlines.parquet'))
-    cl = cl[(cl['cc_l'] == cc) | (cl['cc_r'] == cc)].reset_index(drop=True)
-    al = pd.read_parquet(join(ng911_dir, 'aliases.parquet'))
-    al = al[al['RCL_NGUID'].isin(set(cl['RCL_NGUID']))]
-    xs, ys = np.concatenate(cl['x'].to_numpy()), np.concatenate(cl['y'].to_numpy())
-    w, s, e, n = xs.min() - BBOX_PAD, ys.min() - BBOX_PAD, xs.max() + BBOX_PAD, ys.max() + BBOX_PAD
-    rn = pd.read_parquet(network)
-    rn = rn[[bool(((x >= w) & (x <= e) & (y >= s) & (y <= n)).any()) for x, y in zip(rn['x'], rn['y'])]].reset_index(drop=True)
+    """County `cc`'s `recover` inputs (`recovery_context`), entity ids from the published `runs_path`."""
+    rn, cl, al = county_subset(pd.read_parquet(network), pd.read_parquet(join(ng911_dir, 'centerlines.parquet')), pd.read_parquet(join(ng911_dir, 'aliases.parquet')), cc)
     feats = rn_features(rn)
     seg = ng_segments(cl)
     iv = ng_intervals(seg, feats)
-    runs = pd.read_parquet(runs_path)
-    seg_sris = pd.Series(pd.NA, index=np.arange(len(seg)), dtype='string')
-    seg_sris.loc[iv['seg'].to_numpy()] = iv['sri'].to_numpy()
     err(f'  {len(cl):,} NG911 segments, {len(rn):,} NJDOT features, {len(iv):,} intervals')
-    return dict(
-        seg=seg, idx=ng_name_index(cl, al, cc2mc2mn), seg_ent=seg_entities(seg, iv, runs), seg_sris=seg_sris,
-        snapper=Snapper(feats), runs=runs,
-    )
+    return recovery_context(seg, iv, pd.read_parquet(runs_path), feats, cl, al, cc2mc2mn)
 
 
 def load_crashes(cc: int) -> pd.DataFrame:

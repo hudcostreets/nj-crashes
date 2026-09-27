@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest"
-import { monthStats, rollingMean, yearStats } from "./roadStats"
+import { monthStats, rollingMean, unplacedTotal, yearStats } from "./roadStats"
 
-const row = (year: number, severity: string, n: number, tk = 0, ti = 0) => ({ year, severity, n, tk, ti })
+const row = (year: number, severity: string, n: number, tk = 0, ti = 0, n_unplaced?: number) => ({ year, severity, n, tk, ti, n_unplaced })
+const none = (len: number) => ({ f: new Array(len).fill(0), i: new Array(len).fill(0), p: new Array(len).fill(0) })
 
 describe("yearStats", () => {
     it("sums summary rows by severity, plus killed/injured, per year, zero-filling gaps", () => {
@@ -19,7 +20,29 @@ describe("yearStats", () => {
             p: [0, 4, 0, 2],
             killed: [0, 1, 0, 0],
             injured: [0, 5, 0, 1],
+            unplaced: none(4),
         })
+    })
+
+    it("counts each severity's crashes without a map point (`n_unplaced`)", () => {
+        const rows = [
+            row(2016, "p", 10, 0, 0, 7),
+            row(2016, "i", 3, 0, 4, 1),
+            row(2018, "p", 20, 0, 0, 0),
+            row(2018, "f", 1, 1, 0, 1),
+        ]
+        expect(yearStats(rows, 2016, 2018)).toEqual({
+            years: [2016, 2017, 2018],
+            f: [0, 0, 1],
+            i: [3, 0, 0],
+            p: [10, 0, 20],
+            killed: [0, 0, 1],
+            injured: [4, 0, 0],
+            unplaced: { f: [0, 0, 1], i: [1, 0, 0], p: [7, 0, 0] },
+        })
+        expect(unplacedTotal(rows)).toEqual(9)
+        // Builds before location recovery have no `n_unplaced`.
+        expect(unplacedTotal([{}, {}])).toEqual(0)
     })
 
     it("sums monthly rows into their year", () => {
@@ -29,7 +52,7 @@ describe("yearStats", () => {
             { ...row(2021, "f", 1, 2, 0), month: 7 },
         ]
         expect(yearStats(rows, 2021, 2021)).toEqual({
-            years: [2021], f: [1], i: [0], p: [5], killed: [2], injured: [0],
+            years: [2021], f: [1], i: [0], p: [5], killed: [2], injured: [0], unplaced: none(1),
         })
     })
 
@@ -42,12 +65,13 @@ describe("yearStats", () => {
             p: [0, 0, 0],
             killed: [0, 0, 2],
             injured: [0, 2, 0],
+            unplaced: none(3),
         })
     })
 
     it("ignores unknown severities in the per-severity counts", () => {
         expect(yearStats([row(2021, "x", 1, 0, 1)], 2021, 2021)).toEqual({
-            years: [2021], f: [0], i: [0], p: [0], killed: [0], injured: [1],
+            years: [2021], f: [0], i: [0], p: [0], killed: [0], injured: [1], unplaced: none(1),
         })
     })
 })
@@ -64,7 +88,13 @@ describe("monthStats", () => {
             f: [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             i: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3],
             p: [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            unplaced: none(12),
         })
+    })
+
+    it("counts crashes without a map point per month", () => {
+        const s = monthStats([{ year: 2021, month: 3, severity: "i", n: 5, n_unplaced: 2 }], 2021, 2021)
+        expect([s.i[2], s.unplaced.i[2], s.unplaced.i.reduce((a, b) => a + b, 0)]).toEqual([5, 2, 2])
     })
 
     it("widens to the rows' years", () => {

@@ -11,7 +11,8 @@ import pytest
 from njdot.cc2mc2mn import cc2mc2mn
 from njdot.cli.roads import (
     alias_candidates, assign_crashes, build_geom, crashes_by_sri, entity_table, point_aliases, point_names,
-    read_crashes_by_sri, road_names_index, road_outputs, road_runs, smooth_names, sri_hit, sris, stretch_aliases,
+    read_crashes_by_sri, road_names_index, road_outputs, road_runs, road_system_codes, smooth_names, sri_hit, sris,
+    stretch_aliases,
     write_outputs,
 )
 from njdot.road_net import (
@@ -51,6 +52,13 @@ def test_crashes_by_sri_filters_joins_and_sorts():
     assert out['lat'].isna().tolist() == [False, False, True, False]
     assert out['route'].tolist() == ['1', '9', '1', '1']
     assert pa.Table.from_pandas(out, preserve_index=False).schema.field('route').type == pa.string()
+
+
+def test_road_system_codes():
+    # Per-table int codes ∪ AASHTO names after the concat: only "Private Property" maps (to 9).
+    s = pd.Series([7, 9, 'Private Property', 'Municipal', None, 5.0], dtype=object)
+    assert na(road_system_codes(s)) == [7, 9, 9, None, None, 5]
+    assert str(road_system_codes(s).dtype) == 'Int8'
 
 
 def test_shield():

@@ -58,18 +58,41 @@ export function RoadPlots({ rows }: { rows: (RoadSummaryRow & { month: number })
         ticktext: years.years.map(y => `'${String(y).slice(2)}`),
     }), [years])
 
+    const hasUnplaced = useMemo(() => Severities.some(s => years.unplaced[s].some(v => v > 0)), [years])
+
     const sevPlot = useMemo(() => {
         const x = gran === "year" ? years.years : months!.months
         const src = gran === "year" ? years : months!
-        const traces: Partial<PlotData>[] = Severities.map(s => ({
-            uid: `${gran}-${s}`,
-            type: "bar",
-            name: SeverityLabels[s],
-            x,
-            y: src[s],
-            marker: { color: sevColors[s] },
-            hovertemplate: `${SeverityLabels[s]}: %{y:,}<extra></extra>`,
-        }))
+        // Each severity's crashes located by street name / route only (no map point) stack on top of
+        // its placed ones, faded and hatched; the hover line gives the severity's total.
+        const traces: Partial<PlotData>[] = Severities.flatMap(s => {
+            const tot = src[s], un = src.unplaced[s]
+            const placed: Partial<PlotData> = {
+                uid: `${gran}-${s}`,
+                type: "bar",
+                name: SeverityLabels[s],
+                legendgroup: s,
+                x,
+                y: hasUnplaced ? tot.map((v, k) => v - un[k]) : tot,
+                text: tot.map((v, k) => `${SeverityLabels[s]}: ${v.toLocaleString()}${un[k] ? ` (${un[k].toLocaleString()} no map point)` : ""}`),
+                textposition: "none",
+                marker: { color: sevColors[s] },
+                hovertemplate: "%{text}<extra></extra>",
+            }
+            if (!hasUnplaced) return [placed]
+            const unplaced: Partial<PlotData> = {
+                uid: `${gran}-${s}-unplaced`,
+                type: "bar",
+                name: `${SeverityLabels[s]} (no map point)`,
+                legendgroup: s,
+                showlegend: false,
+                x,
+                y: un,
+                marker: { color: sevColors[s], opacity: 0.4, pattern: { shape: "/", fgcolor: sevColors[s], solidity: 0.35 } },
+                hoverinfo: "skip",
+            }
+            return [placed, unplaced]
+        })
         if (gran === "month") {
             const totals = x.map((_, k) => src.f[k] + src.i[k] + src.p[k])
             traces.push({
@@ -91,7 +114,7 @@ export function RoadPlots({ rows }: { rows: (RoadSummaryRow & { month: number })
             datarevision: gran,
         }
         return { traces, layout }
-    }, [gran, years, months, sevColors, colors, baseLayout, yearTicks])
+    }, [gran, years, months, sevColors, colors, baseLayout, yearTicks, hasUnplaced])
 
     const casualtyPlot = useMemo(() => {
         const traces: Partial<PlotData>[] = [
@@ -135,6 +158,11 @@ export function RoadPlots({ rows }: { rows: (RoadSummaryRow & { month: number })
         <div>
             <h3 style={{ marginBottom: 0 }}>Crashes by severity</h3>
             <PlotWrapper data={sevPlot.traces as PlotData[]} layout={sevPlot.layout} disableFade disableSolo boldWeight="normal" fallback={<div style={{ height: HEIGHT }} />} />
+            {hasUnplaced && (
+                <p style={{ margin: "0 0 0.5em", fontSize: "0.85em", opacity: 0.75 }}>
+                    Faded, hatched: crashes located by street name or route only (no map point).
+                </p>
+            )}
             <Radios
                 label="Per"
                 name="road-granularity"

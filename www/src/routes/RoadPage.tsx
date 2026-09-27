@@ -13,10 +13,11 @@ import { normalize } from "@/src/county"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import { mapViewHref } from "@/src/map/links"
 import {
-    entityCrashesSql, fetchEntityCrashes, fetchEntityGeom, fetchEntitySummary, roadPaths, type RoadCrashView,
+    entityCrashesSql, fetchEntityCrashes, fetchEntityGeom, fetchEntitySummary, isUnplaced, roadPaths, type RoadCrashView,
     type RoadSummaryRow,
 } from "@/src/map/roads/roadsData"
-import { crashHref, ExportCsvButton, RoadCrashTable } from "@/src/map/roads/RoadCrashTable"
+import { crashHref, ExportCsvButton, RoadCrashTable, UnplacedNote } from "@/src/map/roads/RoadCrashTable"
+import { unplacedTotal } from "@/src/map/roads/roadStats"
 import { RoadPlots } from "@/src/map/roads/RoadPlots"
 import { parseRoadRef, useRoadEntity } from "@/src/map/roads/useRoadEntity"
 import css from "@/src/home.module.scss"
@@ -53,9 +54,11 @@ export default function RoadPage() {
     const paths = useMemo(() => roadPaths(geom.data ?? []), [geom.data])
     const sorted = useMemo((): RoadCrashView[] => {
         const rows = crashes.data ?? []
-        // The query returns (sri, mp, dt) order.
-        return order === "mp" ? rows : [...rows].sort((a, b) => b.dt - a.dt)
+        // The query returns (sri, mp, dt) order, crashes without a milepost last; newest-first keeps
+        // those (no map point) last too.
+        return order === "mp" ? rows : [...rows].sort((a, b) => Number(isUnplaced(a)) - Number(isUnplaced(b)) || b.dt - a.dt)
     }, [crashes.data, order])
+    const nUnplaced = useMemo(() => unplacedTotal(summary.data ?? []), [summary.data])
     const nPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
     const pageRows = useMemo(() => sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [sorted, page])
 
@@ -120,6 +123,7 @@ export default function RoadPage() {
                 <b>{road.n_crashes.toLocaleString()}</b> crashes · <b>{road.n_fatal.toLocaleString()}</b> fatal
                 {" "}(<b>{road.n_killed.toLocaleString()}</b> killed) · <b>{road.n_injury.toLocaleString()}</b> injury
             </p>
+            <UnplacedNote n={nUnplaced} dim={dim} style={{ marginTop: "-0.6em", marginBottom: "1em" }} />
 
             <h2 id="map">Map</h2>
             <Suspense fallback={<div style={{ height: MAP_HEIGHT }} />}>

@@ -42,7 +42,7 @@ One row per entity. **Sort:** `entity`, which is also `slug` order. **Row groups
 | `subt` | int8 | road class (1 interstate … 7 local, 8 ramp) |
 | `sris` | string | comma-joined |
 | `lon_min`, `lat_min`, `lon_max`, `lat_max` | double | bbox |
-| `n_crashes`, `n_fatal`, `n_injury`, `n_killed` | int32 | whole-road totals |
+| `n_crashes`, `n_fatal`, `n_injury`, `n_killed` | int32 | whole-road totals (all assigned crashes, placed or not) |
 | `aliases` | string? | " · "-joined: NG911 local aliases, then crash-report aliases |
 | `cc` | int8? | county |
 | `mc` | int16? | **new:** NJDOT muni code (`cc2mc2mn`) when the road is within one muni (slug has a muni segment), else null |
@@ -57,7 +57,9 @@ Lookups:
 
 ### `crashes-by-entity.parquet`
 
-Columns unchanged: `entity, sri, mp, id, year, dt, cc, mc, case, severity, tk, ti, pk, pi, tv, road, cross_street, route, lat, lon`. **Sort:** `(entity, sri, mp, dt, id)`. **Row groups:** 10,000 rows. **Stats:** `entity` only (so no `sri` pruning: filter on `entity`). **Dict:** `sri, severity, road, cross_street, route` (−16% file size vs all-dictionary).
+Columns: `entity, sri, mp, id, year, dt, cc, mc, case, severity, tk, ti, pk, pi, tv, road, cross_street, route, loc_source, lat, lon`. **Sort:** `(entity, unplaced, sri, mp, dt, id)`, where `unplaced` = `loc_source` ∈ {`sri_only`, `name_only`}: crashes on the road without a map point come last within it. **Row groups:** 10,000 rows. **Stats:** `entity` only (so no `sri` pruning: filter on `entity`). **Dict:** `sri, severity, road, cross_street, route, loc_source` (−16% file size vs all-dictionary).
+
+`loc_source` (string, added with crash location recovery; [crash-location-recovery.md § Shipped](crash-location-recovery.md#shipped-njdot-roads-build)) says how the crash got onto the road: `sri_mp` (NJDOT's coded SRI / MP, as before), `intersection` / `route_xs` / `latlon_snap` (recovered SRI / MP and point), `sri_only` (SRI, no MP / point) or `name_only` (no SRI / MP / point). The last two have null `mp`, `lat`, `lon`. The frontend reads it through a `COLUMNS('^(…)$')` select, so files from before recovery (no `loc_source`) still load.
 
 ### `sri-geom.parquet`
 
@@ -72,7 +74,11 @@ Columns `sri, mp, sld_name, name, subt, entity, alias, lon, lat`: one row per MP
 
 ### `crashes-by-sri.parquet`
 
-As before, plus `entity` (int32, nullable) as the last column. Sort `(sri, mp, dt, id)`, row groups 25k, all stats.
+As before, plus `loc_source` / `how` (strings, after `route`) and `entity` (int32, nullable, last). Sort `(sri, mp, dt, id)`, row groups 25k, all stats.
+
+- Recovered placed crashes (`intersection` / `route_xs` / `latlon_snap`) appear under their *recovered* SRI (a retired-SRI crash moves to the SRI it was re-located on). `name_only` crashes (no SRI) aren't in this file; `sri_only` ones are, with `entity` set.
+- `how` (audit only): which rule resolved the road name (`exact` / `base` / `nodir` / `fuzzy` / `learned` / `route`), on crashes recovery tried; null on coded `sri_mp` crashes.
+- `loc_source` = `none`: the crash has an SRI (without MP, or off every run) and recovery couldn't place it.
 
 ### `road-summary.parquet` / `road-summary-monthly.parquet`
 
@@ -85,7 +91,9 @@ As before, plus `entity` (int32, nullable) as the last column. Sort `(sri, mp, d
 | `n` | int32: crashes |
 | `tk` | int32: killed |
 | `ti` | int32: injured |
+| `n_unplaced` | int32: of `n`, crashes without a map point (`loc_source` `sri_only` / `name_only`) |
 
+- `n` counts **every** crash assigned to the road, recovered ones included; `n_unplaced` drives the plots' faded / hatched segment and the "located by street name or route only" note.
 - **Sort:** the key columns.
 - **Row groups:** 10,000 (yearly) / 20,000 (monthly).
 - **Stats:** `entity`.
@@ -101,7 +109,7 @@ One row per `(cc, mc, entity)` where the entity is in that area's top 50 (`RANK_
 | `cc` | int8 | county |
 | `mc` | int16 | NJDOT muni code; **0 = the whole county** |
 | `entity`, `slug`, `name`, `route`, `subt` | | the road (no ramps: `subt` < 8) |
-| `n_crashes`, `n_fatal`, `n_killed` | int32 | the road's crashes / fatal crashes / killed **in this area**, by the crash's own `(cc, mc)` |
+| `n_crashes`, `n_fatal`, `n_killed` | int32 | the road's crashes / fatal crashes / killed **in this area**, by the crash's own `(cc, mc)`, recovered crashes included |
 | `length_mi` | float32 | the road's miles in this area (0 if unknown) |
 | `per_mi` | float32? | `n_crashes / length_mi`: **all years (2001–), not per year**. Null unless `length_mi` ≥ 0.25 and `n_crashes` ≥ 10 in the area |
 | `rank_crashes`, `rank_fatal`, `rank_killed`, `rank_per_mi` | int16? | 1 = most; null outside the top 50 or when the value is 0 / null. Ties are broken by `slug` |
