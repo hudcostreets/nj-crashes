@@ -388,8 +388,10 @@ NODE_SNAP_M = 1.0
 # Nodes this close that join the same roads (by corridor) are one intersection: both carriageways
 # of a divided road meeting a cross street, a cross street jogging across a road.
 NODE_MERGE_M = 40
-# NG911 names that don't make a leg a road.
+# NG911 names that don't make a leg a road (`merge_key`s), and ramp names in NJDOT's SLD style
+# ("FR US 1 SB to RAMP A105460", "From NJ 10 Wb To Unnamed Road").
 UNNAMED = {'UNNAMEDSEGMENT', 'RAMP', 'UNNAMED', 'PRIVATE', 'PRIVATEROAD', 'DRIVEWAY'}
+RAMP_NAME_RE = r'(?i)^(?:fr|from)\b.*\bto\b|\bramp\b'
 
 
 def intersection_nodes(
@@ -430,7 +432,8 @@ def intersection_nodes(
     # A leg's road: its (non-ramp) entity, mapped to its corridor; else its NG911 name (a public road
     # NJDOT's network lacks, or whose segment didn't match a line), unless unnamed or a ramp.
     ent_leg = np.where(ramp, np.nan, ent_all)
-    nm = merge_key(seg['name']).to_numpy(dtype=object, na_value=None)[leg_seg]
+    ramp_nm = seg['name'].astype('string').str.contains(RAMP_NAME_RE, regex=True).fillna(False).to_numpy(dtype=bool)
+    nm = merge_key(seg['name'].mask(ramp_nm)).to_numpy(dtype=object, na_value=None)[leg_seg]
     road = [
         f'c{corridor_of.get(int(e), -1 - int(e))}' if np.isfinite(e) else (None if r or v is None or v in UNNAMED else f'n{v}')
         for e, r, v in zip(ent_leg, ramp, nm)
@@ -819,7 +822,7 @@ def node_table(nodes: pd.DataFrame, node_ents: pd.DataFrame, node_legs: pd.DataF
     extra = node_legs.assign(name=seg['name'].to_numpy()[node_legs['seg'].to_numpy()])
     names = pd.concat([ne[['node', 'name']], extra[['node', 'name']]], ignore_index=True).dropna()
     names['k'] = merge_key(names['name']).to_numpy()
-    names = names[~names['k'].isin(UNNAMED)].drop_duplicates(['node', 'k'])
+    names = names[~names['k'].isin(UNNAMED) & ~names['name'].astype('string').str.contains(RAMP_NAME_RE, regex=True).fillna(False)].drop_duplicates(['node', 'k'])
     label = names.groupby('node', sort=False)['name'].agg(lambda s: ' & '.join(list(s)[:LABEL_MAX_ROADS]))
     at = by_entity[by_entity['node'].notna().to_numpy()].assign(node=lambda d: d['node'].astype('int64'))
     cnt = _severity_counts(at, ['node'])
