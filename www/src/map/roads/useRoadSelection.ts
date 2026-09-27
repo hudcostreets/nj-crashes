@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { PathLayer } from "@deck.gl/layers"
 import { useUrlState, stringParam } from "use-prms"
-import { useAction } from "use-kbd"
+import { useAction } from "@/src/lib/kbd"
 import { useDb } from "@/src/lib/DuckDbContext"
 import {
     fetchEntityCrashes, fetchEntityGeom, fetchEntitySummary, fetchHitPoints, hitFileForZoom, HIT_TIERS, nearestRoad,

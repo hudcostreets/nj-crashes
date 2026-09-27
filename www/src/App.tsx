@@ -9,6 +9,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useSectionsActions } from './components/SectionsOmnibar'
 import { useScrollAnchor } from './lib/useScrollAnchor'
 import { useDomainToggle } from './lib/useDomainToggle'
+import { FeedbackButton, FeedbackProvider } from './feedback/Feedback'
+import { ActionLogRecorder } from './feedback/ActionLogRecorder'
 
 // Home is eager (the landing page). Everything else lazy — `/sql`,
 // `/duckdb`, `/match-review`, `/map`, `/raw`, `/files`, `/harmonization`
@@ -54,6 +56,8 @@ export default function App() {
         <QueryClientProvider client={queryClient}>
         <HotkeysProvider>
         <DuckDbProvider>
+        <FeedbackProvider>
+            <ActionLogRecorder />
             <SectionsRegistrar />
             <DomainToggleRegistrar />
             <Suspense fallback={null}>
@@ -105,7 +109,9 @@ export default function App() {
             <Omnibar />
             <ShortcutsModal />
             <LookupModal />
+            <FeedbackButton />
             <AppSpeedDial />
+        </FeedbackProvider>
         </DuckDbProvider>
         </HotkeysProvider>
         </QueryClientProvider>

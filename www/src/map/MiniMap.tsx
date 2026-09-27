@@ -2,12 +2,13 @@
  *  deck.gl overlay as `CrashMap`, minus its modes/controls. Top-down; scroll-wheel zoom is off so
  *  the page still scrolls over it (drag / pinch / double-click / the ± buttons zoom). */
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { Map as MapGl } from "react-map-gl/maplibre"
+import { Map as MapGl, type MapRef } from "react-map-gl/maplibre"
 import "./maplibreWorker"
 import "maplibre-gl/dist/maplibre-gl.css"
 import DeckGL from "@deck.gl/react"
 import { WebMercatorViewport, type PickingInfo } from "@deck.gl/core"
 import { AttributionPopover, rasterStyle } from "./basemap"
+import { useDeckMapCapture } from "@/src/feedback/glCapture"
 
 export type MiniView = { longitude: number; latitude: number; zoom: number }
 export type Bbox = [number, number, number, number]
@@ -42,6 +43,8 @@ function fitView(bounds: Bbox, width: number, height: number): MiniView {
 
 export default function MiniMap({ height, theme, center, bounds, layers, onHover, onClick, hovering, children }: MiniMapProps) {
     const ref = useRef<HTMLDivElement>(null)
+    const mapRef = useRef<MapRef | null>(null)
+    const { deckRef, onAfterRender } = useDeckMapCapture(mapRef)
     const [home, setHome] = useState<MiniView | null>(null)
     const [view, setView] = useState<MiniView | null>(null)
     const boundsKey = bounds?.join(",")
@@ -64,6 +67,8 @@ export default function MiniMap({ height, theme, center, bounds, layers, onHover
         <div ref={ref} style={{ position: "relative", height, width: "100%", borderRadius: 4, overflow: "hidden", border: `1px solid ${border}` }}>
             {view && (
                 <DeckGL
+                    ref={deckRef}
+                    onAfterRender={onAfterRender}
                     viewState={{ ...view, pitch: 0, bearing: 0 }}
                     onViewStateChange={({ viewState }: any) => setView({ longitude: viewState.longitude, latitude: viewState.latitude, zoom: viewState.zoom })}
                     controller={{ scrollZoom: false, dragRotate: false, touchRotate: false, keyboard: false, maxZoom: MAX_ZOOM } as any}
@@ -73,7 +78,7 @@ export default function MiniMap({ height, theme, center, bounds, layers, onHover
                     getCursor={({ isDragging }) => (isDragging ? "grabbing" : hovering ? "pointer" : "grab")}
                     style={{ position: "absolute", inset: "0" }}
                 >
-                    <MapGl mapStyle={style} maxZoom={MAX_ZOOM} attributionControl={false} />
+                    <MapGl ref={mapRef} mapStyle={style} maxZoom={MAX_ZOOM} attributionControl={false} />
                 </DeckGL>
             )}
             <div style={{ position: "absolute", top: 8, right: 8, zIndex: 5, display: "flex", flexDirection: "column", gap: 4 }}>

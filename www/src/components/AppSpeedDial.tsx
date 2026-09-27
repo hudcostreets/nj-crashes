@@ -1,4 +1,5 @@
-/** SpeedDial actions used app-wide: GitHub link + theme cycler.
+/** SpeedDial actions used app-wide: GitHub link + theme cycler + "Report
+ *  an issue" (also a standalone button beside the SD; see `feedback/`).
  *
  *  These used to live in a separate scroll-triggered `<ThemeToggle>` widget
  *  at bottom-right, which collided with use-kbd's own `<SpeedDial>` at the
@@ -10,6 +11,7 @@ import { MdBrightnessAuto, MdDarkMode, MdLightMode } from "react-icons/md"
 import { SpeedDial, type SpeedDialAction } from "use-kbd"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import { GitHub } from "@/src/socials"
+import { useFeedbackSpeedDialAction } from "@/src/feedback/Feedback"
 
 export function AppSpeedDial() {
     const { theme, setTheme } = useTheme()
@@ -21,7 +23,9 @@ export function AppSpeedDial() {
         theme === "light" ? "Light" :
         theme === "dark"  ? "Dark" :
                             "System"
+    const feedbackAction = useFeedbackSpeedDialAction()
     const actions: SpeedDialAction[] = useMemo(() => [
+        feedbackAction,
         {
             key: "github",
             label: "View on GitHub",
@@ -35,6 +39,6 @@ export function AppSpeedDial() {
             icon: themeIcon,
             onClick: () => setTheme(theme === "light" ? "dark" : theme === "dark" ? "system" : "light"),
         },
-    ], [theme, themeIcon, themeLabel, setTheme])
+    ], [feedbackAction, theme, themeIcon, themeLabel, setTheme])
     return <SpeedDial actions={actions} />
 }

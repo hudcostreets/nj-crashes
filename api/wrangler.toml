@@ -32,11 +32,35 @@ binding = "NJSP_CRASHES_DB"
 database_name = "njsp-crashes"
 database_id = "d29fda93-ed68-4229-a2b9-da55460e80a1"
 
+# User feedback ("report an issue", `src/feedback/`). Separate DB because
+# `scripts/d1-import.sh` drops+recreates the data DBs above. Schema:
+# `migrations/`. Screenshots go to a *private* bucket (no custom domain, unlike
+# `crashes` → crashes-data.hccs.dev), served only via the worker's tokenized
+# `/v1/feedback/:id/screenshot` route. Both are declared in `infra/__main__.py`.
+# TODO: replace the placeholder `database_id` with
+# `pulumi stack output d1_database_ids` → `crashes-feedback` after `pulumi up`
+# (a placeholder id works for `wrangler dev`, but not `wrangler deploy`).
+# Secrets (`wrangler secret put`): FEEDBACK_SLACK_WEBHOOK, FEEDBACK_ADMIN_TOKEN,
+# TURNSTILE_SECRET — each optional (unset → Slack skipped / listing disabled /
+# no bot check).
+[[d1_databases]]
+binding = "FEEDBACK_DB"
+database_name = "crashes-feedback"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "FEEDBACK_BUCKET"
+bucket_name = "crashes-feedback"
+
 [dev]
 port = 51894
 
 [vars]
 CORS_ORIGIN = "*"
+# Public Turnstile site key for the feedback form (`pulumi stack output
+# turnstile_sitekey`); empty → no widget. Pair with the TURNSTILE_SECRET secret.
+TURNSTILE_SITE_KEY = ""
 
 # Dev tier: `wrangler deploy --env dev` → `crashes-api-dev`, served at
 # `crashes-api-dev.hccs.dev` (domain via `infra/`) for `dev.crashes.hccs.dev`.
@@ -75,5 +99,16 @@ binding = "NJSP_CRASHES_DB"
 database_name = "njsp-crashes"
 database_id = "d29fda93-ed68-4229-a2b9-da55460e80a1"
 
+[[env.dev.d1_databases]]
+binding = "FEEDBACK_DB"
+database_name = "crashes-feedback"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[[env.dev.r2_buckets]]
+binding = "FEEDBACK_BUCKET"
+bucket_name = "crashes-feedback"
+
 [env.dev.vars]
 CORS_ORIGIN = "*"
+TURNSTILE_SITE_KEY = ""

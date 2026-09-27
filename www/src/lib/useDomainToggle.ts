@@ -1,4 +1,4 @@
-import { useAction } from "use-kbd"
+import { useAction } from "@/src/lib/kbd"
 
 /** `g d` — toggle the current URL's host between the local dev server
  *  (`localhost:4006`) and prod (`crashes.hccs.dev`). Preserves
