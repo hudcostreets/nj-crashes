@@ -7,9 +7,10 @@ import pandas as pd
 import pyarrow as pa
 import pytest
 
+from njdot.cc2mc2mn import cc2mc2mn
 from njdot.cli.roads import (
     alias_candidates, assign_crashes, build_geom, crashes_by_sri, entity_table, point_aliases, point_names,
-    road_names_index, road_runs, smooth_names, sri_hit, sris, stretch_aliases,
+    road_names_index, road_outputs, road_runs, smooth_names, sri_hit, sris, stretch_aliases,
 )
 from njdot.road_net import (
     merge_key, name_key, name_points, ng_intervals, ng_segments, rn_features, rn_points, road_entities, shield,
@@ -550,3 +551,75 @@ def test_real_boulevard_east_is_not_jfk_blvd(real):
     assert [entity_at(real, '09111121__', mp) for mp in (0.5, 0.9)] == [be, be]
     assert entity_at(real, '00000505__', 1.0) == be
     assert real.ents.at[be, 'aliases'] == 'J F Kennedy Boulevard East · Jfk Boulevard East · Kennedy Boulevard East'
+
+
+@pytest.fixture(scope='module')
+def real_out():
+    con = duckdb.connect()
+    b = build_geom(
+        pd.read_parquet(join(FIXTURES, 'roadway_network.parquet')),
+        pd.read_parquet(join(FIXTURES, 'ng911', 'centerlines.parquet')),
+        pd.read_parquet(join(FIXTURES, 'ng911', 'aliases.parquet')),
+        con,
+    )
+    by_sri = pd.DataFrame([
+        crash(1, '00000501__', 30.0, '2020-01-01', severity='f', tk=1) | {'road': 'KENNEDY BLVD'},
+        crash(2, '09061684__', 1.0, '2021-06-01', severity='i') | {'road': 'W SIDE AVE'},
+        crash(3, '09061684__', 9.0, '2021-06-01'),  # past every run → no entity
+    ])
+    by_sri['_i'] = np.arange(len(by_sri))
+    return road_outputs(b, by_sri, assign_crashes(by_sri, b['runs'], con), con, cc2mc2mn)
+
+
+def test_real_slugs_and_renumbering(real_out):
+    ents = real_out['ents']
+    # Entity ids are slug ranks: `road-entities` is sorted by both.
+    assert ents['entity'].tolist() == list(range(len(ents)))
+    assert ents['slug'].tolist() == sorted(ents['slug'])
+    hudson = ents[ents['slug'].str.startswith('hudson/')]
+    assert [tuple(na(r)) for r in hudson[['slug', 'name', 'mc']].astype(object).values.tolist()] == [
+        ('hudson/boulevard-east', 'Boulevard East', None),
+        ('hudson/general-pulaski-skyway', 'General Pulaski Skyway', None),
+        ('hudson/j-f-kennedy-boulevard', 'J F Kennedy Boulevard', None),
+        ('hudson/jersey-city/bergen-avenue', 'Bergen Avenue', 6),
+        ('hudson/jersey-city/duncan-avenue', 'Duncan Avenue', 6),
+        ('hudson/jersey-city/sip-avenue', 'Sip Avenue', 6),
+        ('hudson/jersey-city/west-side-avenue', 'West Side Avenue', 6),
+        ('hudson/north-bergen/route-501-secondary', 'ROUTE 501 SECONDARY', 8),
+        ('hudson/north-bergen/us-1-secondary', 'US 1 SECONDARY', 8),
+        ('hudson/north-bergen/west-side-avenue', 'West Side Avenue', 8),
+        ('hudson/park-avenue', 'Park Avenue', None),
+        ('hudson/river-road', 'River Road', None),
+        ('hudson/tonnelle-avenue', 'Tonnelle Avenue', None),
+        ('hudson/union-city/38th-street', '38th Street', 10),
+        ('hudson/union-city/park-avenue', 'Park Avenue', 10),
+        ('hudson/weehawken/highwood-terrace', 'Highwood Terrace', 11),
+    ]
+    slug = ents.set_index('entity')['slug']
+    # `crashes-by-sri` carries each crash's (renumbered) entity.
+    assert str(real_out['by_sri']['entity'].dtype) == 'Int32'
+    assert [None if pd.isna(e) else slug[e] for e in real_out['by_sri']['entity']] == [
+        'hudson/j-f-kennedy-boulevard', 'hudson/jersey-city/west-side-avenue', None,
+    ]
+    assert [slug[e] for e in real_out['by_entity']['entity']] == ['hudson/j-f-kennedy-boulevard', 'hudson/jersey-city/west-side-avenue']
+    assert [(slug[e], y, s, n) for e, y, s, n in real_out['road-summary'][['entity', 'year', 'severity', 'n']].values.tolist()] == [
+        ('hudson/j-f-kennedy-boulevard', 2020, 'f', 1), ('hudson/jersey-city/west-side-avenue', 2020, 'i', 1),
+    ]
+    lengths = ents.set_index('slug')['length_mi'].astype('float64').round(2)
+    assert lengths[['hudson/j-f-kennedy-boulevard', 'hudson/jersey-city/west-side-avenue', 'hudson/tonnelle-avenue']].tolist() == [14.11, 2.94, 6.05]
+
+
+def test_real_search_tokens(real_out):
+    s = real_out['road-search']
+    k = s[s['token'] == 'kennedy']
+    assert [tuple(na(r)) for r in k[['slug', 'matched', 'kind']].values.tolist()] == [
+        ('hudson/j-f-kennedy-boulevard', None, 'primary'),
+        ('hudson/j-f-kennedy-boulevard', 'J F Kennedy Boulevard East', 'alias'),
+        ('hudson/j-f-kennedy-boulevard', 'J F Kennedy Boulevard West', 'alias'),
+        ('hudson/j-f-kennedy-boulevard', 'Kennedy Boulevard', 'alias'),
+        ('hudson/boulevard-east', 'East Kennedy Boulevard', 'alias'),
+        ('hudson/boulevard-east', 'J F Kennedy Boulevard East', 'alias'),
+        ('hudson/boulevard-east', 'Kennedy Boulevard East', 'alias'),
+        ('hudson/park-avenue', 'Kennedy Boulevard East', 'alias'),
+    ]
+    assert s['token'].tolist() == sorted(s['token'])
