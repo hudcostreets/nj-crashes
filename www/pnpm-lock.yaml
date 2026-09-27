@@ -39,8 +39,8 @@ importers:
         specifier: ^9.2.0
         version: 9.3.2(@deck.gl/core@9.3.2)(@deck.gl/widgets@9.3.2(@deck.gl/core@9.3.2)(@luma.gl/core@9.3.3))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@duckdb/duckdb-wasm':
-        specifier: ^1.28.0
-        version: 1.28.0
+        specifier: ^1.32.0
+        version: 1.32.0
       '@emotion/react':
         specifier: ^11.11.3
         version: 11.11.3(@types/react@18.2.48)(react@18.2.0)
@@ -450,8 +450,8 @@ packages:
       '@deck.gl/core': ~9.3.0
       '@luma.gl/core': ~9.3.3
 
-  '@duckdb/duckdb-wasm@1.28.0':
-    resolution: {integrity: sha512-YaswpEmxr1Sp20/FZbWR7bZBJqj6xQXX2m4LLzYBnA02g4K1yrpxsBWmkxQyMbrH6AHKhcUUqAlaXfA2Rvaa3w==}
+  '@duckdb/duckdb-wasm@1.32.0':
+    resolution: {integrity: sha512-IewXTNYEjsZCPE9weUWgtjGxUlMRo7qhX0GF6tq/KjK8bnY+RAl4cyUdYUfcdzbyb4b9ZxPC+FOsCcxgaKFWMg==}
 
   '@emnapi/runtime@1.11.3':
     resolution: {integrity: sha512-Xz4Tpyki7XyrpbUK1jR1AhdAdaXyhhY4lZ3neLodmhpuWfy2PAQN5B46sAiU4liOXGLkHypn/qU+jvfWSCYYLA==}
@@ -1161,6 +1161,7 @@ packages:
   '@mui/base@5.0.0-beta.36':
     resolution: {integrity: sha512-6A8fYiXgjqTO6pgj31Hc8wm1M3rFYCxDRh09dBVk0L0W4cb2lnurRJa3cAyic6hHY+we1S58OdGYRbKmOsDpGQ==}
     engines: {node: '>=12.0.0'}
+    deprecated: This package has been replaced by @base-ui/react
     peerDependencies:
       '@types/react': ^17.0.0 || ^18.0.0
       react: ^17.0.0 || ^18.0.0
@@ -1280,6 +1281,7 @@ packages:
   '@plotly/mapbox-gl@1.13.4':
     resolution: {integrity: sha512-sR3/Pe5LqT/fhYgp4rT4aSFf1rTsxMbGiH6Hojc7PH36ny5Bn17iVFUjpzycafETURuFbLZUfjODO8LvSI+5zQ==}
     engines: {node: '>=6.4.0'}
+    deprecated: This package is deprecated as of August 2026. plotly.js v4 uses MapLibre for map traces — see https://github.com/maplibre/maplibre-gl-js.
 
   '@plotly/point-cluster@3.1.9':
     resolution: {integrity: sha512-MwaI6g9scKf68Orpr1pHZ597pYx9uP8UEFXLPbsCmuw3a84obwz6pnMXGc90VhgDNeNiLEdlmuK7CPo+5PIxXw==}
@@ -1315,7 +1317,7 @@ packages:
       react-dom: ^18
 
   '@rdub/file-tree@https://codeload.github.com/runsascoded/file-tree/tar.gz/0ca64f4a22f3aff962f8d64dbd2438d30277dc22':
-    resolution: {integrity: sha512-d2RLSv0UEAQTs7V6E2JC+loj1NhO3Ll6CbYch8NWUeviYczELNxaG0eY0E7mIFZ+1YP0GKJs4Cxm7WZ76htL6w==, tarball: https://codeload.github.com/runsascoded/file-tree/tar.gz/0ca64f4a22f3aff962f8d64dbd2438d30277dc22}
+    resolution: {tarball: https://codeload.github.com/runsascoded/file-tree/tar.gz/0ca64f4a22f3aff962f8d64dbd2438d30277dc22}
     version: 0.0.1-dist.0d91515
     peerDependencies:
       highlight.js: ^11
@@ -1521,14 +1523,8 @@ packages:
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
 
-  '@types/command-line-args@5.2.0':
-    resolution: {integrity: sha512-UuKzKpJJ/Ief6ufIaIzr3A/0XnluX7RvFgwkV89Yzvm77wCh1kFaFmqN8XEnGcN62EuHdedQjEMb8mYxFLGPyA==}
-
   '@types/command-line-args@5.2.3':
     resolution: {integrity: sha512-uv0aG6R0Y8WHZLTamZwtfsDLVRnOa+n+n5rEvFWL5Na5gZ8V2Teab/duDPFzIIIhs9qizDpcavCusCLJZu62Kw==}
-
-  '@types/command-line-usage@5.0.2':
-    resolution: {integrity: sha512-n7RlEEJ+4x4TS7ZQddTmNSxP+zziEG0TNsMfiRIxcIVXt71ENJ9ojeXmGO3wPoTdn7pJcU2xc3CJYMktNT6DPg==}
 
   '@types/command-line-usage@5.0.4':
     resolution: {integrity: sha512-BwR5KP3Es/CSht0xqBcUXS3qCAUVXwpRKsV2+arxeb65atasuXG9LykC9Ab10Cw3s2raH92ZqOeILaQbsB2ACg==}
@@ -1569,6 +1565,9 @@ packages:
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
 
+  '@types/node@20.19.43':
+    resolution: {integrity: sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA==}
+
   '@types/node@20.3.0':
     resolution: {integrity: sha512-cumHmIAf6On83X7yP+LrsEyUOf/YlociZelmpRYaGFydoaPdxdt80MAbu6vWerQT2COCp2nPvHdsbD7tHn/YlQ==}
 
@@ -1580,9 +1579,6 @@ packages:
 
   '@types/offscreencanvas@2019.7.3':
     resolution: {integrity: sha512-ieXiYmgSRXUDeOntE1InxjWyvEelZGP63M+cGuquuRLuIKKT1osnkXjxev9B7d1nXSug5vpunx+gNlbVxMlC9A==}
-
-  '@types/pad-left@2.1.1':
-    resolution: {integrity: sha512-Xd22WCRBydkGSApl5Bw0PhAOHKSVjNL3E3AwzKaps96IMraPqy5BvZIsBVK6JLwdybUzjHnuWVwpDd0JjTfHXA==}
 
   '@types/parse-json@4.0.2':
     resolution: {integrity: sha512-dISoDXWWQwUquiKsyZ4Ng+HX2KsPL7LyHKHQwgGFEA3IaKac4Obd+h2a/a6waisAoepJlBcx9paWqjA8/HVjCw==}
@@ -1737,8 +1733,8 @@ packages:
     resolution: {integrity: sha512-KMReFUr0B4t+D+OBkjR3KYqvocp2XaSzO55UcB6mgQMd3KbcE+mWTyvVV7D/zsdEbNnV6acZUutkiHQXvTr1Rw==}
     engines: {node: '>= 8'}
 
-  apache-arrow@13.0.0:
-    resolution: {integrity: sha512-3gvCX0GDawWz6KFNC28p65U+zGh/LZ6ZNKWNu74N6CQlKzxeoWHpi4CgEQsgRSEMuyrIIXi1Ea2syja7dwcHvw==}
+  apache-arrow@17.0.0:
+    resolution: {integrity: sha512-X0p7auzdnGuhYMVKYINdQssS4EcKec9TCXyez/qtJt32DrIMGbzqiaMiQ0X6fQlQpw8Fl0Qygcv4dfRAr5Gu9Q==}
     hasBin: true
 
   apache-arrow@21.1.0:
@@ -2407,8 +2403,8 @@ packages:
     resolution: {integrity: sha512-78/PXT1wlLLDgTzDs7sjq9hzz0vXD+zn+7wypEe4fXQxCmdmqfGsEPQxmiCSQI3ajFV91bVSsvNtrJRiW6nGng==}
     engines: {node: '>=10'}
 
-  flatbuffers@23.5.26:
-    resolution: {integrity: sha512-vE+SI9vrJDwi1oETtTIFldC/o9GsVKRM+s6EL0nQgxXlYV1Vc4Tk30hj4xGICftInKQKj1F3up2n8UbIVobISQ==}
+  flatbuffers@24.12.23:
+    resolution: {integrity: sha512-dLVCAISd5mhls514keQzmEG6QHmUUsNuWsb4tFafIUwvvgDjXhtfAYSKOzt5SWOy+qByV5pbsDZ+Vb7HUOBEdA==}
 
   flatbuffers@25.9.23:
     resolution: {integrity: sha512-MI1qs7Lo4Syw0EOzUl0xjs2lsoeqFku44KpngfIduHBYvzm8h2+7K8YMQh1JtVVVrUvhLpNwqVi4DERegUJhPQ==}
@@ -2576,7 +2572,7 @@ packages:
     resolution: {integrity: sha512-ol6UPyBWqsrO6EJySPz2O7ZSr856WDrEzM5zMqp+FJJLGMW35cLYmmZnl0vztAZxRUoNZJFTCohfjuIJ8I4QBQ==}
 
   hyparquet@https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz:
-    resolution: {integrity: sha512-/xPyOMC4XKvVJLld6Tko01f9Galwu/7/VJHH3ZTPe3dXqzcYkaOXfbYSLUDr7Ye2TPQpInu6TlDWRyBa4+MgVQ==, tarball: https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz}
+    resolution: {tarball: https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz}
     version: 1.22.1
 
   iconv-lite@0.4.24:
@@ -3005,6 +3001,7 @@ packages:
   node-domexception@1.0.0:
     resolution: {integrity: sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==}
     engines: {node: '>=10.5.0'}
+    deprecated: Use your platform's native DOMException instead
 
   node-fetch@3.3.2:
     resolution: {integrity: sha512-dRB78srN/l6gqWulah9SrxeYnxeddIG30+GOqK/9OlLVyLg3HPnr6SqOWTWOXKRwC2eGYCkZ59NNuSgvSrpgOA==}
@@ -3056,10 +3053,6 @@ packages:
   p-locate@5.0.0:
     resolution: {integrity: sha512-LaNjtRWUBY++zB5nE/NwcaoMylSPk+S+ZHNB1TzdbMJMny6dynpAGt7X/tl/QYq3TIeE6nxHppbo2LGymrG5Pw==}
     engines: {node: '>=10'}
-
-  pad-left@2.1.0:
-    resolution: {integrity: sha512-HJxs9K9AztdIQIAIa/OIazRAUW/L6B9hbQDxO4X07roW3eo9XqZc2ur9bn1StH9CnbbI9EgvejHQX7CBpCF1QA==}
-    engines: {node: '>=0.10.0'}
 
   parent-module@1.0.1:
     resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}
@@ -3150,7 +3143,7 @@ packages:
     hasBin: true
 
   plotly.js@https://codeload.github.com/runsascoded/plotly.js/tar.gz/cf90c76e0398a19b429a573fac5fabcec44d0606:
-    resolution: {integrity: sha512-i2yOKAes68poibskC4gHXyHtHjFwc+T7RpsT7ZXlWFwL3UYs9ssW01dPCgeBlyh0Gvcngzb8KYcpsoD2Et0jMA==, tarball: https://codeload.github.com/runsascoded/plotly.js/tar.gz/cf90c76e0398a19b429a573fac5fabcec44d0606}
+    resolution: {tarball: https://codeload.github.com/runsascoded/plotly.js/tar.gz/cf90c76e0398a19b429a573fac5fabcec44d0606}
     version: 3.3.1-dist.217af44
     engines: {node: '>=18.0.0'}
 
@@ -3163,7 +3156,7 @@ packages:
       react-plotly.js: '>=2'
 
   pnpm-dep-source@https://codeload.github.com/runsascoded/pnpm-dep-source/tar.gz/f93b15258b9e8366de5822221c57fe428a5ee52b:
-    resolution: {integrity: sha512-qnV6e5xcEd+aP6wlh4sxFdHMV8eqkRge9/9JxlFq6LbiqAEJqW2r8b+HDaUQjRi3uAUTtEzvDBz2/HhljYYT5A==, tarball: https://codeload.github.com/runsascoded/pnpm-dep-source/tar.gz/f93b15258b9e8366de5822221c57fe428a5ee52b}
+    resolution: {tarball: https://codeload.github.com/runsascoded/pnpm-dep-source/tar.gz/f93b15258b9e8366de5822221c57fe428a5ee52b}
     version: 0.4.0-dist.be180c5
     hasBin: true
 
@@ -3343,10 +3336,6 @@ packages:
 
   remark-stringify@11.0.0:
     resolution: {integrity: sha512-1OSmLd3awB/t8qdoEOMazZkNsfVTeY4fTsgzcQFdXNq8ToTN4ZGwrMnlda4K6smTFKD+GRV6O48i6Z4iKgPPpw==}
-
-  repeat-string@1.6.1:
-    resolution: {integrity: sha512-PV0dzCYDNfRi1jCDbJzpW7jNNDRuCOG/jI5ctQcGKt/clZD+YcPS3yIlWuTJMmESC8aevCFmWJy5wjAFgNqN6w==}
-    engines: {node: '>=0.10'}
 
   require-from-string@2.0.2:
     resolution: {integrity: sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==}
@@ -3625,9 +3614,6 @@ packages:
   trough@2.2.0:
     resolution: {integrity: sha512-tmMpK00BjZiUyVyvrBK7knerNgmgvcV/KLVyuma/SC+TQN167GrMRciANTz09+k3zW8L8t60jWO1GpfkZdjTaw==}
 
-  tslib@2.6.2:
-    resolution: {integrity: sha512-AEYxH93jGFPn/a2iVAwW87VuUIkR1FVUKB77NwMF7nBTDkDrrT/Hpt/IrCJ0QXhW27jTBDcf5ZY7w6RiqTMw2Q==}
-
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
@@ -3720,7 +3706,7 @@ packages:
       react-dom: '>=18.0.0'
 
   use-prms@https://codeload.github.com/runsascoded/use-prms/tar.gz/da21b49c98e1ad372f88c4dee07eca483d17f1c8:
-    resolution: {integrity: sha512-LraGfvWnu3SPcS0ChDjONf4vzb8nBzLRXcTAwrXZNzJPr9Mf3hNsZr0ifzNsf0OhCxlNz2N5u+FQlUsNi77xTQ==, tarball: https://codeload.github.com/runsascoded/use-prms/tar.gz/da21b49c98e1ad372f88c4dee07eca483d17f1c8}
+    resolution: {tarball: https://codeload.github.com/runsascoded/use-prms/tar.gz/da21b49c98e1ad372f88c4dee07eca483d17f1c8}
     version: 0.4.1-dist.678d4b4
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
@@ -4178,9 +4164,9 @@ snapshots:
     transitivePeerDependencies:
       - preact-render-to-string
 
-  '@duckdb/duckdb-wasm@1.28.0':
+  '@duckdb/duckdb-wasm@1.32.0':
     dependencies:
-      apache-arrow: 13.0.0
+      apache-arrow: 17.0.0
     transitivePeerDependencies:
       - '@75lb/nature'
 
@@ -5123,11 +5109,7 @@ snapshots:
       '@types/deep-eql': 4.0.2
       assertion-error: 2.0.1
 
-  '@types/command-line-args@5.2.0': {}
-
   '@types/command-line-args@5.2.3': {}
-
-  '@types/command-line-usage@5.0.2': {}
 
   '@types/command-line-usage@5.0.4': {}
 
@@ -5167,6 +5149,10 @@ snapshots:
 
   '@types/ms@2.1.0': {}
 
+  '@types/node@20.19.43':
+    dependencies:
+      undici-types: 6.21.0
+
   '@types/node@20.3.0': {}
 
   '@types/node@22.19.15':
@@ -5178,8 +5164,6 @@ snapshots:
       undici-types: 7.16.0
 
   '@types/offscreencanvas@2019.7.3': {}
-
-  '@types/pad-left@2.1.1': {}
 
   '@types/parse-json@4.0.2': {}
 
@@ -5410,18 +5394,17 @@ snapshots:
       normalize-path: 3.0.0
       picomatch: 2.3.2
 
-  apache-arrow@13.0.0:
+  apache-arrow@17.0.0:
     dependencies:
-      '@types/command-line-args': 5.2.0
-      '@types/command-line-usage': 5.0.2
-      '@types/node': 20.3.0
-      '@types/pad-left': 2.1.1
+      '@swc/helpers': 0.5.21
+      '@types/command-line-args': 5.2.3
+      '@types/command-line-usage': 5.0.4
+      '@types/node': 20.19.43
       command-line-args: 5.2.1
       command-line-usage: 7.0.1
-      flatbuffers: 23.5.26
+      flatbuffers: 24.12.23
       json-bignum: 0.0.3
-      pad-left: 2.1.0
-      tslib: 2.6.2
+      tslib: 2.8.1
     transitivePeerDependencies:
       - '@75lb/nature'
 
@@ -6091,7 +6074,7 @@ snapshots:
       locate-path: 6.0.0
       path-exists: 4.0.0
 
-  flatbuffers@23.5.26: {}
+  flatbuffers@24.12.23: {}
 
   flatbuffers@25.9.23: {}
 
@@ -6999,10 +6982,6 @@ snapshots:
     dependencies:
       p-limit: 3.1.0
 
-  pad-left@2.1.0:
-    dependencies:
-      repeat-string: 1.6.1
-
   parent-module@1.0.1:
     dependencies:
       callsites: 3.1.0
@@ -7412,8 +7391,6 @@ snapshots:
       mdast-util-to-markdown: 2.1.2
       unified: 11.0.5
 
-  repeat-string@1.6.1: {}
-
   require-from-string@2.0.2: {}
 
   require-like@0.1.2: {}
@@ -7729,8 +7706,6 @@ snapshots:
   trim-lines@3.0.1: {}
 
   trough@2.2.0: {}
-
-  tslib@2.6.2: {}
 
   tslib@2.8.1: {}
 

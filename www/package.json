@@ -27,7 +27,7 @@
     "@deck.gl/core": "^9.2.0",
     "@deck.gl/layers": "^9.2.0",
     "@deck.gl/react": "^9.2.0",
-    "@duckdb/duckdb-wasm": "^1.28.0",
+    "@duckdb/duckdb-wasm": "^1.32.0",
     "@emotion/react": "^11.11.3",
     "@emotion/styled": "^11.11.0",
     "@fortawesome/fontawesome-svg-core": "^6",
