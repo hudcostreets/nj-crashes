@@ -8,8 +8,9 @@ ignoredBuiltDependencies:
 # release *within the major already in use*, so no major moves implicitly.
 overrides:
   vite: ^6.4.3
-  react-router-dom: ^6.30.6
-  '@remix-run/router': ^1.23.3
+  # Exception to the same-major rule: GHSA-jrc7-96c5-q579 has no 4.x/5.x fix.
+  # `plotly.js` depends on `maplibre-gl` 4 only for its `map` traces (unused here).
+  maplibre-gl@4: ^6.4.1
   '@75lb/deep-merge': ^1.1.2
   '@babel/core': ^7.29.6
   '@babel/runtime': ^7.26.10

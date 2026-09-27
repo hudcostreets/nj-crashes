@@ -6,8 +6,7 @@ settings:
 
 overrides:
   vite: ^6.4.3
-  react-router-dom: ^6.30.6
-  '@remix-run/router': ^1.23.3
+  maplibre-gl@4: ^6.4.1
   '@75lb/deep-merge': ^1.1.2
   '@babel/core': ^7.29.6
   '@babel/runtime': ^7.26.10
@@ -74,7 +73,7 @@ importers:
         version: 0.0.2(@duckdb/duckdb-wasm@1.28.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@rdub/file-tree':
         specifier: https://github.com/runsascoded/file-tree#0ca64f4a22f3aff962f8d64dbd2438d30277dc22
-        version: https://codeload.github.com/runsascoded/file-tree/tar.gz/0ca64f4a22f3aff962f8d64dbd2438d30277dc22(highlight.js@11.11.1)(hyparquet@https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz)(jq-web@0.6.2)(react-dom@18.2.0(react@18.2.0))(react-markdown@10.1.0(@types/react@18.2.48)(react@18.2.0))(react-router-dom@6.30.6(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)(remark-gfm@4.0.1)(use-prms@https://codeload.github.com/runsascoded/use-prms/tar.gz/da21b49c98e1ad372f88c4dee07eca483d17f1c8(react@18.2.0))
+        version: https://codeload.github.com/runsascoded/file-tree/tar.gz/0ca64f4a22f3aff962f8d64dbd2438d30277dc22(highlight.js@11.11.1)(hyparquet@https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz)(jq-web@0.6.2)(react-dom@18.2.0(react@18.2.0))(react-markdown@10.1.0(@types/react@18.2.48)(react@18.2.0))(react-router-dom@7.18.4(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)(remark-gfm@4.0.1)(use-prms@https://codeload.github.com/runsascoded/use-prms/tar.gz/da21b49c98e1ad372f88c4dee07eca483d17f1c8(react@18.2.0))
       '@react-leaflet/core':
         specifier: ^2.1.0
         version: 2.1.0(leaflet@1.9.4)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -100,8 +99,8 @@ importers:
         specifier: ^3.0.1
         version: 3.1.2
       maplibre-gl:
-        specifier: ^5.0.0
-        version: 5.24.0
+        specifier: ^6.4.1
+        version: 6.11.2
       moment-timezone:
         specifier: ^0.5.45
         version: 0.5.45
@@ -131,13 +130,13 @@ importers:
         version: 4.2.1(leaflet@1.9.4)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       react-map-gl:
         specifier: ^8.0.0
-        version: 8.1.1(mapbox-gl@3.1.2)(maplibre-gl@5.24.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+        version: 8.1.1(mapbox-gl@3.1.2)(maplibre-gl@6.11.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       react-markdown:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@18.2.48)(react@18.2.0)
       react-router-dom:
-        specifier: ^6.30.6
-        version: 6.30.6(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+        specifier: ^7.18.0
+        version: 7.18.4(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
@@ -1078,6 +1077,10 @@ packages:
     resolution: {integrity: sha512-rY0o9A5ECsTQRVhv7tL/OyDpGAoUB4tTvLiW1DSzQGq4bvTPhNw1VpSNjDJc5GFZ2XuyOtSWSVN05qOtcD71qQ==}
     engines: {node: '>= 0.6'}
 
+  '@mapbox/jsonlint-lines-primitives@2.0.3':
+    resolution: {integrity: sha512-0SElaV0uMxEnxzBhhX9WTuPyUeMsAN/SS0i16tjuba4/mio63MG9khjC1a0JAiPGXAwvwm4UfHJURCN7nyudQg==}
+    engines: {node: '>= 22'}
+
   '@mapbox/mapbox-gl-supported@1.5.0':
     resolution: {integrity: sha512-/PT1P6DNf7vjEEiPkVIRJkvibbqWtqnyGaBz3nfRdcxclNSnSdaLU5tfAgcD7I8Yt5i+L19s406YLl1koLnLbg==}
     peerDependencies:
@@ -1107,39 +1110,35 @@ packages:
   '@mapbox/unitbezier@0.0.1':
     resolution: {integrity: sha512-nMkuDXFv60aBr9soUG5q+GvZYL+2KZHVvsqFCzqnkGEf46U2fvmytHaEVc1/YZbiLn8X+eR3QzX1+dwDO1lxlw==}
 
+  '@mapbox/unitbezier@1.0.0':
+    resolution: {integrity: sha512-fqd515fjBmANKGGsQ286E2Wvj/XvDFpGzwJxq4CI6jMQue6Oy04uCKp+JWKF00xRTmk6cEu1jPJ9p3xqH8YWqQ==}
+
   '@mapbox/vector-tile@1.3.1':
     resolution: {integrity: sha512-MCEddb8u44/xfQ3oD+Srl/tNcQoqTw3goGk2oLsrFxOTc3dUp+kAnby3PvAeeBYSMSjSPD1nd1AJA6W49WnoUw==}
 
-  '@mapbox/vector-tile@2.0.4':
-    resolution: {integrity: sha512-AkOLcbgGTdXScosBWwmmD7cDlvOjkg/DetGva26pIRiZPdeJYjYKarIlb4uxVzi6bwHO6EWH82eZ5Nuv4T5DUg==}
+  '@mapbox/vector-tile@3.0.0':
+    resolution: {integrity: sha512-Qf10S1uIHMk20ri/IVBnpS+esUEkVaR5Hftmz88jTInrpmWgPGJfPe3LVjjlE77trLx8tH6qjTG7uWH9hIq/0Q==}
 
   '@mapbox/whoots-js@3.1.0':
     resolution: {integrity: sha512-Es6WcD0nO5l+2BOQS4uLfNPYQaNDfbot3X1XUoloz+x0mPDS3eeORZJl06HXjwBG1fOGwCRnzK88LMdxKRrd6Q==}
     engines: {node: '>=6.0.0'}
 
-  '@maplibre/geojson-vt@5.0.4':
-    resolution: {integrity: sha512-KGg9sma45S+stfH9vPCJk1J0lSDLWZgCT9Y8u8qWZJyjFlP8MNP1WGTxIMYJZjDvVT3PDn05kN1C95Sut1HpgQ==}
-
-  '@maplibre/geojson-vt@6.1.0':
-    resolution: {integrity: sha512-2eIY4gZxeKIVOZVNkAMb+5NgXhgsMQpOveTQAvnp53LYqHGJZDidk7Ew0Tged9PThidpbS+NFTh0g4zivhPDzQ==}
+  '@maplibre/geojson-vt@6.1.1':
+    resolution: {integrity: sha512-FVMOcmSP/yqol45t7StApEyTL5/vmqBCuFhH9n+fFuINenhaX+YgHHIt1yJ86S8kln3uJLcMvmEU2cfn6E2eCQ==}
 
   '@maplibre/maplibre-gl-style-spec@19.3.3':
     resolution: {integrity: sha512-cOZZOVhDSulgK0meTsTkmNXb1ahVvmTmWmfx9gRBwc6hq98wS9JP35ESIoNq3xqEan+UN+gn8187Z6E4NKhLsw==}
     hasBin: true
 
-  '@maplibre/maplibre-gl-style-spec@20.4.0':
-    resolution: {integrity: sha512-AzBy3095fTFPjDjmWpR2w6HVRAZJ6hQZUCwk5Plz6EyfnfuQW1odeW5i2Ai47Y6TBA2hQnC+azscjBSALpaWgw==}
+  '@maplibre/maplibre-gl-style-spec@26.4.4':
+    resolution: {integrity: sha512-hG4RZR4PBd/+6A3ODdZ3AnQRF106ZQk1y3bhwDg8bH/A4Oz2tnRUJVVWs9BZa6gXZ1d3UKe89C+Mm+olGBELvA==}
     hasBin: true
 
-  '@maplibre/maplibre-gl-style-spec@24.8.5':
-    resolution: {integrity: sha512-EzEJmMt6thioRH7GI9LWS7ahXTcAhAPGWCe6oTP2Ps4YnsXOOAfeqx854lZaiDnwURfHmcCKV1mr6oo0i23x6w==}
-    hasBin: true
+  '@maplibre/mlt@1.3.0':
+    resolution: {integrity: sha512-7M2O7ABM80Oi8XPkfkrjKB8mOBIxGoVgkA52Mu4RMWoBvvMdagQ522+WxVYujZsMpqIr3BpzrTbXrm4k8lCzCQ==}
 
-  '@maplibre/mlt@1.1.9':
-    resolution: {integrity: sha512-g/tD8EYJB97udq33ipuJ9a4Q7fcbZnTEnUrgnEc/tLMmEL+zaCbR+X5fkDBO2dgpaAMsLH179qE3UXg2N0Nc/g==}
-
-  '@maplibre/vt-pbf@4.3.0':
-    resolution: {integrity: sha512-jIvp8F5hQCcreqOOpEt42TJMUlsrEcpf/kI1T2v85YrQRV6PPXUcEXUg5karKtH6oh47XJZ4kHu56pUkOuqA7w==}
+  '@maplibre/vt-pbf@4.3.2':
+    resolution: {integrity: sha512-j6p0AdjvAR19Z3XaCysle7A4ZSo08tYOzxD0Y9NQylwPAkwJJeYub5b2eVucdeDh7erhv69DahoLOevDRERRUw==}
 
   '@math.gl/core@4.1.0':
     resolution: {integrity: sha512-FrdHBCVG3QdrworwrUSzXIaK+/9OCRLscxI2OUy6sLOHyHgBMyfnEGs99/m3KNvs+95BsnQLWklVfpKfQzfwKA==}
@@ -1329,7 +1328,7 @@ packages:
       react: ^18 || ^19
       react-dom: ^18 || ^19
       react-markdown: ^9 || ^10
-      react-router-dom: ^6.30.6
+      react-router-dom: ^6 || ^7
       remark-gfm: ^4
       use-prms: ^0.4
     peerDependenciesMeta:
@@ -1346,10 +1345,6 @@ packages:
       leaflet: ^1.9.0
       react: ^18.0.0
       react-dom: ^18.0.0
-
-  '@remix-run/router@1.23.4':
-    resolution: {integrity: sha512-q7j5geK7xs3UJSdm9/iytUNclBnLmYx1EnSeCFXHPeutdqgIMeFeHtUZgS3EhlKxdBEAu8OwtJCwmLrEzpSs7Q==}
-    engines: {node: '>=14.0.0'}
 
   '@rolldown/pluginutils@1.0.0-beta.27':
     resolution: {integrity: sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA==}
@@ -1557,9 +1552,6 @@ packages:
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
 
-  '@types/geojson-vt@3.2.5':
-    resolution: {integrity: sha512-qDO7wqtprzlpe8FfQ//ClPV9xiuoh2nkIgiouIptON9w5jvD/fA4szvP9GBlDVdJ5dldAl0kX/sy3URbWwLx0g==}
-
   '@types/geojson@7946.0.13':
     resolution: {integrity: sha512-bmrNrgKMOhM3WsafmbGmC+6dsF2Z308vLFsQ3a/bT8X8Sv5clVYpPars/UPq+sAaJP+5OoLAYgwbkS5QEJdLUQ==}
 
@@ -1574,12 +1566,6 @@ packages:
 
   '@types/mapbox-gl@2.7.20':
     resolution: {integrity: sha512-vuczqb42fXjqGa3Pe4ahYv80We/eM//4pelVYxRXV/DYBVGsD+XhmZNUD2aIdH6mcEV601/k6Z5dn6QFtULFCQ==}
-
-  '@types/mapbox__point-geometry@0.1.4':
-    resolution: {integrity: sha512-mUWlSxAmYLfwnRBmgYV86tgYmMIICX4kza8YnE/eIlywGe2XoOxlpVnXWwir92xRLjwyarqwpu2EJKD2pk0IUA==}
-
-  '@types/mapbox__vector-tile@1.3.4':
-    resolution: {integrity: sha512-bpd8dRn9pr6xKvuEBQup8pwQfD4VUyqO/2deGjfpe6AwC8YRlyEipvefyRJUSiCJTZuCb8Pl1ciVV5ekqJ96Bg==}
 
   '@types/mdast@4.0.4':
     resolution: {integrity: sha512-kGaNbPh1k7AFzgpud/gMdvIm5xuECykRR+JnWKQno9TAXVa6WIVCGTPvYGekIDL4uwCZQSYbUxNBSb1aUo79oA==}
@@ -1605,9 +1591,6 @@ packages:
   '@types/parse-json@4.0.2':
     resolution: {integrity: sha512-dISoDXWWQwUquiKsyZ4Ng+HX2KsPL7LyHKHQwgGFEA3IaKac4Obd+h2a/a6waisAoepJlBcx9paWqjA8/HVjCw==}
 
-  '@types/pbf@3.0.5':
-    resolution: {integrity: sha512-j3pOPiEcWZ34R6a6mN07mUkM4o4Lwf6hPNt8eilOeZhTFbxFXmKhvXl9Y28jotFPaI1bpPDJsbCprUoNke6OrA==}
-
   '@types/plotly.js@2.12.32':
     resolution: {integrity: sha512-pCE60W1v77zxobnA1oGIisHhGzTHv8c4fAtM81Y1h7gezeKpLpx4E0fQ3ThKIPOIvGlnoVseUjSpFwFqIKdsXg==}
 
@@ -1631,9 +1614,6 @@ packages:
 
   '@types/strftime@0.9.8':
     resolution: {integrity: sha512-QIvDlGAKyF3YJbT3QZnfC+RIvV5noyDbi+ZJ5rkaSRqxCGrYJefgXm3leZAjtoQOutZe1hCXbAg+p89/Vj4HlQ==}
-
-  '@types/supercluster@7.1.3':
-    resolution: {integrity: sha512-Z0pOY34GDFl3Q6hUFYf3HkTwKEE02e7QgtJppBt+beEAxnyOpJua+voGFvxINBHa06GwLFFym7gRPY2SiKIfIA==}
 
   '@types/unist@2.0.11':
     resolution: {integrity: sha512-CmBKiL6NNo/OqgmMn95Fk9Whlp2mtvIv+KNpQKN2F4SjvrEesubTRWGYSg+BnWZOnlCaSTU1sMpsBOzgbYhnsA==}
@@ -1689,7 +1669,7 @@ packages:
   '@vis.gl/react-maplibre@8.1.1':
     resolution: {integrity: sha512-iUOfzJAhFAJwEZp1644tQb7LOTFgi5/GzdaztkhzNgFVuoF2Ez7guvwZjQAKB9CN2TlHTgNuYH8UW85kO7cVhw==}
     peerDependencies:
-      maplibre-gl: '>=4.0.0'
+      maplibre-gl: ^6.4.1
       react: '>=16.3.0'
       react-dom: '>=16.3.0'
     peerDependenciesMeta:
@@ -1830,6 +1810,9 @@ packages:
     resolution: {integrity: sha512-GLQdD3y6UF8iVuMJl5fHgE4jdn/ua7n+toKfLgNlg3BqQtOZjpy68T8Tup8/wGWZCDlm7KMg7tPb4MPn7oN0TQ==}
     engines: {node: '>=6.0.0'}
     hasBin: true
+
+  bidi-js@1.1.0:
+    resolution: {integrity: sha512-fX1Onk0tdVPC7obPWB5EbJ1z7NVhLq4m2xZLq2YXBkxzMXIGRpNMU88n0EPgWseKl12J7zXs7qrDxPK4sRs2fg==}
 
   binary-extensions@2.2.0:
     resolution: {integrity: sha512-jDctJ/IVQbZoJykoeHbhXpOlNBqGNcwXJKJog42E5HDPUwQTSdjCHdihjj0DlnheQ7blbT6dHOafNAiS8ooQKA==}
@@ -2252,8 +2235,8 @@ packages:
   earcut@2.2.4:
     resolution: {integrity: sha512-/pjZsA1b4RPHbeWZQn66SWS8nZZWLQQ23oE3Eam7aroEFGEvwKAsJfZ9ytiEMycfzXWpca4FA9QIOehf7PocBQ==}
 
-  earcut@3.0.2:
-    resolution: {integrity: sha512-X7hshQbLyMJ/3RPhyObLARM2sNxxmRALLKx1+NVFFnQ9gKzmCrxm9+uLIAdBcvc8FNLpctqlQ2V6AE92Ol9UDQ==}
+  earcut@3.2.3:
+    resolution: {integrity: sha512-vnS4AVwp1KHAF13i1vp1/2D5evWy3k5u/iW/B81QVsUZtV8cv2tU0b2VNFlqvh4kYwrFMDdjPCfAmfyJW9y14Q==}
 
   electron-to-chromium@1.5.439:
     resolution: {integrity: sha512-qu6QIPXhsb+CRcAiTMNjR4A1y/7tCYKkKjr5CZXRVih6qkDf79peZ2BpEU3qoDBNCRrcy3Mra3X9nG5oruuA7Q==}
@@ -2473,9 +2456,6 @@ packages:
   geojson-vt@3.2.1:
     resolution: {integrity: sha512-EvGQQi/zPrDA6zr6BnJD/YhwAkBP8nnJ9emh3EnHQKVMfg/MRVtPbMYdgVy/IaEmn4UfagD2a6fafPDL5hbtwg==}
 
-  geojson-vt@4.0.2:
-    resolution: {integrity: sha512-AV9ROqlNqoZEIJGfm1ncNjEXfkz2hdFlZf0qkVfmkwdKa8vj7H16YUOT81rJw1rdFhyEDlN2Tds91p/glzbl5A==}
-
   get-canvas-context@1.0.2:
     resolution: {integrity: sha512-LnpfLf/TNzr9zVOGiIY6aKCz8EKuXmlYNV7CM2pUjBa/B+c2I15tS7KLySep75+FuerJdmArvJLcsAXWEy2H0A==}
 
@@ -2505,10 +2485,6 @@ packages:
   glob-parent@5.1.2:
     resolution: {integrity: sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==}
     engines: {node: '>= 6'}
-
-  global-prefix@4.0.0:
-    resolution: {integrity: sha512-w0Uf9Y9/nyHinEk5vMJKRie+wa4kR5hmDbEhGGds/kG1PwGLLHKRoNMeJOyCQjjBkANlnScqgzcFwGHgmgLkVA==}
-    engines: {node: '>=16'}
 
   glsl-inject-defines@1.0.3:
     resolution: {integrity: sha512-W49jIhuDtF6w+7wCMcClk27a2hq8znvHtlGnrYkSWEr8tHe9eA2dcnohlcAmxLYBSpSSdzOkRdyPTrx9fw49+A==}
@@ -2621,10 +2597,6 @@ packages:
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
 
-  ini@4.1.3:
-    resolution: {integrity: sha512-X7rqawQBvfdjS10YU1y1YVreA3SsLrW9dX2CewP2EbBJM4ypVNLDkO5y04gejPwKIY9lR+7r9gn3rFPt/kmWFg==}
-    engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
-
   inline-style-parser@0.2.7:
     resolution: {integrity: sha512-Nb2ctOyNR8DqQoR0OwRG95uNWIC0C1lCgf5Naz5H6Ji72KZ8OcFZLz2P5sNgwlyoJ8Yif11oMuYs5pBQa86csA==}
 
@@ -2727,10 +2699,6 @@ packages:
   isarray@2.0.5:
     resolution: {integrity: sha512-xHjhDr3cNBK0BzdUJSPXZntQUx/mwMS5Rw4A7lPJ90XGAO6ISP/ePDNuo0vhqOZU+UD5JoodwCAAoZQd3FeAKw==}
 
-  isexe@3.1.1:
-    resolution: {integrity: sha512-LpB/54B+/2J5hqQ7imZHfdU31OlgQqx7ZicVlkm9kzg9/w8GKLEcFfJl/t7DCEDueOyBAD6zCCwTO6Fzs0NoEQ==}
-    engines: {node: '>=16'}
-
   isobject@3.0.1:
     resolution: {integrity: sha512-WhB9zCku7EGTj/HQQRz5aUQEUeoQZH2bWcltRErOpymJ4boYE6wL9Tbr23krRPSZ+C5zqNSrSw+Cc7sZZ4b7vg==}
     engines: {node: '>=0.10.0'}
@@ -2776,9 +2744,8 @@ packages:
   kdbush@4.0.2:
     resolution: {integrity: sha512-WbCVYJ27Sz8zi9Q7Q0xHC+05iwkm3Znipc2XTlrnJbsHMYktW4hPhXUE8Ys1engBrvffoSCqbil1JQAa7clRpA==}
 
-  kind-of@6.0.3:
-    resolution: {integrity: sha512-dcS1ul+9tmeD95T+x28/ehLgd9mENa3LsvDTtzm3vyBEO7RPptvAD+t44WVXaUjTBRcrpFeFlC8WCruUR456hw==}
-    engines: {node: '>=0.10.0'}
+  kdbush@4.1.0:
+    resolution: {integrity: sha512-e9vurzrXJQrFX6ckpHP3bvj5l+9CnYzkxDNnNQ1h2QTqdWsUAJgXiKdGNcOa1EY85dU8KbQ+z/FdQdB7P+9yfQ==}
 
   kleur@4.1.5:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
@@ -2831,12 +2798,8 @@ packages:
   mapbox-gl@3.1.2:
     resolution: {integrity: sha512-+KoLEqZM8GxO/ViPz9tKgGURteKne+Y0pXiVCNsowymiZFH3FiL6dt9oZE95owMg5XqD3Kygz5mfchR1ZgmWlA==}
 
-  maplibre-gl@4.7.1:
-    resolution: {integrity: sha512-lgL7XpIwsgICiL82ITplfS7IGwrB1OJIw/pCvprDp2dhmSSEBgmPzYRvwYYYvJGJD7fxUv1Tvpih4nZ6VrLuaA==}
-    engines: {node: '>=16.14.0', npm: '>=8.1.0'}
-
-  maplibre-gl@5.24.0:
-    resolution: {integrity: sha512-ALyFxgtd5R+65UqZ/++lOqwWcC0SNho9c27fYSyLmG7AfnAul2o46F05aDJGPbFU57wos9dgcIySHs0Xe6ia3A==}
+  maplibre-gl@6.11.2:
+    resolution: {integrity: sha512-Xh06pxoipjX/Ad1sUPGhiNh9go9naCNGZZ1IJm3sIeqK1kYGuMaMDSTIGDQ2igOLfVyukJU7kvEOA089VO7Z7g==}
     engines: {node: '>=16.14.0', npm: '>=8.1.0'}
 
   markdown-table@3.0.4:
@@ -3147,8 +3110,8 @@ packages:
     resolution: {integrity: sha512-XDF38WCH3z5OV/OVa8GKUNtLAyneuzbCisx7QUCF8Q6Nutx0WnJrQe5O+kOtBlLfRNUws98Y58Lblp+NJG5T4Q==}
     hasBin: true
 
-  pbf@4.0.1:
-    resolution: {integrity: sha512-SuLdBvS42z33m8ejRbInMapQe8n0D3vN/Xd5fmWM3tufNgRQFBpaW2YVJxQZV4iPNqb0vEFvssMEo5w9c6BTIA==}
+  pbf@5.1.2:
+    resolution: {integrity: sha512-mnvGdvOrIvJOBGUEdGkrVXjN8E/VkIJCkf2eS1DH2yv82ORUlLttmDt0rWY38yYZmVwciZwBUvHM20qxBZf40w==}
     hasBin: true
 
   performance-now@2.1.0:
@@ -3288,7 +3251,7 @@ packages:
     resolution: {integrity: sha512-aSqFAFoxvY7wxbGI93Dz0E41171mkAb3GcNbnkFIotmu88OFw495os6mIDZSi7irYNT/PZEIOEHUxhun4ToGuQ==}
     peerDependencies:
       mapbox-gl: '>=1.13.0'
-      maplibre-gl: '>=1.13.0'
+      maplibre-gl: ^6.4.1
       react: '>=16.3.0'
       react-dom: '>=16.3.0'
     peerDependenciesMeta:
@@ -3315,18 +3278,22 @@ packages:
     resolution: {integrity: sha512-z6F7K9bV85EfseRCp2bzrpyQ0Gkw1uLoCel9XBVWPg/TjRj94SkJzUTGfOa4bs7iJvBWtQG0Wq7wnI0syw3EBQ==}
     engines: {node: '>=0.10.0'}
 
-  react-router-dom@6.30.6:
-    resolution: {integrity: sha512-0RHKZz7wwffvkU+2MFVT2NnjK44ssLEV+m0CAJaS2Ksmorrwj7WxH00jO0SOCW26/tINUnJHToXblDs33I38YQ==}
-    engines: {node: '>=14.0.0'}
+  react-router-dom@7.18.4:
+    resolution: {integrity: sha512-yrfmJHIpDG7taCpqKjT1G5B6q3O2K+RN8/fgNf0lTjCwiPbQ0ei6vXX9ZjQR+7ld8Tr7Z5xmyMnZ8YJrphWQUw==}
+    engines: {node: '>=20.0.0'}
     peerDependencies:
-      react: '>=16.8'
-      react-dom: '>=16.8'
+      react: '>=18'
+      react-dom: '>=18'
 
-  react-router@6.30.6:
-    resolution: {integrity: sha512-5HfK7k5im7LTOB0EqCQmfvy4C13G92Ssj1VTmouTK3AJvyjKTnFuCV0vcMAD/JS+JC4DvDIBRrlAeJIFjh5VWg==}
-    engines: {node: '>=14.0.0'}
+  react-router@7.18.4:
+    resolution: {integrity: sha512-PUPQcMhMGRAslLcvtlPz/kmzBEWPhLdgLFrL7pLNepBL6dX0lWj4WD2cUYVgYCuT3jxvghYFg81cDTj44DhetQ==}
+    engines: {node: '>=20.0.0'}
     peerDependencies:
-      react: '>=16.8'
+      react: '>=18'
+      react-dom: '>=18'
+    peerDependenciesMeta:
+      react-dom:
+        optional: true
 
   react-transition-group@4.4.5:
     resolution: {integrity: sha512-pZcd1MCJoiKiBR2NRxeCRg13uCXbydPnmB4EOeRrY7480qNWO8IIgQG6zlDkm6uRMsURXPuKq0GWtiM59a5Q6g==}
@@ -3378,6 +3345,10 @@ packages:
   repeat-string@1.6.1:
     resolution: {integrity: sha512-PV0dzCYDNfRi1jCDbJzpW7jNNDRuCOG/jI5ctQcGKt/clZD+YcPS3yIlWuTJMmESC8aevCFmWJy5wjAFgNqN6w==}
     engines: {node: '>=0.10'}
+
+  require-from-string@2.0.2:
+    resolution: {integrity: sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==}
+    engines: {node: '>=0.10.0'}
 
   require-like@0.1.2:
     resolution: {integrity: sha512-oyrU88skkMtDdauHDuKVrgR+zuItqr6/c//FXzvmxRGMexSDc6hNvJInGW3LL46n+8b50RykrvwSUIIQH2LQ5A==}
@@ -3437,6 +3408,9 @@ packages:
     resolution: {integrity: sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==}
     engines: {node: '>=10'}
     hasBin: true
+
+  set-cookie-parser@2.7.2:
+    resolution: {integrity: sha512-oeM1lpU/UvhTxw+g3cIfxXHyJRc/uidd3yK1P242gzHds0udQBYzs3y8j4gCCW+ZJ7ad0yctld8RYO+bdurlvw==}
 
   set-value@2.0.1:
     resolution: {integrity: sha512-JxHc1weCN68wRY0fhCoXpyK55m/XPHafOmK4UWD7m2CI14GMcFypt4w/0+NV5f/ZMby2F6S2wwA7fgynh9gWSw==}
@@ -3870,11 +3844,6 @@ packages:
   whatwg-mimetype@3.0.0:
     resolution: {integrity: sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q==}
     engines: {node: '>=12'}
-
-  which@4.0.0:
-    resolution: {integrity: sha512-GlaYyEb07DPxYCKhKzplCWBJtvxZcZMrL+4UkrTSJHHPyZU4mYYTv3qaOe77H7EODLSSopAUFAc6W8U4yqvscg==}
-    engines: {node: ^16.13.0 || >=18.0.0}
-    hasBin: true
 
   why-is-node-running@2.3.0:
     resolution: {integrity: sha512-hUrmaWBdVDcxvYqnyh09zunKzROWjbZTiNy8dBEjkS7ehEDQibXJ7XvlmtbwuTclUiIyN+CyXQD4Vmko8fNm8w==}
@@ -4713,6 +4682,8 @@ snapshots:
 
   '@mapbox/jsonlint-lines-primitives@2.0.2': {}
 
+  '@mapbox/jsonlint-lines-primitives@2.0.3': {}
+
   '@mapbox/mapbox-gl-supported@1.5.0(mapbox-gl@3.1.2)':
     dependencies:
       mapbox-gl: 3.1.2
@@ -4733,23 +4704,23 @@ snapshots:
 
   '@mapbox/unitbezier@0.0.1': {}
 
+  '@mapbox/unitbezier@1.0.0': {}
+
   '@mapbox/vector-tile@1.3.1':
     dependencies:
       '@mapbox/point-geometry': 0.1.0
 
-  '@mapbox/vector-tile@2.0.4':
+  '@mapbox/vector-tile@3.0.0':
     dependencies:
       '@mapbox/point-geometry': 1.1.0
       '@types/geojson': 7946.0.16
-      pbf: 4.0.1
+      pbf: 5.1.2
 
   '@mapbox/whoots-js@3.1.0': {}
 
-  '@maplibre/geojson-vt@5.0.4': {}
-
-  '@maplibre/geojson-vt@6.1.0':
+  '@maplibre/geojson-vt@6.1.1':
     dependencies:
-      kdbush: 4.0.2
+      kdbush: 4.1.0
 
   '@maplibre/maplibre-gl-style-spec@19.3.3':
     dependencies:
@@ -4760,38 +4731,24 @@ snapshots:
       rw: 1.3.3
       sort-object: 3.0.3
 
-  '@maplibre/maplibre-gl-style-spec@20.4.0':
+  '@maplibre/maplibre-gl-style-spec@26.4.4':
     dependencies:
-      '@mapbox/jsonlint-lines-primitives': 2.0.2
-      '@mapbox/unitbezier': 0.0.1
-      json-stringify-pretty-compact: 4.0.0
-      minimist: 1.2.8
-      quickselect: 2.0.0
-      rw: 1.3.3
-      tinyqueue: 3.0.0
-
-  '@maplibre/maplibre-gl-style-spec@24.8.5':
-    dependencies:
-      '@mapbox/jsonlint-lines-primitives': 2.0.2
-      '@mapbox/unitbezier': 0.0.1
+      '@mapbox/jsonlint-lines-primitives': 2.0.3
+      '@mapbox/unitbezier': 1.0.0
       json-stringify-pretty-compact: 4.0.0
       minimist: 1.2.8
       quickselect: 3.0.0
       tinyqueue: 3.0.0
 
-  '@maplibre/mlt@1.1.9':
+  '@maplibre/mlt@1.3.0':
     dependencies:
       '@mapbox/point-geometry': 1.1.0
 
-  '@maplibre/vt-pbf@4.3.0':
+  '@maplibre/vt-pbf@4.3.2':
     dependencies:
       '@mapbox/point-geometry': 1.1.0
-      '@mapbox/vector-tile': 2.0.4
-      '@maplibre/geojson-vt': 5.0.4
       '@types/geojson': 7946.0.16
-      '@types/supercluster': 7.1.3
-      pbf: 4.0.1
-      supercluster: 8.0.1
+      pbf: 5.1.2
 
   '@math.gl/core@4.1.0':
     dependencies:
@@ -5003,7 +4960,7 @@ snapshots:
       react-dom: 18.2.0(react@18.2.0)
       web-worker: 1.3.0
 
-  '@rdub/file-tree@https://codeload.github.com/runsascoded/file-tree/tar.gz/0ca64f4a22f3aff962f8d64dbd2438d30277dc22(highlight.js@11.11.1)(hyparquet@https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz)(jq-web@0.6.2)(react-dom@18.2.0(react@18.2.0))(react-markdown@10.1.0(@types/react@18.2.48)(react@18.2.0))(react-router-dom@6.30.6(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)(remark-gfm@4.0.1)(use-prms@https://codeload.github.com/runsascoded/use-prms/tar.gz/da21b49c98e1ad372f88c4dee07eca483d17f1c8(react@18.2.0))':
+  '@rdub/file-tree@https://codeload.github.com/runsascoded/file-tree/tar.gz/0ca64f4a22f3aff962f8d64dbd2438d30277dc22(highlight.js@11.11.1)(hyparquet@https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz)(jq-web@0.6.2)(react-dom@18.2.0(react@18.2.0))(react-markdown@10.1.0(@types/react@18.2.48)(react@18.2.0))(react-router-dom@7.18.4(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)(remark-gfm@4.0.1)(use-prms@https://codeload.github.com/runsascoded/use-prms/tar.gz/da21b49c98e1ad372f88c4dee07eca483d17f1c8(react@18.2.0))':
     dependencies:
       aws4fetch: 1.0.20
       highlight.js: 11.11.1
@@ -5015,15 +4972,13 @@ snapshots:
     optionalDependencies:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
-      react-router-dom: 6.30.6(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      react-router-dom: 7.18.4(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
 
   '@react-leaflet/core@2.1.0(leaflet@1.9.4)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
       leaflet: 1.9.4
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
-
-  '@remix-run/router@1.23.4': {}
 
   '@rolldown/pluginutils@1.0.0-beta.27': {}
 
@@ -5198,10 +5153,6 @@ snapshots:
 
   '@types/estree@1.0.9': {}
 
-  '@types/geojson-vt@3.2.5':
-    dependencies:
-      '@types/geojson': 7946.0.16
-
   '@types/geojson@7946.0.13': {}
 
   '@types/geojson@7946.0.16': {}
@@ -5217,14 +5168,6 @@ snapshots:
   '@types/mapbox-gl@2.7.20':
     dependencies:
       '@types/geojson': 7946.0.13
-
-  '@types/mapbox__point-geometry@0.1.4': {}
-
-  '@types/mapbox__vector-tile@1.3.4':
-    dependencies:
-      '@types/geojson': 7946.0.16
-      '@types/mapbox__point-geometry': 0.1.4
-      '@types/pbf': 3.0.5
 
   '@types/mdast@4.0.4':
     dependencies:
@@ -5247,8 +5190,6 @@ snapshots:
   '@types/pad-left@2.1.1': {}
 
   '@types/parse-json@4.0.2': {}
-
-  '@types/pbf@3.0.5': {}
 
   '@types/plotly.js@2.12.32': {}
 
@@ -5276,10 +5217,6 @@ snapshots:
   '@types/scheduler@0.16.8': {}
 
   '@types/strftime@0.9.8': {}
-
-  '@types/supercluster@7.1.3':
-    dependencies:
-      '@types/geojson': 7946.0.13
 
   '@types/unist@2.0.11': {}
 
@@ -5398,13 +5335,13 @@ snapshots:
     optionalDependencies:
       mapbox-gl: 3.1.2
 
-  '@vis.gl/react-maplibre@8.1.1(maplibre-gl@5.24.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
+  '@vis.gl/react-maplibre@8.1.1(maplibre-gl@6.11.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
       '@maplibre/maplibre-gl-style-spec': 19.3.3
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
     optionalDependencies:
-      maplibre-gl: 5.24.0
+      maplibre-gl: 6.11.2
 
   '@vitejs/plugin-react@4.7.0(vite@6.4.3(@types/node@20.3.0)(sass@1.69.7)(terser@5.46.0))':
     dependencies:
@@ -5549,6 +5486,10 @@ snapshots:
   base64-js@1.5.1: {}
 
   baseline-browser-mapping@2.11.26: {}
+
+  bidi-js@1.1.0:
+    dependencies:
+      require-from-string: 2.0.2
 
   binary-extensions@2.2.0: {}
 
@@ -5948,7 +5889,7 @@ snapshots:
 
   earcut@2.2.4: {}
 
-  earcut@3.0.2: {}
+  earcut@3.2.3: {}
 
   electron-to-chromium@1.5.439: {}
 
@@ -6197,8 +6138,6 @@ snapshots:
 
   geojson-vt@3.2.1: {}
 
-  geojson-vt@4.0.2: {}
-
   get-canvas-context@1.0.2: {}
 
   get-stream@6.0.1: {}
@@ -6244,12 +6183,6 @@ snapshots:
   glob-parent@5.1.2:
     dependencies:
       is-glob: 4.0.3
-
-  global-prefix@4.0.0:
-    dependencies:
-      ini: 4.1.3
-      kind-of: 6.0.3
-      which: 4.0.0
 
   glsl-inject-defines@1.0.3:
     dependencies:
@@ -6414,8 +6347,6 @@ snapshots:
 
   inherits@2.0.4: {}
 
-  ini@4.1.3: {}
-
   inline-style-parser@0.2.7: {}
 
   internmap@2.0.3: {}
@@ -6489,8 +6420,6 @@ snapshots:
 
   isarray@2.0.5: {}
 
-  isexe@3.1.1: {}
-
   isobject@3.0.1: {}
 
   javascript-stringify@2.1.0: {}
@@ -6517,7 +6446,7 @@ snapshots:
 
   kdbush@4.0.2: {}
 
-  kind-of@6.0.3: {}
+  kdbush@4.1.0: {}
 
   kleur@4.1.5: {}
 
@@ -6589,53 +6518,23 @@ snapshots:
       tinyqueue: 2.0.3
       vt-pbf: 3.1.3
 
-  maplibre-gl@4.7.1:
+  maplibre-gl@6.11.2:
     dependencies:
-      '@mapbox/geojson-rewind': 0.5.2
-      '@mapbox/jsonlint-lines-primitives': 2.0.2
-      '@mapbox/point-geometry': 0.1.0
-      '@mapbox/tiny-sdf': 2.2.0
-      '@mapbox/unitbezier': 0.0.1
-      '@mapbox/vector-tile': 1.3.1
-      '@mapbox/whoots-js': 3.1.0
-      '@maplibre/maplibre-gl-style-spec': 20.4.0
-      '@types/geojson': 7946.0.16
-      '@types/geojson-vt': 3.2.5
-      '@types/mapbox__point-geometry': 0.1.4
-      '@types/mapbox__vector-tile': 1.3.4
-      '@types/pbf': 3.0.5
-      '@types/supercluster': 7.1.3
-      earcut: 3.0.2
-      geojson-vt: 4.0.2
-      gl-matrix: 3.4.4
-      global-prefix: 4.0.0
-      kdbush: 4.0.2
-      murmurhash-js: 1.0.0
-      pbf: 3.3.0
-      potpack: 2.1.0
-      quickselect: 3.0.0
-      supercluster: 8.0.1
-      tinyqueue: 3.0.0
-      vt-pbf: 3.1.3
-
-  maplibre-gl@5.24.0:
-    dependencies:
-      '@mapbox/jsonlint-lines-primitives': 2.0.2
       '@mapbox/point-geometry': 1.1.0
       '@mapbox/tiny-sdf': 2.2.0
-      '@mapbox/unitbezier': 0.0.1
-      '@mapbox/vector-tile': 2.0.4
-      '@mapbox/whoots-js': 3.1.0
-      '@maplibre/geojson-vt': 6.1.0
-      '@maplibre/maplibre-gl-style-spec': 24.8.5
-      '@maplibre/mlt': 1.1.9
-      '@maplibre/vt-pbf': 4.3.0
+      '@mapbox/unitbezier': 1.0.0
+      '@mapbox/vector-tile': 3.0.0
+      '@maplibre/geojson-vt': 6.1.1
+      '@maplibre/maplibre-gl-style-spec': 26.4.4
+      '@maplibre/mlt': 1.3.0
+      '@maplibre/vt-pbf': 4.3.2
       '@types/geojson': 7946.0.16
-      earcut: 3.0.2
+      bidi-js: 1.1.0
+      earcut: 3.2.3
       gl-matrix: 3.4.4
-      kdbush: 4.0.2
+      kdbush: 4.1.0
       murmurhash-js: 1.0.0
-      pbf: 4.0.1
+      pbf: 5.1.2
       potpack: 2.1.0
       quickselect: 3.0.0
       tinyqueue: 3.0.0
@@ -7161,7 +7060,7 @@ snapshots:
       ieee754: 1.2.1
       resolve-protobuf-schema: 2.1.0
 
-  pbf@4.0.1:
+  pbf@5.1.2:
     dependencies:
       resolve-protobuf-schema: 2.1.0
 
@@ -7233,7 +7132,7 @@ snapshots:
       has-hover: 1.0.1
       has-passive-events: 1.0.0
       is-mobile: 4.0.0
-      maplibre-gl: 4.7.1
+      maplibre-gl: 6.11.2
       mouse-change: 1.4.0
       mouse-event-offset: 3.0.2
       mouse-wheel: 1.2.0
@@ -7345,15 +7244,15 @@ snapshots:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
 
-  react-map-gl@8.1.1(mapbox-gl@3.1.2)(maplibre-gl@5.24.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
+  react-map-gl@8.1.1(mapbox-gl@3.1.2)(maplibre-gl@6.11.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
     dependencies:
       '@vis.gl/react-mapbox': 8.1.1(mapbox-gl@3.1.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@vis.gl/react-maplibre': 8.1.1(maplibre-gl@5.24.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      '@vis.gl/react-maplibre': 8.1.1(maplibre-gl@6.11.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
     optionalDependencies:
       mapbox-gl: 3.1.2
-      maplibre-gl: 5.24.0
+      maplibre-gl: 6.11.2
 
   react-markdown@10.1.0(@types/react@18.2.48)(react@18.2.0):
     dependencies:
@@ -7380,17 +7279,19 @@ snapshots:
 
   react-refresh@0.17.0: {}
 
-  react-router-dom@6.30.6(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
+  react-router-dom@7.18.4(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
     dependencies:
-      '@remix-run/router': 1.23.4
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
-      react-router: 6.30.6(react@18.2.0)
+      react-router: 7.18.4(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
 
-  react-router@6.30.6(react@18.2.0):
+  react-router@7.18.4(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
     dependencies:
-      '@remix-run/router': 1.23.4
+      cookie: 1.1.1
       react: 18.2.0
+      set-cookie-parser: 2.7.2
+    optionalDependencies:
+      react-dom: 18.2.0(react@18.2.0)
 
   react-transition-group@4.4.5(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
     dependencies:
@@ -7517,6 +7418,8 @@ snapshots:
 
   repeat-string@1.6.1: {}
 
+  require-from-string@2.0.2: {}
+
   require-like@0.1.2: {}
 
   resolve-from@4.0.0: {}
@@ -7591,6 +7494,8 @@ snapshots:
   semver@6.3.1: {}
 
   semver@7.8.5: {}
+
+  set-cookie-parser@2.7.2: {}
 
   set-value@2.0.1:
     dependencies:
@@ -8027,10 +7932,6 @@ snapshots:
       get-canvas-context: 1.0.2
 
   whatwg-mimetype@3.0.0: {}
-
-  which@4.0.0:
-    dependencies:
-      isexe: 3.1.1
 
   why-is-node-running@2.3.0:
     dependencies:
