@@ -53,10 +53,9 @@ name = "crashes-cells-api-dev"
 binding = "CELLS_BUCKET"
 bucket_name = "crashes"
 
-[[env.dev.d1_databases]]
-binding = "CELLS_S2_DB"
-database_name = "cells-s2"
-database_id = "5f3f02b6-4ff6-439d-be66-a9d1436c649b"
+# Staging new cells: dev reads the `cells-dev` R2 prefix with no `CELLS_S2_DB`
+# (the prod D1 would be out of sync with it), so every query falls back to the
+# R2 pyramid. Restore both once the new cells are promoted to `cells` + D1.
 
 [[env.dev.d1_databases]]
 binding = "TUNE_DB"
@@ -65,4 +64,4 @@ database_id = "b9eea284-d436-4045-bb3b-c30ebf53f9b7"
 
 [env.dev.vars]
 CORS_ORIGIN = "*"
-CELLS_PREFIX = "cells"
+CELLS_PREFIX = "cells-dev"

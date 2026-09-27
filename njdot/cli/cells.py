@@ -76,9 +76,8 @@ S2_SHARD_LEVEL_DEFAULT = 4       # NJ is two level-4 cells (`89b`, `89d`)
 # finally matches H3 r14 (~4 m) instead of rendering ~5× coarser. l22+ is
 # point-mode territory (~1 crash/cell), so aggregation stops paying for itself.
 S2_LEVELS_DEFAULT = tuple(range(4, 22))
-R2_BUCKET_DEFAULT = 'nj-crashes'
+R2_BUCKET_DEFAULT = 'crashes'
 R2_PREFIX_DEFAULT = 'cells'
-R2_PROFILE_DEFAULT = 'cf'
 
 
 
@@ -680,8 +679,8 @@ def cells_sld(base_level: int | None, levels: str | None, mp_path: str, muni_pat
 @click.option('-o', '--out-dir', type=click.Path(path_type=Path), default=OUT_DIR_DEFAULT)
 @click.option('-p', '--prefix', default=R2_PREFIX_DEFAULT, help=f'Bucket prefix (default: {R2_PREFIX_DEFAULT})')
 @click.option('-q', '--quiet', is_flag=True, help='`--only-show-errors` (suppress per-file progress; huge with 100k+ shards)')
-@click.option('--profile', default=R2_PROFILE_DEFAULT, help=f'AWS profile for R2 (default: {R2_PROFILE_DEFAULT})')
-def cells_push(bucket: str, no_delete: bool, dry_run: bool, out_dir: Path, prefix: str, quiet: bool, profile: str):
+@click.option('--profile', default=None, help='AWS profile for R2 (default: ambient creds, e.g. from `infra/r2-run`)')
+def cells_push(bucket: str, no_delete: bool, dry_run: bool, out_dir: Path, prefix: str, quiet: bool, profile: str | None):
     """Mirror `out_dir` to s3://{bucket}/{prefix}/ for the worker (excludes .dvc artifacts)."""
     s3_uri = f's3://{bucket}/{prefix}/'
     cmd = [
@@ -702,6 +701,6 @@ def cells_push(bucket: str, no_delete: bool, dry_run: bool, out_dir: Path, prefi
         cmd.append('--dryrun')
     if quiet:
         cmd.append('--only-show-errors')
-    env = {**os.environ, 'AWS_PROFILE': profile}
-    err(f'$ AWS_PROFILE={profile} {" ".join(cmd)}')
+    env = {**os.environ, **({'AWS_PROFILE': profile} if profile else {})}
+    err(f'$ {f"AWS_PROFILE={profile} " if profile else ""}{" ".join(cmd)}')
     subprocess.run(cmd, env=env, check=True)
