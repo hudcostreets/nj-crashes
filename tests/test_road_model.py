@@ -371,7 +371,7 @@ def test_real_nodes_and_west_side_inclusive(built):
     s = built.o['road-summary']
     s = s[s['entity'] == wsa].groupby('year')[['n', 'n_unplaced', 'n_node', 'n_xs']].sum()
     # 2019: 7 crashes at West Side & Duncan are on Duncan Ave; they count on West Side too (inclusive).
-    assert s.reset_index().values.tolist() == [[2006, 107, 96, 2, 0], [2016, 126, 112, 7, 0], [2019, 172, 8, 8, 7]]
+    assert s.reset_index().values.tolist() == [[2006, 107, 96, 2, 0], [2016, 126, 110, 7, 0], [2019, 172, 8, 8, 7]]
     xs = built.o['xs']
     assert sorted(set(zip(xs['entity'].map(built.slug), xs['own_entity'].map(built.slug)))) == [
         ('hudson/jersey-city/duncan-avenue', 'hudson/jersey-city/west-side-avenue'),
@@ -481,6 +481,6 @@ def test_locate_several_roads_named():
         lines=lines, segs_by={(9, 1, '48THST'): np.array([0, 1])}, segs_named={(9, 1, '48THST'): np.array([0, 1])}, segs_cc={},
         seg_ent=np.array([10.0, 11.0]), seg_sris=np.array([None, None], dtype=object), sri_lines={}, ent_sris={}, sri_ent={}, snapper=None,
     )
-    assert _locate_one(9, 1, ('48THST',), None, pd.NA, pd.NA, 0.0, '', None, False, False, None, **ctx) == ('none', None, None, None, frozenset({10, 11}))
+    assert _locate_one(9, 1, ('48THST',), None, pd.NA, pd.NA, 0.0, '', None, False, False, None, **ctx) == ('none', None, None, None, frozenset({10, 11}), None)
     one = dict(ctx, seg_ent=np.array([10.0, 10.0]))
-    assert _locate_one(9, 1, ('48THST',), None, pd.NA, pd.NA, 0.0, '', None, False, False, None, **one) == ('name_only', None, None, None, 10)
+    assert _locate_one(9, 1, ('48THST',), None, pd.NA, pd.NA, 0.0, '', None, False, False, None, **one) == ('name_only', None, None, None, 10, None)

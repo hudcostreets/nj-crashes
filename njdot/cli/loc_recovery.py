@@ -72,12 +72,13 @@ def score(ev: pd.DataFrame, runs: pd.DataFrame) -> pd.DataFrame:
 @roads.command('recover')
 @option('-C', '--county', 'cc', type=int, default=9, show_default=True, help='County code (9 = Hudson)')
 @option('-e', '--eval', 'n_eval', type=int, default=0, help='Also blind-re-locate this many coded crashes and score them')
+@option('-E', '--eval-out', help='Write the blind eval\'s per-crash results (crash columns + `r_*`) to this parquet')
 @option('-g', '--ng911-dir', default=NG911_DIR, show_default=True, help='`njdot roads fetch-ng911` output dir')
 @option('-m', '--eval-mode', type=Choice(list(EVAL_MODES)), default='new', show_default=True, help='Blind-eval sample (see `EVAL_MODES`)')
 @option('-n', '--network', default=ROADWAY_NETWORK, show_default=True, help='`njdot roads fetch-network` output')
 @option('-o', '--out', help='Write per-crash results (crash columns + `r_*`) to this parquet')
 @option('-r', '--runs', 'runs_path', default=join(ROADS_DIR, 'road-runs.parquet'), show_default=True, help='`road-runs.parquet` (entity ids)')
-def roads_recover(cc: int, n_eval: int, ng911_dir: str, eval_mode: str, network: str, out: str | None, runs_path: str):
+def roads_recover(cc: int, n_eval: int, eval_out: str | None, ng911_dir: str, eval_mode: str, network: str, out: str | None, runs_path: str):
     """Recover SRI / MP / entity for a county's crashes from their road / cross-street strings."""
     err(f'Loading county {cc}...')
     ctx = load_county(cc, ng911_dir, network, runs_path)
@@ -111,5 +112,8 @@ def roads_recover(cc: int, n_eval: int, ng911_dir: str, eval_mode: str, network:
         llo, lhi = m['learn']
         o = recover(blind, learned=learn_names(coded[coded['year'].between(llo, lhi)]), **ctx)
         ev = pd.concat([gt.reset_index(drop=True), o.add_prefix('r_').reset_index(drop=True)], axis=1)
+        if eval_out:
+            ev.drop(columns=['r_cands']).to_parquet(eval_out)
+            err(f'Wrote {eval_out}')
         print(f'Blind eval ({eval_mode}): {len(ev):,} coded crashes', file=sys.stderr)
         print(score(ev, ctx['runs']).to_string())
