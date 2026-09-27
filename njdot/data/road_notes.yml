@@ -92,3 +92,17 @@
     amount, so it may be a real change (e.g. the interchange's layout) or a reporting one.
   where:
     slug: bergen/maywood/west-essex-street|bergen/essex-street|bergen/rochelle-park/essex-street
+
+- id: newark-2023-25
+  kind: coverage
+  years: [2023, 2025]
+  title: Most Newark crash reports are missing from September 2024
+  text: >
+    Crashes on Newark's streets (not the interstates, Turnpike or ramps, which other police patrol) number
+    ~870 a month in 2021–22. From September 2023 its property-damage reports fall ~40% while injury crashes
+    hold steady (a change in reporting minor crashes); from September 2024 all of them fall to ~280 a month
+    (~70% fewer), injury crashes as much as the rest, while crashes on the interstates and Turnpike through
+    Newark don't change. So most of Newark's crash reports since September 2024 are missing from NJDOT's
+    data, and its roads' counts for 2023–25 are too low (Broadway: ~180 a year in 2021–22; 119, 93 and 37
+    in 2023–25).
+  where: {cc: 7, mc: 14, subt: [2, 3, 5, 6, 7]}
