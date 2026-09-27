@@ -1,13 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
-import type { Layout, PlotData } from "plotly.js"
-import { useDb, useQuery, useQueryState } from "@/src/lib/DuckDbContext"
-import { useRegisteredDb, useRegisteredParquetDb } from "@/src/tableData"
+import type { Annotations, Layout, PlotData } from "plotly.js"
 import { MonthlyParquet, ProjectedCsv, YtcParquet } from "@/src/paths"
 import { fadeColor, lightenColor } from "pltly"
 import { LegendRow, LegendItem, useLegendPin } from "pltly/react"
 import PlotWrapper from "@/src/lib/plot-wrapper"
-import { Annotation } from "./plot"
+import { monthlyAtGeo, projectionTotals, useNjspParquet, useProjected, yearlyFromMonthly, ytcYearly, type Geo, type MonthlyFileRow, type YtcFileRow } from "./data"
 import A from "@/src/lib/a"
 import { GitHub } from "@/src/socials"
 import { loadRundate } from "@/src/lib/data"
@@ -94,45 +92,12 @@ type ProjectionRow = TypeCounts & {
 const curYear = new Date().getFullYear()
 const prvYear = curYear - 1
 
-// Projected current-year totals. `projected.csv` has county rows (`mc`
-// NULL, keyed by `county` name) and municipality rows (keyed by NJGIN
-// `(cc, mc)`); the statewide projection sums the county rows.
-// Also returns trailing-365d totals (Phase 2A — `Ytd.trailing_365_crashes`
-// in the backend), so the plot header can display "Last 365 days: N".
-const typeCountsQuery = (county: string | null, cc: number | null, mc: number | null) => {
-    const where =
-        cc !== null && mc !== null ? `WHERE cc = ${cc} AND mc = ${mc}`
-        : county ? `WHERE county = '${county}' AND mc IS NULL`
-        : `WHERE mc IS NULL`
-    return `
-    SELECT
-        CAST(sum(driver) as INT) as driver,
-        CAST(sum(pedestrian) as INT) as pedestrian,
-        CAST(sum(cyclist) as INT) as cyclist,
-        CAST(sum(passenger) as INT) as passenger,
-        CAST(sum(trailing_365_driver) as INT) as trailing_365_driver,
-        CAST(sum(trailing_365_pedestrian) as INT) as trailing_365_pedestrian,
-        CAST(sum(trailing_365_cyclist) as INT) as trailing_365_cyclist,
-        CAST(sum(trailing_365_passenger) as INT) as trailing_365_passenger
-    FROM read_csv_auto('projected')
-    ${where}
-`
-}
-
-// Query for ytc data
-const ytcQueryFn = (county: string | null) => `
-    SELECT
-        year,
-        CAST(sum(driver) as INT) as driver,
-        CAST(sum(pedestrian) as INT) as pedestrian,
-        CAST(sum(cyclist) as INT) as cyclist,
-        CAST(sum(passenger) as INT) as passenger,
-        CAST(sum(driver + pedestrian + cyclist + passenger) as INT) as total
-    FROM read_parquet('ytc')
-    ${county ? `WHERE county = '${county}'` : ``}
-    GROUP BY year
-    ORDER BY year
-`
+// Projected current-year totals: `projected.csv` has county rows (`mc` null, keyed by `county`
+// name) and municipality rows (keyed by NJGIN `(cc, mc)`); the statewide projection sums the county
+// rows. Also trailing-365d totals (`Ytd.trailing_365_crashes` in the backend), so the plot header can
+// display "Last 365 days: N" (`projectionTotals`).
+const ZERO_PROJECTIONS: ProjectionRow = { driver: 0, pedestrian: 0, cyclist: 0, passenger: 0, trailing_365_driver: 0, trailing_365_pedestrian: 0, trailing_365_cyclist: 0, trailing_365_passenger: 0 }
+const NO_ROWS: never[] = []
 
 const typesMap: Record<Type, keyof TypeCounts> = {
     Cyclists: "cyclist",
@@ -142,7 +107,8 @@ const typesMap: Record<Type, keyof TypeCounts> = {
 }
 
 type MonthlyRow = {
-    date: string
+    /** Epoch ms (a parquet timestamp). */
+    date: number
     year: number
     month: number
     fatalities: number
@@ -151,48 +117,6 @@ type MonthlyRow = {
     pedestrian: number
     cyclist: number
     avg_12mo: number
-}
-
-const monthlyQueryFn = (county: string | null, cc: number | null, mc: number | null) => {
-    let where: string
-    if (cc !== null && mc !== null) {
-        where = `WHERE cc = ${cc} AND mc = ${mc}`
-    } else if (county) {
-        where = `WHERE county = '${county}' AND mc IS NULL`
-    } else {
-        where = `WHERE county IS NULL AND cc IS NULL`
-    }
-    return `
-    SELECT date, year, month, fatalities, driver, passenger, pedestrian, cyclist, avg_12mo
-    FROM read_parquet('monthly')
-    ${where}
-    ORDER BY date
-`
-}
-
-// Query yearly data from monthly CSV (works for statewide, county, and muni)
-const yearlyFromMonthlyQueryForGeo = (county: string | null, cc: number | null, mc: number | null) => {
-    let where: string
-    if (cc !== null && mc !== null) {
-        where = `WHERE cc = ${cc} AND mc = ${mc}`
-    } else if (county) {
-        where = `WHERE county = '${county}' AND mc IS NULL`
-    } else {
-        where = `WHERE county IS NULL AND cc IS NULL`
-    }
-    return `
-    SELECT
-        year,
-        CAST(SUM(driver) as INT) as driver,
-        CAST(SUM(pedestrian) as INT) as pedestrian,
-        CAST(SUM(cyclist) as INT) as cyclist,
-        CAST(SUM(passenger) as INT) as passenger,
-        CAST(SUM(fatalities) as INT) as total
-    FROM read_parquet('monthly')
-    ${where}
-    GROUP BY year
-    ORDER BY year
-`
 }
 
 type TimeGranularity = 'year' | 'month'
@@ -207,7 +131,6 @@ export type Props = {
 }
 
 export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, cc: propCc = null, mc: propMc = null, regionLabel, height = 500 }: Props) {
-    const db = useDb()
     const plotColors = usePlotColors()
     const county = initialCounty
     // hoverTrace from pltly (unused — no native Plotly legend on this plot)
@@ -277,28 +200,18 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
         return () => observer.disconnect()
     }, [])
 
-    // Load data sources
-    const ytcDb = useRegisteredParquetDb({ db, table: "ytc", url: YtcParquet })
-    const monthlyDb = useRegisteredParquetDb({ db, table: "monthly", url: MonthlyParquet })
-    const projectionsDb = useRegisteredDb({ db, table: "projected", url: ProjectedCsv })
-
-    // Yearly data: always aggregate from monthly CSV (always up to date)
-    // ytc is only used for the county list in the dropdown
-    const ytcQueryStr = useMemo(() => ytcQueryFn(county), [county])
-    const ytc = useQueryState<YtRow>({ db: ytcDb, query: ytcQueryStr, init: [] })
-    const ytcRows = ytc.data
-    const yearlyQueryStr = useMemo(
-        () => yearlyFromMonthlyQueryForGeo(county, propCc ?? null, propMc ?? null),
-        [county, propCc, propMc],
-    )
-    const yearly = useQueryState<YtRow>({ db: monthlyDb, query: yearlyQueryStr, init: [] })
+    // Data: yearly rows aggregate `monthly` (always up to date); `ytc` fills in type breakdowns
+    // it lacks (`pickYearlyRows`).
+    const geo: Geo = useMemo(() => ({ county, cc: propCc ?? null, mc: propMc ?? null }), [county, propCc, propMc])
+    const ytcFile = useNjspParquet<YtcFileRow>(YtcParquet)
+    const monthlyFile = useNjspParquet<MonthlyFileRow>(MonthlyParquet)
+    const projectedFile = useProjected(ProjectedCsv)
+    const ytc = useMemo(() => ({ data: ytcFile.rows ? ytcYearly(ytcFile.rows, county) : NO_ROWS, loading: ytcFile.loading }), [ytcFile, county])
+    const ytcRows: YtRow[] = ytc.data
+    const yearly = useMemo(() => ({ data: monthlyFile.rows ? yearlyFromMonthly(monthlyFile.rows, geo) : NO_ROWS, loading: monthlyFile.loading }), [monthlyFile, geo])
     const ytRowsAll = pickYearlyRows(yearly.data, ytcRows, propMc ?? null)
-
-    // Projected current-year totals (statewide / county / municipality).
-    const projectionsQueryStr = useMemo(() => typeCountsQuery(county, propCc ?? null, propMc ?? null), [county, propCc, propMc])
-    const [projections] = useQuery<ProjectionRow>({ db: projectionsDb, query: projectionsQueryStr, init: [{ driver: 0, pedestrian: 0, cyclist: 0, passenger: 0, trailing_365_driver: 0, trailing_365_pedestrian: 0, trailing_365_cyclist: 0, trailing_365_passenger: 0 }] })
-    const monthlyQueryStr = useMemo(() => monthlyQueryFn(county, propCc ?? null, propMc ?? null), [county, propCc, propMc])
-    const monthlyRowsAll = useQuery<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
+    const projections: ProjectionRow = useMemo(() => (projectedFile ? projectionTotals(projectedFile, geo) : ZERO_PROJECTIONS), [projectedFile, geo])
+    const monthlyRowsAll: MonthlyRow[] = useMemo(() => (monthlyFile.rows ? monthlyAtGeo(monthlyFile.rows, geo) : NO_ROWS), [monthlyFile, geo])
 
     // Section-scoped filters (NjspSection): year-range narrowing (`yearRange`
     // is null when default/wide) + victim-type subset (`visibleTypes` is the
@@ -480,7 +393,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
 
             // Optional population overlay on y2.
             if (showPop) {
-                const popX: string[] = []
+                const popX: number[] = []
                 const popY: number[] = []
                 for (const r of filteredRows) {
                     const p = popFor(r.year, r.month)
@@ -720,7 +633,7 @@ export function FatalitiesPerYearPlot({ id = "per-year", initialCounty = null, c
         }
 
         // Build annotations (totals above bars)
-        const annotations: Annotation[] = []
+        const annotations: Partial<Annotations>[] = []
         const fmtTotal = (year: number, total: number): string => {
             const v = scale(total, year)
             return effectivePerCapita ? v.toPrecision(2) : String(Math.round(v))

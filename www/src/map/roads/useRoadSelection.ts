@@ -4,7 +4,6 @@ import { PathLayer, ScatterplotLayer } from "@deck.gl/layers"
 import type { Layer, PickingInfo } from "@deck.gl/core"
 import { useUrlState, stringParam } from "use-prms"
 import { useAction } from "@/src/lib/kbd"
-import { useDb } from "@/src/lib/DuckDbContext"
 import {
     fetchEntityGeom, fetchEntitySummary, fetchHitPoints, hitFileForZoom, HIT_TIERS, nearestRoad,
     roadPaths, roadSegments, type Bbox, type RoadPoint,
@@ -66,7 +65,6 @@ type Handle = { end: 0 | 1; lngLat: [number, number] }
  *  move the anchor, shift-click to select a span, Alt+wheel / `[` `]` to step the scope ladder,
  *  and drag the span's end handles. */
 export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
-    const db = useDb()
     const [roadUrl, setRoadUrl] = useUrlState("road", stringParam())
     const ref = parseRoadRef(roadUrl)
     const hitFile = view ? hitFileForZoom(view.zoom) : null
@@ -82,8 +80,8 @@ export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
     }, [hitFile, viewBbox, hitKey])
     const hit = useQuery({
         queryKey: ["road-hit", hitKey],
-        queryFn: () => fetchHitPoints(db!, hitKey!.file as Parameters<typeof fetchHitPoints>[1], hitKey!.bbox),
-        enabled: active && !!db && !!hitKey,
+        queryFn: () => fetchHitPoints(hitKey!.file as Parameters<typeof fetchHitPoints>[0], hitKey!.bbox),
+        enabled: active && !!hitKey,
     })
     const hitPoints = useMemo(() => (active && hitKey?.file === hitFile ? (hit.data ?? []) : []), [active, hitKey, hitFile, hit.data])
     const hitSegments = useMemo(() => roadSegments(hitPoints), [hitPoints])
@@ -94,9 +92,9 @@ export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
     }, [ref, info.data, setRoadUrl])
     // A click's (numeric) ref is the entity, so its geometry etc. load alongside the entity row.
     const road = typeof ref === "number" ? ref : info.data?.entity ?? null
-    const enabled = !!db && road !== null
-    const geom = useQuery({ queryKey: ["road-geom", road], queryFn: () => fetchEntityGeom(db!, road!), enabled, staleTime: Infinity })
-    const summary = useQuery({ queryKey: ["road-summary", road], queryFn: () => fetchEntitySummary(db!, road!, false), enabled, staleTime: Infinity })
+    const enabled = road !== null
+    const geom = useQuery({ queryKey: ["road-geom", road], queryFn: () => fetchEntityGeom(road!), enabled, staleTime: Infinity })
+    const summary = useQuery({ queryKey: ["road-summary", road], queryFn: () => fetchEntitySummary(road!, false), enabled, staleTime: Infinity })
     // The scope's road: only once the entity row matches the selection (not a previous road's).
     const scopeInfo = info.data && info.data.entity === road ? info.data : null
     const scope = useRoadScope({ info: scopeInfo, geom: geom.data ?? null, roadSummary: summary.data ?? null, hotkeys: true })
