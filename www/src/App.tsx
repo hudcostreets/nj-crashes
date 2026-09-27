@@ -86,7 +86,8 @@ export default function App() {
                 <Route path="/map/c/:county" element={<CrashMapPage />} />
                 <Route path="/map/c/:county/:muni" element={<CrashMapPage />} />
                 <Route path="/crash/:year/:cc/:mc/:case" element={<CrashDetailPage />} />
-                <Route path="/road/:entity" element={<RoadPage />} />
+                {/* `/road/<county>/[<muni>/]<road>` slugs; numeric `/road/<entity>` redirects to the slug. */}
+                <Route path="/road/*" element={<RoadPage />} />
                 <Route path="/raw" element={<RawFileBrowser />} />
                 <Route path="/raw/*" element={<RawFileBrowser />} />
                 <Route path="/harmonization" element={<HarmonizationPage />} />

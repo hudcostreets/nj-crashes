@@ -1,8 +1,8 @@
 import { useMemo } from "react"
 import { Link } from "react-router-dom"
 import { EndYear, StartYear } from "@/src/constants"
-import { entityCrashesSql, type RoadCrashView, type RoadEntity } from "./roadsData"
-import { ExportCsvButton, RoadCrashTable, roadSlug } from "./RoadCrashTable"
+import { entityCrashesSql, type RoadCrashView, type RoadEntity, type RoadSummaryRow } from "./roadsData"
+import { ExportCsvButton, RoadCrashTable } from "./RoadCrashTable"
 import { yearStats } from "./roadStats"
 import { YearStrip } from "./YearStrip"
 
@@ -10,8 +10,11 @@ import { YearStrip } from "./YearStrip"
 const TABLE_ROWS = 300
 
 export type RoadPanelProps = {
-    entity: number
+    /** Null while loading (or when `?road=` names no road). */
     info: RoadEntity | null
+    notFound: boolean
+    /** The road's `road-summary` rows (per year × severity). */
+    summary: RoadSummaryRow[] | null
     crashes: RoadCrashView[] | null
     loading: boolean
     onClose: () => void
@@ -20,16 +23,14 @@ export type RoadPanelProps = {
 }
 
 /** Selected-road summary + crash table (specs/road-name-normalization-and-search.md Layer 4b). */
-export function RoadPanel({ entity, info, crashes, loading, onClose, onZoomTo, theme }: RoadPanelProps) {
+export function RoadPanel({ info, notFound, summary, crashes, loading, onClose, onZoomTo, theme }: RoadPanelProps) {
     const bg = theme === "dark" ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.95)"
     const fg = theme === "dark" ? "#e0e0e0" : "#333"
     const dim = theme === "dark" ? "#999" : "#666"
     const rows = useMemo(() => crashes?.slice(0, TABLE_ROWS) ?? [], [crashes])
-    const stats = useMemo(() => (crashes?.length ? yearStats(crashes, StartYear, EndYear) : null), [crashes])
+    const stats = useMemo(() => (summary?.length ? yearStats(summary, StartYear, EndYear) : null), [summary])
     const sris = info?.sris.split(",") ?? []
-    const sqlHref = `/sql?q=${encodeURIComponent(entityCrashesSql(entity) + ";")}`
     const multiSri = sris.length > 1
-    const slug = roadSlug(info?.name, entity)
     const btn = { padding: "2px 8px", fontSize: "0.8em", background: "transparent", color: fg, border: `1px solid ${dim}`, borderRadius: 3, cursor: "pointer" }
     return (
         <div style={{
@@ -40,7 +41,7 @@ export function RoadPanel({ entity, info, crashes, loading, onClose, onZoomTo, t
             <div style={{ padding: "8px 10px", borderBottom: `1px solid ${dim}` }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                     <strong style={{ flex: 1 }}>
-                        {info?.name ?? `Road ${entity}`}
+                        {info?.name ?? (notFound ? "Road not found" : "Loading…")}
                         {info?.route && <span style={{ fontWeight: "normal", color: dim }}> · on {info.route}</span>}
                     </strong>
                     <button onClick={onClose} style={{ ...btn, border: "none" }} aria-label="Clear road selection">✕</button>
@@ -57,16 +58,18 @@ export function RoadPanel({ entity, info, crashes, loading, onClose, onZoomTo, t
                         ({info.n_killed.toLocaleString()} killed) · {info.n_injury.toLocaleString()} injury
                     </div>
                 )}
-                <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                    {info && <button style={btn} onClick={() => onZoomTo([info.lon_min, info.lat_min, info.lon_max, info.lat_max])}>Zoom to road</button>}
-                    <ExportCsvButton entity={entity} slug={slug} disabled={info?.n_crashes === 0} style={btn} />
-                    <a style={{ ...btn, textDecoration: "none" }} href={sqlHref} target="_blank" rel="noreferrer">Open in SQL ↗</a>
-                    <Link style={{ ...btn, textDecoration: "none", marginLeft: "auto" }} to={`/road/${entity}`}>Open road page →</Link>
-                </div>
+                {info && (
+                    <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                        <button style={btn} onClick={() => onZoomTo([info.lon_min, info.lat_min, info.lon_max, info.lat_max])}>Zoom to road</button>
+                        <ExportCsvButton entity={info.entity} slug={info.slug} disabled={info.n_crashes === 0} style={btn} />
+                        <a style={{ ...btn, textDecoration: "none" }} href={`/sql?q=${encodeURIComponent(entityCrashesSql(info.entity) + ";")}`} target="_blank" rel="noreferrer">Open in SQL ↗</a>
+                        <Link style={{ ...btn, textDecoration: "none", marginLeft: "auto" }} to={`/road/${info.slug}`}>Open road page →</Link>
+                    </div>
+                )}
                 {stats && <YearStrip stats={stats} dim={dim} />}
             </div>
             <div style={{ overflow: "auto" }}>
-                {loading && !crashes && <div style={{ padding: 10, color: dim }}>Loading…</div>}
+                {loading && info && !crashes && <div style={{ padding: 10, color: dim }}>Loading crashes…</div>}
                 {crashes && <RoadCrashTable rows={rows} multiSri={multiSri} theme={theme} headerBg={bg} />}
                 {crashes && crashes.length > TABLE_ROWS && (
                     <div style={{ padding: "4px 10px", color: dim, fontSize: "0.8em" }}>

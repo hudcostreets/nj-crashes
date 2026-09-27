@@ -36,7 +36,23 @@ async function initDuckDb(): Promise<AsyncDuckDB> {
     const db = new AsyncDuckDB(SilentLogger, worker)
     await db.instantiate(bundle.mainModule, bundle.pthreadWorker)
     await db.open({ path: ":memory:", query: { castBigIntToDouble: true } })
+    await enableMetadataCache(db)
     return db
+}
+
+/** Cache parquet footers across queries (the road files have many small row groups, so a footer
+ *  is often bigger than the rows a lookup reads; specs/road-data-v4.md § Measurement). This
+ *  DuckDB-WASM build predates the `parquet_metadata_cache` name; `enable_object_cache` is the
+ *  same setting. A failure only costs repeat footer reads, so it's logged, not thrown. */
+async function enableMetadataCache(db: AsyncDuckDB) {
+    const conn = await db.connect()
+    try {
+        await conn.query("SET GLOBAL enable_object_cache = true")
+    } catch (e) {
+        console.warn("DuckDB: couldn't enable the parquet metadata cache:", e)
+    } finally {
+        await conn.close()
+    }
 }
 
 // Use window-level global so the singleton survives Vite HMR module re-execution

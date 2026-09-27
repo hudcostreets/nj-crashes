@@ -1,5 +1,6 @@
-/** Per-period aggregates of a road's crashes, for the road page's plots and `RoadPanel`'s strip. */
-import type { RoadCrash } from "./roadsData"
+/** Per-period aggregates of a road's crashes, for the road page's plots and `RoadPanel`'s strip,
+ *  from `road-summary[-monthly]` rows (zero-filled: only non-zero cells have rows). */
+import type { RoadSummaryRow } from "./roadsData"
 
 export type SevCounts = { f: number[]; i: number[]; p: number[] }
 
@@ -19,43 +20,37 @@ function isSev(s: string): s is "f" | "i" | "p" {
 }
 
 /** Crashes by severity, plus killed / injured totals, per year over `[y0, y1]` (widened to cover
- *  every crash's year; years without crashes are zeros). */
-export function yearStats(crashes: Pick<RoadCrash, "year" | "severity" | "tk" | "ti">[], y0: number, y1: number): YearStats {
-    for (const c of crashes) {
-        if (c.year < y0) y0 = c.year
-        if (c.year > y1) y1 = c.year
+ *  every row's year; years without rows are zeros). Monthly rows sum into their year. */
+export function yearStats(rows: Pick<RoadSummaryRow, "year" | "severity" | "n" | "tk" | "ti">[], y0: number, y1: number): YearStats {
+    for (const r of rows) {
+        if (r.year < y0) y0 = r.year
+        if (r.year > y1) y1 = r.year
     }
     const n = Math.max(0, y1 - y0 + 1)
     const zeros = () => new Array<number>(n).fill(0)
     const out: YearStats = { years: Array.from({ length: n }, (_, i) => y0 + i), f: zeros(), i: zeros(), p: zeros(), killed: zeros(), injured: zeros() }
-    for (const c of crashes) {
-        const k = c.year - y0
-        if (isSev(c.severity)) out[c.severity][k]++
-        out.killed[k] += c.tk ?? 0
-        out.injured[k] += c.ti ?? 0
+    for (const r of rows) {
+        const k = r.year - y0
+        if (isSev(r.severity)) out[r.severity][k] += r.n
+        out.killed[k] += r.tk
+        out.injured[k] += r.ti
     }
     return out
 }
 
-/** Crashes by severity per calendar month (`dt` is epoch ms of a naive local timestamp, so it's
- *  read in UTC) over `[y0, y1]`, widened like `yearStats`. */
-export function monthStats(crashes: Pick<RoadCrash, "dt" | "severity">[], y0: number, y1: number): MonthStats {
-    const ym = crashes.map(c => {
-        const d = new Date(c.dt)
-        return [d.getUTCFullYear(), d.getUTCMonth()] as const
-    })
-    for (const [y] of ym) {
-        if (y < y0) y0 = y
-        if (y > y1) y1 = y
+/** Crashes by severity per calendar month over `[y0, y1]`, widened like `yearStats`. */
+export function monthStats(rows: (Pick<RoadSummaryRow, "year" | "severity" | "n"> & { month: number })[], y0: number, y1: number): MonthStats {
+    for (const r of rows) {
+        if (r.year < y0) y0 = r.year
+        if (r.year > y1) y1 = r.year
     }
     const n = Math.max(0, (y1 - y0 + 1) * 12)
     const zeros = () => new Array<number>(n).fill(0)
     const months = Array.from({ length: n }, (_, k) => `${y0 + Math.floor(k / 12)}-${String(k % 12 + 1).padStart(2, "0")}`)
     const out: MonthStats = { months, f: zeros(), i: zeros(), p: zeros() }
-    crashes.forEach((c, j) => {
-        const [y, m] = ym[j]
-        if (isSev(c.severity)) out[c.severity][(y - y0) * 12 + m]++
-    })
+    for (const r of rows) {
+        if (isSev(r.severity)) out[r.severity][(r.year - y0) * 12 + r.month - 1] += r.n
+    }
     return out
 }
 

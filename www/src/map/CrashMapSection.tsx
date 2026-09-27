@@ -649,7 +649,7 @@ export function CrashMapSection({
         return { level, cellPx, nextZoom, nextLevel }
     }, [mode, heatRender, effectiveView, heatCpxUrl])
 
-    // Road selection (hover/click at street zooms → `?road=<sri>`, panel + table + export).
+    // Road selection (hover/click at street zooms → `?road=<slug>`, panel + table + export).
     const viewBbox = useMemo(() => {
         if (!effectiveView) return null
         const [w, h] = viewportDims(fullScreen)
@@ -860,10 +860,11 @@ export function CrashMapSection({
             {result.status === "error" && (
                 <div style={{ padding: "1em", color: "red" }}>Error: {result.error}</div>
             )}
-            {roadSel.road !== null && (
+            {roadSel.selected && (
                 <RoadPanel
-                    entity={roadSel.road}
                     info={roadSel.info}
+                    notFound={roadSel.notFound}
+                    summary={roadSel.summary}
                     crashes={roadSel.crashes}
                     loading={roadSel.loading}
                     onClose={() => roadSel.setRoad(null)}
@@ -875,7 +876,7 @@ export function CrashMapSection({
                 road={roadSel.hovered}
                 roadSelected={!!roadSel.hovered && roadSel.hovered.entity === roadSel.road}
                 area={hoveredOutlineLabel}
-                dodgePanel={roadSel.road !== null}
+                dodgePanel={roadSel.selected}
                 theme={actualTheme}
             />
             {result.status === "loading" && <LoadingOverlay theme={actualTheme} />}

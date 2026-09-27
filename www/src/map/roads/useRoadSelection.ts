@@ -5,9 +5,10 @@ import { useUrlState, stringParam } from "use-prms"
 import { useAction } from "use-kbd"
 import { useDb } from "@/src/lib/DuckDbContext"
 import {
-    fetchEntity, fetchEntityCrashes, fetchEntityGeom, fetchHitPoints, hitFileForZoom, HIT_TIERS, nearestRoad,
+    fetchEntityCrashes, fetchEntityGeom, fetchEntitySummary, fetchHitPoints, hitFileForZoom, HIT_TIERS, nearestRoad,
     roadPaths, roadSegments, type Bbox, type RoadPoint,
 } from "./roadsData"
+import { parseRoadRef, useRoadEntity } from "./useRoadEntity"
 
 const { cos, PI, pow } = Math
 
@@ -31,15 +32,17 @@ function contains([w, s, e, n]: Bbox, [w2, s2, e2, n2]: Bbox): boolean {
     return w <= w2 && s <= s2 && e >= e2 && n >= n2
 }
 
-/** Map road selection (specs/road-name-normalization-and-search.md Layer 4b): hover a road to
- *  highlight it, click to select it (`?road=<entity>`); the selection's geometry, summary and
- *  crashes load from the `roads/` parquets. A road is an *entity* (same-named SRI runs joined
- *  across routes), not an SRI. `viewBbox` is the current viewport. */
+/** Map road selection (specs/road-data-v4.md): hover a road to highlight it, click to select it
+ *  (`?road=<slug>`); the selection's geometry, summary and crashes load from the `roads/` parquets.
+ *  A road is an *entity* (same-named SRI runs joined across routes), not an SRI. `viewBbox` is the
+ *  current viewport. A numeric `?road=<entity>` (a click, or an old link) is rewritten to the slug
+ *  once the entity loads. */
 export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
     const db = useDb()
     const [roadUrl, setRoadUrl] = useUrlState("road", stringParam())
-    const road = roadUrl && /^\d+$/.test(roadUrl) ? Number(roadUrl) : null
-    const setRoad = useCallback((entity: number | null) => setRoadUrl(entity === null ? undefined : String(entity)), [setRoadUrl])
+    const ref = parseRoadRef(roadUrl)
+    /** Select a road by slug, or by (this build's) entity id. */
+    const setRoad = useCallback((road: string | number | null) => setRoadUrl(road === null ? undefined : String(road)), [setRoadUrl])
     const hitFile = view ? hitFileForZoom(view.zoom) : null
     const active = !!hitFile
 
@@ -73,15 +76,19 @@ export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
         return false
     }, [active, hovered, hitSegments, hitMeters, setRoad])
 
+    const info = useRoadEntity(ref)
+    useEffect(() => {
+        if (typeof ref === "number" && info.data) setRoadUrl(info.data.slug)
+    }, [ref, info.data, setRoadUrl])
+    const road = info.data?.entity ?? null
     const enabled = !!db && road !== null
-    const info = useQuery({ queryKey: ["road-entity", road], queryFn: () => fetchEntity(db!, road!), enabled })
     const sris = info.data?.sris.split(",") ?? []
     const geom = useQuery({
         queryKey: ["road-geom", road, info.data?.sris],
         queryFn: () => fetchEntityGeom(db!, road!, sris),
         enabled: enabled && sris.length > 0,
     })
-    // Waits on the entity's SRIs, which prune `crashes-by-entity` to their row groups.
+    const summary = useQuery({ queryKey: ["road-summary", road], queryFn: () => fetchEntitySummary(db!, road!, false), enabled })
     const crashes = useQuery({ queryKey: ["road-crashes", road], queryFn: () => fetchEntityCrashes(db!, road!), enabled })
 
     useAction("map:road-clear", {
@@ -130,9 +137,13 @@ export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
     }, [geom.data, hoveredEntity, hitPoints])
 
     return {
+        /** Whether `?road=` names a road (it may still be loading, or not exist). */
+        selected: ref !== null,
         road, setRoad, active, hovered, onHover, onClick, layers,
         info: info.data ?? null,
+        notFound: info.isSuccess && !info.data,
+        summary: summary.data ?? null,
         crashes: crashes.data ?? null,
-        loading: info.isFetching || geom.isFetching || crashes.isFetching,
+        loading: info.isFetching || geom.isFetching || summary.isFetching || crashes.isFetching,
     }
 }

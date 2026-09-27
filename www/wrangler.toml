@@ -29,6 +29,7 @@ run_worker_first = [
     "/map/*",
     "/raw",
     "/raw/*",
+    "/road/*",
     "/sql",
 ]
 

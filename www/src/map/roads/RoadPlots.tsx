@@ -8,20 +8,21 @@ import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { EndYear, StartYear } from "@/src/constants"
 import { Radios } from "@/src/njdot/Radios"
 import { Severities, SeverityColorsDark, SeverityColorsLight, SeverityLabels } from "@/src/njdot/data"
-import type { RoadCrashView } from "./roadsData"
+import type { RoadSummaryRow } from "./roadsData"
 import { monthStats, rollingMean, yearStats } from "./roadStats"
 
 const HEIGHT = 360
 
 type Granularity = "year" | "month"
 
-export function RoadPlots({ crashes }: { crashes: RoadCrashView[] }) {
+/** `rows`: the road's `road-summary-monthly` rows. */
+export function RoadPlots({ rows }: { rows: (RoadSummaryRow & { month: number })[] }) {
     const { isDark } = useTheme()
     const colors = usePlotColors()
     const sevColors = isDark ? SeverityColorsDark : SeverityColorsLight
     const [gran, setGran] = useState<Granularity>("year")
-    const years = useMemo(() => yearStats(crashes, StartYear, EndYear), [crashes])
-    const months = useMemo(() => (gran === "month" ? monthStats(crashes, StartYear, EndYear) : null), [crashes, gran])
+    const years = useMemo(() => yearStats(rows, StartYear, EndYear), [rows])
+    const months = useMemo(() => (gran === "month" ? monthStats(rows, StartYear, EndYear) : null), [rows, gran])
 
     const baseLayout = useMemo((): Partial<Layout> => ({
         height: HEIGHT,
