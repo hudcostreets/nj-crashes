@@ -8,7 +8,7 @@
  *  Storage: D1 `crashes-feedback` (`FEEDBACK_DB`, schema `migrations/`),
  *  screenshots in the private R2 bucket `crashes-feedback` (`FEEDBACK_BUCKET`,
  *  no public domain — only reachable through the tokenized route above).
- *  Each report is also posted to Slack via `FEEDBACK_SLACK_WEBHOOK` when set.
+ *  Each report is also posted to Slack via `SLACK_FEEDBACK_WEBHOOK` when set.
  *
  *  None of these responses go through the edge cache (see `index.ts`). */
 import {
@@ -26,7 +26,7 @@ export interface FeedbackEnv {
 	FEEDBACK_DB?: D1Database
 	FEEDBACK_BUCKET?: R2Bucket
 	/** Secret. Slack incoming-webhook URL; unset → skip posting. */
-	FEEDBACK_SLACK_WEBHOOK?: string
+	SLACK_FEEDBACK_WEBHOOK?: string
 	/** Secret. Bearer token for the admin list; unset → list disabled. */
 	FEEDBACK_ADMIN_TOKEN?: string
 	/** Var (public). Turnstile site key served to the FE; unset → no widget. */
@@ -186,7 +186,7 @@ async function handlePost(request: Request, env: FeedbackEnv, ctx: ExecutionCont
 	).run()
 
 	const origin = new URL(request.url).origin
-	const webhook = env.FEEDBACK_SLACK_WEBHOOK
+	const webhook = env.SLACK_FEEDBACK_WEBHOOK
 	if (webhook) {
 		const msg = slackMessage(report, {
 			id,
@@ -199,7 +199,7 @@ async function handlePost(request: Request, env: FeedbackEnv, ctx: ExecutionCont
 				.then(status => db.prepare("UPDATE feedback SET slack = ?1 WHERE id = ?2").bind(status, id).run()),
 		)
 	} else {
-		console.log(`feedback ${id}: FEEDBACK_SLACK_WEBHOOK unset, skipping Slack`)
+		console.log(`feedback ${id}: SLACK_FEEDBACK_WEBHOOK unset, skipping Slack`)
 		ctx.waitUntil(db.prepare("UPDATE feedback SET slack = 'skipped' WHERE id = ?1").bind(id).run())
 	}
 
