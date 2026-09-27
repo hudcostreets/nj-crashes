@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import type { Layout, PlotData } from "plotly.js"
-import { useDb, useQueryState } from "@/src/lib/DuckDbContext"
 import { EmptyRegion } from "./EmptyRegion"
-import { useRegisteredParquetDb } from "@/src/tableData"
+import { useNjspParquet, ytdAtGeo, type YtdFileRow } from "./data"
 import { YtdParquet } from "@/src/paths"
 import { fadeColor, useCustomHover } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
@@ -35,43 +34,7 @@ type YtdRow = {
     cumulative: number
 }
 
-/** Per-victim-type column suffixes in `ytd.parquet`. Matches the
- *  `VictimType` codes in `victim-types.tsx`. */
-const TYPE_COLS: Record<VictimType, string> = {
-    driver: 'driver',
-    passenger: 'passenger',
-    pedestrian: 'pedestrian',
-    cyclist: 'cyclist',
-}
-
-// Query to get YTD data (filtered by geo level + victim-type subset).
-// `selectedTypes` of all 4 (or omitted) → use the precomputed `fatalities`/
-// `cumulative` totals; a narrowed subset sums the per-type columns instead.
-const ytdQueryFn = (county: string | null, cc: number | null, mc: number | null, selectedTypes: VictimType[]) => {
-    let where: string
-    if (cc !== null && mc !== null) {
-        where = `cc = ${cc} AND mc = ${mc}`
-    } else if (county) {
-        where = `county = '${county}' AND mc IS NULL`
-    } else {
-        where = `county IS NULL AND cc IS NULL`
-    }
-    const allTypes = selectedTypes.length === 4 || selectedTypes.length === 0
-    const fatExpr = allTypes
-        ? 'fatalities'
-        : selectedTypes.map(t => TYPE_COLS[t]).join(' + ')
-    const cumExpr = allTypes
-        ? 'cumulative'
-        : selectedTypes.map(t => `${TYPE_COLS[t]}_cumulative`).join(' + ')
-    return `
-    SELECT year, day_of_year, date_label,
-      (${fatExpr}) AS fatalities,
-      (${cumExpr}) AS cumulative
-    FROM read_parquet('ytd')
-    WHERE ${where}
-    ORDER BY year, day_of_year
-`
-}
+const NO_ROWS: YtdRow[] = []
 
 // Check if a year is a leap year
 function isLeapYear(year: number): boolean {
@@ -121,7 +84,6 @@ function legendLayout(position: 'bottom' | 'right', textColor: string) {
 type ViewMode = 'ytd' | 'full-faded' | 'full' | 'trailing-365'
 
 export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, regionLabel }: Props) {
-    const db = useDb()
     const plotColors = usePlotColors()
 
     const [activeTrace, setActiveTrace] = useState<string | null>(null)
@@ -149,12 +111,11 @@ export function YtdDeathsPlot({ id = "ytd", county, cc = null, mc = null, region
     const selectedTypes: VictimType[] = filters?.selectedTypes ?? VICTIM_TYPES
 
     // Load YTD data
-    const ytdDb = useRegisteredParquetDb({ db, table: "ytd", url: YtdParquet })
-    const ytdQueryStr = useMemo(
-        () => ytdQueryFn(county ?? null, cc ?? null, mc ?? null, selectedTypes),
-        [county, cc, mc, selectedTypes],
-    )
-    const ytd = useQueryState<YtdRow>({ db: ytdDb, query: ytdQueryStr, init: [] })
+    const ytdFile = useNjspParquet<YtdFileRow>(YtdParquet)
+    const ytd = useMemo(() => ({
+        data: ytdFile.rows ? ytdAtGeo(ytdFile.rows, { county: county ?? null, cc: cc ?? null, mc: mc ?? null }, selectedTypes) as YtdRow[] : NO_ROWS,
+        loading: ytdFile.loading,
+    }), [ytdFile, county, cc, mc, selectedTypes])
     const ytdRowsAll = ytd.data
     const ytdRows = useMemo(
         () => yearRange ? ytdRowsAll.filter(r => r.year >= yearRange[0] && r.year <= yearRange[1]) : ytdRowsAll,

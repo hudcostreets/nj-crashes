@@ -2,12 +2,11 @@
  *  the real road files (specs/off-duckdb-wasm.md § Parity). Needs `public/njdot/roads/*.parquet`
  *  (symlink / `dvx pull`) and the `duckdb` CLI; skipped without them. Rows are compared as
  *  multisets (ties in the SQL's `ORDER BY` are unordered), and the pq order is checked separately. */
-import { execFileSync } from "node:child_process"
-import { closeSync, existsSync, openSync, readSync, statSync } from "node:fs"
+import { existsSync } from "node:fs"
 import { join } from "node:path"
 import { beforeAll, describe, expect, it } from "vitest"
 import { openParquet, sortRows, type SortKey } from "@/src/lib/pq"
-import type { RangeFetch } from "@/src/lib/pq/source"
+import { duckRows, fileRangeFetch, haveDuckdb, normFloats as norm, type Row } from "@/src/lib/pq/nodeFetch"
 import {
     fetchBlocks, fetchCorridor, fetchCorridorSummary, fetchCrashEntity, fetchEntity, fetchEntityBySlug, fetchEntityCrashes,
     fetchEntityCrashesFull, fetchEntityGeom, fetchEntityNames, fetchEntitySummary, fetchEntityXs, fetchHitPoints,
@@ -17,7 +16,6 @@ import { filterHits, pickWord, queryWords, searchRoads, type RoadSearchRow } fro
 import type { SpanSel } from "./roadScope"
 
 const ROADS = join(__dirname, "../../../public/njdot/roads")
-const haveDuckdb = (() => { try { execFileSync("duckdb", ["-version"]); return true } catch { return false } })()
 const enabled = haveDuckdb && existsSync(join(ROADS, "crashes-by-entity.parquet"))
 
 const FILES: RoadsFile[] = [
@@ -26,34 +24,15 @@ const FILES: RoadsFile[] = [
     "road-corridor-summary-monthly",
 ]
 
-function fileFetch(path: string): RangeFetch {
-    return async req => {
-        const total = statSync(path).size
-        const start = "suffix" in req ? Math.max(0, total - req.suffix) : req.start
-        const end = "suffix" in req ? total : req.end
-        const buf = Buffer.alloc(end - start)
-        const fd = openSync(path, "r")
-        try { readSync(fd, buf, 0, end - start, start) } finally { closeSync(fd) }
-        return { buf: buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer, start, total }
-    }
-}
-
 const local = (file: RoadsFile) => `'${join(ROADS, `${file}.parquet`)}'`
 /** `read_parquet('<url>')` → the local file. */
 function localize(sql: string): string {
     return FILES.reduce((s, f) => s.replaceAll(`'${roadsUrl(f)}'`, local(f)), sql)
 }
 
-type Row = Record<string, unknown>
-
-/** DuckDB CLI rows; floats rounded to float32 (the CLI prints a FLOAT's shortest float32 repr). */
+/** DuckDB CLI rows of `sql` over the local files. */
 function duck(sql: string): Row[] {
-    const out = execFileSync("duckdb", ["-json", "-c", localize(sql)], { maxBuffer: 1 << 30 }).toString().trim()
-    return out ? norm(JSON.parse(out) as Row[]) : []
-}
-
-function norm(rows: Row[]): Row[] {
-    return rows.map(r => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, typeof v === "number" && !Number.isInteger(v) ? Math.fround(v) : v])))
+    return duckRows(localize(sql))
 }
 
 const key = (r: Row) => JSON.stringify(Object.keys(r).sort().map(k => [k, r[k]]))
@@ -77,7 +56,7 @@ describe.skipIf(!enabled)("road reads: pq vs DuckDB", () => {
     const JFK = 42039
     const CORRIDOR = 1810
     beforeAll(async () => {
-        for (const f of FILES) await openParquet(roadsUrl(f), { fetch: fileFetch(join(ROADS, `${f}.parquet`)) })
+        for (const f of FILES) await openParquet(roadsUrl(f), { fetch: fileRangeFetch(join(ROADS, `${f}.parquet`)) })
     })
 
     it("road-entities: by slug, by id", async () => {

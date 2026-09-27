@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import type { Layout, PlotData } from "plotly.js"
-import { useDb, useQuery } from "@/src/lib/DuckDbContext"
-import { useRegisteredParquetDb } from "@/src/tableData"
+import { crashHomicideAt, useNjspParquet, ytcYearly, type CrashHomicideFileRow, type YtcFileRow } from "./data"
 import { CrashHomicideParquet, YtcParquet } from "@/src/paths"
 import { VICTIM_LABEL_SINGULAR, VICTIM_TYPES, victimTypeTitlePhrase, type VictimType } from "./victim-types"
 import { useAlignedDualAxes, LegendRow, LegendItem, useLegendPin } from "pltly/react"
@@ -63,32 +62,12 @@ type YtcRow = {
     cyclist: number
 }
 
-// Query to get crash-homicide data (filtered by county and source)
-const crashHomicideQueryFn = (county: string | null, source: CrashSource) => `
-    SELECT year, traffic_deaths, homicides, ratio
-    FROM read_parquet('crash_homicide')
-    WHERE source = '${source}'
-      AND (${county ? `county = '${county}'` : `county IS NULL OR county = ''`})
-    ORDER BY year
-`
-
-const ytcTypeQueryFn = (county: string | null) => `
-    SELECT
-        year,
-        CAST(sum(driver) as INT) as driver,
-        CAST(sum(passenger) as INT) as passenger,
-        CAST(sum(pedestrian) as INT) as pedestrian,
-        CAST(sum(cyclist) as INT) as cyclist
-    FROM read_parquet('ytc')
-    ${county ? `WHERE county = '${county}'` : ``}
-    GROUP BY year
-    ORDER BY year
-`
+const NO_CH_ROWS: CrashHomicideRow[] = []
+const NO_YTC_ROWS: YtcRow[] = []
 
 export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null, height: propHeight, width: propWidth }: Props) {
     const plotHeight = propHeight ?? HEIGHT
     // Note: crash-homicide data only exists at statewide and county level (no muni breakdowns)
-    const db = useDb()
     const plotColors = usePlotColors()
     const plotAnnotations = useAnnotations({ page: 'homicides-comparison', cc, mc: null })
     const annOpen = useAnnotationOpenState()
@@ -107,16 +86,17 @@ export function HomicidesComparisonPlot({ id = "vs-homicides", county, cc = null
     const effectiveSource: CrashSource = (county || typesActive) ? 'njsp' : crashSource
 
     // Load crash-homicide data
-    const crashHomicideDb = useRegisteredParquetDb({ db, table: "crash_homicide", url: CrashHomicideParquet })
-    const crashHomicideQuery = useMemo(() => crashHomicideQueryFn(county ?? null, effectiveSource), [county, effectiveSource])
-    const rowsRaw = useQuery<CrashHomicideRow>({ db: crashHomicideDb, query: crashHomicideQuery, init: [] })
+    const crashHomicideFile = useNjspParquet<CrashHomicideFileRow>(CrashHomicideParquet)
+    const rowsRaw: CrashHomicideRow[] = useMemo(
+        () => (crashHomicideFile.rows ? crashHomicideAt(crashHomicideFile.rows, county ?? null, effectiveSource) : NO_CH_ROWS),
+        [crashHomicideFile, county, effectiveSource],
+    )
 
     // Per-victim-type NJSP counts — used to derive filtered `traffic_deaths`
     // when the type filter is active. Loaded unconditionally so toggling
     // the filter doesn't trigger a fetch.
-    const ytcDb = useRegisteredParquetDb({ db, table: "ytc", url: YtcParquet })
-    const ytcQuery = useMemo(() => ytcTypeQueryFn(county ?? null), [county])
-    const ytcRows = useQuery<YtcRow>({ db: ytcDb, query: ytcQuery, init: [] })
+    const ytcFile = useNjspParquet<YtcFileRow>(YtcParquet)
+    const ytcRows: YtcRow[] = useMemo(() => (ytcFile.rows ? ytcYearly(ytcFile.rows, county ?? null) : NO_YTC_ROWS), [ytcFile, county])
 
     // Override `traffic_deaths` with the sum of selected type columns when
     // the type filter narrows below all four. Homicides + ratio are
