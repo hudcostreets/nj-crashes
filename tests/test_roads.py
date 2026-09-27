@@ -640,7 +640,9 @@ def test_real_write_outputs_layout(real_out, tmp_path):
     write_outputs(real_out, str(tmp_path), meta)
     files = sorted(p.name for p in tmp_path.iterdir())
     assert files == [
-        'crashes-by-entity.parquet', 'crashes-by-sri.parquet', 'road-entities.parquet', 'road-ranks.parquet',
+        'crashes-by-entity-xs.parquet', 'crashes-by-entity.parquet', 'crashes-by-sri.parquet',
+        'road-blocks.parquet', 'road-corridor-summary.parquet', 'road-corridors.parquet', 'road-entities.parquet',
+        'road-node-entities.parquet', 'road-nodes.parquet', 'road-pieces.parquet', 'road-ranks.parquet',
         'road-runs.parquet', 'road-search.parquet', 'road-summary-monthly.parquet', 'road-summary.parquet',
         'sri-geom.parquet', 'sri-hit-5.parquet', 'sri-hit-6.parquet', 'sri-hit.parquet', 'sris.parquet',
     ]
@@ -656,9 +658,46 @@ def test_real_write_outputs_layout(real_out, tmp_path):
     geom = con.sql(f"SELECT entity, sri, mp FROM '{tmp_path / 'sri-geom.parquet'}'").fetchall()
     assert len(geom) == len(real_out['geom'])
     assert geom == sorted(geom)
-    for f in ('sri-geom.parquet', 'road-runs.parquet'):
+    stats = {}
+    for f in files:
         md = pq.ParquetFile(tmp_path / f).metadata
-        assert [md.row_group(0).column(i).path_in_schema for i in range(md.num_columns) if md.row_group(0).column(i).is_stats_set] == ['entity']
+        if md.num_row_groups:
+            stats[f] = [md.row_group(0).column(i).path_in_schema for i in range(md.num_columns) if md.row_group(0).column(i).is_stats_set]
+    assert {f: v for f, v in stats.items() if not f.startswith(('sri-hit', 'sris', 'crashes-by-sri'))} == {
+        # Empty here (no crash at an intersection / in a corridor): one empty row group, no stats.
+        'crashes-by-entity-xs.parquet': [],
+        'road-corridor-summary.parquet': [],
+        'crashes-by-entity.parquet': ['entity', 'chain'],
+        'road-blocks.parquet': ['entity', 'chain_lo', 'chain_hi'],
+        'road-corridors.parquet': ['corridor', 'slug'],
+        'road-entities.parquet': ['entity', 'slug', 'cc', 'mc'],
+        'road-node-entities.parquet': ['entity', 'chain'],
+        'road-nodes.parquet': ['node', 'lon', 'lat'],
+        'road-pieces.parquet': ['entity'],
+        'road-ranks.parquet': ['cc', 'mc'],
+        'road-runs.parquet': ['entity'],
+        'road-search.parquet': ['token'],
+        'road-summary-monthly.parquet': ['entity'],
+        'road-summary.parquet': ['entity'],
+        'sri-geom.parquet': ['entity'],
+    }
+    # v4 columns keep their names and order; v5 columns come after them.
+    cols = {f: [c.name for c in pq.ParquetFile(tmp_path / f).schema] for f in ('crashes-by-entity.parquet', 'road-entities.parquet', 'sri-geom.parquet', 'road-summary.parquet')}
+    assert cols == {
+        'crashes-by-entity.parquet': [
+            'entity', 'sri', 'mp', 'id', 'year', 'dt', 'cc', 'mc', 'case', 'severity', 'tk', 'ti', 'pk', 'pi', 'tv',
+            # (this fixture's crashes have no `loc_source` / `lat` / `lon`)
+            'road', 'cross_street', 'route', 'chain', 'chain_lo', 'chain_hi', 'node', 'override',
+        ],
+        'road-entities.parquet': [
+            'entity', 'slug', 'name', 'route', 'subt', 'sris', 'lon_min', 'lat_min', 'lon_max', 'lat_max',
+            'n_crashes', 'n_fatal', 'n_injury', 'n_killed', 'aliases', 'cc', 'mc', 'munis', 'length_mi',
+            'corridor', 'corridor_c0', 'corridor_sign', 'chain_mi', 'n_nodes',
+            'n_crashes_xs', 'n_fatal_xs', 'n_injury_xs', 'n_killed_xs',
+        ],
+        'sri-geom.parquet': ['sri', 'mp', 'sld_name', 'name', 'subt', 'entity', 'alias', 'lon', 'lat', 'chain'],
+        'road-summary.parquet': ['entity', 'year', 'severity', 'n', 'tk', 'ti', 'n_unplaced', 'n_node', 'n_xs', 'tk_xs', 'ti_xs'],
+    }
     # A written `crashes-by-sri` reads back with `crashes_by_sri`'s nullable dtypes (the `roads build -c` path).
     back = read_crashes_by_sri(str(tmp_path / 'crashes-by-sri.parquet'))
     assert back.dtypes.astype(str).to_dict() == {

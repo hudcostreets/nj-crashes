@@ -34,6 +34,7 @@ in the browser by DuckDB-WASM with ranged reads, so each is sorted for row-group
 - `crashes-by-sri.parquet` / `sris.parquet`: the same by whole SRI route (`crashes-by-sri` also
   carries each crash's `entity`, null when on none).
 """
+import json
 import os
 import subprocess
 import time
@@ -48,7 +49,7 @@ from click import option
 
 from nj_crashes.utils.log import err
 from njdot.load import load_crashes_with_aashto
-from njdot.loc_recovery import PRIVATE_ROAD_SYSTEM, recover_unassigned, recovery_context
+from njdot.loc_recovery import PRIVATE_ROAD_SYSTEM, ng_name_index, recover_unassigned, recovery_context
 from njdot.map_base import _build_base
 from njdot.paths import NG911_DIR, ROADS_DIR, ROADS_S3, ROADWAY_NETWORK
 from njdot.road_audit import audit
@@ -57,6 +58,8 @@ from njdot.road_net import (
     run_names, seg_aliases,
 )
 from njdot.cc2mc2mn import CC2MC2MN, cc2mc2mn
+from njdot.road_model import block_stats, model_outputs, node_table, xs_rows
+from njdot.road_overrides import ROAD_OVERRIDES, Override, apply_overrides, load_overrides
 from njdot.road_outputs import (
     UNPLACED_SOURCES, entity_lengths, entity_slugs, point_mc, road_ranks, road_search_index, road_summary, search_meta,
     slug_order, unplaced,
@@ -109,18 +112,39 @@ ROW_GROUP = {
     'road-summary-monthly': 20_000,
     'road-ranks': 2_000,
     'road-search': 2_000,
+    # v5 (specs/road-model-v5.md).
+    'crashes-by-entity-xs': 10_000,
+    'road-pieces': 2_000,
+    'road-blocks': 4_000,
+    'road-nodes': 4_000,
+    'road-node-entities': 4_000,
+    'road-corridors': 1_000,
+    'road-corridor-summary': 10_000,
 }
 # Dictionary-encode only these columns (a small row group's dictionary of mostly-distinct strings
 # costs more than it saves); default all.
 DICT = {
-    'crashes-by-entity': ['sri', 'severity', 'road', 'cross_street', 'route', 'loc_source'],
+    'crashes-by-entity': ['sri', 'severity', 'road', 'cross_street', 'route', 'loc_source', 'override'],
+    'crashes-by-entity-xs': ['sri', 'severity', 'road', 'cross_street', 'route', 'loc_source', 'override'],
+    'road-pieces': ['sri', 'join'],
+    'road-blocks': ['from_name', 'to_name'],
+    'road-nodes': [],
+    'road-node-entities': ['cross'],
+    'road-corridors': ['kind'],
     'road-entities': [],
     'road-ranks': [],
     'road-search': ['token', 'kind', 'place', 'words'],
 }
 # Files with many small row groups: min/max stats only on the columns lookups filter on.
 STATS = {
-    'crashes-by-entity': ['entity'],
+    'crashes-by-entity': ['entity', 'chain'],
+    'crashes-by-entity-xs': ['entity', 'chain'],
+    'road-pieces': ['entity'],
+    'road-blocks': ['entity', 'chain_lo', 'chain_hi'],
+    'road-nodes': ['node', 'lon', 'lat'],
+    'road-node-entities': ['entity', 'chain'],
+    'road-corridors': ['corridor', 'slug'],
+    'road-corridor-summary': ['corridor'],
     'road-entities': ['entity', 'slug', 'cc', 'mc'],
     'sri-geom': ['entity'],
     'road-runs': ['entity'],
@@ -134,6 +158,11 @@ STALE = ['road-names.parquet']
 ENTITY_COLS = [
     'entity', 'slug', 'name', 'route', 'subt', 'sris', 'lon_min', 'lat_min', 'lon_max', 'lat_max',
     'n_crashes', 'n_fatal', 'n_injury', 'n_killed', 'aliases', 'cc', 'mc', 'munis', 'length_mi',
+]
+# v5 (specs/road-model-v5.md), after the v4 columns.
+ENTITY_V5_COLS = [
+    'corridor', 'corridor_c0', 'corridor_sign', 'chain_mi', 'n_nodes',
+    'n_crashes_xs', 'n_fatal_xs', 'n_injury_xs', 'n_killed_xs',
 ]
 
 def crash_rows(crashes: pd.DataFrame, latlon: pd.DataFrame, extra: list[str] | None = None) -> pd.DataFrame:
@@ -157,6 +186,10 @@ def crashes_by_sri(crashes: pd.DataFrame, latlon: pd.DataFrame, extra: list[str]
 
 # Crash columns `recover` needs beyond `MAP_INPUT_COLS` (offset from the cross street; road class).
 RECOVERY_COLS = ['road_system', 'cross_street_distance', 'Unit Of Measurement', 'Direction From Cross Street']
+# … and the intersection association (`road_model.crash_nodes`): NJDOT's intersection flag.
+XS_COLS = ['Intersection']
+# The police location fields carried through `by_sri` / `by_entity` for `crash_nodes` (not written).
+LOC_COLS = ['cross_street_distance', 'Unit Of Measurement', 'Intersection']
 # AASHTO (2024+) names its `road_system`s; only private property matters to recovery.
 AASHTO_ROAD_SYSTEMS = {'Private Property': PRIVATE_ROAD_SYSTEM}
 
@@ -172,23 +205,24 @@ def road_system_codes(s: pd.Series) -> pd.Series:
 def load_build_crashes(cc: int | None = None) -> pd.DataFrame:
     """`load_crashes_with_aashto` with `id` and the columns `roads build` needs (`MAP_INPUT_COLS`,
     `RECOVERY_COLS`), `prep_crashes`'d; `cc`: only that county's (dev subsets)."""
-    crashes = load_crashes_with_aashto(columns=MAP_INPUT_COLS + ['id'] + RECOVERY_COLS)
+    crashes = load_crashes_with_aashto(columns=MAP_INPUT_COLS + ['id'] + RECOVERY_COLS + XS_COLS)
     if cc is not None:
         crashes = crashes[crashes['cc'] == cc].reset_index(drop=True)
     return prep_crashes(crashes)
 
 
 def prep_crashes(crashes: pd.DataFrame) -> pd.DataFrame:
-    """Normalize `RECOVERY_COLS` types across the per-table ∪ AASHTO concat (in place)."""
+    """Normalize `RECOVERY_COLS` / `XS_COLS` types across the per-table ∪ AASHTO concat (in place)."""
     crashes['road_system'] = road_system_codes(crashes['road_system'])
-    for c in ('Unit Of Measurement', 'Direction From Cross Street'):
-        crashes[c] = crashes[c].astype('string')
+    for c in ('Unit Of Measurement', 'Direction From Cross Street', 'Intersection'):
+        if c in crashes:
+            crashes[c] = crashes[c].astype('string')
     crashes['cross_street_distance'] = pd.to_numeric(crashes['cross_street_distance'], errors='coerce')
     return crashes
 
 
 # `loc_source`s with a map point (coded or recovered SRI + MP) vs. assigned to an entity only.
-PLACED_SOURCES = ('sri_mp', 'intersection', 'route_xs', 'latlon_snap')
+PLACED_SOURCES = ('sri_mp', 'intersection', 'route_xs', 'latlon_snap', 'sri_calib')
 
 
 def fold_recovery(crashes: pd.DataFrame, latlon: pd.DataFrame, rec: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -196,7 +230,7 @@ def fold_recovery(crashes: pd.DataFrame, latlon: pd.DataFrame, rec: pd.DataFrame
     `loc_source` (default "sri_mp": crashes `rec` doesn't cover are on an entity by their coded
     SRI / MP), `how` and `_ent` (the entity of `sri_only` / `name_only` crashes), and takes `rec`'s
     `sri` / `mp` wherever it recovered a location. Returns it and `latlon` (every crash's effective
-    `lat` / `lon`): the recovered point for `intersection` / `route_xs`, the reported one (as
+    `lat` / `lon`): the recovered point for `intersection` / `route_xs` / `sri_calib`, the reported one (as
     before) for `latlon_snap`, none for `sri_only` / `name_only` (no map point)."""
     c = crashes.copy()
     ll = latlon[['lat', 'lon']].reindex(c.index)
@@ -214,7 +248,7 @@ def fold_recovery(crashes: pd.DataFrame, latlon: pd.DataFrame, rec: pd.DataFrame
     c.loc[recovered.index, 'sri'] = recovered['sri']
     c['mp'] = c['mp'].astype('float32')
     c.loc[recovered.index, 'mp'] = recovered['mp'].astype('float32')
-    pt = recovered[recovered['loc_source'].isin(['intersection', 'route_xs'])]
+    pt = recovered[recovered['loc_source'].isin(['intersection', 'route_xs', 'sri_calib'])]
     ll.loc[pt.index, 'lat'] = pt['lat'].astype('float32')
     ll.loc[pt.index, 'lon'] = pt['lon'].astype('float32')
     ll.loc[unpl.index] = np.nan
@@ -231,7 +265,7 @@ def entity_crashes(by_sri: pd.DataFrame, crashes: pd.DataFrame, latlon: pd.DataF
     if '_ent' not in by_sri:
         return placed
     sri_only = by_sri[by_sri['loc_source'].eq('sri_only').fillna(False).to_numpy()]
-    name_only = crash_rows(crashes[crashes['loc_source'].eq('name_only').fillna(False).to_numpy()], latlon, ['loc_source', 'how', '_ent'])
+    name_only = crash_rows(crashes[crashes['loc_source'].eq('name_only').fillna(False).to_numpy()], latlon, ['loc_source', 'how', '_ent'] + LOC_COLS)
     unpl = pd.concat([sri_only, name_only], ignore_index=True)
     unpl = unpl.assign(entity=unpl["_ent"], run=pd.NA)[["entity", "run"] + cols]
     out = pd.concat([placed.astype({'entity': 'Int32', 'run': 'Int64'}), unpl.astype({"entity": "Int32", "run": "Int64"})], ignore_index=True)
@@ -723,7 +757,7 @@ def place_crashes(
     mp)` doesn't put on an entity go through `njdot.loc_recovery` first (`recover_unassigned`,
     `fold_recovery`; specs/crash-location-recovery.md): placed ones join `by_sri` / `assign_crashes`
     with their recovered SRI / MP, `sri_only` / `name_only` ones are appended to `by_entity`."""
-    extra = None
+    extra = [c for c in LOC_COLS if c in crashes]
     if recover:
         t0 = time.monotonic()
         ctx = recovery_context(b['seg'], b['iv'], b['runs'], b['feats'], cl, al, cc2mc2mn)
@@ -731,7 +765,10 @@ def place_crashes(
         crashes, latlon = fold_recovery(crashes, latlon, rec)
         counts = crashes['loc_source'].value_counts()
         err(f'  recovery ({time.monotonic() - t0:.0f}s, {len(rec):,} crashes tried): ' + ', '.join(f'{k} {v:,}' for k, v in counts.items()))
-        extra = ['loc_source', 'how', '_ent']
+        extra = ['loc_source', 'how', '_ent'] + extra
+        b['idx'] = ctx['idx']
+    else:
+        b['idx'] = ng_name_index(cl, al, cc2mc2mn)
     by_sri = crashes_by_sri(crashes, latlon, extra)
     by_sri['_i'] = np.arange(len(by_sri), dtype='int64')
     by_entity = entity_crashes(by_sri, crashes, latlon, b['runs'], con)
@@ -744,8 +781,9 @@ def place_crashes(
 @option('-g', '--ng911-dir', default=NG911_DIR, show_default=True, help='`njdot roads fetch-ng911` output dir')
 @option('-n', '--network', default=ROADWAY_NETWORK, show_default=True, help='`njdot roads fetch-network` output')
 @option('-o', '--out-dir', default=ROADS_DIR, show_default=True, help='Output dir')
+@option('-O', '--overrides', 'overrides_path', default=ROAD_OVERRIDES, show_default=True, help='Curated crash-assignment overrides (YAML; see `njdot.road_overrides`)')
 @option('-R', '--no-recover', is_flag=True, help='Skip crash location recovery (coded SRI / MP only)')
-def roads_build(crashes_path: str | None, cc: int | None, ng911_dir: str, network: str, out_dir: str, no_recover: bool):
+def roads_build(crashes_path: str | None, cc: int | None, ng911_dir: str, network: str, out_dir: str, overrides_path: str, no_recover: bool):
     """Build the `roads/` parquets (see module docstring)."""
     os.makedirs(out_dir, exist_ok=True)
     cl_path, al_path = join(ng911_dir, 'centerlines.parquet'), join(ng911_dir, 'aliases.parquet')
@@ -767,24 +805,35 @@ def roads_build(crashes_path: str | None, cc: int | None, ng911_dir: str, networ
             by_sri = by_sri[by_sri['cc'] == cc].reset_index(drop=True)
         by_sri['_i'] = np.arange(len(by_sri), dtype='int64')
         by_entity = assign_crashes(by_sri, b['runs'], con)
+        # No police location fields here: crashes join nodes by cross street + point (as AASHTO's).
+        b['idx'] = ng_name_index(cl, al, cc2mc2mn)
     else:
         err('Loading crashes...')
         crashes = load_build_crashes(cc)
         latlon = _build_base(crashes, keep_severities=set())
         by_sri, by_entity = place_crashes(crashes, latlon, b, cl, al, con, recover=not no_recover)
         del crashes, latlon
-    o = road_outputs(b, by_sri, by_entity, con, cc2mc2mn)
+    o = road_outputs(b, by_sri, by_entity, con, cc2mc2mn, load_overrides(overrides_path))
     n_unpl = int(unplaced(o['by_entity']).sum())
     err(f'  {len(b["runs"]):,} runs → {len(o["ents"]):,} entities; {len(o["by_entity"]):,} crashes on an entity ({n_unpl:,} without a map point), {len(by_sri):,} with an SRI')
     err('Writing...')
     write_outputs(o, out_dir, meta)
 
 
-def road_outputs(b: dict, by_sri: pd.DataFrame, by_entity: pd.DataFrame, con: duckdb.DuckDBPyConnection, cc2mc2mn: CC2MC2MN) -> dict:
+def road_outputs(
+    b: dict,
+    by_sri: pd.DataFrame,
+    by_entity: pd.DataFrame,
+    con: duckdb.DuckDBPyConnection,
+    cc2mc2mn: CC2MC2MN,
+    overrides: list[Override] | None = None,
+) -> dict:
     """`build_geom` output + crashes (`by_sri` with a row index `_i`, `assign_crashes` output) → the
-    output tables (keys = file names, plus `ents` / `by_entity` / `geom` / `runs` / `capped`), with
-    entity ids renumbered in slug order (`road_outputs.slug_order`). Updates `b`'s `geom` / `runs`
-    and `by_sri` (adds `entity`, drops `_i`) in place."""
+    output tables (keys = file names, plus `ents` / `by_entity` / `geom` / `runs` / `capped` /
+    `override_counts`), with entity ids renumbered in slug order (`road_outputs.slug_order`), the
+    curated `overrides` applied (`njdot.road_overrides`), and the v5 model (`njdot.road_model`:
+    chainage, corridors, intersection nodes, blocks; specs/road-model-v5.md). Updates `b`'s `geom`
+    / `runs` and `by_sri` (adds `entity`, drops `_i`) in place."""
     geom, runs, point_run = b['geom'], b['runs'], b['point_run']
     # Crash-reported aliases come from crashes NJDOT placed itself: recovered ones were placed *by*
     # their names, so they'd only echo them back.
@@ -798,46 +847,160 @@ def road_outputs(b: dict, by_sri: pd.DataFrame, by_entity: pd.DataFrame, con: du
     ents = ents.merge(slugs, on='entity')
     for df in (geom, runs, by_entity, ents, searchable):
         df['entity'] = df['entity'].map(new).astype('int32')
-    # Unplaced crashes (no MP) last within their entity.
+    by_entity, override_counts = apply_overrides(by_entity, overrides or [], ents[['entity', 'slug']])
+    for rid, n in override_counts.items():
+        err(f'  override {rid}: {n:,} crashes')
+    t0 = time.monotonic()
+    m = model_outputs(b, ents, by_entity, b.get('idx'))
+    by_entity = m['by_entity']
+    n_at = int(by_entity['node'].notna().sum())
+    err(f'  v5 model ({time.monotonic() - t0:.0f}s): {len(m["pieces"]):,} pieces, {len(m["corridors"]):,} corridors '
+        f'({len(m["members"]):,} entities), {len(m["nodes"]):,} intersection nodes, {len(m["blocks"]):,} blocks; '
+        f'{n_at:,} crashes at an intersection ({n_at / max(len(by_entity), 1):.1%})')
+    # Unplaced crashes (no chain) last within their entity; placed ones in chain order.
     by_entity = (
-        by_entity.assign(_u=unplaced(by_entity).to_numpy())
-        .sort_values(['entity', '_u', 'sri', 'mp', 'dt', 'id'], kind='stable', na_position='last')
+        by_entity.assign(_u=unplaced(by_entity).to_numpy() | by_entity['chain'].isna().to_numpy())
+        .sort_values(['entity', '_u', 'chain', 'dt', 'id'], kind='stable', na_position='last')
         .drop(columns=['_u']).reset_index(drop=True)
     )
     on_sri = by_entity[by_entity['_i'].notna().to_numpy()]
     by_sri['entity'] = pd.Series(on_sri['entity'].to_numpy(), index=on_sri['_i'].to_numpy(dtype='int64')).reindex(np.arange(len(by_sri))).astype('Int32').array
-    by_sri.drop(columns=['_i', '_ent'], inplace=True, errors='ignore')
+    by_sri.drop(columns=['_i', '_ent'] + LOC_COLS, inplace=True, errors='ignore')
     by_entity.drop(columns=['run', '_i', 'how'], inplace=True, errors='ignore')
+    # Counts after overrides.
+    cnt = by_entity.groupby('entity').agg(
+        n_crashes=('severity', 'size'), n_fatal=('severity', lambda s: int(s.eq('f').sum())),
+        n_injury=('severity', lambda s: int(s.eq('i').sum())), n_killed=('tk', 'sum'),
+    )
+    for c in ('n_crashes', 'n_fatal', 'n_injury', 'n_killed'):
+        ents[c] = ents['entity'].map(cnt[c]).fillna(0).astype('int32')
     lengths = entity_lengths(geom, pt_mc, b.get('parent', {}), RUN_GAP_MP, RUN_JUMP_M)
     ents['length_mi'] = ents['entity'].map(lengths['total']).fillna(0).astype('float32')
-    ents = ents.sort_values('entity').reset_index(drop=True)[ENTITY_COLS]
-    names_idx = road_names_index(ents, searchable, geom, con, point_names(geom, b['seg'], b['aliases']) if 'seg' in b else None)
-    search, capped = road_search_index(names_idx, ents, cc2mc2mn)
+    subt = ents.set_index('entity')['subt']
+    xs = xs_rows(by_entity, m['node_ents'], subt)
+    ents = ents.sort_values('entity').reset_index(drop=True)
+    ents = ents_v5(ents, m, xs)
+    names_idx = road_names_index(ents[ENTITY_COLS], searchable, geom, con, point_names(geom, b['seg'], b['aliases']) if 'seg' in b else None)
+    search, capped = road_search_index(names_idx, ents[ENTITY_COLS], cc2mc2mn)
+    nodes, node_ents = node_table(m['nodes'], m['node_ents'], m['node_legs'], b['seg'] if 'seg' in b else pd.DataFrame({'name': []}), ents, by_entity)
+    blocks = blocks_v5(m['blocks'], by_entity, node_ents)
+    corridors, cor_summary = corridors_v5(m['corridors'], m['members'], ents, by_entity, xs, geom)
     return {
-        'geom': geom, 'runs': runs, 'ents': ents, 'by_entity': by_entity, 'by_sri': by_sri,
-        'road-summary': road_summary(by_entity), 'road-summary-monthly': road_summary(by_entity, monthly=True),
+        'geom': geom, 'runs': runs, 'ents': ents, 'by_entity': by_entity, 'by_sri': by_sri, 'xs': xs,
+        'road-summary': road_summary(by_entity, xs=xs), 'road-summary-monthly': road_summary(by_entity, monthly=True, xs=xs),
         'road-ranks': road_ranks(by_entity, ents, lengths), 'road-search': search, 'capped': capped,
+        'road-pieces': m['pieces'], 'road-blocks': blocks, 'road-nodes': nodes, 'road-node-entities': node_ents,
+        'road-corridors': corridors, 'road-corridor-summary': cor_summary, 'members': m['members'], 'pairs': m['pairs'],
+        'override_counts': override_counts, 'node_legs': m['node_legs'], 'seg_ent': m['seg_ent'], 'node_ents_raw': m['node_ents'],
     }
+
+
+def ents_v5(ents: pd.DataFrame, m: dict, xs: pd.DataFrame) -> pd.DataFrame:
+    """`road-entities`' v5 columns: `corridor` / `corridor_c0` / `corridor_sign` (null when in no
+    corridor; `cchain = corridor_c0 + corridor_sign · chain`), `chain_mi` (the chain's end), `n_nodes`,
+    and the other roads' crashes at its intersections, `n_crashes_xs` / `n_fatal_xs` / `n_injury_xs` /
+    `n_killed_xs` (inclusive = `n_*` + `n_*_xs`)."""
+    mem = m['members'].set_index('entity')
+    out = ents.copy()
+    out['corridor'] = out['entity'].map(mem['corridor']).astype('Int32')
+    out['corridor_c0'] = out['entity'].map(mem['c0']).astype('float32')
+    out['corridor_sign'] = out['entity'].map(mem['sign']).astype('Int8')
+    out['chain_mi'] = out['entity'].map(m['pieces'].groupby('entity')['chain_hi'].max()).fillna(0).astype('float32')
+    out['n_nodes'] = out['entity'].map(m['node_ents'].groupby('entity').size()).fillna(0).astype('int32')
+    xc = _xs_counts(xs, 'entity')
+    for c in ('n_crashes', 'n_fatal', 'n_injury', 'n_killed'):
+        out[f'{c}_xs'] = out['entity'].map(xc[c]).fillna(0).astype('int32')
+    return out[ENTITY_COLS + ENTITY_V5_COLS]
+
+
+def _xs_counts(xs: pd.DataFrame, key: str) -> pd.DataFrame:
+    c = xs.assign(_f=xs['severity'].eq('f').astype('int32'), _i=xs['severity'].eq('i').astype('int32'), _k=pd.to_numeric(xs['tk'], errors='coerce').fillna(0).astype('int32'))
+    return c.groupby(key).agg(n_crashes=('_f', 'size'), n_fatal=('_f', 'sum'), n_injury=('_i', 'sum'), n_killed=('_k', 'sum'))
+
+
+def blocks_v5(blocks: pd.DataFrame, by_entity: pd.DataFrame, node_ents: pd.DataFrame) -> pd.DataFrame:
+    """`road-blocks`: `road_model.block_stats` + `from_name` / `to_name` (the cross streets at each
+    end's node, from `road-node-entities.cross`) and `length_mi`."""
+    b = block_stats(blocks, by_entity)
+    cross = node_ents.set_index(['entity', 'node'])['cross']
+    def names(col):
+        k = list(zip(b['entity'].to_numpy(), b[col].to_numpy(dtype=object)))
+        return pd.array([None if pd.isna(n) else cross.get((int(e), int(n))) for e, n in k], dtype='string')
+    b['from_name'] = names('node_lo')
+    b['to_name'] = names('node_hi')
+    b['length_mi'] = (b['chain_hi'] - b['chain_lo']).astype('float32')
+    b = b.astype({'chain_lo': 'float32', 'chain_hi': 'float32'})
+    return b[['entity', 'block', 'chain_lo', 'chain_hi', 'length_mi', 'node_lo', 'node_hi', 'from_name', 'to_name', 'n_crashes', 'n_fatal', 'n_injury', 'n_killed']]
+
+
+def corridors_v5(corridors: pd.DataFrame, members: pd.DataFrame, ents: pd.DataFrame, by_entity: pd.DataFrame, xs: pd.DataFrame, geom: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """`road-corridors` (one row per corridor: slug, name, kind, members, extent, counts) and
+    `road-corridor-summary` (per `(corridor, year, severity)`, as `road-summary`; `n_xs` counts
+    crashes at the corridor's intersections on roads *outside* it, once per crash)."""
+    e = ents.set_index('entity')
+    mem = members.merge(ents[['entity', 'slug']], on='entity')
+    cor = corridors.set_index('corridor')
+    ent_list = mem.sort_values(['corridor', 'role', 'slug']).groupby('corridor')['entity'].agg(lambda s: ','.join(map(str, s)))
+    c_of = members.set_index('entity')['corridor']
+    be = by_entity.assign(corridor=by_entity['entity'].map(c_of))
+    be = be[be['corridor'].notna().to_numpy()].assign(corridor=lambda d: d['corridor'].astype('int32'))
+    x = xs.assign(corridor=xs['entity'].map(c_of), own_c=xs['own_entity'].map(c_of))
+    x = x[x['corridor'].notna().to_numpy() & (x['corridor'] != x['own_c']).fillna(True).to_numpy()]
+    x = x.assign(corridor=x['corridor'].astype('int32'))
+    x = x.drop_duplicates(['corridor', 'year', 'case', 'dt', 'cc', 'mc', 'own_entity'])
+    cnt = _xs_counts(be.rename(columns={}), 'corridor')
+    xc = _xs_counts(x, 'corridor')
+    gm = geom[geom['entity'].isin(members['entity'])].assign(corridor=lambda d: d['entity'].map(c_of))
+    bbox = gm.groupby('corridor').agg(lon_min=('lon', 'min'), lat_min=('lat', 'min'), lon_max=('lon', 'max'), lat_max=('lat', 'max'))
+    out = corridors[['corridor', 'slug', 'name', 'kind']].copy()
+    out['spine'] = out['corridor'].map(cor['spine']).astype('int32')
+    out['entities'] = out['corridor'].map(ent_list).astype('string')
+    out['n_entities'] = out['corridor'].map(members.groupby('corridor').size()).astype('int16')
+    out['cc'] = out['corridor'].map(mem.assign(cc=mem['entity'].map(e['cc'])).groupby('corridor')['cc'].agg(lambda s: s.iloc[0] if s.nunique() == 1 else pd.NA)).astype('Int8')
+    out['chain_mi'] = out['corridor'].map(cor['chain_mi']).astype('float32')
+    out['length_mi'] = out['corridor'].map(cor['length_mi']).astype('float32')
+    for c in ('lon_min', 'lat_min', 'lon_max', 'lat_max'):
+        out[c] = out['corridor'].map(bbox[c])
+    for c in ('n_crashes', 'n_fatal', 'n_injury', 'n_killed'):
+        out[c] = out['corridor'].map(cnt[c]).fillna(0).astype('int32')
+        out[f'{c}_xs'] = out['corridor'].map(xc[c]).fillna(0).astype('int32')
+    summ = road_summary(be, xs=x, key='corridor')
+    return out.sort_values('corridor').reset_index(drop=True), summ
+
+
+# `crashes-by-entity` / `crashes-by-entity-xs` columns (v4's, then v5's), where present.
+BY_ENTITY_COLS = [
+    'entity', 'sri', 'mp', 'id', 'year', 'dt', 'cc', 'mc', 'case', 'severity', 'tk', 'ti', 'pk', 'pi', 'tv',
+    'road', 'cross_street', 'route', 'loc_source', 'lat', 'lon',
+    'chain', 'chain_lo', 'chain_hi', 'node', 'override',
+]
+V5_FILES = ['road-pieces', 'road-blocks', 'road-nodes', 'road-node-entities', 'road-corridors', 'road-corridor-summary']
 
 
 def write_outputs(o: dict, out_dir: str, meta: dict[str, str]):
     """Write `road_outputs` output to `out_dir` (and remove `STALE` files there)."""
-    geom = o['geom'][['sri', 'mp', 'sld_name', 'name', 'subt', 'entity', 'alias', 'lon', 'lat']]
+    geom = o['geom'][['sri', 'mp', 'sld_name', 'name', 'subt', 'entity', 'alias', 'lon', 'lat'] + (['chain'] if 'chain' in o['geom'] else [])]
     # `sri-geom` is read per road (`WHERE entity = ?`), so it's sorted by entity: a road's points
     # are contiguous. `sri-hit*` / `sris` re-sort / aggregate `geom` themselves.
     by_entity_geom = geom.sort_values(['entity', 'sri', 'mp'], kind='stable').reset_index(drop=True)
+    be = o['by_entity']
     write(o['by_sri'], join(out_dir, 'crashes-by-sri.parquet'), ROW_GROUP['crashes-by-sri'])
-    write(o['by_entity'], join(out_dir, 'crashes-by-entity.parquet'), ROW_GROUP['crashes-by-entity'], stats=STATS['crashes-by-entity'], dict_cols=DICT['crashes-by-entity'])
+    write(be[[c for c in BY_ENTITY_COLS if c in be]], join(out_dir, 'crashes-by-entity.parquet'), ROW_GROUP['crashes-by-entity'], stats=STATS['crashes-by-entity'], dict_cols=DICT['crashes-by-entity'])
+    if 'xs' in o:
+        xs = o['xs'].sort_values(['entity', 'chain', 'dt', 'id'], kind='stable').reset_index(drop=True)
+        write(xs[[c for c in BY_ENTITY_COLS if c in xs] + ['own_entity']].astype({'own_entity': 'int32'}), join(out_dir, 'crashes-by-entity-xs.parquet'),
+              ROW_GROUP['crashes-by-entity-xs'], stats=STATS['crashes-by-entity-xs'], dict_cols=DICT['crashes-by-entity-xs'])
     write(by_entity_geom, join(out_dir, 'sri-geom.parquet'), ROW_GROUP['sri-geom'], meta, stats=STATS['sri-geom'])
-    hit = sri_hit(geom)
+    hit = sri_hit(geom.drop(columns=['chain'], errors='ignore'))
     write(hit, join(out_dir, 'sri-hit.parquet'), ROW_GROUP['sri-hit'])
     for tier in HIT_TIERS:
         write(hit[hit['subt'] <= tier].reset_index(drop=True), join(out_dir, f'sri-hit-{tier}.parquet'), ROW_GROUP['sri-hit'])
     write(sris(geom, o['by_sri']), join(out_dir, 'sris.parquet'), ROW_GROUP['sris'])
-    write(o['ents'], join(out_dir, 'road-entities.parquet'), ROW_GROUP['road-entities'], meta, stats=STATS['road-entities'], dict_cols=DICT['road-entities'])
+    ents_meta = meta | ({'overrides': json.dumps(o['override_counts'], separators=(',', ':'), sort_keys=True)} if o.get('override_counts') else {})
+    write(o['ents'], join(out_dir, 'road-entities.parquet'), ROW_GROUP['road-entities'], ents_meta, stats=STATS['road-entities'], dict_cols=DICT['road-entities'])
     write(o['runs'][['entity', 'sri', 'mp_lo', 'mp_end']].sort_values(['entity', 'sri', 'mp_lo']).reset_index(drop=True),
           join(out_dir, 'road-runs.parquet'), ROW_GROUP['road-runs'], stats=STATS['road-runs'])
-    for f in ('road-summary', 'road-summary-monthly', 'road-ranks'):
+    for f in ('road-summary', 'road-summary-monthly', 'road-ranks') + tuple(f for f in V5_FILES if f in o):
         write(o[f], join(out_dir, f'{f}.parquet'), ROW_GROUP[f], stats=STATS[f], dict_cols=DICT.get(f))
     write(o['road-search'], join(out_dir, 'road-search.parquet'), ROW_GROUP['road-search'], meta | search_meta(o['capped']), stats=STATS['road-search'], dict_cols=DICT['road-search'])
     for f in STALE:
@@ -884,6 +1047,42 @@ def roads_audit(crashes_path: str, cc: int, ng911_dir: str, osm_path: str | None
     """Name coverage of crash `road` strings by NG911 / SLD / (optionally) OSM names, for one county."""
     for line in audit(cc, ng911_dir, roads_dir, crashes_path, osm_path, top):
         print(line)
+
+
+@roads.command('audit-anomalies')
+@option('-m', '--markdown', 'md_path', help='Also write the top findings of each kind as markdown here')
+@option('-n', '--top', type=int, default=25, show_default=True, help='Findings per kind in the markdown / printed summary')
+@option('-o', '--out', 'csv_path', help='Write the full ranked review queue (CSV) here')
+@option('-r', '--roads-dir', default=ROADS_DIR, show_default=True, help='`njdot roads build` output dir')
+def roads_audit_anomalies(md_path: str | None, top: int, csv_path: str | None, roads_dir: str):
+    """Rank roads whose crash counts look like data quirks: year-over-year breaks, crashes without
+    a map point, and road pairs whose split of shared crashes swings by year (`njdot.road_anomalies`)."""
+    from njdot.road_anomalies import pair_swings, queue_markdown, review_queue, unplaced_share, yoy_breaks
+    rd = lambda f, cols=None: pd.read_parquet(join(roads_dir, f), columns=cols)
+    ents = rd('road-entities.parquet', ['entity', 'slug', 'name', 'cc', 'subt'])
+    summary = rd('road-summary.parquet')
+    ramps = set(ents.loc[ents['subt'] >= 8, 'entity'])
+    summary = summary[~summary['entity'].isin(ramps)]
+    parts = [yoy_breaks(summary, ents), unplaced_share(summary, ents)]
+    # `pair_swing` needs v5 outputs (intersection nodes, corridors).
+    if exists(join(roads_dir, 'road-node-entities.parquet')):
+        be = rd('crashes-by-entity.parquet', ['entity', 'year', 'node'])
+        node_ents = rd('road-node-entities.parquet', ['entity', 'node'])
+        members = rd('road-entities.parquet', ['entity', 'corridor']).dropna(subset=['corridor'])
+        parts.append(pair_swings(be, node_ents, ents, members))
+    else:
+        err(f'{roads_dir} has no `road-node-entities.parquet` (pre-v5 build): skipping `pair_swing`')
+    q = review_queue(parts)
+    if csv_path:
+        q.to_csv(csv_path, index=False)
+        err(f'Wrote {len(q):,} findings to {csv_path}')
+    md = queue_markdown(q, top)
+    if md_path:
+        with open(md_path, 'w') as f:
+            f.write(md + '\n')
+        err(f'Wrote {md_path}')
+    else:
+        print(md)
 
 
 @roads.command('sync')

@@ -1,0 +1,4 @@
+# Curated crash → road overrides, applied by `njdot roads build` (`njdot/road_overrides.py`;
+# format in specs/road-model-v5.md § Overrides). Each rule needs an `id`, a `note` with its evidence,
+# a `where` (all conditions must hold) and `set: {entity: <slug> | null}`.
+[]

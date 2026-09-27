@@ -35,7 +35,7 @@ import shapely
 from pyproj import Transformer
 
 from njdot.cc2mc2mn import CC2MC2MN
-from njdot.road_net import _locate, lines_from, name_key, to_meters
+from njdot.road_net import _locate, lines_from, name_key, ng_name, to_meters
 from njdot.road_outputs import muni_codes
 
 # Road / cross street segments "meet" if within this many meters (NG911 is noded, so usually 0).
@@ -92,7 +92,7 @@ ROUTE_KIND = (
 ROUTE_RE = re.compile(ROUTE_KIND + r'[ -]*(?P<num>\d{1,3})(?:\s*(?:&|/|-|AND)\s*\d{1,3})?(?P<sfx>[A-Z])?\b')
 COUNTY_KINDS = {'CR', 'CO RD', 'CO RT', 'COUNTY RD', 'COUNTY ROAD', 'COUNTY RT', 'COUNTY ROUTE'}
 # SRI suffixes of "US 1 TRUCK" / "NJ 139 UPPER" style variants.
-ROUTE_SFX_WORDS = {'TRUCK': 'T', 'UPPER': 'U', 'ALT': 'A', 'BUS': 'B', 'SPUR': 'S'}
+ROUTE_SFX_WORDS = {'TRUCK': 'T', 'UPPER': 'U', 'ALT': 'A', 'BUS': 'B', 'SPUR': 'S', 'WESTERN': 'W', 'EXPRESS': 'E'}
 
 
 def ordinalize(s: pd.Series) -> pd.Series:
@@ -152,11 +152,19 @@ def split_road(road: pd.Series, cross: pd.Series) -> pd.DataFrame:
     return pd.DataFrame({'road': r, 'cross': x}, index=road.index)
 
 
-def route_sri(s: pd.Series, cc: pd.Series) -> pd.Series:
+def route_sri(s: pd.Series, cc: pd.Series, net: set[str] | None = None) -> pd.Series:
     """Route strings → SRI: state / US / interstate and 500-series county routes are statewide
     (`00000501__`), other county routes county-prefixed (`09000617__`); a trailing "TRUCK" /
-    "UPPER" / letter suffix fills the 9th character (`00000001T_`). Non-route strings → NA."""
+    "UPPER" / "WESTERN" / "EXPRESS" / letter suffix fills the 9th character (`00000001T_`,
+    `00000095W_`), "SECONDARY" the 10th (`00000095WS`). With `net` (the network's SRIs), a
+    "SECONDARY" whose `…S` SRI isn't in it takes the route's one other secondary SRI there
+    ("I-78 SECONDARY" → `00000078_W`), else the primary. Non-route strings → NA."""
     u = s.astype('string').str.upper().fillna('')
+    by9: dict[str, list[str]] = {}
+    if net:
+        for x in net:
+            if len(x) >= 10 and x[9] != '_':
+                by9.setdefault(x[:9], []).append(x)
     out = []
     for v, c in zip(u.to_numpy(), cc.to_numpy()):
         m = ROUTE_RE.match(v)
@@ -164,8 +172,8 @@ def route_sri(s: pd.Series, cc: pd.Series) -> pd.Series:
             out.append(pd.NA)
             continue
         kind, num = m.group('kind'), int(m.group('num'))
-        rest = v[m.end():].strip()
-        sfx = m.group('sfx') or next((ROUTE_SFX_WORDS[w] for w in rest.split() if w in ROUTE_SFX_WORDS), None)
+        words = v[m.end():].split()
+        sfx = m.group('sfx') or next((ROUTE_SFX_WORDS[w] for w in words if w in ROUTE_SFX_WORDS), None)
         county = kind in COUNTY_KINDS or kind.endswith(' COUNTY') or kind.endswith(' CO')
         if county and not 500 <= num < 600:
             if pd.isna(c):
@@ -174,7 +182,14 @@ def route_sri(s: pd.Series, cc: pd.Series) -> pd.Series:
             base = f'{int(c):02d}{num:06d}'
         else:
             base = f'{num:08d}'
-        out.append(base + (f'{sfx}_' if sfx else '__'))
+        b9 = base + (sfx or '_')
+        sri = b9 + '_'
+        if 'SECONDARY' in words:
+            if net is None or b9 + 'S' in net:
+                sri = b9 + 'S'
+            elif len(by9.get(b9, [])) == 1:
+                sri = by9[b9][0]
+        out.append(sri)
     return pd.Series(out, index=s.index, dtype='string')
 
 
@@ -219,8 +234,8 @@ def ng_name_index(cl: pd.DataFrame, al: pd.DataFrame, cc2mc2mn: CC2MC2MN) -> pd.
     df = cl[[len(x) >= 2 for x in cl['x']]].reset_index(drop=True)
     seg = pd.Series(np.arange(len(df)))
     names = pd.concat([
-        pd.DataFrame({'rcl': df['RCL_NGUID'], 'seg': seg, 'name': df['PRIMENAME'], 'src': 'name'}),
-        pd.DataFrame({'rcl': df['RCL_NGUID'], 'seg': seg, 'name': df['LST_PNAME'], 'src': 'name'}),
+        pd.DataFrame({'rcl': df['RCL_NGUID'], 'seg': seg, 'name': ng_name(df['PRIMENAME']), 'src': 'name'}),
+        pd.DataFrame({'rcl': df['RCL_NGUID'], 'seg': seg, 'name': ng_name(df['LST_PNAME']), 'src': 'name'}),
     ])
     la = al[al['ANAME_TYP'] == 'L']
     la = pd.concat([la[['RCL_NGUID', 'AST_PNAME']].rename(columns={'AST_PNAME': 'name'}), la[['RCL_NGUID', 'ALST_PNAME']].rename(columns={'ALST_PNAME': 'name'})])
@@ -372,6 +387,10 @@ class Snapper:
         self.tree = shapely.STRtree(self.lines)
         self.fsri = feats['sri'].to_numpy()
 
+    def near(self, p: np.ndarray, tol: float = SNAP_M) -> set[str]:
+        """SRIs with a line within `tol` of point `p`."""
+        return set(self.fsri[self.tree.query(shapely.points(p), predicate='dwithin', distance=tol)])
+
     def snap(self, p: np.ndarray, sris: set[str] | None = None, tol: float = SNAP_M) -> tuple[str, float, float] | None:
         pt = shapely.points(p)
         cand = self.tree.query(pt, predicate='dwithin', distance=tol)
@@ -415,7 +434,7 @@ def seg_entities(seg: pd.DataFrame, iv: pd.DataFrame, runs: pd.DataFrame) -> pd.
     return out
 
 
-LOC_SOURCES = ['sri_mp', 'intersection', 'route_xs', 'latlon_snap', 'sri_only', 'name_only', 'none']
+LOC_SOURCES = ['sri_mp', 'intersection', 'route_xs', 'latlon_snap', 'sri_calib', 'sri_only', 'name_only', 'none']
 # `road_system` 9: private property (parking lots, driveways): not on a road, never recovered (NJDOT
 # codes almost none of them with an SRI either).
 PRIVATE_ROAD_SYSTEM = 9
@@ -478,8 +497,8 @@ def recover(
     net = set(runs['sri'])
     coded = has_sri & crashes['mp'].notna()
     ok = coded & sri_in.isin(net).fillna(False)
-    sri0 = sri_in.where(has_sri, route_sri(sp['road'], crashes['cc']))
-    x_sri = route_sri(sp['cross'], crashes['cc'])
+    sri0 = sri_in.where(has_sri, route_sri(sp['road'], crashes['cc'], net))
+    x_sri = route_sri(sp['cross'], crashes['cc'], net)
     r_rk, x_rk = route_keys(sp['road']), route_keys(sp['cross'])
     base = pd.DataFrame({'cc': crashes['cc'].astype('Int64'), 'mc': crashes['mc'].astype('Int64')}, index=crashes.index)
     r_raw = loc_key(sp['road'])
@@ -494,10 +513,7 @@ def recover(
     segs_named = _seg_groups(idx[idx['src'] == 'name'], ['cc', 'mc', 'key'])
     segs_cc = _seg_groups(idx, ['cc', 'key'])
     ent_sris = {int(e): frozenset(s) for e, s in runs.groupby('entity')['sri'].unique().items()}
-    # An SRI all of whose runs are one entity (most local SRIs): an SRI without MP is still on it.
-    g = runs.groupby('sri')['entity']
-    one = g.nunique() == 1
-    sri_ent = {s: int(e) for s, e in g.first()[one].items()}
+    sri_ent = sri_entities(runs)
     off = offset_m(crashes['cross_street_distance'], crashes['Unit Of Measurement']).round(1)
     dirn = crashes['Direction From Cross Street'].astype('string').str.strip().str.upper().fillna('')
     need = set(sri0.dropna()) | set(x_sri.dropna()) | {s for e in set(learned_ent.values()) for s in ent_sris.get(e, ())}
@@ -515,6 +531,7 @@ def recover(
     sri = sri_in.where(coded).to_numpy(dtype=object)
     mp = crashes['mp'].where(coded).astype('float64').to_numpy()
     lon, lat = np.full(n, np.nan), np.full(n, np.nan)
+    qx, qy = np.full(n, np.nan), np.full(n, np.nan)
     ent = np.full(n, pd.NA, dtype=object)
     how = rr['how'].to_numpy(dtype=object)
     # Plain arrays for the per-crash loop (`Series.iat` costs ~10 µs a call; statewide that's minutes).
@@ -551,8 +568,33 @@ def recover(
         sri[i], mp[i] = (s_i, np.nan if mp_i is None else mp_i) if s_i is not None else (pd.NA, np.nan)
         if q is not None:
             lon[i], lat[i] = _to_lonlat(q)
+            qx[i], qy[i] = q
         if e is not None:
             ent[i] = e
+    # (d″) Retired SRIs the strings couldn't re-locate: the SRI's MPs calibrated against its other
+    # crashes' known points (recovered or police-reported), then refined by the cross street.
+    retired = todo & coded_a & ~sri_in.isin(net).fillna(False).to_numpy()
+    still = retired & (src == 'sri_mp')
+    if still.any():
+        ax = np.where(np.isfinite(qx), qx, pts[:, 0])
+        ay = np.where(np.isfinite(qy), qy, pts[:, 1])
+        cal = calibrate_retired(sri_in.to_numpy(dtype=object, na_value=None), crashes['mp'].to_numpy(dtype='float64', na_value=np.nan), ax, ay, retired, still, snapper)
+        for i, (s_new, mp_new, p) in cal.items():
+            c, m = int(cc_a[i]), int(mc_a[i])
+            if s_new not in sri_lines:
+                sri_lines[s_new] = snapper.lines[feat_ix.get(s_new, _EMPTY)]
+            x_keys = x_ng[i]
+            if x_rk_a[i]:
+                x_keys = tuple(k for k in x_rk_a[i] if (c, m, k) in segs_by or (c, k) in segs_cc) or x_keys
+            key = (c, m, (), x_keys, s_new, x_sri_a[i], off_a[i], dirn_a[i], None, False, True, None)
+            if key not in cache:
+                cache[key] = _locate_one(*key, **ctx)
+            res, s_i, mp_i, q, _ = cache[key]
+            if res == 'route_xs' and np.hypot(*(np.asarray(q) - p)) <= CAL_XS_MAX_M:
+                src[i], sri[i], mp[i], how[i] = 'sri_calib', s_i, mp_i, 'calib_xs'
+            else:
+                src[i], sri[i], mp[i], how[i], q = 'sri_calib', s_new, mp_new, 'calib', p
+            lon[i], lat[i] = _to_lonlat(q)
     df = pd.DataFrame({'loc_source': src, 'sri': sri, 'mp': mp, 'lon': lon, 'lat': lat}, index=crashes.index)
     placed = df['sri'].notna() & df['mp'].notna() & ~df['loc_source'].isin(['name_only', 'sri_only'])
     at = entity_at(df['sri'].astype('string')[placed], df['mp'][placed], runs)
@@ -565,6 +607,119 @@ def recover(
     df['how'] = pd.array(how, dtype='string')
     df.loc[ok.to_numpy(), 'how'] = pd.NA
     return df
+
+
+def sri_entities(runs: pd.DataFrame) -> dict:
+    """SRIs an SRI-without-MP crash is still on one entity of (`sri_only`): `{sri: entity}` when all
+    the SRI's runs are one entity (most local SRIs), and `{(sri, cc): entity}` when all its runs *in
+    county `cc`* are (with `runs['cc']`): CR 501 is 15 roads statewide but only J F Kennedy
+    Boulevard in Hudson, so a Hudson crash coded `00000501__` with no MP is on JFK Blvd."""
+    g = runs.groupby('sri')['entity']
+    one = g.nunique() == 1
+    out: dict = {s: int(e) for s, e in g.first()[one].items()}
+    if 'cc' in runs:
+        r = runs.dropna(subset=['cc'])
+        gc = r.groupby(['sri', r['cc'].astype(int)])['entity']
+        onec = gc.nunique() == 1
+        out |= {(s, int(c)): int(e) for (s, c), e in gc.first()[onec].items()}
+    return out
+
+
+# Retired-SRI calibration (`calibrate_retired`): anchors binned per this many MP miles; an SRI needs
+# this many anchor bins; a crash's MP is interpolated between anchors at most this far apart (mi),
+# whose points are at most `CAL_STRAIGHT` × their MP distance (+ `CAL_SLACK_M`) apart; interior
+# anchors this far off their neighbors' line are dropped as outliers.
+CAL_BIN_MP = 0.01
+CAL_MIN_ANCHORS = 3
+# … spanning at least this many MP miles.
+CAL_MIN_SPAN_MI = 0.1
+CAL_MAX_SPAN_MI = 0.25
+CAL_NEAR_MI = 0.02
+CAL_STRAIGHT = 1.3
+CAL_SLACK_M = 60
+CAL_OUTLIER_M = 150
+# A current SRI is the retired SRI's if it's near this share of its anchors.
+CAL_SRI_SHARE = 0.5
+# A cross-street refinement of a calibrated point is kept only this close to it.
+CAL_XS_MAX_M = 200
+
+
+def calibrate_retired(
+    sri: np.ndarray,
+    mp: np.ndarray,
+    ax: np.ndarray,
+    ay: np.ndarray,
+    anchor: np.ndarray,
+    query: np.ndarray,
+    snapper: 'Snapper',
+) -> dict[int, tuple[str, float, np.ndarray]]:
+    """Crashes coded with an SRI + MP that today's network lacks (retired SRIs: Hudson's pre-2019
+    county routes `09000612__` …), placed by the SRI's *other* crashes: those with a point (`ax` /
+    `ay`, meters: recovered from their strings, or police-reported) are anchors `(mp, point)`. Per
+    SRI, anchors are binned (`CAL_BIN_MP`, median point), outliers dropped, and a `query` crash's MP
+    is interpolated between the anchors around it (≤ `CAL_MAX_SPAN_MI` apart, or within
+    `CAL_NEAR_MI` of one), then snapped (≤ `SNAP_M`) to the current SRIs its anchors snap to.
+    Returns `{row: (sri, mp, point)}` for the query rows placed."""
+    out: dict[int, tuple[str, float, np.ndarray]] = {}
+    df = pd.DataFrame({'i': np.arange(len(sri)), 'sri': sri, 'mp': mp, 'x': ax, 'y': ay})
+    anc = df[anchor & np.isfinite(ax) & np.isfinite(ay) & np.isfinite(mp)]
+    q = df[query & np.isfinite(mp)]
+    qs_by = q.groupby('sri').indices
+    for s, g in anc.groupby('sri'):
+        if s not in qs_by:
+            continue
+        b = g.assign(bin=np.round(g['mp'] / CAL_BIN_MP)).groupby('bin').agg(mp=('mp', 'median'), x=('x', 'median'), y=('y', 'median')).reset_index(drop=True)
+        m_, x_, y_ = b['mp'].to_numpy(), b['x'].to_numpy(), b['y'].to_numpy()
+        keep = np.ones(len(b), dtype=bool)
+        while keep.sum() >= CAL_MIN_ANCHORS:
+            k = np.flatnonzero(keep)
+            mm, xx, yy = m_[k], x_[k], y_[k]
+            w = (mm[1:-1] - mm[:-2]) / np.where(mm[2:] > mm[:-2], mm[2:] - mm[:-2], 1)
+            px, py = xx[:-2] + w * (xx[2:] - xx[:-2]), yy[:-2] + w * (yy[2:] - yy[:-2])
+            r = np.hypot(xx[1:-1] - px, yy[1:-1] - py)
+            if not len(r) or r.max() <= CAL_OUTLIER_M:
+                break
+            keep[k[1 + int(np.argmax(r))]] = False
+        if keep.sum() < CAL_MIN_ANCHORS:
+            continue
+        m_, x_, y_ = m_[keep], x_[keep], y_[keep]
+        if m_[-1] - m_[0] < CAL_MIN_SPAN_MI:
+            # Anchors bunched at one spot (a stub's crashes at the street it starts on) can't tell
+            # the route's line from the cross street's.
+            continue
+        # The route's current SRIs: near (≤ `SNAP_M`) most of its anchors. A cross street's line is
+        # near only the anchors at its own intersection.
+        near = [snapper.near(np.array([x, y])) for x, y in zip(x_, y_)]
+        cnt = pd.Series([v for ss in near for v in ss], dtype=object).value_counts()
+        sris = set(cnt[cnt >= CAL_SRI_SHARE * len(m_)].index)
+        if not sris:
+            continue
+        rows = q.iloc[qs_by[s]]
+        memo: dict[float, tuple | None] = {}
+        for i, v in zip(rows['i'].to_numpy(), rows['mp'].to_numpy()):
+            v = round(float(v), 3)
+            if v not in memo:
+                memo[v] = None
+                j = int(np.searchsorted(m_, v))
+                p = None
+                if 0 < j < len(m_) and m_[j] - m_[j - 1] <= CAL_MAX_SPAN_MI:
+                    a, c_ = j - 1, j
+                    span = m_[c_] - m_[a]
+                    gap = np.hypot(x_[c_] - x_[a], y_[c_] - y_[a])
+                    if gap <= CAL_STRAIGHT * span * MI_M + CAL_SLACK_M:
+                        w = (v - m_[a]) / span if span > 0 else 0.0
+                        p = np.array([x_[a] + w * (x_[c_] - x_[a]), y_[a] + w * (y_[c_] - y_[a])])
+                if p is None:
+                    near = int(np.argmin(np.abs(m_ - v)))
+                    if abs(m_[near] - v) <= CAL_NEAR_MI:
+                        p = np.array([x_[near], y_[near]])
+                if p is not None:
+                    h = snapper.snap(p, sris)
+                    if h is not None:
+                        memo[v] = (h[0], h[1], p)
+            if memo[v] is not None:
+                out[int(i)] = memo[v]
+    return out
 
 
 def recovery_context(
@@ -696,7 +851,7 @@ def _locate_one(
         if hit is not None:
             return ('latlon_snap', hit[0], hit[1], np.array(pt), None)
     if route_ok:
-        e = sri_ent.get(r_sri)
+        e = sri_ent.get((r_sri, c), sri_ent.get(r_sri))
         return ('sri_only', r_sri, None, None, e) if e is not None else none
     if conflict or is_route:
         return none

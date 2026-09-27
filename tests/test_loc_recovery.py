@@ -73,6 +73,12 @@ def test_route_sri():
         '00000001__', '00000001__', '09000617__', '00000501__', '00000440__', '00000001T_', '00000139U_', '00000078__',
         '09000601__', None, None,
     ]
+    # Alignment / express / secondary words pick the SRI's 9th / 10th characters; with the network's
+    # SRIs, a secondary without an `…S` SRI takes the route's one other secondary.
+    more = pd.Series(['I-95 Secondary Western Alignment', 'I-95 Express', 'I-78 Secondary', 'US 1 SECONDARY', 'NJ 495 Secondary'])
+    assert route_sri(more, pd.Series([9] * 5)).tolist() == ['00000095WS', '00000095E_', '00000078_S', '00000001_S', '00000495_S']
+    net = {'00000095WS', '00000095W_', '00000078__', '00000078_W', '00000001__', '00000001_S', '00000495__', '00000495_W', '00000095E_'}
+    assert route_sri(more, pd.Series([9] * 5), net).tolist() == ['00000095WS', '00000095E_', '00000078_W', '00000001_S', '00000495_W']
 
 
 def test_route_keys():
