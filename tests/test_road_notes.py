@@ -87,8 +87,8 @@ def test_load_notes_validates(tmp_path):
 
 
 def test_muni_gaps_and_gap_notes(tmp_path):
-    """Muni (9, 10) has its reports missing in 2021–22 (its county's other muni doesn't dip); (9, 11)
-    dips in 2019 with its county's other muni (a county-wide change, not a gap); (9, 12) is too small
+    """Muni (9, 10) has its reports missing in 2021–22 (its county's other munis don't dip); (9, 11)
+    dips in 2019 with its county's other munis (a county-wide change, not a gap); (9, 12) is too small
     to check. A curated note for (9, 10) 2022 replaces the automatic one."""
     rows = []
     for y in range(2012, 2026):
@@ -96,19 +96,66 @@ def test_muni_gaps_and_gap_notes(tmp_path):
             (9, 10, y, 30 if y in (2021, 2022) else 1000),
             (9, 11, y, 400 if y == 2019 else 800),
             (9, 20, y, 5000 if y == 2019 else 10000),
+            (9, 21, y, 5000 if y == 2019 else 10000),
             (9, 12, y, 0 if y == 2016 else 60),
         ]
     counts = pd.DataFrame(rows, columns=['cc', 'mc', 'year', 'n'])
     g = muni_gaps(counts)
-    assert g.values.tolist() == [[9, 10, 2021, 2022, '30 30', '1000 1000']]
+    assert g.values.tolist() == [[9, 10, 2021, 2022, '30 30', '1000 1000', 0.05, '']]
     notes = gap_notes(g, [], {(9, 10): 'Union City'})
     assert [(n.id, n.kind, n.years, n.title, n.where) for n in notes] == [
-        ('gap-9-10-2021-2022', 'coverage', (2021, 2022), "Most of Union City's crash reports are missing for 2021–2022", {'cc': 9, 'mc': 10, 'subt': LOCAL_SUBT}),
+        ('gap-9-10-2021-2022', 'coverage', (2021, 2022), "Nearly all of Union City's crash reports are missing for 2021–2022", {'cc': 9, 'mc': 10, 'subt': LOCAL_SUBT}),
     ]
     assert notes[0].text == (
-        "NJDOT's data has 30 (2021), 30 (2022) crashes in Union City, vs ~1,000 a year expected from the years around them "
-        "(and the rest of the county's trend): most of the town's crash reports for 2021–2022 are missing from the data, "
-        "so its roads' counts for 2021–2022 are too low."
+        "NJDOT's data has 30 (2021), 30 (2022) crashes in Union City, vs ~1,000 a year expected from the town's other years "
+        "(and the rest of the county's trend): nearly all (~95%) of the town's crash reports for 2021–2022 are missing from "
+        "the data, so its roads' counts for 2021–2022 are too low."
     )
     curated = load_notes(write(tmp_path, "- id: uc\n  kind: coverage\n  years: 2022\n  title: t\n  text: x\n  where: {cc: 9, mc: 10}\n"))
     assert gap_notes(g, curated) == []
+
+
+def monthly(cc: int, mc: int, totals: dict[int, int], months: dict[tuple[int, int], int] | None = None) -> list[tuple]:
+    """Rows `(cc, mc, year, month, n)`: each year's total spread evenly over its months, except the
+    `(year, month)`s given."""
+    rows = []
+    for y, t in totals.items():
+        for m in range(1, 13):
+            rows.append((cc, mc, y, m, (months or {}).get((y, m), t // 12)))
+    return rows
+
+
+def test_muni_gaps_partial():
+    """Partial gaps (under 75% of the expected): Hoboken-like (9, 5) is about half short in 2023–25
+    with near-empty months (missing reports); (16, 2) is 30% short in 2020, every month alike (it may be
+    a change in reporting). (7, 3) varies ±20% a year, so 30% short is within its spread; (12, 8) is 40%
+    short, but by < 100 crashes. Each county's other munis (98, 99) are steady."""
+    ys = range(2014, 2026)
+    wobble = [1.0, 1.2, 0.8, 1.2, 0.8, 1.0, 1.2, 0.8, 1.0, 1.2, 0.8, 1.0]
+    rows = (
+        monthly(9, 5, {y: 336 if y >= 2023 else 720 for y in ys}, {(2023, 2): 5, (2024, 10): 2})
+        + monthly(16, 2, {y: 840 if y == 2020 else 1200 for y in ys})
+        + monthly(7, 3, {y: 840 if y == 2020 else round(1200 * w) for y, w in zip(ys, wobble)})
+        + monthly(12, 8, {y: 144 if y == 2020 else 240 for y in ys})
+        + [r for c in (9, 16, 7, 12) for m in (98, 99) for r in monthly(c, m, {y: 24000 for y in ys})]
+    )
+    g = muni_gaps(pd.DataFrame(rows, columns=['cc', 'mc', 'year', 'month', 'n']))
+    assert g.values.tolist() == [
+        [9, 5, 2023, 2025, '313 310 336', '720 720 720', 0.05, '2023-02:5 2024-10:2'],
+        [16, 2, 2020, 2020, '840', '1200', 0.05, ''],
+    ]
+    notes = gap_notes(g, [], {(9, 5): 'Hoboken', (16, 2): 'Clifton'})
+    assert [(n.id, n.kind, n.title) for n in notes] == [
+        ('gap-9-5-2023-2025', 'coverage', "About half of Hoboken's crash reports are missing for 2023–2025"),
+        ('gap-16-2-2020', 'unexplained', 'Clifton has ~30% fewer crash reports than expected for 2020'),
+    ]
+    assert [n.text for n in notes] == [
+        "NJDOT's data has 313 (2023), 310 (2024), 336 (2025) crashes in Hoboken, vs ~720 a year expected from the town's "
+        "other years (and the rest of the county's trend), and 2 of its months have almost none (Feb 2023: 5, Oct 2024: 2): "
+        "about half (~55%) of the town's crash reports for 2023–2025 are missing from the data, so its roads' counts for "
+        "2023–2025 are too low.",
+        "NJDOT's data has 840 (2020) crashes in Clifton, vs ~1,200 a year expected from the town's other years (and the "
+        "rest of the county's trend): ~30% fewer, where its totals otherwise vary by about ±5% a year. Reports missing from "
+        "the data, its police reporting fewer crashes, or fewer crashes: the data can't tell which, so compare its roads' "
+        "counts for 2020 with care.",
+    ]

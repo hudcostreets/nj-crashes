@@ -92,3 +92,101 @@
     amount, so it may be a real change (e.g. the interchange's layout) or a reporting one.
   where:
     slug: bergen/maywood/west-essex-street|bergen/essex-street|bergen/rochelle-park/essex-street
+
+- id: newark-2023-25
+  kind: coverage
+  years: [2023, 2025]
+  title: Most Newark crash reports are missing from September 2024
+  text: >
+    Crashes on Newark's streets (not the interstates, Turnpike or ramps, which other police patrol) number
+    ~870 a month in 2021–22. From September 2023 its property-damage reports fall ~40% while injury crashes
+    hold steady (a change in reporting minor crashes); from September 2024 all of them fall to ~280 a month
+    (~70% fewer), injury crashes as much as the rest, while crashes on the interstates and Turnpike through
+    Newark don't change. So most of Newark's crash reports since September 2024 are missing from NJDOT's
+    data, and its roads' counts for 2023–25 are too low (Broadway: ~180 a year in 2021–22; 119, 93 and 37
+    in 2023–25).
+  where: {cc: 7, mc: 14, subt: [2, 3, 5, 6, 7]}
+
+- id: flemington-circle-coding
+  kind: coding
+  title: Flemington Circle crashes are split between US 202 and NJ 31 differently over the years
+  text: >
+    NJDOT codes a crash at the Flemington Circle to US 202 (MP ~11.4) or to NJ 31 (MP ~22.0). The circle's
+    total is steady (264–349 crashes per three years, 2001–24), but NJ 31's share fell from ~40% in 2001–06
+    to 5–13% in 2010–21 (22% in 2022–24): its circle crashes moved to US 202, not away. Compare the two
+    roads' circle crashes together.
+  where: {slug: 'hunterdon/(state-highway-31-2|us-highway-202-2)'}
+
+- id: woodbridge-green-st-us9
+  kind: reporting
+  years: [2016, 2025]
+  title: Crashes at Green Street and US 9 are recorded under US 9 since about 2016
+  text: >
+    Police reports put crashes at the Green Street / US 9 interchange under Green Street (with US 9 the
+    cross street) 163 times in 2007–09 but only 11–17 per three years from 2016, while the reports under US 9
+    (Green Street the cross street) held at ~115–180. So Green Street's count at US 9 fell mostly because
+    of which road the reports name; the interchange's crashes are in US 9's count and in both roads'
+    intersection totals. (The two together also fell, from ~320 per three years in 2007–09 to ~130–150.)
+  where: {slug: 'middlesex/woodbridge/green-street'}
+
+- id: port-authority-2019-22
+  kind: coverage
+  years: [2019, 2021]
+  title: Port Authority police crashes grow each year in 2019–22
+  text: >
+    Port Authority police crashes, new to NJDOT's data in 2019, grow each year to 2022 statewide (1,350,
+    1,541, 2,299, 2,526), through 2020's drop elsewhere. On the Lincoln Tunnel / NJ 495 corridor they're
+    234, 263, 431 and 524 in 2019–22, while its other crashes hold at ~90–100 a year: 2019–21 look low
+    next to 2022+, likely because fewer of the Port Authority's reports reached the data, not fewer crashes.
+  where:
+    slug: 'hudson/state-highway-495|hudson/weehawken/(lincoln-tunnel|nj-495)'
+  corridors: true
+
+- id: pip-police-2013-18
+  kind: coverage
+  years: [2013, 2018]
+  title: Palisades Interstate Parkway crashes are missing from mid-2013 through 2018
+  text: >
+    NJDOT's data has 134–241 crashes a year on the Palisades Interstate Parkway in 2001–12 (Parkway Police
+    reports), 27 in 2013, 0–2 a year in 2014–18, and 237 in 2019 (119–315 a year since). The Parkway
+    Police's reports for mid-2013 through 2018 are missing from the data.
+  where:
+    slug: 'bergen/palisades-interstate-parkway|bergen/fort-lee/palisades-interstate-parkway-spur'
+
+- id: mannington-pennsville-pd-2011-14
+  kind: reporting
+  years: [2011, 2014]
+  title: Pennsville police reported Mannington's crashes in 2011–14, and more of them
+  text: >
+    In 2011–14 most of Mannington's crash reports come from the Pennsville Police (193, 355, 242, 185 a year,
+    vs ~80 in 2010 and 13–51 after) instead of the State Police (81 in 2010, 15–50 in 2011–13), and
+    Mannington's total rises from 166 (2010) to 252 / 393 / 264 / 259, then 115 (2015). Its roads (NJ 45 /
+    Salem–Woodstown Rd: ~30 a year, 61–101 in 2012–13) show the same step: more crashes reported, not
+    necessarily more crashes.
+  where: {cc: 17, mc: 6, subt: [2, 3, 5, 6, 7]}
+
+- id: secondary-carriageway-2023
+  kind: coding
+  years: [2023, 2025]
+  title: From 2023, crashes on a route's second carriageway are coded separately
+  text: >
+    NJDOT's 2023+ data (the AASHTO format) codes crashes to routes' secondary SRIs (like 00000501_S), which
+    2001–22 data never used (0 crashes a year; 7,272 / 20,421 / 24,035 in 2023–25). Where the second
+    carriageway is a separately named street, its crashes were counted on the main route's road before
+    2023: Englewood's Dean Street (CR 501's second carriageway) had ~0 a year through 2022 and 63 / 103 / 114
+    in 2023–25, while Grand Avenue / Engle Street (CR 501's main line) fell from ~210 to 153 / 123 / 92;
+    together they're continuous.
+  where:
+    sris: '^(?=.*(?:^|,)([0-9]{8})_S(?:,|$))(?!.*(?:^|,)\1__(?:,|$))'
+
+- id: us1-truck-coding
+  kind: coding
+  title: US 1&9 Truck's crashes are coded inconsistently over the years
+  text: >
+    NJDOT's coding of US 1&9 Truck (SRI 00000001T_) crashes changes over time: 382 / 575 crashes a year in
+    2001–02, 47–80 in 2006–09 (when Jersey City and Kearny crashes on it were mostly coded to plain US 1
+    without a milepost, and many are on no road), 153–376 from 2010. Crashes at Charlotte Circle / Newark
+    Avenue fall on Wallis Avenue (MP 3.55–3.80: 125 / 186 in 2001–02, 79 / 58 in 2019–20) or on US 1&9
+    Truck (MP 3.3–3.5, 2003–18), depending on the year's MP coding. Compare the two roads together, and
+    with care in 2006–09.
+  where: {slug: 'hudson/(jersey-city/wallis-avenue|us-highway-1-truck)'}

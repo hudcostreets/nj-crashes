@@ -19,11 +19,14 @@ With `corridors: true` a note also applies to the corridors of the roads it sele
 member road of those corridors. The build writes one row per (road, note) and per (corridor, note).
 
 **Coverage gaps** (`muni_gaps`) are noted automatically: a muni-year whose crash total is under
-`GAP_RATIO` of its neighboring years' (scaled by the rest of its county's trend) is, in every case
-checked, its police department's reports missing from NJDOT's data (Edgewater May 2010–2012, Deptford
-2013–14, Bridgeton 2018–20, Pleasantville 2020–23, Boonton 2021–23). Each gap becomes a `coverage`
-note (id `gap-<cc>-<mc>-<years>`) on the roads through that muni, unless a curated note already
-covers that muni and those years.
+`GAP_RATIO` of its other years' (scaled by the rest of its county's trend) is, in every case checked,
+its police department's reports missing from NJDOT's data (Edgewater May 2010–2012, Deptford
+2013–14, Bridgeton 2018–20, Pleasantville 2020–23, Boonton 2021–23). A partial gap (under
+`GAP_PARTIAL_RATIO`, beyond the town's own year-to-year spread) is too when some of its months are
+near-empty (Hoboken 2023–25: Feb 2023 has 5 crashes, Oct 2024 2); without that it may be a change in
+reporting. Each gap becomes a note (id `gap-<cc>-<mc>-<years>`; `coverage`, or `unexplained` for an
+uncorroborated partial gap: `gap_notes`) on the roads through that muni, unless a curated note
+already covers that muni and those years.
 """
 import re
 from dataclasses import dataclass
@@ -41,14 +44,27 @@ NOTE_WHERE_KEYS = ('cc', 'mc', 'slug', 'name', 'sris', 'bbox', 'subt')
 # Road classes a municipal police department reports on: not interstates (1), toll roads (4), ramps (8).
 LOCAL_SUBT = [2, 3, 5, 6, 7]
 NOTE_COLS = ['entity', 'corridor', 'note', 'kind', 'year_lo', 'year_hi', 'title', 'text']
-# `muni_gaps`: munis with a median of ≥ `GAP_MIN_MEDIAN` crashes a year; a year is a gap when its total
-# is < `GAP_RATIO` × the median of up to `GAP_WINDOW` years on each side (≥ `GAP_MIN_NEIGHBORS` of them),
-# scaled by the rest of the county's totals.
+# `muni_gaps`: munis with a median of ≥ `GAP_MIN_MEDIAN` crashes a year. A year's expected total is the
+# median of its `GAP_NEIGHBORS` nearest other non-gap years (≥ `GAP_MIN_NEIGHBORS` of them, at most
+# `GAP_MAX_DIST` years away), each scaled by the rest of the county's totals. A year is a gap when its
+# total is < `GAP_RATIO` × expected, or (a partial gap) < `GAP_PARTIAL_RATIO` × expected, short by ≥
+# `GAP_MIN_SHORTFALL` crashes and by more than `GAP_Z` × the muni's own year-to-year spread (robust:
+# 1.4826 × the MAD of its other years' log(observed / expected), at least `GAP_MIN_SPREAD`). Gap years
+# don't count toward other years' expectations (iterated, ≤ `GAP_ITERS` times).
 GAP_MIN_MEDIAN = 100
 GAP_RATIO = 0.5
-GAP_WINDOW = 3
+GAP_PARTIAL_RATIO = 0.75
+GAP_MIN_SHORTFALL = 100
+GAP_Z = 3.0
+GAP_MIN_SPREAD = 0.05
+GAP_NEIGHBORS = 6
 GAP_MIN_NEIGHBORS = 4
-
+GAP_MAX_DIST = 8
+GAP_ITERS = 5
+# A month (of a gap year) with under this share of the year's expected monthly count is "near-empty":
+# a batch of reports missing, which a real change in crashes doesn't look like.
+GAP_EMPTY_MONTH = 0.25
+MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 @dataclass
 class Note:
@@ -129,27 +145,61 @@ def note_mask(ents: pd.DataFrame, where: dict, ent_munis: pd.DataFrame | None = 
     return m
 
 
+GAP_COLS = ['cc', 'mc', 'year_lo', 'year_hi', 'observed', 'expected', 'spread', 'empty_months']
+
+
+def _gap_years(v: np.ndarray, rest: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
+    """One muni's yearly totals `v` and the rest of its county's `rest` → `(gap, expected, spread)`
+    per `muni_gaps`' rules."""
+    n = len(v)
+    gap = np.zeros(n, dtype=bool)
+    exp = np.full(n, np.nan)
+    spread = GAP_MIN_SPREAD
+    for _ in range(GAP_ITERS):
+        exp = np.full(n, np.nan)
+        for j in range(n):
+            if rest[j] <= 0:
+                continue
+            nb = sorted(
+                (i for i in range(n) if i != j and not gap[i] and rest[i] > 0 and abs(i - j) <= GAP_MAX_DIST),
+                key=lambda i: (abs(i - j), i),
+            )[:GAP_NEIGHBORS]
+            if len(nb) >= GAP_MIN_NEIGHBORS:
+                exp[j] = float(np.median([v[i] * rest[j] / rest[i] for i in nb]))
+        ok = np.isfinite(exp)
+        r = np.log((v + 1) / (np.where(ok, exp, 0) + 1))
+        base = ok & ~gap
+        if base.sum() >= GAP_MIN_NEIGHBORS:
+            rb = r[base]
+            spread = max(1.4826 * float(np.median(np.abs(rb - np.median(rb)))), GAP_MIN_SPREAD)
+        with np.errstate(invalid='ignore'):
+            most = ok & (v < GAP_RATIO * exp)
+            partial = ok & (v < GAP_PARTIAL_RATIO * exp) & (exp - v >= GAP_MIN_SHORTFALL) & (r < -GAP_Z * spread)
+        new = most | partial
+        if (new == gap).all():
+            break
+        gap = new
+    return gap, exp, spread
+
+
 def muni_gaps(counts: pd.DataFrame) -> pd.DataFrame:
-    """Coverage gaps in `counts` (`cc, mc, year, n`: crashes per muni-year): runs of consecutive
-    years whose total is < `GAP_RATIO` of the expected (see the module docstring). Rows `cc, mc,
-    year_lo, year_hi, observed` (the years' totals, space-joined), `expected` (likewise)."""
+    """Coverage gaps in `counts` (`cc, mc, year, n`: crashes per muni-year, or per muni-year-`month`):
+    runs of consecutive years whose total is well under the expected (see `GAP_*` above). Rows
+    `GAP_COLS`: `observed` / `expected` (the years' totals, space-joined), `spread` (the muni's
+    year-to-year spread, a log ratio), `empty_months` (with `month`: the gap years' near-empty
+    months, `GAP_EMPTY_MONTH`, as space-joined "YYYY-MM:n"; else empty)."""
+    by_month = 'month' in counts
     c = counts.groupby(['cc', 'mc', 'year'])['n'].sum().reset_index()
     ys = np.arange(int(c['year'].min()), int(c['year'].max()) + 1) if len(c) else np.array([], dtype=int)
     grid = c.pivot_table(index=['cc', 'mc'], columns='year', values='n', aggfunc='sum').reindex(columns=ys).fillna(0)
     county = grid.groupby(level='cc').sum()
+    months = counts.groupby(['cc', 'mc', 'year', 'month'])['n'].sum() if by_month else None
     rows = []
     for (cc, mc), v in zip(grid.index, grid.to_numpy()):
         if np.median(v) < GAP_MIN_MEDIAN:
             continue
         rest = county.loc[cc].to_numpy(dtype=float) - v
-        exp = np.full(len(ys), np.nan)
-        gap = np.zeros(len(ys), dtype=bool)
-        for j in range(len(ys)):
-            nb = [i for i in range(max(0, j - GAP_WINDOW), min(len(ys), j + GAP_WINDOW + 1)) if i != j and rest[i] > 0]
-            if len(nb) < GAP_MIN_NEIGHBORS or rest[j] <= 0:
-                continue
-            exp[j] = float(np.median([v[i] * rest[j] / rest[i] for i in nb]))
-            gap[j] = v[j] < GAP_RATIO * exp[j]
+        gap, exp, spread = _gap_years(v, rest)
         j = 0
         while j < len(ys):
             if not gap[j]:
@@ -158,17 +208,40 @@ def muni_gaps(counts: pd.DataFrame) -> pd.DataFrame:
             k = j
             while k + 1 < len(ys) and gap[k + 1]:
                 k += 1
+            empty = []
+            if by_month:
+                for t in range(j, k + 1):
+                    for mo in range(1, 13):
+                        nm = int(months.get((cc, mc, int(ys[t]), mo), 0))
+                        if nm < GAP_EMPTY_MONTH * exp[t] / 12:
+                            empty.append(f'{ys[t]}-{mo:02d}:{nm}')
             rows.append(dict(
                 cc=int(cc), mc=int(mc), year_lo=int(ys[j]), year_hi=int(ys[k]),
                 observed=' '.join(str(int(x)) for x in v[j:k + 1]), expected=' '.join(str(int(round(x))) for x in exp[j:k + 1]),
+                spread=round(spread, 3), empty_months=' '.join(empty),
             ))
             j = k + 1
-    return pd.DataFrame(rows, columns=['cc', 'mc', 'year_lo', 'year_hi', 'observed', 'expected'])
+    return pd.DataFrame(rows, columns=GAP_COLS)
+
+
+def missing_share(missing: float) -> str:
+    """A missing share (0–1) in words, for a note: "nearly all" … "about a quarter"."""
+    return (
+        'nearly all' if missing >= 0.9 else 'most' if missing >= 0.6 else 'about half' if missing >= 0.4
+        else 'about a third' if missing >= 0.3 else 'about a quarter'
+    )
 
 
 def gap_notes(gaps: pd.DataFrame, notes: list[Note], muni_name: dict[tuple[int, int], str] | None = None) -> list[Note]:
-    """`muni_gaps` rows → `coverage` notes, skipping a gap whose muni and years a curated `notes`
-    entry (with scalar `cc` / `mc`) already covers."""
+    """`muni_gaps` rows → notes, skipping a gap whose muni and years a curated `notes` entry (with
+    scalar `cc` / `mc`) already covers.
+
+    A gap under `GAP_RATIO` of the expected, or with near-empty months (`empty_months`: a batch of
+    reports absent), is reports missing from NJDOT's data: a `coverage` note saying how much
+    (`missing_share` of the run's observed / expected: "About half of Hoboken's crash reports are
+    missing for 2023–2025"). A partial gap without either is a shortfall beyond the town's usual
+    year-to-year spread, but could be its police reporting fewer crashes (or fewer crashes): an
+    `unexplained` note ("Clifton has ~30% fewer crash reports than expected for 2020")."""
     covered = [
         (n.where['cc'], n.where['mc'], n.years) for n in notes
         if not isinstance(n.where.get('cc'), (list, tuple, type(None))) and not isinstance(n.where.get('mc'), (list, tuple, type(None)))
@@ -179,21 +252,45 @@ def gap_notes(gaps: pd.DataFrame, notes: list[Note], muni_name: dict[tuple[int, 
             continue
         name = (muni_name or {}).get((g.cc, g.mc), f'muni {g.cc}-{g.mc}')
         yrs = f'{g.year_lo}' if g.year_lo == g.year_hi else f'{g.year_lo}–{g.year_hi}'
-        obs, exp = g.observed.split(), g.expected.split()
-        pairs = ', '.join(f'{o} ({y})' for o, y in zip(obs, range(g.year_lo, g.year_hi + 1)))
-        exp_lo, exp_hi = min(map(int, exp)), max(map(int, exp))
-        exp_s = f'~{exp_lo:,}' if exp_lo == exp_hi else f'~{exp_lo:,}–{exp_hi:,}'
-        out.append(Note(
-            id=f'gap-{g.cc}-{g.mc}-{g.year_lo}' + ('' if g.year_lo == g.year_hi else f'-{g.year_hi}'),
-            kind='coverage', years=(g.year_lo, g.year_hi),
-            title=f'Most of {name}\'s crash reports are missing for {yrs}',
-            text=(
-                f'NJDOT\'s data has {pairs} crashes in {name}, vs {exp_s} a year expected from the years '
-                f'around them (and the rest of the county\'s trend): most of the town\'s crash reports for '
-                f'{yrs} are missing from the data, so its roads\' counts for {yrs} are too low.'
-            ),
-            where={'cc': g.cc, 'mc': g.mc, 'subt': LOCAL_SUBT},
-        ))
+        obs, exp = [int(x) for x in g.observed.split()], [int(x) for x in g.expected.split()]
+        missing = 1 - sum(obs) / max(sum(exp), 1)
+        pct = f'~{5 * round(20 * missing):d}%'
+        pairs = ', '.join(f'{o:,} ({y})' for o, y in zip(obs, range(g.year_lo, g.year_hi + 1)))
+        exp_s = f'~{min(exp):,}' if min(exp) == max(exp) else f'~{min(exp):,}–{max(exp):,}'
+        counts = (
+            f'NJDOT\'s data has {pairs} crashes in {name}, vs {exp_s} a year expected from the town\'s other '
+            f'years (and the rest of the county\'s trend)'
+        )
+        empty = [e.split(':') for e in str(getattr(g, 'empty_months', '') or '').split()]
+        nid = f'gap-{g.cc}-{g.mc}-{g.year_lo}' + ('' if g.year_lo == g.year_hi else f'-{g.year_hi}')
+        where = {'cc': g.cc, 'mc': g.mc, 'subt': LOCAL_SUBT}
+        if empty or missing >= 1 - GAP_RATIO:
+            share = missing_share(missing)
+            evidence = ''
+            if empty:
+                ms = ', '.join(f'{MONTHS[int(ym[5:]) - 1]} {ym[:4]}: {int(n)}' for ym, n in empty[:4]) + (', …' if len(empty) > 4 else '')
+                evidence = f', and {len(empty)} of its months have almost none ({ms})'
+            out.append(Note(
+                id=nid, kind='coverage', years=(g.year_lo, g.year_hi),
+                title=f'{share[0].upper()}{share[1:]} of {name}\'s crash reports are missing for {yrs}',
+                text=(
+                    f'{counts}{evidence}: {share} ({pct}) of the town\'s crash reports for {yrs} are missing from the '
+                    f'data, so its roads\' counts for {yrs} are too low.'
+                ),
+                where=where,
+            ))
+        else:
+            spread = round(100 * (np.exp(g.spread) - 1))
+            out.append(Note(
+                id=nid, kind='unexplained', years=(g.year_lo, g.year_hi),
+                title=f'{name} has {pct} fewer crash reports than expected for {yrs}',
+                text=(
+                    f'{counts}: {pct} fewer, where its totals otherwise vary by about ±{spread:d}% a year. Reports '
+                    f'missing from the data, its police reporting fewer crashes, or fewer crashes: the data can\'t tell '
+                    f'which, so compare its roads\' counts for {yrs} with care.'
+                ),
+                where=where,
+            ))
     return out
 
 

@@ -186,6 +186,27 @@ def test_calibrate_retired_sri():
     assert {i: (s, round(m, 2)) for i, (s, m, _) in out.items()} == {4: ('NEW', 2.3), 7: ('NEW', 2.9)}
 
 
+def test_calibrate_retired_road_of_several_sris():
+    """Today's road is three SRIs (`A`, `B`, `C`: a third of the retired SRI's MPs 0–1 each, MPs 0–0.3
+    of their own; Summit Ave, CR 617): none is near half the anchors, so by SRI nothing is placed; with
+    `runs`, all are road 7's, near all the anchors, and the queries are placed on whichever SRI they
+    fall on."""
+    t = MI_M / 3
+    feats = rn_features(pd.concat([line_feats(s, i * t, (i + 1) * t, 0.0, 0.3) for i, s in enumerate('ABC')], ignore_index=True))
+    snap = Snapper(feats)
+    x0, y0 = to_meters([lon_at(0)], [LAT])
+    anchors = [0.05, 0.2, 0.4, 0.55, 0.75, 0.9]
+    sri = np.array(['OLD'] * 8, dtype=object)
+    mp = np.array(anchors + [0.3, 0.8])
+    ax = np.array([x0[0] + m * MI_M for m in anchors] + [np.nan] * 2)
+    ay = np.array([y0[0]] * 6 + [np.nan] * 2)
+    anchor = np.isfinite(ax)
+    runs = pd.DataFrame({'entity': [7, 7, 7], 'sri': ['A', 'B', 'C'], 'mp_lo': [0.0] * 3, 'mp_end': [0.3] * 3})
+    assert calibrate_retired(sri, mp, ax, ay, anchor, ~anchor, snap) == {}
+    out = calibrate_retired(sri, mp, ax, ay, anchor, ~anchor, snap, runs)
+    assert {i: (s, round(m, 2)) for i, (s, m, _) in out.items()} == {6: ('A', 0.27), 7: ('C', 0.12)}
+
+
 def test_calibrate_retired_skips_ramps():
     """A route's retired MPs aren't calibrated onto a ramp: here the only current line along the
     anchors is a ramp SRI (`NEW` + a ramp id), so nothing is placed; a ramp's own retired SRI can be."""
@@ -371,7 +392,7 @@ def test_real_nodes_and_west_side_inclusive(built):
     s = built.o['road-summary']
     s = s[s['entity'] == wsa].groupby('year')[['n', 'n_unplaced', 'n_node', 'n_xs']].sum()
     # 2019: 7 crashes at West Side & Duncan are on Duncan Ave; they count on West Side too (inclusive).
-    assert s.reset_index().values.tolist() == [[2006, 107, 96, 2, 0], [2016, 126, 112, 7, 0], [2019, 172, 8, 8, 7]]
+    assert s.reset_index().values.tolist() == [[2006, 107, 96, 2, 0], [2016, 126, 110, 7, 0], [2019, 172, 8, 8, 7]]
     xs = built.o['xs']
     assert sorted(set(zip(xs['entity'].map(built.slug), xs['own_entity'].map(built.slug)))) == [
         ('hudson/jersey-city/duncan-avenue', 'hudson/jersey-city/west-side-avenue'),
@@ -481,6 +502,6 @@ def test_locate_several_roads_named():
         lines=lines, segs_by={(9, 1, '48THST'): np.array([0, 1])}, segs_named={(9, 1, '48THST'): np.array([0, 1])}, segs_cc={},
         seg_ent=np.array([10.0, 11.0]), seg_sris=np.array([None, None], dtype=object), sri_lines={}, ent_sris={}, sri_ent={}, snapper=None,
     )
-    assert _locate_one(9, 1, ('48THST',), None, pd.NA, pd.NA, 0.0, '', None, False, False, None, **ctx) == ('none', None, None, None, frozenset({10, 11}))
+    assert _locate_one(9, 1, ('48THST',), None, pd.NA, pd.NA, 0.0, '', None, False, False, None, **ctx) == ('none', None, None, None, frozenset({10, 11}), None)
     one = dict(ctx, seg_ent=np.array([10.0, 10.0]))
-    assert _locate_one(9, 1, ('48THST',), None, pd.NA, pd.NA, 0.0, '', None, False, False, None, **one) == ('name_only', None, None, None, 10)
+    assert _locate_one(9, 1, ('48THST',), None, pd.NA, pd.NA, 0.0, '', None, False, False, None, **one) == ('name_only', None, None, None, 10, None)

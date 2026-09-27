@@ -15,9 +15,9 @@ module recovers a location from those strings against the NJOGIS NG9-1-1 centerl
   the segment's primary name, its abbreviated form, its local (`L`) aliases and its shields;
   `resolve_keys` looks crash keys up in it (exact, type-less, direction-less, fuzzy).
 - **Learned names** (`learn_names`): road strings → entities, from the crashes NJDOT did code.
-- **Intersections** (`meet_points`, `cluster_point`, `offset_along`): a road's and a cross street's
-  segments in one muni → the point they meet (within `TOUCH_M`), moved `distance` along the road in the
-  reported direction.
+- **Intersections** (`meet_points`, `junctions`, `offset_along`): a road's and a cross street's
+  segments in one muni → the junctions where they meet (within `TOUCH_M`), moved `distance` along the
+  road in the reported direction (which picks between junctions when there are several).
 - **Snap** (`Snapper`): a point → the nearest NJDOT line of the road's SRIs (within `SNAP_M`) → `(sri,
   mp)`, and so an entity by the build's run intervals (`entity_at`).
 
@@ -39,14 +39,17 @@ import shapely
 from pyproj import Transformer
 
 from njdot.cc2mc2mn import CC2MC2MN
-from njdot.road_net import _locate, lines_from, name_key, ng_name, per_unique, to_meters, to_mp
+from njdot.road_net import _locate, from_mp, lines_from, name_key, ng_name, per_unique, to_meters, to_mp
 from njdot.road_outputs import muni_codes
 
 # Road / cross street segments "meet" if within this many meters (NG911 is noded, so usually 0).
 TOUCH_M = 5
-# An intersection's candidate points must lie within this many meters of each other; farther apart
-# (a crescent meeting a street twice, or two same-named streets in one muni) is ambiguous.
-CLUSTER_M = 150
+# Meet points within `2 × JUNCTION_M` of one another (chained) whose group lies within `JUNCTION_M`
+# of its mean are one junction (`junctions`); a group spread wider is the road running along the
+# cross street (sharing its alignment, or "BERGEN AVE" × "BERGEN AVE"), no junction. Farther apart
+# (a crescent meeting a street at both ends, or two same-named streets in one muni) they're
+# separate junctions, which the reported offset / direction must choose between.
+JUNCTION_M = 150
 # A geocoded point snaps to one of the road's NJDOT lines within this many meters.
 SNAP_M = 30
 # Offsets larger than this (feet) are typos or "0.5 MI" entered as feet; clamp rather than trust.
@@ -212,6 +215,57 @@ def route_sri(s: pd.Series, cc: pd.Series, net: set[str] | None = None) -> pd.Se
                 sri = by9[b9][0]
         out.append(sri)
     return pd.Series(out, dtype='string').iloc[codes].set_axis(s.index)
+
+
+# Years in which NJDOT coded crashes on a (non-500-series) county route to the statewide SRI with
+# the same number ("CR 29" in Bergen → `00000029__`, NJ 29's; specs/road-anomalies.md § R2-4).
+STATE_CODED_COUNTY_YEARS = (2001, 2002)
+
+
+def county_route_sris(crashes: pd.DataFrame, years: tuple[int, int] = STATE_CODED_COUNTY_YEARS) -> pd.Series:
+    """Crashes of `years` whose road string names a county route ("CR 29", "BERGEN COUNTY 57")
+    and whose coded SRI is the statewide one with that number (`00000029__`) → the county route's
+    SRI (`02000029__`; its MP is the county route's), else NA. In 2001–02 NJDOT coded ~7–8k crashes
+    a year so (Bergen: 4,882 / 6,389), putting them on NJ 29, NJ 57, I-80 … or off every road."""
+    y = pd.to_numeric(crashes['year'], errors='coerce')
+    sri = crashes['sri'].astype('string').str.strip()
+    cand = y.between(*years).fillna(False) & sri.str.match(r'^00000\d{3}').fillna(False)
+    out = pd.Series(pd.NA, index=crashes.index, dtype='string')
+    if not cand.any():
+        return out
+    c = crashes[cand.to_numpy()]
+    rs = route_sri(clean_road(c['road']), c['cc'])
+    s = sri[cand]
+    ok = rs.notna() & ~rs.str.startswith('00').fillna(True) & (rs.str[5:8] == s.str[5:8]).fillna(False)
+    out[ok[ok].index] = rs[ok]
+    return out
+
+
+def recode_county_routes(crashes: pd.DataFrame) -> tuple[pd.DataFrame, int]:
+    """`crashes` with `county_route_sris`' SRIs in place of the statewide ones (MP kept), and their
+    NJDOT points (`drop_coded_points`: computed from the wrong SRI, Bergen's "CR 29" crashes sat on
+    NJ 29 in Mercer) dropped. Returns them and how many were recoded."""
+    fixed = county_route_sris(crashes)
+    m = fixed.notna().to_numpy()
+    if not m.any():
+        return crashes, 0
+    c = crashes.copy()
+    c['sri'] = c['sri'].astype('string')
+    c.loc[m, 'sri'] = fixed[m]
+    drop_coded_points(c, m)
+    return c, int(m.sum())
+
+
+def drop_coded_points(crashes: pd.DataFrame, m: np.ndarray):
+    """Drop (in place) the points of `crashes[m]` that NJDOT computed from their SRI / MP (being
+    replaced): `ilat` / `ilon`, and `olat` / `olon` where they're the same point (in some years,
+    2006–08 at least, NJDOT filled the "police" point from the SRI / MP too)."""
+    if 'ilat' not in crashes:
+        return
+    if 'olat' in crashes:
+        same = m & ((crashes['olat'] - crashes['ilat']).abs() < 1e-4).fillna(False).to_numpy() & ((crashes['olon'] - crashes['ilon']).abs() < 1e-4).fillna(False).to_numpy()
+        crashes.loc[same, ['olat', 'olon']] = np.nan
+    crashes.loc[m, ['ilat', 'ilon']] = np.nan
 
 
 # NG911 shield types → route-key prefixes (`route_keys`).
@@ -412,33 +466,78 @@ def meet_points(r_lines: np.ndarray, x_lines: np.ndarray, touch_m: float = TOUCH
     return np.array(pts).reshape(-1, 2)
 
 
-def cluster_point(pts: np.ndarray, max_spread: float = CLUSTER_M) -> np.ndarray | None:
-    """The mean of `pts` if they all lie within `max_spread` of it, else None (ambiguous / none)."""
+def junctions(pts: np.ndarray, r_lines: np.ndarray, radius: float = JUNCTION_M) -> np.ndarray:
+    """The junctions (k × 2, meters, sorted) where a road meets a cross street, from their meet
+    points `pts` (`meet_points`, one per touching pair of segments: a street crossing through a
+    node meets there several times): the distinct points, grouped by single linkage within `2 ×
+    radius` (a divided road's carriageways, a triangle junction, a slip lane: one junction).
+
+    A group all within `radius` of its (meet-weighted) mean is one junction: at that mean if it's
+    within `SNAP_M` of the road (`r_lines`), else at the group's point nearest it (the mean can be
+    off the road: North Bergen's West Side Ave bends between its two meets with Paterson Plank Rd,
+    138 m apart, and their mean is > 30 m from it). Any wider group (the road running along the cross
+    street) → no junctions at all."""
     if not len(pts):
-        return None
-    c = pts.mean(axis=0)
-    return c if np.hypot(*(pts - c).T).max() <= max_spread else None
+        return np.empty((0, 2))
+    pts = np.asarray(pts, dtype=float)
+    # Distinct points (to 0.1 m; the first of each, unrounded), and how many meets each is.
+    _, first, cnt = np.unique(pts.round(1), axis=0, return_index=True, return_counts=True)
+    order = np.argsort(first)
+    u, w = pts[first[order]], cnt[order].astype(float)
+    n = len(u)
+    near = np.hypot(u[:, None, 0] - u[None, :, 0], u[:, None, 1] - u[None, :, 1]) <= 2 * radius
+    group = np.full(n, -1)
+    for i in range(n):
+        if group[i] >= 0:
+            continue
+        group[i] = i
+        todo = [i]
+        while todo:
+            j = todo.pop()
+            for k in np.flatnonzero(near[j] & (group < 0)):
+                group[k] = i
+                todo.append(int(k))
+    out = []
+    for g in np.unique(group):
+        members, wg = u[group == g], w[group == g]
+        mean = (members * wg[:, None]).sum(axis=0) / wg.sum()
+        d = np.hypot(*(members - mean).T)
+        if d.max() > radius:
+            # The road runs along the cross street here (Tonnelle Ave on US 1): where they part
+            # isn't where they "cross".
+            return np.empty((0, 2))
+        on_road = float(shapely.distance(r_lines, shapely.points(mean)).min()) <= SNAP_M
+        out.append(mean if on_road else members[int(np.argmin(d))])
+    return np.array(sorted(map(tuple, out))).reshape(-1, 2)
 
 
 DIR_VEC = {'N': (0, 1), 'S': (0, -1), 'E': (1, 0), 'W': (-1, 0)}
 
 
 def offset_along(lines: np.ndarray, p: np.ndarray, dist_m: float, direction: str | None) -> np.ndarray | None:
-    """Move `dist_m` from point `p` along the nearest of `lines` (the road), toward `direction`
-    (N/S/E/W, relative to the cross street). With no / unknown direction: `p` itself if `dist_m` ≤
-    `UNDIRECTED_MAX_M`, else None; None too if the road doesn't run that way."""
+    """Move `dist_m` from point `p` along the nearest of `lines` (the road; any of those through `p`,
+    at a node), toward `direction` (N/S/E/W, relative to the cross street): the move that goes
+    farthest that way. With no / unknown direction: `p` itself if `dist_m` ≤ `UNDIRECTED_MAX_M`, else
+    None; None too if the road doesn't run that way."""
     if dist_m <= 0:
         return p
     if direction not in DIR_VEC:
         return p if dist_m <= UNDIRECTED_MAX_M else None
     pt = shapely.points(p)
-    line = lines[int(np.argmin(shapely.distance(lines, pt)))]
-    t = shapely.line_locate_point(line, pt)
-    cands = [shapely.line_interpolate_point(line, min(max(t + s * dist_m, 0), line.length)) for s in (-1, 1)]
+    d = shapely.distance(lines, pt)
     v = np.array(DIR_VEC[direction])
-    scores = [float(np.dot(shapely.get_coordinates(c)[0] - p, v)) for c in cands]
-    best = int(np.argmax(scores))
-    return shapely.get_coordinates(cands[best])[0] if scores[best] > 0 else None
+    best, best_score = None, 0.0
+    # Every line through `p` (within `TOUCH_M` of the nearest): at a node, the road goes on along
+    # another segment than the one that ends there.
+    for li in np.flatnonzero(d <= d.min() + TOUCH_M):
+        line = lines[li]
+        t = shapely.line_locate_point(line, pt)
+        for s in (-1, 1):
+            c = shapely.get_coordinates(shapely.line_interpolate_point(line, min(max(t + s * dist_m, 0), line.length)))[0]
+            score = float(np.dot(c - p, v))
+            if score > best_score:
+                best, best_score = c, score
+    return best
 
 
 def offset_m(dist: pd.Series, unit: pd.Series) -> pd.Series:
@@ -462,6 +561,25 @@ class Snapper:
         self.by_sri = pd.Series(np.arange(len(feats))).groupby(self.fsri).indices
         self.d, self.m = feats['d'].to_numpy(), feats['m'].to_numpy()
         self.sec, self.ms, self.me, self.ps, self.pe = (feats[c].to_numpy() for c in ('sec', 'ms', 'me', 'ps', 'pe'))
+
+    def point(self, sri: str, mp: float, max_off: float = 0.25) -> np.ndarray | None:
+        """`(sri, mp)` → its point (meters) on the first of the SRI's lines whose MPs span `mp`, else at
+        the nearest line end within `max_off` MP miles (a run's interval reaches past its last
+        vertex), else None (the inverse of `snap`)."""
+        best, best_off = None, max_off
+        for f in self.by_sri.get(sri, _EMPTY):
+            m = float(from_mp(self.sec[f], self.ms[f], self.me[f], self.ps[f], self.pe[f], mp))
+            mf, df = self.m[f], self.d[f]
+            if not len(mf):
+                continue
+            if mf[0] > mf[-1]:
+                mf, df = mf[::-1], df[::-1]
+            off = max(mf[0] - m, m - mf[-1], 0.0)
+            if off == 0.0:
+                return shapely.get_coordinates(shapely.line_interpolate_point(self.lines[f], float(np.interp(m, mf, df))))[0]
+            if off <= best_off:
+                best, best_off = shapely.get_coordinates(shapely.line_interpolate_point(self.lines[f], float(np.interp(m, mf, df))))[0], off
+        return best
 
     def near(self, p: np.ndarray, tol: float = SNAP_M) -> set[str]:
         """SRIs with a line within `tol` of point `p`."""
@@ -556,6 +674,100 @@ def learn_names(coded: pd.DataFrame, min_n: int = LEARN_MIN_N, min_share: float 
     return n[['cc', 'mc', 'key', 'entity', 'n', 'share']].astype({'cc': 'int8', 'mc': 'int16', 'entity': 'int32', 'n': 'int32'}).reset_index(drop=True)
 
 
+# A coded crash's NJDOT point (computed from its SRI / MP on today's network) must be within this many
+# meters of its muni's streets (`far_from_town`).
+TOWN_M = 2000
+# … unless the road it lands on comes that near: sampled every this many MP miles along its runs.
+ROAD_STEP_MI = 0.1
+
+
+def muni_geoms(seg_lines: np.ndarray, idx: pd.DataFrame) -> dict[tuple[int, int], shapely.Geometry]:
+    """Each muni's NG9-1-1 streets (`idx`: `ng_name_index`, segments' `(cc, mc)`; `seg_lines`: their
+    lines, meters) as one prepared geometry, `{(cc, mc): MultiLineString}`."""
+    out = {}
+    for (c, m), segs in idx[['cc', 'mc', 'seg']].drop_duplicates().groupby(['cc', 'mc'])['seg'].unique().items():
+        g = shapely.multilinestrings(list(seg_lines[segs]))
+        shapely.prepare(g)
+        out[(int(c), int(m))] = g
+    return out
+
+
+def far_from_town(
+    crashes: pd.DataFrame,
+    geoms: dict | None,
+    snapper: 'Snapper | None' = None,
+    road: pd.DataFrame | None = None,
+    town_m: float = TOWN_M,
+) -> np.ndarray:
+    """Coded crashes (SRI + MP) whose point is more than `town_m` from every street of the crash's
+    muni (`geoms`: `muni_geoms`). The point is where the SRI / MP is on today's network (with
+    `snapper`: `Snapper.point`), else NJDOT's `ilat` / `ilon` (which some years computed on the
+    network of the time: Elizabeth's pre-2020 CR 624 crashes have points in Elizabeth).
+    NJDOT re-mileposted some routes (CR 509 through Paterson moved ~7 mi up in 2020; Elizabeth's old
+    CR 624 MPs are Berkeley Heights' today), so older crashes' `(sri, mp)` land on the road now
+    carrying those MPs, towns away. With `road` (the build's runs) and `snapper`, a crash whose road
+    (`entity_at` its SRI / MP; its runs' points every `ROAD_STEP_MI`) comes within `town_m` of its
+    muni is kept (a mistyped MP along the right road). Crashes without a point or a known muni
+    aren't checked (False); none are without `geoms`."""
+    out = np.zeros(len(crashes), dtype=bool)
+    if not geoms or not len(crashes):
+        return out
+    nan = np.full(len(crashes), np.nan)
+    lat = pd.to_numeric(crashes['ilat'], errors='coerce').to_numpy(dtype='float64', na_value=np.nan) if 'ilat' in crashes else nan
+    lon = pd.to_numeric(crashes['ilon'], errors='coerce').to_numpy(dtype='float64', na_value=np.nan) if 'ilon' in crashes else nan
+    cc = pd.to_numeric(crashes['cc'], errors='coerce').to_numpy(dtype='float64', na_value=np.nan)
+    mc = pd.to_numeric(crashes['mc'], errors='coerce').to_numpy(dtype='float64', na_value=np.nan)
+    sri = crashes['sri'].astype('string').fillna('').str.strip().to_numpy(dtype=object)
+    mp = pd.to_numeric(crashes['mp'], errors='coerce').to_numpy(dtype='float64', na_value=np.nan)
+    coded = (sri != '') & np.isfinite(mp) & np.isfinite(cc) & np.isfinite(mc)
+    X, Y = np.full(len(crashes), np.nan), np.full(len(crashes), np.nan)
+    if snapper is not None:
+        memo: dict[tuple, np.ndarray | None] = {}
+        for i in np.flatnonzero(coded):
+            k = (sri[i], round(float(mp[i]), 3))
+            if k not in memo:
+                memo[k] = snapper.point(*k)
+            if memo[k] is not None:
+                X[i], Y[i] = memo[k]
+    has_ll = coded & ~np.isfinite(X) & np.isfinite(lat) & np.isfinite(lon)
+    if has_ll.any():
+        X[has_ll], Y[has_ll] = to_meters(lon[has_ll], lat[has_ll])
+    has = coded & np.isfinite(X)
+    if not has.any():
+        return out
+    rows = np.flatnonzero(has)
+    X, Y = X[rows], Y[rows]
+    key = pd.Series(list(zip(cc[rows].astype(int), mc[rows].astype(int))))
+    for cm, ix in key.groupby(key).indices.items():
+        if cm in geoms:
+            out[rows[ix]] = ~shapely.dwithin(geoms[cm], shapely.points(X[ix], Y[ix]), town_m)
+    if road is not None and snapper is not None and out.any():
+        # The point is far, but the road it's on comes through town (a mistyped MP on the Parkway
+        # through Bloomfield): the road is right, keep it. The road: its runs' points every
+        # `ROAD_STEP_MI`.
+        runs = road
+        f = np.flatnonzero(out)
+        ents = entity_at(pd.Series(sri[f], dtype='string'), pd.Series(mp[f]), runs).to_numpy(dtype='float64', na_value=np.nan)
+        runs_of = runs.groupby('entity').indices
+        rs, lo, hi = runs['sri'].astype(str).to_numpy(), runs['mp_lo'].to_numpy(dtype=float), runs['mp_end'].to_numpy(dtype=float)
+        shape: dict[int, shapely.Geometry | None] = {}
+        memo: dict[tuple, bool] = {}
+        for i, e in zip(f, ents):
+            if not np.isfinite(e):
+                continue
+            e = int(e)
+            if e not in shape:
+                pts = [snapper.point(rs[j], m) for j in runs_of.get(e, ()) for m in np.arange(lo[j], hi[j] + 1e-9, ROAD_STEP_MI)]
+                pts = [p for p in pts if p is not None]
+                shape[e] = shapely.multipoints(pts) if pts else None
+            k = (e, int(cc[i]), int(mc[i]))
+            if k not in memo:
+                memo[k] = shape[e] is not None and bool(shapely.dwithin(geoms[k[1:]], shape[e], town_m + ROAD_STEP_MI * MI_M))
+            if memo[k]:
+                out[i] = False
+    return out
+
+
 def recover(
     crashes: pd.DataFrame,
     seg: pd.DataFrame,
@@ -565,6 +777,7 @@ def recover(
     snapper: Snapper,
     runs: pd.DataFrame,
     learned: pd.DataFrame | None = None,
+    muni_geoms: dict | None = None,
 ) -> pd.DataFrame:
     """Per crash (`cc, mc, sri, mp, road, cross_street, cross_street_distance, Unit Of Measurement,
     Direction From Cross Street`, optionally `road_system`, `ilat` / `ilon`, `olat` / `olon`):
@@ -595,6 +808,9 @@ def recover(
     # `09000697__` MP 1.4–3.6 until 2018; today's `09000697__` ends at MP 1.3 in Harrison) — is
     # re-located like an uncoded crash.
     ok = coded & entity_at(sri_in, crashes['mp'], runs).notna().to_numpy()
+    # … or on a run towns from the crash's muni (a re-mileposted route: `far_from_town`).
+    far_town = far_from_town(crashes, muni_geoms, snapper, runs) & ok.to_numpy()
+    ok = ok & ~far_town
     sri0 = sri_in.where(has_sri, route_sri(sp['road'], crashes['cc'], net))
     # Off a current run of a *current* SRI: that SRI's lines are where its MPs are today, not where the
     # crash is (pre-2018 CR 677 II ran on past today's end, MP 1.22, into Weehawken), so neither
@@ -624,10 +840,14 @@ def recover(
     ctx = dict(
         lines=lines, segs_by=segs_by, segs_named=segs_named, segs_cc=segs_cc,
         seg_ent=seg_ent.to_numpy(dtype='float64', na_value=np.nan), seg_sris=seg_sris.to_numpy(dtype=object, na_value=None),
-        sri_lines=sri_lines, ent_sris=ent_sris, sri_ent=sri_ent, snapper=snapper,
+        sri_lines=sri_lines, ent_sris=ent_sris, sri_ent=sri_ent, snapper=snapper, muni_geoms=muni_geoms or {},
     )
     private = crashes['road_system'].eq(PRIVATE_ROAD_SYSTEM).fillna(False).to_numpy() if 'road_system' in crashes else np.zeros(len(crashes), dtype=bool)
-    pts = _points(crashes)
+    # A far-from-town crash's NJDOT point is no clue if it's where its SRI / MP fall today (Paterson's
+    # CR 509 crashes: in Bloomfield); computed on the network of its day, it's in town (Elizabeth's).
+    pc = crashes[[c for c in ('ilat', 'ilon', 'olat', 'olon') if c in crashes]].copy()
+    drop_coded_points(pc, far_town & far_from_town(crashes, muni_geoms))
+    pts = _points(pc)
 
     n = len(crashes)
     src = np.where(coded.to_numpy(), 'sri_mp', 'none').astype(object)
@@ -680,7 +900,7 @@ def recover(
     if still.any():
         ax = np.where(np.isfinite(qx), qx, pts[:, 0])
         ay = np.where(np.isfinite(qy), qy, pts[:, 1])
-        cal = calibrate_retired(sri_in.to_numpy(dtype=object, na_value=None), crashes['mp'].to_numpy(dtype='float64', na_value=np.nan), ax, ay, retired, still, snapper)
+        cal = calibrate_retired(sri_in.to_numpy(dtype=object, na_value=None), crashes['mp'].to_numpy(dtype='float64', na_value=np.nan), ax, ay, retired, still, snapper, runs)
         cal_memo: dict[tuple, tuple] = {}
         for i, (s_new, mp_new, p) in cal.items():
             c, m = int(cc_a[i]), int(mc_a[i])
@@ -689,12 +909,16 @@ def recover(
             x_keys = x_ng[i]
             if x_rk_a[i]:
                 x_keys = tuple(k for k in x_rk_a[i] if (c, m, k) in segs_by or (c, k) in segs_cc) or x_keys
-            res, s_i, mp_i, q, _ = _locate_one(c, m, (), x_keys, s_new, x_sri_a[i], off_a[i], dirn_a[i], None, False, True, None, memo=cal_memo, **ctx)
+            res, s_i, mp_i, q, _, _ = _locate_one(c, m, (), x_keys, s_new, x_sri_a[i], off_a[i], dirn_a[i], None, False, True, None, memo=cal_memo, **ctx)
             if res == 'route_xs' and np.hypot(*(np.asarray(q) - p)) <= CAL_XS_MAX_M:
                 src[i], sri[i], mp[i], how[i] = 'sri_calib', s_i, mp_i, 'calib_xs'
             else:
                 src[i], sri[i], mp[i], how[i], q = 'sri_calib', s_new, mp_new, 'calib', p
             lon[i], lat[i] = _to_lonlat(q)
+    # Far-from-town crashes neither re-located nor calibrated keep NJDOT's coding: the muni may be
+    # what's wrong (Essex Fells's 1,391 crashes in 2002, vs ~340 a year after, include Parkway
+    # crashes at East Orange's exits).
+    how[far_town & (src == 'sri_mp')] = 'far_town'
     df = pd.DataFrame({'loc_source': src, 'sri': sri, 'mp': mp, 'lon': lon, 'lat': lat}, index=crashes.index)
     placed = df['sri'].notna() & df['mp'].notna() & ~df['loc_source'].isin(['name_only', 'sri_only'])
     at = entity_at(df['sri'].astype('string')[placed], df['mp'][placed], runs)
@@ -707,6 +931,7 @@ def recover(
     df['how'] = pd.array(how, dtype='string')
     df.loc[ok.to_numpy(), 'how'] = pd.NA
     df['cands'] = pd.Series(cands, index=crashes.index, dtype=object)
+    df['far_town'] = far_town
     return df
 
 
@@ -755,6 +980,7 @@ def calibrate_retired(
     anchor: np.ndarray,
     query: np.ndarray,
     snapper: 'Snapper',
+    runs: pd.DataFrame | None = None,
 ) -> dict[int, tuple[str, float, np.ndarray]]:
     """Crashes coded with an SRI + MP that today's network lacks (retired SRIs: Hudson's pre-2019
     county routes `09000612__` …; or MPs past a cut-back SRI's current runs), placed by the SRI's
@@ -762,7 +988,8 @@ def calibrate_retired(
     `ay`, meters: recovered from their strings, or police-reported) are anchors `(mp, point)`. Per
     SRI, anchors are binned (`CAL_BIN_MP`, median point), outliers dropped, and a `query` crash's MP
     is interpolated between the anchors around it (≤ `CAL_MAX_SPAN_MI` apart, or within
-    `CAL_NEAR_MI` of one), then snapped (≤ `SNAP_M`) to the current SRIs its anchors snap to.
+    `CAL_NEAR_MI` of one), then snapped (≤ `SNAP_M`) to the current SRIs its anchors snap to (with
+    `runs`, when no one SRI is near most anchors: the SRIs of the road most anchors are nearest to).
     Returns `{row: (sri, mp, point)}` for the query rows placed."""
     out: dict[int, tuple[str, float, np.ndarray]] = {}
     df = pd.DataFrame({'i': np.arange(len(sri)), 'sri': sri, 'mp': mp, 'x': ax, 'y': ay})
@@ -796,6 +1023,18 @@ def calibrate_retired(
         near = [snapper.near(np.array([x, y])) for x, y in zip(x_, y_)]
         cnt = pd.Series([v for ss in near for v in ss], dtype=object).value_counts()
         sris = set(cnt[cnt >= CAL_SRI_SHARE * len(m_)].index)
+        if not sris and runs is not None:
+            # No one SRI, but maybe one road: today's Summit Ave (Hudson's retired CR 617,
+            # `09000617__`) is 7 local SRIs, the longest 1.7 of its 4.6 mi. Each anchor's nearest line
+            # → its road; the road near most anchors → its SRIs.
+            hits = [snapper.snap(np.array([x, y])) for x, y in zip(x_, y_)]
+            hits = [h for h in hits if h is not None]
+            if hits:
+                ents = entity_at(pd.Series([h[0] for h in hits], dtype='string'), pd.Series([h[1] for h in hits]), runs).dropna()
+                ec = ents.astype(int).value_counts()
+                if len(ec) and ec.iloc[0] >= CAL_SRI_SHARE * len(m_):
+                    e0 = int(ec.index[0])
+                    sris = set(runs.loc[runs['entity'] == e0, 'sri'].astype(str))
         if len(str(s)) <= 10:
             # A route's crashes aren't on a ramp (ramp SRIs: the route's SRI + a ramp id, "00000444__A314670").
             sris = {v for v in sris if len(str(v)) <= 10}
@@ -843,9 +1082,10 @@ def recovery_context(
     `entity`) and NJDOT line features (`rn_features`), plus the NG911 centerlines / aliases."""
     seg_sris = pd.Series(pd.NA, index=np.arange(len(seg)), dtype='string')
     seg_sris.loc[iv['seg'].to_numpy()] = iv['sri'].to_numpy()
+    idx = ng_name_index(cl, al, cc2mc2mn)
     return dict(
-        seg=seg, idx=ng_name_index(cl, al, cc2mc2mn), seg_ent=seg_entities(seg, iv, runs), seg_sris=seg_sris,
-        snapper=Snapper(feats), runs=runs,
+        seg=seg, idx=idx, seg_ent=seg_entities(seg, iv, runs), seg_sris=seg_sris,
+        snapper=Snapper(feats), runs=runs, muni_geoms=muni_geoms(seg['line'].to_numpy(), idx),
     )
 
 
@@ -854,6 +1094,8 @@ def recover_unassigned(crashes: pd.DataFrame, ctx: dict) -> pd.DataFrame:
     `ctx['runs']` → `recover`, with road names learned (`learn_names`) from the ones it does.
     Returns `recover`'s output for those crashes (its index a subset of `crashes.index`)."""
     ent = entity_at(crashes['sri'], crashes['mp'], ctx['runs'])
+    # Coded crashes on a road towns away (`far_from_town`) are re-located too, and teach no names.
+    ent = ent.mask(far_from_town(crashes, ctx.get('muni_geoms'), ctx['snapper'], ctx['runs']))
     learned = learn_names(crashes[['cc', 'mc', 'road']].assign(entity=ent))
     todo = ent.isna().to_numpy()
     return recover(crashes[todo], learned=learned, **ctx)
@@ -934,8 +1176,8 @@ def _locate_rows(rows: np.ndarray, loc: dict | None = None) -> list[tuple]:
         rk = r_raw_a[i]
         le = None if split_a[i] or pd.isna(rk) else learned_ent.get((c, m, rk))
         pt = (round(float(pts[i, 0]), 1), round(float(pts[i, 1]), 1)) if np.isfinite(pts[i]).all() else None
-        res, s_i, mp_i, q, e = _locate_one(c, m, r_keys, x_keys, a['sri0'][i], a['x_sri'][i], a['off'][i], a['dirn'][i], le, bool(split_a[i]), bool(r_rki), pt, memo=memo, **ctx)
-        h = 'route' if r_rki and res != 'none' else 'learned' if le is not None and res in ('intersection', 'name_only') else None
+        res, s_i, mp_i, q, e, flag = _locate_one(c, m, r_keys, x_keys, a['sri0'][i], a['x_sri'][i], a['off'][i], a['dirn'][i], le, bool(split_a[i]), bool(r_rki), pt, memo=memo, **ctx)
+        h = flag or ('route' if r_rki and res != 'none' else 'learned' if le is not None and res in ('intersection', 'name_only') else None)
         out.append((int(i), res, s_i, mp_i, q, e, h))
     return out
 
@@ -974,10 +1216,16 @@ def _locate_all(rows: np.ndarray, loc: dict, procs: int | None = None) -> list[t
 def _locate_one(c, m, r_keys, x_keys, r_sri, x_sri, off, dirn, learned_ent, split, is_route, pt, *, memo: dict | None = None, **ctx):
     """One `(muni, road keys, cross keys, road route SRI, cross route SRI, offset, direction, learned
     entity, split road string, road is a route string, reported point)` → `(loc_source, sri, mp,
-    point, entity)`; `entity` is set only for `sri_only` / `name_only` (placed crashes get theirs
-    from `entity_at`). In order: the road meets the cross street (`intersection` / `route_xs`); the
-    reported point snaps to the road's lines (`latlon_snap`); the SRI is one entity (`sri_only`);
-    the name is one entity (`name_only`).
+    point, entity, flag)`; `entity` is set only for `sri_only` / `name_only` (placed crashes get
+    theirs from `entity_at`). In order: the road meets the cross street (`intersection` /
+    `route_xs`); the reported point snaps to the road's lines (`latlon_snap`); the SRI is one entity
+    (`sri_only`); the name is one entity (`name_only`).
+
+    Where the road meets the cross street at several junctions (`junctions`: Edison's Old Post Rd
+    meets US 1 at both its ends), the crash is at the one junction from which the reported offset /
+    direction leads along the road onto its NJDOT lines. With several such (no direction, or both
+    ways possible), none: `flag` is "junctions" when the crash isn't placed otherwise either (the
+    reported point, or its name / SRI's one road without a point), else None.
 
     With `memo`, each step is computed once per distinct inputs it depends on: where the road meets
     the cross street (`_locate_strings`) doesn't depend on the offset, and nothing but the
@@ -986,42 +1234,48 @@ def _locate_one(c, m, r_keys, x_keys, r_sri, x_sri, off, dirn, learned_ent, spli
     k = (c, m, r_keys, x_keys, r_sri, x_sri, learned_ent, split, is_route)
     if k not in memo:
         memo[k] = _locate_strings(*k, **ctx)
-    r_lines, r_sris, kind, p, rest = memo[k]
-    if p is not None:
+    r_lines, r_sris, kind, ps, rest = memo[k]
+    ambiguous = False
+    if len(ps):
         ko = (k, off, dirn)
         if ko not in memo:
-            memo[ko] = None
-            q = offset_along(r_lines, p, off, dirn)
-            if q is not None:
-                # Only the road's own SRIs: at an intersection the cross street's line is as near.
-                hit = ctx['snapper'].snap(q, r_sris)
-                if hit is not None:
-                    memo[ko] = (kind, hit[0], hit[1], q, None)
-        if memo[ko] is not None:
-            return memo[ko]
+            hits = []
+            for p in ps:
+                q = offset_along(r_lines, p, off, dirn)
+                if q is not None:
+                    # Only the road's own SRIs: at an intersection the cross street's line is as near.
+                    hit = ctx['snapper'].snap(q, r_sris)
+                    if hit is not None:
+                        hits.append((kind, hit[0], hit[1], q, None))
+            # One junction the offset / direction leads onto the road from: there. Several: ambiguous.
+            memo[ko] = (hits[0] if len(hits) == 1 else None, len(hits) > 1)
+        hit, ambiguous = memo[ko]
+        if hit is not None:
+            return hit + (None,)
     if pt is not None and r_sris:
         kp = (pt, r_sris)
         if kp not in memo:
             memo[kp] = ctx['snapper'].snap(np.array(pt), r_sris)
         hit = memo[kp]
         if hit is not None:
-            return ('latlon_snap', hit[0], hit[1], np.array(pt), None)
-    return rest
+            return ('latlon_snap', hit[0], hit[1], np.array(pt), None, None)
+    return rest + ('junctions' if ambiguous else None,)
 
 
 def _locate_strings(
     c, m, r_keys, x_keys, r_sri, x_sri, learned_ent, split, is_route, *,
-    lines, segs_by, segs_named, segs_cc, seg_ent, seg_sris, sri_lines, ent_sris, sri_ent, snapper,
+    lines, segs_by, segs_named, segs_cc, seg_ent, seg_sris, sri_lines, ent_sris, sri_ent, snapper, muni_geoms=None,
 ):
-    """`_locate_one`'s offset- and point-independent part: `(r_lines, r_sris, kind, p, rest)` — the
+    """`_locate_one`'s offset- and point-independent part: `(r_lines, r_sris, kind, ps, rest)` — the
     road's lines and SRIs, the result kind of an intersection (`intersection` / `route_xs`), the
-    point `p` where the road meets the cross street (None: they don't, or ambiguously), and `rest`:
-    the result when neither the intersection nor the reported point places the crash."""
+    junctions `ps` where the road meets the cross street (`junctions`; none: they don't, or the road
+    has no SRIs), and `rest`: the result when neither a junction nor the reported point places the
+    crash."""
     none = ('none', None, None, None, None)
     if split:
         # "A / B": either part may be the road (both at their intersection); 2018+ coded crashes
         # with such strings sit on A only ~75-90% of the time, so they're left unassigned.
-        return None, frozenset(), None, None, none
+        return None, frozenset(), None, np.empty((0, 2)), none
     r_segs = _segs(r_keys, c, m, segs_by)
     route_ok = not pd.isna(r_sri) and len(sri_lines.get(r_sri, ()))
     x_route = not pd.isna(x_sri) and len(sri_lines.get(x_sri, ()))
@@ -1053,19 +1307,25 @@ def _locate_strings(
         x_lines = sri_lines[x_sri]
     else:
         x_lines = lines[x_segs] if len(x_segs) else np.array([], dtype=object)
-    conflict, p = False, None
+    conflict, ps = False, np.empty((0, 2))
     if len(x_lines) and len(r_lines):
         meets = meet_points(r_lines, x_lines)
         # The named cross street never meets the named road here: one of the names is wrong (or
         # means another street), so no name-only guess either.
         conflict = not len(meets)
-        p = cluster_point(meets) if r_sris else None
+        if r_sris:
+            ps = junctions(meets, r_lines)
 
     def result(rest):
-        return r_lines, r_sris, kind, p, rest
+        return r_lines, r_sris, kind, ps, rest
 
     if route_ok:
         e = sri_ent.get((r_sri, c), sri_ent.get(r_sri))
+        g = (muni_geoms or {}).get((c, m))
+        if e is not None and g is not None and not shapely.dwithin(g, r_lines, TOWN_M).any():
+            # The SRI's one road runs nowhere near the crash's muni (Elizabeth's pre-2020 "UNION
+            # COUNTY 624" crashes; today's CR 624 is Horseshoe Rd in Berkeley Heights).
+            e = None
         return result(('sri_only', r_sri, None, None, e) if e is not None else none)
     if conflict or is_route:
         return result(none)
