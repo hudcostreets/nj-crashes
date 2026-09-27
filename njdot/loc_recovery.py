@@ -35,7 +35,7 @@ import shapely
 from pyproj import Transformer
 
 from njdot.cc2mc2mn import CC2MC2MN
-from njdot.road_net import _locate, lines_from, name_key, to_meters
+from njdot.road_net import _locate, lines_from, name_key, ng_name, to_meters
 from njdot.road_outputs import muni_codes
 
 # Road / cross street segments "meet" if within this many meters (NG911 is noded, so usually 0).
@@ -92,7 +92,7 @@ ROUTE_KIND = (
 ROUTE_RE = re.compile(ROUTE_KIND + r'[ -]*(?P<num>\d{1,3})(?:\s*(?:&|/|-|AND)\s*\d{1,3})?(?P<sfx>[A-Z])?\b')
 COUNTY_KINDS = {'CR', 'CO RD', 'CO RT', 'COUNTY RD', 'COUNTY ROAD', 'COUNTY RT', 'COUNTY ROUTE'}
 # SRI suffixes of "US 1 TRUCK" / "NJ 139 UPPER" style variants.
-ROUTE_SFX_WORDS = {'TRUCK': 'T', 'UPPER': 'U', 'ALT': 'A', 'BUS': 'B', 'SPUR': 'S'}
+ROUTE_SFX_WORDS = {'TRUCK': 'T', 'UPPER': 'U', 'ALT': 'A', 'BUS': 'B', 'SPUR': 'S', 'WESTERN': 'W', 'EXPRESS': 'E'}
 
 
 def ordinalize(s: pd.Series) -> pd.Series:
@@ -152,11 +152,19 @@ def split_road(road: pd.Series, cross: pd.Series) -> pd.DataFrame:
     return pd.DataFrame({'road': r, 'cross': x}, index=road.index)
 
 
-def route_sri(s: pd.Series, cc: pd.Series) -> pd.Series:
+def route_sri(s: pd.Series, cc: pd.Series, net: set[str] | None = None) -> pd.Series:
     """Route strings → SRI: state / US / interstate and 500-series county routes are statewide
     (`00000501__`), other county routes county-prefixed (`09000617__`); a trailing "TRUCK" /
-    "UPPER" / letter suffix fills the 9th character (`00000001T_`). Non-route strings → NA."""
+    "UPPER" / "WESTERN" / "EXPRESS" / letter suffix fills the 9th character (`00000001T_`,
+    `00000095W_`), "SECONDARY" the 10th (`00000095WS`). With `net` (the network's SRIs), a
+    "SECONDARY" whose `…S` SRI isn't in it takes the route's one other secondary SRI there
+    ("I-78 SECONDARY" → `00000078_W`), else the primary. Non-route strings → NA."""
     u = s.astype('string').str.upper().fillna('')
+    by9: dict[str, list[str]] = {}
+    if net:
+        for x in net:
+            if len(x) >= 10 and x[9] != '_':
+                by9.setdefault(x[:9], []).append(x)
     out = []
     for v, c in zip(u.to_numpy(), cc.to_numpy()):
         m = ROUTE_RE.match(v)
@@ -164,8 +172,8 @@ def route_sri(s: pd.Series, cc: pd.Series) -> pd.Series:
             out.append(pd.NA)
             continue
         kind, num = m.group('kind'), int(m.group('num'))
-        rest = v[m.end():].strip()
-        sfx = m.group('sfx') or next((ROUTE_SFX_WORDS[w] for w in rest.split() if w in ROUTE_SFX_WORDS), None)
+        words = v[m.end():].split()
+        sfx = m.group('sfx') or next((ROUTE_SFX_WORDS[w] for w in words if w in ROUTE_SFX_WORDS), None)
         county = kind in COUNTY_KINDS or kind.endswith(' COUNTY') or kind.endswith(' CO')
         if county and not 500 <= num < 600:
             if pd.isna(c):
@@ -174,7 +182,14 @@ def route_sri(s: pd.Series, cc: pd.Series) -> pd.Series:
             base = f'{int(c):02d}{num:06d}'
         else:
             base = f'{num:08d}'
-        out.append(base + (f'{sfx}_' if sfx else '__'))
+        b9 = base + (sfx or '_')
+        sri = b9 + '_'
+        if 'SECONDARY' in words:
+            if net is None or b9 + 'S' in net:
+                sri = b9 + 'S'
+            elif len(by9.get(b9, [])) == 1:
+                sri = by9[b9][0]
+        out.append(sri)
     return pd.Series(out, index=s.index, dtype='string')
 
 
@@ -219,8 +234,8 @@ def ng_name_index(cl: pd.DataFrame, al: pd.DataFrame, cc2mc2mn: CC2MC2MN) -> pd.
     df = cl[[len(x) >= 2 for x in cl['x']]].reset_index(drop=True)
     seg = pd.Series(np.arange(len(df)))
     names = pd.concat([
-        pd.DataFrame({'rcl': df['RCL_NGUID'], 'seg': seg, 'name': df['PRIMENAME'], 'src': 'name'}),
-        pd.DataFrame({'rcl': df['RCL_NGUID'], 'seg': seg, 'name': df['LST_PNAME'], 'src': 'name'}),
+        pd.DataFrame({'rcl': df['RCL_NGUID'], 'seg': seg, 'name': ng_name(df['PRIMENAME']), 'src': 'name'}),
+        pd.DataFrame({'rcl': df['RCL_NGUID'], 'seg': seg, 'name': ng_name(df['LST_PNAME']), 'src': 'name'}),
     ])
     la = al[al['ANAME_TYP'] == 'L']
     la = pd.concat([la[['RCL_NGUID', 'AST_PNAME']].rename(columns={'AST_PNAME': 'name'}), la[['RCL_NGUID', 'ALST_PNAME']].rename(columns={'ALST_PNAME': 'name'})])
@@ -482,8 +497,8 @@ def recover(
     net = set(runs['sri'])
     coded = has_sri & crashes['mp'].notna()
     ok = coded & sri_in.isin(net).fillna(False)
-    sri0 = sri_in.where(has_sri, route_sri(sp['road'], crashes['cc']))
-    x_sri = route_sri(sp['cross'], crashes['cc'])
+    sri0 = sri_in.where(has_sri, route_sri(sp['road'], crashes['cc'], net))
+    x_sri = route_sri(sp['cross'], crashes['cc'], net)
     r_rk, x_rk = route_keys(sp['road']), route_keys(sp['cross'])
     base = pd.DataFrame({'cc': crashes['cc'].astype('Int64'), 'mc': crashes['mc'].astype('Int64')}, index=crashes.index)
     r_raw = loc_key(sp['road'])

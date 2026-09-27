@@ -181,8 +181,9 @@ def _headings(geom: pd.DataFrame, X: np.ndarray, Y: np.ndarray) -> np.ndarray:
 def corridor_pairs(ents: pd.DataFrame, runs: pd.DataFrame, geom: pd.DataFrame, pieces: pd.DataFrame, parent: dict[str, str]) -> pd.DataFrame:
     """Entity pairs that are one right-of-way, `(a, b, kind)` with `a < b`, `kind` "sequential"
     (direction variants / same name, touching end to end: an end of one within `SEQ_M` of the
-    other's points, or consecutive runs on one SRI) or "parallel" (see `PAR_*`; direction variants /
-    same name, or sharing an SRI route number, e.g. `00000001__` / `00000001_S`). Ramps never pair."""
+    other's points, or consecutive runs on one SRI, where also an entity NG9-1-1 doesn't name continues
+    a named one) or "parallel" (see `PAR_*`; direction variants / same name, or sharing an SRI route
+    number, e.g. `00000001__` / `00000001_S`). Ramps never pair."""
     e = ents.set_index('entity')
     dk = pd.Series(dir_key(e['name']).to_numpy(), index=e.index)
     ramp = e['subt'].ge(RAMP_SUBT)
@@ -216,8 +217,11 @@ def corridor_pairs(ents: pd.DataFrame, runs: pd.DataFrame, geom: pd.DataFrame, p
     r = runs.sort_values(['sri', 'mp_lo'])
     same = (r['sri'].to_numpy()[1:] == r['sri'].to_numpy()[:-1]) & (r['mp_lo'].to_numpy()[1:] - r['mp_hi'].to_numpy()[:-1] <= 0.1 + 1e-9)
     ra, rb = r['entity'].to_numpy()[:-1][same], r['entity'].to_numpy()[1:][same]
+    # An entity NG9-1-1 doesn't name (its points keep NJDOT's SLD name: "I-95, N.J. TURNPIKE") that
+    # continues a named one on the same SRI is the same road.
+    unnamed = (geom.assign(named=geom['seg'].to_numpy() >= 0).groupby('entity')['named'].mean() < 0.5) if 'seg' in geom else pd.Series(dtype=bool)
     for a, b in zip(ra, rb):
-        if a != b and not ramp.get(a, True) and not ramp.get(b, True) and named(a, b):
+        if a != b and not ramp.get(a, True) and not ramp.get(b, True) and (named(a, b) or unnamed.get(a, False) or unnamed.get(b, False)):
             pairs[(min(a, b), max(a, b))] = 'sequential'
 
     # Parallel.
@@ -251,17 +255,25 @@ def _strip_dir(name: str) -> str:
     return ' '.join(w)
 
 
-def road_corridors(ents: pd.DataFrame, pairs: pd.DataFrame, geom: pd.DataFrame, pieces: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+def road_corridors(
+    ents: pd.DataFrame,
+    pairs: pd.DataFrame,
+    geom: pd.DataFrame,
+    pieces: pd.DataFrame,
+    parent: dict[str, str] | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Corridors: connected components (≥ 2 entities) of `corridor_pairs`. Returns `(corridors,
     members)`: `corridors` one row per corridor (`corridor` = component id here, `name`, `kind`
-    "direction" / "parallel" / "mixed", `spine` entity, `chain_mi`, `length_mi`); `members` one row
+    "sequential" / "parallel" / "mixed", `spine` entity, `chain_mi`, `length_mi`); `members` one row
     per member entity: `entity, corridor, role` ("spine" / "sequential" / "parallel"), `c0`,
     `sign`: its chain maps to the corridor's as `cchain = c0 + sign · chain`, and corridor chain
     starts at 0.
 
-    The spine is the member with the longest chain; members are placed breadth-first from it:
-    a parallel member by least-squares on its points' nearest placed points' corridor chains, a
-    sequential one end to end past whichever corridor end it attaches nearer to."""
+    The spine is the NG9-1-1-named member with the longest chain; members are placed breadth-first
+    from it: a parallel member by its points' chains on a placed member it shares MPs with (a
+    secondary carriageway beside its parent), else by the median offset to its points' nearest
+    placed points' corridor chains; a sequential one end to end past whichever corridor end it
+    attaches nearer to."""
     if not len(pairs):
         return (pd.DataFrame(columns=['corridor', 'name', 'kind', 'spine', 'chain_mi', 'length_mi']),
                 pd.DataFrame(columns=['entity', 'corridor', 'role', 'c0', 'sign']))
@@ -273,6 +285,8 @@ def road_corridors(ents: pd.DataFrame, pairs: pd.DataFrame, geom: pd.DataFrame, 
     _, comp = connected_components(adj, directed=False)
     length = pieces.groupby('entity')['chain_hi'].max()
     name = ents.set_index('entity')['name']
+    # NG9-1-1-named members name the corridor (not an SLD-named continuation).
+    ng_named = geom.assign(named=geom['seg'].to_numpy() >= 0).groupby('entity')['named'].mean() >= 0.5 if 'seg' in geom else pd.Series(dtype=bool)
     X, Y = to_meters(geom['lon'].to_numpy(), geom['lat'].to_numpy())
     gent = geom['entity'].to_numpy()
     gchain = geom['chain'].to_numpy()
@@ -284,7 +298,7 @@ def road_corridors(ents: pd.DataFrame, pairs: pd.DataFrame, geom: pd.DataFrame, 
     crow, mrows = [], []
     for c in range(comp.max() + 1):
         mem = [int(e) for e in ids[comp == c]]
-        spine = max(mem, key=lambda e: (length.get(e, 0), -e))
+        spine = max(mem, key=lambda e: (bool(ng_named.get(e, True)), length.get(e, 0), -e))
         placed = {spine: (0.0, 1, 'spine')}
         queue = [spine]
         while queue:
@@ -304,7 +318,18 @@ def road_corridors(ents: pd.DataFrame, pairs: pd.DataFrame, geom: pd.DataFrame, 
                 t = cKDTree(np.c_[X[pi], Y[pi]])
                 d, j = t.query(np.c_[X[oi], Y[oi]])
                 oc = gchain[oi]
+                # A parallel member measured in a placed member's MPs (a secondary carriageway beside
+                # its parent): its points' chains on that member, exactly.
+                shared = np.full(len(oi), np.nan)
                 if kind == 'parallel':
+                    for e in placed:
+                        ce = chain_at(pd.Series(e, index=range(len(oi))), geom['sri'].iloc[oi].reset_index(drop=True), geom['mp'].iloc[oi].reset_index(drop=True), pieces, parent or {})
+                        shared = np.where(np.isfinite(shared), shared, placed[e][0] + placed[e][1] * ce)
+                if kind == 'parallel' and (np.isfinite(shared) & np.isfinite(oc)).sum() >= 2:
+                    m = np.isfinite(shared) & np.isfinite(oc)
+                    sign = 1 if np.std(oc[m]) == 0 or np.corrcoef(oc[m], shared[m])[0, 1] >= 0 else -1
+                    c0 = float(np.median(shared[m] - sign * oc[m]))
+                elif kind == 'parallel':
                     m = (d <= PAR_M) & np.isfinite(oc)
                     if m.sum() >= 2 and np.std(oc[m]) > 0:
                         sign = 1 if np.corrcoef(oc[m], pc[j[m]])[0, 1] >= 0 else -1
@@ -343,7 +368,7 @@ def road_corridors(ents: pd.DataFrame, pairs: pd.DataFrame, geom: pd.DataFrame, 
                 cur_hi = max(cur_hi, hi_)
         covered += cur_hi - cur_lo
         roles = {r for _, (_, _, r) in placed.items() if r != 'spine'}
-        kind = 'direction' if roles == {'sequential'} else 'parallel' if roles == {'parallel'} else 'mixed'
+        kind = 'sequential' if roles == {'sequential'} else 'parallel' if roles == {'parallel'} else 'mixed'
         cname = name.get(spine)
         if kind != 'parallel':
             cname = _strip_dir(cname)
@@ -410,7 +435,16 @@ def intersection_nodes(
         f'c{corridor_of.get(int(e), -1 - int(e))}' if np.isfinite(e) else (None if r or v is None or v in UNNAMED else f'n{v}')
         for e, r, v in zip(ent_leg, ramp, nm)
     ]
-    legs = pd.DataFrame({'cl': cl, 'seg': leg_seg, 'ent': ent_leg, 'road': road, 'x': P[:, 0], 'y': P[:, 1]})
+    legs = pd.DataFrame({'cl': cl, 'seg': leg_seg, 'ent': ent_leg, 'road': road, 'k': nm, 'x': P[:, 0], 'y': P[:, 1]})
+    # A leg on no entity whose name is one of an entity's names at the same point ("Kennedy
+    # Boulevard" beside J F Kennedy Boulevard) is that road, not another.
+    if 'aliases' in ents:
+        ek = pd.concat([ents[['entity', 'name']], ents[['entity', 'aliases']].rename(columns={'aliases': 'name'}).assign(name=lambda d: d['name'].str.split(' · ')).explode('name')])
+        ek = ek.dropna().assign(k=lambda d: merge_key(d['name']).to_numpy())[['entity', 'k']].drop_duplicates()
+        el = legs.dropna(subset=['ent']).assign(entity=lambda d: d['ent'].astype('int64'))[['cl', 'entity', 'road']].drop_duplicates()
+        known = el.merge(ek.assign(entity=ek['entity'].astype('int64')), on='entity')[['cl', 'k', 'road']].drop_duplicates(['cl', 'k'])
+        m = legs[legs['ent'].isna()].reset_index().merge(known, on=['cl', 'k'], suffixes=('', '_e'))
+        legs.loc[m['index'].to_numpy(), 'road'] = m['road_e'].to_numpy()
     st = legs.groupby('cl').agg(n_legs=('seg', 'size'), n_ent=('ent', 'nunique'), n_road=('road', 'nunique'), x=('x', 'mean'), y=('y', 'mean'))
     raw = st[(st['n_legs'] >= 3) & (st['n_road'] >= 2) & (st['n_ent'] >= 1)]
     legs = legs[legs['cl'].isin(raw.index)]
@@ -702,7 +736,7 @@ def model_outputs(
     by_entity = by_entity.assign(chain=np.where(placed, ch, np.nan))
 
     pairs = corridor_pairs(ents, runs, geom, pieces, parent)
-    corridors, members = road_corridors(ents, pairs, geom, pieces)
+    corridors, members = road_corridors(ents, pairs, geom, pieces, parent)
     if len(corridors):
         slugs = corridor_slugs(corridors, members, ents)
         order = {old: new for new, old in enumerate(slugs.sort_values(kind='stable').index)}

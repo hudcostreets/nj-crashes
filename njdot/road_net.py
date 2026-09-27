@@ -193,15 +193,26 @@ def rn_points(feats: pd.DataFrame, step: float = STEP) -> pd.DataFrame:
     return df.sort_values(['sri', 'mp'], kind='stable').drop_duplicates(['sri', 'mp']).reset_index(drop=True)
 
 
+# NG9-1-1 placeholder names ("Unnamed Segment": 26k segments statewide), which aren't names: a
+# point there keeps NJDOT's SLD name, and unrelated unnamed streets don't join into one entity.
+PLACEHOLDER_NAME_RE = r'(?i)^(unnamed\b.*|ramp|driveway)$'
+
+
+def ng_name(s: pd.Series) -> pd.Series:
+    """NG911 `PRIMENAME`s, stripped; blank or placeholder (`PLACEHOLDER_NAME_RE`) → NA."""
+    n = s.astype('string').str.strip().replace('', pd.NA)
+    return n.mask(n.str.match(PLACEHOLDER_NAME_RE).fillna(False))
+
+
 def ng_segments(cl: pd.DataFrame) -> pd.DataFrame:
-    """NG911 centerline rows → `seg` frame: names, place, shield, and metric geometry (`line`, and
-    `start` / `mid` / `end` points)."""
+    """NG911 centerline rows → `seg` frame: names (`ng_name`), place, shield, and metric geometry
+    (`line`, and `start` / `mid` / `end` points)."""
     df = cl[[len(x) >= 2 for x in cl['x']]].reset_index(drop=True)
     line = lines_from(*ragged_to_meters(df['x'], df['y']))
     return pd.DataFrame({
         'rcl': df['RCL_NGUID'].astype('string'),
         'tag': df['SRI'].astype('string').str.strip().replace('', pd.NA),
-        'name': df['PRIMENAME'].astype('string').str.strip().replace('', pd.NA),
+        'name': ng_name(df['PRIMENAME']),
         'cc': df['cc_l'].fillna(df['cc_r']).astype('Int8'),
         'muni': df['muni_l'].fillna(df['muni_r']).astype('string'),
         'shield': [shield(t, s, n) for t, s, n in zip(df['SHLD_TYPE'], df['SHLDSUBTYP'], df['SHLD_NUM'])],
