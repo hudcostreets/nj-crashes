@@ -18,6 +18,8 @@
   cross street) its point is within `X` of a node and the police flagged it an intersection crash.
   `X` depends on the road class (`XS_M`); see the spec for the evidence.
 """
+import time
+
 import numpy as np
 import pandas as pd
 import shapely
@@ -25,9 +27,22 @@ from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
 from scipy.spatial import cKDTree
 
+from nj_crashes.utils.log import err
 from njdot.road_net import _locate, dir_key, lines_from, merge_key, to_meters
 
 MI_M = 1609.344
+
+
+class Steps:
+    """Logs the wall-clock time of each build step (`steps('label')` after it): `    label: 1.2s`."""
+
+    def __init__(self, indent: str = '    '):
+        self.indent, self.t = indent, time.monotonic()
+
+    def __call__(self, label: str):
+        now = time.monotonic()
+        err(f'{self.indent}{label}: {now - self.t:.1f}s')
+        self.t = now
 
 # --- Pieces / chainage -------------------------------------------------------------------------
 
@@ -105,17 +120,29 @@ def entity_pieces(runs: pd.DataFrame, parent: dict[str, str]) -> pd.DataFrame:
     X0, Y0 = to_meters(lo_end.loc[agg.index, 'lon0'].to_numpy(), lo_end.loc[agg.index, 'lat0'].to_numpy())
     X1, Y1 = to_meters(hi_end.loc[agg.index, 'lon1'].to_numpy(), hi_end.loc[agg.index, 'lat1'].to_numpy())
     agg = agg.assign(x0=X0, y0=Y0, x1=X1, y1=Y1, len=agg['mp_hi'] - agg['mp_lo']).reset_index(drop=True)
+    ents, lens = agg['entity'].to_numpy(), agg['len'].to_numpy()
+    k = pd.Series(ents).map(pd.Series(ents).value_counts()).to_numpy()
+    # Single-piece entities (most): piece 0, chain `[0, len]`.
+    one = np.flatnonzero(k == 1)
+    parts = [pd.DataFrame({
+        'i': one, 'entity': ents[one], 'piece': 0, 'dir': 1, 'chain_lo': 0.0, 'chain_hi': 0.0 + lens[one], 'join': 'start', 'gap_mi': 0.0,
+    })]
     rows = []
-    for ent, g in agg.groupby('entity', sort=True):
-        idx = g.index.to_numpy()
-        steps = _order_pieces(g[['x0', 'y0']].to_numpy(), g[['x1', 'y1']].to_numpy(), g['len'].to_numpy())
+    P0, P1 = agg[['x0', 'y0']].to_numpy(), agg[['x1', 'y1']].to_numpy()
+    for idx in pd.Series(np.arange(len(agg))[k > 1]).groupby(ents[k > 1]).indices.values():
+        idx = np.flatnonzero(k > 1)[idx]
         c = 0.0
-        for i, (q, d, gap, join) in enumerate(steps):
-            row = agg.loc[idx[q]]
+        for i, (q, d, gap, join) in enumerate(_order_pieces(P0[idx], P1[idx], lens[idx])):
             c += gap
-            rows.append((ent, i, row['key'], row['mp_lo'], row['mp_hi'], d, c, c + row['len'], join, gap))
-            c += row['len']
-    out = pd.DataFrame(rows, columns=['entity', 'piece', 'sri', 'mp_lo', 'mp_hi', 'dir', 'chain_lo', 'chain_hi', 'join', 'gap_mi'])
+            rows.append((idx[q], ents[idx[q]], i, d, c, c + lens[idx[q]], join, gap))
+            c += lens[idx[q]]
+    if rows:
+        parts.append(pd.DataFrame(rows, columns=['i', 'entity', 'piece', 'dir', 'chain_lo', 'chain_hi', 'join', 'gap_mi']))
+    out = pd.concat(parts, ignore_index=True)
+    i = out['i'].to_numpy(dtype='int64')
+    out = out.assign(sri=agg['key'].to_numpy()[i], mp_lo=agg['mp_lo'].to_numpy()[i], mp_hi=agg['mp_hi'].to_numpy()[i])
+    out = out.sort_values(['entity', 'piece'], kind='stable').reset_index(drop=True)
+    out = out[['entity', 'piece', 'sri', 'mp_lo', 'mp_hi', 'dir', 'chain_lo', 'chain_hi', 'join', 'gap_mi']]
     return out.astype({
         'entity': 'int32', 'piece': 'int16', 'sri': 'string', 'mp_lo': 'float64', 'mp_hi': 'float64', 'dir': 'int8',
         'chain_lo': 'float64', 'chain_hi': 'float64', 'join': 'string', 'gap_mi': 'float32',
@@ -196,8 +223,10 @@ def corridor_pairs(ents: pd.DataFrame, runs: pd.DataFrame, geom: pd.DataFrame, p
     npts = pd.Series(gent[keep]).value_counts()
     pairs: dict[tuple[int, int], str] = {}
 
+    dkd = {int(e): v for e, v in zip(dk.index, dk.to_numpy(dtype=object)) if v is not None and not pd.isna(v)}
+
     def named(a, b):
-        return dk.get(a) is not None and not pd.isna(dk.get(a)) and dk.get(a) == dk.get(b)
+        return int(a) in dkd and dkd[int(a)] == dkd.get(int(b))
 
     # Sequential: piece ends near the other's points, or consecutive runs on one SRI.
     ep = pd.concat([
@@ -295,6 +324,12 @@ def road_corridors(
     for x, y, k in zip(pairs['a'], pairs['b'], pairs['kind']):
         edges.setdefault(int(x), []).append((int(y), k))
         edges.setdefault(int(y), []).append((int(x), k))
+    # Each entity's pieces (`chain_at` per member: the whole table would make this quadratic).
+    p_by = pieces.groupby('entity').indices
+
+    def pieces_of(e):
+        return pieces.iloc[p_by.get(e, [])]
+
     crow, mrows = [], []
     for c in range(comp.max() + 1):
         mem = [int(e) for e in ids[comp == c]]
@@ -323,7 +358,7 @@ def road_corridors(
                 shared = np.full(len(oi), np.nan)
                 if kind == 'parallel':
                     for e in placed:
-                        ce = chain_at(pd.Series(e, index=range(len(oi))), geom['sri'].iloc[oi].reset_index(drop=True), geom['mp'].iloc[oi].reset_index(drop=True), pieces, parent or {})
+                        ce = chain_at(pd.Series(e, index=range(len(oi))), geom['sri'].iloc[oi].reset_index(drop=True), geom['mp'].iloc[oi].reset_index(drop=True), pieces_of(e), parent or {})
                         shared = np.where(np.isfinite(shared), shared, placed[e][0] + placed[e][1] * ce)
                 if kind == 'parallel' and (np.isfinite(shared) & np.isfinite(oc)).sum() >= 2:
                     m = np.isfinite(shared) & np.isfinite(oc)
@@ -418,8 +453,8 @@ def intersection_nodes(
       names still identify a cross street)."""
     subt = ents.set_index('entity')['subt']
     n = len(seg)
-    P0 = np.array([(p.x, p.y) for p in seg['start'].to_numpy()])
-    P1 = np.array([(p.x, p.y) for p in seg['end'].to_numpy()])
+    P0 = shapely.get_coordinates(seg['start'].to_numpy()).reshape(-1, 2)
+    P1 = shapely.get_coordinates(seg['end'].to_numpy()).reshape(-1, 2)
     P = np.r_[P0, P1]
     leg_seg = np.r_[np.arange(n), np.arange(n)]
     t = cKDTree(P)
@@ -428,7 +463,10 @@ def intersection_nodes(
     _, cl = connected_components(adj, directed=False)
     se = seg_ent.to_numpy(dtype='float64', na_value=np.nan)
     ent_all = se[leg_seg]
-    ramp = np.array([np.isfinite(e) and subt.get(int(e), RAMP_SUBT) >= RAMP_SUBT for e in ent_all], dtype=bool)
+    fin = np.isfinite(ent_all)
+    sv = np.full(len(ent_all), float(RAMP_SUBT))
+    sv[fin] = subt.reindex(ent_all[fin].astype('int64')).to_numpy(dtype='float64', na_value=float(RAMP_SUBT))
+    ramp = fin & (sv >= RAMP_SUBT)
     # A leg's road: its (non-ramp) entity, mapped to its corridor; else its NG911 name (a public road
     # NJDOT's network lacks, or whose segment didn't match a line), unless unnamed or a ramp.
     ent_leg = np.where(ramp, np.nan, ent_all)
@@ -561,19 +599,23 @@ def cross_keys(crashes: pd.DataFrame, idx: pd.DataFrame) -> pd.DataFrame:
     raw = loc_key(sp['cross'])
     base = pd.DataFrame({'cc': crashes['cc'].astype('Int64'), 'mc': pd.to_numeric(crashes['mc'], errors='coerce').astype('Int64')}, index=crashes.index)
     has = raw.notna().to_numpy()
-    q = base[has].assign(key=raw[has])
-    res = resolve_keys(q, idx) if len(q) else q.assign(ng_keys=None)
-    rk = route_keys(sp['cross'][has])
-    pos = np.flatnonzero(has)
+    q = base[has].assign(key=raw[has], cross=sp['cross'][has]).reset_index(drop=True).assign(i=np.flatnonzero(has))
+    # Keys per distinct `(cc, mc, cross street)`, then broadcast to its crashes.
+    g = q.groupby(['cc', 'mc', 'cross'], dropna=False, sort=False).ngroup().to_numpy()
+    u = q[~pd.Series(g).duplicated().to_numpy()].reset_index(drop=True)
+    res = resolve_keys(u[['cc', 'mc', 'key']], idx) if len(u) else u.assign(ng_keys=None)
+    rk = route_keys(u['cross'])
     rows = []
-    for i, k, ng, r in zip(pos, raw[has].to_numpy(dtype=object), res['ng_keys'].to_numpy(dtype=object), rk.to_numpy(dtype=object)):
+    for j, k, ng, r in zip(range(len(u)), u['key'].to_numpy(dtype=object), res['ng_keys'].to_numpy(dtype=object), rk.to_numpy(dtype=object)):
         ks = {k}
         if ng:
             ks.update(ng)
         if r:
             ks.update(r)
-        rows.extend((i, x) for x in ks)
-    return pd.DataFrame(rows, columns=['i', 'key']).astype({'i': 'int64', 'key': 'string'})
+        rows.extend((j, x) for x in ks)
+    uk = pd.DataFrame(rows, columns=['g', 'key'])
+    out = pd.DataFrame({'i': q['i'].to_numpy(), 'g': g}).merge(uk, on='g')[['i', 'key']]
+    return out.astype({'i': 'int64', 'key': 'string'})
 
 
 def stated_m(crashes: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
@@ -615,7 +657,7 @@ def crash_nodes(
     ent = by_entity['entity'].to_numpy(dtype='int64')
     chain = pd.Series(by_entity['chain']).to_numpy(dtype='float64', na_value=np.nan)
     at, st = stated_m(by_entity)
-    X = np.array([xs_m.get(int(s), XS_M_DEFAULT) if not pd.isna(s) else XS_M_DEFAULT for s in subt.reindex(ent).to_numpy()], dtype=float)
+    X = pd.Series(subt.reindex(ent).to_numpy(dtype='float64', na_value=np.nan)).map(xs_m).fillna(XS_M_DEFAULT).to_numpy(dtype=float)
     node = np.full(n, -1, dtype='int64')
     how = np.full(n, None, dtype=object)
     d_m = np.full(n, np.nan)
@@ -732,13 +774,17 @@ def model_outputs(
     from njdot.loc_recovery import seg_entities
     from njdot.loc_recovery import FROM_M
     runs, geom, parent = b['runs'], b['geom'], b.get('parent', {})
+    steps = Steps()
     pieces = entity_pieces(runs, parent)
+    steps('pieces')
     geom['chain'] = chain_at(geom['entity'], geom['sri'], geom['mp'], pieces, parent).astype('float32')
     placed = by_entity['mp'].notna().to_numpy()
     ch = chain_at(by_entity['entity'], by_entity['sri'], by_entity['mp'], pieces, parent)
     by_entity = by_entity.assign(chain=np.where(placed, ch, np.nan))
+    steps('chain')
 
     pairs = corridor_pairs(ents, runs, geom, pieces, parent)
+    steps('corridor pairs')
     corridors, members = road_corridors(ents, pairs, geom, pieces, parent)
     if len(corridors):
         slugs = corridor_slugs(corridors, members, ents)
@@ -746,6 +792,7 @@ def model_outputs(
         corridors = corridors.assign(slug=corridors['corridor'].map(slugs)).assign(corridor=lambda d: d['corridor'].map(order)).sort_values('corridor').reset_index(drop=True)
         members = members.assign(corridor=members['corridor'].map(order))
     corridor_of = dict(zip(members['entity'].astype(int), members['corridor'].astype(int)))
+    steps('corridors')
 
     seg_ent = seg_entities(b['seg'], b['iv'], runs) if 'seg' in b else pd.Series(dtype='Int32')
     if 'seg' in b:
@@ -763,6 +810,7 @@ def model_outputs(
     nodes = nodes.assign(node=nodes['node'].map(renum)).sort_values('node').reset_index(drop=True)
     node_ents = node_ents.assign(node=node_ents['node'].map(renum))
     node_legs = node_legs.assign(node=node_legs['node'].map(renum))
+    steps('intersection nodes')
 
     blocks = road_blocks(node_ents, pieces)
     subt = ents.set_index('entity')['subt']
@@ -772,6 +820,7 @@ def model_outputs(
         nk = pd.DataFrame({'entity': pd.Series(dtype='int32'), 'key': pd.Series(dtype='string'), 'node': pd.Series(dtype='int32'), 'chain': [], 'leg_ent': []})
     xs = crash_nodes(by_entity, nk, node_ents, idx if idx is not None else pd.DataFrame(columns=['cc', 'mc', 'key', 'base']), subt)
     by_entity = by_entity.assign(**{c: xs[c] for c in xs.columns})
+    steps('crash ↔ node')
     for c in ('chain', 'chain_lo', 'chain_hi'):
         by_entity[c] = by_entity[c].astype('float32')
     return dict(
@@ -823,13 +872,13 @@ def node_table(nodes: pd.DataFrame, node_ents: pd.DataFrame, node_legs: pd.DataF
     names = pd.concat([ne[['node', 'name']], extra[['node', 'name']]], ignore_index=True).dropna()
     names['k'] = merge_key(names['name']).to_numpy()
     names = names[~names['k'].isin(UNNAMED) & ~names['name'].astype('string').str.contains(RAMP_NAME_RE, regex=True).fillna(False)].drop_duplicates(['node', 'k'])
-    label = names.groupby('node', sort=False)['name'].agg(lambda s: ' & '.join(list(s)[:LABEL_MAX_ROADS]))
+    label = names.groupby('node', sort=False).head(LABEL_MAX_ROADS).groupby('node', sort=False)['name'].agg(' & '.join)
     at = by_entity[by_entity['node'].notna().to_numpy()].assign(node=lambda d: d['node'].astype('int64'))
     cnt = _severity_counts(at, ['node'])
     own = at.groupby(['node', 'entity']).size().rename('n_own').reset_index()
     nodes = nodes.assign(
         n_roads=nodes['node'].map(ne.groupby('node').size()).fillna(0).astype('int16'),
-        entities=nodes['node'].map(ne.groupby('node')['entity'].agg(lambda s: ','.join(map(str, sorted(s))))).astype('string'),
+        entities=nodes['node'].map(ne.sort_values(['node', 'entity']).assign(e=lambda d: d['entity'].astype(str)).groupby('node')['e'].agg(','.join)).astype('string'),
         label=nodes['node'].map(label).astype('string'),
     ).merge(cnt, on='node', how='left')
     for col in ('n_crashes', 'n_fatal', 'n_injury', 'n_killed'):
@@ -839,7 +888,7 @@ def node_table(nodes: pd.DataFrame, node_ents: pd.DataFrame, node_legs: pd.DataF
     names = names.reset_index(drop=True).reset_index(names='o')
     x = ne[['node', 'entity', 'name']].assign(ke=merge_key(ne['name']).to_numpy()).merge(names[['node', 'o', 'name', 'k']].rename(columns={'name': 'other'}), on='node')
     x = x[x['k'].to_numpy() != x['ke'].to_numpy()].sort_values(['node', 'entity', 'o'], kind='stable')
-    cross = x.groupby(['node', 'entity'])['other'].agg(lambda s: ' & '.join(list(s)[:LABEL_MAX_ROADS - 1])).rename('cross').reset_index()
+    cross = x.groupby(['node', 'entity']).head(LABEL_MAX_ROADS - 1).groupby(['node', 'entity'])['other'].agg(' & '.join).rename('cross').reset_index()
     rne = ne[['entity', 'chain', 'node']].merge(cross, on=['node', 'entity'], how='left')
     rne['cross'] = rne['cross'].astype('string')
     rne = rne.merge(cnt[['node', 'n_crashes']], on='node', how='left').merge(own, on=['node', 'entity'], how='left')

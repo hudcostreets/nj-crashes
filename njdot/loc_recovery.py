@@ -26,8 +26,11 @@ module recovers a location from those strings against the NJOGIS NG9-1-1 centerl
 street), `latlon_snap` (a reported point snapped to the road), `sri_only` (an SRI without MP that is
 one entity), `name_only` (the road name is one entity in the crash's muni; no point), or `none`.
 """
+import heapq
+import multiprocessing as mp
+import os
 import re
-from difflib import SequenceMatcher, get_close_matches
+from difflib import SequenceMatcher
 
 import numpy as np
 import pandas as pd
@@ -35,7 +38,7 @@ import shapely
 from pyproj import Transformer
 
 from njdot.cc2mc2mn import CC2MC2MN
-from njdot.road_net import _locate, lines_from, name_key, ng_name, to_meters
+from njdot.road_net import _locate, lines_from, name_key, ng_name, per_unique, to_meters, to_mp
 from njdot.road_outputs import muni_codes
 
 # Road / cross street segments "meet" if within this many meters (NG911 is noded, so usually 0).
@@ -95,6 +98,7 @@ COUNTY_KINDS = {'CR', 'CO RD', 'CO RT', 'COUNTY RD', 'COUNTY ROAD', 'COUNTY RT',
 ROUTE_SFX_WORDS = {'TRUCK': 'T', 'UPPER': 'U', 'ALT': 'A', 'BUS': 'B', 'SPUR': 'S', 'WESTERN': 'W', 'EXPRESS': 'E'}
 
 
+@per_unique
 def ordinalize(s: pd.Series) -> pd.Series:
     """Spelled / split ordinals → "39TH": "THIRTY-NINTH ST", "THIRTY NINTH ST", "E 39 TH ST" → "… 39TH …"."""
     s = s.str.replace('-', ' ', regex=False).str.replace(r'\s+', ' ', regex=True)
@@ -102,6 +106,7 @@ def ordinalize(s: pd.Series) -> pd.Series:
     return s.str.replace(r'\b(\d+) (ST|ND|RD|TH)\b', r'\1\2', regex=True)
 
 
+@per_unique
 def clean_road(s: pd.Series) -> pd.Series:
     """Police-entered road string → upper-case name: junk (`JUNK_RE`), a leading house number and
     punctuation dropped, whitespace collapsed; empty → NA."""
@@ -112,6 +117,7 @@ def clean_road(s: pd.Series) -> pd.Series:
     return s.where(s.str.len() > 0)
 
 
+@per_unique
 def loc_key(s: pd.Series) -> pd.Series:
     """A name → its match key: ordinals numeric, `name_key` (abbreviations, directions spelled out,
     spaces dropped), "JOHN F" → "J F", "JR" dropped, doubled *letters* squeezed ("TONNELLE" ==
@@ -130,6 +136,7 @@ def loc_key(s: pd.Series) -> pd.Series:
 TYPE_RE = r'(AVE|ST|RD|BLVD|DR|PL|PKWY|HWY|LN|CT|TER|WAY|CIR|PLZ|SQ|EXT)$'
 
 
+@per_unique
 def base_key(k: pd.Series) -> pd.Series:
     """`loc_key` without a trailing street type ("WESTSIDEAVE" → "WESTSIDE"), for crash strings
     that omit it ("WESTSIDE")."""
@@ -141,6 +148,15 @@ def split_road(road: pd.Series, cross: pd.Series) -> pd.DataFrame:
     """Crash `road` / `cross_street` → `(road, cross)` cleaned names; an intersection-style `road`
     ("DUNCAN AVE / W SIDE AVE") gives the road its first part and, when `cross` is empty, the cross
     street its second. Route strings ("US 1 & 9") aren't split."""
+    # Once per distinct `(road, cross)` pair (`ngroup` numbers them in order of first appearance).
+    pairs = pd.DataFrame({'r': road.astype('string'), 'x': cross.astype('string')}, index=road.index)
+    codes = pairs.groupby(['r', 'x'], dropna=False, sort=False).ngroup().to_numpy()
+    u = pairs[~pd.Series(codes).duplicated().to_numpy()]
+    out = _split_road(u['r'], u['x'])
+    return out.iloc[codes].set_axis(road.index)
+
+
+def _split_road(road: pd.Series, cross: pd.Series) -> pd.DataFrame:
     r, x = clean_road(road), clean_road(cross)
     is_route = r.str.match(ROUTE_RE.pattern).fillna(False).astype(bool)
     parts = r.str.split(INTX_RE, n=1, regex=True)
@@ -159,7 +175,11 @@ def route_sri(s: pd.Series, cc: pd.Series, net: set[str] | None = None) -> pd.Se
     `00000095W_`), "SECONDARY" the 10th (`00000095WS`). With `net` (the network's SRIs), a
     "SECONDARY" whose `…S` SRI isn't in it takes the route's one other secondary SRI there
     ("I-78 SECONDARY" → `00000078_W`), else the primary. Non-route strings → NA."""
-    u = s.astype('string').str.upper().fillna('')
+    # Once per distinct `(string, county)` (`ngroup` numbers them in order of first appearance).
+    df = pd.DataFrame({'s': s.astype('string').str.upper().fillna(''), 'cc': pd.Series(cc).astype('Int64').to_numpy()}, index=s.index)
+    codes = df.groupby(['s', 'cc'], dropna=False, sort=False).ngroup().to_numpy()
+    first = df[~pd.Series(codes).duplicated().to_numpy()]
+    u, cc = first['s'], first['cc']
     by9: dict[str, list[str]] = {}
     if net:
         for x in net:
@@ -190,7 +210,7 @@ def route_sri(s: pd.Series, cc: pd.Series, net: set[str] | None = None) -> pd.Se
             elif len(by9.get(b9, [])) == 1:
                 sri = by9[b9][0]
         out.append(sri)
-    return pd.Series(out, index=s.index, dtype='string')
+    return pd.Series(out, dtype='string').iloc[codes].set_axis(s.index)
 
 
 # NG911 shield types → route-key prefixes (`route_keys`).
@@ -200,6 +220,7 @@ NJ_KINDS = {'NJ', 'NJ RT', 'NJ ROUTE', 'NJSH', 'SH', 'STATE HWY', 'STATE HIGHWAY
 I_KINDS = {'I', 'INTERSTATE'}
 
 
+@per_unique
 def route_keys(s: pd.Series) -> pd.Series:
     """Route strings → candidate NG911 shield keys (`R:<type><number>`, as `ng_name_index` indexes
     segments' shields): "US 1 & 9" → (`R:US1`,), "HUDSON COUNTY 617" → (`R:CR617`,), and a bare "RT
@@ -275,6 +296,7 @@ DIR_RE = r'^(?:NORTH|SOUTH|EAST|WEST)(?=\d)|(?:(?<=AVE)|(?<=ST)|(?<=RD)|(?<=BLVD
 FUZZ_MARGIN = 0.04
 
 
+@per_unique
 def nodir_key(k: pd.Series) -> pd.Series:
     """`loc_key` without a leading direction before a number ("SOUTH3RDST" → "3RDST") or a trailing
     one after a street type ("PARKAVEEAST" → "PARKAVE")."""
@@ -295,30 +317,80 @@ def resolve_keys(q: pd.DataFrame, idx: pd.DataFrame, fuzz: bool = True) -> pd.Da
     keys = keys.assign(nd=nodir_key(keys['key'].astype('string')).to_numpy())
     nodirs = keys.dropna(subset=['nd']).groupby(['cc', 'mc', 'nd'])['key'].agg(lambda k: tuple(sorted(set(k)))).to_dict()
     by_muni = keys.groupby(['cc', 'mc'])['key'].agg(lambda k: sorted(set(k))).to_dict()
-    qk = q['key'].astype('string')
-    qb, qn = base_key(qk).to_numpy(), nodir_key(qk).to_numpy()
-    ng_keys, how = [], []
-    cache: dict[tuple, tuple] = {}
-    for c, m, k, b, n in zip(q['cc'].to_numpy(), q['mc'].to_numpy(), qk.to_numpy(), qb, qn):
-        if pd.isna(k) or pd.isna(c) or pd.isna(m):
-            ng_keys.append(None); how.append(pd.NA); continue
+    fuzzers: dict[tuple, CloseMatcher] = {}
+    # One lookup per distinct `(cc, mc, key)` (queries repeat heavily), broadcast back to the rows.
+    qq = pd.DataFrame({'cc': q['cc'].astype('Int64'), 'mc': q['mc'].astype('Int64'), 'key': q['key'].astype('string')})
+    ok = qq.notna().all(axis=1).to_numpy()
+    codes = np.full(len(q), -1)
+    u = qq[ok].drop_duplicates()
+    if len(u):
+        codes[ok] = u.reset_index(drop=True).reset_index().merge(qq[ok], on=['cc', 'mc', 'key'], how='right')['index'].to_numpy()
+    uk = u['key']
+    ub, un = base_key(uk).to_numpy(), nodir_key(uk).to_numpy()
+    res_keys, res_how = [], []
+    for c, m, k, b, n in zip(u['cc'].to_numpy(dtype=int), u['mc'].to_numpy(dtype=int), uk.to_numpy(dtype=object), ub, un):
         t = (int(c), int(m), k)
-        if t not in cache:
-            r = (None, pd.NA)
-            if t in exact:
-                r = ((k,), 'exact')
-            elif not pd.isna(b) and len(bk := bases.get((t[0], t[1], b), ())) == 1:
-                r = (bk, 'base')
-            elif not pd.isna(n) and (nk := nodirs.get((t[0], t[1], n), ())):
-                r = (nk, 'nodir')
-            elif fuzz and len(k) >= FUZZ_MIN_LEN:
-                hits = get_close_matches(k, by_muni.get((t[0], t[1]), []), n=2, cutoff=FUZZ_CUTOFF)
-                ratios = [SequenceMatcher(None, k, h).ratio() for h in hits]
-                if hits and (len(hits) == 1 or ratios[0] - ratios[1] >= FUZZ_MARGIN):
-                    r = ((hits[0],), 'fuzzy')
-            cache[t] = r
-        ng_keys.append(cache[t][0]); how.append(cache[t][1])
+        r = (None, pd.NA)
+        if t in exact:
+            r = ((k,), 'exact')
+        elif not pd.isna(b) and len(bk := bases.get((t[0], t[1], b), ())) == 1:
+            r = (bk, 'base')
+        elif not pd.isna(n) and (nk := nodirs.get((t[0], t[1], n), ())):
+            r = (nk, 'nodir')
+        elif fuzz and len(k) >= FUZZ_MIN_LEN:
+            if t[:2] not in fuzzers:
+                fuzzers[t[:2]] = CloseMatcher(by_muni.get(t[:2], []))
+            hits = fuzzers[t[:2]].close_matches(k, n=2, cutoff=FUZZ_CUTOFF)
+            ratios = [SequenceMatcher(None, k, h).ratio() for h in hits]
+            if hits and (len(hits) == 1 or ratios[0] - ratios[1] >= FUZZ_MARGIN):
+                r = ((hits[0],), 'fuzzy')
+        res_keys.append(r[0]); res_how.append(r[1])
+    res_keys.append(None); res_how.append(pd.NA)
+    # (Filled one by one: `np.array` of equal-length tuples would make a 2-D array.)
+    arr = np.empty(len(res_keys), dtype=object)
+    arr[:] = res_keys
+    ng_keys = arr[codes]
+    how = pd.array(res_how, dtype='string')[codes]
     return q.assign(ng_keys=pd.Series(ng_keys, index=q.index, dtype=object), how=pd.array(how, dtype='string'))
+
+
+class CloseMatcher:
+    """`difflib.get_close_matches` over a fixed list of `possibilities`, with the same result, but
+    `real_quick_ratio` / `quick_ratio` (length and character-multiset upper bounds of `ratio`)
+    evaluated for all possibilities at once in numpy; only the survivors get a `SequenceMatcher`."""
+
+    def __init__(self, possibilities: list[str]):
+        self.words = list(possibilities)
+        self.lens = np.array([len(w) for w in self.words], dtype=np.int64)
+        chars = sorted({ch for w in self.words for ch in w})
+        self.col = {ch: i for i, ch in enumerate(chars)}
+        cnt = np.zeros((len(self.words), len(chars)), dtype=np.int64)
+        for i, w in enumerate(self.words):
+            for ch in w:
+                cnt[i, self.col[ch]] += 1
+        self.cnt = cnt
+
+    def close_matches(self, word: str, n: int = 3, cutoff: float = 0.6) -> list[str]:
+        if not self.words:
+            return []
+        la = len(word)
+        tot = self.lens + la
+        # `difflib._calculate_ratio`: 2 · matches / length (1 when both are empty).
+        rq = np.where(tot > 0, 2.0 * np.minimum(self.lens, la) / np.maximum(tot, 1), 1.0)
+        q = np.zeros(len(self.col), dtype=np.int64)
+        for ch in word:
+            if ch in self.col:
+                q[self.col[ch]] += 1
+        qr = np.where(tot > 0, 2.0 * np.minimum(self.cnt, q).sum(axis=1) / np.maximum(tot, 1), 1.0)
+        s = SequenceMatcher()
+        s.set_seq2(word)
+        result = []
+        for i in np.flatnonzero((rq >= cutoff) & (qr >= cutoff)):
+            x = self.words[i]
+            s.set_seq1(x)
+            if s.ratio() >= cutoff:
+                result.append((s.ratio(), x))
+        return [x for _, x in heapq.nlargest(n, result)]
 
 
 def meet_points(r_lines: np.ndarray, x_lines: np.ndarray, touch_m: float = TOUCH_M) -> np.ndarray:
@@ -386,22 +458,40 @@ class Snapper:
         self.lines = lines_from(list(feats['X']), list(feats['Y']), np.array([len(x) for x in feats['X']]))
         self.tree = shapely.STRtree(self.lines)
         self.fsri = feats['sri'].to_numpy()
+        self.by_sri = pd.Series(np.arange(len(feats))).groupby(self.fsri).indices
+        self.d, self.m = feats['d'].to_numpy(), feats['m'].to_numpy()
+        self.sec, self.ms, self.me, self.ps, self.pe = (feats[c].to_numpy() for c in ('sec', 'ms', 'me', 'ps', 'pe'))
 
     def near(self, p: np.ndarray, tol: float = SNAP_M) -> set[str]:
         """SRIs with a line within `tol` of point `p`."""
         return set(self.fsri[self.tree.query(shapely.points(p), predicate='dwithin', distance=tol)])
 
     def snap(self, p: np.ndarray, sris: set[str] | None = None, tol: float = SNAP_M) -> tuple[str, float, float] | None:
+        """The nearest line (of `sris`, if given) within `tol` of `p` → `(sri, mp, dist_m)`, else
+        None. Equidistant lines: the first in the network tree's query order."""
         pt = shapely.points(p)
-        cand = self.tree.query(pt, predicate='dwithin', distance=tol)
         if sris is not None:
-            cand = cand[np.isin(self.fsri[cand], list(sris))]
+            # The SRIs' own features (few) first, rather than a query of the whole network's tree;
+            # the tree decides only between equidistant lines (so the result is the tree query's).
+            cand = np.concatenate([self.by_sri.get(s, _EMPTY) for s in sris] or [_EMPTY])
+            d = shapely.distance(self.lines[cand], pt)
+            near = d <= tol
+            cand, d = cand[near], d[near]
+            if len(cand) and (d == d.min()).sum() > 1:
+                cand = self.tree.query(pt, predicate='dwithin', distance=tol)
+                cand = cand[np.isin(self.fsri[cand], list(sris))]
+                d = shapely.distance(self.lines[cand], pt)
+        else:
+            cand = self.tree.query(pt, predicate='dwithin', distance=tol)
+            d = shapely.distance(self.lines[cand], pt)
         if not len(cand):
             return None
-        d = shapely.distance(self.lines[cand], pt)
-        f = int(cand[np.argmin(d)])
-        mp = float(_locate(self.feats, np.array([f]), np.array([pt]), self.lines)[0])
-        return str(self.fsri[f]), round(mp, 3), float(d.min())
+        j = int(np.argmin(d))
+        f = int(cand[j])
+        t = shapely.line_locate_point(self.lines[f], pt)
+        m = np.interp(t, self.d[f], self.m[f])
+        mp = float(to_mp(self.sec[f], self.ms[f], self.me[f], self.ps[f], self.pe[f], m))
+        return str(self.fsri[f]), round(mp, 3), float(d[j])
 
 
 def entity_at(sri: pd.Series, mp: pd.Series, runs: pd.DataFrame) -> pd.Series:
@@ -520,7 +610,8 @@ def recover(
     feat_ix = pd.Series(np.arange(len(snapper.fsri))).groupby(snapper.fsri).indices
     sri_lines = {s: snapper.lines[feat_ix.get(s, _EMPTY)] for s in need}
     ctx = dict(
-        lines=lines, segs_by=segs_by, segs_named=segs_named, segs_cc=segs_cc, seg_ent=seg_ent, seg_sris=seg_sris,
+        lines=lines, segs_by=segs_by, segs_named=segs_named, segs_cc=segs_cc,
+        seg_ent=seg_ent.to_numpy(dtype='float64', na_value=np.nan), seg_sris=seg_sris.to_numpy(dtype=object, na_value=None),
         sri_lines=sri_lines, ent_sris=ent_sris, sri_ent=sri_ent, snapper=snapper,
     )
     private = crashes['road_system'].eq(PRIVATE_ROAD_SYSTEM).fillna(False).to_numpy() if 'road_system' in crashes else np.zeros(len(crashes), dtype=bool)
@@ -542,29 +633,16 @@ def recover(
     sri0_a, x_sri_a = sri0.to_numpy(dtype=object), x_sri.to_numpy(dtype=object)
     off_a, dirn_a, coded_a = off.to_numpy(), dirn.to_numpy(dtype=object), coded.to_numpy(dtype=bool)
     todo = ~ok.to_numpy() & ~private & base['cc'].notna().to_numpy() & base['mc'].notna().to_numpy()
-    cache: dict[tuple, tuple] = {}
-    for i in np.flatnonzero(todo):
-        c, m = int(cc_a[i]), int(mc_a[i])
-        # Route strings ("RT 440", "HUDSON COUNTY 617") → the NG911 shield keys present in the muni.
-        r_keys, x_keys, r_rki, x_rki = r_ng[i], x_ng[i], r_rk_a[i], x_rk_a[i]
-        if r_rki:
-            r_keys = tuple(k for k in r_rki if (c, m, k) in segs_by) or r_keys
-        if x_rki:
-            x_keys = tuple(k for k in x_rki if (c, m, k) in segs_by or (c, k) in segs_cc) or x_keys
-        rk = r_raw_a[i]
-        le = None if split_a[i] or pd.isna(rk) else learned_ent.get((c, m, rk))
-        pt = (round(float(pts[i, 0]), 1), round(float(pts[i, 1]), 1)) if np.isfinite(pts[i]).all() else None
-        key = (c, m, r_keys, x_keys, sri0_a[i], x_sri_a[i], off_a[i], dirn_a[i], le, bool(split_a[i]), bool(r_rki), pt)
-        if key not in cache:
-            cache[key] = _locate_one(*key, **ctx)
-        res, s_i, mp_i, q, e = cache[key]
+    loc = dict(
+        cc=cc_a, mc=mc_a, r_ng=r_ng, x_ng=x_ng, r_rk=r_rk_a, x_rk=x_rk_a, r_raw=r_raw_a, split=split_a,
+        learned_ent=learned_ent, pts=pts, sri0=sri0_a, x_sri=x_sri_a, off=off_a, dirn=dirn_a, ctx=ctx,
+    )
+    for i, res, s_i, mp_i, q, e, h in _locate_all(np.flatnonzero(todo), loc):
         if res == 'none' and coded_a[i]:
             continue  # a retired SRI we couldn't re-locate: keep it as coded
         src[i] = res
-        if r_rki and res != 'none':
-            how[i] = 'route'
-        elif le is not None and res in ('intersection', 'name_only'):
-            how[i] = 'learned'
+        if h is not None:
+            how[i] = h
         sri[i], mp[i] = (s_i, np.nan if mp_i is None else mp_i) if s_i is not None else (pd.NA, np.nan)
         if q is not None:
             lon[i], lat[i] = _to_lonlat(q)
@@ -579,6 +657,7 @@ def recover(
         ax = np.where(np.isfinite(qx), qx, pts[:, 0])
         ay = np.where(np.isfinite(qy), qy, pts[:, 1])
         cal = calibrate_retired(sri_in.to_numpy(dtype=object, na_value=None), crashes['mp'].to_numpy(dtype='float64', na_value=np.nan), ax, ay, retired, still, snapper)
+        cal_memo: dict[tuple, tuple] = {}
         for i, (s_new, mp_new, p) in cal.items():
             c, m = int(cc_a[i]), int(mc_a[i])
             if s_new not in sri_lines:
@@ -586,10 +665,7 @@ def recover(
             x_keys = x_ng[i]
             if x_rk_a[i]:
                 x_keys = tuple(k for k in x_rk_a[i] if (c, m, k) in segs_by or (c, k) in segs_cc) or x_keys
-            key = (c, m, (), x_keys, s_new, x_sri_a[i], off_a[i], dirn_a[i], None, False, True, None)
-            if key not in cache:
-                cache[key] = _locate_one(*key, **ctx)
-            res, s_i, mp_i, q, _ = cache[key]
+            res, s_i, mp_i, q, _ = _locate_one(c, m, (), x_keys, s_new, x_sri_a[i], off_a[i], dirn_a[i], None, False, True, None, memo=cal_memo, **ctx)
             if res == 'route_xs' and np.hypot(*(np.asarray(q) - p)) <= CAL_XS_MAX_M:
                 src[i], sri[i], mp[i], how[i] = 'sri_calib', s_i, mp_i, 'calib_xs'
             else:
@@ -798,70 +874,163 @@ def _segs(keys: tuple | None, c: int, m: int, segs_by: dict, segs_cc: dict | Non
     return np.unique(np.concatenate(s)) if s else _EMPTY
 
 
-def _locate_one(
-    c, m, r_keys, x_keys, r_sri, x_sri, off, dirn, learned_ent, split, is_route, pt, *,
-    lines, segs_by, segs_named, segs_cc, seg_ent, seg_sris, sri_lines, ent_sris, sri_ent, snapper,
-):
+# `recover`'s per-crash loop runs in this many processes (forked: they share its inputs) when there
+# are at least `PAR_MIN_ROWS` crashes to locate; `ROADS_PROCS=1` disables it.
+RECOVER_PROCS = int(os.environ.get('ROADS_PROCS') or min(8, os.cpu_count() or 1))
+PAR_MIN_ROWS = 50_000
+# The forked workers' inputs (`_locate_all`).
+_LOC: dict = {}
+
+
+def _locate_rows(rows: np.ndarray, loc: dict | None = None) -> list[tuple]:
+    """`_locate_one` for crashes `rows` (positions in `recover`'s arrays, `loc`) → `(row, loc_source,
+    sri, mp, point, entity, how)` per row, `how` "route" / "learned" when that resolved the road
+    (else None)."""
+    a = _LOC if loc is None else loc
+    cc_a, mc_a, r_ng, x_ng, r_rk_a, x_rk_a = a['cc'], a['mc'], a['r_ng'], a['x_ng'], a['r_rk'], a['x_rk']
+    r_raw_a, split_a, learned_ent, pts, ctx = a['r_raw'], a['split'], a['learned_ent'], a['pts'], a['ctx']
+    segs_by, segs_cc = ctx['segs_by'], ctx['segs_cc']
+    memo: dict[tuple, tuple] = {}
+    out = []
+    for i in rows:
+        c, m = int(cc_a[i]), int(mc_a[i])
+        # Route strings ("RT 440", "HUDSON COUNTY 617") → the NG911 shield keys present in the muni.
+        r_keys, x_keys, r_rki, x_rki = r_ng[i], x_ng[i], r_rk_a[i], x_rk_a[i]
+        if r_rki:
+            r_keys = tuple(k for k in r_rki if (c, m, k) in segs_by) or r_keys
+        if x_rki:
+            x_keys = tuple(k for k in x_rki if (c, m, k) in segs_by or (c, k) in segs_cc) or x_keys
+        rk = r_raw_a[i]
+        le = None if split_a[i] or pd.isna(rk) else learned_ent.get((c, m, rk))
+        pt = (round(float(pts[i, 0]), 1), round(float(pts[i, 1]), 1)) if np.isfinite(pts[i]).all() else None
+        res, s_i, mp_i, q, e = _locate_one(c, m, r_keys, x_keys, a['sri0'][i], a['x_sri'][i], a['off'][i], a['dirn'][i], le, bool(split_a[i]), bool(r_rki), pt, memo=memo, **ctx)
+        h = 'route' if r_rki and res != 'none' else 'learned' if le is not None and res in ('intersection', 'name_only') else None
+        out.append((int(i), res, s_i, mp_i, q, e, h))
+    return out
+
+
+def _locate_all(rows: np.ndarray, loc: dict, procs: int | None = None) -> list[tuple]:
+    """`_locate_rows` over all `rows`: in `procs` forked processes (default `RECOVER_PROCS`) when
+    there are ≥ `PAR_MIN_ROWS`, each taking whole munis (their crashes share names, so the `memo`
+    works), else in this one. The result doesn't depend on `procs`."""
+    procs = RECOVER_PROCS if procs is None else procs
+    if procs <= 1 or len(rows) < PAR_MIN_ROWS or 'fork' not in mp.get_all_start_methods():
+        return _locate_rows(rows, loc)
+    # Munis, largest first, dealt to the least-loaded of `procs * 4` chunks.
+    muni = pd.Series(loc['cc'][rows] * 10_000 + loc['mc'][rows])
+    groups = sorted(muni.groupby(muni.to_numpy()).indices.values(), key=len, reverse=True)
+    k = procs * 4
+    chunks, load = [[] for _ in range(k)], np.zeros(k, dtype=int)
+    for g in groups:
+        j = int(np.argmin(load))
+        chunks[j].append(rows[g])
+        load[j] += len(g)
+    chunks = [np.sort(np.concatenate(c)) for c in chunks if c]
+    global _LOC
+    _LOC = loc
+    try:
+        with mp.get_context('fork').Pool(procs) as pool:
+            parts = pool.map(_locate_rows, chunks)
+    finally:
+        _LOC = {}
+    return [r for part in parts for r in part]
+
+
+def _locate_one(c, m, r_keys, x_keys, r_sri, x_sri, off, dirn, learned_ent, split, is_route, pt, *, memo: dict | None = None, **ctx):
     """One `(muni, road keys, cross keys, road route SRI, cross route SRI, offset, direction, learned
     entity, split road string, road is a route string, reported point)` → `(loc_source, sri, mp,
     point, entity)`; `entity` is set only for `sri_only` / `name_only` (placed crashes get theirs
     from `entity_at`). In order: the road meets the cross street (`intersection` / `route_xs`); the
     reported point snaps to the road's lines (`latlon_snap`); the SRI is one entity (`sri_only`);
-    the name is one entity (`name_only`)."""
+    the name is one entity (`name_only`).
+
+    With `memo`, each step is computed once per distinct inputs it depends on: where the road meets
+    the cross street (`_locate_strings`) doesn't depend on the offset, and nothing but the
+    `latlon_snap` step on the (nearly always distinct) point."""
+    memo = {} if memo is None else memo
+    k = (c, m, r_keys, x_keys, r_sri, x_sri, learned_ent, split, is_route)
+    if k not in memo:
+        memo[k] = _locate_strings(*k, **ctx)
+    r_lines, r_sris, kind, p, rest = memo[k]
+    if p is not None:
+        ko = (k, off, dirn)
+        if ko not in memo:
+            memo[ko] = None
+            q = offset_along(r_lines, p, off, dirn)
+            if q is not None:
+                # Only the road's own SRIs: at an intersection the cross street's line is as near.
+                hit = ctx['snapper'].snap(q, r_sris)
+                if hit is not None:
+                    memo[ko] = (kind, hit[0], hit[1], q, None)
+        if memo[ko] is not None:
+            return memo[ko]
+    if pt is not None and r_sris:
+        kp = (pt, r_sris)
+        if kp not in memo:
+            memo[kp] = ctx['snapper'].snap(np.array(pt), r_sris)
+        hit = memo[kp]
+        if hit is not None:
+            return ('latlon_snap', hit[0], hit[1], np.array(pt), None)
+    return rest
+
+
+def _locate_strings(
+    c, m, r_keys, x_keys, r_sri, x_sri, learned_ent, split, is_route, *,
+    lines, segs_by, segs_named, segs_cc, seg_ent, seg_sris, sri_lines, ent_sris, sri_ent, snapper,
+):
+    """`_locate_one`'s offset- and point-independent part: `(r_lines, r_sris, kind, p, rest)` — the
+    road's lines and SRIs, the result kind of an intersection (`intersection` / `route_xs`), the
+    point `p` where the road meets the cross street (None: they don't, or ambiguously), and `rest`:
+    the result when neither the intersection nor the reported point places the crash."""
     none = ('none', None, None, None, None)
     if split:
         # "A / B": either part may be the road (both at their intersection); 2018+ coded crashes
         # with such strings sit on A only ~75-90% of the time, so they're left unassigned.
-        return none
+        return None, frozenset(), None, None, none
     r_segs = _segs(r_keys, c, m, segs_by)
     route_ok = not pd.isna(r_sri) and len(sri_lines.get(r_sri, ()))
     if route_ok:
         # A route string (or a coded SRI without MP): the route's NJDOT lines.
         r_lines, r_sris = sri_lines[r_sri], {r_sri}
     elif len(r_segs):
-        r_lines, r_sris = lines[r_segs], set(seg_sris.iloc[r_segs].dropna())
+        r_lines, r_sris = lines[r_segs], {v for v in seg_sris[r_segs] if v is not None}
     elif learned_ent is not None and ent_sris.get(learned_ent):
         # A name only crash strings know (learned): the entity's SRIs' lines.
         r_sris = set(ent_sris[learned_ent])
-        r_lines = np.concatenate([sri_lines[s] for s in r_sris if s in sri_lines] or [np.array([], dtype=object)])
+        # (Sorted: `offset_along` takes the first of equidistant lines, so the order must be fixed.)
+        r_lines = np.concatenate([sri_lines[s] for s in sorted(r_sris) if s in sri_lines] or [np.array([], dtype=object)])
     else:
         r_lines, r_sris = np.array([], dtype=object), set()
+    r_sris = frozenset(r_sris)
     kind = 'route_xs' if route_ok or is_route else 'intersection'
     if not pd.isna(x_sri) and len(sri_lines.get(x_sri, ())):
         x_lines = sri_lines[x_sri]
     else:
         x_segs = _segs(x_keys, c, m, segs_by, segs_cc)
         x_lines = lines[x_segs] if len(x_segs) else np.array([], dtype=object)
-    conflict = False
+    conflict, p = False, None
     if len(x_lines) and len(r_lines):
         meets = meet_points(r_lines, x_lines)
         # The named cross street never meets the named road here: one of the names is wrong (or
         # means another street), so no name-only guess either.
         conflict = not len(meets)
-        p = cluster_point(meets)
-        if p is not None and r_sris:
-            q = offset_along(r_lines, p, off, dirn)
-            if q is not None:
-                # Only the road's own SRIs: at an intersection the cross street's line is as near.
-                hit = snapper.snap(q, r_sris)
-                if hit is not None:
-                    return (kind, hit[0], hit[1], q, None)
-    if pt is not None and r_sris:
-        hit = snapper.snap(np.array(pt), r_sris)
-        if hit is not None:
-            return ('latlon_snap', hit[0], hit[1], np.array(pt), None)
+        p = cluster_point(meets) if r_sris else None
+
+    def result(rest):
+        return r_lines, r_sris, kind, p, rest
+
     if route_ok:
         e = sri_ent.get((r_sri, c), sri_ent.get(r_sri))
-        return ('sri_only', r_sri, None, None, e) if e is not None else none
+        return result(('sri_only', r_sri, None, None, e) if e is not None else none)
     if conflict or is_route:
-        return none
+        return result(none)
     if learned_ent is not None:
-        return ('name_only', None, None, None, learned_ent)
+        return result(('name_only', None, None, None, learned_ent))
     # NG911: the entity of the segments carrying the name as their own (not an alias), else any.
     for segs in (_segs(r_keys, c, m, segs_named), r_segs):
-        ents = set(seg_ent.iloc[segs].dropna()) if len(segs) else set()
+        ents = {int(v) for v in seg_ent[segs] if v == v}
         if len(ents) == 1:
-            return ('name_only', None, None, None, next(iter(ents)))
+            return result(('name_only', None, None, None, next(iter(ents))))
         if len(ents) > 1:
             break
-    return none
+    return result(none)

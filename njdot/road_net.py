@@ -21,6 +21,8 @@
   Boulevard" are one road, while West Side Ave in Jersey City and in North Bergen are two, and Park
   Ave (Hoboken → Weehawken) isn't Boulevard East.
 """
+from functools import wraps
+
 import numpy as np
 import pandas as pd
 import shapely
@@ -84,6 +86,21 @@ ABBREV_RE = r'\b(' + '|'.join(ABBREVS) + r')\b'
 DIRECTIONS = {'W': 'WEST', 'E': 'EAST', 'N': 'NORTH', 'S': 'SOUTH'}
 
 
+def per_unique(fn):
+    """Run an elementwise `Series → Series` function once per distinct value (crash strings repeat
+    heavily: statewide, ~7M road / cross-street strings have a few hundred thousand distinct values),
+    then broadcast back onto the input's rows and index. The result is the same as `fn(s)`."""
+    @wraps(fn)
+    def wrapped(s: pd.Series, *args, **kwargs) -> pd.Series:
+        s = s if isinstance(s, pd.Series) else pd.Series(s)
+        codes, uniq = pd.factorize(s, use_na_sentinel=True)
+        # One NA appended: `fn`'s value for missing inputs (code -1).
+        u = pd.concat([pd.Series(uniq, dtype=s.dtype), pd.Series([pd.NA], dtype=s.dtype)], ignore_index=True)
+        out = fn(u, *args, **kwargs)
+        return out.iloc[np.where(codes < 0, len(uniq), codes)].set_axis(s.index)
+    return wrapped
+
+
 def name_key(s: pd.Series) -> pd.Series:
     """Looser key for joining runs into entities: `norm_name`, directions spelled out, spaces
     dropped — so "W Side Ave" == "Westside Ave" (`WESTSIDEAVE`)."""
@@ -91,6 +108,7 @@ def name_key(s: pd.Series) -> pd.Series:
     return n.str.replace(' ', '', regex=False)
 
 
+@per_unique
 def norm_name(s: pd.Series) -> pd.Series:
     """Upper-case, drop periods, collapse whitespace, abbreviate street types / directions — for
     comparing (and de-duplicating) road names."""
@@ -330,6 +348,7 @@ def name_points(geom: pd.DataFrame, iv: pd.DataFrame, seg: pd.DataFrame, con) ->
     return out
 
 
+@per_unique
 def merge_key(s: pd.Series) -> pd.Series:
     """`name_key` with doubled letters squeezed, "John F" → "J F" and "Jr" dropped, so spelling
     variants ("Tonnele" / "Tonnelle", "JOHN F KENNEDY BLVD E" / "J F Kennedy Boulevard East",
@@ -339,6 +358,7 @@ def merge_key(s: pd.Series) -> pd.Series:
     return k.str.replace(r'(.)\1+', r'\1', regex=True)
 
 
+@per_unique
 def dir_key(s: pd.Series) -> pd.Series:
     """`merge_key` of the name without a trailing, then a leading, direction word, each dropped only
     when ≥ 2 words remain: "West 48th Street" / "East 48th Street" → "48THST", "North Avenue East"
