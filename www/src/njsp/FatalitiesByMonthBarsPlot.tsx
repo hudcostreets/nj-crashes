@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from "react"
 import { useResetSolo } from "@/src/lib/ResetSoloContext"
 import type { Layout, PlotData } from "plotly.js"
-import { useDb, useQueryState } from "@/src/lib/DuckDbContext"
 import { EmptyRegion } from "./EmptyRegion"
-import { useRegisteredParquetDb } from "@/src/tableData"
+import { sortRows } from "@/src/lib/pq"
+import { monthlyAtGeo, useNjspParquet, type MonthlyFileRow } from "./data"
 import { MonthlyParquet } from "@/src/paths"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { PlotInfo } from "@/src/icons"
@@ -37,26 +37,9 @@ type MonthlyRow = {
     cyclist: number
 }
 
-// Query to get monthly data (filtered by geo level)
-const monthlyQueryFn = (county: string | null, cc: number | null, mc: number | null) => {
-    let where: string
-    if (cc !== null && mc !== null) {
-        where = `cc = ${cc} AND mc = ${mc}`
-    } else if (county) {
-        where = `county = '${county}' AND mc IS NULL`
-    } else {
-        where = `county IS NULL AND cc IS NULL`
-    }
-    return `
-    SELECT year, month, fatalities, driver, passenger, pedestrian, cyclist
-    FROM read_parquet('monthly')
-    WHERE ${where}
-    ORDER BY year, month
-`
-}
+const NO_ROWS: MonthlyRow[] = []
 
 export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = null, mc = null, regionLabel }: Props) {
-    const db = useDb()
     const plotColors = usePlotColors()
 
     const [activeTrace, setActiveTrace] = useState<string | null>(null)
@@ -69,9 +52,11 @@ export function FatalitiesByMonthBarsPlot({ id = "by-month-bars", county, cc = n
     const colorScale = COLORSCALES[colorScaleName]
 
     // Load monthly data
-    const monthlyDb = useRegisteredParquetDb({ db, table: "monthly", url: MonthlyParquet })
-    const monthlyQueryStr = useMemo(() => monthlyQueryFn(county ?? null, cc ?? null, mc ?? null), [county, cc, mc])
-    const monthly = useQueryState<MonthlyRow>({ db: monthlyDb, query: monthlyQueryStr, init: [] })
+    const monthlyFile = useNjspParquet<MonthlyFileRow>(MonthlyParquet)
+    const monthly = useMemo(() => ({
+        data: monthlyFile.rows ? sortRows(monthlyAtGeo(monthlyFile.rows, { county: county ?? null, cc: cc ?? null, mc: mc ?? null }), ["year", "month"]) as MonthlyRow[] : NO_ROWS,
+        loading: monthlyFile.loading,
+    }), [monthlyFile, county, cc, mc])
     const monthlyRowsAll = monthly.data
 
     // Section-scoped filters (NjspSection): year-range + victim-type subset.
