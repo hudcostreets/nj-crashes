@@ -1047,6 +1047,42 @@ def roads_audit(crashes_path: str, cc: int, ng911_dir: str, osm_path: str | None
         print(line)
 
 
+@roads.command('audit-anomalies')
+@option('-m', '--markdown', 'md_path', help='Also write the top findings of each kind as markdown here')
+@option('-n', '--top', type=int, default=25, show_default=True, help='Findings per kind in the markdown / printed summary')
+@option('-o', '--out', 'csv_path', help='Write the full ranked review queue (CSV) here')
+@option('-r', '--roads-dir', default=ROADS_DIR, show_default=True, help='`njdot roads build` output dir')
+def roads_audit_anomalies(md_path: str | None, top: int, csv_path: str | None, roads_dir: str):
+    """Rank roads whose crash counts look like data quirks: year-over-year breaks, crashes without
+    a map point, and road pairs whose split of shared crashes swings by year (`njdot.road_anomalies`)."""
+    from njdot.road_anomalies import pair_swings, queue_markdown, review_queue, unplaced_share, yoy_breaks
+    rd = lambda f, cols=None: pd.read_parquet(join(roads_dir, f), columns=cols)
+    ents = rd('road-entities.parquet', ['entity', 'slug', 'name', 'cc', 'subt'])
+    summary = rd('road-summary.parquet')
+    ramps = set(ents.loc[ents['subt'] >= 8, 'entity'])
+    summary = summary[~summary['entity'].isin(ramps)]
+    parts = [yoy_breaks(summary, ents), unplaced_share(summary, ents)]
+    # `pair_swing` needs v5 outputs (intersection nodes, corridors).
+    if exists(join(roads_dir, 'road-node-entities.parquet')):
+        be = rd('crashes-by-entity.parquet', ['entity', 'year', 'node'])
+        node_ents = rd('road-node-entities.parquet', ['entity', 'node'])
+        members = rd('road-entities.parquet', ['entity', 'corridor']).dropna(subset=['corridor'])
+        parts.append(pair_swings(be, node_ents, ents, members))
+    else:
+        err(f'{roads_dir} has no `road-node-entities.parquet` (pre-v5 build): skipping `pair_swing`')
+    q = review_queue(parts)
+    if csv_path:
+        q.to_csv(csv_path, index=False)
+        err(f'Wrote {len(q):,} findings to {csv_path}')
+    md = queue_markdown(q, top)
+    if md_path:
+        with open(md_path, 'w') as f:
+            f.write(md + '\n')
+        err(f'Wrote {md_path}')
+    else:
+        print(md)
+
+
 @roads.command('sync')
 @option('-n', '--dry-run', is_flag=True, help='Show what would be uploaded without uploading')
 @option('-u', '--s3-url', default=ROADS_S3, help=f'Sync to this S3 URL (default: {ROADS_S3})')
