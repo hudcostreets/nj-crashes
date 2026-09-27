@@ -3,9 +3,12 @@ import { Link } from "react-router-dom"
 import { EndYear, StartYear } from "@/src/constants"
 import { isV5, type RoadEntity, type RoadSummaryRow } from "./roadsData"
 import { ExportCsvButton, RoadCrashTable, UnplacedNote } from "./RoadCrashTable"
+import { noteBands } from "./roadNotes"
+import { DataNotes, noteColors } from "./DataNotes"
 import { unplacedTotal, yearStats } from "./roadStats"
 import { ScopeBar } from "./ScopeBar"
 import { scopeSql } from "./scopeSql"
+import { useRoadNotes } from "./useRoadNotes"
 import type { RoadScope } from "./useRoadScope"
 import { YearStrip } from "./YearStrip"
 
@@ -36,6 +39,11 @@ export function RoadPanel({ info, notFound, roadSummary, scope, onClose, onZoomT
     const rows = useMemo(() => crashes?.slice(0, TABLE_ROWS) ?? [], [crashes])
     const stats = useMemo(() => (scope.summary?.length ? yearStats(scope.summary, StartYear, EndYear) : null), [scope.summary])
     const nUnplaced = useMemo(() => unplacedTotal(roadSummary ?? []), [roadSummary])
+    const notes = useRoadNotes(info, scope)
+    const bands = useMemo(
+        () => (stats?.years.length ? noteBands(notes, stats.years[0], stats.years[stats.years.length - 1]) : []),
+        [notes, stats],
+    )
     const sris = info?.sris.split(",") ?? []
     const multiSri = sris.length > 1
     const v5 = isV5(info)
@@ -77,7 +85,8 @@ export function RoadPanel({ info, notFound, roadSummary, scope, onClose, onZoomT
                         {pageHref && <Link style={{ ...btn, textDecoration: "none", marginLeft: "auto" }} to={pageHref}>Open road page →</Link>}
                     </div>
                 )}
-                {stats && <YearStrip stats={stats} dim={dim} />}
+                {stats && <YearStrip stats={stats} dim={dim} bands={bands} bandFill={noteColors(theme).band} />}
+                <DataNotes notes={notes} theme={theme} compact corridorRoads={scope.state.corridor ? scope.corridor?.n_entities : undefined} style={{ marginTop: 6 }} />
             </div>
             <div style={{ overflow: "auto" }}>
                 {scope.crashesLoading && info && !crashes && <div style={{ padding: 10, color: dim }}>Loading crashes…</div>}

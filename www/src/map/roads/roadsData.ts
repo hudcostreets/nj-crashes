@@ -4,6 +4,7 @@
  *  (= `slug` order, so a county's / muni's roads are contiguous). */
 import { readRows, type Filter, type SortKey } from "@/src/lib/pq"
 import { MAP_BASE_URL } from "@/src/map/config"
+import { noteFilter, type NoteTarget, type RoadNoteRow } from "./roadNotes"
 import { spanBounds, type BlockCounts, type SpanSel } from "./roadScope"
 
 const { cos, PI, sqrt } = Math
@@ -15,7 +16,7 @@ export type RoadsFile =
     | "crashes-by-sri" | "crashes-by-entity" | "sri-geom" | "sri-hit" | "sri-hit-5" | "sri-hit-6"
     | "sris" | "road-entities" | "road-runs" | "road-summary" | "road-summary-monthly" | "road-ranks"
     | "road-search" | "crashes-by-entity-xs" | "road-blocks" | "road-node-entities" | "road-corridors"
-    | "road-corridor-summary" | "road-corridor-summary-monthly"
+    | "road-corridor-summary" | "road-corridor-summary-monthly" | "road-notes"
 
 export function roadsUrl(file: RoadsFile): string {
     return new URL(`${ROADS_BASE_URL}/${file}.parquet`, window.location.origin).href
@@ -433,6 +434,12 @@ export function fetchBlocks(entity: number): Promise<RoadBlock[]> {
 export async function fetchCorridor(corridor: number): Promise<RoadCorridor | null> {
     const rows = await readRows<RoadCorridor>(roadsUrl("road-corridors"), { filter: { corridor: corridor | 0 } })
     return rows[0] ?? null
+}
+
+/** A road's or corridor's data notes (`road-notes`; absent from builds before
+ *  specs/road-anomalies.md, where the read fails). */
+export function fetchRoadNotes(target: NoteTarget): Promise<RoadNoteRow[]> {
+    return readRows<RoadNoteRow>(roadsUrl("road-notes"), { filter: noteFilter(target) })
 }
 
 /** `entity, name` of each id in `ids`: one `IN` read (pruned to the row groups whose `entity`

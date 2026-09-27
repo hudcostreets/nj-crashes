@@ -1,13 +1,16 @@
 /** Road page's over-time plots: crashes by severity (per year, or per month with a 12-month
- *  average), and killed / injured per year. Same Plotly wrapper + palette as `CrashPlot`. */
+ *  average), and killed / injured per year. Same Plotly wrapper + palette as `CrashPlot`. Data
+ *  notes' years are shaded, lettered like the notes list, and named in the hover. */
 import { useMemo, useState } from "react"
-import type { Layout, PlotData } from "plotly.js"
+import type { Annotations, Layout, PlotData, Shape } from "plotly.js"
 import { useTheme } from "pltly"
 import PlotWrapper from "@/src/lib/plot-wrapper"
 import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { EndYear, StartYear } from "@/src/constants"
 import { Radios } from "@/src/njdot/Radios"
 import { Severities, SeverityColorsDark, SeverityColorsLight, SeverityLabels } from "@/src/njdot/data"
+import { noteBands, type NoteBand, type ScopeNote } from "./roadNotes"
+import { noteColors } from "./DataNotes"
 import type { RoadSummaryRow } from "./roadsData"
 import { monthStats, rollingMean, yearStats } from "./roadStats"
 
@@ -15,8 +18,46 @@ const HEIGHT = 360
 
 type Granularity = "year" | "month"
 
-/** `rows`: the road's `road-summary-monthly` rows. */
-export function RoadPlots({ rows }: { rows: (RoadSummaryRow & { month: number })[] }) {
+/** A band's x-extent: per year, bars are centered on the year; per month (a date axis), on each
+ *  month's first day. */
+function bandX(b: NoteBand, gran: Granularity): [number | string, number | string] {
+    return gran === "year" ? [b.lo - 0.5, b.hi + 0.5] : [`${b.lo - 1}-12-16`, `${b.hi}-12-16`]
+}
+
+/** Shaded bands + letters (in the top margin) for `bands`, and an invisible trace per band whose
+ *  points (one per period in it) add "A · <title>" to the unified hover. */
+function bandLayers(bands: NoteBand[], gran: Granularity, fill: string, textColor: string) {
+    const shapes: Partial<Shape>[] = bands.map(b => {
+        const [x0, x1] = bandX(b, gran)
+        return { type: "rect", xref: "x", yref: "paper", x0, x1, y0: 0, y1: 1, fillcolor: fill, line: { width: 0 }, layer: "below" }
+    })
+    const annotations: Partial<Annotations>[] = bands.map(b => ({
+        xref: "x", yref: "paper", x: bandX(b, gran)[0], y: 1, xanchor: "left", yanchor: "bottom",
+        text: `<b>${b.label}</b>`, showarrow: false, font: { size: 11, color: textColor },
+    }))
+    const traces: Partial<PlotData>[] = bands.map(b => {
+        const x: (number | string)[] = []
+        for (let y = b.lo; y <= b.hi; y++) {
+            if (gran === "year") x.push(y)
+            else for (let m = 1; m <= 12; m++) x.push(`${y}-${String(m).padStart(2, "0")}`)
+        }
+        return {
+            uid: `note-${gran}-${b.id}`,
+            type: "scatter",
+            mode: "markers",
+            name: `Note ${b.label}`,
+            showlegend: false,
+            x,
+            y: x.map(() => 0),
+            marker: { size: 1, opacity: 0 },
+            hovertemplate: `<b>${b.label}</b> · ${b.title.replace(/</g, "&lt;")} (see Data notes)<extra></extra>`,
+        }
+    })
+    return { shapes, annotations, traces }
+}
+
+/** `rows`: the road's `road-summary-monthly` rows; `notes`: its data notes (a few get bands). */
+export function RoadPlots({ rows, notes = [] }: { rows: (RoadSummaryRow & { month: number })[]; notes?: ScopeNote[] }) {
     const { isDark } = useTheme()
     const colors = usePlotColors()
     const sevColors = isDark ? SeverityColorsDark : SeverityColorsLight
@@ -57,6 +98,13 @@ export function RoadPlots({ rows }: { rows: (RoadSummaryRow & { month: number })
         tickvals: years.years,
         ticktext: years.years.map(y => `'${String(y).slice(2)}`),
     }), [years])
+
+    const bands = useMemo(
+        () => (years.years.length ? noteBands(notes, years.years[0], years.years[years.years.length - 1]) : []),
+        [notes, years],
+    )
+    const bandFill = noteColors(isDark ? "dark" : "light").band
+    const yearBands = useMemo(() => bandLayers(bands, "year", bandFill, colors.textColor), [bands, bandFill, colors])
 
     const hasUnplaced = useMemo(() => Severities.some(s => years.unplaced[s].some(v => v > 0)), [years])
 
@@ -106,15 +154,19 @@ export function RoadPlots({ rows }: { rows: (RoadSummaryRow & { month: number })
                 hovertemplate: "12-mo avg: %{y:,.1f}<extra></extra>",
             })
         }
+        const nb = gran === "year" ? yearBands : bandLayers(bands, "month", bandFill, colors.textColor)
+        traces.push(...nb.traces)
         const layout: Partial<Layout> = {
             ...baseLayout,
             barmode: "stack",
             xaxis: { ...baseLayout.xaxis, ...(gran === "year" ? yearTicks : {}) },
             yaxis: { ...baseLayout.yaxis, title: { text: "Crashes", font: { color: colors.textColor } } },
-            datarevision: gran,
+            shapes: nb.shapes,
+            annotations: nb.annotations,
+            datarevision: `${gran}-${bands.map(b => b.id).join(",")}`,
         }
         return { traces, layout }
-    }, [gran, years, months, sevColors, colors, baseLayout, yearTicks, hasUnplaced])
+    }, [gran, years, months, sevColors, colors, baseLayout, yearTicks, hasUnplaced, bands, bandFill, yearBands])
 
     const casualtyPlot = useMemo(() => {
         const traces: Partial<PlotData>[] = [
@@ -137,12 +189,16 @@ export function RoadPlots({ rows }: { rows: (RoadSummaryRow & { month: number })
                 marker: { color: sevColors.f, size: 7 },
                 hovertemplate: "Killed: %{y:,}<extra></extra>",
             },
+            ...yearBands.traces,
         ]
         const maxKilled = Math.max(1, ...years.killed)
         const layout: Partial<Layout> = {
             ...baseLayout,
             xaxis: { ...baseLayout.xaxis, ...yearTicks },
             yaxis: { ...baseLayout.yaxis, title: { text: "Injured", font: { color: sevColors.i } } },
+            shapes: yearBands.shapes,
+            annotations: yearBands.annotations,
+            datarevision: bands.map(b => b.id).join(","),
             yaxis2: {
                 overlaying: "y", side: "right", fixedrange: true, showgrid: false, rangemode: "tozero",
                 // Integer ticks: most roads have a handful of deaths.
@@ -152,7 +208,7 @@ export function RoadPlots({ rows }: { rows: (RoadSummaryRow & { month: number })
             },
         }
         return { traces, layout }
-    }, [years, sevColors, colors, baseLayout, yearTicks])
+    }, [years, sevColors, colors, baseLayout, yearTicks, yearBands, bands])
 
     return (
         <div>

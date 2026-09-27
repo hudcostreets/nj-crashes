@@ -17,7 +17,9 @@ import {
 import { crashHref, ExportCsvButton, RoadCrashTable, UnplacedNote } from "@/src/map/roads/RoadCrashTable"
 import { isPinned } from "@/src/map/roads/roadScope"
 import { unplacedTotal } from "@/src/map/roads/roadStats"
+import { DataNotes } from "@/src/map/roads/DataNotes"
 import { RoadPlots } from "@/src/map/roads/RoadPlots"
+import { useRoadNotes } from "@/src/map/roads/useRoadNotes"
 import { ScopeBar } from "@/src/map/roads/ScopeBar"
 import { scopeSql } from "@/src/map/roads/scopeSql"
 import { parseRoadRef, useRoadEntity } from "@/src/map/roads/useRoadEntity"
@@ -74,6 +76,7 @@ export default function RoadPage() {
         hotkeys: true,
     })
     const v5 = isV5(info.data)
+    const notes = useRoadNotes(typeof ref === "string" ? info.data ?? null : null, scope)
 
     const paths = useMemo(() => roadPaths(geom.data ?? []), [geom.data])
     const { span } = scope
@@ -180,8 +183,9 @@ export default function RoadPage() {
             {scope.crashesLoading && <p style={{ color: dim, fontSize: "0.85em" }}>Loading crashes…</p>}
 
             <h2 id="over-time">Over time</h2>
+            <DataNotes notes={notes} theme={theme} corridorRoads={corridorScope ? scope.corridor?.n_entities : undefined} style={{ margin: "0 0 0.8em" }} />
             {scope.summary
-                ? <RoadPlots rows={scope.summary as (RoadSummaryRow & { month: number })[]} />
+                ? <RoadPlots rows={scope.summary as (RoadSummaryRow & { month: number })[]} notes={notes} />
                 : <p style={{ color: dim }}>{summary.isError ? `Error: ${summary.error}` : "Loading…"}</p>}
 
             <h2 id="crashes">Crashes</h2>
