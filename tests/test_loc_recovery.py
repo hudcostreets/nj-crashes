@@ -144,6 +144,26 @@ def test_meet_cluster_offset():
     assert offset_along(road, p, 100, '') is None
 
 
+def test_locate_strings_road_aliased_on_cross_street():
+    """NG9-1-1 aliases 17 of Edison's 20 Vineyard Road segments "Old Post Road": an "OLD POST RD" ×
+    "VINEYARD RD" crash met the cross street all along their shared stretch (ambiguous → name-only).
+    The shared segments can't be where they cross, so the road is the segments carrying its name as
+    their own: Old Post Road (along y = 0) ends at Vineyard Road (x = 500, running north)."""
+    from njdot.loc_recovery import _locate_strings, _seg_groups
+    segs = lines([(0, 0), (500, 0)], [(500, 0), (500, 300)], [(500, 300), (500, 600)], [(500, 600), (500, 900)])
+    idx = pd.DataFrame([
+        (9, 6, 'OLDPOSTRD', 0, 'name'), (9, 6, 'OLDPOSTRD', 1, 'alias'), (9, 6, 'OLDPOSTRD', 2, 'alias'),
+        (9, 6, 'VINEYARDRD', 1, 'name'), (9, 6, 'VINEYARDRD', 2, 'name'), (9, 6, 'VINEYARDRD', 3, 'name'),
+    ], columns=['cc', 'mc', 'key', 'seg', 'src'])
+    ctx = dict(
+        lines=segs, segs_by=_seg_groups(idx, ['cc', 'mc', 'key']), segs_named=_seg_groups(idx[idx['src'] == 'name'], ['cc', 'mc', 'key']),
+        segs_cc=_seg_groups(idx, ['cc', 'key']), seg_ent=np.array([7.0, 8.0, 8.0, 8.0]), seg_sris=np.array(['OPR', 'VIN', 'VIN', 'VIN'], dtype=object),
+        sri_lines={}, ent_sris={}, sri_ent={}, snapper=None,
+    )
+    r_lines, r_sris, kind, p, rest = _locate_strings(9, 6, ('OLDPOSTRD',), ('VINEYARDRD',), None, None, None, False, False, **ctx)
+    assert (len(r_lines), sorted(r_sris), kind, p.round(3).tolist(), rest) == (1, ['OPR'], 'intersection', [500.0, 0.0], ('name_only', None, None, None, 7))
+
+
 def test_entity_at():
     runs = pd.DataFrame({'entity': [1, 2, 3], 'sri': ['A', 'A', 'B'], 'mp_lo': [0.0, 1.0, 0.0], 'mp_end': [1.0, 2.0, 0.5]})
     e = entity_at(pd.Series(['A', 'A', 'A', 'B', 'B', 'C', None]), pd.Series([0.5, 1.0, 2.5, 0.1, np.nan, 0.1, 0.1]), runs)
