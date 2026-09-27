@@ -4,11 +4,12 @@ import { Link } from "react-router-dom"
 import { useDb } from "@/src/lib/DuckDbContext"
 import { Tooltip } from "@/src/tooltip"
 import { fetchEntityCrashesFull, isUnplaced, type LocSource, type RoadCrash, type RoadCrashView } from "./roadsData"
-import { isPinned } from "./roadScope"
+import { isCorridorOnly, isPinned } from "./roadScope"
 
 const CSV_COLS: (keyof RoadCrash)[] = [
     "sri", "mp", "dt", "year", "cc", "mc", "case", "severity", "tk", "ti", "pk", "pi", "tv",
     "road", "cross_street", "route", "lat", "lon", "id", "loc_source", "chain", "chain_lo", "chain_hi", "node",
+    "block", "corridor_only",
 ]
 export const SEVERITY: Record<string, string> = { f: "Fatal", i: "Injury", p: "Property" }
 
@@ -87,6 +88,17 @@ export function CalibBadge({ theme }: { theme: "light" | "dark" }) {
     return <Badge tip={CALIB_TIP} color={theme === "dark" ? "#9bc" : "#468"}>from old route code</Badge>
 }
 
+/** Why a `corridor_only` crash has no side (`corridor`: the corridor's name, when known). */
+export function corridorOnlyTip(corridor?: string | null): string {
+    const cor = corridor ? `the ${corridor} corridor` : "one corridor"
+    return `The police report names a street that is several roads of ${cor} here (e.g. East and West 48th Street, or a divided road's two sides), and nothing in the report says which. The crash is located to the corridor, not a side of it: it's counted once, on one of them, but has no position along it and isn't on the map.`
+}
+
+/** "corridor, side unknown": a `corridor_only` crash (v5.1). */
+export function CorridorOnlyBadge({ corridor, theme }: { corridor?: string | null; theme: "light" | "dark" }) {
+    return <Badge tip={corridorOnlyTip(corridor)} color={theme === "dark" ? "#bbb" : "#666"}>corridor, side unknown</Badge>
+}
+
 /** "≈ here": an unplaced crash whose cross street pins it near an intersection in this span. */
 function PinnedBadge({ theme }: { theme: "light" | "dark" }) {
     return (
@@ -97,11 +109,14 @@ function PinnedBadge({ theme }: { theme: "light" | "dark" }) {
 }
 
 /** "at X": a crash on another road, counted here because it's at an intersection with this one. */
-function CrossBadge({ name, theme }: { name: string | null | undefined; theme: "light" | "dark" }) {
+function CrossBadge({ name, corridorOnly, theme }: { name: string | null | undefined; corridorOnly: boolean; theme: "light" | "dark" }) {
     const color = theme === "dark" ? "#e8b86a" : "#9a5b00"
+    const tip = corridorOnly
+        ? `Police put this crash on a street that is ${name ? `${name} or a road paired with it` : "one of several roads"} (e.g. its East / West or divided sides), at an intersection with this road; which side is unknown. It's counted on this road (in "incl. intersection crashes" totals) and once on that corridor.`
+        : `Police put this crash on ${name ?? "a cross street"}, at its intersection with this road. It's counted on both roads (in "incl. intersection crashes" totals), and once in overall totals.`
     return (
-        <Badge tip={`Police put this crash on ${name ?? "a cross street"}, at its intersection with this road. It's counted on both roads (in "incl. intersection crashes" totals), and once in overall totals.`} color={color} dashed={false}>
-            on {name ?? "cross street"}
+        <Badge tip={tip} color={color} dashed={false}>
+            on {name ?? "cross street"}{corridorOnly && " (or its other side)"}
         </Badge>
     )
 }
@@ -130,6 +145,8 @@ export type RoadCrashTableProps = {
     roadNames?: Map<number, string>
     /** Displayed position (default: `chain`); corridor scope maps it onto the corridor chain. */
     chainOf?: (r: RoadCrashView) => number | null
+    /** The road's corridor's name, for `corridor_only` rows' badge. */
+    corridorName?: string | null
     theme: "light" | "dark"
     /** Sticky-header background (matches the container's). */
     headerBg: string
@@ -139,7 +156,7 @@ function srimp(r: RoadCrashView): string {
     return r.sri ? `SRI ${r.sri.replace(/_+$/, "")}${r.mp !== null ? `, MP ${r.mp.toFixed(2)}` : ""}` : "No SRI / milepost"
 }
 
-export function RoadCrashTable({ rows, multiSri, v5 = false, roadNames, chainOf, theme, headerBg }: RoadCrashTableProps) {
+export function RoadCrashTable({ rows, multiSri, v5 = false, roadNames, chainOf, corridorName, theme, headerBg }: RoadCrashTableProps) {
     const fg = theme === "dark" ? "#e0e0e0" : "#333"
     const dim = theme === "dark" ? "#999" : "#666"
     const cell = { padding: "2px 6px" }
@@ -147,6 +164,7 @@ export function RoadCrashTable({ rows, multiSri, v5 = false, roadNames, chainOf,
     const position = (r: RoadCrashView) => {
         // An intersection row (`-xs`) has the intersection's chain even when the crash has no point.
         const hasChain = v5 && r.chain !== null && r.chain !== undefined
+        if (isCorridorOnly(r) && !hasChain) return <CorridorOnlyBadge corridor={corridorName} theme={theme} />
         if (isUnplaced(r) && r.loc_source && !isPinned(r) && !hasChain) return <UnplacedBadge source={r.loc_source} theme={theme} />
         if (!v5) return r.mp?.toFixed(2) ?? "—"
         if (isPinned(r)) return <PinnedBadge theme={theme} />
@@ -188,7 +206,7 @@ export function RoadCrashTable({ rows, multiSri, v5 = false, roadNames, chainOf,
                         <td style={cell}>{r.tk ?? 0}/{r.ti ?? 0}</td>
                         <td style={cell}>
                             {r.own_entity !== null && r.own_entity !== undefined
-                                ? <CrossBadge name={r.own_name} theme={theme} />
+                                ? <CrossBadge name={r.own_name} corridorOnly={isCorridorOnly(r)} theme={theme} />
                                 : <>
                                     {r.cross_street ?? ""}
                                     {r.loc_source === "sri_calib" && <> <CalibBadge theme={theme} /></>}

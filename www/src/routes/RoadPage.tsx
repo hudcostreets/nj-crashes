@@ -88,7 +88,8 @@ export default function RoadPage() {
         const rows = scope.crashes ?? []
         // The scope's list is along the road (or SRI / MP on v4), crashes without a location last;
         // newest-first keeps those last too.
-        const noLoc = (c: ScopeCrash) => Number(isUnplaced(c) && !isPinned(c))
+        // (An intersection row has the intersection's chain even when the crash has no point.)
+        const noLoc = (c: ScopeCrash) => Number(isUnplaced(c) && !isPinned(c) && (c.chain === null || c.chain === undefined))
         return order === "mp" ? rows : [...rows].sort((a, b) => noLoc(a) - noLoc(b) || b.dt - a.dt)
     }, [scope.crashes, order])
     const nUnplaced = useMemo(() => unplacedTotal(summary.data ?? []), [summary.data])
@@ -198,7 +199,7 @@ export default function RoadPage() {
                 </span>
             </div>
             {scope.crashes && <>
-                <RoadCrashTable rows={pageRows} multiSri={multiSri} v5={v5} roadNames={roadNames} chainOf={scope.displayChain} theme={theme} headerBg={theme === "dark" ? "#1e1e1e" : "#fff"} />
+                <RoadCrashTable rows={pageRows} multiSri={multiSri} v5={v5} roadNames={roadNames} chainOf={scope.displayChain} corridorName={scope.corridor?.name} theme={theme} headerBg={theme === "dark" ? "#1e1e1e" : "#fff"} />
                 {nPages > 1 && (
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, fontSize: "0.85em" }}>
                         <button style={btn} disabled={page === 0} onClick={() => setPage(0)}>«</button>

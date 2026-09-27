@@ -51,8 +51,8 @@ export function parseSpan(s: string | null | undefined): Span | null {
 
 // ─── Blocks ─────────────────────────────────────────────────────────────────────────────────────
 
-/** The `road-blocks` fields the ladder needs: sorted by `chain_lo`, contiguous (`chain_hi` of one
- *  = `chain_lo` of the next), covering `[0, chain_mi]`. */
+/** The `road-blocks` fields the ladder needs: sorted by `chain_lo`, covering `[0, chain_mi]`
+ *  except at gaps (v5.1 cuts blocks there: one's `chain_hi` can be below the next's `chain_lo`). */
 export type BlockExtent = {
     block: number
     chain_lo: number
@@ -61,15 +61,14 @@ export type BlockExtent = {
     to_name?: string | null
 }
 
-/** Index of the block containing chain `c` (`[chain_lo, chain_hi)`, the last one closed), or of
- *  the nearest block when `c` is off the ends. -1 when there are no blocks. */
+/** Index of the block chain `c` is in, by the build's block convention (specs/road-model-v5.md §
+ *  Block convention): the last block with `chain_lo ≤ c`, or the first when `c` is below them all
+ *  (so a gap belongs to the block before it). -1 when there are no blocks. */
 export function blockIndexAt(blocks: readonly BlockExtent[], c: number): number {
     if (!blocks.length) return -1
-    if (c <= blocks[0].chain_lo) return 0
-    for (let i = 0; i < blocks.length; i++) {
-        if (c < blocks[i].chain_hi) return i
-    }
-    return blocks.length - 1
+    let k = 0
+    for (let i = 1; i < blocks.length && blocks[i].chain_lo <= c; i++) k = i
+    return k
 }
 
 export function blockSpan(b: BlockExtent): Span {
@@ -108,6 +107,18 @@ export function snapToBlocks(blocks: readonly BlockExtent[], span: Span): Span {
     const i = blockIndexAt(blocks, span.lo + EPS)
     const j = blockIndexAt(blocks, max(span.lo, span.hi - EPS))
     return { lo: blocks[i].chain_lo, hi: blocks[j].chain_hi }
+}
+
+/** The `block` ids `[b0, b1]` a span covers exactly, when it starts at a block's `chain_lo` and
+ *  ends at a (later or same) block's `chain_hi`, within rounding: block / stretch scopes, and any
+ *  span whose ends snapped onto block boundaries. Null for other (exact two-point / dragged) spans. */
+export function spanBlockRange(blocks: readonly BlockExtent[], span: Span): [number, number] | null {
+    const i = blocks.findIndex(b => abs(b.chain_lo - span.lo) < EPS)
+    if (i < 0) return null
+    for (let j = i; j < blocks.length; j++) {
+        if (abs(blocks[j].chain_hi - span.hi) < EPS) return [blocks[i].block, blocks[j].block]
+    }
+    return null
 }
 
 /** Cross streets at a span's ends ("Communipaw Avenue", "Harrison Avenue"), from its blocks: the
@@ -322,14 +333,19 @@ export function crashKey(c: { id: number | null; year: number; cc: number; mc: n
     return c.id !== null ? `#${c.id}` : `${c.year}/${c.cc}/${c.mc}/${c.case}`
 }
 
-/** Chain tolerance at span ends: crashes *at* an intersection sit exactly on a block boundary, up
- *  to float noise (the files' chain is float32, computed along different paths for crashes and
- *  blocks). */
+/** Chain tolerance at an exact span's ends: crashes *at* an intersection sit on a block boundary,
+ *  up to float noise (the files' chain is float32). */
 export const END_TOL = 1e-4
+
+/** How a span selects its placed crashes. `blocks`: by the rows' `block` column, `b0 ≤ block ≤ b1`
+ *  (v5.1, block-aligned spans), which matches `road-blocks.n_*` / `n_*_xs` exactly. Otherwise by
+ *  `chain` in `span` (`spanBounds`): exact two-point / dragged spans, and v5.0 builds (no `block`
+ *  column). `hiClosed`: the span reaches the road's end. */
+export type SpanSel = { span: Span; hiClosed: boolean; blocks: [number, number] | null }
 
 /** Half-open `[lo, hi)` bounds for a span's placed crashes, with `END_TOL`: a crash at the
  *  intersection a span starts at is in it, one at the intersection it ends at belongs to the next
- *  block (as `road-blocks`), except at the road's end (`hiClosed`). */
+ *  block, except at the road's end (`hiClosed`). */
 export function spanBounds({ lo, hi }: Span, hiClosed: boolean): { min: number; max: number; maxInclusive: boolean } {
     return { min: lo - END_TOL, max: hiClosed ? hi + END_TOL : hi - END_TOL, maxInclusive: hiClosed }
 }
@@ -346,33 +362,55 @@ export function snapEnds(blocks: readonly BlockExtent[], span: Span): Span {
     return { lo: snap(span.lo), hi: snap(span.hi) }
 }
 
-/** Placed crashes in `span` by `chain` (`spanBounds`; `hiClosed`: the span reaches the road's
- *  end), plus unplaced ones *pinned* to it (a cross street puts them within `[chain_lo,
- *  chain_hi]`, which overlaps the span). */
-export function inSpan(
-    c: { chain?: number | null; chain_lo?: number | null; chain_hi?: number | null },
-    span: Span,
-    hiClosed = true,
-): boolean {
-    const { lo, hi } = span
+type SpanRow = {
+    chain?: number | null
+    chain_lo?: number | null
+    chain_hi?: number | null
+    block?: number | null
+    corridor_only?: boolean | null
+}
+
+/** Placed crashes in a span (by `block`, or by `chain`: `SpanSel`), plus unplaced ones *pinned* to
+ *  it (a cross street puts them within `[chain_lo, chain_hi]`, which overlaps the span). */
+export function inSpan(c: SpanRow, { span, hiClosed, blocks }: SpanSel): boolean {
     if (c.chain !== null && c.chain !== undefined) {
+        if (blocks) return c.block !== null && c.block !== undefined && c.block >= blocks[0] && c.block <= blocks[1]
         const b = spanBounds(span, hiClosed)
         return c.chain >= b.min && (b.maxInclusive ? c.chain <= b.max : c.chain < b.max)
     }
-    if (c.chain_lo === null || c.chain_lo === undefined || c.chain_hi === null || c.chain_hi === undefined) return false
-    return c.chain_lo <= hi && c.chain_hi >= lo
+    return isPinned(c) && c.chain_lo! <= span.hi && c.chain_hi! >= span.lo
 }
 
-/** Whether a row is pinned (unplaced, but near a known intersection) rather than placed. */
-export function isPinned(c: { chain?: number | null; chain_lo?: number | null }): boolean {
-    return (c.chain === null || c.chain === undefined) && c.chain_lo !== null && c.chain_lo !== undefined
+/** A `corridor_only` row (v5.1): its road name is several members of one corridor (East / West
+ *  48th Street) and nothing picks the side, so its `entity` is a representative. It has no point,
+ *  and no position along the road. */
+export function isCorridorOnly(c: { corridor_only?: boolean | null }): boolean {
+    return !!c.corridor_only
 }
 
-export type MonthRow = { year: number; month: number; severity: string; n: number; tk: number; ti: number; n_unplaced: number }
+/** Whether a row is pinned (unplaced, but near a known intersection on this road) rather than
+ *  placed. `corridor_only` rows aren't: their side of the corridor is unknown. */
+export function isPinned(c: Pick<SpanRow, "chain" | "chain_lo" | "chain_hi" | "corridor_only">): boolean {
+    return (c.chain === null || c.chain === undefined)
+        && c.chain_lo !== null && c.chain_lo !== undefined && c.chain_hi !== null && c.chain_hi !== undefined
+        && !isCorridorOnly(c)
+}
 
-/** `road-summary-monthly`-shaped rows counted from crash rows (spans and corridors, which have no
- *  summary file cut to them); `unplaced(c)` says which count as "no map point". Sorted. */
-export function summarizeCrashes<C extends { dt: number; severity: string; tk: number | null; ti: number | null }>(
+export type MonthRow = {
+    year: number
+    month: number
+    severity: string
+    n: number
+    tk: number
+    ti: number
+    n_unplaced: number
+    n_corridor_only: number
+}
+
+/** `road-summary-monthly`-shaped rows counted from crash rows (spans, and corridors of builds
+ *  without `road-corridor-summary-monthly`); `unplaced(c)` says which count as "no map point".
+ *  Sorted. */
+export function summarizeCrashes<C extends { dt: number; severity: string; tk: number | null; ti: number | null; corridor_only?: boolean | null; own_entity?: number | null }>(
     rows: readonly C[],
     unplaced: (c: C) => boolean,
 ): MonthRow[] {
@@ -382,11 +420,13 @@ export function summarizeCrashes<C extends { dt: number; severity: string; tk: n
         const year = d.getUTCFullYear(), month = d.getUTCMonth() + 1
         const key = `${year}-${month}-${c.severity}`
         let r = cells.get(key)
-        if (!r) cells.set(key, r = { year, month, severity: c.severity, n: 0, tk: 0, ti: 0, n_unplaced: 0 })
+        if (!r) cells.set(key, r = { year, month, severity: c.severity, n: 0, tk: 0, ti: 0, n_unplaced: 0, n_corridor_only: 0 })
         r.n++
         r.tk += c.tk ?? 0
         r.ti += c.ti ?? 0
         if (unplaced(c)) r.n_unplaced++
+        // As the summaries' `n_corridor_only`: of this road's (corridor's) own crashes, not `-xs` rows.
+        if (isCorridorOnly(c) && (c.own_entity === null || c.own_entity === undefined)) r.n_corridor_only++
     }
     return [...cells.values()].sort((a, b) => a.year - b.year || a.month - b.month || a.severity.localeCompare(b.severity))
 }
@@ -411,6 +451,47 @@ export function crashTotals(rows: readonly { severity: string; tk: number | null
         t.killed += r.tk ?? 0
     }
     return t
+}
+
+/** `road-blocks` counts: this road's placed crashes by `block`, and (v5.1) other roads' crashes at
+ *  its intersections (`_xs`). */
+export type BlockCounts = {
+    block: number
+    n_crashes: number
+    n_fatal: number
+    n_injury: number
+    n_killed: number
+    n_crashes_xs?: number
+    n_fatal_xs?: number
+    n_injury_xs?: number
+    n_killed_xs?: number
+}
+
+/** Whether blocks come from a v5.1 build: their counts follow the rows' `block` column (which
+ *  exists), and include `n_*_xs`. */
+export function hasBlockColumn(blocks: readonly Partial<BlockCounts>[]): boolean {
+    return blocks.length > 0 && typeof blocks[0].n_crashes_xs === "number"
+}
+
+/** Totals of blocks `b0..b1` (by `block` id): `own` from `n_*`, `xs` from `n_*_xs` (null on v5.0
+ *  blocks). Equal to counting the span's `block BETWEEN b0 AND b1` rows. */
+export function blockTotals(blocks: readonly BlockCounts[], [b0, b1]: [number, number]): { own: Totals; xs: Totals | null } {
+    const own = { ...ZERO_TOTALS }
+    const xs = { ...ZERO_TOTALS }
+    let hasXs = true
+    for (const b of blocks) {
+        if (b.block < b0 || b.block > b1) continue
+        own.n += b.n_crashes
+        own.fatal += b.n_fatal
+        own.injury += b.n_injury
+        own.killed += b.n_killed
+        if (typeof b.n_crashes_xs !== "number") { hasXs = false; continue }
+        xs.n += b.n_crashes_xs
+        xs.fatal += b.n_fatal_xs ?? 0
+        xs.injury += b.n_injury_xs ?? 0
+        xs.killed += b.n_killed_xs ?? 0
+    }
+    return { own, xs: hasXs ? xs : null }
 }
 
 export function addTotals(a: Totals, b: Totals | null): Totals {
