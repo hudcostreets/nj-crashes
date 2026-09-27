@@ -16,7 +16,7 @@ from njdot.cli.roads import (
     write_outputs,
 )
 from njdot.road_net import (
-    merge_key, name_key, name_points, ng_intervals, ng_segments, rn_features, rn_points, road_entities, shield,
+    merge_key, name_key, name_points, ng_intervals, ng_segments, norm_name, per_unique, rn_features, rn_points, road_entities, shield,
 )
 
 
@@ -52,6 +52,23 @@ def test_crashes_by_sri_filters_joins_and_sorts():
     assert out['lat'].isna().tolist() == [False, False, True, False]
     assert out['route'].tolist() == ['1', '9', '1', '1']
     assert pa.Table.from_pandas(out, preserve_index=False).schema.field('route').type == pa.string()
+
+
+def test_per_unique_matches_elementwise():
+    s = pd.Series(['W Side Ave', None, 'W Side Ave', 'Kennedy Blvd.', pd.NA, 'Kennedy Blvd.'], index=[5, 3, 9, 1, 0, 7], dtype='string')
+    calls = []
+
+    @per_unique
+    def f(x: pd.Series) -> pd.Series:
+        calls.append(len(x))
+        return norm_name(x)
+
+    out = f(s)
+    # Once, over the 2 distinct values + NA.
+    assert calls == [3]
+    pd.testing.assert_series_equal(out, norm_name.__wrapped__(s))
+    assert out.fillna('<NA>').tolist() == ['W SIDE AVE', '<NA>', 'W SIDE AVE', 'KENNEDY BLVD', '<NA>', 'KENNEDY BLVD']
+    assert out.index.tolist() == [5, 3, 9, 1, 0, 7]
 
 
 def test_road_system_codes():

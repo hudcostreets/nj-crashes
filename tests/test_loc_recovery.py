@@ -230,6 +230,31 @@ def test_recover_real(real):
     placed = out['loc_source'].isin(['intersection', 'route_xs'])
     assert out['lon'].notna().tolist() == placed.tolist()
 
+    # The per-crash loop in forked processes gives the same result (as `recover_unassigned` does
+    # statewide; here forced on, with crashes from two munis).
+    import njdot.loc_recovery as lr
+    more = pd.concat([cs, cs.assign(mc=7), cs], ignore_index=True)
+    serial = recover(more, real.seg, real.idx, real.seg_ent, real.seg_sris, real.snapper, real.runs)
+    par_min, procs = lr.PAR_MIN_ROWS, lr.RECOVER_PROCS
+    lr.PAR_MIN_ROWS, lr.RECOVER_PROCS = 0, 2
+    try:
+        par = recover(more, real.seg, real.idx, real.seg_ent, real.seg_sris, real.snapper, real.runs)
+    finally:
+        lr.PAR_MIN_ROWS, lr.RECOVER_PROCS = par_min, procs
+    pd.testing.assert_frame_equal(par, serial)
+
+
+def test_close_matcher_is_get_close_matches():
+    from difflib import get_close_matches
+    from njdot.loc_recovery import CloseMatcher
+    words = ['AUDUBONAVE', 'AUDIBONAVE', 'WESTSIDEAVE', 'WESTSIDEPL', 'BERGENAVE', 'BERGENLN', 'KENNEDYBLVD', 'JFKENEDYBLVD', 'MLKDR', '']
+    cm = CloseMatcher(words)
+    queries = ['AUDOBONAVE', 'WESTSIDEAV', 'BERGENAV', 'JFKENNEDYBLVD', 'X', '', 'ZZZZZZZ', 'WESTSIDEAVE']
+    for q in queries:
+        for cutoff in (0.6, 0.88):
+            assert cm.close_matches(q, n=2, cutoff=cutoff) == get_close_matches(q, words, n=2, cutoff=cutoff), (q, cutoff)
+    assert cm.close_matches('AUDOBONAVE', n=2, cutoff=0.88) == ['AUDUBONAVE', 'AUDIBONAVE']
+
 
 def build_fixture(recover: bool) -> dict:
     """`njdot roads build`'s crash placement + outputs over the real fixtures and the West Side Ave
