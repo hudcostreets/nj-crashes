@@ -1,4 +1,4 @@
-import { useActions } from "use-kbd"
+import { useActions } from "@/src/lib/kbd"
 import type { MapMode, HeatRender } from "@/src/map/CrashMap"
 import { HEAT_C_SIGMA_PX, HEAT_C_PX_TARGET, HEAT_C_OPACITY } from "@/src/map/CrashMap"
 

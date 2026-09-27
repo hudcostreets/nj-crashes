@@ -7,11 +7,15 @@
     "deploy": "wrangler deploy",
     "deploy:dev": "wrangler deploy --env dev",
     "d1:create": "bash scripts/d1-create.sh",
-    "d1:import": "bash scripts/d1-import.sh"
+    "d1:import": "bash scripts/d1-import.sh",
+    "tc": "tsc",
+    "test": "vitest run",
+    "db:migrate:local": "wrangler d1 migrations apply crashes-feedback --local"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260702.1",
     "typescript": "^5.9.3",
+    "vitest": "^4.1.11",
     "wrangler": "^4.141.0"
   }
 }

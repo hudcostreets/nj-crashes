@@ -12,9 +12,11 @@
  *   GET /njdot/victim-severity?cc=&mc=
  *   GET /njsp/crashes?cc=&mc=&yearFrom=&yearTo=&types=&page=&limit=
  *   GET /njsp/crashes/count?cc=&mc=&yearFrom=&yearTo=&types=
+ *   /v1/feedback*  user "report an issue" submissions (see `feedback/handler.ts`)
  */
+import { handleFeedback, type FeedbackEnv } from "./feedback/handler"
 
-interface Env {
+interface Env extends FeedbackEnv {
 	CRASHES_DB: D1Database
 	VEHICLES_DB: D1Database
 	OCCUPANTS_DB: D1Database
@@ -24,11 +26,11 @@ interface Env {
 	CORS_ORIGIN: string
 }
 
-function corsHeaders(env: Env): HeadersInit {
+function corsHeaders(env: Env): Record<string, string> {
 	return {
 		"Access-Control-Allow-Origin": env.CORS_ORIGIN,
-		"Access-Control-Allow-Methods": "GET, OPTIONS",
-		"Access-Control-Allow-Headers": "Content-Type",
+		"Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+		"Access-Control-Allow-Headers": "Content-Type, Authorization",
 		"Content-Type": "application/json",
 	}
 }
@@ -317,6 +319,16 @@ export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		if (request.method === "OPTIONS") {
 			return new Response(null, { headers: corsHeaders(env) })
+		}
+		// Feedback routes bypass the edge cache below: the cache key ignores
+		// `Authorization`, so a cached admin listing would be served to anyone.
+		try {
+			const feedback = await handleFeedback(request, env, ctx, corsHeaders(env))
+			if (feedback) return feedback
+		} catch (e) {
+			console.error("feedback error:", e)
+			const message = e instanceof Error ? e.message : "Internal error"
+			return Response.json({ error: message }, { status: 500, headers: corsHeaders(env) })
 		}
 		// Edge-cache GET responses. Crash data changes at most daily
 		// (njsp-crashes / cmymc imports) or annually (njdot), so a 1h TTL
