@@ -779,6 +779,9 @@ def place_crashes(
         crashes, latlon = fold_recovery(crashes, latlon, rec)
         counts = crashes['loc_source'].value_counts()
         err(f'  recovery ({time.monotonic() - t0:.0f}s, {len(rec):,} crashes tried): ' + ', '.join(f'{k} {v:,}' for k, v in counts.items()))
+        # Crashes whose road meets the cross street at several junctions the offset / direction
+        # doesn't choose between (`loc_recovery._locate_one`): on the road without a point, or on none.
+        err(f'    ambiguous junctions: {int(rec["how"].eq("junctions").sum()):,} crashes')
         extra = ['loc_source', 'how', '_ent'] + extra
         b['idx'] = ctx['idx']
     else:
@@ -837,9 +840,10 @@ def roads_build(crashes_path: str | None, cc: int | None, ng911_dir: str, networ
         crashes = load_build_crashes(cc)
         latlon = _build_base(crashes, keep_severities=set())
         steps('load crashes')
-        # Crashes per muni-year, for `road_notes.muni_gaps` (towns whose reports are missing some years).
+        # Crashes per muni-year-month, for `road_notes.muni_gaps` (towns whose reports are missing
+        # some years; near-empty months).
         mcc = crashes.dropna(subset=['cc', 'mc'])
-        muni_counts = mcc.groupby([mcc['cc'].astype(int), mcc['mc'].astype(int), 'year']).size().rename('n').reset_index()
+        muni_counts = mcc.groupby([mcc['cc'].astype(int), mcc['mc'].astype(int), 'year', mcc['dt'].dt.month.rename('month')], dropna=False).size().rename('n').reset_index()
         del mcc
         crashes, recode_counts = apply_recodes(crashes, overrides)
         for rid, n in recode_counts.items():
@@ -871,7 +875,7 @@ def road_outputs(
     output tables (keys = file names, plus `ents` / `by_entity` / `geom` / `runs` / `capped` /
     `override_counts`), with entity ids renumbered in slug order (`road_outputs.slug_order`), the
     curated `overrides` applied (`njdot.road_overrides`), the curated `notes` and the coverage gaps
-    found in `muni_counts` (`cc, mc, year, n`: all crashes per muni-year) attached (`njdot.road_notes`
+    found in `muni_counts` (`cc, mc, year, month, n`: all crashes per muni-year-month) attached (`njdot.road_notes`
     → `road-notes`), and the v5 model (`njdot.road_model`:
     chainage, corridors, intersection nodes, blocks; specs/road-model-v5.md). Updates `b`'s `geom`
     / `runs` and `by_sri` (adds `entity`, drops `_i`) in place."""

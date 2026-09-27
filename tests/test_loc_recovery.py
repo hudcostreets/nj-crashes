@@ -10,7 +10,7 @@ import shapely
 from njdot.cc2mc2mn import cc2mc2mn
 from njdot.cli.roads import build_geom, place_crashes, prep_crashes, road_outputs
 from njdot.loc_recovery import (
-    Snapper, base_key, clean_road, cluster_point, entity_at, learn_names, loc_key, meet_points, ng_name_index,
+    Snapper, base_key, clean_road, entity_at, junctions, learn_names, loc_key, meet_points, ng_name_index,
     nodir_key, offset_along, offset_m, recover, resolve_keys, route_keys, route_sri, seg_entities, split_road,
 )
 from njdot.map_base import _build_base
@@ -123,7 +123,7 @@ def lines(*coords):
     return np.array([shapely.linestrings(c) for c in coords], dtype=object)
 
 
-def test_meet_cluster_offset():
+def test_meet_junctions_offset():
     # A road along y=0 (x 0…1000 m), a cross street along x=400, another far away along x=900 (no meet).
     road = lines([(0, 0), (500, 0)], [(500, 0), (1000, 0)])
     cross = lines([(400, -200), (400, 0)], [(400, 0), (400, 200)])
@@ -131,10 +131,9 @@ def test_meet_cluster_offset():
     pts = meet_points(road, cross)
     assert sorted(map(tuple, pts.round(3).tolist())) == [(400.0, 0.0), (400.0, 0.0)]
     assert meet_points(road, far).shape == (0, 2)
-    p = cluster_point(pts)
-    assert p.round(3).tolist() == [400.0, 0.0]
-    # Two meets 600 m apart (a crescent, or two same-named streets): ambiguous.
-    assert cluster_point(np.array([[0.0, 0.0], [600.0, 0.0]])) is None
+    ps = junctions(pts, road)
+    assert ps.round(3).tolist() == [[400.0, 0.0]]
+    p = ps[0]
     assert offset_along(road, p, 100, 'E').round(3).tolist() == [500.0, 0.0]
     assert offset_along(road, p, 100, 'W').round(3).tolist() == [300.0, 0.0]
     # The road runs east-west: "N of the cross street" has nowhere to go.
@@ -142,6 +141,57 @@ def test_meet_cluster_offset():
     # No direction: at the intersection if near enough, else unplaceable.
     assert offset_along(road, p, 50, '').round(3).tolist() == [400.0, 0.0]
     assert offset_along(road, p, 100, '') is None
+    # At a node the road goes on along the next segment (the nearest line, the first, ends there).
+    assert offset_along(road, np.array([500.0, 0.0]), 100, 'E').round(3).tolist() == [600.0, 0.0]
+    assert offset_along(road, np.array([500.0, 0.0]), 100, 'W').round(3).tolist() == [400.0, 0.0]
+
+
+def test_junctions():
+    # A road turning north at (100, 0); a cross street forking to meet it at (0, 0) and, through a
+    # node (two meets), at (100, 140): 172 m apart, one junction (a triangle). Their meet-weighted
+    # mean (66.7, 93.3) is 33 m off the road, so the junction is the meet nearest it.
+    road = lines([(-100, 0), (100, 0)], [(100, 0), (100, 300)])
+    pts = np.array([[0.0, 0.0], [100.0, 140.0], [100.0, 140.0]])
+    assert junctions(pts, road).tolist() == [[100.0, 140.0]]
+    # The same meets once each: the mean (50, 70) is off the road too, and equidistant from both;
+    # the first.
+    assert junctions(pts[:2], road).tolist() == [[0.0, 0.0]]
+    # Meets 10 m apart (a divided road's carriageways crossing): their mean, on the road.
+    assert junctions(np.array([[40.0, 0.0], [50.0, 0.0], [50.0, 0.0]]), road).round(2).tolist() == [[46.67, 0.0]]
+    # Meets 600 m apart (a crescent meeting a street at both ends): two junctions, each where it meets.
+    v = lines([(0, 0), (300, -300)], [(300, -300), (0, -600)])
+    assert junctions(meet_points(v, lines([(0, 100), (0, -700)])), v).tolist() == [[0.0, -600.0], [0.0, 0.0]]
+    # Meets all along a stretch the road shares with the cross street: no junction.
+    along = np.array([[0.0, 0.0], [100.0, 0.0], [200.0, 0.0], [300.0, 0.0], [400.0, 0.0]])
+    assert junctions(along, road).shape == (0, 2)
+    assert junctions(np.empty((0, 2)), road).shape == (0, 2)
+
+
+def test_locate_one_several_junctions():
+    """A road meeting its cross street at both ends (Edison's Old Post Rd, US 1): the reported
+    direction picks the junction the road leaves that way; with both possible, neither (flagged)."""
+    from njdot.loc_recovery import _locate_one, _seg_groups
+    # A "V" east of a north-south cross street (x = 0), meeting it at (0, 0) and (0, -600).
+    segs = lines([(0, 0), (300, -300)], [(300, -300), (0, -600)], [(0, 100), (0, -700)])
+    idx = pd.DataFrame([(9, 6, 'OLDPOSTRD', 0, 'name'), (9, 6, 'OLDPOSTRD', 1, 'name'), (9, 6, 'USRT1', 2, 'name')], columns=['cc', 'mc', 'key', 'seg', 'src'])
+    snapper = SimpleNamespace(snap=lambda q, sris: ('OPR', round(float(q[0]) / 1000, 3), 0.0))
+    ctx = dict(
+        lines=segs, segs_by=_seg_groups(idx, ['cc', 'mc', 'key']), segs_named=_seg_groups(idx[idx['src'] == 'name'], ['cc', 'mc', 'key']),
+        segs_cc=_seg_groups(idx, ['cc', 'key']), seg_ent=np.array([7.0, 7.0, 8.0]), seg_sris=np.array(['OPR', 'OPR', 'US1'], dtype=object),
+        sri_lines={}, ent_sris={}, sri_ent={}, snapper=snapper,
+    )
+
+    def locate(off, dirn):
+        res = _locate_one(9, 6, ('OLDPOSTRD',), ('USRT1',), pd.NA, pd.NA, off, dirn, None, False, False, None, **ctx)
+        return res[:3] + (None if res[3] is None else res[3].round(1).tolist(),) + res[4:]
+
+    # 100 m south of US 1: only from the north junction does the road run south.
+    assert locate(100.0, 'S') == ('intersection', 'OPR', 0.071, [70.7, -70.7], None, None)
+    # … north: only from the south one.
+    assert locate(100.0, 'N') == ('intersection', 'OPR', 0.071, [70.7, -529.3], None, None)
+    # East, or at the intersection: either junction; on the road by its name, no point.
+    assert locate(100.0, 'E') == ('name_only', None, None, None, 7, 'junctions')
+    assert locate(0.0, '') == ('name_only', None, None, None, 7, 'junctions')
 
 
 def test_locate_strings_road_aliased_on_cross_street():
@@ -160,8 +210,8 @@ def test_locate_strings_road_aliased_on_cross_street():
         segs_cc=_seg_groups(idx, ['cc', 'key']), seg_ent=np.array([7.0, 8.0, 8.0, 8.0]), seg_sris=np.array(['OPR', 'VIN', 'VIN', 'VIN'], dtype=object),
         sri_lines={}, ent_sris={}, sri_ent={}, snapper=None,
     )
-    r_lines, r_sris, kind, p, rest = _locate_strings(9, 6, ('OLDPOSTRD',), ('VINEYARDRD',), None, None, None, False, False, **ctx)
-    assert (len(r_lines), sorted(r_sris), kind, p.round(3).tolist(), rest) == (1, ['OPR'], 'intersection', [500.0, 0.0], ('name_only', None, None, None, 7))
+    r_lines, r_sris, kind, ps, rest = _locate_strings(9, 6, ('OLDPOSTRD',), ('VINEYARDRD',), None, None, None, False, False, **ctx)
+    assert (len(r_lines), sorted(r_sris), kind, ps.round(3).tolist(), rest) == (1, ['OPR'], 'intersection', [[500.0, 0.0]], ('name_only', None, None, None, 7))
 
 
 def test_entity_at():
@@ -209,7 +259,7 @@ def crash(road, cross=None, sri=None, mp=None, dist=None, unit=None, d=None, roa
 def test_recover_real(real):
     cs = pd.DataFrame([
         crash('WESTSIDE AVE', 'DUNCAN AVE', unit='AT'),
-        # West Side Ave runs north into Duncan Ave: 500 ft S of it is on West Side, N is nowhere.
+        # 500 ft S / N of Duncan Ave: on West Side Ave's SRI south of it / the next one north.
         crash('W SIDE AVENUE', 'DUNCAN AVENUE', dist=500, unit='FE', d='S'),
         crash('W SIDE AVENUE', 'DUNCAN AVENUE', dist=500, unit='FE', d='N'),
         crash('DUNCAN AVE', 'WEST SIDE AVE', dist=300, unit='FE', d='W'),
@@ -239,7 +289,7 @@ def test_recover_real(real):
     assert rows == [
         ('intersection', '09061684__', 1.93, 'West Side Avenue', 'exact'),
         ('intersection', '09061684__', 1.86, 'West Side Avenue', 'exact'),
-        ('name_only', None, None, 'West Side Avenue', 'exact'),
+        ('intersection', '09061575__', 0.06, 'West Side Avenue', 'exact'),
         ('intersection', '09061684__', 1.99, 'Duncan Avenue', 'exact'),
         ('name_only', None, None, 'West Side Avenue', 'exact'),
         ('name_only', None, None, 'West Side Avenue', 'base'),
@@ -319,17 +369,17 @@ def test_build_recovers_west_side_ave(built):
     assert year_counts(before, WSA) == [[2006, 2, 0], [2016, 7, 0], [2019, 164, 0]]
     # With it: police strings put ~50x more 2006 / 2016 crashes on it, most by name only (this
     # fixture's NG911 has few of the cross streets); 2019 (already coded) barely moves.
-    assert year_counts(after, WSA) == [[2006, 107, 96], [2016, 126, 112], [2019, 172, 8]]
+    assert year_counts(after, WSA) == [[2006, 107, 96], [2016, 126, 110], [2019, 172, 8]]
     be = after['by_entity']
     wsa = be[be['entity'].map(after['slug']).eq(WSA).to_numpy()]
     assert wsa.groupby(['year', 'loc_source']).size().reset_index().values.tolist() == [
         [2006, 'intersection', 9], [2006, 'name_only', 96], [2006, 'sri_mp', 2],
-        [2016, 'intersection', 7], [2016, 'name_only', 112], [2016, 'sri_mp', 7],
+        [2016, 'intersection', 9], [2016, 'name_only', 110], [2016, 'sri_mp', 7],
         [2019, 'name_only', 8], [2019, 'sri_mp', 164],
     ]
     # Unplaced (name-only) crashes sort last on the road, with no SRI / MP / point.
     unpl = wsa['loc_source'].eq('name_only').to_numpy()
-    assert unpl.tolist() == [False] * 189 + [True] * 216
+    assert unpl.tolist() == [False] * 191 + [True] * 214
     assert wsa[unpl][['sri', 'mp', 'lat', 'lon']].notna().sum().tolist() == [0, 0, 0, 0]
     # Placed recoveries have a recovered SRI / MP and point.
     assert wsa[wsa['loc_source'].eq('intersection').to_numpy()][['sri', 'mp', 'lat', 'lon']].notna().all().tolist() == [True] * 4
@@ -351,13 +401,13 @@ def test_build_recovery_keeps_coded_and_private(built, real):
     # Coded crashes stay exactly where they were.
     assert ids(after, 'sri_mp') == ids(before)
     # `crashes-by-sri` gains the placed recoveries; name-only crashes (no SRI) aren't in it.
-    assert after['by_sri']['loc_source'].value_counts().sort_index().to_dict() == {'intersection': 16, 'none': 5, 'sri_mp': 354}
+    assert after['by_sri']['loc_source'].value_counts().sort_index().to_dict() == {'intersection': 19, 'none': 5, 'sri_mp': 354}
     assert len(before['by_sri']) == 359
     # `how` (audit) is only in `crashes-by-sri`, and only on crashes recovery tried and whose road
     # name resolved (the 5 "none" are "HUDSON COUNTY 6xx" strings coded with retired county-route
     # SRIs that this fixture's network and NG911 names lack).
     assert 'how' not in after['by_entity']
-    assert after['by_sri'].groupby('loc_source')['how'].count().to_dict() == {'intersection': 16, 'none': 0, 'sri_mp': 0}
+    assert after['by_sri'].groupby('loc_source')['how'].count().to_dict() == {'intersection': 19, 'none': 0, 'sri_mp': 0}
     # Private property (`road_system` 9) is never recovered: the fixture's 16 private crashes stay
     # off every road.
     cr = after['crashes']
