@@ -35,7 +35,7 @@ import shapely
 from pyproj import Transformer
 
 from njdot.cc2mc2mn import CC2MC2MN
-from njdot.road_net import _locate, lines_from, name_key, ng_segments, to_meters
+from njdot.road_net import _locate, lines_from, name_key, to_meters
 from njdot.road_outputs import muni_codes
 
 # Road / cross street segments "meet" if within this many meters (NG911 is noded, so usually 0).
@@ -387,10 +387,20 @@ class Snapper:
 
 def entity_at(sri: pd.Series, mp: pd.Series, runs: pd.DataFrame) -> pd.Series:
     """`(sri, mp)` → the entity whose run interval `[mp_lo, mp_end)` on `sri` holds `mp` (as the
-    build's `assign_crashes`), else NA."""
-    q = pd.DataFrame({'sri': sri.to_numpy(), 'mp': mp.to_numpy(), 'i': np.arange(len(sri))}).dropna()
-    m = q.merge(runs[['entity', 'sri', 'mp_lo', 'mp_end']], on='sri')
-    m = m[(m['mp'] >= m['mp_lo']) & (m['mp'] < m['mp_end'])].drop_duplicates('i')
+    build's `assign_crashes`), else NA. A run's interval ends at or before the next run's `mp_lo` on
+    its SRI (`road_runs`), so the last run starting at or before `mp` is the only candidate
+    (`merge_asof`: no crash × run blow-up on long, many-run SRIs)."""
+    q = pd.DataFrame({
+        'sri': sri.to_numpy(dtype=object),
+        'mp': pd.Series(mp).to_numpy(dtype='float64', na_value=np.nan),
+        'i': np.arange(len(sri)),
+    })
+    q = q[pd.notna(q['sri']).to_numpy() & np.isfinite(q['mp'].to_numpy())]
+    q = q.assign(sri=q['sri'].astype(str)).sort_values('mp', kind='stable')
+    r = runs[['entity', 'sri', 'mp_lo', 'mp_end']]
+    r = r.assign(sri=r['sri'].astype(str), mp_lo=r['mp_lo'].astype('float64')).sort_values('mp_lo', kind='stable')
+    m = pd.merge_asof(q, r, left_on='mp', right_on='mp_lo', by='sri')
+    m = m[m['mp'] < m['mp_end']]
     out = pd.Series(pd.NA, index=np.arange(len(sri)), dtype='Int32')
     out.loc[m['i'].to_numpy()] = m['entity'].to_numpy()
     return out.set_axis(sri.index)
@@ -480,17 +490,19 @@ def recover(
     learned_ent: dict[tuple, int] = {}
     if learned is not None:
         learned_ent = {(int(c), int(m), k): int(e) for c, m, k, e in zip(learned['cc'], learned['mc'], learned['key'], learned['entity'])}
-    segs_by = {k: np.unique(g.to_numpy()) for k, g in idx.groupby(['cc', 'mc', 'key'])['seg']}
-    named = idx[idx['src'] == 'name']
-    segs_named = {k: np.unique(g.to_numpy()) for k, g in named.groupby(['cc', 'mc', 'key'])['seg']}
-    segs_cc = {k: np.unique(g.to_numpy()) for k, g in idx.groupby(['cc', 'key'])['seg']}
-    ent_sris = runs.groupby('entity')['sri'].agg(lambda s: frozenset(s)).to_dict()
+    segs_by = _seg_groups(idx, ['cc', 'mc', 'key'])
+    segs_named = _seg_groups(idx[idx['src'] == 'name'], ['cc', 'mc', 'key'])
+    segs_cc = _seg_groups(idx, ['cc', 'key'])
+    ent_sris = {int(e): frozenset(s) for e, s in runs.groupby('entity')['sri'].unique().items()}
     # An SRI all of whose runs are one entity (most local SRIs): an SRI without MP is still on it.
-    sri_ent = runs.groupby('sri')['entity'].agg(lambda e: int(e.iloc[0]) if e.nunique() == 1 else None).dropna().to_dict()
+    g = runs.groupby('sri')['entity']
+    one = g.nunique() == 1
+    sri_ent = {s: int(e) for s, e in g.first()[one].items()}
     off = offset_m(crashes['cross_street_distance'], crashes['Unit Of Measurement']).round(1)
     dirn = crashes['Direction From Cross Street'].astype('string').str.strip().str.upper().fillna('')
     need = set(sri0.dropna()) | set(x_sri.dropna()) | {s for e in set(learned_ent.values()) for s in ent_sris.get(e, ())}
-    sri_lines = {s: snapper.lines[np.flatnonzero(snapper.fsri == s)] for s in need}
+    feat_ix = pd.Series(np.arange(len(snapper.fsri))).groupby(snapper.fsri).indices
+    sri_lines = {s: snapper.lines[feat_ix.get(s, _EMPTY)] for s in need}
     ctx = dict(
         lines=lines, segs_by=segs_by, segs_named=segs_named, segs_cc=segs_cc, seg_ent=seg_ent, seg_sris=seg_sris,
         sri_lines=sri_lines, ent_sris=ent_sris, sri_ent=sri_ent, snapper=snapper,
@@ -505,31 +517,34 @@ def recover(
     lon, lat = np.full(n, np.nan), np.full(n, np.nan)
     ent = np.full(n, pd.NA, dtype=object)
     how = rr['how'].to_numpy(dtype=object)
+    # Plain arrays for the per-crash loop (`Series.iat` costs ~10 µs a call; statewide that's minutes).
+    cc_a, mc_a = base['cc'].fillna(-1).to_numpy('int64'), base['mc'].fillna(-1).to_numpy('int64')
+    r_ng, x_ng = rr['ng_keys'].to_numpy(dtype=object), xr['ng_keys'].to_numpy(dtype=object)
+    r_rk_a, x_rk_a = r_rk.to_numpy(dtype=object), x_rk.to_numpy(dtype=object)
+    r_raw_a, split_a = r_raw.to_numpy(dtype=object), split.to_numpy(dtype=bool)
+    sri0_a, x_sri_a = sri0.to_numpy(dtype=object), x_sri.to_numpy(dtype=object)
+    off_a, dirn_a, coded_a = off.to_numpy(), dirn.to_numpy(dtype=object), coded.to_numpy(dtype=bool)
+    todo = ~ok.to_numpy() & ~private & base['cc'].notna().to_numpy() & base['mc'].notna().to_numpy()
     cache: dict[tuple, tuple] = {}
-    for i in np.flatnonzero(~ok.to_numpy() & ~private):
-        c, m = base['cc'].iat[i], base['mc'].iat[i]
-        if pd.isna(c) or pd.isna(m):
-            continue
-        c, m = int(c), int(m)
+    for i in np.flatnonzero(todo):
+        c, m = int(cc_a[i]), int(mc_a[i])
         # Route strings ("RT 440", "HUDSON COUNTY 617") → the NG911 shield keys present in the muni.
-        r_keys, x_keys = rr['ng_keys'].iat[i], xr['ng_keys'].iat[i]
-        if r_rk.iat[i]:
-            r_keys = tuple(k for k in r_rk.iat[i] if (c, m, k) in segs_by) or r_keys
-        if x_rk.iat[i]:
-            x_keys = tuple(k for k in x_rk.iat[i] if (c, m, k) in segs_by or (c, k) in segs_cc) or x_keys
-        le = None if split.iat[i] or pd.isna(r_raw.iat[i]) else learned_ent.get((c, m, r_raw.iat[i]))
+        r_keys, x_keys, r_rki, x_rki = r_ng[i], x_ng[i], r_rk_a[i], x_rk_a[i]
+        if r_rki:
+            r_keys = tuple(k for k in r_rki if (c, m, k) in segs_by) or r_keys
+        if x_rki:
+            x_keys = tuple(k for k in x_rki if (c, m, k) in segs_by or (c, k) in segs_cc) or x_keys
+        rk = r_raw_a[i]
+        le = None if split_a[i] or pd.isna(rk) else learned_ent.get((c, m, rk))
         pt = (round(float(pts[i, 0]), 1), round(float(pts[i, 1]), 1)) if np.isfinite(pts[i]).all() else None
-        key = (
-            c, m, r_keys, x_keys, sri0.iat[i], x_sri.iat[i], off.iat[i], dirn.iat[i], le, bool(split.iat[i]),
-            bool(r_rk.iat[i]), pt,
-        )
+        key = (c, m, r_keys, x_keys, sri0_a[i], x_sri_a[i], off_a[i], dirn_a[i], le, bool(split_a[i]), bool(r_rki), pt)
         if key not in cache:
             cache[key] = _locate_one(*key, **ctx)
         res, s_i, mp_i, q, e = cache[key]
-        if res == 'none' and coded.iat[i]:
+        if res == 'none' and coded_a[i]:
             continue  # a retired SRI we couldn't re-locate: keep it as coded
         src[i] = res
-        if r_rk.iat[i] and res != 'none':
+        if r_rki and res != 'none':
             how[i] = 'route'
         elif le is not None and res in ('intersection', 'name_only'):
             how[i] = 'learned'
@@ -550,6 +565,36 @@ def recover(
     df['how'] = pd.array(how, dtype='string')
     df.loc[ok.to_numpy(), 'how'] = pd.NA
     return df
+
+
+def recovery_context(
+    seg: pd.DataFrame,
+    iv: pd.DataFrame,
+    runs: pd.DataFrame,
+    feats: pd.DataFrame,
+    cl: pd.DataFrame,
+    al: pd.DataFrame,
+    cc2mc2mn: CC2MC2MN,
+) -> dict:
+    """`recover`'s geometry / name inputs (`seg, idx, seg_ent, seg_sris, snapper, runs`) from a
+    build's NG911 segments (`ng_segments(cl)`), accepted intervals (`ng_intervals`), runs (with
+    `entity`) and NJDOT line features (`rn_features`), plus the NG911 centerlines / aliases."""
+    seg_sris = pd.Series(pd.NA, index=np.arange(len(seg)), dtype='string')
+    seg_sris.loc[iv['seg'].to_numpy()] = iv['sri'].to_numpy()
+    return dict(
+        seg=seg, idx=ng_name_index(cl, al, cc2mc2mn), seg_ent=seg_entities(seg, iv, runs), seg_sris=seg_sris,
+        snapper=Snapper(feats), runs=runs,
+    )
+
+
+def recover_unassigned(crashes: pd.DataFrame, ctx: dict) -> pd.DataFrame:
+    """The build's recovery pass: crashes whose coded `(sri, mp)` puts them on no entity of
+    `ctx['runs']` → `recover`, with road names learned (`learn_names`) from the ones it does.
+    Returns `recover`'s output for those crashes (its index a subset of `crashes.index`)."""
+    ent = entity_at(crashes['sri'], crashes['mp'], ctx['runs'])
+    learned = learn_names(crashes[['cc', 'mc', 'road']].assign(entity=ent))
+    todo = ent.isna().to_numpy()
+    return recover(crashes[todo], learned=learned, **ctx)
 
 
 def _points(crashes: pd.DataFrame) -> np.ndarray:
@@ -580,6 +625,12 @@ def _to_lonlat(p: np.ndarray) -> tuple[float, float]:
 
 
 _EMPTY = np.array([], dtype=int)
+
+
+def _seg_groups(idx: pd.DataFrame, keys: list[str]) -> dict[tuple, np.ndarray]:
+    """`idx` (`ng_name_index`) → `{keys tuple: sorted unique segment ids}`."""
+    seg = idx['seg'].to_numpy()
+    return {k: np.unique(seg[ix]) for k, ix in idx.groupby(keys).indices.items()}
 
 
 def _segs(keys: tuple | None, c: int, m: int, segs_by: dict, segs_cc: dict | None = None) -> np.ndarray:

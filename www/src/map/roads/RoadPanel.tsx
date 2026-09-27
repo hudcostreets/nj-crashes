@@ -2,8 +2,8 @@ import { useMemo } from "react"
 import { Link } from "react-router-dom"
 import { EndYear, StartYear } from "@/src/constants"
 import { entityCrashesSql, type RoadCrashView, type RoadEntity, type RoadSummaryRow } from "./roadsData"
-import { ExportCsvButton, RoadCrashTable } from "./RoadCrashTable"
-import { yearStats } from "./roadStats"
+import { ExportCsvButton, RoadCrashTable, UnplacedNote } from "./RoadCrashTable"
+import { unplacedTotal, yearStats } from "./roadStats"
 import { YearStrip } from "./YearStrip"
 
 /** Rows rendered in the panel; the CSV export always has all of them. */
@@ -29,6 +29,7 @@ export function RoadPanel({ info, notFound, summary, crashes, loading, onClose, 
     const dim = theme === "dark" ? "#999" : "#666"
     const rows = useMemo(() => crashes?.slice(0, TABLE_ROWS) ?? [], [crashes])
     const stats = useMemo(() => (summary?.length ? yearStats(summary, StartYear, EndYear) : null), [summary])
+    const nUnplaced = useMemo(() => unplacedTotal(summary ?? []), [summary])
     const sris = info?.sris.split(",") ?? []
     const multiSri = sris.length > 1
     const btn = { padding: "2px 8px", fontSize: "0.8em", background: "transparent", color: fg, border: `1px solid ${dim}`, borderRadius: 3, cursor: "pointer" }
@@ -58,6 +59,7 @@ export function RoadPanel({ info, notFound, summary, crashes, loading, onClose, 
                         ({info.n_killed.toLocaleString()} killed) · {info.n_injury.toLocaleString()} injury
                     </div>
                 )}
+                <UnplacedNote n={nUnplaced} dim={dim} />
                 {info && (
                     <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
                         <button style={btn} onClick={() => onZoomTo([info.lon_min, info.lat_min, info.lon_max, info.lat_max])}>Zoom to road</button>
@@ -73,7 +75,7 @@ export function RoadPanel({ info, notFound, summary, crashes, loading, onClose, 
                 {crashes && <RoadCrashTable rows={rows} multiSri={multiSri} theme={theme} headerBg={bg} />}
                 {crashes && crashes.length > TABLE_ROWS && (
                     <div style={{ padding: "4px 10px", color: dim, fontSize: "0.8em" }}>
-                        Showing {TABLE_ROWS} of {crashes.length.toLocaleString()} (by SRI, MP) — export for all.
+                        Showing {TABLE_ROWS} of {crashes.length.toLocaleString()} (by SRI, MP; street-name-only last) — export for all.
                     </div>
                 )}
             </div>

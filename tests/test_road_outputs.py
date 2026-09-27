@@ -115,13 +115,25 @@ def by_entity_rows():
 
 def test_road_summary():
     c = by_entity_rows()
+    # Without `loc_source` (a build without recovery): every crash is placed.
     assert road_summary(c).values.tolist() == [
-        [0, 2020, 'f', 1, 2, 1], [0, 2020, 'i', 2, 0, 3], [0, 2021, 'p', 1, 0, 0],
-        [1, 2020, 'p', 2, 0, 0], [2, 2020, 'p', 1, 0, 0],
+        [0, 2020, 'f', 1, 2, 1, 0], [0, 2020, 'i', 2, 0, 3, 0], [0, 2021, 'p', 1, 0, 0, 0],
+        [1, 2020, 'p', 2, 0, 0, 0], [2, 2020, 'p', 1, 0, 0, 0],
     ]
     assert road_summary(c, monthly=True).values.tolist() == [
-        [0, 2020, 1, 'f', 1, 2, 1], [0, 2020, 1, 'i', 1, 0, 2], [0, 2020, 3, 'i', 1, 0, 1], [0, 2021, 7, 'p', 1, 0, 0],
-        [1, 2020, 1, 'p', 1, 0, 0], [1, 2020, 2, 'p', 1, 0, 0], [2, 2020, 2, 'p', 1, 0, 0],
+        [0, 2020, 1, 'f', 1, 2, 1, 0], [0, 2020, 1, 'i', 1, 0, 2, 0], [0, 2020, 3, 'i', 1, 0, 1, 0], [0, 2021, 7, 'p', 1, 0, 0, 0],
+        [1, 2020, 1, 'p', 1, 0, 0, 0], [1, 2020, 2, 'p', 1, 0, 0, 0], [2, 2020, 2, 'p', 1, 0, 0, 0],
+    ]
+    # Name-only / SRI-only crashes count in `n` and in `n_unplaced`; recovered placed ones only in `n`.
+    c['loc_source'] = pd.array(['sri_mp', 'name_only', 'intersection', 'sri_only', 'latlon_snap', 'name_only', 'sri_mp'], dtype='string')
+    assert road_summary(c).columns.tolist() == ['entity', 'year', 'severity', 'n', 'tk', 'ti', 'n_unplaced']
+    assert road_summary(c).values.tolist() == [
+        [0, 2020, 'f', 1, 2, 1, 0], [0, 2020, 'i', 2, 0, 3, 1], [0, 2021, 'p', 1, 0, 0, 1],
+        [1, 2020, 'p', 2, 0, 0, 0], [2, 2020, 'p', 1, 0, 0, 1],
+    ]
+    assert road_summary(c, monthly=True).values.tolist() == [
+        [0, 2020, 1, 'f', 1, 2, 1, 0], [0, 2020, 1, 'i', 1, 0, 2, 1], [0, 2020, 3, 'i', 1, 0, 1, 0], [0, 2021, 7, 'p', 1, 0, 0, 1],
+        [1, 2020, 1, 'p', 1, 0, 0, 0], [1, 2020, 2, 'p', 1, 0, 0, 0], [2, 2020, 2, 'p', 1, 0, 0, 1],
     ]
 
 

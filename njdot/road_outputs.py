@@ -213,20 +213,34 @@ def entity_lengths(geom: pd.DataFrame, pt_mc: np.ndarray, parent: dict[str, str]
 
 # --- Summaries ---------------------------------------------------------------------------------
 
+# `loc_source`s (`njdot.loc_recovery`) of crashes assigned to an entity without a map point (no MP).
+UNPLACED_SOURCES = ('sri_only', 'name_only')
+
+
+def unplaced(by_entity: pd.DataFrame) -> pd.Series:
+    """Whether each crash is on its entity without a map point (`UNPLACED_SOURCES`; all false
+    without a `loc_source` column)."""
+    if 'loc_source' not in by_entity:
+        return pd.Series(False, index=by_entity.index)
+    return by_entity['loc_source'].isin(UNPLACED_SOURCES).fillna(False).astype(bool)
+
 
 def road_summary(by_entity: pd.DataFrame, monthly: bool = False) -> pd.DataFrame:
     """Crash counts per `(entity, year, severity)` (or `(entity, year, month, severity)`): `n`
-    crashes, `tk` killed, `ti` injured. Sorted by the keys."""
+    crashes (all assigned ones, placed or not), `tk` killed, `ti` injured, `n_unplaced` of them
+    without a map point (`unplaced`). Sorted by the keys."""
     keys = ['entity', 'year', 'month', 'severity'] if monthly else ['entity', 'year', 'severity']
     c = by_entity[['entity', 'year', 'severity', 'tk', 'ti']].copy()
     if monthly:
         c['month'] = pd.to_datetime(by_entity['dt']).dt.month
     c['n'] = 1
-    out = c.groupby(keys, as_index=False, observed=True)[['n', 'tk', 'ti']].sum()
-    out = out.astype({'entity': 'int32', 'year': 'int16', 'severity': 'string', 'n': 'int32', 'tk': 'int32', 'ti': 'int32'})
+    c['n_unplaced'] = unplaced(by_entity).astype('int32')
+    vals = ['n', 'tk', 'ti', 'n_unplaced']
+    out = c.groupby(keys, as_index=False, observed=True)[vals].sum()
+    out = out.astype({'entity': 'int32', 'year': 'int16', 'severity': 'string'} | {v: 'int32' for v in vals})
     if monthly:
         out['month'] = out['month'].astype('int8')
-    return out.sort_values(keys, kind='stable').reset_index(drop=True)[keys + ['n', 'tk', 'ti']]
+    return out.sort_values(keys, kind='stable').reset_index(drop=True)[keys + vals]
 
 
 # --- Ranks -------------------------------------------------------------------------------------

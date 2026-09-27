@@ -36,6 +36,7 @@ in the browser by DuckDB-WASM with ranged reads, so each is sorted for row-group
 """
 import os
 import subprocess
+import time
 from os.path import dirname, exists, join
 
 import duckdb
@@ -47,6 +48,7 @@ from click import option
 
 from nj_crashes.utils.log import err
 from njdot.load import load_crashes_with_aashto
+from njdot.loc_recovery import PRIVATE_ROAD_SYSTEM, recover_unassigned, recovery_context
 from njdot.map_base import _build_base
 from njdot.paths import NG911_DIR, ROADS_DIR, ROADS_S3, ROADWAY_NETWORK
 from njdot.road_audit import audit
@@ -56,7 +58,8 @@ from njdot.road_net import (
 )
 from njdot.cc2mc2mn import CC2MC2MN, cc2mc2mn
 from njdot.road_outputs import (
-    entity_lengths, entity_slugs, point_mc, road_ranks, road_search_index, road_summary, search_meta, slug_order,
+    UNPLACED_SOURCES, entity_lengths, entity_slugs, point_mc, road_ranks, road_search_index, road_summary, search_meta,
+    slug_order, unplaced,
 )
 from njdot.road_sources import HUDSON_GNIS, fetch_network, fetch_ng911, read_meta, write_parquet
 from njdot.s2 import latlng_to_id
@@ -110,7 +113,7 @@ ROW_GROUP = {
 # Dictionary-encode only these columns (a small row group's dictionary of mostly-distinct strings
 # costs more than it saves); default all.
 DICT = {
-    'crashes-by-entity': ['sri', 'severity', 'road', 'cross_street', 'route'],
+    'crashes-by-entity': ['sri', 'severity', 'road', 'cross_street', 'route', 'loc_source'],
     'road-entities': [],
     'road-ranks': [],
     'road-search': ['token', 'kind', 'place', 'words'],
@@ -133,17 +136,108 @@ ENTITY_COLS = [
     'n_crashes', 'n_fatal', 'n_injury', 'n_killed', 'aliases', 'cc', 'mc', 'munis', 'length_mi',
 ]
 
-def crashes_by_sri(crashes: pd.DataFrame, latlon: pd.DataFrame) -> pd.DataFrame:
-    """Crashes with a non-empty SRI, joined to their effective `lat`/`lon` (left join on the index,
-    so ungeocoded crashes are kept), sorted `(sri, mp, dt, id)`."""
-    df = crashes[crashes['sri'].notna() & (crashes['sri'] != '')]
-    df = df[CRASH_COLS].join(latlon[['lat', 'lon']], how='left')
+def crash_rows(crashes: pd.DataFrame, latlon: pd.DataFrame, extra: list[str] | None = None) -> pd.DataFrame:
+    """`CRASH_COLS` (+ `extra`, where present) of `crashes`, joined to their effective `lat`/`lon`
+    (left join on the index, so ungeocoded crashes are kept)."""
+    cols = CRASH_COLS + [c for c in (extra or []) if c in crashes]
+    df = crashes[cols].join(latlon[['lat', 'lon']], how='left')
     # Per-table years and AASHTO disagree on some types (e.g. `route` is int in one, str in the
     # other), so object columns are mixed after the concat; normalize them to `string` for arrow.
     for col in df.select_dtypes('object').columns:
         df[col] = df[col].astype('string')
     df['id'] = df['id'].astype('Int64')  # AASHTO rows have no `id` → NaN after the concat
+    return df
+
+
+def crashes_by_sri(crashes: pd.DataFrame, latlon: pd.DataFrame, extra: list[str] | None = None) -> pd.DataFrame:
+    """Crashes with a non-empty SRI (`crash_rows`), sorted `(sri, mp, dt, id)`."""
+    df = crash_rows(crashes[crashes['sri'].notna() & (crashes['sri'] != '')], latlon, extra)
     return df.sort_values(['sri', 'mp', 'dt', 'id'], kind='stable', na_position='last').reset_index(drop=True)
+
+
+# Crash columns `recover` needs beyond `MAP_INPUT_COLS` (offset from the cross street; road class).
+RECOVERY_COLS = ['road_system', 'cross_street_distance', 'Unit Of Measurement', 'Direction From Cross Street']
+# AASHTO (2024+) names its `road_system`s; only private property matters to recovery.
+AASHTO_ROAD_SYSTEMS = {'Private Property': PRIVATE_ROAD_SYSTEM}
+
+
+def road_system_codes(s: pd.Series) -> pd.Series:
+    """`road_system` after the per-table (int codes) ∪ AASHTO (names) concat → int codes (`Int8`);
+    AASHTO names via `AASHTO_ROAD_SYSTEMS`, others NA."""
+    num = pd.to_numeric(s, errors='coerce')
+    named = s.map(AASHTO_ROAD_SYSTEMS)
+    return num.fillna(pd.to_numeric(named, errors='coerce')).astype('Int8')
+
+
+def load_build_crashes(cc: int | None = None) -> pd.DataFrame:
+    """`load_crashes_with_aashto` with `id` and the columns `roads build` needs (`MAP_INPUT_COLS`,
+    `RECOVERY_COLS`), `prep_crashes`'d; `cc`: only that county's (dev subsets)."""
+    crashes = load_crashes_with_aashto(columns=MAP_INPUT_COLS + ['id'] + RECOVERY_COLS)
+    if cc is not None:
+        crashes = crashes[crashes['cc'] == cc].reset_index(drop=True)
+    return prep_crashes(crashes)
+
+
+def prep_crashes(crashes: pd.DataFrame) -> pd.DataFrame:
+    """Normalize `RECOVERY_COLS` types across the per-table ∪ AASHTO concat (in place)."""
+    crashes['road_system'] = road_system_codes(crashes['road_system'])
+    for c in ('Unit Of Measurement', 'Direction From Cross Street'):
+        crashes[c] = crashes[c].astype('string')
+    crashes['cross_street_distance'] = pd.to_numeric(crashes['cross_street_distance'], errors='coerce')
+    return crashes
+
+
+# `loc_source`s with a map point (coded or recovered SRI + MP) vs. assigned to an entity only.
+PLACED_SOURCES = ('sri_mp', 'intersection', 'route_xs', 'latlon_snap')
+
+
+def fold_recovery(crashes: pd.DataFrame, latlon: pd.DataFrame, rec: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Fold `recover_unassigned` output `rec` (a subset of `crashes`' index) into `crashes`: adds
+    `loc_source` (default "sri_mp": crashes `rec` doesn't cover are on an entity by their coded
+    SRI / MP), `how` and `_ent` (the entity of `sri_only` / `name_only` crashes), and takes `rec`'s
+    `sri` / `mp` wherever it recovered a location. Returns it and `latlon` (every crash's effective
+    `lat` / `lon`): the recovered point for `intersection` / `route_xs`, the reported one (as
+    before) for `latlon_snap`, none for `sri_only` / `name_only` (no map point)."""
+    c = crashes.copy()
+    ll = latlon[['lat', 'lon']].reindex(c.index)
+    src = pd.Series('sri_mp', index=c.index, dtype='string')
+    src.loc[rec.index] = rec['loc_source'].astype('string')
+    c['loc_source'] = src
+    c['how'] = pd.Series(pd.NA, index=c.index, dtype='string')
+    tried = rec[rec['loc_source'] != 'sri_mp']
+    c.loc[tried.index, 'how'] = tried['how']
+    c['_ent'] = pd.Series(pd.NA, index=c.index, dtype='Int32')
+    recovered = rec[~rec['loc_source'].isin(['sri_mp', 'none'])]
+    unpl = recovered[recovered['loc_source'].isin(UNPLACED_SOURCES)]
+    c.loc[unpl.index, '_ent'] = unpl['entity']
+    c['sri'] = c['sri'].astype('string')
+    c.loc[recovered.index, 'sri'] = recovered['sri']
+    c['mp'] = c['mp'].astype('float32')
+    c.loc[recovered.index, 'mp'] = recovered['mp'].astype('float32')
+    pt = recovered[recovered['loc_source'].isin(['intersection', 'route_xs'])]
+    ll.loc[pt.index, 'lat'] = pt['lat'].astype('float32')
+    ll.loc[pt.index, 'lon'] = pt['lon'].astype('float32')
+    ll.loc[unpl.index] = np.nan
+    return c, ll.dropna()
+
+
+def entity_crashes(by_sri: pd.DataFrame, crashes: pd.DataFrame, latlon: pd.DataFrame, runs: pd.DataFrame, con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+    """All crashes assigned to an entity (`road_outputs`' `by_entity` input): `by_sri` (with `_i`,
+    and `loc_source` / `_ent` when recovery ran) crashes on a run (`assign_crashes`), then its
+    `sri_only` crashes (`_ent`), then `crashes`' `name_only` ones (no SRI: not in `by_sri`; no
+    `_i`). The unplaced ones have no `run`, `mp`, `lat` / `lon`."""
+    cols = [c for c in by_sri.columns if c != '_ent']
+    placed = assign_crashes(by_sri[cols], runs, con)
+    if '_ent' not in by_sri:
+        return placed
+    sri_only = by_sri[by_sri['loc_source'].eq('sri_only').fillna(False).to_numpy()]
+    name_only = crash_rows(crashes[crashes['loc_source'].eq('name_only').fillna(False).to_numpy()], latlon, ['loc_source', 'how', '_ent'])
+    unpl = pd.concat([sri_only, name_only], ignore_index=True)
+    unpl = unpl.assign(entity=unpl["_ent"], run=pd.NA)[["entity", "run"] + cols]
+    out = pd.concat([placed.astype({'entity': 'Int32', 'run': 'Int64'}), unpl.astype({"entity": "Int32", "run": "Int64"})], ignore_index=True)
+    for col in out.select_dtypes('object').columns:
+        out[col] = out[col].astype('string')
+    return out.astype({'id': 'Int64', '_i': 'Int64'})
 
 
 # `crashes_by_sri`'s nullable dtypes, which a written `crashes-by-sri.parquet` doesn't record (`write`
@@ -574,7 +668,8 @@ def write(
 def build_geom(rn: pd.DataFrame, cl: pd.DataFrame, al: pd.DataFrame, con: duckdb.DuckDBPyConnection) -> dict:
     """Sources → named MP points, runs, entities (no crashes). Returns a dict with `geom` (points,
     with `name`, `cc`, `muni`, `seg`, `entity`), `runs`, `point_run`, `names` (`run_names`),
-    `seg`, `iv` (accepted NG911 intervals), `aliases` (`seg_aliases`), `parent` (secondary SRI → parent SRI)."""
+    `seg`, `iv` (accepted NG911 intervals), `aliases` (`seg_aliases`), `parent` (secondary SRI → parent SRI),
+    `feats` (`rn_features`)."""
     feats = rn_features(rn)
     err(f'  {len(feats):,} NJDOT line features, {feats["sri"].nunique():,} SRIs')
     geom = rn_points(feats)
@@ -591,7 +686,7 @@ def build_geom(rn: pd.DataFrame, cl: pd.DataFrame, al: pd.DataFrame, con: duckdb
     parent = feats[feats['sec']].drop_duplicates('sri').set_index('sri')['parent'].to_dict()
     runs['entity'] = road_entities(runs, geom, point_run, names, parent)
     geom['entity'] = runs['entity'].to_numpy()[point_run]
-    return dict(geom=geom, runs=runs, point_run=point_run, names=names, seg=seg, iv=iv, aliases=aliases, parent=parent)
+    return dict(geom=geom, runs=runs, point_run=point_run, names=names, seg=seg, iv=iv, aliases=aliases, parent=parent, feats=feats)
 
 
 @njdot.group('roads')
@@ -599,35 +694,88 @@ def roads():
     """Road-selection artifacts (crashes / geometry by SRI and road entity)."""
 
 
+# Bbox margin (degrees) around a county's NG911 segments when subsetting the NJDOT network (`county_subset`).
+BBOX_PAD = 0.02
+
+
+def county_subset(rn: pd.DataFrame, cl: pd.DataFrame, al: pd.DataFrame, cc: int) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Dev subsets: NG911 centerlines with either side in county `cc` (+ their aliases), and the
+    NJDOT lines with a vertex within `BBOX_PAD`° of their bbox."""
+    cl = cl[(cl['cc_l'] == cc) | (cl['cc_r'] == cc)].reset_index(drop=True)
+    al = al[al['RCL_NGUID'].isin(set(cl['RCL_NGUID']))].reset_index(drop=True)
+    xs, ys = np.concatenate(cl['x'].to_numpy()), np.concatenate(cl['y'].to_numpy())
+    w, s, e, n = xs.min() - BBOX_PAD, ys.min() - BBOX_PAD, xs.max() + BBOX_PAD, ys.max() + BBOX_PAD
+    rn = rn[[bool(((x >= w) & (x <= e) & (y >= s) & (y <= n)).any()) for x, y in zip(rn['x'], rn['y'])]].reset_index(drop=True)
+    return rn, cl, al
+
+
+def place_crashes(
+    crashes: pd.DataFrame,
+    latlon: pd.DataFrame,
+    b: dict,
+    cl: pd.DataFrame,
+    al: pd.DataFrame,
+    con: duckdb.DuckDBPyConnection,
+    recover: bool = True,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Crashes (`load_build_crashes`) + their effective `lat` / `lon` (`_build_base`) + `build_geom`
+    output → `(by_sri, by_entity)` for `road_outputs`. With `recover`, crashes their coded `(sri,
+    mp)` doesn't put on an entity go through `njdot.loc_recovery` first (`recover_unassigned`,
+    `fold_recovery`; specs/crash-location-recovery.md): placed ones join `by_sri` / `assign_crashes`
+    with their recovered SRI / MP, `sri_only` / `name_only` ones are appended to `by_entity`."""
+    extra = None
+    if recover:
+        t0 = time.monotonic()
+        ctx = recovery_context(b['seg'], b['iv'], b['runs'], b['feats'], cl, al, cc2mc2mn)
+        rec = recover_unassigned(crashes, ctx)
+        crashes, latlon = fold_recovery(crashes, latlon, rec)
+        counts = crashes['loc_source'].value_counts()
+        err(f'  recovery ({time.monotonic() - t0:.0f}s, {len(rec):,} crashes tried): ' + ', '.join(f'{k} {v:,}' for k, v in counts.items()))
+        extra = ['loc_source', 'how', '_ent']
+    by_sri = crashes_by_sri(crashes, latlon, extra)
+    by_sri['_i'] = np.arange(len(by_sri), dtype='int64')
+    by_entity = entity_crashes(by_sri, crashes, latlon, b['runs'], con)
+    return by_sri, by_entity
+
+
 @roads.command('build')
-@option('-c', '--crashes-by-sri', 'crashes_path', help='Reuse this `crashes-by-sri.parquet` instead of loading crashes (dev subsets)')
+@option('-c', '--crashes-by-sri', 'crashes_path', help='Reuse this `crashes-by-sri.parquet` instead of loading crashes (dev subsets; no recovery)')
+@option('-C', '--county', 'cc', type=int, help='Dev subset: only this county\'s crashes, NG911 segments and nearby NJDOT lines')
 @option('-g', '--ng911-dir', default=NG911_DIR, show_default=True, help='`njdot roads fetch-ng911` output dir')
 @option('-n', '--network', default=ROADWAY_NETWORK, show_default=True, help='`njdot roads fetch-network` output')
 @option('-o', '--out-dir', default=ROADS_DIR, show_default=True, help='Output dir')
-def roads_build(crashes_path: str | None, ng911_dir: str, network: str, out_dir: str):
+@option('-R', '--no-recover', is_flag=True, help='Skip crash location recovery (coded SRI / MP only)')
+def roads_build(crashes_path: str | None, cc: int | None, ng911_dir: str, network: str, out_dir: str, no_recover: bool):
     """Build the `roads/` parquets (see module docstring)."""
     os.makedirs(out_dir, exist_ok=True)
-    if crashes_path:
-        # A previous build's `crashes-by-sri` carries its (now stale) `entity`.
-        by_sri = read_crashes_by_sri(crashes_path).drop(columns=['entity'], errors='ignore')
-    else:
-        err('Loading crashes...')
-        crashes = load_crashes_with_aashto(columns=MAP_INPUT_COLS + ['id'])
-        latlon = _build_base(crashes, keep_severities=set())
-        by_sri = crashes_by_sri(crashes, latlon)
-        del crashes, latlon
     cl_path, al_path = join(ng911_dir, 'centerlines.parquet'), join(ng911_dir, 'aliases.parquet')
     err(f'Loading {network}, {cl_path}, {al_path}...')
     meta = {f'network_{k}': v for k, v in read_meta(network).items()} | {f'ng911_{k}': v for k, v in read_meta(cl_path).items()}
+    rn, cl, al = pd.read_parquet(network), pd.read_parquet(cl_path), pd.read_parquet(al_path)
+    if cc is not None:
+        rn, cl, al = county_subset(rn, cl, al, cc)
     con = duckdb.connect()
     con.sql("SET memory_limit='12GB'; SET threads=4")
     err('Points, runs, entities...')
-    b = build_geom(pd.read_parquet(network), pd.read_parquet(cl_path), pd.read_parquet(al_path), con)
-    geom, runs, point_run = b['geom'], b['runs'], b['point_run']
-    by_sri['_i'] = np.arange(len(by_sri), dtype='int64')
-    by_entity = assign_crashes(by_sri, runs, con)
+    b = build_geom(rn, cl, al, con)
+    del rn
+    if crashes_path:
+        # A previous build's `crashes-by-sri` carries its (now stale) `entity`; it has no uncoded
+        # crashes to recover.
+        by_sri = read_crashes_by_sri(crashes_path).drop(columns=['entity', 'loc_source', 'how'], errors='ignore')
+        if cc is not None:
+            by_sri = by_sri[by_sri['cc'] == cc].reset_index(drop=True)
+        by_sri['_i'] = np.arange(len(by_sri), dtype='int64')
+        by_entity = assign_crashes(by_sri, b['runs'], con)
+    else:
+        err('Loading crashes...')
+        crashes = load_build_crashes(cc)
+        latlon = _build_base(crashes, keep_severities=set())
+        by_sri, by_entity = place_crashes(crashes, latlon, b, cl, al, con, recover=not no_recover)
+        del crashes, latlon
     o = road_outputs(b, by_sri, by_entity, con, cc2mc2mn)
-    err(f'  {len(runs):,} runs → {len(o["ents"]):,} entities; {len(o["by_entity"]):,} of {len(by_sri):,} SRI crashes on an entity')
+    n_unpl = int(unplaced(o['by_entity']).sum())
+    err(f'  {len(b["runs"]):,} runs → {len(o["ents"]):,} entities; {len(o["by_entity"]):,} crashes on an entity ({n_unpl:,} without a map point), {len(by_sri):,} with an SRI')
     err('Writing...')
     write_outputs(o, out_dir, meta)
 
@@ -638,7 +786,10 @@ def road_outputs(b: dict, by_sri: pd.DataFrame, by_entity: pd.DataFrame, con: du
     entity ids renumbered in slug order (`road_outputs.slug_order`). Updates `b`'s `geom` / `runs`
     and `by_sri` (adds `entity`, drops `_i`) in place."""
     geom, runs, point_run = b['geom'], b['runs'], b['point_run']
-    stretches = stretch_aliases(geom, point_run, by_entity)
+    # Crash-reported aliases come from crashes NJDOT placed itself: recovered ones were placed *by*
+    # their names, so they'd only echo them back.
+    coded = by_entity[by_entity['loc_source'].eq('sri_mp').fillna(False).to_numpy()] if 'loc_source' in by_entity else by_entity
+    stretches = stretch_aliases(geom, point_run, coded.assign(run=coded['run'].astype('int64')))
     geom['alias'] = point_aliases(geom, point_run, stretches)
     ents, searchable = entity_table(runs, geom, by_entity, con, b['names'], point_run, stretches)
     pt_mc = point_mc(geom, cc2mc2mn)
@@ -647,10 +798,16 @@ def road_outputs(b: dict, by_sri: pd.DataFrame, by_entity: pd.DataFrame, con: du
     ents = ents.merge(slugs, on='entity')
     for df in (geom, runs, by_entity, ents, searchable):
         df['entity'] = df['entity'].map(new).astype('int32')
-    by_entity = by_entity.sort_values(['entity', 'sri', 'mp', 'dt', 'id'], kind='stable', na_position='last').reset_index(drop=True)
-    by_sri['entity'] = pd.Series(by_entity['entity'].to_numpy(), index=by_entity['_i'].to_numpy()).reindex(np.arange(len(by_sri))).astype('Int32').array
-    by_sri.drop(columns=['_i'], inplace=True)
-    by_entity.drop(columns=['run', '_i'], inplace=True)
+    # Unplaced crashes (no MP) last within their entity.
+    by_entity = (
+        by_entity.assign(_u=unplaced(by_entity).to_numpy())
+        .sort_values(['entity', '_u', 'sri', 'mp', 'dt', 'id'], kind='stable', na_position='last')
+        .drop(columns=['_u']).reset_index(drop=True)
+    )
+    on_sri = by_entity[by_entity['_i'].notna().to_numpy()]
+    by_sri['entity'] = pd.Series(on_sri['entity'].to_numpy(), index=on_sri['_i'].to_numpy(dtype='int64')).reindex(np.arange(len(by_sri))).astype('Int32').array
+    by_sri.drop(columns=['_i', '_ent'], inplace=True, errors='ignore')
+    by_entity.drop(columns=['run', '_i', 'how'], inplace=True, errors='ignore')
     lengths = entity_lengths(geom, pt_mc, b.get('parent', {}), RUN_GAP_MP, RUN_JUMP_M)
     ents['length_mi'] = ents['entity'].map(lengths['total']).fillna(0).astype('float32')
     ents = ents.sort_values('entity').reset_index(drop=True)[ENTITY_COLS]
