@@ -34,7 +34,7 @@ import pyarrow.parquet as pq
 from nj_crashes.utils.log import err
 from njdot import s2
 from njdot.cli.base import compute
-from njdot.map_base import _build_base
+from njdot.map_base import _build_base, read_recovered_points
 from njdot.load import load_crashes_with_aashto
 from njdot.paths import ROOT_DIR
 
@@ -116,11 +116,13 @@ def cells_raw(base_level: int, force: bool, out_dir: Path, shard_level: int):
             p.unlink()
     raw_dir.mkdir(parents=True, exist_ok=True)
 
-    df = load_crashes_with_aashto(columns=MAP_INPUT_COLS)
+    # `id` keys the recovered-points sidecar (`njdot roads build`'s; `map_base`).
+    df = load_crashes_with_aashto(columns=MAP_INPUT_COLS + ['id'])
     n_total = len(df)
 
     err('Computing effective lat/lon (via _build_base)...')
-    base = _build_base(df, keep_severities=set())
+    base = _build_base(df, keep_severities=set(), recovered=read_recovered_points())
+    err(f'  geocode_src: {", ".join(f"{k} {v:,}" for k, v in base["geocode_src"].value_counts().items())}')
     n_geo = len(base)
     n_drop = n_total - n_geo
     err(f'  {n_geo:,} rows with lat/lon (dropped {n_drop:,} ungeocoded, {n_drop / n_total:.1%})')

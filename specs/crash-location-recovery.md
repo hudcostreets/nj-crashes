@@ -1,6 +1,6 @@
 # Crash location recovery (pre-2018 local roads)
 
-Status: **shipped in `njdot roads build`** (branch `loc-ship`; see [Shipped](#shipped-njdot-roads-build)). Needs a statewide Batch `roads build` and the matching frontend deploy. The prototype CLI (`njdot roads recover`) stays for per-county evals.
+Status: **shipped in `njdot roads build`** (branch `loc-ship`; see [Shipped](#shipped-njdot-roads-build)). Needs a statewide Batch `roads build` and the matching frontend deploy. The prototype CLI (`njdot roads recover`) stays for per-county evals. Recovered points on the main map (cells): implemented on branch `cells-recovered`, not yet built ([Map / cells integration](#map--cells-integration)).
 
 ## Problem
 
@@ -280,10 +280,7 @@ Details:
 - Per-mile ranks shift: pre-2018 volume rises on municipal roads. That's the point of the change.
 - Also keep **`how`** (`exact`/`base`/`nodir`/`fuzzy`/`learned`/`route`) in `crashes-by-sri` only, for audits. It's not needed in the lean `crashes-by-entity`.
 
-For the main map (cells) and the crash-level DB, a crash-level sidecar works like `crashes_geocode_backfill.parquet`:
-
-- `njdot/data/crash_loc_recovery.parquet`, keyed by `id`, with `(loc_source, sri, mp, ilat, ilon)` for placed recoveries only;
-- `load_crashes_with_aashto` fills NaNs from it, so `_build_base` puts recovered points on the map.
+For the main map (cells), a crash-level sidecar: implemented as `njdot/data/crash_recovered_points.parquet`, a `roads build` co-output applied by `_build_base` (not by `load_crashes_with_aashto`, which `roads build` reads too); see [Map / cells integration](#map--cells-integration).
 
 Entity ids are build-specific, so name-only assignments stay inside `njdot roads build`.
 
@@ -296,7 +293,7 @@ Entity ids are build-specific, so name-only assignments stay inside `njdot roads
   - fold placed ones into `by_sri` / `assign_crashes`, and append name-only / SRI-only rows to `by_entity`.
 
   Statewide `ng_intervals` / `ng_segments` are already computed there, so reuse `b['seg']`, `b['iv']` and the build's own `runs`. Estimated extra runtime: minutes; the per-crash loop is memoized by `(muni, names, offset)`. Deps are unchanged: crashes, AASHTO, NG911 and the network are all already inputs of `roads-build`.
-- **Map / cells (optional second step):** a `crash_loc_recovery.parquet` stage (`njdot roads recover --all -o …`), which becomes a dep of the cells / map stage. That triggers one cells rebuild on Batch.
+- **Map / cells (second step):** a sidecar the map / cells stages depend on; done as a `roads build` co-output ([Map / cells integration](#map--cells-integration)). That triggers one cells rebuild on Batch.
 - **FE:**
   - `loc_source` badge in the road crash table;
   - "N by name only" note;
@@ -369,18 +366,110 @@ The frontend must ship **before or with** the new road data: the current fronten
 - `learn_names` thresholds (5 crashes, 80%) are untuned. A statewide holdout eval (`-m new`) per county would tune them and check how Hudson's precision transfers.
 - The E/W-merged entities ("West 48th Street" containing East 48th) come from `road_entities`, not from here.
 
-## Recommendation: `crash_loc_recovery.parquet` sidecar (not implemented)
+## Map / cells integration
 
-A crash-level sidecar (`id` → `loc_source, sri, mp, ilat, ilon` for placed recoveries), filled into `load_crashes_with_aashto` like `crashes_geocode_backfill.parquet`, would put recovered points on the main map (cells) and the crash-level DBs.
+Status: **implemented** on branch `cells-recovered`, not yet built statewide or deployed. Recovered points reach the main map (S2 cells / heatmap) through a sidecar that `roads build` writes and the map-facing exports apply.
 
-- **Size / cost**: ~1.1M placed recoveries statewide (Hudson: 88k of 489k crashes) × 5 columns ≈ 15–25 MB parquet. Producing it is the same pass as `roads build`'s, so either a separate `njdot roads recover --all -o …` stage (~10 min, needs `road-runs` → depends on `roads.dvc`) or a co-output of `roads build`.
-- **Rebuild dependency**: it becomes a dep of the cells / map stage (and anything else calling `load_crashes_with_aashto`: `njdot compute db`, backfill), so it triggers one full cells rebuild on Batch, then one per `roads build` whose recoveries change. It also puts `roads build` upstream of cells, which is new: today cells and roads are siblings.
-- **Risks**:
-  - ~2–3% of placed recoveries are on the wrong road (97–98% precision), and intersection points sit at the intersection ± offset: fine for per-road counts, more visible as dots on the main map, where they'd look as authoritative as NJDOT's.
-  - Map density shifts: pre-2018 local streets go from nearly empty to populated, so year-over-year map comparisons change (the point, but worth a note in the map UI).
-  - Mixing inputs: `ilat` / `ilon` today means NJDOT-interpolated; the sidecar would need its own `geocode_src` value (`recovered`) so the map / crash page can tell them apart.
-  - Circularity: recovery's `learn_names` learns from `crashes.parquet`'s coded crashes; feeding recovered SRIs back into `crashes`-derived inputs must not feed `learn_names` (keep the sidecar out of `roads build`'s own crash load).
-- **Recommendation**: worth doing, but after the road-page ship has run a cycle: add `geocode_src = 'recovered'` first, emit the sidecar as a `roads build` co-output (no second recovery pass), and gate the main map on it with a visible provenance label.
+### Sidecar: `njdot/data/crash_recovered_points.parquet`
+
+A second output of `njdot roads build` (`map_points` in `njdot/cli/roads.py`), declared as a co-output stage `njdot/data/crash_recovered_points.parquet.dvc` (same cmd as `www/public/njdot/roads.dvc`, so dvx runs the build once for both). It's a new dep of `data/cells/raw/s2_l21.dvc` and `www/public/njdot/map.dvc`, never of `roads.dvc`: recovery must see NJDOT's points only (the circularity risk above), so `_build_base` applies it only when a caller passes it, and `roads build` doesn't. Consequence: `roads build` is now upstream of cells (they were siblings).
+
+One row per crash whose map point recovery changes (`map_base.RECOVERED_COLS`):
+
+| column | type | |
+|---|---|---|
+| `id` | int64, null | the crash's `id`; null on AASHTO (2023+) rows, which have none |
+| `year`, `cc`, `mc`, `case` | int16, int8, int16, string | |
+| `dt`, `road`, `cross_street` | timestamp, string, string | AASHTO rows only: with the four above, their key (`RECOVERED_KEY`) |
+| `kind` | string | `recovered` / `corrected` / `dropped` |
+| `loc_source` | string | the build's (`intersection`, `route_xs`, `sri_calib`, `sri_mp`, `latlon_snap`, `name_only`, …) |
+| `lat`, `lon` | float32 | the new point (null when `dropped`) |
+
+- **Keys.** Per-table rows join on `id`. AASHTO rows have no `id`, and `(year, cc, mc, case)` isn't unique among them (1,595 duplicate keys: the same crash reported twice, typically once with a point and once without), so they join on `(year, cc, mc, case, dt, road, cross_street)` (226 duplicates left). A key whose crashes' outcomes differ is left out, so its crashes keep NJDOT's points; a key whose crashes all come out the same is written once.
+- **Deterministic**: sorted `(id, *RECOVERED_KEY)` (AASHTO last), zstd, no pandas / arrow schema metadata (`write_recovered_points`; the test writes it twice and compares bytes).
+- **Size**: Bergen 116.5k rows / 1.5 MiB, Essex 121.2k / 1.5 MiB (`roads build -C 2` / `-C 7`); statewide ≈ 1.05M rows, **≈ 13–14 MiB**.
+
+### Precedence
+
+After recovery, a crash's map point is the first of (`map_points`):
+
+1. **NJDOT's** (`interpolated`, else `original`), unless judged wrong:
+   - `recoded`: `recode_county_routes` (2001–02 county routes coded to the state route's SRI) or a curated `recode` rule dropped it (`drop_coded_points`: computed from the SRI / MP being replaced);
+   - coded towns from the crash's muni, **re-located** by recovery, with NJDOT's point out of town too (`far_from_town` on it; R2-7). Not re-located, NJDOT's coding stands (the muni may be what's wrong: Essex Fells's Parkway crashes), and so does its point.
+
+   A distinct police point survives either (`drop_coded_points` only drops `olat` / `olon` when they equal `ilat` / `ilon`).
+2. **Recovery's** (`intersection` / `route_xs` / `sri_calib`; `latlon_snap`'s point is the reported one).
+3. A **recoded** crash still on its (now county-route) SRI / MP: that SRI / MP's point on today's network (`Snapper.point`). Without this, Bergen's 2001–02 "CR N" crashes drawn on NJ N would just vanish.
+
+`kind` compares it with the map's point today (`effective_points` before recodes): none → a point is `recovered`; a point → another is `corrected`; a point → none is `dropped`. `_build_base(df, keep_severities, recovered=…)` applies them: `recovered` fills only (NJDOT's point wins if a stale row meets one), `corrected` overrides, `dropped` removes. `geocode_src` gains `recovered` and `corrected` (`GEOCODE_SRCS`).
+
+Deliberate differences from the road pages:
+
+- A police point that didn't snap to the crash's named road (`sri_only` / `name_only`) stays on the map. `fold_recovery` drops it from `crashes-by-entity` (the road page shows the crash without a point), but it's independent evidence, and NJDOT's interpolated points aren't second-guessed on the map either.
+- Crashes re-located from a retired SRI whose NJDOT point (computed on the network of its day) isn't judged wrong keep that point on the map; the road page shows recovery's. Statewide ~51k crashes are placed by recovery while having an NJDOT point (23.6k `intersection`, 19.5k `route_xs`, 7.7k `sri_calib`); only the judged-wrong ones (~12k, below) move.
+
+Risk (from the pre-implementation review): ~2–3% of recovered points are on the wrong road (97–98% precision), and intersection points sit at the intersection ± offset. Fine for per-road counts, more visible as heatmap mass, where they look as authoritative as NJDOT's; `geocode_src` keeps them distinguishable if the UI ever needs to.
+
+### County checks (`roads build -C N`, laptop)
+
+| | Bergen `-C 2` | Essex `-C 7` |
+|---|---|---|
+| recovered | 115,176 | 115,934 |
+| corrected | 1,128 (982 recoded → re-interpolated, 123 `route_xs`, 23 `sri_calib`) | 5,251 (towns away, re-located: 4,377 `route_xs`, 686 `sri_calib`, 187 to the police point) |
+| dropped | 214 (recoded, SRI / MP on no current line) | 2 |
+| sidecar step | 0.6 s (whole build 76 s, peak RSS 3.3 GB) | 0.5 s |
+
+Bergen's 982 corrected `sri_mp` points moved a median 97 km (4 of 982 were in Bergen before, all 982 after). Applied through the cells load path (`load_crashes_with_aashto(MAP_INPUT_COLS + ['id'])`, Bergen rows), every sidecar row matched, AASHTO keys included: Bergen map points 446,536 → 561,498 (+25.7%).
+
+### Statewide impact (estimate)
+
+From the published statewide roads outputs (`roads-20260927-182127`) against `crashes.parquet` ∪ AASHTO (`recovered` only; `corrected` / `dropped` need the build's recode / out-of-town masks): **~1.03M crashes gain a map point** (837k `intersection`, 165k `route_xs`, 30k `sri_calib`; 651 fatal, 233k injury, 799k PDO), on top of 4.44M drawn today (+23%). Corrected: ~12k statewide (Essex 5.3k, Union ~4.1k and Passaic ~0.7k by R2-7's re-located counts, Bergen 1.1k); dropped: a few hundred.
+
+| year | map now | + recovered | |
+|---|---:|---:|---:|
+| 2001 | 123,911 | 84,980 | +69% |
+| 2002 | 141,534 | 75,538 | +53% |
+| 2003 | 176,849 | 55,361 | +31% |
+| 2004 | 179,853 | 52,352 | +29% |
+| 2005 | 174,108 | 50,458 | +29% |
+| 2006 | 172,839 | 48,911 | +28% |
+| 2007 | 178,433 | 51,358 | +29% |
+| 2008 | 170,507 | 51,363 | +30% |
+| 2009 | 164,956 | 53,863 | +33% |
+| 2010 | 155,514 | 57,543 | +37% |
+| 2011 | 150,450 | 55,320 | +37% |
+| 2012 | 144,305 | 53,749 | +37% |
+| 2013 | 145,491 | 57,165 | +39% |
+| 2014 | 155,616 | 54,978 | +35% |
+| 2015 | 159,967 | 58,251 | +36% |
+| 2016 | 168,265 | 58,398 | +35% |
+| 2017 | 189,816 | 46,333 | +24% |
+| 2018 | 207,260 | 37,436 | +18% |
+| 2019 | 233,879 | 14,418 | +6% |
+| 2020–25 | 1,247,976 | 15,203 | +1% |
+
+By county: Hudson 123.6k, Essex 115.9k, Bergen 115.1k, Middlesex 112.1k, Passaic 97.0k, Union 70.6k, Ocean 62.1k, Monmouth 58.9k, Mercer 52.2k, Camden 42.2k, Morris 36.6k, Somerset 27.2k, Atlantic 21.5k, Burlington 21.3k, Gloucester 16.7k, Cumberland 13.3k, Cape May 12.9k, Warren 11.1k, Hunterdon 9.7k, Sussex 9.1k, Salem 3.6k.
+
+**Heatmap effect.** The map's pre-/post-2018 discontinuity mostly closes: 2001–2018 gain 18–69% (municipal streets go from nearly empty to populated), 2019+ ≤ 6%. West Side Ave (JC) map points per year: 0–5 in 2001–2017 → 102–192 recovered (2011–13: 154 / 127 / 148; 2017: 179), vs 79–151 coded in 2019–25. The 2011–13 / 2017 gap of §2 is filled too: those years' West Side crashes are mostly coded to its retired county-route SRIs ("HUDSON COUNTY 605 / 641") and placed by calibration (`sri_calib`, R2-8), e.g. 2012: 127 recovered points. Year-over-year comparisons of pre-2019 heatmaps change accordingly (the point, but worth a note in the map UI).
+
+**Cells size** (recovered points' S2 cells ∪ today's raw `s2_l21`): distinct cells across l4–l21 4.04M → 5.22M (+29%; l21 1.03M → 1.39M, l17 +26%, l13 +3%, l11 and coarser ~0), so `cells-s2.db` ≈ 403 → ~520 MB (D1 rows +29%), `s2-sld.parquet` (git-tracked) ≈ 28 → ~36 MB; pyramid `(cell, year)` rows 13.8M → 17.7M (+28%), ≈ 490 → ~625 MB; raw shards 4.44M → ~5.47M rows (≈ 88 → ~108 MB).
+
+### `geocode_src` downstream
+
+The raw shards (`raw/s2_l21/*.parquet`) carry `geocode_src` per crash, so `recovered` / `corrected` land there for free. The pyramid and `cells-s2.db` aggregate counts only, and the worker serves only those; nothing downstream reads `geocode_src`. A per-cell `n_recovered` (pyramid + D1 column, worker `fields`, a tooltip "N located from street names") is left as a follow-up: an extra count column on every pyramid / D1 row for a caption.
+
+### Rebuild order (Batch)
+
+1. `www/public/njdot/roads.dvc` + co-output `njdot/data/crash_recovered_points.parquet.dvc`: one `njdot roads build` (last statewide run 555 s; `mem_gb: 16`; the sidecar step adds seconds and ~0.5–1 GB for the pre-recode keys / points). `roads.dvc` is stale anyway (`roads.py` / `map_base.py` git_deps); its outputs don't change on this branch.
+2. `data/cells/raw/s2_l21.dvc` (60 s on Batch, 2026-09-25; no `mem_gb` hint).
+3. `njdot compute cells sld` → `data/cells/s2-sld.parquet`: not a dvx stage (git-tracked, run by hand; needs `nj_mp_tenths.parquet` + the muni geojson). Without it, the ~1.2M new cells have null `sld_name` / `mun` labels in the pyramid / D1.
+4. `data/cells/s2_pyramid.dvc` (156 s on the laptop before phase 8; +28% rows) and `data/cells/cells-s2.db.dvc` (15 s on Batch).
+5. `www/public/njdot/map.dvc` (`export_map_v2`: county / muni fit-bboxes + year range; cheap, bboxes shift slightly).
+6. Publish: `njdot compute cells manifest` + `njdot compute cells push` (R2 pyramid + raw; bumps `data_version`), then `api/d1-import.dvc` (`d1-import.sh --inplace … cells-s2`; ~5.2M rows). No worker or frontend change is needed.
+
+### Tests
+
+`tests/test_map_points.py` (exact equality): `recovered_points` kinds and AASHTO keys (shared keys, same / different outcomes); `_build_base` precedence (fill / correct / drop / stale `recovered` loses to NJDOT / AASHTO key match / no match on another road); byte-identical rewrite + read-back; `map_points` precedence (recoded → re-interpolated / dropped; towns away → recovery's point / the police point; `name_only` police point kept; NJDOT kept over a retired-SRI re-location) with a stub `Snapper`; and the Hudson fixture end to end (19 `intersection` recoveries, at exactly the road pages' points).
 
 [wsa]: https://crashes.hudcostreets.org/road/hudson/jersey-city/west-side-avenue
 [`road-anomalies.md`]: road-anomalies.md

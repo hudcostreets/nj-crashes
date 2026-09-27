@@ -34,6 +34,11 @@ in the browser by DuckDB-WASM with ranged reads, so each is sorted for row-group
 - `crashes-by-sri.parquet` / `sris.parquet`: the same by whole SRI route (`crashes-by-sri` also
   carries each crash's `entity`, null when on none).
 - `road-notes.parquet`: data notes per road / corridor (`njdot.road_notes`; specs/road-anomalies.md).
+
+Outside `roads/`: `njdot/data/crash_recovered_points.parquet` (`map_points`), the map points
+recovery adds / moves / removes, for the main map's exports (`njdot.map_base`; co-output stage
+`njdot/data/crash_recovered_points.parquet.dvc`; specs/crash-location-recovery.md § "Map / cells
+integration").
 """
 import json
 import os
@@ -50,9 +55,12 @@ from click import option
 
 from nj_crashes.utils.log import err
 from njdot.load import load_crashes_with_aashto
-from njdot.loc_recovery import PRIVATE_ROAD_SYSTEM, ng_name_index, recode_county_routes, recover_unassigned, recovery_context
-from njdot.map_base import _build_base
-from njdot.paths import NG911_DIR, ROADS_DIR, ROADS_S3, ROADWAY_NETWORK
+from njdot.loc_recovery import (
+    FROM_M, PRIVATE_ROAD_SYSTEM, drop_coded_points, far_from_town, ng_name_index, recode_county_routes, recover_unassigned,
+    recovery_context,
+)
+from njdot.map_base import RECOVERED_KEY, _build_base, effective_points, recovered_points, write_recovered_points
+from njdot.paths import CRASH_RECOVERED_POINTS, NG911_DIR, ROADS_DIR, ROADS_S3, ROADWAY_NETWORK
 from njdot.road_audit import audit
 from njdot.road_net import (
     M_PER_DEG_LAT, m_per_deg_lon, merge_key, name_points, ng_intervals, ng_segments, norm_name, rn_features, rn_points, road_entities,
@@ -232,6 +240,8 @@ def prep_crashes(crashes: pd.DataFrame) -> pd.DataFrame:
 
 # `loc_source`s with a map point (coded or recovered SRI + MP) vs. assigned to an entity only.
 PLACED_SOURCES = ('sri_mp', 'intersection', 'route_xs', 'latlon_snap', 'sri_calib')
+# … of those, the ones whose point recovery computed (`latlon_snap`'s is the reported one).
+RECOVERED_POINT_SOURCES = ('intersection', 'route_xs', 'sri_calib')
 
 
 def fold_recovery(crashes: pd.DataFrame, latlon: pd.DataFrame, rec: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -260,7 +270,7 @@ def fold_recovery(crashes: pd.DataFrame, latlon: pd.DataFrame, rec: pd.DataFrame
     c.loc[recovered.index, 'sri'] = recovered['sri']
     c['mp'] = c['mp'].astype('float32')
     c.loc[recovered.index, 'mp'] = recovered['mp'].astype('float32')
-    pt = recovered[recovered['loc_source'].isin(['intersection', 'route_xs', 'sri_calib'])]
+    pt = recovered[recovered['loc_source'].isin(RECOVERED_POINT_SOURCES)]
     ll.loc[pt.index, 'lat'] = pt['lat'].astype('float32')
     ll.loc[pt.index, 'lon'] = pt['lon'].astype('float32')
     ll.loc[unpl.index] = np.nan
@@ -809,13 +819,24 @@ def place_crashes(
     output → `(by_sri, by_entity)` for `road_outputs`. With `recover`, crashes their coded `(sri,
     mp)` doesn't put on an entity go through `njdot.loc_recovery` first (`recover_unassigned`,
     `fold_recovery`; specs/crash-location-recovery.md): placed ones join `by_sri` / `assign_crashes`
-    with their recovered SRI / MP, `sri_only` / `name_only` ones are appended to `by_entity`."""
+    with their recovered SRI / MP, `sri_only` / `name_only` ones are appended to `by_entity`.
+
+    Recovery also leaves `b['placement']` for `map_points`: the folded crashes, their effective
+    points, which re-located crashes' NJDOT points are out of town (`far_wrong`) and the `Snapper`."""
     extra = [c for c in LOC_COLS if c in crashes]
     if recover:
         t0 = time.monotonic()
         ctx = recovery_context(b['seg'], b['iv'], b['runs'], b['feats'], cl, al, cc2mc2mn)
         rec = recover_unassigned(crashes, ctx)
+        # Coded crashes towns from their muni, re-located, whose NJDOT point is out of town too
+        # (`recover` drops it as a clue): it was computed from an SRI / MP that isn't where the
+        # crash is. Not re-located, NJDOT's coding stands (the muni can be what's wrong), point too.
+        far_wrong = np.zeros(len(crashes), dtype=bool)
+        far = rec.index[(rec['far_town'].astype(bool) & rec['loc_source'].ne('sri_mp')).to_numpy()]
+        if len(far):
+            far_wrong[crashes.index.get_indexer(far)] = far_from_town(crashes.loc[far], ctx['muni_geoms'])
         crashes, latlon = fold_recovery(crashes, latlon, rec)
+        b['placement'] = dict(crashes=crashes, latlon=latlon, far_wrong=far_wrong, snapper=ctx['snapper'])
         counts = crashes['loc_source'].value_counts()
         err(f'  recovery ({time.monotonic() - t0:.0f}s, {len(rec):,} crashes tried): ' + ', '.join(f'{k} {v:,}' for k, v in counts.items()))
         # Crashes whose road meets the cross street at several junctions the offset / direction
@@ -838,6 +859,57 @@ def place_crashes(
     return by_sri, by_entity
 
 
+RECOVERED_POINTS_NAME = 'crash_recovered_points.parquet'
+
+
+def map_points(keys: pd.DataFrame, before: pd.DataFrame, recoded: np.ndarray, placement: dict) -> pd.DataFrame:
+    """The recovered map points sidecar (`map_base.recovered_points`): how the build's recovery
+    changes the main map's crash points (`_build_base`'s, which the map draws today; `before`).
+
+    A crash's point after (precedence, first that exists):
+    1. NJDOT's (`interpolated`, else `original`), unless judged wrong: `recoded` (NJDOT computed it
+       from an SRI / MP the build replaced; `drop_coded_points`), or coded towns from the crash's
+       muni, re-located by recovery, with the point out of town too (`placement['far_wrong']`).
+       The police point stands when it's distinct (`drop_coded_points` keeps it).
+    2. Recovery's (`RECOVERED_POINT_SOURCES`: re-located by strings, or calibrated).
+    3. A recoded crash still on its (now county-route) SRI / MP: that SRI / MP's point on today's
+       network (`Snapper.point`).
+
+    Unlike the road pages, a police point that didn't snap to the crash's named road
+    (`sri_only` / `name_only` crashes) stays on the map: it's evidence independent of the names,
+    and NJDOT's own interpolated points aren't second-guessed there either.
+
+    `keys` / `before` / `recoded`: every crash's (`id` + `RECOVERED_KEY`; its map point; whether a
+    recode dropped its NJDOT point), aligned with `placement['crashes']` (`place_crashes`)."""
+    c = placement['crashes']
+    pc = c[['ilat', 'ilon', 'olat', 'olon']].copy()
+    drop_coded_points(pc, placement['far_wrong'])
+    after = effective_points(pc)[['lat', 'lon']]
+    src = c['loc_source'].astype('string')
+    ll = placement['latlon'][['lat', 'lon']].reindex(c.index)
+    rec = src.isin(RECOVERED_POINT_SOURCES).fillna(False).to_numpy() & after['lat'].isna().to_numpy()
+    after.loc[rec, ['lat', 'lon']] = ll.loc[rec, ['lat', 'lon']].to_numpy()
+    interp = recoded & src.eq('sri_mp').fillna(False).to_numpy() & after['lat'].isna().to_numpy() & c['sri'].notna().to_numpy() & c['mp'].notna().to_numpy()
+    snapper, memo = placement['snapper'], {}
+    rows, xs, ys = [], [], []
+    for i, s, m in zip(np.flatnonzero(interp), c['sri'].to_numpy()[interp], c['mp'].to_numpy(dtype='float64')[interp]):
+        k = (str(s), round(float(m), 3))
+        if k not in memo:
+            memo[k] = snapper.point(*k)
+        if memo[k] is not None:
+            rows.append(i)
+            xs.append(memo[k][0])
+            ys.append(memo[k][1])
+    if rows:
+        lon, lat = FROM_M.transform(np.array(xs), np.array(ys))
+        after.iloc[rows, after.columns.get_indexer(['lat', 'lon'])] = np.c_[lat, lon].astype('float32')
+    n_far, n_rc = int(placement['far_wrong'].sum()), int(recoded.sum())
+    n_rc_none = int((recoded & after['lat'].isna().to_numpy()).sum())
+    err(f'  map points: NJDOT points judged wrong: {n_far:,} out of town (re-located), {n_rc:,} recoded ({len(rows):,} re-interpolated, {n_rc_none:,} left without a point)')
+    assert keys.index.equals(c.index) and before.index.equals(c.index), 'map_points: crash frames not aligned'
+    return recovered_points(keys, before, after, src)
+
+
 @roads.command('build')
 @option('-c', '--crashes-by-sri', 'crashes_path', help='Reuse this `crashes-by-sri.parquet` instead of loading crashes (dev subsets; no recovery)')
 @option('-C', '--county', 'cc', type=int, help='Dev subset: only this county\'s crashes, NG911 segments and nearby NJDOT lines')
@@ -846,9 +918,14 @@ def place_crashes(
 @option('-N', '--notes', 'notes_path', default=ROAD_NOTES, show_default=True, help='Curated per-road data notes (YAML; see `njdot.road_notes`) → `road-notes.parquet`')
 @option('-o', '--out-dir', default=ROADS_DIR, show_default=True, help='Output dir')
 @option('-O', '--overrides', 'overrides_path', default=ROAD_OVERRIDES, show_default=True, help='Curated crash-assignment overrides (YAML; see `njdot.road_overrides`)')
+@option('-p', '--points-out', help=f'Recovered map points sidecar (`map_points`); default {CRASH_RECOVERED_POINTS} statewide, `<out-dir>/{RECOVERED_POINTS_NAME}` with -C; "" skips')
 @option('-R', '--no-recover', is_flag=True, help='Skip crash location recovery (coded SRI / MP only)')
-def roads_build(crashes_path: str | None, cc: int | None, ng911_dir: str, network: str, notes_path: str, out_dir: str, overrides_path: str, no_recover: bool):
-    """Build the `roads/` parquets (see module docstring)."""
+def roads_build(crashes_path: str | None, cc: int | None, ng911_dir: str, network: str, notes_path: str, out_dir: str, overrides_path: str, points_out: str | None, no_recover: bool):
+    """Build the `roads/` parquets (see module docstring), and the recovered map points sidecar
+    (`map_points`; recovery only)."""
+    if points_out is None:
+        # A county dev build mustn't overwrite the statewide sidecar the map exports read.
+        points_out = CRASH_RECOVERED_POINTS if cc is None else join(out_dir, RECOVERED_POINTS_NAME)
     os.makedirs(out_dir, exist_ok=True)
     cl_path, al_path = join(ng911_dir, 'centerlines.parquet'), join(ng911_dir, 'aliases.parquet')
     err(f'Loading {network}, {cl_path}, {al_path}...')
@@ -879,6 +956,11 @@ def roads_build(crashes_path: str | None, cc: int | None, ng911_dir: str, networ
     else:
         err('Loading crashes...')
         crashes = load_build_crashes(cc)
+        # The map's view of each crash, before recodes rewrite it: its key (recodes may rewrite
+        # `road`) and point, and which NJDOT points the recodes drop.
+        keys0 = crashes[['id', *RECOVERED_KEY]]
+        pts0 = effective_points(crashes)[['lat', 'lon']]
+        ilat0 = crashes['ilat'].notna().to_numpy()
         # 2001–02 county-route crashes NJDOT coded to the same-numbered state route's SRI, and the
         # curated `recode` rules: before the crashes' points are taken (NJDOT's were computed from
         # the SRI / MP these replace, so they're dropped).
@@ -894,9 +976,17 @@ def roads_build(crashes_path: str | None, cc: int | None, ng911_dir: str, networ
         mcc = crashes.dropna(subset=['cc', 'mc'])
         muni_counts = mcc.groupby([mcc['cc'].astype(int), mcc['mc'].astype(int), 'year', mcc['dt'].dt.month.rename('month')], dropna=False).size().rename('n').reset_index()
         del mcc
+        recoded = ilat0 & crashes['ilat'].isna().to_numpy()
         by_sri, by_entity = place_crashes(crashes, latlon, b, cl, al, con, recover=not no_recover)
         del crashes, latlon
         steps('place crashes (incl. recovery)')
+        placement = b.pop('placement', None)
+        if points_out and placement is not None:
+            pts = map_points(keys0, pts0, recoded, placement)
+            write_recovered_points(pts, points_out)
+            err(f'  {points_out}: {len(pts):,} crashes ({", ".join(f"{k} {v:,}" for k, v in pts["kind"].value_counts().items())}), {os.path.getsize(points_out) / 2**20:.1f} MiB')
+            steps('recovered map points')
+        del keys0, pts0, placement
     o = road_outputs(b, by_sri, by_entity, con, cc2mc2mn, overrides, load_notes(notes_path), muni_counts)
     o['override_counts'] = recode_counts | o['override_counts']
     steps('road outputs')

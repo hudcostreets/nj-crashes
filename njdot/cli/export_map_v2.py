@@ -25,7 +25,7 @@ import pandas as pd
 from njdot.load import load_crashes_with_aashto
 
 from .base import njdot
-from njdot.map_base import _build_base
+from njdot.map_base import _build_base, read_recovered_points
 
 
 @njdot.command("export_map_v2")
@@ -42,7 +42,8 @@ def export_map_v2(outdir, severities, years):
         "olat", "olon", "ilat", "ilon",
         "road", "cross_street", "route", "sri", "mp",
     ]
-    df = load_crashes_with_aashto(columns=MAP_INPUT_COLS)
+    # `id` keys the recovered-points sidecar (`njdot roads build`'s; `map_base`).
+    df = load_crashes_with_aashto(columns=MAP_INPUT_COLS + ["id"])
 
     if years:
         y0, y1 = [int(x) for x in years.split(":")]
@@ -52,7 +53,7 @@ def export_map_v2(outdir, severities, years):
     sevs = {s.strip() for s in severities.split(",") if s.strip()}
     print(f"  severities: {sorted(sevs)}")
 
-    base = _build_base(df, sevs)
+    base = _build_base(df, sevs, recovered=read_recovered_points())
     print(f"  with lat/lon: {len(base):,}")
 
     base["year"] = (

@@ -1,0 +1,32 @@
+outs:
+- path: crash_recovered_points.parquet
+meta:
+  # Co-output of `www/public/njdot/roads.dvc` (same cmd): the map points `roads build`'s location
+  # recovery adds / moves / removes (`njdot.map_base`, "Recovered points"). A dep of the map-facing
+  # stages (`data/cells/raw/s2_l21.dvc`, `www/public/njdot/map.dvc`), never of `roads.dvc` itself
+  # (recovery must see NJDOT's points only). Deps / git_deps mirror `roads.dvc`'s.
+  computation:
+    cmd: njdot roads build
+    resources:
+      mem_gb: 16
+    deps:
+      /njdot/data/crashes.parquet:
+      /njdot/data/aashto_supplemented_crashes.parquet:
+      /njdot/data/crashes_geocode_backfill.parquet:
+      /njdot/data/roadway_network.parquet:
+      /njdot/data/ng911:
+      /www/public/njdot/cc2mc2mn.json:
+    git_deps:
+      /njdot/cli/roads.py:
+      /njdot/map_base.py:
+      /njdot/load.py:
+      /njdot/road_net.py:
+      /njdot/road_sources.py:
+      /njdot/road_outputs.py:
+      /njdot/cc2mc2mn.py:
+      /njdot/loc_recovery.py:
+      /njdot/road_model.py:
+      /njdot/road_overrides.py:
+      /njdot/data/road_overrides.yml:
+      /njdot/road_notes.py:
+      /njdot/data/road_notes.yml:
