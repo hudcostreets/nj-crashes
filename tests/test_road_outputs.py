@@ -1,9 +1,12 @@
 import json
 
+import duckdb
 import numpy as np
 import pandas as pd
+import pyarrow.parquet as pq
 
 from njdot.cc2mc2mn import cc2mc2mn
+from njdot.cli.roads import write
 from njdot.road_outputs import (
     canon_words, entity_lengths, entity_slugs, muni_codes, place_label, road_ranks, road_search_index, road_summary,
     search_meta, slug_order, slugify,
@@ -215,3 +218,42 @@ def test_road_search_index():
     meta = search_meta(capped)
     assert json.loads(meta['synonyms'])['avenue'] == ['ave', 'av']
     assert json.loads(meta['capped_tokens']) == {'avenue': 3, 'side': 3, 'west': 3}
+
+
+def test_write_footer_has_only_own_metadata_and_keeps_types(tmp_path):
+    df = pd.DataFrame({
+        'entity': pd.array([0, 0, 1, 2], dtype='int32'),
+        'cc': pd.array([9, None, 9, 13], dtype='Int8'),
+        'mc': pd.array([6, 6, None, 35], dtype='Int16'),
+        'severity': pd.Categorical(['f', 'i', 'p', 'p']),
+        'name': pd.array(['West Side Avenue', None, 'Main Street', 'Main Street'], dtype='string'),
+        'dt': pd.to_datetime(['2020-01-01 12:30', '2021-06-01 00:00', '2022-02-03 00:00', '2023-04-05 00:00']),
+        'lat': np.array([40.72, 40.73, np.nan, 40.1], dtype='float32'),
+        'mp': [1.5, 2.0, None, 0.05],
+    })
+    path = str(tmp_path / 'x.parquet')
+    write(df, path, 2, {'capped_tokens': '{"avenue": 3}'}, stats=['entity'], dict_cols=['severity'])
+    md = pq.ParquetFile(path).metadata
+    # No `pandas` / `ARROW:schema` blobs: only our own key-value metadata.
+    assert md.metadata == {b'capped_tokens': b'{"avenue": 3}'}
+    assert [(md.row_group(i).num_rows, md.row_group(i).column(0).statistics.min, md.row_group(i).column(0).statistics.max) for i in range(md.num_row_groups)] == [(2, 0, 0), (2, 1, 2)]
+    assert [md.row_group(0).column(i).is_stats_set for i in range(md.num_columns)] == [True] + [False] * 7
+    # What the frontend sees: DuckDB types from the Parquet schema alone.
+    con = duckdb.connect()
+    assert con.sql(f"DESCRIBE SELECT * FROM '{path}'").fetchall() == [
+        ('entity', 'INTEGER', 'YES', None, None, None),
+        ('cc', 'TINYINT', 'YES', None, None, None),
+        ('mc', 'SMALLINT', 'YES', None, None, None),
+        ('severity', 'VARCHAR', 'YES', None, None, None),
+        ('name', 'VARCHAR', 'YES', None, None, None),
+        ('dt', 'TIMESTAMP_NS', 'YES', None, None, None),
+        ('lat', 'FLOAT', 'YES', None, None, None),
+        ('mp', 'DOUBLE', 'YES', None, None, None),
+    ]
+    rows = con.sql(f"SELECT entity, cc, mc, severity, name, epoch_ms(dt), lat IS NULL, mp FROM '{path}'").fetchall()
+    assert rows == [
+        (0, 9, 6, 'f', 'West Side Avenue', 1577881800000, False, 1.5),
+        (0, None, 6, 'i', None, 1622505600000, False, 2.0),
+        (1, 9, None, 'p', 'Main Street', 1643846400000, True, None),
+        (2, 13, 35, 'p', 'Main Street', 1680652800000, False, 0.05),
+    ]

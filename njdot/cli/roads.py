@@ -17,7 +17,8 @@ in the browser by DuckDB-WASM with ranged reads, so each is sorted for row-group
 `slug` order (`njdot.road_outputs`), so every entity-sorted file is also slug-sorted:
 
 - `sri-geom.parquet`: points `(sri, mp, sld_name, name, subt, entity, alias, lon, lat)`, sorted
-  `(sri, mp)`. `name` = the NG911 local street name (else the NJDOT `SLD_NAME`); `alias` = the
+  `(entity, sri, mp)` (stats on `entity` only: look points up by road, not SRI; `sris.parquet`
+  has per-SRI extents). `name` = the NG911 local street name (else the NJDOT `SLD_NAME`); `alias` = the
   dominant crash-reported `road` in the point's ½-mile stretch, where it differs from `name`.
 - `sri-hit{-5,-6,}.parquet`: the same points sorted by S2 cell (level `HIT_S2_LEVEL`) so a viewport
   bbox prunes on row-group stats; `-5` / `-6` keep only road classes `subt` ≤ 5 / ≤ 6 (interstate
@@ -90,14 +91,17 @@ ENTITY_ALIAS_FRAC = 0.1
 ROUTES_MAX = 3
 ROW_GROUP = {
     'crashes-by-sri': 25_000,
-    # 10k rows ≈ 210 KB per group, footer ≈ 575 KB (5k: 105 KB / 1.1 MB; see specs/road-data-v4.md).
+    # 10k rows ≈ 210 KB per group, footer ≈ 565 KB (5k: 105 KB / 1.1 MB; see specs/road-data-v4.md).
     'crashes-by-entity': 10_000,
-    'sri-geom': 25_000,
+    # Sorted by entity: a road's points (≤ ~1.5k) are 1–2 groups of ~86 KB; footer ≈ 160 KB
+    # (group / footer at 2k rows: 40 KB / 320 KB; 8k: 170 KB / 80 KB; see specs/road-data-v4.md).
+    'sri-geom': 4_000,
     # Smaller groups → a click's bbox reads fewer bytes.
     'sri-hit': 8_000,
     'sris': 25_000,
     'road-entities': 1_000,
-    'road-runs': 25_000,
+    # A road's runs: one ~18 KB group; footer ≈ 20 KB.
+    'road-runs': 2_000,
     'road-summary': 10_000,
     'road-summary-monthly': 20_000,
     'road-ranks': 2_000,
@@ -115,6 +119,8 @@ DICT = {
 STATS = {
     'crashes-by-entity': ['entity'],
     'road-entities': ['entity', 'slug', 'cc', 'mc'],
+    'sri-geom': ['entity'],
+    'road-runs': ['entity'],
     'road-summary': ['entity'],
     'road-summary-monthly': ['entity'],
     'road-ranks': ['cc', 'mc'],
@@ -138,6 +144,19 @@ def crashes_by_sri(crashes: pd.DataFrame, latlon: pd.DataFrame) -> pd.DataFrame:
         df[col] = df[col].astype('string')
     df['id'] = df['id'].astype('Int64')  # AASHTO rows have no `id` → NaN after the concat
     return df.sort_values(['sri', 'mp', 'dt', 'id'], kind='stable', na_position='last').reset_index(drop=True)
+
+
+# `crashes_by_sri`'s nullable dtypes, which a written `crashes-by-sri.parquet` doesn't record (`write`
+# stores no pandas metadata): read back plainly, they're float64 / object.
+BY_SRI_DTYPES = {'id': 'Int64', 'cc': 'Int8', 'mc': 'Float64', 'entity': 'Int32'}
+
+
+def read_crashes_by_sri(path: str) -> pd.DataFrame:
+    """A `crashes-by-sri.parquet` with `crashes_by_sri`'s dtypes (strings as `string`)."""
+    df = pd.read_parquet(path)
+    for col in df.select_dtypes('object').columns:
+        df[col] = df[col].astype('string')
+    return df.astype({c: t for c, t in BY_SRI_DTYPES.items() if c in df})
 
 
 def smooth_names(df: pd.DataFrame, max_blip: int = MAX_BLIP_PTS) -> pd.DataFrame:
@@ -532,15 +551,23 @@ def write(
 ):
     """Write `df` (zstd) in row groups of `row_group_size`. `stats`: write min/max statistics only
     for these columns (the ones queries filter on), which keeps the footer small when row groups
-    are many; `dict_cols`: dictionary-encode only these columns; defaults: all."""
-    table = pa.Table.from_pandas(df, preserve_index=False)
-    if meta:
-        table = table.replace_schema_metadata({**(table.schema.metadata or {}), **{k.encode(): v.encode() for k, v in meta.items()}})
-    pq.write_table(
-        table, path, row_group_size=row_group_size, compression='zstd', compression_level=level,
+    are many; `dict_cols`: dictionary-encode only these columns; defaults: all.
+
+    The footer's key-value metadata is `meta` only: no `pandas` / `ARROW:schema` blobs (2–9 KB per
+    file, read by every first lookup). Readers get types from the Parquet schema alone, which
+    DuckDB always does; pandas readers get plain dtypes back (nullable ints as float, strings as
+    object)."""
+    table = pa.Table.from_pandas(df, preserve_index=False).replace_schema_metadata(None)
+    # `store_schema=False` also drops the schema's own metadata, so `meta` goes in via the writer.
+    with pq.ParquetWriter(
+        path, table.schema, compression='zstd', compression_level=level,
         write_statistics=stats if stats is not None else True,
         use_dictionary=(dict_cols or False) if dict_cols is not None else True,
-    )
+        store_schema=False,
+    ) as w:
+        w.write_table(table, row_group_size=row_group_size)
+        if meta:
+            w.add_key_value_metadata(meta)
     err(f'  {path}: {len(df):,} rows, {os.path.getsize(path) / 2**20:.1f} MiB')
 
 
@@ -582,7 +609,7 @@ def roads_build(crashes_path: str | None, ng911_dir: str, network: str, out_dir:
     os.makedirs(out_dir, exist_ok=True)
     if crashes_path:
         # A previous build's `crashes-by-sri` carries its (now stale) `entity`.
-        by_sri = pd.read_parquet(crashes_path).drop(columns=['entity'], errors='ignore')
+        by_sri = read_crashes_by_sri(crashes_path).drop(columns=['entity'], errors='ignore')
     else:
         err('Loading crashes...')
         crashes = load_crashes_with_aashto(columns=MAP_INPUT_COLS + ['id'])
@@ -639,9 +666,12 @@ def road_outputs(b: dict, by_sri: pd.DataFrame, by_entity: pd.DataFrame, con: du
 def write_outputs(o: dict, out_dir: str, meta: dict[str, str]):
     """Write `road_outputs` output to `out_dir` (and remove `STALE` files there)."""
     geom = o['geom'][['sri', 'mp', 'sld_name', 'name', 'subt', 'entity', 'alias', 'lon', 'lat']]
+    # `sri-geom` is read per road (`WHERE entity = ?`), so it's sorted by entity: a road's points
+    # are contiguous. `sri-hit*` / `sris` re-sort / aggregate `geom` themselves.
+    by_entity_geom = geom.sort_values(['entity', 'sri', 'mp'], kind='stable').reset_index(drop=True)
     write(o['by_sri'], join(out_dir, 'crashes-by-sri.parquet'), ROW_GROUP['crashes-by-sri'])
     write(o['by_entity'], join(out_dir, 'crashes-by-entity.parquet'), ROW_GROUP['crashes-by-entity'], stats=STATS['crashes-by-entity'], dict_cols=DICT['crashes-by-entity'])
-    write(geom, join(out_dir, 'sri-geom.parquet'), ROW_GROUP['sri-geom'], meta)
+    write(by_entity_geom, join(out_dir, 'sri-geom.parquet'), ROW_GROUP['sri-geom'], meta, stats=STATS['sri-geom'])
     hit = sri_hit(geom)
     write(hit, join(out_dir, 'sri-hit.parquet'), ROW_GROUP['sri-hit'])
     for tier in HIT_TIERS:
@@ -649,7 +679,7 @@ def write_outputs(o: dict, out_dir: str, meta: dict[str, str]):
     write(sris(geom, o['by_sri']), join(out_dir, 'sris.parquet'), ROW_GROUP['sris'])
     write(o['ents'], join(out_dir, 'road-entities.parquet'), ROW_GROUP['road-entities'], meta, stats=STATS['road-entities'], dict_cols=DICT['road-entities'])
     write(o['runs'][['entity', 'sri', 'mp_lo', 'mp_end']].sort_values(['entity', 'sri', 'mp_lo']).reset_index(drop=True),
-          join(out_dir, 'road-runs.parquet'), ROW_GROUP['road-runs'])
+          join(out_dir, 'road-runs.parquet'), ROW_GROUP['road-runs'], stats=STATS['road-runs'])
     for f in ('road-summary', 'road-summary-monthly', 'road-ranks'):
         write(o[f], join(out_dir, f'{f}.parquet'), ROW_GROUP[f], stats=STATS[f], dict_cols=DICT.get(f))
     write(o['road-search'], join(out_dir, 'road-search.parquet'), ROW_GROUP['road-search'], meta | search_meta(o['capped']), stats=STATS['road-search'], dict_cols=DICT['road-search'])
