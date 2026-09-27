@@ -1,9 +1,9 @@
 outs:
 - path: roads
-  md5: 89286804a3a825c73b778a4ec811612e.dir
-  size: 308311937
+  md5: 9c9ecf665b666c3da868c5fc202fd195.dir
+  size: 316082120
   hash: md5
-  nfiles: 9
+  nfiles: 10
 meta:
   computation:
     cmd: njdot roads build
@@ -13,11 +13,11 @@ meta:
       /njdot/data/crashes.parquet: 1211e215284ecc253b64b51dd211dd2c
       /njdot/data/aashto_supplemented_crashes.parquet: 372d541848b2252a1552a339c234c45a
       /njdot/data/crashes_geocode_backfill.parquet: d1d7d16ebbedf14669361e3b2a6db9f3
-      /njdot/data/roadway_network.parquet:
-      /njdot/data/ng911:
+      /njdot/data/roadway_network.parquet: 816986a99d836041f7ff3de4e32ed671
+      /njdot/data/ng911: 8fff34c5fb121af223ec7a02f8e03318
     git_deps:
-      /njdot/cli/roads.py: c27650afd4db4adff6120f0bab942c7bac324b69
+      /njdot/cli/roads.py: 1fc3cb53e7527f257c7f7791933806ae15820e2b
       /njdot/map_base.py: 83c056e31c57526849e6b48914095b474838de31
       /njdot/load.py: c07ec1c009aeb3be394fd4ca235860a05bcf8f35
-      /njdot/road_net.py:
-      /njdot/road_sources.py:
+      /njdot/road_net.py: 18409b8f7ea27592e37284b7b06edcd378aadd99
+      /njdot/road_sources.py: 16f90a6b0f8f9b6e082ac31fee649c7619c6075b
