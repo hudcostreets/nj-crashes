@@ -192,9 +192,9 @@ export default function CrashDetailPage() {
     const entity = entityQ.data ?? null
     const road = useRoadEntity(entity)
     const roadGeom = useQuery({
-        queryKey: ["road-geom", entity, road.data?.sris],
-        queryFn: () => fetchEntityGeom(db!, entity!, road.data!.sris.split(",")),
-        enabled: !!db && !!road.data,
+        queryKey: ["road-geom", entity],
+        queryFn: () => fetchEntityGeom(db!, entity!),
+        enabled: !!db && entity !== null,
     })
     const paths = useMemo(() => roadGeom.data && roadPaths(roadGeom.data), [roadGeom.data])
 
