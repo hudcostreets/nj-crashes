@@ -156,6 +156,41 @@ def test_noted():
     assert noted(findings, notes).tolist() == [True, False, True, False]
 
 
+def test_yoy_breaks_exclude_noted_years():
+    """Road 0's town has its reports missing in 2014–16 (noted): 2017's return to normal isn't a
+    spike, and the gap years themselves aren't checked. Without the exclusion 2014–16 is a dip and
+    2017 is compared with them."""
+    from njdot.road_anomalies import noted_years
+    rows = []
+    for y in range(2008, 2022):
+        rows += [(0, y, 'p', 5 if 2014 <= y <= 2016 else 100, 0), (1, y, 'p', 1000, 0), (2, y, 'p', 1000, 0)]
+    s = summary(rows)
+    notes = pd.DataFrame({
+        'entity': pd.array([0, 0, None], dtype='Int32'), 'corridor': pd.array([None, None, 7], dtype='Int32'),
+        'year_lo': pd.array([2014, None, 2001], dtype='Int16'), 'year_hi': pd.array([2016, None, 2003], dtype='Int16'),
+    })
+    ex = noted_years(notes)
+    assert ex == {0: {2014, 2015, 2016}}
+    assert noted_years(notes, 'corridor') == {7: {2001, 2002, 2003}}
+    assert yoy_breaks(s, ENTS)[['entity', 'years', 'observed', 'expected', 'detail']].values.tolist() == [
+        [0, '2014-2016', '5 5 5', '100 100 100', 'dip'],
+    ]
+    assert len(yoy_breaks(s, ENTS, exclude=ex)) == 0
+
+
+def test_corridor_noted_years():
+    """Corridor 7's members 0 (900 crashes) and 1 (100): road 0's noted years are the corridor's;
+    road 1's alone (under half its crashes) aren't. Corridor 8 has a note of its own."""
+    from njdot.road_anomalies import corridor_noted_years
+    notes = pd.DataFrame({
+        'entity': pd.array([0, 1, None], dtype='Int32'), 'corridor': pd.array([None, None, 8], dtype='Int32'),
+        'year_lo': pd.array([2014, 2019, 2020], dtype='Int16'), 'year_hi': pd.array([2015, 2019, 2020], dtype='Int16'),
+    })
+    members = pd.DataFrame({'entity': [0, 1, 2], 'corridor': [7, 7, 8]})
+    s = summary([(0, 2010, 'p', 900, 0), (1, 2010, 'p', 100, 0), (2, 2010, 'p', 50, 0)])
+    assert corridor_noted_years(notes, members, s) == {7: {2014, 2015}, 8: {2020}}
+
+
 def test_recode_rules(tmp_path):
     """`recode` rules rewrite raw location fields before recovery (Newark's 2001–02 Broadway crashes,
     coded to CR 649's SRI → CR 667's), and seed `override` with their id."""

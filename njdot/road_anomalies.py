@@ -16,7 +16,8 @@ ranked review queue of roads whose crash counts look like data quirks rather tha
   years (`absorbed`): the corridor's series is continuous.
 
 A `yoy` finding a data note explains (`noted`: `road-notes`, e.g. a town's reports missing those
-years) is dropped too.
+years) is dropped too, and noted years don't set other years' expectations (`noted_years`): the
+year after a town's gap isn't a "spike".
 """
 import numpy as np
 import pandas as pd
@@ -46,11 +47,15 @@ def yoy_breaks(
     years: tuple[int, int] | None = None,
     scale_summary: pd.DataFrame | None = None,
     scale_ents: pd.DataFrame | None = None,
+    exclude: dict[int, set[int]] | None = None,
 ) -> pd.DataFrame:
     """`road-summary` (`entity, year, severity, n`) + `road-entities` (`entity, slug, name, cc`) →
     one row per run of consecutive anomalous years per road (see module docstring). The county /
     state totals that scale each road's expectation come from `scale_summary` / `scale_ents` when
-    given (corridors: the roads' totals), else from `summary` / `ents`."""
+    given (corridors: the roads' totals), else from `summary` / `ents`. `exclude`: years of each
+    road a data note explains (`noted_years`: a town's missing reports), which neither set other
+    years' expectations nor are checked themselves; a year's window widens by as many years as it
+    loses (Pleasantville's 2024 is compared with 2017–18 and 2025, not its 2019–23 gap)."""
     n = summary.groupby(['entity', 'year'])['n'].sum().rename('n').reset_index()
     tot = n.groupby('entity')['n'].sum()
     big = tot[tot >= YOY_MIN_TOTAL].index
@@ -78,8 +83,12 @@ def yoy_breaks(
         lo, hi = nz[0], nz[-1]
         flags = np.zeros(len(ys), dtype=bool)
         exp = np.full(len(ys), np.nan)
+        ex = np.isin(ys, sorted((exclude or {}).get(int(ent), ())))
         for j in range(lo, hi + 1):
-            nb = [i for i in range(max(lo, j - YOY_WINDOW), min(hi, j + YOY_WINDOW) + 1) if i != j and c[i] > 0]
+            if ex[j]:
+                continue
+            w = YOY_WINDOW + int(ex[max(0, j - YOY_WINDOW):j + YOY_WINDOW + 1].sum())
+            nb = [i for i in range(max(lo, j - w), min(hi, j + w) + 1) if i != j and c[i] > 0 and not ex[i]]
             if len(nb) < YOY_MIN_NEIGHBORS or c[j] <= 0:
                 continue
             # The neighbors' counts scaled to this year's county volume.
@@ -169,12 +178,19 @@ def pair_swings(by_entity: pd.DataFrame, node_ents: pd.DataFrame, ents: pd.DataF
     return out
 
 
-def corridor_yoy(cor_summary: pd.DataFrame, corridors: pd.DataFrame, summary: pd.DataFrame, ents: pd.DataFrame) -> pd.DataFrame:
+def corridor_yoy(
+    cor_summary: pd.DataFrame,
+    corridors: pd.DataFrame,
+    summary: pd.DataFrame,
+    ents: pd.DataFrame,
+    exclude: dict[int, set[int]] | None = None,
+) -> pd.DataFrame:
     """`yoy_breaks` on corridors (`road-corridor-summary`, `road-corridors`: `corridor, slug, name,
     cc`), scaled by the roads' county / state totals (`road-summary`, `road-entities`), as kind
-    `corridor_yoy` with `corridor` (the corridor's id) and its `slug` / `name`."""
+    `corridor_yoy` with `corridor` (the corridor's id) and its `slug` / `name`; `exclude`: noted
+    years per corridor."""
     c = corridors.rename(columns={'corridor': 'entity'})
-    out = yoy_breaks(cor_summary.rename(columns={'corridor': 'entity'}), c, scale_summary=summary, scale_ents=ents)
+    out = yoy_breaks(cor_summary.rename(columns={'corridor': 'entity'}), c, scale_summary=summary, scale_ents=ents, exclude=exclude)
     if not len(out):
         return out
     return out.assign(kind='corridor_yoy', corridor=out['entity']).drop(columns=['entity'])
@@ -206,6 +222,35 @@ def absorbed(findings: pd.DataFrame, cor_breaks: pd.DataFrame, members: pd.DataF
         lo, hi = _years(r.years)
         out.append(not any(a <= hi and lo <= b for a, b in br.get(int(c), [])))
     return np.array(out, dtype=bool)
+
+
+def noted_years(notes: pd.DataFrame, key: str = 'entity') -> dict[int, set[int]]:
+    """`road-notes` → `{road (or corridor, with key="corridor"): years its notes explain}` (notes with
+    years only: one without explains no particular year)."""
+    n = notes.dropna(subset=[key, 'year_lo', 'year_hi'])
+    out: dict[int, set[int]] = {}
+    for e, lo, hi in zip(n[key], n['year_lo'], n['year_hi']):
+        out.setdefault(int(e), set()).update(range(int(lo), int(hi) + 1))
+    return out
+
+
+def corridor_noted_years(notes: pd.DataFrame, members: pd.DataFrame, summary: pd.DataFrame, share: float = 0.5) -> dict[int, set[int]]:
+    """Noted years of corridors: a corridor's own notes' years, and the years its members holding ≥
+    `share` of its crashes (`road-summary` totals) are noted (Bridgeton's Broad Street corridor: its
+    members are all in Bridgeton, whose reports are missing in 2018–23)."""
+    out = noted_years(notes, 'corridor')
+    ent = noted_years(notes)
+    m = members.dropna(subset=['corridor']).astype({'entity': 'int64', 'corridor': 'int64'})
+    tot = summary.groupby('entity')['n'].sum()
+    for c, g in m.groupby('corridor'):
+        n = {int(e): float(tot.get(e, 0)) for e in g['entity']}
+        all_n = sum(n.values())
+        if not all_n:
+            continue
+        for y in sorted({y for e in n for y in ent.get(e, ())}):
+            if sum(v for e, v in n.items() if y in ent.get(e, ())) >= share * all_n:
+                out.setdefault(int(c), set()).add(y)
+    return out
 
 
 def noted(findings: pd.DataFrame, notes: pd.DataFrame) -> np.ndarray:

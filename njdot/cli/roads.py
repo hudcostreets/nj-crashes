@@ -1146,16 +1146,20 @@ def roads_audit_anomalies(md_path: str | None, top: int, csv_path: str | None, r
     corridors), crashes without a map point, and road pairs whose split of shared crashes swings by
     year (`njdot.road_anomalies`). Breaks a corridor absorbs or a data note (`road-notes`) explains
     are left out."""
-    from njdot.road_anomalies import absorbed, corridor_yoy, noted, pair_swings, queue_markdown, review_queue, unplaced_share, yoy_breaks
+    from njdot.road_anomalies import (
+        absorbed, corridor_noted_years, corridor_yoy, noted, noted_years, pair_swings, queue_markdown, review_queue, unplaced_share, yoy_breaks,
+    )
     rd = lambda f, cols=None: pd.read_parquet(join(roads_dir, f), columns=cols)
     ents = rd('road-entities.parquet', ['entity', 'slug', 'name', 'cc', 'subt'])
     summary = rd('road-summary.parquet')
     ramps = set(ents.loc[ents['subt'] >= 8, 'entity'])
     summary = summary[~summary['entity'].isin(ramps)]
-    yoy = yoy_breaks(summary, ents)
-    if exists(join(roads_dir, 'road-notes.parquet')):
+    notes = rd('road-notes.parquet') if exists(join(roads_dir, 'road-notes.parquet')) else None
+    # Noted years (a town's missing reports) don't set other years' expectations.
+    yoy = yoy_breaks(summary, ents, exclude=None if notes is None else noted_years(notes))
+    if notes is not None:
         # Breaks a data note already explains (a town's missing reports, a coding change).
-        nt = noted(yoy, rd('road-notes.parquet'))
+        nt = noted(yoy, notes)
         err(f'Data notes explain {int(nt.sum()):,} of {len(yoy):,} `yoy` findings')
         yoy = yoy[~nt]
     parts = [unplaced_share(summary, ents)]
@@ -1165,7 +1169,10 @@ def roads_audit_anomalies(md_path: str | None, top: int, csv_path: str | None, r
         node_ents = rd('road-node-entities.parquet', ['entity', 'node'])
         members = rd('road-entities.parquet', ['entity', 'corridor']).dropna(subset=['corridor'])
         swings = pair_swings(be, node_ents, ents, members)
-        cor = corridor_yoy(rd('road-corridor-summary.parquet'), rd('road-corridors.parquet', ['corridor', 'slug', 'name', 'cc']), summary, ents)
+        cor = corridor_yoy(
+            rd('road-corridor-summary.parquet'), rd('road-corridors.parquet', ['corridor', 'slug', 'name', 'cc']), summary, ents,
+            exclude=None if notes is None else corridor_noted_years(notes, members, summary),
+        )
         ay, ap = absorbed(yoy, cor, members), absorbed(swings, cor, members)
         err(f'Corridors absorb {int(ay.sum()):,} of {len(yoy):,} `yoy` and {int(ap.sum()):,} of {len(swings):,} `pair_swing` findings (their corridor\'s series has no break then)')
         yoy, swings = yoy[~ay], swings[~ap]
