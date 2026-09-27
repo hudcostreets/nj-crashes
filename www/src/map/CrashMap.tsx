@@ -103,12 +103,14 @@ export type Props = {
     /** The hovered drill-down polygon, filled + stroked above the data layers. */
     hoverOutline?: Feature | null
     /** Fired for any click on the map canvas (used for drawer close-on-click). */
-    /** Map click, with the clicked `[lon, lat]` (unless a layer handled it). */
-    onMapClick?: (lngLat?: [number, number]) => void
+    /** Map click, with the clicked `[lon, lat]` (unless a layer handled it) and modifier keys. */
+    onMapClick?: (lngLat?: [number, number], mods?: { shiftKey: boolean; altKey: boolean }) => void
     /** Pointer hover `[lon, lat]` (null when the pointer leaves the map). */
     onMapHover?: (lngLat: [number, number] | null) => void
     /** Layers drawn on top of the map's own (e.g. road highlight/selection). */
     extraLayers?: any[]
+    /** Pause drag-panning (e.g. while the pointer is on a draggable handle in `extraLayers`). */
+    freezePan?: boolean
     /** Render the internal PitchSlider / CellControls corner widgets.
      *  Caller can disable (when it supplies its own consolidated panel). */
     showInternalControls?: boolean
@@ -393,6 +395,7 @@ export function CrashMap({
     onMapClick,
     onMapHover,
     extraLayers,
+    freezePan = false,
     showInternalControls = true,
     mode = "scatter",
     heatRender = "legacy",
@@ -1000,9 +1003,12 @@ export function CrashMap({
                 onAfterRender={onAfterRender}
                 viewState={viewState}
                 onViewStateChange={onViewStateChange}
-                controller={{ touchRotate: true, dragRotate: true, maxPitch: MAX_PITCH, maxZoom: 20, minZoom: 0 } as any}
+                controller={{ touchRotate: true, dragRotate: !freezePan, dragPan: !freezePan, maxPitch: MAX_PITCH, maxZoom: 20, minZoom: 0 } as any}
                 layers={allLayers}
-                onClick={onMapClick ? (info: any) => { onMapClick(info.coordinate as [number, number] | undefined) } : undefined}
+                onClick={onMapClick ? (info: any, event: any) => {
+                    const src = event?.srcEvent as MouseEvent | undefined
+                    onMapClick(info.coordinate as [number, number] | undefined, { shiftKey: !!src?.shiftKey, altKey: !!src?.altKey })
+                } : undefined}
                 onHover={onMapHover ? (info: any) => { onMapHover((info.coordinate as [number, number] | undefined) ?? null) } : undefined}
                 style={{ position: "absolute", inset: "0" }}
             >

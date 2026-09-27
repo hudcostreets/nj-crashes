@@ -13,6 +13,8 @@ type Located = RoadCrashView & { lat: number; lon: number }
 
 export type RoadMapProps = {
     paths: [number, number][][]
+    /** The selected scope's stretch (block / stretch / span), drawn white on a dark casing. */
+    highlight?: [number, number][][]
     crashes: RoadCrashView[]
     bounds: Bbox
     theme: "light" | "dark"
@@ -24,7 +26,7 @@ function sevOf(s: string): Severity {
     return s === "f" || s === "i" ? s : "p"
 }
 
-export default function RoadMap({ paths, crashes, bounds, theme, height = 450, onCrashClick }: RoadMapProps) {
+export default function RoadMap({ paths, highlight, crashes, bounds, theme, height = 450, onCrashClick }: RoadMapProps) {
     // Fatal drawn last (on top).
     const points = useMemo(
         () => crashes
@@ -44,6 +46,19 @@ export default function RoadMap({ paths, crashes, bounds, theme, height = 450, o
             capRounded: true,
             jointRounded: true,
         }),
+        ...(highlight?.length
+            ? ([["road-scope-casing", [0, 0, 0, 190], 9], ["road-scope", [255, 255, 255, 245], 4]] as const).map(([id, color, width]) =>
+                new PathLayer({
+                    id,
+                    data: highlight,
+                    getPath: (d: [number, number][]) => d,
+                    getColor: [...color],
+                    getWidth: width,
+                    widthUnits: "pixels",
+                    capRounded: true,
+                    jointRounded: true,
+                }))
+            : []),
         new ScatterplotLayer<Located>({
             id: "road-crashes",
             data: points,
@@ -53,7 +68,7 @@ export default function RoadMap({ paths, crashes, bounds, theme, height = 450, o
             getRadius: d => (d.severity === "f" ? 4 : 3),
             pickable: true,
         }),
-    ], [paths, points])
+    ], [paths, highlight, points])
     const onHover = (info: PickingInfo) => setHover(info.object ? { c: info.object as Located, x: info.x, y: info.y } : null)
     const bg = theme === "dark" ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.95)"
     const fg = theme === "dark" ? "#e0e0e0" : "#333"
