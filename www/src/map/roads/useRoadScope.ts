@@ -11,15 +11,15 @@ import { boolParam, stringParam, useUrlState, type Param } from "use-prms"
 import { useDb } from "@/src/lib/DuckDbContext"
 import { useAction } from "@/src/lib/kbd"
 import {
-    fetchBlocks, fetchCorridor, fetchEntity, fetchEntityCrashes, fetchEntityGeom, fetchEntityNames, fetchEntityXs,
-    fetchSpanCrashes, isUnplaced, isV5, type RoadCorridor, type RoadCrashView, type RoadEntity, type RoadPoint,
-    type RoadSummaryRow,
+    fetchBlocks, fetchCorridor, fetchCorridorSummary, fetchEntity, fetchEntityCrashes, fetchEntityGeom, fetchEntityNames,
+    fetchEntityXs, fetchSpanCrashes, isUnplaced, isV5, type RoadCorridor, type RoadCrashView, type RoadEntity,
+    type RoadPoint, type RoadSummaryRow,
 } from "./roadsData"
 import {
-    crashKey, crashTotals, encodeSpan, inclusiveSummary, inSpan, isCustomSpan, isPinned, memberSpan, parseSpan, snapEnds,
-    pointAtChain, projectToChain, ROAD_SCOPE, SCOPE_LEVELS, scopeAt, scopeLevel, spanEnds, spanPaths, stepScope,
-    summarizeCrashes, toCorridorChain, type ChainPoint, type CorridorMember, type ScopeLevel, type ScopeState, type Span,
-    type Totals,
+    blockTotals, crashKey, crashTotals, encodeSpan, hasBlockColumn, inclusiveSummary, inSpan, isCustomSpan, isPinned,
+    memberSpan, parseSpan, snapEnds, pointAtChain, projectToChain, ROAD_SCOPE, SCOPE_LEVELS, scopeAt, scopeLevel,
+    spanBlockRange, spanEnds, spanPaths, stepScope, summarizeCrashes, toCorridorChain, type ChainPoint,
+    type CorridorMember, type ScopeLevel, type ScopeState, type Span, type SpanSel, type Totals,
 } from "./roadScope"
 
 /** `xs`: inclusive by default (absent); `xs=0` → exclusive. */
@@ -59,6 +59,11 @@ function corridorTotals(c: RoadCorridor): ScopeCounts {
         own: { n: c.n_crashes, fatal: c.n_fatal, injury: c.n_injury, killed: c.n_killed },
         xs: { n: c.n_crashes_xs, fatal: c.n_fatal_xs, injury: c.n_injury_xs, killed: c.n_killed_xs },
     }
+}
+
+/** A row of the road (or corridor) itself, not another road's crash at its intersection. */
+function isOwn(c: RoadCrashView): boolean {
+    return c.own_entity === null || c.own_entity === undefined
 }
 
 function members(c: RoadCorridor | null | undefined): number[] {
@@ -261,6 +266,14 @@ export function useRoadScope({ info, geom, roadSummary, hotkeys = false }: UseRo
     const entitySpan = !state.corridor ? span : null
     const hiClosed = !!entitySpan && typeof info?.chain_mi === "number" && entitySpan.hi >= info.chain_mi - 0.0015
     const blocksReady = blocksQ.isSuccess
+    // v5.1: crash rows carry their `block`, so a block-aligned span (block, stretch, or ends snapped
+    // onto block boundaries) selects `block BETWEEN b0 AND b1`, exactly its blocks' counts. Exact
+    // two-point / dragged spans, and v5.0 builds, select by `chain`.
+    const v51 = hasBlockColumn(blocks)
+    const spanSel = useMemo((): SpanSel | null => (
+        entitySpan ? { span: entitySpan, hiClosed, blocks: v51 ? spanBlockRange(blocks, entitySpan) : null } : null
+    ), [entitySpan, hiClosed, v51, blocks])
+    const selKey = spanSel ? [spanSel.span.lo, spanSel.span.hi, spanSel.hiClosed, spanSel.blocks?.join("-") ?? null] : null
     const wholeKey = ["road-crashes", entity]
     const whole = useQuery({
         queryKey: wholeKey,
@@ -270,12 +283,12 @@ export function useRoadScope({ info, geom, roadSummary, hotkeys = false }: UseRo
     })
     // A span reads its own rows (~1 row group), or filters the whole road's when they're cached.
     const spanQ = useQuery({
-        queryKey: ["road-span-crashes", entity, entitySpan?.lo, entitySpan?.hi],
+        queryKey: ["road-span-crashes", entity, selKey],
         queryFn: () => {
             const all = qc.getQueryData<RoadCrashView[]>(wholeKey)
-            return all ? all.filter(c => inSpan(c, entitySpan!, hiClosed)) : fetchSpanCrashes(db!, entity!, entitySpan!, hiClosed)
+            return all ? all.filter(c => inSpan(c, spanSel!)) : fetchSpanCrashes(db!, entity!, spanSel!, v51)
         },
-        enabled: !!db && entity !== null && !!entitySpan && blocksReady,
+        enabled: !!db && entity !== null && !!spanSel && blocksReady,
         staleTime: Infinity,
     })
     const xsWholeKey = ["road-xs", entity]
@@ -285,13 +298,14 @@ export function useRoadScope({ info, geom, roadSummary, hotkeys = false }: UseRo
         enabled: !!db && entity !== null && inclusive && !state.corridor && !entitySpan,
         staleTime: Infinity,
     })
+    // Block-aligned spans count from `road-blocks`, so their xs rows are only needed for the list.
     const xsSpan = useQuery({
-        queryKey: ["road-xs-span", entity, entitySpan?.lo, entitySpan?.hi],
+        queryKey: ["road-xs-span", entity, selKey],
         queryFn: () => {
             const all = qc.getQueryData<RoadCrashView[]>(xsWholeKey)
-            return all ? all.filter(c => inSpan(c, entitySpan!, hiClosed)) : fetchEntityXs(db!, entity!, entitySpan!, hiClosed)
+            return all ? all.filter(c => inSpan(c, spanSel!)) : fetchEntityXs(db!, entity!, spanSel!)
         },
-        enabled: !!db && entity !== null && v5 && !!entitySpan && blocksReady,
+        enabled: !!db && entity !== null && v5 && !!spanSel && blocksReady && (inclusive || !spanSel.blocks),
         staleTime: Infinity,
     })
     // Corridor: each member's whole list (one `entity = ?` read each), filtered to the span.
@@ -323,7 +337,8 @@ export function useRoadScope({ info, geom, roadSummary, hotkeys = false }: UseRo
                 if (!span) return true
                 if (!m) return false
                 const ms = memberSpan(m, span)
-                return !!ms && inSpan(c, ms, ms.hi >= m.chain_mi - 0.0015)
+                // Members' spans are cut from the corridor chain, not at their blocks: by `chain`.
+                return !!ms && inSpan(c, { span: ms, hiClosed: ms.hi >= m.chain_mi - 0.0015, blocks: null })
             }
             const seen = new Set<string>()
             const out: RoadCrashView[] = []
@@ -396,29 +411,54 @@ export function useRoadScope({ info, geom, roadSummary, hotkeys = false }: UseRo
     const counts = useMemo((): ScopeCounts | null => {
         if (state.corridor && whole_) return corridor ? corridorTotals(corridor) : null
         if (!state.corridor && whole_) return info ? entityTotals(info) : null
-        // Spans count their rows (own and, when loaded, xs).
-        const own = entitySpan ? spanQ.data : rawRows?.filter(c => c.own_entity === null || c.own_entity === undefined)
+        // Block-aligned spans (v5.1): their blocks' counts, before (without) reading any rows.
+        if (spanSel?.blocks) return blockTotals(blocks, spanSel.blocks)
+        // Other spans count their placed rows (own and, when loaded, xs); pinned ones are listed
+        // ("≈ here") but not counted, as blocks don't count them.
+        const own = (entitySpan ? spanQ.data : rawRows?.filter(isOwn))?.filter(c => !isPinned(c))
         if (!own) return null
         const xsRows = state.corridor
-            ? (inclusive ? rawRows?.filter(c => c.own_entity !== null && c.own_entity !== undefined) : null)
+            ? (inclusive ? rawRows?.filter(c => !isOwn(c)) : null)
             : (xsSpan.data ?? null)
         return { own: crashTotals(own), xs: xsRows ? crashTotals(xsRows) : null }
-    }, [state.corridor, whole_, corridor, info, entitySpan, spanQ.data, rawRows, inclusive, xsSpan.data])
+    }, [state.corridor, whole_, corridor, info, spanSel, blocks, entitySpan, spanQ.data, rawRows, inclusive, xsSpan.data])
+
+    // Whole corridor: its monthly summary (v5.1), else counted from the members' rows (v5.0, or
+    // while the file errors).
+    const corSummaryQ = useQuery({
+        queryKey: ["road-corridor-summary-monthly", corridorId],
+        queryFn: () => fetchCorridorSummary(db!, corridorId!),
+        enabled: !!db && corridorId !== null && state.corridor,
+        staleTime: Infinity,
+        retry: false,
+    })
 
     /** Summary rows for the plots / year strip, in the current view (inclusive adds `n_xs`). */
     const summary = useMemo((): RoadSummaryRow[] | null => {
-        if (!state.corridor && whole_) {
-            if (!roadSummary) return null
-            return inclusive ? inclusiveSummary(roadSummary) : roadSummary
+        const view = (rows: RoadSummaryRow[]) => (inclusive ? inclusiveSummary(rows) : rows)
+        if (!state.corridor && whole_) return roadSummary ? view(roadSummary) : null
+        if (state.corridor && whole_) {
+            if (corSummaryQ.data) return view(corSummaryQ.data)
+            if (corSummaryQ.isPending && corSummaryQ.fetchStatus !== "idle") return null
         }
         if (!crashes) return null
         return summarizeCrashes(crashes, c => isUnplaced(c) || isPinned(c))
-    }, [state.corridor, whole_, roadSummary, inclusive, crashes])
+    }, [state.corridor, whole_, roadSummary, inclusive, corSummaryQ.data, corSummaryQ.isPending, corSummaryQ.fetchStatus, crashes])
+
+    /** Of the scope's crashes, those located to the corridor but not a side of it (v5.1
+     *  `corridor_only`; spans hold none, having no position). */
+    const corridorOnly = useMemo(
+        () => (whole_ && summary ? summary.reduce((s, r) => s + (r.n_corridor_only ?? 0), 0) : 0),
+        [whole_, summary],
+    )
 
     // Of the road's crashes without a precise location (road-summary `n_unplaced`), those outside
     // this span: not listed or counted here.
     const unplacedRoad = useMemo(() => (roadSummary ?? []).reduce((s, r) => s + (r.n_unplaced ?? 0), 0), [roadSummary])
-    const pinnedHere = useMemo(() => (entitySpan && spanQ.data ? spanQ.data.filter(isPinned).length : 0), [entitySpan, spanQ.data])
+    const pinnedHere = useMemo(
+        () => (span ? (entitySpan ? spanQ.data : rawRows?.filter(isOwn))?.filter(isPinned).length ?? 0 : 0),
+        [span, entitySpan, spanQ.data, rawRows],
+    )
     const unplacedElsewhere = entitySpan ? Math.max(0, unplacedRoad - pinnedHere) : 0
 
     // ─── Geometry ───────────────────────────────────────────────────────────────────────────────
@@ -514,7 +554,9 @@ export function useRoadScope({ info, geom, roadSummary, hotkeys = false }: UseRo
         crashes, displayChain,
         crashesError: [whole, spanQ, xsWhole, xsSpan, ...memberCrashes, ...memberXs].find(q => q.error)?.error ?? null,
         crashesLoading: (rowsLoading || names.isFetching) && ![whole, spanQ, xsWhole, xsSpan, ...memberCrashes, ...memberXs].some(q => q.error),
-        counts, summary, unplacedElsewhere, pinnedHere,
+        /** v5.1 build (rows carry `block`); `spanSel`: how the road span (if any) selects crashes. */
+        v51, spanSel,
+        counts, summary, unplacedElsewhere, pinnedHere, corridorOnly,
         paths, handles, anchorPoint,
     }
 }

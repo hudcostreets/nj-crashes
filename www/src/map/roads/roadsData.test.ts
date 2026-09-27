@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { nearestRoad, roadPaths, roadSegments, type RoadPoint } from "./roadsData"
+import { entityXsSql, nearestRoad, roadPaths, roadSegments, spanCrashesSql, spanPredicate, type RoadPoint } from "./roadsData"
+import type { SpanSel } from "./roadScope"
 
 // ~0.00147° lat ≈ 163 m: consecutive tenth-mile MP points on a north-south route.
 const DLAT = 0.00147
@@ -37,5 +38,40 @@ describe("roadSegments / roadPaths", () => {
             ["SIDE", 0, 0],  // single-point route → degenerate segment
         ])
         expect(roadPaths([...longRoad, gap]).map(p => p.length)).toEqual([3])
+    })
+})
+
+/** `read_parquet('<url>/roads/<file>.parquet')` → `<file>`, whitespace collapsed. */
+function norm(sql: string): string {
+    return sql.replace(/read_parquet\('[^']*\/([^/']+)\.parquet'\)/g, "<$1>").replace(/\s+/g, " ").trim()
+}
+
+const blocks: SpanSel = { span: { lo: 1.46, hi: 1.532 }, hiClosed: false, blocks: [30, 31] }
+const exact: SpanSel = { span: { lo: 1.46, hi: 1.5 }, hiClosed: false, blocks: null }
+const toEnd: SpanSel = { span: { lo: 3, hi: 3.4835973 }, hiClosed: true, blocks: null }
+
+describe("span SQL", () => {
+    it("filters block-aligned spans by block id, exact spans by chain", () => {
+        expect([spanPredicate(blocks), spanPredicate(exact), spanPredicate(toEnd)]).toEqual([
+            "block BETWEEN 30 AND 31",
+            "chain >= 1.4599 AND chain < 1.4999",
+            "chain >= 2.9999 AND chain <= 3.4836973",
+        ])
+    })
+    it("adds pinned rows, without corridor-only ones on v5.1", () => {
+        expect([norm(spanCrashesSql(2800, blocks, true)), norm(spanCrashesSql(2800, exact, false))]).toEqual([
+            "SELECT * FROM ( SELECT * FROM <crashes-by-entity> WHERE entity = 2800 AND block BETWEEN 30 AND 31 "
+            + "UNION ALL SELECT * FROM <crashes-by-entity> WHERE entity = 2800 AND chain IS NULL AND chain_lo <= 1.532 AND chain_hi >= 1.46 "
+            + "AND NOT coalesce(corridor_only, false) ) ORDER BY chain IS NULL, chain, dt",
+            "SELECT * FROM ( SELECT * FROM <crashes-by-entity> WHERE entity = 2800 AND chain >= 1.4599 AND chain < 1.4999 "
+            + "UNION ALL SELECT * FROM <crashes-by-entity> WHERE entity = 2800 AND chain IS NULL AND chain_lo <= 1.5 AND chain_hi >= 1.46 ) "
+            + "ORDER BY chain IS NULL, chain, dt",
+        ])
+    })
+    it("filters -xs rows the same way", () => {
+        expect([norm(entityXsSql(2800, blocks)), norm(entityXsSql(2800))]).toEqual([
+            "SELECT * FROM <crashes-by-entity-xs> WHERE entity = 2800 AND block BETWEEN 30 AND 31 ORDER BY chain, dt",
+            "SELECT * FROM <crashes-by-entity-xs> WHERE entity = 2800 ORDER BY chain, dt",
+        ])
     })
 })

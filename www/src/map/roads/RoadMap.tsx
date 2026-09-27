@@ -30,7 +30,8 @@ export default function RoadMap({ paths, highlight, crashes, bounds, theme, heig
     // Fatal drawn last (on top).
     const points = useMemo(
         () => crashes
-            .filter((c): c is Located => c.lat !== null && c.lon !== null)
+            // `corridor_only` rows have no point (and must never get one: their side is unknown).
+            .filter((c): c is Located => c.lat !== null && c.lon !== null && !c.corridor_only)
             .sort((a, b) => (SEV_ORDER[a.severity] ?? 0) - (SEV_ORDER[b.severity] ?? 0)),
         [crashes],
     )

@@ -5,7 +5,7 @@
 import type { AsyncDuckDB } from "@duckdb/duckdb-wasm"
 import { runQuery } from "@/src/lib/DuckDbContext"
 import { MAP_BASE_URL } from "@/src/map/config"
-import { spanBounds, type Span } from "./roadScope"
+import { spanBounds, type BlockCounts, type SpanSel } from "./roadScope"
 
 const { cos, PI, sqrt } = Math
 
@@ -16,7 +16,7 @@ export type RoadsFile =
     | "crashes-by-sri" | "crashes-by-entity" | "sri-geom" | "sri-hit" | "sri-hit-5" | "sri-hit-6"
     | "sris" | "road-entities" | "road-runs" | "road-summary" | "road-summary-monthly" | "road-ranks"
     | "road-search" | "crashes-by-entity-xs" | "road-blocks" | "road-node-entities" | "road-corridors"
-    | "road-corridor-summary"
+    | "road-corridor-summary" | "road-corridor-summary-monthly"
 
 export function roadsUrl(file: RoadsFile): string {
     return new URL(`${ROADS_BASE_URL}/${file}.parquet`, window.location.origin).href
@@ -121,11 +121,11 @@ export type RoadCorridor = {
     n_killed_xs: number
 }
 
-/** A road cut at its intersections (`road-blocks`); counts are this road's placed crashes with
- *  chain in `[chain_lo, chain_hi)` (exclusive of other roads' crashes). */
-export type RoadBlock = {
+/** A road cut at its intersections (`road-blocks`): `n_*` count this road's placed crashes in it,
+ *  `n_*_xs` (v5.1) other roads' crashes at its intersections (a crash at a node counts in the block
+ *  that starts there). v5.1: exactly the `crashes-by-entity{,-xs}` rows with this `block`. */
+export type RoadBlock = BlockCounts & {
     entity: number
-    block: number
     chain_lo: number
     chain_hi: number
     length_mi: number
@@ -133,10 +133,6 @@ export type RoadBlock = {
     node_hi: number | null
     from_name: string | null
     to_name: string | null
-    n_crashes: number
-    n_fatal: number
-    n_injury: number
-    n_killed: number
 }
 
 /** Crash counts of one road per `(year[, month], severity)` (`road-summary[-monthly]`); only
@@ -157,6 +153,8 @@ export type RoadSummaryRow = {
     n_xs?: number
     tk_xs?: number
     ti_xs?: number
+    /** v5.1: of `n`, `corridor_only` crashes (located to the corridor, not a side of it). */
+    n_corridor_only?: number
 }
 
 /** A county's (`mc` = 0) or muni's top road (`road-ranks`): counts and miles *within that area*;
@@ -247,6 +245,12 @@ export type RoadCrash = {
     /** `crashes-by-entity-xs` rows only: the road the crash is on (this row counts it at one of
      *  that road's intersections with `entity`). */
     own_entity?: number | null
+    // v5.1 (absent in earlier builds):
+    /** Its block on `entity` (`road-blocks.block`); null when unplaced. */
+    block?: number | null
+    /** Its road name is several members of one corridor and nothing picks the side: `entity` is a
+     *  representative, and it has no point or position along it. */
+    corridor_only?: boolean | null
 }
 
 export type Bbox = [number, number, number, number]
@@ -283,12 +287,24 @@ export async function fetchEntityBySlug(db: AsyncDuckDB, slug: string): Promise<
     return rows[0] ?? null
 }
 
+const SUMMARY_COLS = ["severity", "n", "tk", "ti", "n_unplaced", "n_node", "n_xs", "tk_xs", "ti_xs", "n_corridor_only"]
+
 /** The road's crash counts per `(year, severity)`, or per `(year, month, severity)` with `monthly`. */
 export function fetchEntitySummary(db: AsyncDuckDB, entity: number, monthly: boolean): Promise<RoadSummaryRow[]> {
     const file = monthly ? "road-summary-monthly" : "road-summary"
     return runQuery<RoadSummaryRow>(db, `
-        SELECT ${presentCols(["year", ...(monthly ? ["month"] : []), "severity", "n", "tk", "ti", "n_unplaced"])}
+        SELECT ${presentCols(["year", ...(monthly ? ["month"] : []), ...SUMMARY_COLS])}
         FROM read_parquet('${roadsUrl(file)}') WHERE entity = ${entity | 0}
+    `)
+}
+
+/** A corridor's crash counts per `(year, month, severity)` (`road-corridor-summary-monthly`, v5.1;
+ *  the query fails on builds without it). `n_xs` counts crashes at its intersections on roads
+ *  outside it, once each. */
+export function fetchCorridorSummary(db: AsyncDuckDB, corridor: number): Promise<RoadSummaryRow[]> {
+    return runQuery<RoadSummaryRow>(db, `
+        SELECT ${presentCols(["year", "month", ...SUMMARY_COLS])}
+        FROM read_parquet('${roadsUrl("road-corridor-summary-monthly")}') WHERE corridor = ${corridor | 0}
     `)
 }
 
@@ -327,7 +343,7 @@ export function entityCrashesSql(entity: number, v5: boolean): string {
  *  v5 columns are absent from rows of v4 builds. */
 const VIEW_COLS = [
     "sri", "mp", "id", "year", "dt", "cc", "mc", "case", "severity", "tk", "ti", "cross_street", "lat", "lon", "loc_source",
-    "chain", "chain_lo", "chain_hi", "node", "entity",
+    "chain", "chain_lo", "chain_hi", "node", "entity", "block", "corridor_only",
 ] as const
 export type RoadCrashView = Pick<RoadCrash, typeof VIEW_COLS[number]> & {
     /** `crashes-by-entity-xs` rows: the road the crash is on. */
@@ -344,37 +360,43 @@ export function fetchEntityCrashesFull(db: AsyncDuckDB, entity: number, v5: bool
     return runQuery<RoadCrash>(db, `SELECT * EXCLUDE (dt), epoch_ms(dt) AS dt FROM (${entityCrashesSql(entity, v5)})`)
 }
 
-/** Other roads' crashes at this road's intersections (`crashes-by-entity-xs`, v5): `chain` is the
- *  intersection's chain on this road, `own_entity` the road the crash is on. */
-/** A span's `chain` predicate (`spanBounds`: `[lo, hi)`, closed at the road's end). */
-function chainRange(span: Span, hiClosed: boolean): string {
+/** A span's placed-crash predicate (`SpanSel`): `block BETWEEN b0 AND b1` (v5.1 block-aligned
+ *  spans; `block` has no stats, so this prunes on `entity` only), else `chain` in `[lo, hi)`
+ *  (`spanBounds`, closed at the road's end). */
+export function spanPredicate({ span, hiClosed, blocks }: SpanSel): string {
+    if (blocks) return `block BETWEEN ${blocks[0] | 0} AND ${blocks[1] | 0}`
     const b = spanBounds(span, hiClosed)
-    return `chain >= ${b.min} AND chain ${b.maxInclusive ? "<=" : "<"} ${b.max}`
+    return `chain >= ${+b.min} AND chain ${b.maxInclusive ? "<=" : "<"} ${+b.max}`
 }
 
-export function entityXsSql(entity: number, span?: Span, hiClosed = true): string {
-    const range = span ? ` AND ${chainRange(span, hiClosed)}` : ""
+/** Other roads' crashes at this road's intersections (`crashes-by-entity-xs`, v5): `chain` is the
+ *  intersection's chain on this road, `own_entity` the road the crash is on. */
+export function entityXsSql(entity: number, sel?: SpanSel): string {
+    const range = sel ? ` AND ${spanPredicate(sel)}` : ""
     return `SELECT * FROM read_parquet('${roadsUrl("crashes-by-entity-xs")}') WHERE entity = ${entity | 0}${range} ORDER BY chain, dt`
 }
 
-export function fetchEntityXs(db: AsyncDuckDB, entity: number, span?: Span, hiClosed = true): Promise<RoadCrashView[]> {
-    return runQuery<RoadCrashView>(db, `SELECT ${viewCols(["own_entity"])} FROM (${entityXsSql(entity, span, hiClosed)})`)
+export function fetchEntityXs(db: AsyncDuckDB, entity: number, sel?: SpanSel): Promise<RoadCrashView[]> {
+    return runQuery<RoadCrashView>(db, `SELECT ${viewCols(["own_entity"])} FROM (${entityXsSql(entity, sel)})`)
 }
 
-/** A road's crashes in chain range `span`, plus its unplaced crashes pinned there (a cross street
- *  puts them within `[chain_lo, chain_hi]`). Two `UNION ALL`ed scans, so the placed one prunes on
- *  `chain` stats (an `OR` wouldn't). */
-export function spanCrashesSql(entity: number, span: Span, hiClosed = true): string {
+/** A road's crashes in a span (`spanPredicate`), plus its unplaced crashes pinned there (a cross
+ *  street puts them within `[chain_lo, chain_hi]`), except `corridor_only` ones (their side is
+ *  unknown; `v51`: the build has that column). Two `UNION ALL`ed scans, so a `chain` range prunes
+ *  on its stats (an `OR` wouldn't). */
+export function spanCrashesSql(entity: number, sel: SpanSel, v51: boolean): string {
     const src = `read_parquet('${roadsUrl("crashes-by-entity")}')`
     const e = entity | 0
+    const { lo, hi } = sel.span
+    const side = v51 ? " AND NOT coalesce(corridor_only, false)" : ""
     return `SELECT * FROM (
-        SELECT * FROM ${src} WHERE entity = ${e} AND ${chainRange(span, hiClosed)}
-        UNION ALL SELECT * FROM ${src} WHERE entity = ${e} AND chain IS NULL AND chain_lo <= ${+span.hi} AND chain_hi >= ${+span.lo}
+        SELECT * FROM ${src} WHERE entity = ${e} AND ${spanPredicate(sel)}
+        UNION ALL SELECT * FROM ${src} WHERE entity = ${e} AND chain IS NULL AND chain_lo <= ${+hi} AND chain_hi >= ${+lo}${side}
     ) ORDER BY chain IS NULL, chain, dt`
 }
 
-export function fetchSpanCrashes(db: AsyncDuckDB, entity: number, span: Span, hiClosed: boolean): Promise<RoadCrashView[]> {
-    return runQuery<RoadCrashView>(db, `SELECT ${viewCols()} FROM (${spanCrashesSql(entity, span, hiClosed)})`)
+export function fetchSpanCrashes(db: AsyncDuckDB, entity: number, sel: SpanSel, v51: boolean): Promise<RoadCrashView[]> {
+    return runQuery<RoadCrashView>(db, `SELECT ${viewCols()} FROM (${spanCrashesSql(entity, sel, v51)})`)
 }
 
 /** The road's blocks, in chain order (`road-blocks`, v5). */

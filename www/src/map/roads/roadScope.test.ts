@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
 import {
-    addTotals, blockIndexAt, crashKey, crashTotals, encodeSpan, inclusiveSummary, inSpan, isBlockSpan, isCustomSpan, memberSpan,
-    parseSpan, pointAtChain, projectToChain, ROAD_SCOPE, scopeAt, scopeLevel, snapEnds, snapToBlocks, spanBounds, spanEnds, spanPaths,
-    stepScope, stretchAround, summarizeCrashes, toCorridorChain, fromCorridorChain, type BlockExtent, type ChainPoint,
+    addTotals, blockIndexAt, blockTotals, crashKey, crashTotals, encodeSpan, hasBlockColumn, inclusiveSummary, inSpan, isBlockSpan,
+    isCorridorOnly, isCustomSpan, isPinned, memberSpan, parseSpan, pointAtChain, projectToChain, ROAD_SCOPE, scopeAt, scopeLevel,
+    snapEnds, snapToBlocks, spanBlockRange, spanBounds, spanEnds, spanPaths, stepScope, stretchAround, summarizeCrashes,
+    toCorridorChain, fromCorridorChain, type BlockCounts, type BlockExtent, type ChainPoint, type SpanSel,
 } from "./roadScope"
-
 /** West Side Ave (JC)-like blocks: 0.1 mi each over [0, 1], then one long block [1, 2]. */
 const blocks: BlockExtent[] = [
     ...Array.from({ length: 10 }, (_, k) => ({
@@ -63,6 +63,55 @@ describe("blocks", () => {
     it("names a span's cross streets only where it starts / ends at them", () => {
         expect(spanEnds(blocks, { lo: 0.3, hi: 0.5 })).toEqual({ from: "S3", to: "S5" })
         expect(spanEnds(blocks, { lo: 0.33, hi: 0.5 })).toEqual({ from: null, to: "S5" })
+    })
+    it("puts a gap in the block before it (v5.1: blocks are cut at gaps)", () => {
+        // West Side Ave's blocks 51 / 52 (v5.1): 2.78–2.94, a gap (Journal Square), then 3.15–3.38.
+        const gapped: BlockExtent[] = [
+            { block: 51, chain_lo: 2.782378, chain_hi: 2.942378 },
+            { block: 52, chain_lo: 3.153597, chain_hi: 3.3835971 },
+        ]
+        expect([2.7, 2.8, 2.95, 3.1535, 3.153597, 3.5].map(c => blockIndexAt(gapped, c))).toEqual([0, 0, 0, 0, 1, 1])
+    })
+    it("finds the block ids a span covers exactly, else null", () => {
+        expect([
+            spanBlockRange(blocks, { lo: 0.3, hi: 0.4 }),
+            spanBlockRange(blocks, { lo: 0.3004, hi: 0.6996 }),
+            spanBlockRange(blocks, { lo: 0.9, hi: 2 }),
+            spanBlockRange(blocks, { lo: 0.33, hi: 0.5 }),
+            spanBlockRange(blocks, { lo: 0.3, hi: 0.55 }),
+            spanBlockRange(blocks, { lo: 0.5, hi: 0.3 }),
+            spanBlockRange([], { lo: 0, hi: 1 }),
+        ]).toEqual([[3, 3], [3, 6], [9, 10], null, null, null, null])
+    })
+    it("uses block ids, not positions", () => {
+        const gapped: BlockExtent[] = [
+            { block: 51, chain_lo: 2.782378, chain_hi: 2.942378 },
+            { block: 52, chain_lo: 3.153597, chain_hi: 3.3835971 },
+        ]
+        expect(spanBlockRange(gapped, { lo: 2.782, hi: 3.384 })).toEqual([51, 52])
+    })
+})
+
+describe("block counts", () => {
+    const b = (block: number, n: number, fatal: number, injury: number, killed: number, xs?: [number, number, number, number]): BlockCounts => ({
+        block, n_crashes: n, n_fatal: fatal, n_injury: injury, n_killed: killed,
+        ...(xs ? { n_crashes_xs: xs[0], n_fatal_xs: xs[1], n_injury_xs: xs[2], n_killed_xs: xs[3] } : {}),
+    })
+    // West Side Ave blocks 10–12 (Hudson v5.1 dev build): 84 / 106 / 45 crashes, 22 / 23 / 11 xs.
+    const v51 = [b(10, 84, 0, 20, 0, [22, 0, 5, 0]), b(11, 106, 1, 30, 1, [23, 1, 6, 2]), b(12, 45, 0, 9, 0, [11, 0, 3, 0])]
+    const v50 = [b(10, 84, 0, 20, 0), b(11, 106, 1, 30, 1)]
+    it("sums n_* and n_*_xs over a block id range", () => {
+        expect([blockTotals(v51, [10, 11]), blockTotals(v51, [12, 12]), blockTotals(v51, [13, 14])]).toEqual([
+            { own: { n: 190, fatal: 1, injury: 50, killed: 1 }, xs: { n: 45, fatal: 1, injury: 11, killed: 2 } },
+            { own: { n: 45, fatal: 0, injury: 9, killed: 0 }, xs: { n: 11, fatal: 0, injury: 3, killed: 0 } },
+            { own: { n: 0, fatal: 0, injury: 0, killed: 0 }, xs: { n: 0, fatal: 0, injury: 0, killed: 0 } },
+        ])
+    })
+    it("has no xs totals for v5.0 blocks", () => {
+        expect(blockTotals(v50, [10, 11])).toEqual({ own: { n: 190, fatal: 1, injury: 50, killed: 1 }, xs: null })
+    })
+    it("detects v5.1 blocks (the `block` column convention) by `n_crashes_xs`", () => {
+        expect([hasBlockColumn(v51), hasBlockColumn(v50), hasBlockColumn([])]).toEqual([true, false, false])
     })
 })
 
@@ -176,19 +225,43 @@ describe("crash rows", () => {
             crashKey({ id: null, year: 2024, cc: 9, mc: 6, case: "24-1" }),
         ]).toEqual(["#7", "2024/9/6/24-1"])
     })
+    const bySpan = (lo: number, hi: number, hiClosed = true): SpanSel => ({ span: { lo, hi }, hiClosed, blocks: null })
     it("selects placed crashes by chain and pinned ones by overlap", () => {
-        const span = { lo: 1, hi: 2 }
+        const sel = bySpan(1, 2)
         expect([
-            inSpan({ chain: 1.5 }, span),
-            inSpan({ chain: 2.5 }, span),
-            inSpan({ chain: null, chain_lo: 1.9, chain_hi: 2.1 }, span),
-            inSpan({ chain: null, chain_lo: 2.1, chain_hi: 2.2 }, span),
-            inSpan({ chain: null, chain_lo: null, chain_hi: null }, span),
-        ]).toEqual([true, false, true, false, false])
+            inSpan({ chain: 1.5 }, sel),
+            inSpan({ chain: 2.5 }, sel),
+            inSpan({ chain: null, chain_lo: 1.9, chain_hi: 2.1 }, sel),
+            inSpan({ chain: null, chain_lo: 2.1, chain_hi: 2.2 }, sel),
+            inSpan({ chain: null, chain_lo: null, chain_hi: null }, sel),
+            inSpan({ chain: null, chain_lo: 1.9, chain_hi: 2.1, corridor_only: true }, sel),
+        ]).toEqual([true, false, true, false, false, false])
+    })
+    it("selects placed crashes by block id for block-aligned spans (v5.1), whatever their chain", () => {
+        // Blocks 3–4 = [0.3, 0.5]. A crash at the node at 0.3 is in block 3 even when its own point
+        // is before it; one at the node at 0.5 is in block 5 even when its point is before it.
+        const sel: SpanSel = { span: { lo: 0.3, hi: 0.5 }, hiClosed: false, blocks: [3, 4] }
+        expect([
+            inSpan({ chain: 0.2999, block: 3 }, sel),
+            inSpan({ chain: 0.4999, block: 5 }, sel),
+            inSpan({ chain: 0.45, block: 4 }, sel),
+            inSpan({ chain: 0.45, block: null }, sel),
+            inSpan({ chain: null, chain_lo: 0.49, chain_hi: 0.51 }, sel),
+            inSpan({ chain: null, chain_lo: 0.49, chain_hi: 0.51, corridor_only: true }, sel),
+        ]).toEqual([true, false, true, false, true, false])
+    })
+    it("tells pinned and corridor-only rows apart", () => {
+        const rows = [
+            { chain: null, chain_lo: 1, chain_hi: 1.1 },
+            { chain: null, chain_lo: 1, chain_hi: 1.1, corridor_only: true },
+            { chain: null, chain_lo: null, chain_hi: null, corridor_only: true },
+            { chain: 1, chain_lo: null, chain_hi: null, corridor_only: false },
+        ]
+        expect(rows.map(r => [isPinned(r), isCorridorOnly(r)])).toEqual([[true, false], [false, true], [false, true], [false, false]])
     })
     it("puts crashes at the span's end intersection in the next block, except at the road's end", () => {
         const span = { lo: 1, hi: 2 }
-        const at = (chain: number, closed: boolean) => inSpan({ chain }, span, closed)
+        const at = (chain: number, closed: boolean) => inSpan({ chain }, bySpan(1, 2, closed))
         expect([at(0.99995, false), at(2, false), at(1.99995, false), at(1.9998, false), at(2, true), at(2.00005, true)]).toEqual(
             [true, false, false, true, true, true],
         )
@@ -200,18 +273,20 @@ describe("crash rows", () => {
         expect(snapEnds(bs, { lo: 1.2, hi: 2.047 })).toEqual({ lo: 1.2, hi: 2.0473780632 })
     })
     it("summarizes crash rows per month × severity", () => {
-        const c = (iso: string, severity: string, tk: number, ti: number, unplaced = false) =>
-            ({ dt: Date.parse(iso), severity, tk, ti, unplaced })
+        const c = (iso: string, severity: string, tk: number, ti: number, unplaced = false, corridor_only = false, own_entity: number | null = null) =>
+            ({ dt: Date.parse(iso), severity, tk, ti, unplaced, corridor_only, own_entity })
         const rows = [
             c("2020-01-05T10:00:00Z", "i", 0, 2),
-            c("2020-01-20T10:00:00Z", "i", 0, 1, true),
+            c("2020-01-20T10:00:00Z", "i", 0, 1, true, true),
             c("2020-01-20T10:00:00Z", "f", 1, 0),
             c("2019-12-31T23:00:00Z", "p", 0, 0),
+            // Another road's corridor-only crash at an intersection: not this road's `n_corridor_only`.
+            c("2019-12-30T23:00:00Z", "p", 0, 0, false, true, 7),
         ]
         expect(summarizeCrashes(rows, r => r.unplaced)).toEqual([
-            { year: 2019, month: 12, severity: "p", n: 1, tk: 0, ti: 0, n_unplaced: 0 },
-            { year: 2020, month: 1, severity: "f", n: 1, tk: 1, ti: 0, n_unplaced: 0 },
-            { year: 2020, month: 1, severity: "i", n: 2, tk: 0, ti: 3, n_unplaced: 1 },
+            { year: 2019, month: 12, severity: "p", n: 2, tk: 0, ti: 0, n_unplaced: 0, n_corridor_only: 0 },
+            { year: 2020, month: 1, severity: "f", n: 1, tk: 1, ti: 0, n_unplaced: 0, n_corridor_only: 0 },
+            { year: 2020, month: 1, severity: "i", n: 2, tk: 0, ti: 3, n_unplaced: 1, n_corridor_only: 1 },
         ])
     })
     it("adds other roads' intersection crashes for the inclusive view", () => {
