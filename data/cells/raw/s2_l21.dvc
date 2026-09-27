@@ -1,6 +1,6 @@
 outs:
-- md5: 9ed97058dc51a6bfb64b1cfd3a9e9824.dir
-  size: 87849114
+- md5: bec807610c05b029a06e0f28c82ec243.dir
+  size: 112350125
   hash: md5
   nfiles: 2
   path: s2_l21
@@ -16,9 +16,9 @@ meta:
       /njdot/data/crashes_geocode_backfill.parquet: d1d7d16ebbedf14669361e3b2a6db9f3
       # `njdot roads build`'s recovered map points (`map_base`, "Recovered points"): fill / move /
       # remove crash points (`geocode_src` `recovered` / `corrected`).
-      /njdot/data/crash_recovered_points.parquet:
+      /njdot/data/crash_recovered_points.parquet: ea22b94c6b3bcead04d2e7f8639b7a5d
     git_deps:
-      /njdot/cli/cells.py: d308c2c960bf43876fbaaf30973166cb47064bb2
+      /njdot/cli/cells.py: 5ec1f922e2b3e61fa72e462d663892e7764dd82c
       /njdot/s2.py: 18b3290b93befcb93f8edcffeb141a8782ccfe7d
-      /njdot/load.py: 77446ab26435ed4c5ef578547367304fb43c42f9
-      /njdot/map_base.py:
+      /njdot/load.py: c07ec1c009aeb3be394fd4ca235860a05bcf8f35
+      /njdot/map_base.py: 371e69ed2263c20baf6615d8463e4075c562e683

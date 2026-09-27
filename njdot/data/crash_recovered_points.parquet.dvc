@@ -1,5 +1,8 @@
 outs:
 - path: crash_recovered_points.parquet
+  md5: ea22b94c6b3bcead04d2e7f8639b7a5d
+  size: 11391393
+  hash: md5
 meta:
   # Co-output of `www/public/njdot/roads.dvc` (same cmd): the map points `roads build`'s location
   # recovery adds / moves / removes (`njdot.map_base`, "Recovered points"). A dep of the map-facing
@@ -10,23 +13,23 @@ meta:
     resources:
       mem_gb: 16
     deps:
-      /njdot/data/crashes.parquet:
-      /njdot/data/aashto_supplemented_crashes.parquet:
-      /njdot/data/crashes_geocode_backfill.parquet:
-      /njdot/data/roadway_network.parquet:
-      /njdot/data/ng911:
-      /www/public/njdot/cc2mc2mn.json:
+      /www/public/njdot/cc2mc2mn.json: 21626cd6b5ed02264335837141b86984
+      crashes.parquet: 1211e215284ecc253b64b51dd211dd2c
+      aashto_supplemented_crashes.parquet: 372d541848b2252a1552a339c234c45a
+      crashes_geocode_backfill.parquet: d1d7d16ebbedf14669361e3b2a6db9f3
+      roadway_network.parquet: 816986a99d836041f7ff3de4e32ed671
+      ng911: 8fff34c5fb121af223ec7a02f8e03318
     git_deps:
-      /njdot/cli/roads.py:
-      /njdot/map_base.py:
-      /njdot/load.py:
-      /njdot/road_net.py:
-      /njdot/road_sources.py:
-      /njdot/road_outputs.py:
-      /njdot/cc2mc2mn.py:
-      /njdot/loc_recovery.py:
-      /njdot/road_model.py:
-      /njdot/road_overrides.py:
-      /njdot/data/road_overrides.yml:
-      /njdot/road_notes.py:
-      /njdot/data/road_notes.yml:
+      /njdot/cli/roads.py: 53abcfd4396b261a5dfb31797b22cf3fdf8fcb17
+      /njdot/map_base.py: 371e69ed2263c20baf6615d8463e4075c562e683
+      /njdot/load.py: c07ec1c009aeb3be394fd4ca235860a05bcf8f35
+      /njdot/road_net.py: 8db7216392e58ef5b3c108f46f5a4639bd499673
+      /njdot/road_sources.py: 16f90a6b0f8f9b6e082ac31fee649c7619c6075b
+      /njdot/road_outputs.py: 4699c51df55e64b252288c45537258ead7b67e71
+      /njdot/cc2mc2mn.py: 100cbbb7521f7b3ae87df50088b849705a253f87
+      /njdot/loc_recovery.py: 8ff2f63274d7187881d72ec716bcf2b97db7c660
+      /njdot/road_model.py: b07699659aba97fa2c265cecd1b2e4c49a55f2aa
+      /njdot/road_overrides.py: 338df31a45933e51d065476371a9fadb2e608496
+      /njdot/road_notes.py: e2aa258530f7608d1ecd55d89e6ac11a3cd269c8
+      road_overrides.yml: aae8fb77b66d96cfba53515e2cce7e6e57b09888
+      road_notes.yml: ca1bf6143020e04dbb7f5451077f3573ec2afe08
