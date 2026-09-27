@@ -3,7 +3,7 @@ meta:
     # W+A Worker (`crashes-www`: crashes.hccs.dev) + the `crashes` Pages project,
     # which still serves crashes.hudcostreets.org until its CF-for-SaaS move
     # (specs/workers-assets-and-map-ogi.md); then drop `./deploy.sh`.
-    cmd: ./deploy-worker.sh prod && ./deploy.sh
+    cmd: ./deploy-worker.sh prod
     side_effect: true
     git_deps:
       deploy-worker.sh: e6c9fdc35080305df68c702be128d54da2ba1e87
