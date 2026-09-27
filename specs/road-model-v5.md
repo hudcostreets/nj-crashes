@@ -1,6 +1,6 @@
 # Road model v5: corridors, chainage, blocks, intersections
 
-**Status:** implemented on branch `road-v5` and tested on real fixtures plus three county dev builds (`roads build -C 9` Hudson, `-C 2` Bergen, `-C 10` Hunterdon). Not yet built statewide: `www/public/njdot/roads.dvc` is stale on purpose, with new git deps `/njdot/road_model.py`, `/njdot/road_overrides.py` and `/njdot/data/road_overrides.yml` added without hashes. The frontend isn't changed on this branch.
+**Status:** v5 built statewide (Batch `roads-20260927-113129`). **v5.1** (branch `road-v5-1`, [below](#v51)) fixes block ↔ crash consistency, cuts blocks at gaps, adds block / corridor intersection counts, a monthly corridor summary, corridor-level placement of direction-ambiguous names, and makes the build ~3–6× faster; tested on the fixtures and the Hudson / Bergen dev builds, not yet built statewide (`roads.dvc` is stale: code deps changed).
 
 Builds on [`road-data-v4.md`] and [`crash-location-recovery.md`]. Code:
 
@@ -13,6 +13,7 @@ Builds on [`road-data-v4.md`] and [`crash-location-recovery.md`]. Code:
 
 ## Contents
 
+- [v5.1](#v51): block convention, gap cuts, block / corridor counts, `corridor_only`, types, build speed
 - [What changed](#what-changed)
 - [Data model](#data-model): entity, corridor, piece / chain, block, intersection node
 - [Files](#files): schemas, sorts, row groups, stats
@@ -29,6 +30,114 @@ Builds on [`road-data-v4.md`] and [`crash-location-recovery.md`]. Code:
 - [Tests](#tests)
 - [Build](#build)
 - [Open questions](#open-questions)
+
+## v5.1
+
+Changes on branch `road-v5-1`, from gaps the frontend's span selection found. Additive: no column removed or renamed; new columns come last.
+
+### Block convention
+
+A placed crash row (non-null `chain`) is in exactly one block of its row's `entity`, stored as `block` on `crashes-by-entity` and `crashes-by-entity-xs`. `road-blocks.n_*` = those rows counted by `block`, and `n_*_xs` = the `-xs` rows counted by `block`. So `SUM(n_crashes)` over blocks `b0..b1` equals `crashes-by-entity WHERE entity = E AND block BETWEEN b0 AND b1`, exactly. Unplaced rows (null `chain`, incl. pinned ones with `chain_lo` / `chain_hi`) have no block.
+
+The rule, which the frontend can reproduce from stored values alone (all float32):
+
+1. **Position.** A row at an intersection node (`node` non-null, with a `road-node-entities.chain` for `(entity, node)`) takes that node's chain. Otherwise it takes its own `chain`. `-xs` rows' `chain` already is the node's chain.
+2. **Block.** It's in the entity's last block with `chain_lo ≤ position`, or the first block if the position is below all of them. Equivalently `[chain_lo, next block's chain_lo)`, open-ended for the last block.
+
+So a crash at a node is in the block that *starts* at the node, wherever its own point is (NJDOT puts it up to X before or after the node). A crash at a section's end goes to that section's last block. The v5 frontend rule (`[chain_lo, chain_hi)` with a 1e-4 mi tolerance) disagreed with the build on most blocks: on West Side Ave, 14 of 54 matched. The build compared float64 crash chains against float64 node chains; its node crashes sit exactly on block boundaries, one float32 ulp either side. Prefer the `block` column; recompute only where you have to.
+
+| Hudson dev build | Blocks whose `n_crashes` = rows by `block` = the rule above | v5 (FE rule `[lo, hi)`) |
+|---|---:|---:|
+| West Side Ave (JC) | 54 / 54 | 14 / 54 |
+| J F Kennedy Blvd | 268 / 268 | 78 / 268 |
+| Tonnelle Ave | 71 / 71 | 33 / 72 |
+
+Totals are unchanged: blocks still sum to the road's placed crashes (West Side 3,433, JFK 30,659, Tonnelle 15,697), and `n_*_xs` sums to `road-entities.n_*_xs`. `tests/test_road_model.py::test_real_blocks_match_crash_rows` asserts all of this on the fixtures.
+
+### Blocks cut at gaps
+
+v5 cut an entity only at nodes and at the *start* of a `gap` / `branch` piece, so the block before a gap ran across it. West Side Ave's block 51 ran from Broadway to "US 1 Truck & St Pauls" (chain 2.78–3.15), across Journal Square. Blocks are now built per section (pieces joined `contiguous`). Block 51 is 2.78–2.94 (Broadway → the end of `09061725__`), and block 52 starts at 3.15. Nothing is in the gap: `chain` is clamped into pieces.
+
+- Hudson: 11,601 → 11,556 blocks. On 42 roads a gap-spanning block became a trimmed one, or merged into the node at the next section's start.
+- West Side Ave keeps 54 blocks, since the node at 3.15 was already a cut. Tonnelle Ave goes 72 → 71.
+
+### Types
+
+Chains are float32 wherever the frontend compares them: `crashes-by-entity{,-xs}.chain` / `chain_lo` / `chain_hi` (v5's `-xs` wrote double), `road-blocks.chain_lo` / `chain_hi`, `road-node-entities.chain` and `sri-geom.chain`. `road-pieces` keeps double: it's for mapping MPs, not for comparing positions. `road-corridors.corridor` is int32 (v5 wrote int64), as are `road-corridor-summary{,-monthly}.corridor` and `road-entities.corridor`.
+
+### Corridor monthly summary
+
+`road-corridor-summary-monthly.parquet`: as `road-summary-monthly` (with `n_unplaced`, `n_node`, `n_xs` / `tk_xs` / `ti_xs`, `n_corridor_only`), keyed and sorted `(corridor, year, month, severity)`. Row groups 20,000; stats on `corridor`. Hudson 27,467 rows.
+
+### Corridor only
+
+Since v5 split direction variants into separate entities, a road string without its direction ("48TH ST" in Bayonne: East / West 48th Street) names several entities, and `name_only` couldn't pick one. The crash was left off every road.
+
+- **Recovery.** `recover` returns the candidate entities as `cands` when a name resolves to several entities in the muni.
+- **Build.** When all candidates are members of one corridor (`road_model.corridor_only_rows`), the crash goes on a representative member, `loc_source` `name_only` (no chain, no point). The representative is chosen in this order:
+  1. the candidate whose intersections include the crash's cross street (the pinned-node rule of [Intersections](#intersections-and-x));
+  2. else the candidate in the crash's muni;
+  3. else the corridor's spine;
+  4. else the longest;
+  5. else the lowest id.
+- **`corridor_only`** (bool, `crashes-by-entity{,-xs}`) is true unless exactly one candidate has the cross street's intersection. When it's true, the crash is on the corridor but not on a particular side, and the frontend should say so ("located to the 48th Street corridor"). `road-summary{,-monthly}` / `road-corridor-summary{,-monthly}` get `n_corridor_only` (of `n`).
+- **Overrides** don't apply to these rows: they're added after overrides, in the model step.
+
+| Dev build | Crashes naming several roads | on one corridor | of which `corridor_only` | pinned to one side |
+|---|---:|---:|---:|---:|
+| Hudson `-C 9` | 4,212 | **1,467** | 1,176 | 291 |
+| Bergen `-C 2` | 3,604 | **1,633** | 1,463 | 170 |
+
+Hudson's 1,467 are mostly Bayonne's East / West numbered streets (22nd St 82, 32nd 58, 26th 58, …) and the 5th St / 53rd St corridors. That covers the 882 the v5 split pushed off-road, plus names v4 hadn't merged either. The other 2,745 name candidates on no one corridor ([Open questions](#open-questions)). Totals rise by exactly the placed crashes: Hudson `crashes-by-entity` 403,016 → 404,483, `name_only` 54,748 → 56,215. JFK Blvd's `n_crashes_xs` rises 5,391 → 5,438, because Bayonne corridor crashes pinned at JFK intersections now count there. Its `n_crashes` (36,148), West Side's (3,788) and Tonnelle's (16,139) are unchanged.
+
+**Precision** (Hudson blind re-location, `tmp/ev6.py`; coded crashes with SRI / MP / points blanked, scored against NJDOT's own coding):
+
+| Mode | Coded crashes | → corridor-only | Corridor right | Representative = NJDOT's entity |
+|---|---:|---:|---:|---:|
+| `name` (all years; cross street blanked too: the road name alone) | 100,000 | 139 | **100%** | 61% |
+| `new` (2021+) | 74,561 | 3 | 100% | 2 / 3 |
+
+At the corridor level these placements are exact. At the entity level the representative is a coin flip by construction, which is why the flag exists.
+
+### Build speed
+
+The statewide v5 stage took 1,906 s on Batch. The v4 stage took ~160 s without crash location recovery, and 1,429 s once recovery was added (`roads-20260927-121252`). So most of the time was recovery, then the v5 model. Both scale linearly, with nothing quadratic except `road_corridors`' `chain_at` over the whole pieces table, now fixed. The cost was per-crash Python work, which Batch's cores run ~2–3× slower than the laptop. Fixes (outputs byte-identical on the Hudson / Bergen builds, except where noted):
+
+- **Strings once per distinct value** (`road_net.per_unique`). `norm_name`, `merge_key`, `dir_key`, `loc_key`, `clean_road`, `ordinalize`, `base_key`, `nodir_key` and `route_keys` run once per distinct value; `split_road` / `route_sri` once per distinct pair; `resolve_keys` once per distinct `(cc, mc, key)`. Statewide, ~7M road / cross strings have a few hundred thousand distinct values.
+- **Fuzzy names** (`CloseMatcher`). Numpy length / character-multiset bounds prefilter the candidates, then `difflib` runs on the survivors only. The result equals `difflib.get_close_matches`.
+- **Recovery memo split** (`_locate_one`). The road × cross-street meet point (`_locate_strings`), the offset, and the point snap are each cached on their own inputs. The old per-crash key included the (unique) point and the offset, so it rarely hit.
+- **Snap** (`Snapper.snap`). Distances to the road's SRIs' own features, not a query of the statewide tree. The tree only breaks exact ties, so results match.
+- **Parallel recovery loop** (`_locate_all`). Forked processes (`RECOVER_PROCS` = min(8, CPUs); `ROADS_PROCS=1` disables), whole munis per chunk, `gc.freeze()` against copy-on-write.
+- **Model loops.** `cross_keys` once per distinct `(cc, mc, cross street)`; `entity_pieces` vectorized for single-piece entities; `road_corridors` calls `chain_at` on the member's own pieces; `road_blocks` is one pass over sorted arrays; vectorized `intersection_nodes` / `node_table` / entity counts.
+- **Determinism.** `assign_crashes` breaks sort ties by row (AASHTO rows have no `id`; DuckDB's sort isn't stable), and a learned road's SRIs are sorted before `offset_along`. Both were run-to-run nondeterministic: 12 rows of Bergen's `crashes-by-entity` reordered; one Hudson crash's recovered SRI flipped.
+- **Timings.** `Steps` logs each step's wall time in the build log.
+
+Laptop, same load, v5 → v5.1 (wall s):
+
+| Build | Total | Recovery | v5 model | `road_outputs` |
+|---|---:|---:|---:|---:|
+| Hudson `-C 9` | 53 → 28 | 28 → 6 (11 with `ROADS_PROCS=1`) | 8 → 2 | ~8.5 → 3.6 |
+| Bergen `-C 2` | 79 → 31 | 40 → 5 (10 serial) | 14 → 4 | ~21 → 8 |
+
+The rest of v5.1's total is v4's: loading crashes (~10 s) and points / runs / entities. Statewide projection from the county ratios: recovery + model ~5–6× faster, so the Batch stage goes from ~1,900 s to **~400–550 s**. That's an estimate; the next Batch run's log has the per-step times. The recovery pool forks up to 8 workers: watch the first statewide run's peak memory (`mem_gb: 16` in `roads.dvc` is a scheduling hint).
+
+**Output size.** The statewide v5 roads dir grew 357 → 464 MB (+107 MB):
+
+| File | MB |
+|---|---:|
+| `crashes-by-entity-xs` (new) | +69.7 |
+| `road-blocks` (new) | +8.9 |
+| `crashes-by-entity` (5 columns) | +7.9 |
+| `road-summary-monthly` (4 columns, `n = 0` rows with `n_xs`) | +4.8 |
+| `road-node-entities` (new) | +4.4 |
+| `road-nodes` (new) | +4.1 |
+| `road-summary` | +2.2 |
+| `road-pieces` (new) | +1.7 |
+| `sri-geom` (`chain`) | +1.2 |
+| `road-entities` | +0.8 |
+| `road-corridor-summary` / `road-corridors` (new) | +0.7 |
+
+`-xs` repeats every crash column once per other road at the node (2.7M rows). If its size matters, it could carry only `(entity, chain, block, node, own_entity, id / case keys)` and let the frontend join `crashes-by-entity` for the rest. Not done: the frontend reads it today.
 
 ## What changed
 
@@ -140,7 +249,7 @@ Examples:
 
 ### Blocks
 
-`road_blocks`. An entity is cut at its node chains and at its `gap` / `branch` piece joins. Cuts closer than 0.005 mi merge, keeping the node. Each block has the cross streets at its ends (`from_name` / `to_name`) and its placed crashes' counts (exclusive: by chain in `[chain_lo, chain_hi)`).
+`road_blocks`. An entity's *sections* (runs of pieces joined `contiguous`; a `gap` / `branch` join starts a new one) are cut at the nodes on them. No block spans a gap / branch: the chain between two sections (where there's no road) is in no block, so a block's `chain_hi` can be below the next block's `chain_lo`. Cuts closer than 0.005 mi merge, keeping the first position and a node over a section end. Each block has the cross streets at its ends (`from_name` / `to_name`) and counts of the crash rows in it: by their `block` column ([v5.1](#block-convention)).
 
 ## Files
 
@@ -156,6 +265,8 @@ v4 columns, then:
 | `chain_lo`, `chain_hi` | float32? | unplaced crashes whose cross street pins them: the node's chain ± the police distance (equal when "at" the intersection); else null |
 | `node` | int32? | the intersection node the crash is at ([Intersections](#intersections-and-x)) |
 | `override` | string? | id of the override rule that moved it |
+| `block` | int32? | v5.1: its block on `entity` ([convention](#block-convention)); null when unplaced (no `chain`) |
+| `corridor_only` | bool | v5.1: its road name is several members of one corridor and nothing picks the side: `entity` is a representative ([`corridor_only`](#corridor-only)) |
 
 - **Sort:** `(entity, unplaced, chain, dt, id)`, `unplaced` = no chain. v4 sorted by `sri, mp` within an entity.
 - **Row groups:** 10,000.
@@ -167,7 +278,7 @@ v4 columns, then:
 
 Inclusive rows: for every crash at a node, one row per *other* non-ramp road at that node.
 
-- **Columns:** `crashes-by-entity`'s, with `entity` = the other road, `chain` = the node's chain on it and `chain_lo` / `chain_hi` null, plus `own_entity` (int32, the road the crash is on).
+- **Columns:** `crashes-by-entity`'s v4 / v5 ones, with `entity` = the other road, `chain` = the node's chain on it (float32, = `road-node-entities.chain`) and `chain_lo` / `chain_hi` null (float32), then `own_entity` (int32, the road the crash is on), then v5.1's `block` (the block on `entity` starting at the node; null when the node has no chain there) and `corridor_only`.
 - **Sort:** `(entity, chain, dt, id)`. **Row groups:** 10,000. **Stats:** `entity`, `chain`. **Dict:** as `crashes-by-entity`.
 - A road's inclusive crash list is `crashes-by-entity` ∪ `crashes-by-entity-xs` for its entity. The two never share a crash for one entity.
 - Rows: Hudson 218,224 (vs 403,016 exclusive). Statewide estimate ~2.5–3M, ~55–65 MB.
@@ -194,6 +305,7 @@ v4 columns, then:
 |---|---|---|
 | `n_node` | int32 | of `n`, crashes at an intersection node |
 | `n_xs`, `tk_xs`, `ti_xs` | int32 | other roads' crashes at this road's intersections (crashes / killed / injured) |
+| `n_corridor_only` | int32 | v5.1: of `n`, `corridor_only` crashes (located to the corridor, not this side) |
 
 - `n` stays exclusive: it sums to the total across roads. Inclusive = `n + n_xs`, which double counts across roads by design.
 - A cell exists when `n` or `n_xs` is non-zero.
@@ -223,11 +335,12 @@ v4 columns, then:
 |---|---|---|
 | `entity`, `block` | int32 | `block` 0-based along the chain |
 | `chain_lo`, `chain_hi`, `length_mi` | float32 | |
-| `node_lo`, `node_hi` | int32? | the nodes at its ends (null: road end, or a gap / branch) |
+| `node_lo`, `node_hi` | int32? | the nodes at its ends (null: road end, or either side of a gap / branch) |
 | `from_name`, `to_name` | string? | the cross streets there (`road-node-entities.cross`) |
-| `n_crashes`, `n_fatal`, `n_injury`, `n_killed` | int32 | placed crashes on this road with chain in `[chain_lo, chain_hi)` (last block closed) |
+| `n_crashes`, `n_fatal`, `n_injury`, `n_killed` | int32 | this road's placed crashes in the block: `crashes-by-entity` rows with this `block` ([convention](#block-convention)) |
+| `n_crashes_xs`, `n_fatal_xs`, `n_injury_xs`, `n_killed_xs` | int32 | v5.1: other roads' crashes at this block's intersections: `crashes-by-entity-xs` rows with this `block` (a crash at a node counts in the block that *starts* at the node) |
 
-**Sort:** `(entity, block)` (= `chain_lo`). **Row groups:** 4,000. **Stats:** `entity`, `chain_lo`, `chain_hi`. **Dict:** `from_name`, `to_name`. Hudson 11,601 rows (median block 0.05 mi on urban arterials, 0.15 mi on Hunterdon's CR 523). Statewide ~0.45M (~8 MB).
+**Sort:** `(entity, block)` (= `chain_lo`). **Row groups:** 4,000. **Stats:** `entity`, `chain_lo`, `chain_hi`. **Dict:** `from_name`, `to_name`. Hudson 11,556 rows (v5: 11,601) (median block 0.05 mi on urban arterials, 0.15 mi on Hunterdon's CR 523). Statewide ~0.45M (~8 MB).
 
 ### `road-nodes.parquet` (new)
 
@@ -262,7 +375,7 @@ One row per (road, node).
 
 | Column | Type | |
 |---|---|---|
-| `corridor` | int32 | rank of `slug` |
+| `corridor` | int32 | rank of `slug` (v5 wrote int64 by mistake) |
 | `slug` | string | `<county>/<muni>/<name>`, `<county>/<name>`, or `nj/<name>` across counties; its own namespace, and may equal its spine entity's slug |
 | `name` | string | |
 | `kind` | string | `sequential` / `parallel` / `mixed` |
@@ -278,9 +391,9 @@ One row per (road, node).
 
 **Sort:** `corridor`. **Row groups:** 1,000. **Stats:** `corridor`, `slug`. **Dict:** `kind`.
 
-### `road-corridor-summary.parquet` (new)
+### `road-corridor-summary.parquet` / `road-corridor-summary-monthly.parquet` (new)
 
-As `road-summary`, keyed `(corridor, year, severity)`. `n_xs` counts crashes at the corridor's intersections on roads outside it, once per crash. **Row groups:** 10,000. **Stats:** `corridor`.
+As `road-summary{,-monthly}` (incl. `n_unplaced`, `n_node`, the `_xs` columns and `n_corridor_only`), keyed `(corridor, year[, month], severity)`, sorted by those keys. `n_xs` counts crashes at the corridor's intersections on roads outside it, once per crash. **Row groups:** 10,000 / 20,000 (monthly, v5.1). **Stats:** `corridor`.
 
 ## Span queries
 
@@ -293,7 +406,8 @@ A *span* is an entity plus a chain range `[a, b]` (miles), or a corridor plus a 
 | Crashes on it | `crashes-by-entity WHERE entity = E AND chain BETWEEN a AND b` |
 | … inclusive | also `UNION ALL crashes-by-entity-xs WHERE entity = E AND chain BETWEEN a AND b` |
 | "N more on this road without a location" | whole road, `SUM(n_unplaced)` from `road-summary WHERE entity = E`. Pinned unplaced crashes (`chain_lo <= b AND chain_hi >= a`) can be shown as "approximately here". |
-| Snap to blocks / block-level stats (no crash read) | `road-blocks WHERE entity = E`: sum `n_*` of blocks inside `[a, b]` |
+| Snap to blocks / block-level stats (no crash read) | `road-blocks WHERE entity = E`: sum `n_*` (`n_*_xs` for inclusive) of blocks `b0..b1` |
+| … their crash rows | `crashes-by-entity WHERE entity = E AND block BETWEEN b0 AND b1` (+ `-xs` likewise): exactly the blocks' `n_*` |
 | Its intersections | `road-node-entities WHERE entity = E AND chain BETWEEN a AND b` |
 | Geometry | `sri-geom WHERE entity = E` (one group), filter `chain` client-side |
 | Scope levels | block (one `road-blocks` row) → stretch (any `[a, b]`, snapped to block ends) → road (`[0, chain_mi]`) → corridor |
@@ -474,7 +588,7 @@ Crashes at a node: Hudson 51%, Bergen 49%, Hunterdon 32%. The inclusive uplift i
 - **Result.** Hudson: 21,505 placed; Bergen: 462 (few retired SRIs).
 - **Precision (5-fold held out).** Held-out anchors re-located from their strings (independent of the calibration) land on the same entity 97.5% of the time: 99.1% of 425 `route_xs`, 89.5% of 86 `intersection`.
 
-**Direction variants** (`road_entities` phase 2): an alias join no longer merges two runs whose names have one `dir_key`. NG9-1-1 aliases Bayonne's "East 48th Street" segments "West 48th Street", and v4 merged the two. Side effect: a crash string without the direction ("48TH ST") now names two entities, so `name_only` can't pick one. Hudson: 882 crashes (0.2%) back off-road.
+**Direction variants** (`road_entities` phase 2): an alias join no longer merges two runs whose names have one `dir_key`. NG9-1-1 aliases Bayonne's "East 48th Street" segments "West 48th Street", and v4 merged the two. Side effect: a crash string without the direction ("48TH ST") now names two entities, so `name_only` can't pick one. Hudson: 882 crashes (0.2%) back off-road. v5.1 places such crashes on the corridor when the candidates are one ([`corridor_only`](#corridor-only)): Hudson 1,467 of 4,212 multi-road-name crashes.
 
 **Placeholder names** (`ng_name`): NG9-1-1 `PRIMENAME` "Unnamed Segment" (26,477 segments), "Unnamed …", "RAMP" and "Driveway" are no names; points there keep NJDOT's SLD name. v4 had 430 entities named "Unnamed Segment". Same-name joins chained unrelated streets: `cape-may/ocean-city/unnamed-segment` spanned 60+ SRIs.
 
@@ -577,6 +691,8 @@ By source (`new`, v5): intersection 97.6% → 97.9% at corridor level; route_xs 
 
 ## Build runtime
 
+v5 as first built. v5.1's numbers are [above](#build-speed).
+
 Laptop, dev builds (wall clock; the laptop's run-to-run noise is ±20%):
 
 | Build | v4 | v5 | of which recovery | of which v5 model | Peak RSS |
@@ -585,13 +701,7 @@ Laptop, dev builds (wall clock; the laptop's run-to-run noise is ±20%):
 | Bergen `-C 2` | n/a | 83–113 s | 41–56 s | 16–21 s | 4.7 GB |
 | Hunterdon `-C 10` | n/a | 21–27 s | 5–7 s | 2–3 s | 5.0 GB |
 
-**Statewide estimate** (7.4M crashes, ~100k entities):
-
-- The v5 model scales with entities (the piece-ordering and corridor loops) and crashes (`cross_keys`, `crash_nodes`): ~1.5–3 min.
-- Calibration adds < 1 min (40k retired-SRI crashes).
-- Writing the new files adds ~30 s.
-- Total: **+3–5 min** on the Batch `roads build`.
-- Memory: +1–2 GB (the ~2.7M `xs` rows and node tables). Keep `mem_gb: 16` and watch the first run's peak.
+The statewide estimate here was **+3–5 min**; the Batch stage actually took 1,906 s (v4 with recovery: 1,429 s).
 
 ## Frontend notes
 
@@ -606,6 +716,8 @@ For the separate frontend branch.
 - **Corridors:** a road with `corridor` links to its corridor page (`/corridor/<slug>`: members, summary from `road-corridor-summary`, span queries per member).
 - **Intersection page:** `road-nodes WHERE node = ?` → its `entities`. Crashes: each entity's `crashes-by-entity WHERE entity = ? AND node = ?` (one entity group each). No `node` stats are needed: filter within the entity's group.
 - **Sort:** `entityCrashesSql` should order by `chain` (null last) instead of `sri, mp`.
+- **v5.1 blocks:** block-snapped spans filter `block BETWEEN b0 AND b1` (not `chain`), which matches `road-blocks.n_*` / `n_*_xs` exactly; see [Block convention](#block-convention) for recomputing a block from stored values.
+- **v5.1 `corridor_only`:** badge such crashes "located to the corridor, not a side"; `road-summary.n_corridor_only` is the per-road count (they're in `n` of the representative member, and in the corridor's counts once).
 
 ## Tests
 
@@ -630,6 +742,14 @@ Updated:
 
 The fixture `tests/data/roads/crashes.parquet` gains `Intersection`. 93 tests pass.
 
+v5.1 adds:
+
+- `test_road_model.py`: `road_blocks` sections, `block_of` / `block_pos`, `block_stats` with `-xs`, `corridor_only_rows`, the multi-road name → candidates in `_locate_one`, and on the fixtures: block counts = crash rows by `block`, with `block` reproduced from the written float32 values.
+- `test_roads.py`: the v5.1 files / columns / types; `per_unique`.
+- `test_loc_recovery.py`: forked recovery = serial; `CloseMatcher` = `difflib.get_close_matches`.
+
+99 tests pass.
+
 ## Build
 
 As [`road-data-v4.md`] § Build: only `www/public/njdot/roads.dvc` needs to run.
@@ -646,7 +766,7 @@ Then run `njdot roads audit-anomalies -o tmp/anom.csv -m tmp/anom.md` on the out
 ## Open questions
 
 - **Corridor ranks.** `road-ranks` is per entity. Split direction variants (White Horse Pike → 4 entities) rank lower than the merged v4 entity did. Add corridor rows to `road-ranks`, or rank corridors separately?
-- **Name-only direction ambiguity.** "48TH ST" with no cross street is now two entities (Hudson: 882 crashes off-road). Could assign them to the corridor, with no entity, if the UI wants corridor-only crashes.
+- **Multi-road names off every corridor.** Of Hudson's 4,212 crashes whose road name is several entities', 2,745 stay off-road: the candidates aren't one corridor ("FIRST ST" naming two unrelated streets, a name split across a muni line). A per-muni "most crashes" guess would place some; not done.
 - **State-road node offsets.** NJDOT's `I` crashes on state roads sit a median 5–48 m from NG9-1-1 nodes. Worth checking whether NJDOT references intersection MPs to a different point (the far stop bar?) before tightening state-road X.
 - **Pre-recovery name overrides.** Rules that rewrite a crash's road string before recovery ("BROADWAY" + Greenville cross street → "GARFIELD AVE") would reach crashes recovery leaves off every road.
 - **2019 → 2020+ step on JC roads** (West Side Ave −30% vs −14% statewide): check after the statewide build whether NJDOT's 2019+ coding attributes intersection crashes to cross streets more than before (`n_xs` rose from ~10/yr in 2001–05 to 40–80).

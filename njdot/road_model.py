@@ -525,37 +525,102 @@ BLOCK_MIN_MI = 0.005
 
 
 def road_blocks(node_ents: pd.DataFrame, pieces: pd.DataFrame) -> pd.DataFrame:
-    """Each entity cut at its intersection nodes and its non-contiguous piece joins (`gap` /
-    `branch`) → `entity, block, chain_lo, chain_hi, node_lo, node_hi` (nodes null at a road end or a
-    gap), sorted `(entity, block)`."""
-    ext = pieces.groupby('entity').agg(c0=('chain_lo', 'min'), c1=('chain_hi', 'max'))
-    b = [
-        pd.DataFrame({'entity': ext.index, 'c': ext['c0'].to_numpy(), 'node': pd.NA}),
-        pd.DataFrame({'entity': ext.index, 'c': ext['c1'].to_numpy(), 'node': pd.NA}),
-    ]
-    gp = pieces[pieces['join'].isin(['gap', 'branch'])]
-    b.append(pd.DataFrame({'entity': gp['entity'].to_numpy(), 'c': gp['chain_lo'].to_numpy(), 'node': pd.NA}))
+    """Each entity's *sections* (runs of pieces joined `contiguous`; a `gap` / `branch` join starts
+    a new one) cut at the intersection nodes on them → `entity, block, chain_lo, chain_hi, node_lo,
+    node_hi` (nodes null at a section end: a road end, or either side of a gap / branch), sorted
+    `(entity, block)`, `block` 0-based along the chain. Blocks don't span the chain between
+    sections (no road there), so a block's `chain_hi` can be below the next one's `chain_lo`.
+
+    Cuts closer than `BLOCK_MIN_MI` are one: the first position, with a node over a section end.
+    Positions are output as float32 (as stored, and as `block_of` and the frontend compare them)."""
+    p = pieces.sort_values(['entity', 'piece'], kind='stable')
+    sec = (p['entity'].ne(p['entity'].shift()) | p['join'].isin(['gap', 'branch'])).cumsum().to_numpy() - 1
+    secs = p.assign(sec=sec).groupby('sec').agg(entity=('entity', 'first'), lo=('chain_lo', 'first'), hi=('chain_hi', 'last'))
+    lo, hi = secs['lo'].to_numpy(dtype='float64'), secs['hi'].to_numpy(dtype='float64')
+    ends = pd.DataFrame({
+        'entity': np.r_[secs['entity'].to_numpy(), secs['entity'].to_numpy()].astype('int64'),
+        'sec': np.r_[secs.index.to_numpy(), secs.index.to_numpy()],
+        'c': np.r_[lo, hi], 'node': -1,
+    })
+    # Nodes go to the section whose `[lo, hi]` holds their chain (sections don't overlap).
     ne = node_ents.dropna(subset=['chain'])
-    b.append(pd.DataFrame({'entity': ne['entity'].to_numpy(), 'c': ne['chain'].to_numpy(), 'node': ne['node'].to_numpy()}))
-    cuts = pd.concat(b, ignore_index=True)
-    cuts['node'] = cuts['node'].astype('Int32')
-    cuts = cuts.sort_values(['entity', 'c', 'node'], na_position='last', kind='stable')
-    # Collapse cuts closer than `BLOCK_MIN_MI` (keep a node over a bare end / gap).
+    q = pd.DataFrame({
+        'entity': ne['entity'].to_numpy(dtype='int64'), 'c': ne['chain'].to_numpy(dtype='float64'),
+        'node': ne['node'].to_numpy(dtype='int64'),
+    }).sort_values('c', kind='stable')
+    r = pd.DataFrame({'entity': secs['entity'].to_numpy(dtype='int64'), 'c': lo, 'sec': secs.index.to_numpy(), 'hi': hi}).sort_values('c', kind='stable')
+    q = pd.merge_asof(q, r, on='c', by='entity')
+    q = q[q['sec'].notna().to_numpy() & (q['c'].to_numpy() <= q['hi'].to_numpy())].astype({'sec': 'int64'})
+    cuts = pd.concat([ends, q[['entity', 'sec', 'c', 'node']]], ignore_index=True)
+    # At one position, nodes (by id) before a bare section end.
+    cuts = cuts.assign(bare=cuts['node'] < 0).sort_values(['entity', 'sec', 'c', 'bare', 'node'], kind='stable')
+    ent_a, sec_a, c_a, node_a = (cuts[k].to_numpy() for k in ('entity', 'sec', 'c', 'node'))
     rows = []
-    for ent, g in cuts.groupby('entity', sort=True):
-        cs, ns = g['c'].to_numpy(), g['node'].to_numpy(dtype=object)
+    blk: dict[int, int] = {}
+    i, n = 0, len(cuts)
+    while i < n:
+        j = i
+        while j < n and sec_a[j] == sec_a[i]:
+            j += 1
         keep_c, keep_n = [], []
-        for c, nd in zip(cs, ns):
+        for c, nd in zip(c_a[i:j], node_a[i:j]):
             if keep_c and c - keep_c[-1] < BLOCK_MIN_MI:
-                if keep_n[-1] is pd.NA and nd is not pd.NA:
+                if keep_n[-1] < 0 <= nd:
                     keep_n[-1] = nd
                 continue
             keep_c.append(c)
             keep_n.append(nd)
-        for i in range(len(keep_c) - 1):
-            rows.append((ent, i, keep_c[i], keep_c[i + 1], keep_n[i], keep_n[i + 1]))
+        e = int(ent_a[i])
+        for k in range(len(keep_c) - 1):
+            bk = blk.get(e, 0)
+            rows.append((e, bk, keep_c[k], keep_c[k + 1], keep_n[k], keep_n[k + 1]))
+            blk[e] = bk + 1
+        i = j
     out = pd.DataFrame(rows, columns=['entity', 'block', 'chain_lo', 'chain_hi', 'node_lo', 'node_hi'])
-    return out.astype({'entity': 'int32', 'block': 'int32', 'chain_lo': 'float64', 'chain_hi': 'float64', 'node_lo': 'Int32', 'node_hi': 'Int32'})
+    for c in ('node_lo', 'node_hi'):
+        out[c] = pd.array([None if v < 0 else int(v) for v in out[c]], dtype='Int32')
+    out = out.astype({'entity': 'int32', 'block': 'int32', 'chain_lo': 'float32', 'chain_hi': 'float32'})
+    return out.sort_values(['entity', 'block'], kind='stable').reset_index(drop=True)
+
+
+def block_of(blocks: pd.DataFrame, entity: pd.Series, pos: pd.Series) -> pd.Series:
+    """Each `(entity, pos)`'s block: the entity's last block with `chain_lo` ≤ `pos` (both float32,
+    as stored), or its first block when `pos` is below all; NA where `pos` is NA or the entity has
+    no blocks. Equivalently `[chain_lo, next block's chain_lo)`: a position past a section's last
+    block (at the section's end) is in that block."""
+    q = pd.DataFrame({
+        'i': np.arange(len(entity)),
+        'entity': pd.Series(entity).to_numpy(dtype='float64', na_value=np.nan),
+        'c': pd.Series(pos).to_numpy(dtype='float64', na_value=np.nan).astype('float32').astype('float64'),
+    })
+    q = q[np.isfinite(q['entity'].to_numpy()) & np.isfinite(q['c'].to_numpy())].astype({'entity': 'int64'}).sort_values('c', kind='stable')
+    r = pd.DataFrame({
+        'entity': blocks['entity'].to_numpy(dtype='int64'),
+        'c': blocks['chain_lo'].to_numpy().astype('float32').astype('float64'),
+        'block': blocks['block'].to_numpy(dtype='int64'),
+    }).sort_values(['c', 'block'], kind='stable')
+    m = pd.merge_asof(q, r, on='c', by='entity')
+    miss = m['block'].isna().to_numpy()
+    if miss.any():
+        m.loc[miss, 'block'] = m.loc[miss, 'entity'].map(blocks.groupby('entity')['block'].min()).to_numpy()
+    out = np.full(len(entity), -1, dtype='int64')
+    ok = m['block'].notna().to_numpy()
+    out[m['i'].to_numpy()[ok]] = m['block'].to_numpy()[ok].astype('int64')
+    return pd.Series(pd.array([None if v < 0 else int(v) for v in out], dtype='Int32'), index=pd.Series(entity).index)
+
+
+def block_pos(df: pd.DataFrame, node_ents: pd.DataFrame) -> pd.Series:
+    """The chain position that decides a crash row's block (`block_of`): its node's chain on the
+    row's entity when it's at an intersection node there (so it's in the block that *starts* at the
+    node), else its own `chain`; NA when it has no `chain` (unplaced: in no block)."""
+    ch = pd.Series(df['chain']).to_numpy(dtype='float64', na_value=np.nan)
+    if 'node' not in df or not len(df):
+        return pd.Series(ch, index=df.index)
+    ne = node_ents.dropna(subset=['chain'])[['entity', 'node', 'chain']].drop_duplicates(['entity', 'node'])
+    k = pd.DataFrame({'entity': df['entity'].to_numpy(dtype='int64'), 'node': pd.Series(df['node']).astype('Int64').to_numpy()})
+    nc = k.merge(ne.astype({'entity': 'int64', 'node': 'Int64', 'chain': 'float64'}), on=['entity', 'node'], how='left')['chain']
+    nc = nc.to_numpy(dtype='float64', na_value=np.nan)
+    return pd.Series(np.where(np.isfinite(ch) & np.isfinite(nc), nc, ch), index=df.index)
 
 
 # --- Crash ↔ node ------------------------------------------------------------------------------
@@ -764,13 +829,15 @@ def model_outputs(
     ents: pd.DataFrame,
     by_entity: pd.DataFrame,
     idx: pd.DataFrame | None,
+    cands: pd.DataFrame | None = None,
 ) -> dict:
     """Road model v5 over `road_outputs`' renumbered frames (`b`: `build_geom` output with `runs`
     / `geom` renumbered; `ents`: `entity, slug, name, subt, cc, mc`; `by_entity`: the crashes on
     entities, with the police location fields when loaded; `idx`: `ng_name_index`, or None: no
-    cross-street matching). Adds `chain` to `b['geom']`; returns the new tables and `by_entity`
-    with `chain`, `chain_lo`, `chain_hi`, `node` (and the internal `xs_how` / `xs_d_m` /
-    `xs_stated_m`)."""
+    cross-street matching; `cands`: crashes whose road name is several entities', with `_cands`
+    (their ids), placed on the corridor when that's one: `corridor_only_rows`). Adds `chain` to
+    `b['geom']`; returns the new tables and `by_entity` with `chain`, `chain_lo`, `chain_hi`,
+    `node`, `corridor_only` (and the internal `xs_how` / `xs_d_m` / `xs_stated_m`)."""
     from njdot.loc_recovery import seg_entities
     from njdot.loc_recovery import FROM_M
     runs, geom, parent = b['runs'], b['geom'], b.get('parent', {})
@@ -790,8 +857,9 @@ def model_outputs(
         slugs = corridor_slugs(corridors, members, ents)
         order = {old: new for new, old in enumerate(slugs.sort_values(kind='stable').index)}
         corridors = corridors.assign(slug=corridors['corridor'].map(slugs)).assign(corridor=lambda d: d['corridor'].map(order)).sort_values('corridor').reset_index(drop=True)
-        members = members.assign(corridor=members['corridor'].map(order))
+        members = members.assign(corridor=members['corridor'].map(order).astype('int32'))
     corridor_of = dict(zip(members['entity'].astype(int), members['corridor'].astype(int)))
+    by_entity = by_entity.assign(corridor_only=False)
     steps('corridors')
 
     seg_ent = seg_entities(b['seg'], b['iv'], runs) if 'seg' in b else pd.Series(dtype='Int32')
@@ -818,7 +886,18 @@ def model_outputs(
         nk = node_keys(node_legs, idx, seg_ent, node_ents)
     else:
         nk = pd.DataFrame({'entity': pd.Series(dtype='int32'), 'key': pd.Series(dtype='string'), 'node': pd.Series(dtype='int32'), 'chain': [], 'leg_ent': []})
-    xs = crash_nodes(by_entity, nk, node_ents, idx if idx is not None else pd.DataFrame(columns=['cc', 'mc', 'key', 'base']), subt)
+    idx_ = idx if idx is not None else pd.DataFrame(columns=['cc', 'mc', 'key', 'base'])
+    if cands is not None and len(cands):
+        # A candidate whose intersections include the crash's cross street is the side it's on.
+        ex = cands.reset_index(drop=True).reset_index(names='_row').explode('_cands', ignore_index=True)
+        ex = ex[ex['_cands'].notna()].assign(entity=lambda d: d['_cands'].astype('int64'), chain=np.nan)
+        pin = crash_nodes(ex, nk, node_ents, idx_, subt) if len(ex) else pd.DataFrame({'node': []})
+        at_node = ex[pin['node'].notna().to_numpy()].groupby('_row')['entity'].agg(set).to_dict()
+        co = corridor_only_rows(cands, corridor_of, corridors, ents, pieces, by_entity, at_node)
+        by_entity = pd.concat([by_entity, co], ignore_index=True)
+        err(f'    crashes naming several roads: {len(cands):,}, {len(co):,} of them on one corridor '
+            f'({int(co["corridor_only"].sum()):,} `corridor_only`, {int((~co["corridor_only"]).sum()):,} on the side their cross street meets)')
+    xs = crash_nodes(by_entity, nk, node_ents, idx_, subt)
     by_entity = by_entity.assign(**{c: xs[c] for c in xs.columns})
     steps('crash ↔ node')
     for c in ('chain', 'chain_lo', 'chain_hi'):
@@ -827,6 +906,52 @@ def model_outputs(
         pieces=pieces, pairs=pairs, corridors=corridors, members=members, nodes=nodes, node_ents=node_ents,
         node_legs=node_legs, blocks=blocks, by_entity=by_entity, seg_ent=seg_ent,
     )
+
+
+def corridor_only_rows(
+    cands: pd.DataFrame,
+    corridor_of: dict[int, int],
+    corridors: pd.DataFrame,
+    ents: pd.DataFrame,
+    pieces: pd.DataFrame,
+    by_entity: pd.DataFrame,
+    at_node: dict[int, set] | None = None,
+) -> pd.DataFrame:
+    """Crashes whose road name is several entities' in their muni (`cands`, with `_cands`: the ids;
+    `loc_recovery._locate_strings`), when those entities are all one corridor ("48TH ST": East /
+    West 48th Street): `by_entity` rows (its columns and dtypes) on a representative member —
+    one whose intersection its cross street names (`at_node`: row position → those candidates),
+    then the candidate in the crash's muni (`ents.mc`), then the corridor's spine, then the longest
+    chain, then the lowest id — `name_only` (no chain, no map point), `corridor_only` True unless
+    exactly one candidate has the cross street's intersection (then it's on that side). The others
+    (candidates on no one corridor) are dropped: they stay off every road."""
+    spine = set(corridors['spine'].astype(int)) if len(corridors) else set()
+    e = ents.set_index('entity')
+    muni = {int(k): (int(c), int(m)) for k, c, m in zip(e.index, e['cc'], e['mc']) if not pd.isna(c) and not pd.isna(m)}
+    length = pieces.groupby('entity')['chain_hi'].max().to_dict()
+    cc = pd.to_numeric(cands['cc'], errors='coerce').to_numpy()
+    mc = pd.to_numeric(cands['mc'], errors='coerce').to_numpy()
+    rep, keep, only = [], [], []
+    for i, t in enumerate(cands['_cands'].to_numpy(dtype=object)):
+        cs = {corridor_of.get(int(x)) for x in t}
+        if not t or None in cs or len(cs) != 1:
+            continue
+        keep.append(i)
+        own = (int(cc[i]), int(mc[i])) if np.isfinite(cc[i]) and np.isfinite(mc[i]) else None
+        pinned = (at_node or {}).get(i, set()) & {int(x) for x in t}
+        rep.append(min(t, key=lambda x: (int(x) not in pinned, muni.get(int(x)) != own, int(x) not in spine, -length.get(int(x), 0.0), int(x))))
+        # Exactly one side has the cross street's intersection: located to that side.
+        only.append(len(pinned) != 1)
+    c = cands.iloc[keep]
+    out = pd.DataFrame(index=range(len(c)), columns=by_entity.columns)
+    for col in c.columns:
+        if col in out:
+            out[col] = c[col].to_numpy()
+    out = out.assign(
+        entity=np.array(rep, dtype='int64'), loc_source='name_only', corridor_only=np.array(only, dtype=bool),
+        sri=pd.NA, mp=np.nan, lat=np.nan, lon=np.nan, chain=np.nan,
+    )
+    return out.astype({col: by_entity[col].dtype for col in out.columns if col in by_entity})
 
 
 def xs_rows(by_entity: pd.DataFrame, node_ents: pd.DataFrame, subt: pd.Series) -> pd.DataFrame:
@@ -839,24 +964,24 @@ def xs_rows(by_entity: pd.DataFrame, node_ents: pd.DataFrame, subt: pd.Series) -
         node_ents.rename(columns={'chain': 'chain'}), on='node')
     x = x[x['entity'].to_numpy() != x['own_entity'].to_numpy()]
     x = x[subt.reindex(x['entity'].to_numpy()).fillna(RAMP_SUBT).to_numpy() < RAMP_SUBT]
-    x = x.assign(chain_lo=np.nan, chain_hi=np.nan)
+    x = x.assign(chain=x['chain'].astype('float32'), chain_lo=np.float32(np.nan), chain_hi=np.float32(np.nan))
     return x.reset_index(drop=True)
 
 
-def block_stats(blocks: pd.DataFrame, by_entity: pd.DataFrame) -> pd.DataFrame:
-    """`blocks` + its placed crashes' counts (`chain` in `[chain_lo, chain_hi)`; the road's last
-    block includes its end): `n_crashes, n_fatal, n_injury, n_killed`."""
-    c = by_entity[by_entity['chain'].notna().to_numpy()][['entity', 'chain', 'severity', 'tk']]
-    b = blocks.sort_values(['entity', 'chain_lo']).reset_index(drop=True)
-    q = c.assign(entity=c['entity'].astype('int64'), chain=c['chain'].astype('float64')).sort_values('chain', kind='stable')
-    r = b[['entity', 'chain_lo', 'block']].assign(entity=b['entity'].astype('int64')).sort_values('chain_lo', kind='stable')
-    m = pd.merge_asof(q, r, left_on='chain', right_on='chain_lo', by='entity')
-    # Crashes a hair before the first block (chain rounding): the first block.
-    m['block'] = m['block'].fillna(0).astype('int64')
-    cnt = _severity_counts(m, ['entity', 'block'])
-    out = b.merge(cnt, on=['entity', 'block'], how='left')
-    for col in ('n_crashes', 'n_fatal', 'n_injury', 'n_killed'):
-        out[col] = out[col].fillna(0).astype('int32')
+def block_stats(blocks: pd.DataFrame, by_entity: pd.DataFrame, xs: pd.DataFrame | None = None) -> pd.DataFrame:
+    """`blocks` + counts of the crash rows in each (by their `block` column: `block_of`):
+    `n_crashes, n_fatal, n_injury, n_killed` from `by_entity` (the road's own crashes), and with `xs`
+    (`xs_rows`: other roads' crashes at its intersections) `n_crashes_xs` … `n_killed_xs`."""
+    out = blocks
+    for df, sfx in ((by_entity, ''), (xs, '_xs')):
+        if df is None:
+            continue
+        c = df[df['block'].notna().to_numpy()]
+        c = c.assign(entity=c['entity'].astype('int64'), block=c['block'].astype('int64'))
+        cnt = _severity_counts(c, ['entity', 'block'], sfx)
+        out = out.merge(cnt.astype({'entity': 'int32', 'block': 'int32'}), on=['entity', 'block'], how='left')
+        for col in ('n_crashes', 'n_fatal', 'n_injury', 'n_killed'):
+            out[f'{col}{sfx}'] = out[f'{col}{sfx}'].fillna(0).astype('int32')
     return out
 
 

@@ -26,6 +26,7 @@ module recovers a location from those strings against the NJOGIS NG9-1-1 centerl
 street), `latlon_snap` (a reported point snapped to the road), `sri_only` (an SRI without MP that is
 one entity), `name_only` (the road name is one entity in the crash's muni; no point), or `none`.
 """
+import gc
 import heapq
 import multiprocessing as mp
 import os
@@ -569,7 +570,9 @@ def recover(
     Direction From Cross Street`, optionally `road_system`, `ilat` / `ilon`, `olat` / `olon`):
     `loc_source` (`LOC_SOURCES`), `sri` / `mp` (as coded, or recovered), `lon` / `lat` (recovered
     points only), `entity` (`entity_at` the SRI / MP, or the one entity for `sri_only` / `name_only`),
-    and `how`: the rule that resolved the road name (`resolve_keys`'s, "route", or "learned").
+    `how`: the rule that resolved the road name (`resolve_keys`'s, "route", or "learned"), and
+    `cands`: for `none` crashes whose name is several entities' in the muni, those entities (a sorted
+    tuple; else None).
 
     Crashes coded with an SRI + MP keep them (`sri_mp`) unless the SRI is gone from the current
     network (`runs`: e.g. Hudson's pre-2018 county-route SRIs `09000617__` …), in which case they're
@@ -624,6 +627,7 @@ def recover(
     lon, lat = np.full(n, np.nan), np.full(n, np.nan)
     qx, qy = np.full(n, np.nan), np.full(n, np.nan)
     ent = np.full(n, pd.NA, dtype=object)
+    cands = np.full(n, None, dtype=object)
     how = rr['how'].to_numpy(dtype=object)
     # Plain arrays for the per-crash loop (`Series.iat` costs ~10 µs a call; statewide that's minutes).
     cc_a, mc_a = base['cc'].fillna(-1).to_numpy('int64'), base['mc'].fillna(-1).to_numpy('int64')
@@ -647,7 +651,9 @@ def recover(
         if q is not None:
             lon[i], lat[i] = _to_lonlat(q)
             qx[i], qy[i] = q
-        if e is not None:
+        if isinstance(e, frozenset):
+            cands[i] = tuple(sorted(e))
+        elif e is not None:
             ent[i] = e
     # (d″) Retired SRIs the strings couldn't re-locate: the SRI's MPs calibrated against its other
     # crashes' known points (recovered or police-reported), then refined by the cross street.
@@ -682,6 +688,7 @@ def recover(
     df['mp'] = df['mp'].astype('float32')
     df['how'] = pd.array(how, dtype='string')
     df.loc[ok.to_numpy(), 'how'] = pd.NA
+    df['cands'] = pd.Series(cands, index=crashes.index, dtype=object)
     return df
 
 
@@ -928,10 +935,14 @@ def _locate_all(rows: np.ndarray, loc: dict, procs: int | None = None) -> list[t
     chunks = [np.sort(np.concatenate(c)) for c in chunks if c]
     global _LOC
     _LOC = loc
+    # Children share the parent's memory copy-on-write; keep the GC from touching (so copying)
+    # every object page in them.
+    gc.freeze()
     try:
         with mp.get_context('fork').Pool(procs) as pool:
             parts = pool.map(_locate_rows, chunks)
     finally:
+        gc.unfreeze()
         _LOC = {}
     return [r for part in parts for r in part]
 
@@ -1032,5 +1043,7 @@ def _locate_strings(
         if len(ents) == 1:
             return result(('name_only', None, None, None, next(iter(ents))))
         if len(ents) > 1:
-            break
+            # Several roads carry the name ("48TH ST": East / West 48th Street): none, with the
+            # candidates (the build places it on their corridor if they're one: `corridor_only`).
+            return result(('none', None, None, None, frozenset(ents)))
     return result(none)

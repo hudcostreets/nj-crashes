@@ -231,8 +231,9 @@ def road_summary(by_entity: pd.DataFrame, monthly: bool = False, xs: pd.DataFram
     without a map point (`unplaced`); with `xs` (`road_model.xs_rows`: other roads' crashes at this
     road's intersections), also `n_node` (of `n`, at an intersection node, when `by_entity` has
     `node`) and `n_xs` / `tk_xs` / `ti_xs` (the `xs` crashes: the road's *inclusive* count is `n +
-    n_xs`). A cell appears when `n` or `n_xs` is non-zero. Sorted by the keys. `key`: the road
-    column (`corridor` for corridor summaries)."""
+    n_xs`), and with `by_entity.corridor_only`, `n_corridor_only` (of `n`, crashes located to the
+    road's corridor but not to this side of it). A cell appears when `n` or `n_xs` is non-zero.
+    Sorted by the keys. `key`: the road column (`corridor` for corridor summaries)."""
     keys = [key, 'year', 'month', 'severity'] if monthly else [key, 'year', 'severity']
 
     def agg(df: pd.DataFrame, sfx: str = '') -> pd.DataFrame:
@@ -256,8 +257,13 @@ def road_summary(by_entity: pd.DataFrame, monthly: bool = False, xs: pd.DataFram
         x = agg(xs, '_xs')
         out = out.merge(x, on=keys, how='outer')
         vals += ['n_xs', 'tk_xs', 'ti_xs']
-        for v in vals:
-            out[v] = out[v].fillna(0)
+    if 'corridor_only' in by_entity:
+        # v5.1: of `n`, crashes located to the road's corridor, not to this side of it.
+        co = agg(by_entity[by_entity['corridor_only'].fillna(False).to_numpy(dtype=bool)])[keys + ['n']].rename(columns={'n': 'n_corridor_only'})
+        out = out.merge(co, on=keys, how='left')
+        vals.append('n_corridor_only')
+    for v in vals:
+        out[v] = out[v].fillna(0)
     out = out.astype({key: 'int32', 'year': 'int16', 'severity': 'string'} | {v: 'int32' for v in vals})
     if monthly:
         out['month'] = out['month'].astype('int8')

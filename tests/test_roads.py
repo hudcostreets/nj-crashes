@@ -658,7 +658,7 @@ def test_real_write_outputs_layout(real_out, tmp_path):
     files = sorted(p.name for p in tmp_path.iterdir())
     assert files == [
         'crashes-by-entity-xs.parquet', 'crashes-by-entity.parquet', 'crashes-by-sri.parquet',
-        'road-blocks.parquet', 'road-corridor-summary.parquet', 'road-corridors.parquet', 'road-entities.parquet',
+        'road-blocks.parquet', 'road-corridor-summary-monthly.parquet', 'road-corridor-summary.parquet', 'road-corridors.parquet', 'road-entities.parquet',
         'road-node-entities.parquet', 'road-nodes.parquet', 'road-pieces.parquet', 'road-ranks.parquet',
         'road-runs.parquet', 'road-search.parquet', 'road-summary-monthly.parquet', 'road-summary.parquet',
         'sri-geom.parquet', 'sri-hit-5.parquet', 'sri-hit-6.parquet', 'sri-hit.parquet', 'sris.parquet',
@@ -684,6 +684,7 @@ def test_real_write_outputs_layout(real_out, tmp_path):
         # Empty here (no crash at an intersection / in a corridor): one empty row group, no stats.
         'crashes-by-entity-xs.parquet': [],
         'road-corridor-summary.parquet': [],
+        'road-corridor-summary-monthly.parquet': [],
         'crashes-by-entity.parquet': ['entity', 'chain'],
         'road-blocks.parquet': ['entity', 'chain_lo', 'chain_hi'],
         'road-corridors.parquet': ['corridor', 'slug'],
@@ -698,13 +699,13 @@ def test_real_write_outputs_layout(real_out, tmp_path):
         'road-summary.parquet': ['entity'],
         'sri-geom.parquet': ['entity'],
     }
-    # v4 columns keep their names and order; v5 columns come after them.
+    # v4 columns keep their names and order; v5 columns come after them, then v5.1's.
     cols = {f: [c.name for c in pq.ParquetFile(tmp_path / f).schema] for f in ('crashes-by-entity.parquet', 'road-entities.parquet', 'sri-geom.parquet', 'road-summary.parquet')}
     assert cols == {
         'crashes-by-entity.parquet': [
             'entity', 'sri', 'mp', 'id', 'year', 'dt', 'cc', 'mc', 'case', 'severity', 'tk', 'ti', 'pk', 'pi', 'tv',
             # (this fixture's crashes have no `loc_source` / `lat` / `lon`)
-            'road', 'cross_street', 'route', 'chain', 'chain_lo', 'chain_hi', 'node', 'override',
+            'road', 'cross_street', 'route', 'chain', 'chain_lo', 'chain_hi', 'node', 'override', 'block', 'corridor_only',
         ],
         'road-entities.parquet': [
             'entity', 'slug', 'name', 'route', 'subt', 'sris', 'lon_min', 'lat_min', 'lon_max', 'lat_max',
@@ -713,8 +714,38 @@ def test_real_write_outputs_layout(real_out, tmp_path):
             'n_crashes_xs', 'n_fatal_xs', 'n_injury_xs', 'n_killed_xs',
         ],
         'sri-geom.parquet': ['sri', 'mp', 'sld_name', 'name', 'subt', 'entity', 'alias', 'lon', 'lat', 'chain'],
-        'road-summary.parquet': ['entity', 'year', 'severity', 'n', 'tk', 'ti', 'n_unplaced', 'n_node', 'n_xs', 'tk_xs', 'ti_xs'],
+        'road-summary.parquet': ['entity', 'year', 'severity', 'n', 'tk', 'ti', 'n_unplaced', 'n_node', 'n_xs', 'tk_xs', 'ti_xs', 'n_corridor_only'],
     }
+    # v5 files' key / position columns: the types the frontend compares (specs/road-model-v5.md § v5.1).
+    types = {
+        f: {k: str(t) for k, t in zip(pq.read_schema(tmp_path / f).names, pq.read_schema(tmp_path / f).types) if k in keys}
+        for f, keys in {
+            'crashes-by-entity.parquet': ('entity', 'chain', 'chain_lo', 'chain_hi', 'node', 'block', 'corridor_only'),
+            'crashes-by-entity-xs.parquet': ('entity', 'chain', 'chain_lo', 'chain_hi', 'node', 'own_entity', 'block', 'corridor_only'),
+            'road-blocks.parquet': ('entity', 'block', 'chain_lo', 'chain_hi', 'node_lo', 'node_hi'),
+            'road-node-entities.parquet': ('entity', 'chain', 'node'),
+            'road-corridors.parquet': ('corridor', 'spine'),
+            'road-corridor-summary.parquet': ('corridor',),
+            'road-corridor-summary-monthly.parquet': ('corridor', 'month'),
+        }.items()
+    }
+    f32 = {'entity': 'int32', 'chain': 'float', 'chain_lo': 'float', 'chain_hi': 'float', 'node': 'int32', 'block': 'int32', 'corridor_only': 'bool'}
+    assert types == {
+        'crashes-by-entity.parquet': f32,
+        'crashes-by-entity-xs.parquet': f32 | {'own_entity': 'int32'},
+        'road-blocks.parquet': {'entity': 'int32', 'block': 'int32', 'chain_lo': 'float', 'chain_hi': 'float', 'node_lo': 'int32', 'node_hi': 'int32'},
+        'road-node-entities.parquet': {'entity': 'int32', 'chain': 'float', 'node': 'int32'},
+        'road-corridors.parquet': {'corridor': 'int32', 'spine': 'int32'},
+        'road-corridor-summary.parquet': {'corridor': 'int32'},
+        'road-corridor-summary-monthly.parquet': {'corridor': 'int32', 'month': 'int8'},
+    }
+    xs_cols = [c.name for c in pq.ParquetFile(tmp_path / 'crashes-by-entity-xs.parquet').schema]
+    assert xs_cols[-3:] == ['own_entity', 'block', 'corridor_only']
+    blk_cols = [c.name for c in pq.ParquetFile(tmp_path / 'road-blocks.parquet').schema]
+    assert blk_cols == [
+        'entity', 'block', 'chain_lo', 'chain_hi', 'length_mi', 'node_lo', 'node_hi', 'from_name', 'to_name',
+        'n_crashes', 'n_fatal', 'n_injury', 'n_killed', 'n_crashes_xs', 'n_fatal_xs', 'n_injury_xs', 'n_killed_xs',
+    ]
     # A written `crashes-by-sri` reads back with `crashes_by_sri`'s nullable dtypes (the `roads build -c` path).
     back = read_crashes_by_sri(str(tmp_path / 'crashes-by-sri.parquet'))
     assert back.dtypes.astype(str).to_dict() == {
