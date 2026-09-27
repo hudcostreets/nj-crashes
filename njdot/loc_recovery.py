@@ -1024,6 +1024,17 @@ def _locate_strings(
         return None, frozenset(), None, None, none
     r_segs = _segs(r_keys, c, m, segs_by)
     route_ok = not pd.isna(r_sri) and len(sri_lines.get(r_sri, ()))
+    x_route = not pd.isna(x_sri) and len(sri_lines.get(x_sri, ()))
+    x_segs = _EMPTY if x_route else _segs(x_keys, c, m, segs_by, segs_cc)
+    if not route_ok and len(r_segs) and len(x_segs):
+        # Segments carrying both names (NG9-1-1 aliases 17 of Edison's 20 Vineyard Road segments "Old
+        # Post Road") can't be where the two meet; with them the meets spread along the whole shared
+        # stretch. So the road is the segments carrying its name as their own, less those.
+        shared = np.intersect1d(r_segs, x_segs)
+        if len(shared):
+            own = np.setdiff1d(_segs(r_keys, c, m, segs_named), shared)
+            if len(own):
+                r_segs = own
     if route_ok:
         # A route string (or a coded SRI without MP): the route's NJDOT lines.
         r_lines, r_sris = sri_lines[r_sri], {r_sri}
@@ -1038,10 +1049,9 @@ def _locate_strings(
         r_lines, r_sris = np.array([], dtype=object), set()
     r_sris = frozenset(r_sris)
     kind = 'route_xs' if route_ok or is_route else 'intersection'
-    if not pd.isna(x_sri) and len(sri_lines.get(x_sri, ())):
+    if x_route:
         x_lines = sri_lines[x_sri]
     else:
-        x_segs = _segs(x_keys, c, m, segs_by, segs_cc)
         x_lines = lines[x_segs] if len(x_segs) else np.array([], dtype=object)
     conflict, p = False, None
     if len(x_lines) and len(r_lines):
