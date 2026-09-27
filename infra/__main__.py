@@ -114,13 +114,13 @@ feedback_bucket = cf.R2Bucket(
 # Bot check on the feedback form. The site key is public (the worker serves
 # it from its `TURNSTILE_SITE_KEY` var); the secret goes to the worker as the
 # `TURNSTILE_SECRET` secret (`wrangler secret put`). Covers every *.hccs.dev
-# host (prod + dev FE) and the workers.dev preview.
+# host, the public prod host (CF for SaaS), and the workers.dev preview.
 feedback_turnstile = cf.TurnstileWidget(
     'crashes-feedback',
     account_id=account_id,
     name='crashes-feedback',
     mode='managed',
-    domains=['hccs.dev', 'crashes-www-dev.hccs-ctbk.workers.dev'],
+    domains=['hccs.dev', 'crashes.hudcostreets.org', 'crashes-www-dev.hccs-ctbk.workers.dev'],
 )
 
 # Worker secrets for crashes-api (+ `--env dev`), set with `wrangler secret put`
