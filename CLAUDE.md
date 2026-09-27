@@ -123,6 +123,11 @@ directory, not the repo root. Bare script invocations in a nested `.dvc` need a
 notifications, upstream fetches, and pure co-output *driver* stages that
 produce no artifact of their own. `batch/reproc-targets` derives the reproc
 exclusion list from that flag, so mark the stage rather than editing a list.
+Upstream fetches that *produce* a tracked artifact (e.g. `njdot/data/ng911.dvc`,
+`roadway_network.parquet.dvc`) use `meta.computation.fetch: {schedule: manual}`
+instead: `side_effect: true` makes dvx drop the stage's `outs`, so the fetched
+data would never be recorded or pushed. `batch/reproc-targets` skips `fetch:`
+stages too; re-fetch with `--force`.
 
 ### Key DVX-tracked Files
 - `njdot/data/crashes.parquet.dvc` - Combined crashes (depends on yearly Accidents.pqt)
