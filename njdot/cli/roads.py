@@ -805,6 +805,8 @@ def roads_build(crashes_path: str | None, cc: int | None, ng911_dir: str, networ
             by_sri = by_sri[by_sri['cc'] == cc].reset_index(drop=True)
         by_sri['_i'] = np.arange(len(by_sri), dtype='int64')
         by_entity = assign_crashes(by_sri, b['runs'], con)
+        # No police location fields here: crashes join nodes by cross street + point (as AASHTO's).
+        b['idx'] = ng_name_index(cl, al, cc2mc2mn)
     else:
         err('Loading crashes...')
         crashes = load_build_crashes(cc)
