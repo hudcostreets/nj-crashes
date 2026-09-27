@@ -1,6 +1,7 @@
-/** Road-selection data (specs/road-name-normalization-and-search.md Layer 4b, phase 1): parquets
- *  built by `njdot roads build`, read with DuckDB-WASM ranged reads. Each file is sorted for
- *  row-group pruning: `sri-hit` spatially (a viewport bbox reads a few groups), the rest by `sri`. */
+/** Road data (specs/road-data-v4.md): parquets built by `njdot roads build`, read with DuckDB-WASM
+ *  ranged reads. Each file is sorted for row-group pruning: `sri-hit` spatially (a viewport bbox
+ *  reads a few groups), `sri-geom` / `crashes-by-sri` by `sri`, the rest by `entity` (= `slug`
+ *  order, so a county's / muni's roads are contiguous). */
 import type { AsyncDuckDB } from "@duckdb/duckdb-wasm"
 import { runQuery } from "@/src/lib/DuckDbContext"
 import { MAP_BASE_URL } from "@/src/map/config"
@@ -12,7 +13,8 @@ export const ROADS_BASE_URL = MAP_BASE_URL.replace(/\/map\/?$/, "/roads")
 
 export type RoadsFile =
     | "crashes-by-sri" | "crashes-by-entity" | "sri-geom" | "sri-hit" | "sri-hit-5" | "sri-hit-6"
-    | "sris" | "road-entities" | "road-runs" | "road-names"
+    | "sris" | "road-entities" | "road-runs" | "road-summary" | "road-summary-monthly" | "road-ranks"
+    | "road-search"
 
 export function roadsUrl(file: RoadsFile): string {
     return new URL(`${ROADS_BASE_URL}/${file}.parquet`, window.location.origin).href
@@ -21,6 +23,11 @@ export function roadsUrl(file: RoadsFile): string {
 /** SRIs are `[0-9A-Z_]` (e.g. `00000001__`); reject anything else before interpolating into SQL. */
 export function isSri(s: string): boolean {
     return /^[0-9A-Za-z_-]{1,32}$/.test(s)
+}
+
+/** Road slugs are `<county>/[<muni>/]<road>`, each segment `[a-z0-9-]` (specs/road-data-v4.md § Slugs). */
+export function isRoadSlug(s: string): boolean {
+    return /^[a-z0-9-]+(\/[a-z0-9-]+){1,2}$/.test(s)
 }
 
 function sriList(sris: string[]): string {
@@ -43,10 +50,12 @@ export type RoadPoint = {
 }
 
 /** A road entity: same-named SRI runs joined across routes, within a county (see `njdot/road_net.py`).
- *  `name` = the local (NG9-1-1) name, `route` = route designation(s) ("CR 501", "US 1 / US 9"),
- *  `aliases` = NG9-1-1 local aliases then crash-reported names, " · "-joined. */
+ *  `entity` = rank of `slug` (not stable across builds; URLs use `slug`), `name` = the local
+ *  (NG9-1-1) name, `route` = route designation(s) ("CR 501", "US 1 / US 9"), `aliases` = NG9-1-1
+ *  local aliases then crash-reported names, " · "-joined. */
 export type RoadEntity = {
     entity: number
+    slug: string
     name: string
     route: string | null
     subt: number
@@ -61,28 +70,45 @@ export type RoadEntity = {
     n_killed: number
     aliases: string | null
     cc: number | null
+    /** NJDOT muni code when the road is within one muni (its slug has a muni segment), else null. */
+    mc: number | null
     /** " · "-joined, most-covered first. */
     munis: string | null
+    length_mi: number
 }
 
-/** A ⌘K search-index row (`road-names.parquet`): one searchable name of an entity. Span-scoped NG9-1-1
- *  names (an alias used on part of a road) carry that span's point / bbox, not the whole entity's. */
-export type RoadName = {
-    name_display: string
-    /** Upper-case, abbreviated ("J F KENNEDY BLVD"), for matching. */
-    name_norm: string
-    kind: "primary" | "alias" | "route"
+/** Crash counts of one road per `(year[, month], severity)` (`road-summary[-monthly]`); only
+ *  non-zero cells have a row. */
+export type RoadSummaryRow = {
+    year: number
+    /** 1–12 (monthly file only). */
+    month?: number
+    severity: string
+    n: number
+    tk: number
+    ti: number
+}
+
+/** A county's (`mc` = 0) or muni's top road (`road-ranks`): counts and miles *within that area*;
+ *  `rank_*` null outside the area's top 50 for that metric. */
+export type RoadRank = {
+    cc: number
+    mc: number
     entity: number
-    cc: number | null
-    munis: string | null
+    slug: string
+    name: string
+    route: string | null
     subt: number
     n_crashes: number
-    lon: number
-    lat: number
-    lon_min: number
-    lat_min: number
-    lon_max: number
-    lat_max: number
+    n_fatal: number
+    n_killed: number
+    length_mi: number
+    /** Crashes per mile, all years; null for short (< 0.25 mi) or low-count (< 10) roads. */
+    per_mi: number | null
+    rank_crashes: number | null
+    rank_fatal: number | null
+    rank_killed: number | null
+    rank_per_mi: number | null
 }
 
 export type RoadRun = { entity: number; sri: string; mp_lo: number; mp_end: number }
@@ -153,18 +179,40 @@ export async function fetchEntity(db: AsyncDuckDB, entity: number): Promise<Road
     return rows[0] ?? null
 }
 
+export async function fetchEntityBySlug(db: AsyncDuckDB, slug: string): Promise<RoadEntity | null> {
+    if (!isRoadSlug(slug)) return null
+    const rows = await runQuery<RoadEntity>(db, `SELECT * FROM read_parquet('${roadsUrl("road-entities")}') WHERE slug = '${slug}'`)
+    return rows[0] ?? null
+}
+
+/** The road's crash counts per `(year, severity)`, or per `(year, month, severity)` with `monthly`. */
+export function fetchEntitySummary(db: AsyncDuckDB, entity: number, monthly: boolean): Promise<RoadSummaryRow[]> {
+    const file = monthly ? "road-summary-monthly" : "road-summary"
+    return runQuery<RoadSummaryRow>(db, `
+        SELECT year, ${monthly ? "month, " : ""}severity, n, tk, ti FROM read_parquet('${roadsUrl(file)}')
+        WHERE entity = ${entity | 0}
+    `)
+}
+
+/** Every ranked road of a county (`mc` = 0) or muni; callers sort / filter by a metric's rank. */
+export function fetchRoadRanks(db: AsyncDuckDB, cc: number, mc: number): Promise<RoadRank[]> {
+    return runQuery<RoadRank>(db, `SELECT * FROM read_parquet('${roadsUrl("road-ranks")}') WHERE cc = ${cc | 0} AND mc = ${mc | 0}`)
+}
+
 export function fetchEntityRuns(db: AsyncDuckDB, entity: number): Promise<RoadRun[]> {
     return runQuery<RoadRun>(db, `SELECT * FROM read_parquet('${roadsUrl("road-runs")}') WHERE entity = ${entity | 0} ORDER BY sri, mp_lo`)
 }
 
 /** The entity's points: `sri-geom` is sorted by `(sri, mp)`, so filtering on the entity's SRIs
- *  prunes to a few row groups before the `entity` filter. */
+ *  prunes to a few row groups before the `entity` filter. The `BETWEEN` does the pruning: DuckDB-
+ *  WASM's DuckDB (v0.9) doesn't push `IN` lists into row-group stats. */
 export function fetchEntityGeom(db: AsyncDuckDB, entity: number, sris: string[]): Promise<RoadPoint[]> {
-    const list = sriList(sris)
-    if (!list) return Promise.resolve([])
+    const ok = sris.filter(isSri).sort()
+    if (!ok.length) return Promise.resolve([])
     return runQuery<RoadPoint>(db, `
         SELECT ${POINT_COLS} FROM read_parquet('${roadsUrl("sri-geom")}')
-        WHERE sri IN (${list}) AND entity = ${entity | 0} ORDER BY sri, mp
+        WHERE sri BETWEEN '${ok[0]}' AND '${ok[ok.length - 1]}' AND sri IN (${sriList(ok)}) AND entity = ${entity | 0}
+        ORDER BY sri, mp
     `)
 }
 
@@ -187,8 +235,9 @@ export function fetchEntityCrashesFull(db: AsyncDuckDB, entity: number): Promise
     return runQuery<RoadCrash>(db, `SELECT * EXCLUDE (dt), epoch_ms(dt) AS dt FROM (${entityCrashesSql(entity)})`)
 }
 
-/** The road entity a crash was matched to (null when it has no SRI match). Filters on the crash's
- *  SRI for row-group pruning; matches on `id`, or on the 4-field PK for rows without one (2024+). */
+/** The road entity a crash was matched to (null when it has no SRI match, or its point isn't on a
+ *  road entity): `crashes-by-sri` is sorted by `sri`, so the SRI filter prunes to its row groups.
+ *  Matches on `id`, or on the 4-field PK for rows without one (2024+). */
 export async function fetchCrashEntity(
     db: AsyncDuckDB,
     crash: { id: number | null; sri: string; year: number; cc: number; mc: number; case: string },
@@ -197,7 +246,7 @@ export async function fetchCrashEntity(
     const pk = `year = ${crash.year | 0} AND cc = ${crash.cc | 0} AND mc = ${crash.mc | 0} AND "case" = '${crash.case.replace(/'/g, "''")}'`
     const match = crash.id !== null ? `(id = ${crash.id | 0} OR (id IS NULL AND ${pk}))` : `(${pk})`
     const rows = await runQuery<{ entity: number }>(db, `
-        SELECT entity FROM read_parquet('${roadsUrl("crashes-by-entity")}')
+        SELECT entity FROM read_parquet('${roadsUrl("crashes-by-sri")}')
         WHERE sri = '${crash.sri}' AND ${match} LIMIT 1
     `)
     return rows[0]?.entity ?? null

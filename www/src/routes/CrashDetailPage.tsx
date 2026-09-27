@@ -11,7 +11,8 @@ import { ConditionMap } from "@/src/use-njdot-crashes"
 import { useDb } from "@/src/lib/DuckDbContext"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import { mapViewHref } from "@/src/map/links"
-import { fetchCrashEntity, fetchEntity, fetchEntityGeom, roadPaths } from "@/src/map/roads/roadsData"
+import { fetchCrashEntity, fetchEntityGeom, roadPaths } from "@/src/map/roads/roadsData"
+import { useRoadEntity } from "@/src/map/roads/useRoadEntity"
 import css from "@/src/home.module.scss"
 
 const CrashLocationMap = lazy(() => import("@/src/map/CrashLocationMap"))
@@ -189,7 +190,7 @@ export default function CrashDetailPage() {
         enabled: !!db && !!c?.sri,
     })
     const entity = entityQ.data ?? null
-    const road = useQuery({ queryKey: ["road-entity", entity], queryFn: () => fetchEntity(db!, entity!), enabled: !!db && entity !== null })
+    const road = useRoadEntity(entity)
     const roadGeom = useQuery({
         queryKey: ["road-geom", entity, road.data?.sris],
         queryFn: () => fetchEntityGeom(db!, entity!, road.data!.sris.split(",")),
@@ -253,7 +254,7 @@ export default function CrashDetailPage() {
                         <b>Mapped road:</b> {road.data.name}
                         {road.data.route && <> (on {road.data.route})</>}
                         {" · "}{road.data.n_crashes.toLocaleString()} crashes, {road.data.n_killed.toLocaleString()} killed
-                        {" · "}<Link to={`/road/${road.data.entity}`}>View road →</Link>
+                        {" · "}<Link to={`/road/${road.data.slug}`}>View road →</Link>
                     </li>
                 )}
                 {crash.cross_street && <li><b>Cross street:</b> {crash.cross_street}</li>}
@@ -266,7 +267,7 @@ export default function CrashDetailPage() {
                         <a href={`https://www.google.com/maps/?q=${lat},${lon}`} target="_blank" rel="noreferrer">
                             {lat.toFixed(5)}, {lon.toFixed(5)}
                         </a>
-                        {" · "}<Link to={mapViewHref({ lat, lon, zoom: 16, road: entity })}>View on crash map</Link>
+                        {" · "}<Link to={mapViewHref({ lat, lon, zoom: 16, road: road.data?.slug })}>View on crash map</Link>
                     </li>
                 )}
             </ul>

@@ -51,6 +51,22 @@ function resolveOgMeta(pathname: string): OgMeta {
         }
     }
 
+    // /road/<county>/[<muni>/]<road> (specs/road-data-v4.md § Slugs; a trailing `-2` … is a
+    // same-name collision suffix). Numeric `/road/<entity>` redirects client-side: default meta.
+    const roadMatch = pathname.match(/^\/road\/([a-z0-9-]+)\/(?:([a-z0-9-]+)\/)?([a-z0-9-]+)\/?$/)
+    if (roadMatch) {
+        const [, countySlug, muniSlug, roadSlug] = roadMatch
+        const road = denormalize(roadSlug.replace(/-\d+$/, ''))
+        const county = countySlug === 'nj' ? null : `${denormalize(countySlug)} County`
+        const place = [muniSlug ? denormalize(muniSlug) : null, county].filter(Boolean).join(', ') || 'NJ'
+        return {
+            title: `${road}, ${place} — NJ Car Crash Data`,
+            description: `Crashes on ${road} (${place}, NJ): totals, trends, map, and crash list`,
+            image: OG_IMAGE,
+            url: `${SITE_URL}${pathname}`,
+        }
+    }
+
     // /crash/:accid (future)
     const crashMatch = pathname.match(/^\/crash\/(\d+)\/?$/)
     if (crashMatch) {

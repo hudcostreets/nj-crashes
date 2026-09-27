@@ -16,10 +16,7 @@ function csvCell(v: unknown): string {
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
-export function roadSlug(name: string | null | undefined, entity: number): string {
-    return (name ?? `road-${entity}`).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
-}
-
+/** `slug`: the road's slug (`hudson/jersey-city/west-side-avenue` → `road-hudson_jersey-city_west-side-avenue.csv`). */
 export function downloadCsv(slug: string, rows: RoadCrash[]) {
     const lines = [CSV_COLS.join(",")]
     for (const r of rows) {
@@ -28,7 +25,7 @@ export function downloadCsv(slug: string, rows: RoadCrash[]) {
     const url = URL.createObjectURL(new Blob([lines.join("\n") + "\n"], { type: "text/csv" }))
     const a = document.createElement("a")
     a.href = url
-    a.download = `road-${slug}.csv`
+    a.download = `road-${slug.replace(/\//g, "_")}.csv`
     a.click()
     URL.revokeObjectURL(url)
 }

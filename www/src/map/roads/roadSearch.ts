@@ -1,138 +1,168 @@
-/** Road search by name (omnibar): token matching over each road entity's name, route and aliases,
- *  ranked by crash count. */
+/** Road search by name (omnibar), over `road-search.parquet`: a word index of every road's name,
+ *  route designations and aliases, one row per `(token, name)` (specs/road-data-v4.md § road-search). */
 import type { AsyncDuckDB } from "@duckdb/duckdb-wasm"
+import { asyncBufferFromUrl, parquetMetadataAsync } from "hyparquet"
 import { runQuery } from "@/src/lib/DuckDbContext"
-import type { CC2MC2MN } from "@/src/county"
-import { roadsUrl } from "./roadsData"
+import { roadsUrl, type Bbox } from "./roadsData"
 
-export type RoadHit = {
-    entity: number
-    name: string
-    route: string | null
-    subt: number
-    aliases: string | null
-    sris: string
-    n_crashes: number
+/** Canonical (long) word → its abbreviations. Index tokens are canonical, and query words are
+ *  mapped the same way. Mirrors `SYNONYMS` in `njdot/road_outputs.py` (pinned by a test). */
+export const SYNONYMS: Record<string, string[]> = {
+    north: ["n"], south: ["s"], east: ["e"], west: ["w"],
+    avenue: ["ave", "av"], street: ["st"], saint: ["st"], boulevard: ["blvd"], road: ["rd"],
+    drive: ["dr"], highway: ["hwy"], parkway: ["pkwy"], turnpike: ["tpke", "tpk"],
+    place: ["pl"], lane: ["ln"], court: ["ct"], terrace: ["ter"], expressway: ["expy"],
+    route: ["rt", "rte"], county: ["co"], mount: ["mt"], fort: ["ft"], circle: ["cir"],
+}
+const CANON = new Map<string, string>()
+for (const [w, abbrs] of Object.entries(SYNONYMS)) {
+    for (const a of abbrs) if (a !== "st") CANON.set(a, w)
 }
 
-/** Interchangeable street-name words (NJDOT names mix "W Side Ave", "WEST SIDE AVE", …). */
-const SYNONYMS: string[][] = [
-    ["north", "n"], ["south", "s"], ["east", "e"], ["west", "w"],
-    ["avenue", "ave", "av"], ["street", "st"], ["saint", "st"], ["boulevard", "blvd"], ["road", "rd"],
-    ["drive", "dr"], ["highway", "hwy"], ["parkway", "pkwy"], ["turnpike", "tpke", "tpk"],
-    ["place", "pl"], ["lane", "ln"], ["court", "ct"], ["terrace", "ter"], ["expressway", "expy"],
-    ["route", "rt", "rte"], ["county", "co"], ["mount", "mt"], ["fort", "ft"], ["circle", "cir"],
-]
-const ALTS = new Map<string, Set<string>>()
-for (const group of SYNONYMS) {
-    for (const w of group) {
-        const alts = ALTS.get(w) ?? new Set<string>()
-        for (const a of group) if (a !== w) alts.add(a)
-        ALTS.set(w, alts)
-    }
-}
-
-/** Lower-cased alphanumeric query tokens; everything else (quotes, `%`, regex syntax, …) is a
- *  separator, so tokens are safe to splice into a regex. */
+/** Lower-cased ASCII alphanumeric words (NFKD-folded, like the index's): everything else (quotes,
+ *  `%`, regex syntax, …) is a separator, so words are safe to splice into SQL string literals. */
 export function queryTokens(query: string): string[] {
-    return query.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
+    return query.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
 }
 
-/** One regex per token, all of which must match (lower-cased) road text: the typed token as a
- *  word prefix, or any of its synonyms as a whole word. */
-export function tokenPatterns(query: string): string[] {
-    return queryTokens(query).map(t => {
-        const alts = [...(ALTS.get(t) ?? [])]
-        return alts.length
-            ? `(^|[^a-z0-9])(${t}|(${alts.join("|")})([^a-z0-9]|$))`
-            : `(^|[^a-z0-9])${t}`
-    })
+/** A query word, with the index tokens it matches: `exact` (its canonical forms; "st" is both
+ *  "street" and "saint"), and — for the word being typed — any token starting with `prefix`. */
+export type QueryWord = { word: string; exact: string[]; prefix: string | null }
+
+/** `query`'s words, canonicalized. The last word is still being typed (a prefix) unless the query
+ *  ends in a separator. */
+export function queryWords(query: string): QueryWord[] {
+    const ws = queryTokens(query)
+    const typing = /[a-z0-9]$/i.test(query.normalize("NFKD"))
+    return ws.map((w, i) => ({
+        word: w,
+        exact: w === "st" ? ["street", "saint"] : [CANON.get(w) ?? w],
+        prefix: typing && i === ws.length - 1 ? w : null,
+    }))
 }
 
-export function matchesAll(text: string, patterns: string[]): boolean {
-    const s = text.toLowerCase()
-    return patterns.every(p => new RegExp(p).test(s))
+function matchesWord(q: QueryWord, words: string[]): boolean {
+    return words.some(w => q.exact.includes(w) || (q.prefix !== null && w.startsWith(q.prefix)))
 }
 
-const SEARCH_TABLE = "road_search"
-const tables = new WeakMap<AsyncDuckDB, Promise<unknown>>()
+/** Which word to fetch from the index: the longest whose tokens aren't capped (`capped`: tokens
+ *  with more rows than the index keeps; a rarer word narrows better). Null when there's nothing
+ *  useful to fetch (a lone 1-character prefix would span several row groups). */
+export function pickWord(words: QueryWord[], capped: Set<string>): QueryWord | null {
+    const usable = words.filter(q => q.prefix === null || q.prefix.length > 1 || q.exact[0] !== q.word)
+    if (!usable.length) return null
+    const score = (q: QueryWord) => (q.exact.every(t => capped.has(t)) ? 0 : 1) * 1000 + q.word.length
+    return usable.reduce((best, q) => (score(q) > score(best) ? q : best))
+}
 
-/** The search columns of `road-entities.parquet` (~2 MB of its ~6.5 MB), loaded into a DuckDB
- *  table on the first search, so later keystrokes don't re-read the parquet. */
-function searchTable(db: AsyncDuckDB): Promise<unknown> {
-    let p = tables.get(db)
-    if (!p) {
-        p = runQuery(db, `
-            CREATE OR REPLACE TABLE ${SEARCH_TABLE} AS
-            SELECT entity, name, route, subt, aliases, sris, n_crashes,
-                   lower(concat_ws(' · ', name, route, aliases)) AS hay
-            FROM read_parquet('${roadsUrl("road-entities")}')
-        `)
-        p.catch(() => tables.delete(db))
-        tables.set(db, p)
+/** The prefix's exclusive upper bound (`kenn` → `keno`). */
+export function prefixEnd(p: string): string {
+    return p.slice(0, -1) + String.fromCharCode(p.charCodeAt(p.length - 1) + 1)
+}
+
+/** `WHERE` clauses fetching `q`'s rows, one query each: its exact canonical tokens, plus a
+ *  prefix range when it's being typed (tokens are `[a-z0-9]`, so they're safe to inline). Each is
+ *  a single `=` or range, which DuckDB-WASM's DuckDB (v0.9) pushes into the row-group stats; it
+ *  doesn't push `OR` / `IN`, and scans the whole file for them. */
+export function wordFilters(q: QueryWord): string[] {
+    const prefix = q.prefix !== null && q.prefix.length > 1 ? q.prefix : null
+    const exact = q.exact.filter(t => prefix === null || !t.startsWith(prefix))
+    return [
+        ...exact.map(t => `token = '${t}'`),
+        ...(prefix !== null ? [`token >= '${prefix}' AND token < '${prefixEnd(prefix)}'`] : []),
+    ]
+}
+
+/** One `road-search.parquet` row (without `token`). */
+export type RoadSearchRow = {
+    entity: number
+    slug: string
+    name: string
+    /** The name this row came from; null when it's the road's own `name`. */
+    matched: string | null
+    kind: "primary" | "route" | "alias"
+    /** The matched name's canonical words, space-joined. */
+    words: string
+    subt: number
+    n_crashes: number
+    place: string | null
+    lon: number
+    lat: number
+    /** bbox offsets from `lon` / `lat`, in `BBOX_UNIT`° */
+    dx0: number
+    dy0: number
+    dx1: number
+    dy1: number
+}
+
+export const BBOX_UNIT = 1e-5
+
+export function hitBbox(r: Pick<RoadSearchRow, "lon" | "lat" | "dx0" | "dy0" | "dx1" | "dy1">): Bbox {
+    return [r.lon + r.dx0 * BBOX_UNIT, r.lat + r.dy0 * BBOX_UNIT, r.lon + r.dx1 * BBOX_UNIT, r.lat + r.dy1 * BBOX_UNIT]
+}
+
+const KIND_ORDER = { primary: 0, route: 1, alias: 2 }
+
+/** Rows where every query word matches some word of the row's name; one per road (its primary
+ *  name when that matched, else a route, else an alias), most crashes first. */
+export function filterHits(rows: RoadSearchRow[], words: QueryWord[], limit: number): RoadSearchRow[] {
+    const best = new Map<number, RoadSearchRow>()
+    for (const r of rows) {
+        const ws = r.words.split(" ")
+        if (!words.every(q => matchesWord(q, ws))) continue
+        const cur = best.get(r.entity)
+        if (!cur || KIND_ORDER[r.kind] < KIND_ORDER[cur.kind]) best.set(r.entity, r)
     }
-    return p
+    return [...best.values()]
+        .sort((a, b) => b.n_crashes - a.n_crashes || a.entity - b.entity)
+        .slice(0, limit)
 }
 
-/** Roads matching `query` (see `tokenPatterns`), most crashes first. The one place that knows
- *  where road-search data lives. */
-export async function searchRoads(db: AsyncDuckDB, query: string, limit: number): Promise<RoadHit[]> {
-    const patterns = tokenPatterns(query)
-    if (!patterns.length) return []
-    await searchTable(db)
-    return runQuery<RoadHit>(db, `
-        SELECT entity, name, route, subt, aliases, sris, n_crashes FROM ${SEARCH_TABLE}
-        WHERE ${patterns.map(() => "regexp_matches(hay, ?)").join(" AND ")}
-        ORDER BY n_crashes DESC, entity
-        LIMIT ${limit | 0}
-    `, patterns)
-}
+const SEARCH_COLS = "entity, slug, name, matched, kind, words, subt, n_crashes, place, lon, lat, dx0, dy0, dx1, dy1"
+let cappedTokens: Promise<Set<string>> | null = null
 
-/** Where a road is, from its SRIs: municipal-road SRIs are `CCMM####` (county, NJDOT muni code),
- *  county roads `CC00####`, and state / interstate / 500-series routes `0000####` (statewide; no
- *  location). E.g. "Jersey City, Hudson", "Hudson County", "Essex / Hudson". */
-export function roadLocation(sris: string, cc2mc2mn: CC2MC2MN | null): string | null {
-    const ccs = new Set<number>()
-    const munis = new Set<string>()
-    for (const sri of sris.split(",")) {
-        const m = /^(\d{2})(\d{2})/.exec(sri.trim())
-        if (!m) return null
-        const cc = Number(m[1]), mc = Number(m[2])
-        if (cc === 0) return null
-        ccs.add(cc)
-        munis.add(`${cc}-${mc}`)
+/** The index's capped tokens (key-value metadata `capped_tokens`: `{token: full count}`), read once
+ *  per session. Via hyparquet: DuckDB-WASM's DuckDB (v0.9) has no `parquet_kv_metadata`. The
+ *  footer is ~100 KB, so one 128 KB tail read covers it. */
+function fetchCapped(): Promise<Set<string>> {
+    if (!cappedTokens) {
+        cappedTokens = asyncBufferFromUrl({ url: roadsUrl("road-search") })
+            .then(buf => parquetMetadataAsync(buf, { initialFetchSize: 1 << 17 }))
+            .then(md => {
+                const kv = md.key_value_metadata?.find(({ key }) => key === "capped_tokens")
+                return new Set(Object.keys(kv?.value ? JSON.parse(kv.value) as Record<string, number> : {}))
+            })
+        cappedTokens.catch(() => { cappedTokens = null })
     }
-    if (!ccs.size || !cc2mc2mn) return null
-    const counties = [...ccs].sort((a, b) => a - b).map(cc => cc2mc2mn[cc]?.cn)
-    if (counties.some(cn => !cn)) return null
-    if (ccs.size > 1) return ccs.size <= 2 ? counties.join(" / ") : `${ccs.size} counties`
-    const [cc] = ccs
-    const county = counties[0]!
-    const mcs = [...munis].map(k => Number(k.split("-")[1])).sort((a, b) => a - b)
-    if (mcs.includes(0)) return `${county} County`
-    const names = mcs.map(mc => cc2mc2mn[cc].mc2mn[mc])
-    if (names.some(n => !n) || names.length > 2) return `${county} County`
-    return `${names.join(" / ")}, ${county}`
+    return cappedTokens
+}
+
+/** Roads matching `query`, most crashes first (specs/road-data-v4.md's recipe): fetch one word's
+ *  rows (a token-range read of 1–2 row groups), filter the rest client-side. The one place that
+ *  knows where road-search data lives. */
+export async function searchRoads(db: AsyncDuckDB, query: string, limit: number): Promise<RoadSearchRow[]> {
+    const words = queryWords(query)
+    const q = pickWord(words, await fetchCapped())
+    if (!q) return []
+    const rows = await Promise.all(wordFilters(q).map(where => runQuery<RoadSearchRow>(db, `
+        SELECT ${SEARCH_COLS} FROM read_parquet('${roadsUrl("road-search")}') WHERE ${where}
+    `)))
+    return filterHits(rows.flat(), words, limit)
 }
 
 export type RoadHitLabel = {
     label: string
-    /** The alias (or route name) that matched, when the name itself didn't. */
-    alias: string | null
     description: string
 }
 
-/** Omnibar label for a search hit: the road's name, the alias that matched (when the name
- *  didn't), its location, and its crash count. */
-export function formatRoadHit(hit: RoadHit, query: string, cc2mc2mn: CC2MC2MN | null): RoadHitLabel {
-    const patterns = tokenPatterns(query)
-    const others = [hit.route, ...(hit.aliases?.split(" · ") ?? [])].filter((s): s is string => !!s && s !== hit.name)
-    const alias = matchesAll(hit.name, patterns) ? null : others.find(s => matchesAll(s, patterns)) ?? null
+/** Omnibar label for a search hit: the road's name, the route / alias that matched (when the
+ *  name itself didn't), its place, and its crash count. */
+export function formatRoadHit(hit: Pick<RoadSearchRow, "name" | "matched" | "kind" | "place" | "n_crashes">): RoadHitLabel {
     const n = hit.n_crashes
     const parts = [
-        ...(alias ? [`aka ${alias}`] : []),
-        ...[roadLocation(hit.sris, cc2mc2mn)].filter((s): s is string => !!s),
+        ...(hit.matched ? [`${hit.kind === "route" ? "on" : "aka"} ${hit.matched}`] : []),
+        ...(hit.place ? [hit.place] : []),
         `${n.toLocaleString("en-US")} crash${n === 1 ? "" : "es"}`,
     ]
-    return { label: hit.name, alias, description: parts.join(" · ") }
+    return { label: hit.name, description: parts.join(" · ") }
 }

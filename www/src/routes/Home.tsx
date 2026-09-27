@@ -27,6 +27,7 @@ import { NjspSection } from "@/src/njsp/NjspSection"
 import { PageFiltersProvider, usePageFilters } from "@/src/PageFiltersContext"
 import { VICTIM_LABEL_SINGULAR, VICTIM_TYPES } from "@/src/njsp/victim-types"
 import { LazySection } from "@/src/components/LazySection"
+import { RoadRanksSection } from "@/src/map/roads/RoadRanksSection"
 import { PlotInfo } from "@/src/icons"
 import { useEffect } from "react"
 import { ResetSoloProvider, useResetAllSolo } from "@/src/lib/ResetSoloContext"
@@ -212,6 +213,19 @@ function HomeInner({ title, description, pageUrl, regionLabel, geo, countyName, 
                     </p>
                 }
                 <PlotContainer showHr={false}><CrashPlot key={`dot-${cc}-${mc}`} counties={countyFilter} mc={mc} /></PlotContainer>
+
+                {/* A county's / muni's top roads (road-ranks); statewide has no ranking. */}
+                {cc !== null && countyName && (
+                    <>
+                        <h2 id="roads"><a href="#roads">Most Dangerous Roads</a></h2>
+                        <div className={css.subtitle}>
+                            Crashes reported to police within {municipalityName ?? `${countyName} County`}, 2001–{EndYear}, by road
+                        </div>
+                        <LazySection placeholder={<p>Loading roads...</p>}>
+                            <RoadRanksSection key={`roads-${cc}-${mc}`} cc={cc} mc={mc} areaName={municipalityName ?? `${countyName} County`} />
+                        </LazySection>
+                    </>
+                )}
 
                 {/* Annual Statistics */}
                 <h2 id="stats"><a href="#stats">Annual Statistics</a></h2>
