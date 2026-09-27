@@ -57,7 +57,7 @@ port = 51894
 CORS_ORIGIN = "*"
 # Public Turnstile site key for the feedback form (`pulumi stack output
 # turnstile_sitekey`); empty → no widget. Pair with the TURNSTILE_SECRET secret.
-TURNSTILE_SITE_KEY = ""
+TURNSTILE_SITE_KEY = "0x4AAAAAAFFkHbBPyfNgUFMC"
 
 # Dev tier: `wrangler deploy --env dev` → `crashes-api-dev`, served at
 # `crashes-api-dev.hccs.dev` (domain via `infra/`) for `dev.crashes.hccs.dev`.
@@ -108,4 +108,4 @@ bucket_name = "crashes-feedback"
 
 [env.dev.vars]
 CORS_ORIGIN = "*"
-TURNSTILE_SITE_KEY = ""
+TURNSTILE_SITE_KEY = "0x4AAAAAAFFkHbBPyfNgUFMC"
