@@ -1,12 +1,24 @@
 /** Compact per-year crash bars (stacked by severity) for `RoadPanel`; hovering a year shows its
- *  counts in the readout line. */
+ *  counts in the readout line (and the data notes covering it). */
 import { useState } from "react"
 import { SEVERITY_COLOR } from "../basemap"
+import { bandsAt, type NoteBand } from "./roadNotes"
 import type { YearStats } from "./roadStats"
 
 const rgb = (s: "f" | "i" | "p") => `rgb(${SEVERITY_COLOR[s].join(",")})`
 
-export function YearStrip({ stats, dim, height = 28 }: { stats: YearStats; dim: string; height?: number }) {
+const noteRef = (bs: NoteBand[]) => (bs.length ? ` · see note ${bs.map(b => b.label).join(", ")}` : "")
+
+export type YearStripProps = {
+    stats: YearStats
+    dim: string
+    height?: number
+    /** Data notes' years: shaded behind the bars, and lettered in the readout. */
+    bands?: NoteBand[]
+    bandFill?: string
+}
+
+export function YearStrip({ stats, dim, height = 28, bands = [], bandFill }: YearStripProps) {
     const [hover, setHover] = useState<number | null>(null)
     const { years, f, i, p, unplaced } = stats
     const totals = years.map((_, k) => f[k] + i[k] + p[k])
@@ -22,6 +34,9 @@ export function YearStrip({ stats, dim, height = 28 }: { stats: YearStats; dim: 
                 style={{ width: "100%", height, display: "block" }}
                 onMouseLeave={() => setHover(null)}
             >
+                {bandFill && bands.map(b => (
+                    <rect key={b.id} x={b.lo - years[0]} y={0} width={b.hi - b.lo + 1} height={height} fill={bandFill} />
+                ))}
                 {years.map((_, j) => {
                     const h = (v: number) => (v / max) * height
                     // Bottom-up: fatal, injury, property; each severity's crashes without a map point
@@ -48,7 +63,7 @@ export function YearStrip({ stats, dim, height = 28 }: { stats: YearStats; dim: 
                 <span>{years[0]}</span>
                 <span>
                     {k !== null
-                        ? `${years[k]}: ${totals[k].toLocaleString()} crashes${unplacedTotals[k] ? ` (${unplacedTotals[k].toLocaleString()} no map point)` : ""} · ${f[k]} fatal · ${i[k]} injury · ${stats.killed[k]} killed`
+                        ? `${years[k]}: ${totals[k].toLocaleString()} crashes${unplacedTotals[k] ? ` (${unplacedTotals[k].toLocaleString()} no map point)` : ""} · ${f[k]} fatal · ${i[k]} injury · ${stats.killed[k]} killed${noteRef(bandsAt(bands, years[k]))}`
                         : "Crashes per year"}
                 </span>
                 <span>{years[n - 1]}</span>
