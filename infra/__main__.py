@@ -126,8 +126,10 @@ if manage_worker_domains:
 # `crashes.hudcostreets.org`'s DNS is at Squarespace (not a Cloudflare zone), so
 # it can't be a Workers Custom Domain. Instead it's a SaaS *custom hostname* on
 # `hccs.dev`, routed to the FE Worker by a zone Worker route. Onboarding (manual,
-# at Squarespace): add the ownership + DCV TXT records (`saas_validation`
-# output) so the cert issues first, then CNAME the hostname → `SAAS_FALLBACK`.
+# at Squarespace): add the ownership TXT record (`saas_validation` output) and
+# the cert's DCV TXT record (not exposed by the provider: `GET
+# zones/<zone>/custom_hostnames?hostname=…` → `ssl.validation_records`) so the
+# cert issues first, then CNAME the hostname → `SAAS_FALLBACK`.
 SAAS_FALLBACK = 'crashes-saas.hccs.dev'
 SAAS_HOSTNAMES = {
     'crashes.hudcostreets.org': 'crashes-www',
@@ -165,9 +167,8 @@ if SAAS_HOSTNAMES:
         )
         saas_validation[hostname] = {
             'ownership': ch.ownership_verification,
-            'dcv': ch.ssl.apply(lambda ssl: ssl.validation_records if ssl else None),
             'status': ch.status,
-            'ssl_status': ch.ssl.apply(lambda ssl: ssl.status if ssl else None),
+            'verification_errors': ch.verification_errors,
         }
 
 # ── Workers (documentation; wrangler-deployed, bindings reference the above) ──
