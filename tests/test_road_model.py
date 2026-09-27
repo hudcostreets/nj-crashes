@@ -13,7 +13,8 @@ from njdot.cli.roads import build_geom, place_crashes, prep_crashes, road_output
 from njdot.loc_recovery import Snapper, calibrate_retired, sri_entities
 from njdot.map_base import _build_base
 from njdot.road_model import (
-    MI_M, XS_M, chain_at, corridor_pairs, crash_nodes, entity_pieces, road_blocks, road_corridors, stated_m, xs_rows,
+    MI_M, XS_M, block_of, block_pos, block_stats, chain_at, corridor_only_rows, corridor_pairs, crash_nodes, entity_pieces,
+    road_blocks, road_corridors, stated_m, xs_rows,
 )
 from njdot.road_net import dir_key, ng_name, road_entities, rn_features, to_meters
 from njdot.road_outputs import road_summary
@@ -222,9 +223,20 @@ def test_road_blocks_cut_at_nodes_and_gaps():
         (0, 0.0, 0.4, None, 3),
         # node 4 is 0.002 mi (3 m) past node 3: one cut
         (1, 0.4, 1.2, 3, 5),
-        (2, 1.2, 1.7624, 5, None),  # to the branch (piece C)'s start
+        # Cut at B's end: no block over the branch join (1.5124–1.7624), where there's no road.
+        (2, 1.2, 1.5124, 5, None),
         (3, 1.7624, 1.9624, None, None),
     ]
+    assert b.dtypes.astype(str).tolist() == ['int32', 'int32', 'float32', 'float32', 'Int32', 'Int32']
+    # A crash row's block: the last block starting at or before it (float32), the first below all.
+    c_lo = b['chain_lo'].tolist()
+    pos = pd.Series([0.0, 0.3999, 0.4, 1.2, 1.5124, 1.6, c_lo[3], 1.9624, -0.001, np.nan, 0.5])
+    ent = pd.Series([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7])
+    assert block_of(b, ent, pos).tolist() == [0, 0, 1, 2, 2, 2, 3, 3, 0, pd.NA, pd.NA]
+    # A crash at a node is in the block that starts there, wherever its own point is.
+    be = pd.DataFrame({'entity': [0, 0, 0, 0], 'chain': [0.39, 0.41, 0.39, np.nan], 'node': pd.array([3, 3, pd.NA, 5], dtype='Int32')})
+    assert r(block_pos(be, ne)) == [0.4, 0.4, 0.39, None]
+    assert block_of(b, be['entity'], block_pos(be, ne)).tolist() == [1, 1, 0, pd.NA]
 
 
 # --- Real fixtures (build) ---------------------------------------------------------------------
@@ -309,3 +321,110 @@ def test_real_nodes_and_west_side_inclusive(built):
         ('hudson/jersey-city/duncan-avenue', 'hudson/jersey-city/west-side-avenue'),
         ('hudson/jersey-city/west-side-avenue', 'hudson/jersey-city/duncan-avenue'),
     ]
+
+
+def test_real_blocks_match_crash_rows(built):
+    """`road-blocks` counts are exactly the crash rows grouped by their `block` column, and that column
+    is reproducible from the stored float32 values alone (specs/road-model-v5.md § v5.1): a row's
+    position is its node's `road-node-entities.chain` when it's at a node, else its `chain`; its block
+    is the entity's last block with `chain_lo` ≤ that (the first block when below all)."""
+    blocks, be, xs = built.o['road-blocks'], built.by_entity, built.o['xs']
+    keys = blocks[['entity', 'block']].astype('int64')
+
+    def grouped(df):
+        d = df[df['block'].notna().to_numpy()]
+        g = d.groupby([d['entity'].astype('int64'), d['block'].astype('int64')]).size()
+        return keys.merge(g.rename('n').reset_index(), on=['entity', 'block'], how='left')['n'].fillna(0).astype(int).tolist()
+
+    assert blocks['n_crashes'].tolist() == grouped(be)
+    assert blocks['n_crashes_xs'].tolist() == grouped(xs)
+    # Every placed row has a block, unplaced ones none; xs rows have one where the node has a chain.
+    assert (be['block'].notna() == be['chain'].notna()).all()
+    assert (xs['block'].notna() == xs['chain'].notna()).all()
+    assert int(blocks['n_crashes'].sum()) == int(be['chain'].notna().sum())
+    # The frontend's rule, on the written (float32) values.
+    ne = built.o['road-node-entities'].set_index(['entity', 'node'])['chain']
+    lo = {e: g['chain_lo'].to_numpy(dtype='float32') for e, g in blocks.groupby('entity')}
+
+    def fe_block(e, pos):
+        i = int(np.searchsorted(lo[e], np.float32(pos), side='right')) - 1
+        return max(i, 0)
+
+    for df in (be, xs):
+        placed = df[df['chain'].notna().to_numpy()]
+        pos = [
+            ne.get((int(e), int(n)), c) if not pd.isna(n) else c
+            for e, n, c in zip(placed['entity'], placed['node'], placed['chain'].astype('float32'))
+        ]
+        assert [fe_block(int(e), p) for e, p in zip(placed['entity'], pos)] == placed['block'].astype(int).tolist()
+    # West Side Ave (the fixture has one node on it, Duncan Ave): the block before the Journal
+    # Square gap ends at its piece's end, and the next starts after the gap (v5: one block across it).
+    wsa = built.ents.set_index('slug').loc['hudson/jersey-city/west-side-avenue', 'entity']
+    w = blocks[blocks['entity'] == wsa]
+    assert [tuple(r(x, 3)) + (None if pd.isna(a) else 'node', None if pd.isna(z) else 'node') for x, a, z in zip(w[['chain_lo', 'chain_hi']].values.tolist(), w['node_lo'], w['node_hi'])] == [
+        (0.0, 1.956, None, 'node'),
+        (1.956, 2.942, 'node', None),
+        (3.154, 3.484, None, None),
+    ]
+
+
+def test_block_stats_and_xs_counts():
+    blocks = pd.DataFrame({'entity': [0, 0], 'block': [0, 1], 'chain_lo': [0.0, 0.5], 'chain_hi': [0.5, 1.0]}).astype({'entity': 'int32', 'block': 'int32', 'chain_lo': 'float32', 'chain_hi': 'float32'})
+    be = pd.DataFrame({'entity': [0, 0, 0, 0], 'block': pd.array([0, 1, 1, pd.NA], dtype='Int32'), 'severity': ['f', 'i', 'p', 'p'], 'tk': [1, 0, 0, 0]})
+    xs = pd.DataFrame({'entity': [0], 'block': pd.array([1], dtype='Int32'), 'severity': ['i'], 'tk': [0]})
+    out = block_stats(blocks, be, xs)
+    assert out.drop(columns=['chain_lo', 'chain_hi']).values.tolist() == [
+        [0, 0, 1, 1, 0, 1, 0, 0, 0, 0],
+        [0, 1, 2, 0, 1, 0, 1, 0, 1, 0],
+    ]
+    assert out.columns.tolist() == [
+        'entity', 'block', 'chain_lo', 'chain_hi', 'n_crashes', 'n_fatal', 'n_injury', 'n_killed',
+        'n_crashes_xs', 'n_fatal_xs', 'n_injury_xs', 'n_killed_xs',
+    ]
+
+
+def test_corridor_only_rows():
+    """A road name several entities carry ("48TH ST": East / West 48th Street) → the crash goes on
+    their corridor, on a representative member: the one its cross street's intersection is on
+    (then it's that side, not corridor-only), else the one in its muni, else the spine."""
+    corridors = pd.DataFrame({'corridor': [0], 'spine': [11]})
+    corridor_of = {10: 0, 11: 0}
+    ents = pd.DataFrame({'entity': [10, 11, 12], 'cc': [9, 9, 9], 'mc': pd.array([1, 1, 2], dtype='Int16')})
+    pieces = pd.DataFrame({'entity': [10, 11, 12], 'chain_hi': [0.15, 0.6, 1.0]})
+    by_entity = pd.DataFrame({
+        'entity': pd.Series([], dtype='int32'), 'id': pd.Series([], dtype='Int64'), 'cc': pd.Series([], dtype='Int8'),
+        'mc': pd.Series([], dtype='float64'), 'road': pd.Series([], dtype='string'), 'sri': pd.Series([], dtype='string'),
+        'mp': pd.Series([], dtype='float32'), 'chain': pd.Series([], dtype='float64'), 'lat': pd.Series([], dtype='float64'),
+        'lon': pd.Series([], dtype='float64'), 'loc_source': pd.Series([], dtype='string'), 'corridor_only': pd.Series([], dtype='bool'),
+    })
+    cands = pd.DataFrame({
+        'id': [1, 2, 3, 4], 'cc': [9, 9, 9, 9], 'mc': [1.0, 2.0, 1.0, 1.0], 'road': ['48TH ST', '48TH ST', '48TH ST', 'MAIN ST'],
+        'lat': [40.6, 40.6, 40.6, 40.6], 'lon': [-74.1] * 4, 'loc_source': ['none'] * 4,
+        '_cands': [(10, 11), (10, 11), (10, 11), (10, 12)],
+    })
+    out = corridor_only_rows(cands, corridor_of, corridors, ents, pieces, by_entity, at_node={2: {10}})
+    assert out[['id', 'entity', 'loc_source', 'corridor_only']].values.tolist() == [
+        # muni 1: both candidates are in it; the spine
+        [1, 11, 'name_only', True],
+        # muni 2 has neither: the spine
+        [2, 11, 'name_only', True],
+        # its cross street meets only East (10): that side
+        [3, 10, 'name_only', False],
+        # (10, 12: no one corridor — dropped)
+    ]
+    assert out[['sri', 'mp', 'lat', 'lon', 'chain']].isna().all().all()
+    assert out.dtypes.astype(str).to_dict() == by_entity.dtypes.astype(str).to_dict()
+
+
+def test_locate_several_roads_named():
+    """A name on several entities in the muni, no cross street → `none` with the candidates."""
+    import shapely
+    from njdot.loc_recovery import _locate_one
+    lines = np.array([shapely.LineString([(0, 0), (100, 0)]), shapely.LineString([(200, 0), (300, 0)])])
+    ctx = dict(
+        lines=lines, segs_by={(9, 1, '48THST'): np.array([0, 1])}, segs_named={(9, 1, '48THST'): np.array([0, 1])}, segs_cc={},
+        seg_ent=np.array([10.0, 11.0]), seg_sris=np.array([None, None], dtype=object), sri_lines={}, ent_sris={}, sri_ent={}, snapper=None,
+    )
+    assert _locate_one(9, 1, ('48THST',), None, pd.NA, pd.NA, 0.0, '', None, False, False, None, **ctx) == ('none', None, None, None, frozenset({10, 11}))
+    one = dict(ctx, seg_ent=np.array([10.0, 10.0]))
+    assert _locate_one(9, 1, ('48THST',), None, pd.NA, pd.NA, 0.0, '', None, False, False, None, **one) == ('name_only', None, None, None, 10)
