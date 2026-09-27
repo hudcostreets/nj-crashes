@@ -81,7 +81,7 @@ export function RoadPanel({ info, notFound, roadSummary, scope, onClose, onZoomT
             </div>
             <div style={{ overflow: "auto" }}>
                 {scope.crashesLoading && info && !crashes && <div style={{ padding: 10, color: dim }}>Loading crashes…</div>}
-                {crashes && <RoadCrashTable rows={rows} multiSri={multiSri} v5={v5} roadNames={roadNames} chainOf={scope.displayChain} theme={theme} headerBg={bg} />}
+                {crashes && <RoadCrashTable rows={rows} multiSri={multiSri} v5={v5} roadNames={roadNames} chainOf={scope.displayChain} corridorName={scope.corridor?.name} theme={theme} headerBg={bg} />}
                 {crashes && crashes.length > TABLE_ROWS && (
                     <div style={{ padding: "4px 10px", color: dim, fontSize: "0.8em" }}>
                         Showing {TABLE_ROWS} of {crashes.length.toLocaleString()} ({v5 ? "along the road" : "by SRI, MP"}; no-location last) — export for all.

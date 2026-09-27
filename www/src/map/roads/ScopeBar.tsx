@@ -3,6 +3,7 @@
  *  by the map's `RoadPanel` and the road page. */
 import type { CSSProperties } from "react"
 import { Tooltip } from "@/src/tooltip"
+import { corridorOnlyTip } from "./RoadCrashTable"
 import { addTotals, SCOPE_LABELS, SCOPE_LEVELS, type ScopeLevel, type Totals } from "./roadScope"
 import type { RoadScope } from "./useRoadScope"
 
@@ -112,7 +113,26 @@ export function ScopeBar({ scope, mapHints, theme, style }: ScopeBarProps) {
                     {shown && <div style={{ color: dim, fontSize: "0.9em" }}>{fmtTotals(shown)}</div>}
                 </div>
             )}
-            {scope.crashesLoading && !counts && <div style={{ color: dim, fontSize: "0.85em" }}>Loading…</div>}
+            {counts && scope.corridorOnly > 0 && (
+                <div style={{ color: dim, fontSize: "0.85em" }}>
+                    <Tooltip title={corridorOnlyTip(scope.corridor?.name)}>
+                        <span style={{ borderBottom: `1px dotted ${dim}`, cursor: "help" }}>
+                            incl. {scope.corridorOnly.toLocaleString()} located to the {scope.corridor ? `${scope.corridor.name} ` : ""}corridor
+                            {" "}(side unknown)
+                        </span>
+                    </Tooltip>
+                </div>
+            )}
+            {scope.pinnedHere > 0 && (
+                <div style={{ color: dim, fontSize: "0.85em" }}>
+                    <Tooltip title="Crashes on this road without a map point, whose cross street puts them at or near an intersection here (within the distance police stated). They're listed (“≈ here”), but not in the counts above, which are the crashes located along the road.">
+                        <span style={{ borderBottom: `1px dotted ${dim}`, cursor: "help" }}>
+                            + {scope.pinnedHere.toLocaleString()} approximately here (no map point; listed, not counted)
+                        </span>
+                    </Tooltip>
+                </div>
+            )}
+            {scope.crashesLoading && !counts &&<div style={{ color: dim, fontSize: "0.85em" }}>Loading…</div>}
             {scope.crashesError && <div style={{ color: "#d55", fontSize: "0.85em" }}>Error loading crashes: {String(scope.crashesError)}</div>}
             {scope.v5 && (
                 <label style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3, fontSize: "0.85em", cursor: "pointer" }}>
