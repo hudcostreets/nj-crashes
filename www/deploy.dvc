@@ -10,7 +10,7 @@ meta:
       wrangler.toml: df0bfaa9ba3c730f2e9aa4eb35e5d48c8c3033b3
       worker: db9cc02954cba1516ba97276ccf7d134199e0b71
       deploy.sh: ac36bd7084941cf7db0b57772dc6524aa40173ae
-      src: d807046bc9823e5f81d0395f440925ace4216058
-      public: 9f82e7e395787fe52471c64a3253f7cc9c49b9d3
+      src: cc62a548a0f4e1d62b3398532f30163b4df2e6b9
+      public: 16cb4e48e80a0cc70207094cbd22e3762fff9a85
       package.json: 27bb0375bb163ff2eabffec233ce3240d1a59b41
       functions: 48171a2aa21c60fcf33347a3e0b7c04a798e8f4d
