@@ -25,6 +25,6 @@ config:
     # DAG reproc / targeted rebuilds, with push-back to `reproc-results/*`.
     nj-crashes-reproc:
       arch: ARM64
-      ref: 737ac0312645db26dfbd69f10b30a46041440472
+      ref: 3a6da77a6adc9b1e85dcd7f1d8ed45d3819464ad
       secrets: true
 encryptionsalt: v1:rpjZN+paDWQ=:v1:RHHHDa5nXKjyKcVl:flPS60rJuBrIAaLbufwGcBJIP7CQ+w==
