@@ -56,13 +56,13 @@ describe("pickWord", () => {
 })
 
 describe("wordFilters", () => {
-    it("fetches the canonical tokens and, for the word being typed, a prefix range: one pushable filter each", () => {
+    it("fetches the canonical tokens (one `=` / `IN`) and, for the word being typed, a prefix range (a separate query)", () => {
         const [kenn] = queryWords("kenn")
         expect(wordFilters(kenn)).toEqual(["token >= 'kenn' AND token < 'keno'"])
         const [, side] = queryWords("west side ")
         expect(wordFilters(side)).toEqual(["token = 'side'"])
         const [st] = queryWords("st ")
-        expect(wordFilters(st)).toEqual(["token = 'street'", "token = 'saint'"])
+        expect(wordFilters(st)).toEqual(["token IN ('street', 'saint')"])
         const [blvd] = queryWords("blvd")
         expect(wordFilters(blvd)).toEqual(["token = 'boulevard'", "token >= 'blvd' AND token < 'blve'"])
         const [ave] = queryWords("ave")

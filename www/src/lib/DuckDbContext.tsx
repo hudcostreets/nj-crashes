@@ -35,19 +35,29 @@ async function initDuckDb(): Promise<AsyncDuckDB> {
     const worker = await createWorker(bundle.mainWorker)
     const db = new AsyncDuckDB(SilentLogger, worker)
     await db.instantiate(bundle.mainModule, bundle.pthreadWorker)
-    await db.open({ path: ":memory:", query: { castBigIntToDouble: true } })
+    await db.open({
+        path: ":memory:",
+        query: { castBigIntToDouble: true },
+        // Ranged reads of `http(s)://` files (specs/road-data-v4.md § Measurement). DuckDB-WASM ≥1.30
+        // otherwise defaults to `forceFullHTTPReads`, one GET of the whole file per query. Full reads
+        // stay a fallback for servers that don't answer a ranged HEAD with a 206.
+        filesystem: { forceFullHTTPReads: false, reliableHeadRequests: true, allowFullHTTPReads: true },
+    })
     await enableMetadataCache(db)
     return db
 }
 
 /** Cache parquet footers across queries (the road files have many small row groups, so a footer
- *  is often bigger than the rows a lookup reads; specs/road-data-v4.md § Measurement). This
- *  DuckDB-WASM build predates the `parquet_metadata_cache` name; `enable_object_cache` is the
- *  same setting. A failure only costs repeat footer reads, so it's logged, not thrown. */
+ *  is often bigger than the rows a lookup reads). A failure only costs repeat footer reads, so
+ *  it's logged, not thrown.
+ *
+ *  Not `LOAD httpfs`: its reads are exact (per column chunk, ~30–60% fewer bytes), but that's
+ *  many more requests, each a synchronous round trip in the worker, so road lookups against R2
+ *  were 2–4× slower than with DuckDB-WASM's own read-ahead. */
 async function enableMetadataCache(db: AsyncDuckDB) {
     const conn = await db.connect()
     try {
-        await conn.query("SET GLOBAL enable_object_cache = true")
+        await conn.query("SET GLOBAL parquet_metadata_cache = true")
     } catch (e) {
         console.warn("DuckDB: couldn't enable the parquet metadata cache:", e)
     } finally {

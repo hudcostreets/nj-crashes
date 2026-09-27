@@ -1,7 +1,6 @@
 /** Road search by name (omnibar), over `road-search.parquet`: a word index of every road's name,
  *  route designations and aliases, one row per `(token, name)` (specs/road-data-v4.md § road-search). */
 import type { AsyncDuckDB } from "@duckdb/duckdb-wasm"
-import { asyncBufferFromUrl, parquetMetadataAsync } from "hyparquet"
 import { runQuery } from "@/src/lib/DuckDbContext"
 import { roadsUrl, type Bbox } from "./roadsData"
 
@@ -60,15 +59,16 @@ export function prefixEnd(p: string): string {
     return p.slice(0, -1) + String.fromCharCode(p.charCodeAt(p.length - 1) + 1)
 }
 
-/** `WHERE` clauses fetching `q`'s rows, one query each: its exact canonical tokens, plus a
- *  prefix range when it's being typed (tokens are `[a-z0-9]`, so they're safe to inline). Each is
- *  a single `=` or range, which DuckDB-WASM's DuckDB (v0.9) pushes into the row-group stats; it
- *  doesn't push `OR` / `IN`, and scans the whole file for them. */
+/** `WHERE` clauses fetching `q`'s rows, one query each: its exact canonical tokens (one `=` / `IN`),
+ *  and a prefix range when it's being typed (tokens are `[a-z0-9]`, so they're safe to inline).
+ *  DuckDB prunes row groups for each, but hardly for an `OR` of the two: `token = 'boulevard' OR
+ *  <blvd range>` reads ~9× the bytes of the two queries. */
 export function wordFilters(q: QueryWord): string[] {
     const prefix = q.prefix !== null && q.prefix.length > 1 ? q.prefix : null
     const exact = q.exact.filter(t => prefix === null || !t.startsWith(prefix))
     return [
-        ...exact.map(t => `token = '${t}'`),
+        ...(exact.length === 1 ? [`token = '${exact[0]}'`] : []),
+        ...(exact.length > 1 ? [`token IN (${exact.map(t => `'${t}'`).join(", ")})`] : []),
         ...(prefix !== null ? [`token >= '${prefix}' AND token < '${prefixEnd(prefix)}'`] : []),
     ]
 }
@@ -122,16 +122,13 @@ const SEARCH_COLS = "entity, slug, name, matched, kind, words, subt, n_crashes, 
 let cappedTokens: Promise<Set<string>> | null = null
 
 /** The index's capped tokens (key-value metadata `capped_tokens`: `{token: full count}`), read once
- *  per session. Via hyparquet: DuckDB-WASM's DuckDB (v0.9) has no `parquet_kv_metadata`. The
- *  footer is ~100 KB, so one 128 KB tail read covers it. */
-function fetchCapped(): Promise<Set<string>> {
+ *  per session. Reading it caches the footer, so the search query that follows doesn't re-read it. */
+function fetchCapped(db: AsyncDuckDB): Promise<Set<string>> {
     if (!cappedTokens) {
-        cappedTokens = asyncBufferFromUrl({ url: roadsUrl("road-search") })
-            .then(buf => parquetMetadataAsync(buf, { initialFetchSize: 1 << 17 }))
-            .then(md => {
-                const kv = md.key_value_metadata?.find(({ key }) => key === "capped_tokens")
-                return new Set(Object.keys(kv?.value ? JSON.parse(kv.value) as Record<string, number> : {}))
-            })
+        cappedTokens = runQuery<{ value: string }>(db, `
+            SELECT decode(value) AS value FROM parquet_kv_metadata('${roadsUrl("road-search")}')
+            WHERE decode(key) = 'capped_tokens'
+        `).then(([row]) => new Set(Object.keys(row ? JSON.parse(row.value) as Record<string, number> : {})))
         cappedTokens.catch(() => { cappedTokens = null })
     }
     return cappedTokens
@@ -142,7 +139,7 @@ function fetchCapped(): Promise<Set<string>> {
  *  knows where road-search data lives. */
 export async function searchRoads(db: AsyncDuckDB, query: string, limit: number): Promise<RoadSearchRow[]> {
     const words = queryWords(query)
-    const q = pickWord(words, await fetchCapped())
+    const q = pickWord(words, await fetchCapped(db))
     if (!q) return []
     const rows = await Promise.all(wordFilters(q).map(where => runQuery<RoadSearchRow>(db, `
         SELECT ${SEARCH_COLS} FROM read_parquet('${roadsUrl("road-search")}') WHERE ${where}
