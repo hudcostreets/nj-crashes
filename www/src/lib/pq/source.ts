@@ -67,7 +67,10 @@ export function coalesce(ranges: readonly ByteRange[], gap: number): ByteRange[]
     return out
 }
 
-export const DEFAULT_TAIL = 1 << 18
+/** First footer read. Small, since the whole read is wasted beyond the footer: bigger footers (the
+ *  road files' are 15 KB–1 MB) cost one more, exact, read. Callers reading a small file whole pass a
+ *  `tail` covering the file (one request). */
+export const DEFAULT_TAIL = 1 << 16
 export const DEFAULT_GAP = 1 << 16
 
 export class ParquetFile {

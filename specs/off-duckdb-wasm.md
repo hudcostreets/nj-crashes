@@ -48,7 +48,7 @@ Not DuckDB: `njdot/CrashPlot.tsx` and crash tables (cells API / D1 API), `/raw/*
 
 ## Design: `www/src/lib/pq/`
 
-- **Source / metadata cache** (`source.ts`): `openParquet(url)` is memoized per URL. One suffix-range read (`Range: bytes=-N`, default 256 KiB) gets the footer and the file length (`Content-Range`, which the R2 bucket exposes via CORS); a footer bigger than that (e.g. `crashes-by-entity`: 1.05 MB) costs one more read of exactly the missing bytes. Files smaller than the first read (all NJSP files) arrive whole in that one request and are served from memory thereafter. Every later read of that URL reuses the parsed `FileMetaData` (DuckDB-WASM re-read the footer unless `enable_object_cache` hit).
+- **Source / metadata cache** (`source.ts`): `openParquet(url)` is memoized per URL. One suffix-range read (`Range: bytes=-N`, default 64 KiB) gets the footer and the file length (`Content-Range`, which the R2 bucket exposes via CORS); a footer bigger than that (road footers are 15 KB–1.05 MB) costs one more read of exactly the missing bytes. (A 256 KiB default saved that RTT but wasted ~200 KB per small-footer file, e.g. tripling `road-ranks` bytes.) The NJSP plots pass `tail: 256 KiB`, so each of their files (≤ 255 KB) arrives whole in one request. Vite's dev server (sirv) answers `bytes=-N` with the file's *head*; `httpRangeFetch` detects that from `Content-Range` and re-asks for the tail explicitly. Every later read of that URL reuses the parsed `FileMetaData` (DuckDB-WASM re-read the footer unless `enable_object_cache` hit).
 - **Pruning** (`filter.ts`): a small typed filter (`{ col: value }` = eq; `{ col: { $in, $gt, $gte, $lt, $lte, $ne, $null } }`; `$and` / `$or`), evaluated against each row group's column statistics (`min_value`/`max_value`, `null_count`) — equality, ranges, `IN` lists, `IS [NOT] NULL`, and `OR`s all prune. Rows are then matched with SQL null semantics (a comparison with null is false).
 - **Reads** (`query.ts`): `readRows(url, { columns, filter, orderBy, limit })`: prune row groups, compute the needed column chunks' byte ranges, coalesce ranges < 64 KiB apart, fetch them in parallel, decode with hyparquet (ZSTD via `fzstd`), normalize values to what `runQuery` returned (INT64 `bigint` → `number`, timestamps → epoch ms), filter, project, sort (nulls last, like DuckDB's default), limit. `columns` is present-only, like the old `COLUMNS('^(…)$')`: columns a build doesn't have are just absent from rows.
 - **Ops** (`ops.ts`): `sortRows`, `groupSum` for the plots' `GROUP BY year` sums.
@@ -63,12 +63,37 @@ Not DuckDB: `njdot/CrashPlot.tsx` and crash tables (cells API / D1 API), `/raw/*
 
 ## Parity
 
-Per ported query, compare to DuckDB on the real files: a vitest (`src/lib/pq/parity.test.ts`) runs each ported fetch through `pq` over local files and the original SQL through the `duckdb` CLI (skipped when either is unavailable), asserting equal rows.
+- `www/src/map/roads/roadsData.parity.test.ts`: every road fetcher (entity by id / slug, summaries, corridor + its summary, ranks, geom, hit bbox, entity crashes view + full, `-xs` whole / block span / chain span, span crashes (block / chain / closed-end × v5.1 on/off), entity names, crash → entity by id and by PK, road search for 4 queries) through `pq` over the local files vs the replaced SQL via the `duckdb` CLI: equal as multisets, and the pq order checked against the `ORDER BY`. JFK Blvd: 36,157 crashes, identical.
+- `www/src/njsp/data.parity.test.ts`: the NJSP selectors vs the replaced SQL, statewide / Hudson / the top muni, incl. a victim-type subset and `projected.csv` sums.
+- Rendered-page A/B (`tmp/compare.mjs`, headless Chromium, before build vs after build): identical Plotly trace data and page text on `/`, `/c/hudson`, `/jersey-city`, `/c/atlantic`, and five `/road/…` views (span, whole, exact span, corridor scope `hudson-avenue?cor=1`, `xs=0`).
+
+## Results (vite build + preview; road files from a local range server with 40 ms latency; headless Chromium, fresh context per run, median of 3)
+
+Bundle: main `index.js` 4,012.7 → 3,834.0 kB (gzip 994.9 → 954.6 kB); `@duckdb/duckdb-wasm` JS moved to the `SqlPage` chunk (3.6 → 188.9 kB); app pages no longer fetch `duckdb-eh.wasm` + worker from unpkg (4.25 MB transferred per cold load). `fzstd` added (~8 kB).
+
+| page | ready (ms) before → after | road bytes (MB) / requests before → after | DuckDB wasm+worker |
+|---|---|---|---|
+| `/` (NJSP plots drawn) | 2,004 → 530 | – | 4.25 MB → 0 |
+| `/c/hudson` (plots; road ranks) | 2,936 → 477; ranks 2,887 → 563 | 2.68 / 20 → 2.04 / 5 | 4.25 MB → 0 |
+| `/jersey-city` | 2,774 → 429 | 3.85 / 20 → 1.91 / 5 | 4.25 MB → 0 |
+| `/road/hudson/j-f-kennedy-boulevard?span=6-7` (counts / rows / plots) | 4,894 / 4,894 / 4,894 → 837 / 837 / 886 | 4.46 / 66 → 3.39 / 20 | 4.25 MB → 0 |
+| `/road/hudson/j-f-kennedy-boulevard` | 2,048 / 4,296 / 4,335 → 297 / 809 / 839 | 4.81 / 59 → 3.71 / 19 | 4.25 MB → 0 |
+| `/map/hudson?road=hudson/j-f-kennedy-boulevard` (panel / rows) | 2,671 / 4,957 → 290 / 741 | 7.50 / 71 → 6.05 / 21 | 4.25 MB → 0 |
+
+"Before" requests include DuckDB's HEAD per file per query; it also re-read footers (`crashes-by-entity`'s is 1 MB). Before-timings include the wasm download + instantiate; warm-cache before-timings (CIC, wasm cached) were ~1–2 s on `/` and ~4–5 s on road pages.
+
+## Behavior differences
+
+- An empty projection selection sums to 0 (SQL `sum` gave NULL; the plot's initial value was all-zeros anyway).
+- Small NJSP files are fetched with a `Range` header, so a server that gzips whole responses (vite preview) sends them uncompressed (+~70 KB on `/`); CF Pages doesn't compress `.parquet`.
+- `/sql` now initializes DuckDB on first visit (the Run button reads "Loading DuckDB…" until then).
+- `e2e/perf-har/*.json` goldens still expect the DuckDB requests; regenerate with `pnpm test:perf:update`.
 
 ## Status
 
-- [ ] Phase 1: data layer
-- [ ] Phase 2: road paths
-- [ ] Phase 3: NJSP plots
-- [ ] Phase 4: lazy DuckDB, dead code
-- [ ] Measurements (before → after)
+- [x] Phase 1: data layer (`804527d7936`)
+- [x] Phase 2: road paths (`adf92422d31`)
+- [x] Phase 3: NJSP plots (`07454ebf474`)
+- [x] Phase 4: lazy DuckDB, dead code
+- [x] Measurements (before → after)
+- [ ] Regenerate `e2e/perf-har` goldens; drop the unused `@rdub/duckdb` dependency.

@@ -1,3 +1,5 @@
+/** DuckDB-WASM for `/sql` (`SqlPage` mounts the provider; nothing else imports this module, so
+ *  `@duckdb/duckdb-wasm` stays in that route's chunk). */
 import { createContext, useContext, useEffect, useState, ReactNode } from "react"
 import {
     AsyncDuckDB,
@@ -104,56 +106,4 @@ export async function runQuery<T = Record<string, unknown>>(db: AsyncDuckDB, que
             await conn.close()
         }
     }
-}
-
-export type QueryState<T> = {
-    data: T[]
-    /** True until the query settles. Distinguishes "not back yet" from
-     *  "came back empty" — `data.length === 0` alone conflates the two, and
-     *  a caller that treats empty as "still loading" shows a spinner forever
-     *  for a region that legitimately has no rows. */
-    loading: boolean
-}
-
-/**
- * Hook-style wrapper around runQuery, exposing settle state.
- */
-export function useQueryState<T = Record<string, unknown>>({ db, query, init }: {
-    db: AsyncDuckDB | null
-    query: string | null
-    init: T[]
-}): QueryState<T> {
-    const [data, setData] = useState(init)
-    const [loading, setLoading] = useState(true)
-    useEffect(() => {
-        if (!db || !query) return
-        // A prior query's result must not land after a newer one.
-        let live = true
-        runQuery<T>(db, query)
-            .then(rows => { if (live) { setData(rows); setLoading(false) } })
-            .catch(err => {
-                console.error(`useQuery error:`, err, `\nQuery: ${query}`)
-                if (live) setLoading(false)
-            })
-        return () => { live = false }
-    }, [db, query])
-    return { data, loading }
-}
-
-/**
- * Hook-style wrapper around runQuery.
- */
-export function useQuery<T = Record<string, unknown>>({ db, query, init }: {
-    db: AsyncDuckDB | null
-    query: string | null
-    init: T[]
-}): T[] {
-    const [data, setData] = useState(init)
-    useEffect(() => {
-        if (!db || !query) return
-        runQuery<T>(db, query).then(setData).catch(err => {
-            console.error(`useQuery error:`, err, `\nQuery: ${query}`)
-        })
-    }, [db, query])
-    return data
 }

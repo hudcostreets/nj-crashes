@@ -1,4 +1,5 @@
-/** Minimal SQL REPL backed by DuckDB-WASM.
+/** Minimal SQL REPL backed by DuckDB-WASM: the one route that loads it (this lazy route's chunk
+ *  holds `@duckdb/duckdb-wasm`; app pages read parquet via `@/src/lib/pq`).
  *
  *  Query params:
  *    ?path=raw/njdot/...   — pre-fill with `SELECT * FROM read_parquet('<worker-url>') LIMIT 100`
@@ -11,7 +12,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { useUrlState, defStringParam, stringParam } from "use-prms"
 import { Head } from "@/src/lib/head"
-import { useDb, runQuery } from "@/src/lib/DuckDbContext"
+import { DuckDbProvider, useDb, runQuery } from "@/src/lib/DuckDbContext"
 import { rawGetUrl } from "@/src/raw/api"
 
 type Row = Record<string, unknown>
@@ -30,6 +31,10 @@ function fmt(v: unknown): string {
 }
 
 export default function SqlPage() {
+    return <DuckDbProvider><SqlRepl /></DuckDbProvider>
+}
+
+function SqlRepl() {
     const db = useDb()
     const [path] = useUrlState("path", stringParam())
     const [q, setQ] = useUrlState("q", defStringParam(""))
