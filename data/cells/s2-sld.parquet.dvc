@@ -1,0 +1,16 @@
+outs:
+- md5: dd686d467d7d4146a091b680f79067fc
+  size: 28284519
+  hash: md5
+  path: s2-sld.parquet
+meta:
+  computation:
+    cmd: cd ../.. && njdot compute cells sld
+    mem_gb: 16
+    deps:
+      raw/s2_l21:
+      /njdot/data/nj_mp_tenths.parquet:
+      /www/public/Municipal_Boundaries_of_NJ.geojson:
+    git_deps:
+      /njdot/cli/cells.py:
+      /njdot/sld.py:
