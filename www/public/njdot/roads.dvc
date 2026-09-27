@@ -1,9 +1,9 @@
 outs:
 - path: roads
-  md5: ed83c8de7b7a5ccd2440b729cd839bab.dir
-  size: 464218837
+  md5: 8184be088a152cfbee054ed8344bbfa9.dir
+  size: 467780123
   hash: md5
-  nfiles: 20
+  nfiles: 21
 meta:
   computation:
     cmd: njdot roads build
@@ -17,14 +17,14 @@ meta:
       /njdot/data/ng911: 8fff34c5fb121af223ec7a02f8e03318
       cc2mc2mn.json: 21626cd6b5ed02264335837141b86984
     git_deps:
-      /njdot/cli/roads.py: 4bd1e7650b285948c641ca7a96cbd911c9c458e3
+      /njdot/cli/roads.py: 608fdcf61624348b01ee64eb60eaa1d4d6fb7d57
       /njdot/map_base.py: 83c056e31c57526849e6b48914095b474838de31
       /njdot/load.py: c07ec1c009aeb3be394fd4ca235860a05bcf8f35
-      /njdot/road_net.py: 6e14cd419e03a9a91a6ddb7b8fdbfd9759c919de
+      /njdot/road_net.py: 8db7216392e58ef5b3c108f46f5a4639bd499673
       /njdot/road_sources.py: 16f90a6b0f8f9b6e082ac31fee649c7619c6075b
-      /njdot/road_outputs.py: 26bd974b466c1dd4ab472d8be81655d1012cd2b6
+      /njdot/road_outputs.py: 4699c51df55e64b252288c45537258ead7b67e71
       /njdot/cc2mc2mn.py: 100cbbb7521f7b3ae87df50088b849705a253f87
-      /njdot/loc_recovery.py: 5521711c663e939c70e0f6cb9b9ce88f282c394d
-      /njdot/road_model.py: 5c23fcd47e7baceaa5f3f39bd4f1bcf83c137a43
+      /njdot/loc_recovery.py: 9cd836ffef53de3aebd5bc8e57b088976d29fdff
+      /njdot/road_model.py: a8c87e0dd62d755a2874123b38996520283204ad
       /njdot/road_overrides.py: f5f1b42b0bc78966d30a911336813ea2d30a98cd
       /njdot/data/road_overrides.yml: bdd4d8bcd2ca4afebf2025a752312dd1645072d6
