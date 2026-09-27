@@ -3,6 +3,7 @@
  *  the page still scrolls over it (drag / pinch / double-click / the ± buttons zoom). */
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Map as MapGl } from "react-map-gl/maplibre"
+import "./maplibreWorker"
 import "maplibre-gl/dist/maplibre-gl.css"
 import DeckGL from "@deck.gl/react"
 import { WebMercatorViewport, type PickingInfo } from "@deck.gl/core"
