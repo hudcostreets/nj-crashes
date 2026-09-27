@@ -99,7 +99,7 @@ describe.skipIf(!enabled)("road reads: pq vs DuckDB", () => {
         const rows = await fetchEntityCrashes(JFK, true)
         sortedBy(rows, ["chain", "dt"])
         const n = same(rows, `SELECT ${VIEW} FROM read_parquet('${roadsUrl("crashes-by-entity")}') WHERE entity = ${JFK}`)
-        expect(n).toBe(36157)
+        expect(n > 30000).toBe(true)  // JFK Blvd; exact count moves with each roads rebuild
         expect(same(await fetchEntityCrashesFull(JFK, true), `SELECT * EXCLUDE (dt), epoch_ms(dt) AS dt FROM read_parquet('${roadsUrl("crashes-by-entity")}') WHERE entity = ${JFK}`)).toBe(n)
     })
 
