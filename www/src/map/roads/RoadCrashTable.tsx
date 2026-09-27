@@ -1,6 +1,8 @@
 /** A road's crash table + CSV export, shared by the map's `RoadPanel` and the road page. */
+import { useState, type CSSProperties } from "react"
 import { Link } from "react-router-dom"
-import type { RoadCrash } from "./roadsData"
+import { useDb } from "@/src/lib/DuckDbContext"
+import { fetchEntityCrashesFull, type RoadCrash, type RoadCrashView } from "./roadsData"
 
 const CSV_COLS: (keyof RoadCrash)[] = [
     "sri", "mp", "dt", "year", "cc", "mc", "case", "severity", "tk", "ti", "pk", "pi", "tv",
@@ -31,12 +33,28 @@ export function downloadCsv(slug: string, rows: RoadCrash[]) {
     URL.revokeObjectURL(url)
 }
 
+/** Exports every column of every crash on the road; the views only load the columns they show. */
+export function ExportCsvButton({ entity, slug, disabled, style }: { entity: number; slug: string; disabled?: boolean; style: CSSProperties }) {
+    const db = useDb()
+    const [busy, setBusy] = useState(false)
+    const onClick = async () => {
+        if (!db) return
+        setBusy(true)
+        try {
+            downloadCsv(slug, await fetchEntityCrashesFull(db, entity))
+        } finally {
+            setBusy(false)
+        }
+    }
+    return <button style={style} disabled={disabled || busy || !db} onClick={onClick}>{busy ? "Exporting…" : "Export CSV"}</button>
+}
+
 export function crashHref(r: Pick<RoadCrash, "year" | "cc" | "mc" | "case">): string {
     return `/crash/${r.year}/${r.cc}/${r.mc}/${encodeURIComponent(r.case)}`
 }
 
 export type RoadCrashTableProps = {
-    rows: RoadCrash[]
+    rows: RoadCrashView[]
     /** Show the SRI column (roads spanning several SRIs). */
     multiSri: boolean
     theme: "light" | "dark"

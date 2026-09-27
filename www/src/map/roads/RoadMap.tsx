@@ -4,20 +4,20 @@ import { PathLayer, ScatterplotLayer } from "@deck.gl/layers"
 import type { PickingInfo } from "@deck.gl/core"
 import MiniMap, { type Bbox } from "../MiniMap"
 import { SEVERITY_COLOR, severityRgba, type Severity } from "../basemap"
-import type { RoadCrash } from "./roadsData"
+import type { RoadCrashView } from "./roadsData"
 
 const SEV_ORDER: Record<string, number> = { p: 0, i: 1, f: 2 }
 const SEV_LABEL: Record<Severity, string> = { f: "Fatal", i: "Injury", p: "Property" }
 
-type Located = RoadCrash & { lat: number; lon: number }
+type Located = RoadCrashView & { lat: number; lon: number }
 
 export type RoadMapProps = {
     paths: [number, number][][]
-    crashes: RoadCrash[]
+    crashes: RoadCrashView[]
     bounds: Bbox
     theme: "light" | "dark"
     height?: number
-    onCrashClick?: (c: RoadCrash) => void
+    onCrashClick?: (c: RoadCrashView) => void
 }
 
 function sevOf(s: string): Severity {
@@ -64,7 +64,7 @@ export default function RoadMap({ paths, crashes, bounds, theme, height = 450, o
             bounds={bounds}
             layers={layers}
             onHover={onHover}
-            onClick={info => { if (info.object && onCrashClick) onCrashClick(info.object as RoadCrash) }}
+            onClick={info => { if (info.object && onCrashClick) onCrashClick(info.object as RoadCrashView) }}
             hovering={!!hover}
         >
             {hover && (

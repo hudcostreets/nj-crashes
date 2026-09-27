@@ -8,14 +8,14 @@ import { usePlotColors } from "@/src/hooks/usePlotColors"
 import { EndYear, StartYear } from "@/src/constants"
 import { Radios } from "@/src/njdot/Radios"
 import { Severities, SeverityColorsDark, SeverityColorsLight, SeverityLabels } from "@/src/njdot/data"
-import type { RoadCrash } from "./roadsData"
+import type { RoadCrashView } from "./roadsData"
 import { monthStats, rollingMean, yearStats } from "./roadStats"
 
 const HEIGHT = 360
 
 type Granularity = "year" | "month"
 
-export function RoadPlots({ crashes }: { crashes: RoadCrash[] }) {
+export function RoadPlots({ crashes }: { crashes: RoadCrashView[] }) {
     const { isDark } = useTheme()
     const colors = usePlotColors()
     const sevColors = isDark ? SeverityColorsDark : SeverityColorsLight
