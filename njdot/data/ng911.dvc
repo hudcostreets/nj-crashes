@@ -1,0 +1,18 @@
+outs:
+- hash: md5
+  path: ng911
+meta:
+  computation:
+    cmd: njdot roads fetch-ng911
+    fetch:
+      schedule: manual
+    git_deps:
+      /njdot/arcgis.py:
+      /njdot/road_sources.py:
+    note: |
+      NJOGIS Road Centerlines of NJ (NG9-1-1), `Tran_road/FeatureServer`: `centerlines.parquet`
+      (layer 0: local street names, route shields, county/muni, `SRI` tag, `x`/`y` vertex lists) and
+      `aliases.parquet` (layer 1: name aliases by `RCL_NGUID`). Monthly upstream; source
+      `editingInfo` dates in each parquet's key-value metadata. Attribution requested: "NJ Office of
+      Information Technology, Office of GIS (NJOGIS)". Upstream fetch (`fetch:`, see
+      `roadway_network.parquet.dvc`).

@@ -13,8 +13,11 @@ meta:
       /njdot/data/crashes.parquet: 1211e215284ecc253b64b51dd211dd2c
       /njdot/data/aashto_supplemented_crashes.parquet: 372d541848b2252a1552a339c234c45a
       /njdot/data/crashes_geocode_backfill.parquet: d1d7d16ebbedf14669361e3b2a6db9f3
-      /njdot/data/nj_mp_tenths.parquet: 7f409f4625279b8ce87791748d28017c
+      /njdot/data/roadway_network.parquet:
+      /njdot/data/ng911:
     git_deps:
       /njdot/cli/roads.py: c27650afd4db4adff6120f0bab942c7bac324b69
       /njdot/map_base.py: 83c056e31c57526849e6b48914095b474838de31
       /njdot/load.py: c07ec1c009aeb3be394fd4ca235860a05bcf8f35
+      /njdot/road_net.py:
+      /njdot/road_sources.py:
