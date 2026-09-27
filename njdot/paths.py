@@ -51,6 +51,11 @@ AASHTO_SUPPLEMENTED_VEHICLES = f'{DOT_DATA}/aashto_supplemented_vehicles.parquet
 # `(year, cc, mc, case)`; merged in by `load_crashes_with_aashto`.
 CRASHES_GEOCODE_BACKFILL = f'{DOT_DATA}/crashes_geocode_backfill.parquet'
 
+# Map points `njdot roads build`'s location recovery adds / moves / removes (co-output of
+# `roads.dvc`; `njdot.map_base`'s "Recovered points" section). Read by the map-facing exports
+# (`compute cells raw`, `export_map_v2`), never by `roads build` itself.
+CRASH_RECOVERED_POINTS = f'{DOT_DATA}/crash_recovered_points.parquet'
+
 
 def aashto_year_path(year: int, name: str) -> str:
     return f'{DOT_DATA}/{year}/{name}'
