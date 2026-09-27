@@ -1,0 +1,17 @@
+outs:
+- hash: md5
+  path: roadway_network.parquet
+meta:
+  computation:
+    cmd: njdot roads fetch-network
+    fetch:
+      schedule: manual
+    git_deps:
+      /njdot/arcgis.py:
+      /njdot/road_sources.py:
+    note: |
+      NJDOT Roadway Network (the LRS: one M-aware polyline per SRI piece, milepost on every vertex),
+      from the `NJDOT_Roadway_Network/FeatureServer/0` ArcGIS service. One row per feature path with
+      `x`/`y`/`m` vertex lists (EPSG:4326). The source's `editingInfo` dates are in the parquet's
+      key-value metadata (`src_dataLastEditDate` …). Upstream fetch (`fetch:`, not `side_effect:`,
+      so dvx still records + pushes the output): excluded from reprocs by `batch/reproc-targets`.
