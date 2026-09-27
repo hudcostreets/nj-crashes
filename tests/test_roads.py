@@ -659,7 +659,7 @@ def test_real_write_outputs_layout(real_out, tmp_path):
     assert files == [
         'crashes-by-entity-xs.parquet', 'crashes-by-entity.parquet', 'crashes-by-sri.parquet',
         'road-blocks.parquet', 'road-corridor-summary-monthly.parquet', 'road-corridor-summary.parquet', 'road-corridors.parquet', 'road-entities.parquet',
-        'road-node-entities.parquet', 'road-nodes.parquet', 'road-pieces.parquet', 'road-ranks.parquet',
+        'road-node-entities.parquet', 'road-nodes.parquet', 'road-notes.parquet', 'road-pieces.parquet', 'road-ranks.parquet',
         'road-runs.parquet', 'road-search.parquet', 'road-summary-monthly.parquet', 'road-summary.parquet',
         'sri-geom.parquet', 'sri-hit-5.parquet', 'sri-hit-6.parquet', 'sri-hit.parquet', 'sris.parquet',
     ]
@@ -685,6 +685,7 @@ def test_real_write_outputs_layout(real_out, tmp_path):
         'crashes-by-entity-xs.parquet': [],
         'road-corridor-summary.parquet': [],
         'road-corridor-summary-monthly.parquet': [],
+        'road-notes.parquet': [],
         'crashes-by-entity.parquet': ['entity', 'chain'],
         'road-blocks.parquet': ['entity', 'chain_lo', 'chain_hi'],
         'road-corridors.parquet': ['corridor', 'slug'],

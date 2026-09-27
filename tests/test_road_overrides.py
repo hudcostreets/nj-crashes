@@ -1,9 +1,10 @@
 """Curated overrides (`njdot.road_overrides`) and the anomaly audit (`njdot.road_anomalies`)."""
+import numpy as np
 import pandas as pd
 import pytest
 
-from njdot.road_anomalies import pair_swings, review_queue, unplaced_share, yoy_breaks
-from njdot.road_overrides import ROAD_OVERRIDES, apply_overrides, load_overrides
+from njdot.road_anomalies import absorbed, corridor_yoy, pair_swings, review_queue, unplaced_share, yoy_breaks
+from njdot.road_overrides import ROAD_OVERRIDES, apply_overrides, apply_recodes, load_overrides
 
 ENTS = pd.DataFrame({
     'entity': [0, 1, 2], 'slug': ['hudson/jersey-city/garfield-avenue', 'hudson/jersey-city/broadway', 'hudson/bayonne/broadway'],
@@ -113,3 +114,84 @@ def test_pair_swings():
     assert p[['slug', 'other_slug', 'years', 'observed', 'expected', 'score']].values.tolist() == [
         ['hudson/jersey-city/garfield-avenue', 'hudson/jersey-city/broadway', '2012 / 2010', '0% / 100%', '50%', 60.0],
     ]
+
+
+def test_corridor_yoy_absorbs_member_swings():
+    """Roads 0 and 1 are one corridor (7): in 2016 90 of road 0's crashes move to road 1 (a
+    carriageway recoded to its express lanes), so each road has a `yoy` break but the corridor
+    doesn't: both are absorbed. Road 2 (no corridor) keeps its break; so does road 0's in a year its
+    corridor also breaks (2012)."""
+    rows = []
+    for y in range(2005, 2020):
+        a, b = (10, 140) if y == 2016 else (100, 50)
+        if y == 2012:
+            a = 10
+        rows += [(0, y, 'p', a, 0), (1, y, 'p', b, 0), (2, y, 'p', 10 if y == 2010 else 100, 0), (3, y, 'p', 1000, 0)]
+    ents = pd.concat([ENTS, pd.DataFrame({'entity': [3], 'slug': ['hudson/other'], 'name': ['Other'], 'cc': [9]})], ignore_index=True)
+    s = summary(rows)
+    yoy = yoy_breaks(s, ents)
+    members = pd.DataFrame({'entity': [0, 1], 'corridor': [7, 7]})
+    cs = s[s['entity'].isin([0, 1])].assign(corridor=7).groupby(['corridor', 'year', 'severity'])['n'].sum().reset_index()
+    cor = corridor_yoy(cs, pd.DataFrame({'corridor': [7], 'slug': ['hudson/garfield'], 'name': ['Garfield'], 'cc': [9]}), s, ents)
+    assert cor[['kind', 'corridor', 'slug', 'years', 'observed', 'detail']].values.tolist() == [
+        ['corridor_yoy', 7, 'hudson/garfield', '2012', '60', 'dip'],
+    ]
+    assert [(sl, y, d, bool(ab)) for sl, y, d, ab in zip(yoy['slug'], yoy['years'], yoy['detail'], absorbed(yoy, cor, members))] == [
+        ('hudson/jersey-city/garfield-avenue', '2012', 'dip', False),
+        ('hudson/jersey-city/garfield-avenue', '2016', 'dip', True),
+        ('hudson/jersey-city/broadway', '2016', 'spike', True),
+        ('hudson/bayonne/broadway', '2010', 'dip', False),
+    ]
+
+
+def test_noted():
+    """A `yoy` finding is explained by a data note on its road whose years overlap (a note without
+    years covers all)."""
+    findings = pd.DataFrame({'entity': [0, 0, 1, 2], 'years': ['2011-2012', '2016', '2020', '2005']})
+    notes = pd.DataFrame({
+        'entity': pd.array([0, 1, None], dtype='Int32'), 'corridor': pd.array([None, None, 7], dtype='Int32'),
+        'year_lo': pd.array([2010, None, 2001], dtype='Int16'), 'year_hi': pd.array([2011, None, 2025], dtype='Int16'),
+    })
+    from njdot.road_anomalies import noted
+    assert noted(findings, notes).tolist() == [True, False, True, False]
+
+
+def test_recode_rules(tmp_path):
+    """`recode` rules rewrite raw location fields before recovery (Newark's 2001–02 Broadway crashes,
+    coded to CR 649's SRI → CR 667's), and seed `override` with their id."""
+    rules = load_overrides(write(tmp_path, """
+- id: newark-broadway-cr649
+  note: Broadway's 2001-02 crashes were coded to CR 649
+  where: {cc: 7, mc: 14, years: [2001, 2002], sri: '07000649__'}
+  recode: {sri: '07000667__'}
+- id: drop-hudson
+  note: a `set` rule, skipped by `apply_recodes`
+  where: {cc: 9}
+  set: {entity: null}
+"""))
+    assert [(r.id, r.recode, r.entity) for r in rules] == [('newark-broadway-cr649', {'sri': '07000667__'}, None), ('drop-hudson', None, None)]
+    cr = pd.DataFrame([
+        {'cc': 7, 'mc': 14.0, 'year': 2001, 'sri': '07000649__', 'mp': np.nan, 'road': 'CR 649', 'cross_street': 'THIRD AVENUE', 'severity': 'p'},
+        {'cc': 7, 'mc': 14.0, 'year': 2003, 'sri': '07000649__', 'mp': np.nan, 'road': 'CR 649', 'cross_street': '', 'severity': 'p'},
+        {'cc': 7, 'mc': 10.0, 'year': 2001, 'sri': '07000649__', 'mp': 4.2, 'road': 'CR 649', 'cross_street': '', 'severity': 'i'},
+    ])
+    out, counts = apply_recodes(cr, rules)
+    assert counts == {'newark-broadway-cr649': 1}
+    assert [(s, None if pd.isna(o) else o) for s, o in zip(out['sri'], out['_recode'])] == [
+        ('07000667__', 'newark-broadway-cr649'), ('07000649__', None), ('07000649__', None),
+    ]
+    # `apply_overrides` skips `recode` rules, and carries `_recode` into `override`.
+    be = out.assign(entity=[1, 1, 2]).drop(columns=['mp'])
+    kept, counts = apply_overrides(be, rules, ENTS)
+    assert counts == {'drop-hudson': 0}
+    assert [None if pd.isna(o) else o for o in kept['override']] == ['newark-broadway-cr649', None, None]
+    assert '_recode' not in kept
+
+
+def test_recode_rules_validate(tmp_path):
+    with pytest.raises(ValueError, match=r"`recode` keys must be some of \['sri', 'mp', 'road', 'cross_street'\] \(got \['entity'\]\)"):
+        load_overrides(write(tmp_path, "- id: a\n  note: x\n  where: {cc: 9}\n  recode: {entity: 3}\n"))
+    with pytest.raises(ValueError, match=r"runs before recovery; it can't match on \['entity', 'loc_source'\]"):
+        load_overrides(write(tmp_path, "- id: a\n  note: x\n  where: {entity: a/b, loc_source: sri_mp}\n  recode: {sri: X}\n"))
+    with pytest.raises(ValueError, match='has both `set` and `recode`'):
+        load_overrides(write(tmp_path, "- id: a\n  note: x\n  where: {cc: 9}\n  recode: {sri: X}\n  set: {entity: null}\n"))

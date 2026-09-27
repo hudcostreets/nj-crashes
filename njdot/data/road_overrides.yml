@@ -1,4 +1,21 @@
 # Curated crash → road overrides, applied by `njdot roads build` (`njdot/road_overrides.py`;
 # format in specs/road-model-v5.md § Overrides). Each rule needs an `id`, a `note` with its evidence,
-# a `where` (all conditions must hold) and `set: {entity: <slug> | null}`.
-[]
+# a `where` (all conditions must hold) and either `set: {entity: <slug> | null}` (move crashes already
+# on a road) or `recode: {sri / mp / road / cross_street: …}` (rewrite raw fields before recovery).
+# Findings behind each rule: specs/road-anomalies.md.
+
+- id: newark-broadway-cr649
+  note: >
+    In 2001-02 NJDOT coded Newark's Broadway (today CR 667, SRI 07000667__) to SRI 07000649__ ("CR 649"),
+    with no milepost: 448 crashes (221 / 227), 0 coded 07000667__. Their cross streets are Broadway's
+    (Third / Fourth / Seventh Ave, Delavan, Verona, Grafton, Chester, Elwood, Clay, Crittenden, Broad St),
+    the same as CR 667's in 2003+, and CR 649 today is JFK Parkway / South Livingston Ave (Livingston,
+    West Orange), which no Newark street meets. Unrecoded, all 448 were off every road (Broadway: 16 / 15
+    crashes in 2001-02 vs ~180 in 2008-19).
+  where:
+    cc: 7
+    mc: 14
+    years: [2001, 2002]
+    sri: '07000649__'
+  recode:
+    sri: '07000667__'
