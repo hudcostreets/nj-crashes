@@ -213,6 +213,16 @@ def test_smooth_names_absorbs_blips():
     assert smooth_names(df)['name'].tolist() == ['Cator Ave'] * 5 + ['Solo St'] + [J] * 11
 
 
+def test_smooth_names_multi_block_blip():
+    """US 206's second carriageway at the Somerville Circle: a point each named "Somerville Circle"
+    and "Easton Turnpike" between "US Highway 206" stretches → US 206. Three different names in 4
+    points (> `max_blip`) stay; so does a run at the SRI's end."""
+    U, S, E, X, Y = 'US Highway 206', 'Somerville Circle', 'Easton Turnpike', 'X St', 'Y St'
+    names = [('A', n) for n in [U, U, S, E, U, U]] + [('B', n) for n in [U, U, S, E, X, Y, U, U]] + [('C', n) for n in [U, U, S, E]]
+    df = pd.DataFrame({'sri': [s for s, _ in names], 'mp': [0.05 * i for i in range(len(names))], 'name': [n for _, n in names]})
+    assert smooth_names(df)['name'].tolist() == [U] * 6 + [U, U, S, E, X, Y, U, U] + [U, U, S, E]
+
+
 def test_smooth_names_county_blip():
     df = pd.DataFrame({'sri': ['A'] * 5, 'mp': [0.0, 0.05, 0.1, 0.15, 0.2], 'name': ['US Highway 1'] * 5, 'cc': pd.array([20, 20, 7, 20, 20], dtype='Int8')})
     assert smooth_names(df)['cc'].tolist() == [20] * 5

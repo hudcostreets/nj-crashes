@@ -124,8 +124,9 @@ The NG911 name index is `ng_name_index`: segment × (county, muni from either si
   - **learned** (`learn_names`): `(cc, mc, road key) → entity` from crashes NJDOT *did* code. The top entity must hold ≥ 80% of ≥ 5 coded crashes. This catches "COLUMBUS DR" → Christopher Columbus Dr and "ROUTE 501" → Kennedy Blvd. Else:
   - **NG911**: the name's segments (primary names first, then aliases) all lie on one entity (`seg_entities`: each segment's `ng_intervals` SRI interval → `entity_at` the published runs).
 - **(b) intersection.** Road segments ∩ cross-street segments in the muni (`meet_points`, ≤ 5 m; NG911 is noded). The cross street falls back to the county if it's not in the muni.
-  - All meets must lie within 150 m (`cluster_point`); otherwise it's ambiguous (a crescent, or two same-named streets).
-  - The point then moves `distance` along the road in the reported direction (`offset_along`). No direction: allowed up to 200 ft.
+  - The meets group into **junctions** (`junctions`; [`road-anomalies.md`] § R2-1): distinct meets chained within 300 m, each group within 150 m of its meet-weighted mean (a divided road's carriageways, a triangle junction). A junction's point is that mean if it's on the road (≤ 30 m), else the group's meet nearest it. A group spread wider is the road running along the cross street: no junction.
+  - The point then moves `distance` along the road in the reported direction (`offset_along`: along any road line through the point, so a node where the nearest segment ends doesn't block it). No direction: allowed up to 200 ft.
+  - Several junctions (a crescent, a road meeting the cross street at both ends, two same-named streets): the one from which the offset / direction leads onto the road's NJDOT lines. With several such (no direction, or both possible) the crash isn't placed by the intersection (`how` = "junctions" if nothing else places it).
   - It then snaps to the road's **own** SRIs only (`Snapper`, ≤ 30 m). At an intersection the cross street's line is equally near.
   - Result: lon/lat + SRI + MP.
 - **(b′) route + cross street** (`route_xs`): the same, with a route string's NJDOT lines as the road.
@@ -133,6 +134,7 @@ The NG911 name index is `ng_name_index`: segment × (county, muni from either si
 - **(d) SRI without MP** (`sri_only`):
   - First, (b′) with the cross street gives an MP.
   - Else, if every run of the SRI is one entity (most local SRIs), the crash gets that entity.
+- **(d″) coded, but towns away** ([`road-anomalies.md`] § R2-7): a coded crash whose `(sri, mp)` lands > 2 km from its muni, on a road that doesn't come near it (re-mileposted routes: CR 509 in Paterson, CR 624 in Elizabeth), is re-located like a retired-SRI crash, else kept as coded; before recovery, 2001–02 county-route crashes coded to the same-numbered state SRI get the county SRI (§ R2-4).
 - **(d′) retired SRIs.** Crashes coded with an SRI that's no longer in the network are re-located like uncoded ones, keeping their coded SRI/MP if that fails. This affects 2–7k crashes/yr statewide before 2019. In Hudson it's big: the pre-2018 county-route SRIs `09000617__` / `612` / `605` … aren't in today's network at all. For example, `09000617__` has 3,151 pre-2018 crashes, none on an entity.
 
 Guards:
@@ -381,3 +383,4 @@ A crash-level sidecar (`id` → `loc_source, sri, mp, ilat, ilon` for placed rec
 - **Recommendation**: worth doing, but after the road-page ship has run a cycle: add `geocode_src = 'recovered'` first, emit the sidecar as a `roads build` co-output (no second recovery pass), and gate the main map on it with a visible provenance label.
 
 [wsa]: https://crashes.hudcostreets.org/road/hudson/jersey-city/west-side-avenue
+[`road-anomalies.md`]: road-anomalies.md

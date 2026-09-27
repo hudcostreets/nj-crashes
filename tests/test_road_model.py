@@ -186,6 +186,27 @@ def test_calibrate_retired_sri():
     assert {i: (s, round(m, 2)) for i, (s, m, _) in out.items()} == {4: ('NEW', 2.3), 7: ('NEW', 2.9)}
 
 
+def test_calibrate_retired_road_of_several_sris():
+    """Today's road is three SRIs (`A`, `B`, `C`: a third of the retired SRI's MPs 0–1 each, MPs 0–0.3
+    of their own; Summit Ave, CR 617): none is near half the anchors, so by SRI nothing is placed; with
+    `runs`, all are road 7's, near all the anchors, and the queries are placed on whichever SRI they
+    fall on."""
+    t = MI_M / 3
+    feats = rn_features(pd.concat([line_feats(s, i * t, (i + 1) * t, 0.0, 0.3) for i, s in enumerate('ABC')], ignore_index=True))
+    snap = Snapper(feats)
+    x0, y0 = to_meters([lon_at(0)], [LAT])
+    anchors = [0.05, 0.2, 0.4, 0.55, 0.75, 0.9]
+    sri = np.array(['OLD'] * 8, dtype=object)
+    mp = np.array(anchors + [0.3, 0.8])
+    ax = np.array([x0[0] + m * MI_M for m in anchors] + [np.nan] * 2)
+    ay = np.array([y0[0]] * 6 + [np.nan] * 2)
+    anchor = np.isfinite(ax)
+    runs = pd.DataFrame({'entity': [7, 7, 7], 'sri': ['A', 'B', 'C'], 'mp_lo': [0.0] * 3, 'mp_end': [0.3] * 3})
+    assert calibrate_retired(sri, mp, ax, ay, anchor, ~anchor, snap) == {}
+    out = calibrate_retired(sri, mp, ax, ay, anchor, ~anchor, snap, runs)
+    assert {i: (s, round(m, 2)) for i, (s, m, _) in out.items()} == {6: ('A', 0.27), 7: ('C', 0.12)}
+
+
 def test_calibrate_retired_skips_ramps():
     """A route's retired MPs aren't calibrated onto a ramp: here the only current line along the
     anchors is a ramp SRI (`NEW` + a ramp id), so nothing is placed; a ramp's own retired SRI can be."""

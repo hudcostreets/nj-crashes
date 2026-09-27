@@ -19,3 +19,19 @@
     sri: '07000649__'
   recode:
     sri: '07000667__'
+
+- id: rockaway-twp-cr513-placeholder-mp
+  note: >
+    In 2003-08 NJDOT coded Rockaway Twp's CR 513 crashes (SRI 00000513__) at MP 42.33-42.38 whatever the
+    cross street: I-80 is at MP 42.33 in those years vs 45.34 in 2001-02 / 2009+, Upper Hibernia Rd 42.34 vs
+    51.77. MP 42.3 is East Blackwell St in Dover, so these crashes (62-83 a year in 2003-07, 19 in 2008;
+    ~1 a year otherwise) made East Blackwell St look busier in 2003-08 and Green Pond Rd quieter. Without
+    the MP, recovery places them by cross street, or leaves them off every road.
+  where:
+    cc: 14
+    mc: 35
+    years: [2003, 2008]
+    sri: '00000513__'
+    mp: [42.30, 42.40]
+  recode:
+    mp: null

@@ -209,12 +209,14 @@ def test_recode_rules(tmp_path):
         {'cc': 7, 'mc': 14.0, 'year': 2001, 'sri': '07000649__', 'mp': np.nan, 'road': 'CR 649', 'cross_street': 'THIRD AVENUE', 'severity': 'p'},
         {'cc': 7, 'mc': 14.0, 'year': 2003, 'sri': '07000649__', 'mp': np.nan, 'road': 'CR 649', 'cross_street': '', 'severity': 'p'},
         {'cc': 7, 'mc': 10.0, 'year': 2001, 'sri': '07000649__', 'mp': 4.2, 'road': 'CR 649', 'cross_street': '', 'severity': 'i'},
-    ])
+    ]).assign(ilat=40.7, ilon=-74.2)
     out, counts = apply_recodes(cr, rules)
     assert counts == {'newark-broadway-cr649': 1}
     assert [(s, None if pd.isna(o) else o) for s, o in zip(out['sri'], out['_recode'])] == [
         ('07000667__', 'newark-broadway-cr649'), ('07000649__', None), ('07000649__', None),
     ]
+    # NJDOT's point came from the replaced SRI / MP: dropped.
+    assert [None if pd.isna(v) else v for v in out['ilat']] == [None, 40.7, 40.7]
     # `apply_overrides` skips `recode` rules, and carries `_recode` into `override`.
     be = out.assign(entity=[1, 1, 2]).drop(columns=['mp'])
     kept, counts = apply_overrides(be, rules, ENTS)
