@@ -1,6 +1,6 @@
 # Road model v5: corridors, chainage, blocks, intersections
 
-**Status:** v5 built statewide (Batch `roads-20260927-113129`). **v5.1** (branch `road-v5-1`, [below](#v51)) fixes block ↔ crash consistency, cuts blocks at gaps, adds block / corridor intersection counts, a monthly corridor summary, corridor-level placement of direction-ambiguous names, and makes the build ~3–6× faster; tested on the fixtures and the Hudson / Bergen dev builds, not yet built statewide (`roads.dvc` is stale: code deps changed).
+**Status:** v5 built statewide (Batch `roads-20260927-113129`). **Road anomalies** (branch `road-anomalies`, [`road-anomalies.md`]): off-run SRI recovery, freeway continuations in corridors, `recode` overrides, `road-notes.parquet`, a corridor-aware audit; needs a statewide rebuild. **v5.1** (branch `road-v5-1`, [below](#v51)) fixes block ↔ crash consistency, cuts blocks at gaps, adds block / corridor intersection counts, a monthly corridor summary, corridor-level placement of direction-ambiguous names, and makes the build ~3–6× faster; tested on the fixtures and the Hudson / Bergen dev builds, not yet built statewide (`roads.dvc` is stale: code deps changed).
 
 Builds on [`road-data-v4.md`] and [`crash-location-recovery.md`]. Code:
 
@@ -201,12 +201,12 @@ Examples (real fixtures):
 
 `corridor_pairs`, `road_corridors`. Two non-ramp entities pair when they are:
 
-- **sequential**: their names are direction variants or the same name, and they touch end to end. "Direction variants" means the same `dir_key`, which is `merge_key` without a leading or trailing direction word, only when ≥ 2 words remain: "West 48th Street" / "East 48th Street" → `48THST`, "North Avenue East" → `NORTHAVE`. "Touch" means a piece end within 100 m (`SEQ_M`) of the other's points, or consecutive runs on one SRI. Consecutive runs on one SRI also pair when one entity isn't NG9-1-1-named: its points keep NJDOT's SLD name ("I-95, N.J. TURNPIKE"), so it's the same road where NG9-1-1 has a gap.
+- **sequential**: their names are direction variants or the same name, and they touch end to end. Also (road anomalies) consecutive runs on one SRI of two limited-access entities (`subt` 1 / 4, neither named as a city street): "Pearl Harbor Memorial Bridge" + "New Jersey Turnpike Extension", the Turnpike's West Alignment in Kearny / Lyndhurst ([`road-anomalies.md`] § 2). "Direction variants" means the same `dir_key`, which is `merge_key` without a leading or trailing direction word, only when ≥ 2 words remain: "West 48th Street" / "East 48th Street" → `48THST`, "North Avenue East" → `NORTHAVE`. "Touch" means a piece end within 100 m (`SEQ_M`) of the other's points, or consecutive runs on one SRI. Consecutive runs on one SRI also pair when one entity isn't NG9-1-1-named: its points keep NJDOT's SLD name ("I-95, N.J. TURNPIKE"), so it's the same road where NG9-1-1 has a gap.
 - **parallel**: ≥ 60% (`PAR_FRAC`) and ≥ 4 of the shorter entity's points lie within 40 m (`PAR_M`) of the other's, heading within ~25° (`PAR_COS` 0.9). They must also share an SRI route number (`sri[:8]`: `00000001__` / `00000001_S`) or have related names.
 
 Corridors are the connected components. **Only multi-entity corridors exist**; `road-entities.corridor` is null for the rest.
 
-- **Spine:** the NG9-1-1-named member with the longest chain. It names the corridor (a direction word stripped for sequential corridors: "48th Street").
+- **Spine:** the NG9-1-1-named member with the longest chain, preferring one not named as an auxiliary carriageway ("… Express", "… Secondary"; road anomalies). It names the corridor (a direction word stripped for sequential corridors: "48th Street").
 - **Mapping:** members map onto the corridor's chain as `cchain = corridor_c0 + corridor_sign · chain`.
   - A sequential member attaches end to end past whichever corridor end it's nearer to.
   - A parallel member maps through the MPs it shares with a placed member (a secondary carriageway: exact), else by the median offset to its points' nearest placed points.
@@ -395,6 +395,10 @@ One row per (road, node).
 
 As `road-summary{,-monthly}` (incl. `n_unplaced`, `n_node`, the `_xs` columns and `n_corridor_only`), keyed `(corridor, year[, month], severity)`, sorted by those keys. `n_xs` counts crashes at the corridor's intersections on roads outside it, once per crash. **Row groups:** 10,000 / 20,000 (monthly, v5.1). **Stats:** `corridor`.
 
+### `road-notes.parquet` (new, road anomalies)
+
+Per-road / per-corridor data notes (`entity` or `corridor`, `note`, `kind`, `year_lo`, `year_hi`, `title`, `text`): schema in [`road-anomalies.md`] § Data notes.
+
 ## Span queries
 
 A *span* is an entity plus a chain range `[a, b]` (miles), or a corridor plus a corridor-chain range.
@@ -554,7 +558,7 @@ Crashes at a node: Hudson 51%, Bergen 49%, Hunterdon 32%. The inclusive uplift i
 - **What the old explanation saw.** The "West Side as cross street" crashes of 2011–13 are the smaller part. They include crashes at "HUDSON COUNTY 612 & WEST SIDE" (CR 612 = Communipaw Ave), which were invisible the same way.
 - **Fix.** Retired-SRI calibration ([Other data fixes](#other-data-fixes)) places 1,911 of West Side's pre-2019 crashes, from `09000605__`'s MPs, which map ~1:1 onto `09061684__`'s. Intersection counting adds the crashes other roads carry at its intersections.
 - **Result.** 2011–13 / 2017 are now 134–183 exclusive (v4: 5–27) and 169–241 inclusive, in line with their neighbors.
-- **Remaining step.** 2019 → 2020+ is 172 → 87–130 exclusive, 253 → 134–206 inclusive. 2020 is COVID, and statewide crashes fell 14% from 2019 to 2022; West Side fell ~30%. The anomaly audit doesn't flag it (below its 2× threshold), but it's worth a look.
+- **Remaining step.** 2019 → 2020+ is 172 → 87–130 exclusive, 253 → 134–206 inclusive. 2020 is COVID, and statewide crashes fell 14% from 2019 to 2022; West Side fell ~30%. Explained in [`road-anomalies.md`] § 1: Jersey City's property-damage crash reports (all roads) are down ~30% since 2020.
 
 ## J F Kennedy Blvd count mismatch
 
@@ -577,7 +581,7 @@ Crashes at a node: Hudson 51%, Bergen 49%, Hunterdon 32%. The inclusive uplift i
 
 ## Other data fixes
 
-**Retired-SRI calibration** (`calibrate_retired`, new `loc_source` `sri_calib`, `how` `calib` / `calib_xs`).
+**Retired-SRI calibration** (`calibrate_retired`, new `loc_source` `sri_calib`, `how` `calib` / `calib_xs`). Road anomalies extend it to crashes coded to a *current* SRI at an MP no current run holds (a cut-back route: Kearny Ave was `09000697__` MP 1.4–3.6; 27k such crashes statewide), re-located by name first without their SRI's current lines, and never calibrated onto a ramp ([`road-anomalies.md`] § 5).
 
 - **Problem.** Crashes coded with an SRI + MP that today's network lacks (Hudson's pre-2019 county routes: `09000605__` West Side Ave, `09000612__` Communipaw Ave, `09000617__` …) were off every road unless their strings re-located them. That's 40k statewide, 26.6k in Hudson.
 - **Anchors.** For each retired SRI, its crashes with a point are anchors: the point recovered from their strings, or NJDOT's / the police's.
@@ -623,9 +627,9 @@ Crashes at a node: Hudson 51%, Bergen 49%, Hunterdon 32%. The inclusive uplift i
 - `entity: null` drops them from `crashes-by-entity` (they stay in `crashes-by-sri`, with a null `entity`).
 - The last matching rule's id goes in `override`. Match counts are logged and stored as JSON in `road-entities`' footer key `overrides`.
 - The build raises on an unknown slug, unknown `where` key, duplicate id, or missing `note`.
-- **Limit:** rules act on crashes already assigned to a road. A crash recovery left off every road can't be pulled on by a rule. That would need a pre-recovery name rule, which isn't built.
+- **Limit:** `set` rules act on crashes already assigned to a road. For crashes recovery leaves off every road, use a **`recode`** rule (road anomalies): `recode: {sri / mp / road / cross_street: …}` instead of `set`, applied to the raw crashes *before* recovery (`where` keys: `road`, `cross_street`, `sri`, `cc`, `mc`, `severity`, `years`, `mp`). Recoded crashes carry the rule id in `override` too. First rule: `newark-broadway-cr649` ([`road-anomalies.md`] § 3).
 
-**Seeded empty.** Candidates investigated and why none was added:
+**Seeded empty** in v5 (road anomalies added one `recode` rule). Candidates investigated and why no `set` rule was added:
 
 | Candidate | Finding |
 |---|---|
@@ -642,6 +646,7 @@ The mechanism is ready for per-road findings from the audit below.
 - **`yoy`:** runs of years whose count is ≥ 2× off (and ≥ 25 crashes off) the median of the road's ±3 years. Those years are scaled by the rest of its county's total (the road itself excluded), so 2020 isn't flagged. Roads with ≥ 300 crashes. Score: summed Poisson z.
 - **`unplaced`:** roads with ≥ 100 crashes, ≥ 30% of them without a map point. Score: count × share.
 - **`pair_swing`:** pairs of roads sharing intersections (crashes at a node of both) or one corridor, with ≥ 60 shared crashes, whose per-year share on the first road (years with ≥ 8) spans ≥ 50 points. Score: χ² against the pooled share. Needs v5 outputs.
+- **`corridor_yoy`** (road anomalies): `yoy` on corridors. A member's `yoy`, or a `pair_swing` of two members, is dropped when its corridor has no `corridor_yoy` finding then (the corridor absorbs it); a `yoy` a `road-notes` row explains is dropped too.
 - **Output:** the queue interleaves the kinds by rank.
 
 ### Top findings
@@ -769,7 +774,8 @@ Then run `njdot roads audit-anomalies -o tmp/anom.csv -m tmp/anom.md` on the out
 - **Multi-road names off every corridor.** Of Hudson's 4,212 crashes whose road name is several entities', 2,745 stay off-road: the candidates aren't one corridor ("FIRST ST" naming two unrelated streets, a name split across a muni line). A per-muni "most crashes" guess would place some; not done.
 - **State-road node offsets.** NJDOT's `I` crashes on state roads sit a median 5–48 m from NG9-1-1 nodes. Worth checking whether NJDOT references intersection MPs to a different point (the far stop bar?) before tightening state-road X.
 - **Pre-recovery name overrides.** Rules that rewrite a crash's road string before recovery ("BROADWAY" + Greenville cross street → "GARFIELD AVE") would reach crashes recovery leaves off every road.
-- **2019 → 2020+ step on JC roads** (West Side Ave −30% vs −14% statewide): check after the statewide build whether NJDOT's 2019+ coding attributes intersection crashes to cross streets more than before (`n_xs` rose from ~10/yr in 2001–05 to 40–80).
+- ~~**2019 → 2020+ step on JC roads**~~ Answered ([`road-anomalies.md`] § 1): Jersey City reports ~30% fewer property-damage crashes since 2020; West Side Ave's share of JC crashes is steady. Data note `jersey-city-pdo-2020`.
 
 [`road-data-v4.md`]: road-data-v4.md
+[`road-anomalies.md`]: road-anomalies.md
 [`crash-location-recovery.md`]: crash-location-recovery.md
