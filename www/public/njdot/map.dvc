@@ -12,6 +12,8 @@ meta:
       /njdot/data/aashto_supplemented_crashes.parquet: 372d541848b2252a1552a339c234c45a
       /njdot/data/crashes_geocode_backfill.parquet: 05408a1785e5d1d009d5b62baf7c0968
       /www/public/Municipal_Boundaries_of_NJ.geojson: 54a252d859eea2207da0fb933661dca0
+      /njdot/data/crash_recovered_points.parquet:
     git_deps:
       /njdot/cli/export_map_v2.py: d67c3f13d850c392bdd29269f0e7bf9bc8803552
       /njdot/load.py: 04e81d5e2acd331dea5496d084b37d79f54aa5e2
+      /njdot/map_base.py:

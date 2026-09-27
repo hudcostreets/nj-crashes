@@ -17,6 +17,7 @@
 /aashto_supplemented_vehicles.parquet
 /nj_mp_tenths.parquet
 /crashes_geocode_backfill.parquet
+/crash_recovered_points.parquet
 /cm.pqt
 /muni_codes.parquet
 /roadway_network.parquet
