@@ -5,12 +5,14 @@ import duckdb
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 
 from njdot.cc2mc2mn import cc2mc2mn
 from njdot.cli.roads import (
     alias_candidates, assign_crashes, build_geom, crashes_by_sri, entity_table, point_aliases, point_names,
-    road_names_index, road_outputs, road_runs, smooth_names, sri_hit, sris, stretch_aliases,
+    read_crashes_by_sri, road_names_index, road_outputs, road_runs, smooth_names, sri_hit, sris, stretch_aliases,
+    write_outputs,
 )
 from njdot.road_net import (
     merge_key, name_key, name_points, ng_intervals, ng_segments, rn_features, rn_points, road_entities, shield,
@@ -623,3 +625,37 @@ def test_real_search_tokens(real_out):
         ('hudson/park-avenue', 'Kennedy Boulevard East', 'alias'),
     ]
     assert s['token'].tolist() == sorted(s['token'])
+
+
+def test_real_write_outputs_layout(real_out, tmp_path):
+    meta = {'network_src_url': 'https://example.com/network'}
+    write_outputs(real_out, str(tmp_path), meta)
+    files = sorted(p.name for p in tmp_path.iterdir())
+    assert files == [
+        'crashes-by-entity.parquet', 'crashes-by-sri.parquet', 'road-entities.parquet', 'road-ranks.parquet',
+        'road-runs.parquet', 'road-search.parquet', 'road-summary-monthly.parquet', 'road-summary.parquet',
+        'sri-geom.parquet', 'sri-hit-5.parquet', 'sri-hit-6.parquet', 'sri-hit.parquet', 'sris.parquet',
+    ]
+    # Footers carry only our own key-value metadata: no `pandas` / `ARROW:schema`.
+    kv = {f: sorted((pq.ParquetFile(tmp_path / f).metadata.metadata or {}).keys()) for f in files}
+    assert kv == {f: [] for f in files} | {
+        'sri-geom.parquet': [b'network_src_url'],
+        'road-entities.parquet': [b'network_src_url'],
+        'road-search.parquet': [b'bbox_unit', b'capped_tokens', b'network_src_url', b'synonyms', b'token_cap'],
+    }
+    # `sri-geom` / `road-runs` are sorted by entity, with stats on `entity` only.
+    con = duckdb.connect()
+    geom = con.sql(f"SELECT entity, sri, mp FROM '{tmp_path / 'sri-geom.parquet'}'").fetchall()
+    assert len(geom) == len(real_out['geom'])
+    assert geom == sorted(geom)
+    for f in ('sri-geom.parquet', 'road-runs.parquet'):
+        md = pq.ParquetFile(tmp_path / f).metadata
+        assert [md.row_group(0).column(i).path_in_schema for i in range(md.num_columns) if md.row_group(0).column(i).is_stats_set] == ['entity']
+    # A written `crashes-by-sri` reads back with `crashes_by_sri`'s nullable dtypes (the `roads build -c` path).
+    back = read_crashes_by_sri(str(tmp_path / 'crashes-by-sri.parquet'))
+    assert back.dtypes.astype(str).to_dict() == {
+        'sri': 'string', 'mp': 'float64', 'id': 'Int64', 'year': 'int64', 'dt': 'datetime64[ns]', 'cc': 'Int8',
+        'mc': 'Float64', 'case': 'string', 'severity': 'string', 'tk': 'int64', 'ti': 'int64', 'pk': 'int64',
+        'pi': 'int64', 'tv': 'int64', 'road': 'string', 'cross_street': 'string', 'route': 'int64', 'entity': 'Int32',
+    }
+    pd.testing.assert_frame_equal(back, real_out['by_sri'], check_dtype=False)

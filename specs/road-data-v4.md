@@ -2,6 +2,8 @@
 
 **Status:** implemented on branch `roads-v4` and tested on fixtures. Sizes and bytes per lookup below were measured by re-emitting the new files from the v3 statewide build (Batch `roads-20260927-042820`), approximating two inputs that only exist at build time (see [Measurement](#measurement)). A Batch build is needed before the frontend can use them: `www/public/njdot/roads.dvc` is stale on purpose (new git deps `/njdot/road_outputs.py`, `/njdot/cc2mc2mn.py` and dep `/www/public/njdot/cc2mc2mn.json`, added without hashes).
 
+**Layout tuning** (branch `roads-tune`, after the first v4 build `roads-20260927-100912`): footers carry no `pandas` / `ARROW:schema` metadata, and `sri-geom` is sorted by entity with 4k-row groups, `road-runs` 2k. See [Footers and layout tuning](#footers-and-layout-tuning). Needs another Batch build, plus the [frontend change](#frontend-notes) to `fetchEntityGeom`.
+
 Builds on [`road-data-v3.md`]. Code: `njdot/road_outputs.py` (new), `njdot/cli/roads.py` (`road_outputs`, `write_outputs`), `njdot/road_net.py` (entity merge fix).
 
 ## What changed
@@ -17,6 +19,9 @@ Builds on [`road-data-v3.md`]. Code: `njdot/road_outputs.py` (new), `njdot/cli/r
 | **`road-search`** (new) | ⌘K word index; replaces `road-names`. |
 | `road-names` | **Removed.** `roads build` deletes it from the output dir (so `roads sync --delete` drops it from S3). |
 | `sri-geom`, `sri-hit*`, `road-runs` | Same columns. `entity` values are the renumbered ids. `alias` uses the dominance rule below. |
+| `sri-geom` | **Sorted `(entity, sri, mp)`** (was `(sri, mp)`), row groups 25k → 4k, stats on `entity` only. Look points up by road. |
+| `road-runs` | Row groups 25k → 2k, stats on `entity` only. |
+| All files | **No `pandas` / `ARROW:schema` key-value metadata** in footers; only our own keys (source vintages, `road-search`'s synonym table etc.). |
 
 Entities themselves change a little too: the [entity merge fix](#entity-merge-fix-park-ave--boulevard-east).
 
@@ -53,6 +58,17 @@ Lookups:
 ### `crashes-by-entity.parquet`
 
 Columns unchanged: `entity, sri, mp, id, year, dt, cc, mc, case, severity, tk, ti, pk, pi, tv, road, cross_street, route, lat, lon`. **Sort:** `(entity, sri, mp, dt, id)`. **Row groups:** 10,000 rows. **Stats:** `entity` only (so no `sri` pruning: filter on `entity`). **Dict:** `sri, severity, road, cross_street, route` (−16% file size vs all-dictionary).
+
+### `sri-geom.parquet`
+
+Columns `sri, mp, sld_name, name, subt, entity, alias, lon, lat`: one row per MP point (every 0.05 mi). **Sort:** `(entity, sri, mp)`. **Row groups:** 4,000 rows. **Stats:** `entity`. **Dict:** all.
+
+- `WHERE entity = N` reads 1 row group (≤ 2: the largest entity has 1,526 points).
+- **No `sri` stats**, and SRIs aren't contiguous. A lookup by SRI scans the whole file (20.6 MiB): use `sris.parquet` for per-SRI extents, or `sri-hit*` for a bbox.
+
+### `road-runs.parquet`
+
+`(entity, sri, mp_lo, mp_end)`. **Sort:** `(entity, sri, mp_lo)`. **Row groups:** 2,000 rows. **Stats:** `entity`. The frontend doesn't read it yet (`fetchEntityRuns` has no callers).
 
 ### `crashes-by-sri.parquet`
 
@@ -269,40 +285,110 @@ Statewide estimate, from v3 outputs with "NG911-named" ≈ the point name is mix
 
 ## Measurement
 
-The files were re-emitted from the v3 statewide outputs by `tmp/measure.py` (dev only, not committed). Two things are approximated:
-
-- A road's munis come from its `munis` list, one vote per muni, rather than per-point NG911 munis. So slugs' "within one muni" means "only one muni listed".
-- Lengths are run MP spans, not the parent-unioned segments.
+Numbers below come from the first v4 statewide build (Batch `roads-20260927-100912`), re-emitted by `tmp/tune.py` on branch `roads-tune` (dev only, not committed) with the tuned `write` settings. (The pre-build estimates, re-emitted from v3 outputs with approximate slugs and lengths, are superseded.)
 
 Bytes per lookup:
 
-- Computed from parquet metadata as footer + the column chunks of each row group whose stats overlap the filter.
-- Cross-checked with native DuckDB 1.5 `EXPLAIN ANALYZE` over httpfs against a local Range-capable server. It reported road-entities by slug 201 KiB, crashes-by-entity (22 crashes) 886 KiB, road-summary 57 KiB, monthly 84 KiB, road-search `kenn*` 278 KiB, `main` 195 KiB, road-ranks (Hudson / Jersey City) 35 KiB.
+- Computed from parquet metadata as footer + the column chunks of every row group whose stats overlap the filter.
+- Cross-checked with native DuckDB 1.5.4 over httpfs against a local Range-capable server that logs bytes served, one fresh connection per lookup (default caches). DuckDB adds a 32 KB tail probe before the footer. With `parquet_metadata_cache` off it reads the footer twice (bind and scan); with it on, a second lookup on the same file reads only data.
 
-| Lookup | v3 bytes | v4 bytes (footer + data) | v4 with footer cached |
+| Lookup | v3 | v4 build (footer + data) | Tuned (footer + data) | Tuned, footer cached | DuckDB 1.5 first lookup, v4 → tuned |
+|---|---:|---:|---:|---:|---:|
+| `road-entities` one road (by `entity` or `slug`) | 1,452 KB | 193 KB (135 + 58) | **185 KB** (127 + 58) | 58 KB | 209 → 201 KB |
+| `road-entities` county prefix `hudson/` | n/a | 307 KB (135 + 172) | 299 KB (127 + 172) | 172 KB | |
+| `crashes-by-entity`, small road (22 crashes, `mercer/trenton/east-lafayette-street`) | 1,017 KB | 781 KB (570 + 211) | **774 KB** (563 + 211) | 211 KB | 912 → 905 KB |
+| `crashes-by-entity`, West Side Ave JC (880) | 1,699 KB | 778 KB (570 + 208) | 771 KB (563 + 208) | 208 KB | |
+| `crashes-by-entity`, JFK Blvd (27k, 4 groups) | 1,542 KB | 1,304 KB (570 + 734) | 1,297 KB (563 + 734) | 734 KB | 1,610 → 1,428 KB |
+| `road-summary` one road | n/a | 42 KB (19 + 23) | **40 KB** (17 + 23) | 23 KB | |
+| `road-summary-monthly` one road | n/a | 73 KB (40 + 33) | 70 KB (37 + 33) | 33 KB | |
+| `road-ranks` one county (`cc = 9`, 2 groups) | n/a | 124 KB (20 + 105) | 118 KB (14 + 105) | 105 KB | |
+| `road-search` `kenn*` / `main` / `tonnel*` (1 group each) | 5,056 KB | 184 / 180 / 188 KB (101 + data) | **176 / 172 / 180 KB** (93 + 83 / 79 / 87) | 83 / 79 / 87 KB | `kenn*` 200 → 192 KB |
+| `sri-geom`, West Side Ave JC | | 1,122 KB (44 + 1,078: 2 of 40 groups) | **248 KB** (162 + 86: 1 of 245) | 86 KB | 1,155 → 280 KB |
+| `sri-geom`, JFK Blvd | | **8,657 KB** (44 + 8,613: 16 of 40 groups) | **248 KB** (162 + 86: 1 of 245) | 86 KB | 1,158 → 280 KB |
+| `road-runs` one road | | 263 KB (4 + 259) | **38 KB** (20 + 18) | 18 KB | 275 → 54 KB |
+
+- `sri-geom` v4 = the frontend's current `fetchEntityGeom` query (`sri BETWEEN min AND max AND sri IN (…) AND entity = ?`), pruned on the `BETWEEN` only, since DuckDB-WASM's DuckDB (v0.9) doesn't prune on `IN` lists. JFK's SRIs run from `00000440__A101870` to `09000693__`, so the `BETWEEN` spans 16 of 40 row groups. Native DuckDB 1.5 does prune on the `IN` list (2 groups, 1.16 MB).
+- Tuned `sri-geom` = `WHERE entity = ?`: every road reads one ~86 KB group, whatever its SRIs.
+
+**Turn on DuckDB's parquet metadata cache in the frontend** (`SET parquet_metadata_cache = true`; older builds call it `enable_object_cache`), then verify in DevTools that repeat lookups skip the footer. With it, the "cached" column applies after the first lookup per file. Footers are most of a first lookup's bytes: a road page reads ~890 KB of footers (`road-entities` 127 + `road-summary-monthly` 37 + `crashes-by-entity` 563 + `sri-geom` 162) against ~390 KB of data for a small road.
+
+## Footers and layout tuning
+
+### Footer metadata
+
+`write` (`njdot/cli/roads.py`) builds the Arrow table with `preserve_index=False`, drops the schema metadata, writes with `store_schema=False`, and adds our own key-value metadata through `ParquetWriter.add_key_value_metadata`. (`store_schema=False` on its own also drops `replace_schema_metadata` keys, which would lose `road-search`'s `capped_tokens` / `synonyms`.)
+
+| File | Footer before | Footer after | Saved |
 |---|---:|---:|---:|
-| `road-entities` one road (by `entity` or `slug`) | 1,452 KB (16 + 1,436) | **190 KB** (131 + 59) | 59 KB |
-| `road-entities` county prefix `hudson/` | n/a | 248 KB (131 + 117) | 117 KB |
-| `crashes-by-entity`, small road (22 crashes) | 1,017 KB (373 + 644) | **776 KB** (570 + 206) | 206 KB |
-| `crashes-by-entity`, West Side Ave JC (880) | 1,699 KB | 771 KB (570 + 201) | 201 KB |
-| `crashes-by-entity`, JFK Blvd (27k) | 1,542 KB | 1,294 KB (570 + 724) | 724 KB |
-| `road-summary` one road | n/a | **42 KB** (19 + 23) | 23 KB |
-| `road-summary-monthly` one road | n/a | 70 KB (39 + 31) | 31 KB |
-| `road-ranks` one county (all its munis) | n/a | 112 KB (19 + 93) | 93 KB |
-| `road-search` `kenn*` / `main` / `tonnel*` | 5,056 KB (whole `road-names`) | **268 / 182 / 185 KB** (100 + 1–2 groups) | 168 / 81 / 85 KB |
+| `crashes-by-sri` | 412,516 | 405,779 | 6,737 (1.6%) |
+| `crashes-by-entity` | 569,813 | 563,076 | 6,737 (1.2%) |
+| `sri-geom` (v4 layout) | 43,843 | 39,383 | 4,460 (10.2%) |
+| `sri-hit` | 119,736 | 116,362 | 3,374 (2.8%) |
+| `sri-hit-5` | 20,844 | 17,470 | 3,374 (16.2%) |
+| `sri-hit-6` | 32,432 | 29,058 | 3,374 (10.4%) |
+| `sris` | 11,343 | 6,824 | 4,519 (39.8%) |
+| `road-entities` | 135,083 | 127,297 | 7,786 (5.8%) |
+| `road-runs` (v4 layout) | 4,165 | 2,339 | 1,826 (43.8%) |
+| `road-summary` | 19,407 | 16,993 | 2,414 (12.4%) |
+| `road-summary-monthly` | 39,657 | 36,934 | 2,723 (6.9%) |
+| `road-ranks` | 19,649 | 13,829 | 5,820 (29.6%) |
+| `road-search` | 101,030 | 92,961 | 8,069 (8.0%) |
 
-Footers dominate once there are many small row groups: about 1.3 KB per row group for 19–21 columns, even with stats on one column. So:
+With the new layouts, `sri-geom`'s footer is 161,510 bytes (245 groups) and `road-runs`' 19,606 (63 groups).
 
-- **Turn on DuckDB's parquet metadata cache in the frontend** (`SET parquet_metadata_cache = true`; older builds call it `enable_object_cache`), then verify in DevTools that repeat lookups skip the footer. With it, the "cached" column applies after the first lookup per file.
-- `crashes-by-entity` uses 10k-row groups, not 5k:
+- The `pandas` + `ARROW:schema` blobs were only 2–9 KB per file. `road-search`'s ~100 KB footer is 90 row groups of column-chunk metadata, not schema metadata, so stripping saves 8%.
+- **Types are unchanged:** DuckDB `DESCRIBE` and every row are identical before and after, for every file (DuckDB never reads `ARROW:schema`). `dt` stays `TIMESTAMP_NS`, nullable ints keep their widths (`TINYINT` / `SMALLINT`), and `severity` etc. are `VARCHAR` as before.
+- **Pandas readers** now get plain dtypes back: nullable ints as `float64`, strings as `object`. `roads build -c` reads `crashes-by-sri` through `read_crashes_by_sri`, which restores `crashes_by_sri`'s dtypes (`BY_SRI_DTYPES`, strings → `string`). `road_audit` only compares `cc` and reads strings, which works either way.
 
-  | Rows / group | Groups | Footer | Data / group | File |
-  |---:|---:|---:|---:|---:|
-  | 5,000 | 911 | 1,101 KB | 106 KB | 97 MB |
-  | 10,000 | 456 | 575 KB | 212 KB | 97 MB |
-  | 16,000 | 285 | 363 KB | 338 KB | 96 MB |
+What the rest of a footer is (`crashes-by-entity`, 456 groups × 20 columns, ~62 bytes per column chunk):
 
-  At 5k, an uncached small-road lookup (~1.2 MB) is *worse* than v3's (~1.0 MB). If the metadata cache proves to work in DuckDB-WASM, 5k is better for sessions viewing several roads: change `ROW_GROUP['crashes-by-entity']`.
+| Part | Bytes |
+|---|---:|
+| `size_statistics` (Parquet 2.10 page-size histograms) | 95 KB |
+| `encoding_stats` | 89 KB |
+| `path_in_schema` | 51 KB |
+| the rest: page offsets, sizes, `num_values`, `encodings`, codec, type, Thrift field headers | ~316 KB |
+| min/max statistics (`entity` only) | 12 KB |
+
+pyarrow 21 has no switch for `size_statistics` or `encoding_stats`. DuckDB's writer is worse here: 767 KB for the same file, since it writes min/max stats on every column. Remaining levers: fewer row groups or columns, or the metadata cache.
+
+### Row-group sizes
+
+Measured bytes (KB) per lookup, footer + data:
+
+`sri-geom` (sorted by entity, stats on `entity`):
+
+| Rows / group | Groups | Footer | Data (1 road) | First lookup | Cached |
+|---:|---:|---:|---:|---:|---:|
+| 1,000 | 980 | 639 | 21–39 | 659–677 | 21–39 |
+| 2,000 | 490 | 321 | 38–47 | 359–368 | 38–47 |
+| **4,000** | 245 | 162 | 84–92 | **246–253** | 84–92 |
+| 8,000 | 123 | 82 | 171–175 | 253–257 | 171–175 |
+| 25,000 | 40 | 28 | 528–571 | 556–599 | 528–571 |
+
+4k minimizes a first lookup and keeps a cached one under 100 KB.
+
+`road-runs` (stats on `entity`):
+
+| Rows / group | Groups | Footer | Data (1 road) | First lookup |
+|---:|---:|---:|---:|---:|
+| 500 | 249 | 76 | 5 | 81 |
+| 1,000 | 125 | 39 | 9 | 48 |
+| **2,000** | 63 | 20 | 18–19 | **38–39** |
+| 5,000 | 25 | 8 | 47–49 | 55–57 |
+| 25,000 | 5 | 2 | 258 | 260 |
+
+`crashes-by-entity` (re-evaluated with the stripped footer; **stays at 10k**). The footer shrank only 1.2%, so the trade-off is unchanged:
+
+| Rows / group | Groups | Footer | Small road (22) | West Side Ave (880) | JFK (27k) | US 1 Middlesex (52k) | Small road, cached |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 5,000 | 911 | 1,083 | 1,192 | 1,192 | 1,720 | 2,057 | 109 |
+| 8,000 | 570 | 679 | 853 | 844 | 1,251 | 1,669 | 174 |
+| **10,000** | 456 | 563 | **774** | **771** | **1,297** | **1,624** | 211 |
+| 16,000 | 285 | 354 | 686 | 660 | 1,240 | 1,486 | 332 |
+
+- 16k is ~60–140 KB cheaper on a first lookup but ~60% more per cached lookup.
+- If the metadata cache proves to work in DuckDB-WASM, 5k is better for sessions viewing several roads: change `ROW_GROUP['crashes-by-entity']`.
 
 **Sizes (MiB):**
 
@@ -314,6 +400,8 @@ Footers dominate once there are many small row groups: about 1.3 KB per row grou
 | `road-summary-monthly` | 2.2 | 1.38M rows |
 | `road-ranks` | 0.7 | 26k rows |
 | `road-search` | 7.2 | 181k rows after the cap; 311k before |
+| `sri-geom` | 20.6 | 979k rows; 20.3 sorted by `sri` in 25k groups |
+| `road-runs` | 1.1 | 124k rows |
 | `road-names` | removed | v3 4.8 |
 
 ## Frontend notes
@@ -326,7 +414,33 @@ For wiring; the frontend is not changed on this branch.
 - `fetchCrashEntity` (crash → road) → `crashes-by-sri WHERE sri = ? AND id = ?` (or the 4-field PK) and read `entity`. Querying `crashes-by-entity` by `sri` now scans the whole file.
 - County / muni "most dangerous roads" → `road-ranks WHERE cc = ? AND mc = ?` (`mc = 0` for the county) `AND rank_<metric> IS NOT NULL ORDER BY rank_<metric>`.
 - ⌘K → `road-search`, per the recipe above. The `RoadsFile` union loses `road-names` and gains `road-summary`, `road-summary-monthly`, `road-ranks`, `road-search`.
-- `road-runs` still uses 25k-row groups, one ~200 KB read per road. Shrink it too if the road page keeps fetching it.
+- **Road geometry → `sri-geom WHERE entity = ?`** (needed once `sri-geom` is sorted by entity; see below).
+- `road-runs` → `WHERE entity = ?`: one ~18 KB group (2k-row groups).
+
+### Frontend change for the entity-sorted `sri-geom`
+
+`sri-geom` has no `sri` stats any more and isn't in SRI order, so an SRI filter scans the whole 20.6 MiB file. In `www/src/map/roads/roadsData.ts`:
+
+- **`fetchEntityGeom(db, entity, sris)`**, called by `useRoadSelection.ts`, `routes/RoadPage.tsx` and `routes/CrashDetailPage.tsx` (with `road.data.sris.split(",")`). Change its query from
+
+  ```sql
+  SELECT sri, mp, sld_name, name, subt, entity, alias, lon, lat FROM read_parquet('…/sri-geom.parquet')
+  WHERE sri BETWEEN '<min sri>' AND '<max sri>' AND sri IN (…) AND entity = <entity>
+  ORDER BY sri, mp
+  ```
+
+  to
+
+  ```sql
+  SELECT sri, mp, sld_name, name, subt, entity, alias, lon, lat FROM read_parquet('…/sri-geom.parquet')
+  WHERE entity = <entity>
+  ORDER BY sri, mp
+  ```
+
+  Then the `sris` parameter is unused: drop it (and the three call sites' `sris` arguments, and the `enabled` / query-key dependency on the entity's `sris`, so the geometry fetch no longer waits for `road-entities`).
+- **`fetchRoadGeom(db, sri)`** (`WHERE sri = ?`) has no callers. Delete it, or point it at the entity: it would scan the whole file.
+- **Deploy order:** the old query still returns correct rows against the new file, just slowly: the `BETWEEN` no longer prunes, so every road reads all of `sri-geom`. The new query against the old file prunes nothing either (`entity` isn't correlated with `sri`), but is correct. Ship the frontend change with the data sync.
+- Update the `roadsData.ts` header comment (`sri-geom` / `crashes-by-sri` by `sri` → `sri-geom` by `entity`).
 
 ## Tests
 
@@ -341,6 +455,7 @@ For wiring; the frontend is not changed on this branch.
 - ranks: area scoping, per-mile eligibility, ramps, top-N, ordering
 - canonical words, place labels
 - the search index: cap, `matched` nulling, bbox offsets, metadata
+- `write`: footer key-value metadata is only ours (no `pandas` / `ARROW:schema`), stats only on the listed columns, and DuckDB types (`TINYINT` / `SMALLINT` nullable ints, `TIMESTAMP_NS`, `VARCHAR` categoricals) and values round-trip
 
 `tests/test_roads.py` adds:
 
@@ -349,6 +464,7 @@ For wiring; the frontend is not changed on this branch.
 - crash aliases only on un-named stretches
 - the extra route designations
 - an end-to-end `road_outputs` run on the real fixtures: renumbering / slug order, the Hudson slugs, `crashes-by-sri.entity`, summaries, lengths, `kennedy` search rows
+- `write_outputs` on those outputs: the file set, each footer's key-value keys, `sri-geom` sorted `(entity, sri, mp)`, `entity`-only stats on `sri-geom` / `road-runs`, and `read_crashes_by_sri` restoring dtypes
 
 ## Build
 
