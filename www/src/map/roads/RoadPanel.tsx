@@ -77,17 +77,3 @@ export function RoadPanel({ entity, info, crashes, loading, onClose, onZoomTo, t
         </div>
     )
 }
-
-/** Small label for the road (or county) under the cursor. */
-export function RoadHoverChip({ name, alias, action = "click to select", theme }: { name: string; alias?: string | null; action?: string; theme: "light" | "dark" }) {
-    return (
-        <div style={{
-            position: "absolute", left: "50%", bottom: 12, transform: "translateX(-50%)", zIndex: 3,
-            padding: "3px 10px", borderRadius: 12, fontSize: 12, pointerEvents: "none",
-            background: theme === "dark" ? "rgba(30,30,30,0.9)" : "rgba(255,255,255,0.9)",
-            color: theme === "dark" ? "#e0e0e0" : "#333",
-        }}>
-            {name}{alias ? ` · ${alias}` : ""} — {action}
-        </div>
-    )
-}

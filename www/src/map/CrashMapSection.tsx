@@ -24,9 +24,10 @@ import { useToolboxOpen } from "@/src/map/useToolboxOpen"
 import { useMapActions } from "@/src/map/useMapActions"
 import { useRoadSelection } from "@/src/map/roads/useRoadSelection"
 import { useRoadSearch } from "@/src/map/roads/useRoadSearch"
-import { RoadPanel, RoadHoverChip } from "@/src/map/roads/RoadPanel"
+import { RoadPanel } from "@/src/map/roads/RoadPanel"
+import { HoverDrawer } from "@/src/map/roads/HoverDrawer"
 import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
-import { bboxesIntersect, featureBbox, fetchCounties, fetchCounty, fetchMunis, outlineLabel } from "@/src/map/boundaries"
+import { bboxesIntersect, featureAt, featureBbox, fetchCounties, fetchCounty, fetchMunis, outlineLabel } from "@/src/map/boundaries"
 import type { Bbox, MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel, HEAT_C_SIGMA_PX, HEAT_C_PX_TARGET, HEAT_C_FLOOR, HEAT_C_OPACITY } from "@/src/map/CrashMap"
 
@@ -681,11 +682,21 @@ export function CrashMapSection({
         const features = pickMunis.flatMap(fc => fc?.features ?? []).filter(f => f.properties?.mc !== mc)
         return features.length ? { type: "FeatureCollection", features } : undefined
     }, [onOutlineClick, muniPick, outline, pickMunis, mc])
-    // Drill-in: only when no road is under the cursor, and announced on hover.
+    // The muni / county under the cursor, hit-tested from the pointer position (like roads), so it
+    // stays highlighted while a road is hovered too. A click goes to the road when there is one,
+    // else drills into the area.
     const [hoveredOutline, setHoveredOutline] = useState<Feature | null>(null)
     useEffect(() => setHoveredOutline(null), [pickOutline])
-    const outlineClick = onOutlineClick && !roadSel.hovered ? onOutlineClick : undefined
-    const onOutlineHover = useCallback((f: Feature | null) => setHoveredOutline(f), [])
+    const { active: roadActive, onHover: roadHover, onClick: roadClick } = roadSel
+    const onMapHover = useCallback((lngLat: [number, number] | null) => {
+        if (roadActive) roadHover(lngLat)
+        setHoveredOutline(lngLat && pickOutline ? featureAt(pickOutline.features, lngLat) : null)
+    }, [roadActive, roadHover, pickOutline])
+    const onMapClick = useCallback((lngLat?: [number, number]) => {
+        if (roadClick(lngLat)) return
+        const f = lngLat && pickOutline ? featureAt(pickOutline.features, lngLat) : null
+        if (f && onOutlineClick) onOutlineClick(f)
+    }, [roadClick, pickOutline, onOutlineClick])
     const hoveredOutlineLabel = hoveredOutline ? outlineLabel(hoveredOutline, cc === null) : null
     const zoomToRoad = (bbox: [number, number, number, number]) => {
         const [w, h] = viewportDims(fullScreen)
@@ -860,11 +871,13 @@ export function CrashMapSection({
                     theme={actualTheme}
                 />
             )}
-            {roadSel.hovered && roadSel.hovered.entity !== roadSel.road ? (
-                <RoadHoverChip name={roadSel.hovered.name} alias={roadSel.hovered.alias} theme={actualTheme} />
-            ) : outlineClick && hoveredOutlineLabel ? (
-                <RoadHoverChip name={hoveredOutlineLabel} action="click to open" theme={actualTheme} />
-            ) : null}
+            <HoverDrawer
+                road={roadSel.hovered}
+                roadSelected={!!roadSel.hovered && roadSel.hovered.entity === roadSel.road}
+                area={hoveredOutlineLabel}
+                dodgePanel={roadSel.road !== null}
+                theme={actualTheme}
+            />
             {result.status === "loading" && <LoadingOverlay theme={actualTheme} />}
             {result.status === "ready" && (() => {
                 return (
@@ -878,11 +891,9 @@ export function CrashMapSection({
                         viewState={llz ?? undefined}
                         onViewStateChange={setLlz}
                         pickOutline={pickOutline}
-                        hoverOutline={outlineClick ? hoveredOutline : null}
-                        onOutlineClick={outlineClick}
-                        onOutlineHover={onOutlineClick ? onOutlineHover : undefined}
-                        onMapClick={roadSel.onClick}
-                        onMapHover={roadSel.active ? roadSel.onHover : undefined}
+                        hoverOutline={hoveredOutline}
+                        onMapClick={onMapClick}
+                        onMapHover={onMapHover}
                         extraLayers={roadSel.layers}
                         mode={mode}
                         heatRender={heatRender}

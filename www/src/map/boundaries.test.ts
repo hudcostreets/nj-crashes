@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { Feature } from "geojson"
-import { bboxesIntersect, featureBbox, outlineLabel } from "./boundaries"
+import { bboxesIntersect, featureAt, featureBbox, outlineLabel } from "./boundaries"
 
 describe("bboxesIntersect", () => {
     it("treats touching boxes as intersecting", () => {
@@ -49,5 +49,26 @@ describe("outlineLabel", () => {
             "Atlantic County",
             null,
         ])
+    })
+})
+
+describe("featureAt", () => {
+    const square = (w: number, s: number, e: number, n: number) => [[w, s], [e, s], [e, n], [w, n], [w, s]]
+    // A township with a borough-shaped hole, the borough filling the hole, and a two-part muni.
+    const twp: Feature = { type: "Feature", properties: { mc: 1 }, geometry: { type: "Polygon", coordinates: [square(0, 0, 10, 10), square(4, 4, 6, 6)] } }
+    const boro: Feature = { type: "Feature", properties: { mc: 2 }, geometry: { type: "Polygon", coordinates: [square(4, 4, 6, 6)] } }
+    const split: Feature = { type: "Feature", properties: { mc: 3 }, geometry: { type: "MultiPolygon", coordinates: [[square(20, 0, 22, 2)], [square(30, 0, 32, 2)]] } }
+    const features = [twp, boro, split]
+    const mcAt = (lngLat: [number, number]) => featureAt(features, lngLat)?.properties?.mc ?? null
+
+    it("hit-tests polygons, holes, and multipolygon parts", () => {
+        expect([
+            mcAt([1, 1]),    // township
+            mcAt([5, 5]),    // in the township's hole → the borough
+            mcAt([21, 1]),   // first part
+            mcAt([31, 1]),   // second part
+            mcAt([25, 1]),   // between the parts (inside the multipolygon's bbox)
+            mcAt([50, 50]),  // outside everything
+        ]).toEqual([1, 2, 3, 3, null, null])
     })
 })
