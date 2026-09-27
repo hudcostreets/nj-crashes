@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react"
+import { lazy, Suspense, useEffect, useMemo, useState } from "react"
 import { useParams, Link } from "react-router-dom"
+import { useQuery } from "@tanstack/react-query"
 import moment from "moment-timezone"
 import { Head } from "@/src/lib/head"
 import { url as siteUrl } from "@/src/site"
@@ -7,7 +8,15 @@ import { apiUrl } from "@/src/api"
 import { CC2MC2MN, normalize } from "@/src/county"
 import { loadCC2MC2MN } from "@/src/lib/data"
 import { ConditionMap } from "@/src/use-njdot-crashes"
+import { useDb } from "@/src/lib/DuckDbContext"
+import { useTheme } from "@/src/contexts/ThemeContext"
+import { mapViewHref } from "@/src/map/links"
+import { fetchCrashEntity, fetchEntity, fetchEntityGeom, roadPaths } from "@/src/map/roads/roadsData"
 import css from "@/src/home.module.scss"
+
+const CrashLocationMap = lazy(() => import("@/src/map/CrashLocationMap"))
+
+const MAP_HEIGHT = 340
 
 type Crash = {
     id: number
@@ -170,6 +179,24 @@ export default function CrashDetailPage() {
         return () => { cancelled = true }
     }, [year, cc, mc, caseStr])
 
+    // The crash's matched road entity (via its SRI), for the map's road path + road-page link.
+    const db = useDb()
+    const { actualTheme: theme } = useTheme()
+    const c = data?.crash
+    const entityQ = useQuery({
+        queryKey: ["crash-entity", c?.id, c?.sri, c?.year, c?.cc, c?.mc, c?.case],
+        queryFn: () => fetchCrashEntity(db!, { id: c!.id ?? null, sri: c!.sri!, year: c!.year, cc: c!.cc, mc: c!.mc, case: c!.case }),
+        enabled: !!db && !!c?.sri,
+    })
+    const entity = entityQ.data ?? null
+    const road = useQuery({ queryKey: ["road-entity", entity], queryFn: () => fetchEntity(db!, entity!), enabled: !!db && entity !== null })
+    const roadGeom = useQuery({
+        queryKey: ["road-geom", entity, road.data?.sris],
+        queryFn: () => fetchEntityGeom(db!, entity!, road.data!.sris.split(",")),
+        enabled: !!db && !!road.data,
+    })
+    const paths = useMemo(() => roadGeom.data && roadPaths(roadGeom.data), [roadGeom.data])
+
     const occByVehicle = useMemo(() => {
         const m = new Map<number | null, Occupant[]>()
         for (const o of data?.occupants ?? []) {
@@ -221,6 +248,14 @@ export default function CrashDetailPage() {
             <h2 id="location">Location</h2>
             <ul>
                 {crash.road && <li><b>Road:</b> {crash.road}{crash.route ? ` (Route ${crash.route})` : ""}</li>}
+                {road.data && (
+                    <li>
+                        <b>Mapped road:</b> {road.data.name}
+                        {road.data.route && <> (on {road.data.route})</>}
+                        {" · "}{road.data.n_crashes.toLocaleString()} crashes, {road.data.n_killed.toLocaleString()} killed
+                        {" · "}<Link to={`/road/${road.data.entity}`}>View road →</Link>
+                    </li>
+                )}
                 {crash.cross_street && <li><b>Cross street:</b> {crash.cross_street}</li>}
                 {crash.mp != null && <li><b>Milepost:</b> {crash.mp.toFixed(2)}</li>}
                 {crash.speed_limit != null && <li><b>Speed limit:</b> {crash.speed_limit}</li>}
@@ -231,9 +266,15 @@ export default function CrashDetailPage() {
                         <a href={`https://www.google.com/maps/?q=${lat},${lon}`} target="_blank" rel="noreferrer">
                             {lat.toFixed(5)}, {lon.toFixed(5)}
                         </a>
+                        {" · "}<Link to={mapViewHref({ lat, lon, zoom: 16, road: entity })}>View on crash map</Link>
                     </li>
                 )}
             </ul>
+            {lat != null && lon != null && (
+                <Suspense fallback={<div style={{ height: MAP_HEIGHT }} />}>
+                    <CrashLocationMap lat={lat} lon={lon} severity={crash.severity} roadPaths={paths} theme={theme} height={MAP_HEIGHT} />
+                </Suspense>
+            )}
 
             <h2 id="conditions">Conditions</h2>
             <ul>

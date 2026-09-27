@@ -23,6 +23,10 @@ export function isSri(s: string): boolean {
     return /^[0-9A-Za-z_-]{1,32}$/.test(s)
 }
 
+function sriList(sris: string[]): string {
+    return sris.filter(isSri).map(s => `'${s}'`).join(",")
+}
+
 /** An `nj_mp_tenths` point: `name` = local street name, `alias` = the top crash-reported road name
  *  nearby (where it differs), `subt` = road class (1 interstate … 7 local, 8 ramp). */
 export type RoadPoint = {
@@ -130,7 +134,7 @@ export function fetchEntityRuns(db: AsyncDuckDB, entity: number): Promise<RoadRu
 /** The entity's points: `sri-geom` is sorted by `(sri, mp)`, so filtering on the entity's SRIs
  *  prunes to a few row groups before the `entity` filter. */
 export function fetchEntityGeom(db: AsyncDuckDB, entity: number, sris: string[]): Promise<RoadPoint[]> {
-    const list = sris.filter(isSri).map(s => `'${s}'`).join(",")
+    const list = sriList(sris)
     if (!list) return Promise.resolve([])
     return runQuery<RoadPoint>(db, `
         SELECT ${POINT_COLS} FROM read_parquet('${roadsUrl("sri-geom")}')
@@ -138,12 +142,32 @@ export function fetchEntityGeom(db: AsyncDuckDB, entity: number, sris: string[])
     `)
 }
 
-export function entityCrashesSql(entity: number): string {
-    return `SELECT * FROM read_parquet('${roadsUrl("crashes-by-entity")}') WHERE entity = ${entity | 0} ORDER BY sri, mp, dt`
+/** `crashes-by-entity` is sorted by `(sri, mp)`, so passing the entity's SRIs lets DuckDB prune to
+ *  their row groups (the `entity` column alone has no useful min/max stats). */
+export function entityCrashesSql(entity: number, sris: string[] = []): string {
+    const list = sriList(sris)
+    const sriFilter = list ? `sri IN (${list}) AND ` : ""
+    return `SELECT * FROM read_parquet('${roadsUrl("crashes-by-entity")}') WHERE ${sriFilter}entity = ${entity | 0} ORDER BY sri, mp, dt`
 }
 
-export function fetchEntityCrashes(db: AsyncDuckDB, entity: number): Promise<RoadCrash[]> {
-    return runQuery<RoadCrash>(db, `SELECT * EXCLUDE (dt), epoch_ms(dt) AS dt FROM (${entityCrashesSql(entity)})`)
+export function fetchEntityCrashes(db: AsyncDuckDB, entity: number, sris: string[] = []): Promise<RoadCrash[]> {
+    return runQuery<RoadCrash>(db, `SELECT * EXCLUDE (dt), epoch_ms(dt) AS dt FROM (${entityCrashesSql(entity, sris)})`)
+}
+
+/** The road entity a crash was matched to (null when it has no SRI match). Filters on the crash's
+ *  SRI for row-group pruning; matches on `id`, or on the 4-field PK for rows without one (2024+). */
+export async function fetchCrashEntity(
+    db: AsyncDuckDB,
+    crash: { id: number | null; sri: string; year: number; cc: number; mc: number; case: string },
+): Promise<number | null> {
+    if (!isSri(crash.sri)) return null
+    const pk = `year = ${crash.year | 0} AND cc = ${crash.cc | 0} AND mc = ${crash.mc | 0} AND "case" = '${crash.case.replace(/'/g, "''")}'`
+    const match = crash.id !== null ? `(id = ${crash.id | 0} OR (id IS NULL AND ${pk}))` : `(${pk})`
+    const rows = await runQuery<{ entity: number }>(db, `
+        SELECT entity FROM read_parquet('${roadsUrl("crashes-by-entity")}')
+        WHERE sri = '${crash.sri}' AND ${match} LIMIT 1
+    `)
+    return rows[0]?.entity ?? null
 }
 
 export function fetchRoadGeom(db: AsyncDuckDB, sri: string): Promise<RoadPoint[]> {
