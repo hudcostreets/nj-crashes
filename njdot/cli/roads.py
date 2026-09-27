@@ -71,6 +71,8 @@ CRASH_COLS = [
 ]
 ALIAS_MIN_N = 3
 ALIAS_MIN_FRAC = 0.02
+# A crash-reported name is a stretch's alias only if it's this share of the stretch's candidate strings.
+ALIAS_DOMINANT_FRAC = 0.5
 # Per entity: at most this many NG911 local aliases / crash-reported aliases / route designations.
 NG_ALIASES_MAX = 5
 CRASH_ALIASES_MAX = 3
@@ -233,9 +235,9 @@ def assign_crashes(by_sri: pd.DataFrame, runs: pd.DataFrame, con: duckdb.DuckDBP
 
 # A bare route designation ("US 1", "RT 1", "NJ 440", "CR 501", "I-78") isn't a local name.
 ROUTE_RE = (
-    r'^((US|RT|NJ|SR|CR|I|ROUTE|INTERSTATE|HWY|STATE HWY|COUNTY RD|CO RD)[ -]?\d+[A-Z]?'
-    r'|[A-Z]+( [A-Z]+)? COUNTY( RD| ROUTE)? \d+[A-Z]?)'
-    r'( (N|S|E|W|NB|SB|EB|WB|RAMP|SPUR|BUS|UPPER|LOWER|EXPRESS|LOCAL|ALT|TRUCK|BYP|I|II|III|SECONDARY|WESTERN|EASTERN'
+    r'^((US|RT|NJ|SR|CR|I|ROUTE|INTERSTATE|HWY|STATE HWY|COUNTY RD|CO RD)[ -]?\d+(IV|I{1,3}|[A-Z])?'
+    r'|[A-Z]+( [A-Z]+)? COUNTY( RD| ROUTE)? \d+(IV|I{1,3}|[A-Z])?)'
+    r'( (N|S|E|W|NB|SB|EB|WB|RAMP|SPUR|BUS|UPPER|LOWER|EXPRESS|LOCAL|ALT|TRUCK|BYP|I|II|III|IV|\d|SECONDARY|WESTERN|EASTERN'
     r'|ALIGNMENT|(N J |NJ )?TPKE(-[NSEW])?))*$'
 )
 
@@ -257,21 +259,41 @@ def alias_candidates(road: pd.Series) -> pd.Series:
 
 def top_aliases(crashes: pd.DataFrame, keys: list[str], k: int, min_n: int) -> pd.DataFrame:
     """Top-`k` local-name candidates (`alias_candidates`) per `keys` group (seen ≥ `min_n` times),
-    as `keys + [alias, n]` rows, most common first (ties by name)."""
+    as `keys + [alias, n, n_cand]` rows (`n_cand`: the group's crashes with any candidate), most
+    common first (ties by name)."""
     cand = alias_candidates(crashes['road'])
     c = crashes[keys].loc[cand.index].assign(alias=cand.to_numpy())
     n = c.groupby(keys + ['alias']).size().rename('n').reset_index()
+    n['n_cand'] = n.groupby(keys)['n'].transform('sum')
     n = n[n['n'] >= min_n].sort_values(keys + ['n', 'alias'], ascending=[True] * len(keys) + [False, True])
     return n.groupby(keys, sort=False).head(k).reset_index(drop=True)
 
 
-def point_aliases(geom: pd.DataFrame, point_run: np.ndarray, by_entity: pd.DataFrame, min_n: int = 3) -> pd.Series:
-    """Per `geom` point: the most common crash-reported `road` (normalized) among its run's crashes
-    in the same ½-mile MP bin, if seen ≥ `min_n` times and not just the point's own `name`."""
+def stretch_aliases(geom: pd.DataFrame, point_run: np.ndarray, by_entity: pd.DataFrame, min_n: int = ALIAS_MIN_N) -> pd.DataFrame:
+    """Per stretch (`run`, ½-mile MP `bin`): its *dominant* crash-reported local name — the top
+    `alias_candidates` string, seen ≥ `min_n` times and ≥ `ALIAS_DOMINANT_FRAC` of the stretch's
+    candidate strings. Rows `(run, bin, alias, n, ng)`, `ng` = whether most of the stretch's points
+    are NG911-named (`seg` ≥ 0; false when `geom` has no `seg`). A cross street reported as the
+    `road` on some crashes (e.g. "PARK AVE" on Boulevard East) is a minority string on every
+    stretch, so it's never dominant."""
     c = by_entity[['run', 'mp', 'road']].assign(bin=np.floor(by_entity['mp'] * 2) / 2)
     top = top_aliases(c, ['run', 'bin'], k=1, min_n=min_n)
+    top = top[top['n'] >= ALIAS_DOMINANT_FRAC * top['n_cand']]
+    named = geom['seg'].to_numpy() >= 0 if 'seg' in geom else np.zeros(len(geom), dtype=bool)
+    ng = (
+        pd.DataFrame({'run': point_run, 'bin': np.floor(geom['mp'].to_numpy() * 2) / 2, 'named': named})
+        .groupby(['run', 'bin'])['named'].mean().ge(0.5).rename('ng').reset_index()
+    )
+    top = top.merge(ng, on=['run', 'bin'], how='left')
+    top['ng'] = top['ng'].fillna(False).astype(bool)
+    return top[['run', 'bin', 'alias', 'n', 'ng']].reset_index(drop=True)
+
+
+def point_aliases(geom: pd.DataFrame, point_run: np.ndarray, stretches: pd.DataFrame) -> pd.Series:
+    """Per `geom` point: its stretch's dominant crash-reported name (`stretch_aliases`), where
+    that isn't just the point's own `name`."""
     pts = pd.DataFrame({'run': point_run, 'bin': np.floor(geom['mp'].to_numpy() * 2) / 2, 'name': norm_name(geom['name']).to_numpy()})
-    merged = pts.merge(top[['run', 'bin', 'alias']], on=['run', 'bin'], how='left')
+    merged = pts.merge(stretches[['run', 'bin', 'alias']], on=['run', 'bin'], how='left')
     alias = merged['alias'].astype('string')
     return alias.where(alias != merged['name']).set_axis(geom.index)
 
@@ -283,14 +305,16 @@ def entity_table(
     con: duckdb.DuckDBPyConnection,
     names: pd.DataFrame | None = None,
     point_run: np.ndarray | None = None,
+    stretches: pd.DataFrame | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """One row per entity: `name` (the local name covering most of it), `route` (its route
     designations — NG911 shields, e.g. "CR 501", "US 1 / US 9" — else the SLD route name where it
     differs from `name`), min road class `subt`, `sris` (comma-joined), bbox, crash counts,
-    `aliases` (NG911 local aliases, then the top crash-reported `road` names; " · "-joined, none
+    `aliases` (NG911 local aliases, then crash-reported names of stretches NG911 doesn't name; " · "-joined, none
     equal to `name` after `name_key`), `cc` (county) and `munis` (" · "-joined, most points first).
 
-    `names` is `njdot.road_net.run_names` output (per-run NG911 aliases / shields). Also returns the
+    `names` is `njdot.road_net.run_names` output (per-run NG911 aliases / shields); `stretches` is
+    `stretch_aliases` output (computed from `geom` / `point_run` / `by_entity` if not given). Also returns the
     entity's searchable names, `(entity, kind, name_display)` with `kind` "primary" / "alias" /
     "route", for `road_names_index`."""
     con.register('r', runs.assign(n=runs['mp_hi'] - runs['mp_lo'] + 0.1))
@@ -348,9 +372,18 @@ def entity_table(
     sld_route = out['sld_name'].astype('string').where((norm_name(out['sld_name']) != norm_name(out['name'])) & (out['subt'] <= 6))
     out['route'] = out['entity'].map(routes).astype('string').fillna(sld_route)
 
-    # Crash-reported aliases: must account for ≥ `ALIAS_MIN_FRAC` of the entity's crashes (and ≥
-    # `ALIAS_MIN_N`), so one-off mentions don't show; variants of the entity's name / NG911 aliases aren't new.
-    al = top_aliases(by_entity[['entity', 'road']], ['entity'], k=CRASH_ALIASES_MAX + 1, min_n=ALIAS_MIN_N)
+    # Crash-reported aliases: only a stretch's *dominant* crash-reported name (`stretch_aliases`), and
+    # only on stretches NG911 doesn't name (where it does, crash strings add spelling variants and
+    # cross streets, not names); summed per entity, they must account for ≥ `ALIAS_MIN_FRAC` of its
+    # crashes (and ≥ `ALIAS_MIN_N`); variants of the entity's name / NG911 aliases aren't new.
+    if stretches is None:
+        stretches = stretch_aliases(geom, point_run, by_entity) if point_run is not None else pd.DataFrame(columns=['run', 'bin', 'alias', 'n', 'ng'])
+    st = stretches[~stretches['ng'].astype(bool)]
+    al = (
+        st.assign(entity=runs['entity'].to_numpy()[st['run'].to_numpy(dtype=int)])
+        .groupby(['entity', 'alias'], as_index=False)['n'].sum()
+        .sort_values(['entity', 'n', 'alias'], ascending=[True, False, True])
+    )
     al = al.merge(out[['entity', 'n_crashes']], on='entity')
     seen = set(zip(ng_l['entity'], merge_key(ng_l['value'])))
     al_k = merge_key(al['alias']).to_numpy()
@@ -522,8 +555,9 @@ def roads_build(crashes_path: str | None, ng911_dir: str, network: str, out_dir:
     b = build_geom(pd.read_parquet(network), pd.read_parquet(cl_path), pd.read_parquet(al_path), con)
     geom, runs, point_run = b['geom'], b['runs'], b['point_run']
     by_entity = assign_crashes(by_sri, runs, con)
-    geom['alias'] = point_aliases(geom, point_run, by_entity)
-    ents, searchable = entity_table(runs, geom, by_entity, con, b['names'], point_run)
+    stretches = stretch_aliases(geom, point_run, by_entity)
+    geom['alias'] = point_aliases(geom, point_run, stretches)
+    ents, searchable = entity_table(runs, geom, by_entity, con, b['names'], point_run, stretches)
     names_idx = road_names_index(ents, searchable, geom, con, point_names(geom, b['seg'], b['aliases']))
     err(f'  {len(runs):,} runs → {len(ents):,} entities; {len(by_entity):,} of {len(by_sri):,} SRI crashes on an entity')
     err('Writing...')
