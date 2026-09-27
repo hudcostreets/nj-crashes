@@ -8,7 +8,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query"
 import { boolParam, stringParam, useUrlState, type Param } from "use-prms"
-import { useDb } from "@/src/lib/DuckDbContext"
 import { useAction } from "@/src/lib/kbd"
 import {
     fetchBlocks, fetchCorridor, fetchCorridorSummary, fetchEntity, fetchEntityCrashes, fetchEntityGeom, fetchEntityNames,
@@ -82,7 +81,6 @@ export type UseRoadScopeArgs = {
 }
 
 export function useRoadScope({ info, geom, roadSummary, hotkeys = false }: UseRoadScopeArgs) {
-    const db = useDb()
     const qc = useQueryClient()
     const [spanUrl, setSpanUrl] = useUrlState("span", stringParam())
     const [corUrl, setCorUrl] = useUrlState("cor", boolParam)
@@ -94,8 +92,8 @@ export function useRoadScope({ info, geom, roadSummary, hotkeys = false }: UseRo
     const corridorId = v5 && info?.corridor !== null && info?.corridor !== undefined ? info.corridor : null
     const blocksQ = useQuery({
         queryKey: ["road-blocks", entity],
-        queryFn: () => fetchBlocks(db!, entity!),
-        enabled: !!db && v5 && entity !== null,
+        queryFn: () => fetchBlocks(entity!),
+        enabled: v5 && entity !== null,
         staleTime: Infinity,
     })
     const blocks = useMemo(() => blocksQ.data ?? [], [blocksQ.data])
@@ -114,8 +112,8 @@ export function useRoadScope({ info, geom, roadSummary, hotkeys = false }: UseRo
     const clear = useCallback(() => setState(ROAD_SCOPE), [setState])
     const corridorQ = useQuery({
         queryKey: ["road-corridor", corridorId],
-        queryFn: () => fetchCorridor(db!, corridorId!),
-        enabled: !!db && corridorId !== null,
+        queryFn: () => fetchCorridor(corridorId!),
+        enabled: corridorId !== null,
         staleTime: Infinity,
     })
     const corridor = corridorQ.data ?? null
@@ -123,16 +121,14 @@ export function useRoadScope({ info, geom, roadSummary, hotkeys = false }: UseRo
     const memberInfos = useQueries({
         queries: memberIds.map(id => ({
             queryKey: ["road-entity", id],
-            queryFn: () => fetchEntity(db!, id),
-            enabled: !!db,
+            queryFn: () => fetchEntity(id),
             staleTime: Infinity,
         })),
     })
     const memberGeoms = useQueries({
         queries: memberIds.map(id => ({
             queryKey: ["road-geom", id],
-            queryFn: () => fetchEntityGeom(db!, id),
-            enabled: !!db,
+            queryFn: () => fetchEntityGeom(id),
             staleTime: Infinity,
         })),
     })
@@ -277,8 +273,8 @@ export function useRoadScope({ info, geom, roadSummary, hotkeys = false }: UseRo
     const wholeKey = ["road-crashes", entity]
     const whole = useQuery({
         queryKey: wholeKey,
-        queryFn: () => fetchEntityCrashes(db!, entity!, v5),
-        enabled: !!db && entity !== null && !state.corridor && !entitySpan,
+        queryFn: () => fetchEntityCrashes(entity!, v5),
+        enabled: entity !== null && !state.corridor && !entitySpan,
         staleTime: Infinity,
     })
     // A span reads its own rows (~1 row group), or filters the whole road's when they're cached.
@@ -286,16 +282,16 @@ export function useRoadScope({ info, geom, roadSummary, hotkeys = false }: UseRo
         queryKey: ["road-span-crashes", entity, selKey],
         queryFn: () => {
             const all = qc.getQueryData<RoadCrashView[]>(wholeKey)
-            return all ? all.filter(c => inSpan(c, spanSel!)) : fetchSpanCrashes(db!, entity!, spanSel!, v51)
+            return all ? all.filter(c => inSpan(c, spanSel!)) : fetchSpanCrashes(entity!, spanSel!, v51)
         },
-        enabled: !!db && entity !== null && !!spanSel && blocksReady,
+        enabled: entity !== null && !!spanSel && blocksReady,
         staleTime: Infinity,
     })
     const xsWholeKey = ["road-xs", entity]
     const xsWhole = useQuery({
         queryKey: xsWholeKey,
-        queryFn: () => fetchEntityXs(db!, entity!),
-        enabled: !!db && entity !== null && inclusive && !state.corridor && !entitySpan,
+        queryFn: () => fetchEntityXs(entity!),
+        enabled: entity !== null && inclusive && !state.corridor && !entitySpan,
         staleTime: Infinity,
     })
     // Block-aligned spans count from `road-blocks`, so their xs rows are only needed for the list.
@@ -303,25 +299,23 @@ export function useRoadScope({ info, geom, roadSummary, hotkeys = false }: UseRo
         queryKey: ["road-xs-span", entity, selKey],
         queryFn: () => {
             const all = qc.getQueryData<RoadCrashView[]>(xsWholeKey)
-            return all ? all.filter(c => inSpan(c, spanSel!)) : fetchEntityXs(db!, entity!, spanSel!)
+            return all ? all.filter(c => inSpan(c, spanSel!)) : fetchEntityXs(entity!, spanSel!)
         },
-        enabled: !!db && entity !== null && v5 && !!spanSel && blocksReady && (inclusive || !spanSel.blocks),
+        enabled: entity !== null && v5 && !!spanSel && blocksReady && (inclusive || !spanSel.blocks),
         staleTime: Infinity,
     })
     // Corridor: each member's whole list (one `entity = ?` read each), filtered to the span.
     const memberCrashes = useQueries({
         queries: memberIds.map(id => ({
             queryKey: ["road-crashes", id],
-            queryFn: () => fetchEntityCrashes(db!, id, true),
-            enabled: !!db,
+            queryFn: () => fetchEntityCrashes(id, true),
             staleTime: Infinity,
         })),
     })
     const memberXs = useQueries({
         queries: (inclusive ? memberIds : []).map(id => ({
             queryKey: ["road-xs", id],
-            queryFn: () => fetchEntityXs(db!, id),
-            enabled: !!db,
+            queryFn: () => fetchEntityXs(id),
             staleTime: Infinity,
         })),
     })
@@ -374,8 +368,8 @@ export function useRoadScope({ info, geom, roadSummary, hotkeys = false }: UseRo
     }, [rawRows])
     const names = useQuery({
         queryKey: ["road-names", ownIds.join(",")],
-        queryFn: () => fetchEntityNames(db!, ownIds),
-        enabled: !!db && ownIds.length > 0,
+        queryFn: () => fetchEntityNames(ownIds),
+        enabled: ownIds.length > 0,
         staleTime: Infinity,
     })
     const crashes = useMemo((): ScopeCrash[] | null => {
@@ -427,8 +421,8 @@ export function useRoadScope({ info, geom, roadSummary, hotkeys = false }: UseRo
     // while the file errors).
     const corSummaryQ = useQuery({
         queryKey: ["road-corridor-summary-monthly", corridorId],
-        queryFn: () => fetchCorridorSummary(db!, corridorId!),
-        enabled: !!db && corridorId !== null && state.corridor,
+        queryFn: () => fetchCorridorSummary(corridorId!),
+        enabled: corridorId !== null && state.corridor,
         staleTime: Infinity,
         retry: false,
     })

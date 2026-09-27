@@ -1,9 +1,8 @@
-/** Road data (specs/road-data-v4.md): parquets built by `njdot roads build`, read with DuckDB-WASM
- *  ranged reads. Each file is sorted for row-group pruning: `sri-hit` spatially (a viewport bbox
+/** Road data (specs/road-data-v4.md): parquets built by `njdot roads build`, read with ranged
+ *  reads (`@/src/lib/pq`, specs/off-duckdb-wasm.md). Each file is sorted for row-group pruning: `sri-hit` spatially (a viewport bbox
  *  reads a few groups), `crashes-by-sri` / `sris` by `sri`, the rest (incl. `sri-geom`) by `entity`
  *  (= `slug` order, so a county's / muni's roads are contiguous). */
-import type { AsyncDuckDB } from "@duckdb/duckdb-wasm"
-import { runQuery } from "@/src/lib/DuckDbContext"
+import { readRows, type Filter, type SortKey } from "@/src/lib/pq"
 import { MAP_BASE_URL } from "@/src/map/config"
 import { spanBounds, type BlockCounts, type SpanSel } from "./roadScope"
 
@@ -267,73 +266,71 @@ export function hitFileForZoom(zoom: number): RoadsFile | null {
     return HIT_TIERS.find(t => zoom >= t.minZoom)?.file ?? null
 }
 
-const POINT_COLS = "sri, mp, sld_name, name, subt, entity, alias, lon, lat"
+const POINT_COLS = ["sri", "mp", "sld_name", "name", "subt", "entity", "alias", "lon", "lat"]
 
-export function fetchHitPoints(db: AsyncDuckDB, file: RoadsFile, [w, s, e, n]: Bbox): Promise<RoadPoint[]> {
-    return runQuery<RoadPoint>(db, `
-        SELECT ${POINT_COLS} FROM read_parquet('${roadsUrl(file)}')
-        WHERE lon BETWEEN ${w} AND ${e} AND lat BETWEEN ${s} AND ${n}
-    `)
+export function fetchHitPoints(file: RoadsFile, [w, s, e, n]: Bbox): Promise<RoadPoint[]> {
+    return readRows<RoadPoint>(roadsUrl(file), {
+        columns: POINT_COLS,
+        filter: { lon: { $gte: w, $lte: e }, lat: { $gte: s, $lte: n } },
+    })
 }
 
-export async function fetchEntity(db: AsyncDuckDB, entity: number): Promise<RoadEntity | null> {
-    const rows = await runQuery<RoadEntity>(db, `SELECT * FROM read_parquet('${roadsUrl("road-entities")}') WHERE entity = ${entity | 0}`)
+export async function fetchEntity(entity: number): Promise<RoadEntity | null> {
+    const rows = await readRows<RoadEntity>(roadsUrl("road-entities"), { filter: { entity: entity | 0 } })
     return rows[0] ?? null
 }
 
-export async function fetchEntityBySlug(db: AsyncDuckDB, slug: string): Promise<RoadEntity | null> {
+export async function fetchEntityBySlug(slug: string): Promise<RoadEntity | null> {
     if (!isRoadSlug(slug)) return null
-    const rows = await runQuery<RoadEntity>(db, `SELECT * FROM read_parquet('${roadsUrl("road-entities")}') WHERE slug = '${slug}'`)
+    const rows = await readRows<RoadEntity>(roadsUrl("road-entities"), { filter: { slug } })
     return rows[0] ?? null
 }
 
 const SUMMARY_COLS = ["severity", "n", "tk", "ti", "n_unplaced", "n_node", "n_xs", "tk_xs", "ti_xs", "n_corridor_only"]
 
-/** The road's crash counts per `(year, severity)`, or per `(year, month, severity)` with `monthly`. */
-export function fetchEntitySummary(db: AsyncDuckDB, entity: number, monthly: boolean): Promise<RoadSummaryRow[]> {
-    const file = monthly ? "road-summary-monthly" : "road-summary"
-    return runQuery<RoadSummaryRow>(db, `
-        SELECT ${presentCols(["year", ...(monthly ? ["month"] : []), ...SUMMARY_COLS])}
-        FROM read_parquet('${roadsUrl(file)}') WHERE entity = ${entity | 0}
-    `)
+/** The road's crash counts per `(year, severity)`, or per `(year, month, severity)` with `monthly`.
+ *  Columns a build doesn't have are absent from its rows (`readRows` `columns` are present-only). */
+export function fetchEntitySummary(entity: number, monthly: boolean): Promise<RoadSummaryRow[]> {
+    return readRows<RoadSummaryRow>(roadsUrl(monthly ? "road-summary-monthly" : "road-summary"), {
+        columns: ["year", ...(monthly ? ["month"] : []), ...SUMMARY_COLS],
+        filter: { entity: entity | 0 },
+    })
 }
 
 /** A corridor's crash counts per `(year, month, severity)` (`road-corridor-summary-monthly`, v5.1;
- *  the query fails on builds without it). `n_xs` counts crashes at its intersections on roads
+ *  the read fails on builds without it). `n_xs` counts crashes at its intersections on roads
  *  outside it, once each. */
-export function fetchCorridorSummary(db: AsyncDuckDB, corridor: number): Promise<RoadSummaryRow[]> {
-    return runQuery<RoadSummaryRow>(db, `
-        SELECT ${presentCols(["year", "month", ...SUMMARY_COLS])}
-        FROM read_parquet('${roadsUrl("road-corridor-summary-monthly")}') WHERE corridor = ${corridor | 0}
-    `)
+export function fetchCorridorSummary(corridor: number): Promise<RoadSummaryRow[]> {
+    return readRows<RoadSummaryRow>(roadsUrl("road-corridor-summary-monthly"), {
+        columns: ["year", "month", ...SUMMARY_COLS],
+        filter: { corridor: corridor | 0 },
+    })
 }
 
 /** Every ranked road of a county (`mc` = 0) or muni; callers sort / filter by a metric's rank. */
-export function fetchRoadRanks(db: AsyncDuckDB, cc: number, mc: number): Promise<RoadRank[]> {
-    return runQuery<RoadRank>(db, `SELECT * FROM read_parquet('${roadsUrl("road-ranks")}') WHERE cc = ${cc | 0} AND mc = ${mc | 0}`)
+export function fetchRoadRanks(cc: number, mc: number): Promise<RoadRank[]> {
+    return readRows<RoadRank>(roadsUrl("road-ranks"), { filter: { cc: cc | 0, mc: mc | 0 } })
 }
 
 /** The entity's points: `sri-geom` is sorted by `(entity, sri, mp)`, so the `entity` filter alone
  *  prunes to its row groups (no need to wait for its SRI list). v5 points carry `chain`. */
-export function fetchEntityGeom(db: AsyncDuckDB, entity: number): Promise<(RoadPoint & { chain?: number })[]> {
-    return runQuery<RoadPoint & { chain?: number }>(db, `
-        SELECT ${presentCols([...POINT_COLS.split(", "), "chain"])} FROM read_parquet('${roadsUrl("sri-geom")}')
-        WHERE entity = ${entity | 0}
-        ORDER BY sri, mp
-    `)
+export function fetchEntityGeom(entity: number): Promise<(RoadPoint & { chain?: number })[]> {
+    return readRows<RoadPoint & { chain?: number }>(roadsUrl("sri-geom"), {
+        columns: [...POINT_COLS, "chain"],
+        filter: { entity: entity | 0 },
+        orderBy: ["sri", "mp"],
+    })
 }
 
-/** A DuckDB `COLUMNS(…)` selecting whichever of `cols` the file has: columns added by newer builds
- *  (`loc_source`, `n_unplaced`) are just absent from rows of older ones, rather than failing the
- *  query (road data and the site deploy separately). */
-function presentCols(cols: readonly string[]): string {
-    return `COLUMNS('^(${cols.join("|")})$')`
+/** Along the road: v5 by `chain` (unplaced last), then date; v4 (no `chain`) by `sri, mp`. */
+function crashOrder(v5: boolean): SortKey<RoadCrash>[] {
+    return v5 ? ["chain", "dt"] : [c => c.mp === null, "sri", "mp", "dt"]
 }
 
 /** `crashes-by-entity` is sorted by `(entity, unplaced, chain, dt, id)` (v5; v4: `sri, mp` for
  *  `chain`), so the `entity` filter alone prunes to the road's row groups (no need to wait for its
  *  SRI list). Crashes without a map position sort last. `v5`: order by `chain` (v4 files have
- *  none, and an `ORDER BY` of a missing column fails). */
+ *  none). The SQL twin, for "Open in SQL". */
 export function entityCrashesSql(entity: number, v5: boolean): string {
     const order = v5 ? "chain IS NULL, chain, dt" : "mp IS NULL, sri, mp, dt"
     return `SELECT * FROM read_parquet('${roadsUrl("crashes-by-entity")}') WHERE entity = ${entity | 0} ORDER BY ${order}`
@@ -350,14 +347,16 @@ export type RoadCrashView = Pick<RoadCrash, typeof VIEW_COLS[number]> & {
     own_entity?: number | null
 }
 
-const viewCols = (extra: string[] = []) => `${presentCols([...VIEW_COLS.filter(c => c !== "dt"), ...extra])}, epoch_ms(dt) AS dt`
-
-export function fetchEntityCrashes(db: AsyncDuckDB, entity: number, v5: boolean): Promise<RoadCrashView[]> {
-    return runQuery<RoadCrashView>(db, `SELECT ${viewCols()} FROM (${entityCrashesSql(entity, v5)})`)
+export function fetchEntityCrashes(entity: number, v5: boolean): Promise<RoadCrashView[]> {
+    return readRows<RoadCrashView>(roadsUrl("crashes-by-entity"), {
+        columns: VIEW_COLS,
+        filter: { entity: entity | 0 },
+        orderBy: crashOrder(v5) as SortKey<RoadCrashView>[],
+    })
 }
 
-export function fetchEntityCrashesFull(db: AsyncDuckDB, entity: number, v5: boolean): Promise<RoadCrash[]> {
-    return runQuery<RoadCrash>(db, `SELECT * EXCLUDE (dt), epoch_ms(dt) AS dt FROM (${entityCrashesSql(entity, v5)})`)
+export function fetchEntityCrashesFull(entity: number, v5: boolean): Promise<RoadCrash[]> {
+    return readRows<RoadCrash>(roadsUrl("crashes-by-entity"), { filter: { entity: entity | 0 }, orderBy: crashOrder(v5) })
 }
 
 /** A span's placed-crash predicate (`SpanSel`): `block BETWEEN b0 AND b1` (v5.1 block-aligned
@@ -369,6 +368,13 @@ export function spanPredicate({ span, hiClosed, blocks }: SpanSel): string {
     return `chain >= ${+b.min} AND chain ${b.maxInclusive ? "<=" : "<"} ${+b.max}`
 }
 
+/** `spanPredicate` as a `readRows` filter. */
+export function spanFilter({ span, hiClosed, blocks }: SpanSel): Filter {
+    if (blocks) return { block: { $gte: blocks[0] | 0, $lte: blocks[1] | 0 } }
+    const b = spanBounds(span, hiClosed)
+    return { chain: b.maxInclusive ? { $gte: +b.min, $lte: +b.max } : { $gte: +b.min, $lt: +b.max } }
+}
+
 /** Other roads' crashes at this road's intersections (`crashes-by-entity-xs`, v5): `chain` is the
  *  intersection's chain on this road, `own_entity` the road the crash is on. */
 export function entityXsSql(entity: number, sel?: SpanSel): string {
@@ -376,14 +382,18 @@ export function entityXsSql(entity: number, sel?: SpanSel): string {
     return `SELECT * FROM read_parquet('${roadsUrl("crashes-by-entity-xs")}') WHERE entity = ${entity | 0}${range} ORDER BY chain, dt`
 }
 
-export function fetchEntityXs(db: AsyncDuckDB, entity: number, sel?: SpanSel): Promise<RoadCrashView[]> {
-    return runQuery<RoadCrashView>(db, `SELECT ${viewCols(["own_entity"])} FROM (${entityXsSql(entity, sel)})`)
+export function fetchEntityXs(entity: number, sel?: SpanSel): Promise<RoadCrashView[]> {
+    return readRows<RoadCrashView>(roadsUrl("crashes-by-entity-xs"), {
+        columns: [...VIEW_COLS, "own_entity"],
+        filter: { entity: entity | 0, ...(sel ? spanFilter(sel) : {}) },
+        orderBy: ["chain", "dt"],
+    })
 }
 
 /** A road's crashes in a span (`spanPredicate`), plus its unplaced crashes pinned there (a cross
  *  street puts them within `[chain_lo, chain_hi]`), except `corridor_only` ones (their side is
- *  unknown; `v51`: the build has that column). Two `UNION ALL`ed scans, so a `chain` range prunes
- *  on its stats (an `OR` wouldn't). */
+ *  unknown; `v51`: the build has that column). The SQL twin (for "Open in SQL") `UNION ALL`s two
+ *  scans, so DuckDB-WASM's `chain` range prunes on its stats (an `OR` wouldn't). */
 export function spanCrashesSql(entity: number, sel: SpanSel, v51: boolean): string {
     const src = `read_parquet('${roadsUrl("crashes-by-entity")}')`
     const e = entity | 0
@@ -395,69 +405,63 @@ export function spanCrashesSql(entity: number, sel: SpanSel, v51: boolean): stri
     ) ORDER BY chain IS NULL, chain, dt`
 }
 
-export function fetchSpanCrashes(db: AsyncDuckDB, entity: number, sel: SpanSel, v51: boolean): Promise<RoadCrashView[]> {
-    return runQuery<RoadCrashView>(db, `SELECT ${viewCols()} FROM (${spanCrashesSql(entity, sel, v51)})`)
+/** `spanCrashesSql` as one read: an `$or` prunes row groups when both its branches do. */
+export function spanCrashesFilter(entity: number, sel: SpanSel, v51: boolean): Filter {
+    const { lo, hi } = sel.span
+    const pinned: Filter = {
+        chain: null,
+        chain_lo: { $lte: +hi },
+        chain_hi: { $gte: +lo },
+        ...(v51 ? { $or: [{ corridor_only: null }, { corridor_only: false }] } : {}),
+    }
+    return { entity: entity | 0, $or: [spanFilter(sel), pinned] }
+}
+
+export function fetchSpanCrashes(entity: number, sel: SpanSel, v51: boolean): Promise<RoadCrashView[]> {
+    return readRows<RoadCrashView>(roadsUrl("crashes-by-entity"), {
+        columns: VIEW_COLS,
+        filter: spanCrashesFilter(entity, sel, v51),
+        orderBy: ["chain", "dt"],
+    })
 }
 
 /** The road's blocks, in chain order (`road-blocks`, v5). */
-export function fetchBlocks(db: AsyncDuckDB, entity: number): Promise<RoadBlock[]> {
-    return runQuery<RoadBlock>(db, `SELECT * FROM read_parquet('${roadsUrl("road-blocks")}') WHERE entity = ${entity | 0} ORDER BY block`)
+export function fetchBlocks(entity: number): Promise<RoadBlock[]> {
+    return readRows<RoadBlock>(roadsUrl("road-blocks"), { filter: { entity: entity | 0 }, orderBy: ["block"] })
 }
 
-export async function fetchCorridor(db: AsyncDuckDB, corridor: number): Promise<RoadCorridor | null> {
-    const rows = await runQuery<RoadCorridor>(db, `SELECT * FROM read_parquet('${roadsUrl("road-corridors")}') WHERE corridor = ${corridor | 0}`)
+export async function fetchCorridor(corridor: number): Promise<RoadCorridor | null> {
+    const rows = await readRows<RoadCorridor>(roadsUrl("road-corridors"), { filter: { corridor: corridor | 0 } })
     return rows[0] ?? null
 }
 
-/** `entity, name` of each id in `ids`: one `BETWEEN` scan per cluster of nearby ids (entities are
- *  slug-ordered, so a road's cross streets are mostly close; DuckDB-WASM doesn't prune on `IN`). */
-export async function fetchEntityNames(db: AsyncDuckDB, ids: readonly number[]): Promise<Map<number, string>> {
-    const sorted = [...new Set(ids.map(i => i | 0))].sort((a, b) => a - b)
-    const ranges: [number, number][] = []
-    for (const id of sorted) {
-        const last = ranges[ranges.length - 1]
-        if (last && id - last[1] <= 200) last[1] = id
-        else ranges.push([id, id])
-    }
-    const results = await Promise.all(ranges.map(([a, b]) => runQuery<{ entity: number; name: string }>(db, `
-        SELECT entity, name FROM read_parquet('${roadsUrl("road-entities")}') WHERE entity BETWEEN ${a} AND ${b}
-    `)))
-    const want = new Set(sorted)
-    const out = new Map<number, string>()
-    for (const rows of results) for (const r of rows) if (want.has(r.entity)) out.set(r.entity, r.name)
-    return out
+/** `entity, name` of each id in `ids`: one `IN` read (pruned to the row groups whose `entity`
+ *  range holds one of them; entities are slug-ordered, so a road's cross streets are mostly close). */
+export async function fetchEntityNames(ids: readonly number[]): Promise<Map<number, string>> {
+    const want = [...new Set(ids.map(i => i | 0))].sort((a, b) => a - b)
+    if (!want.length) return new Map()
+    const rows = await readRows<{ entity: number; name: string }>(roadsUrl("road-entities"), {
+        columns: ["entity", "name"],
+        filter: { entity: { $in: want } },
+    })
+    return new Map(rows.map(r => [r.entity, r.name]))
 }
 
 /** The road entity a crash was matched to (null when it has no SRI match, or its point isn't on a
  *  road entity): `crashes-by-sri` is sorted by `sri`, so the SRI filter prunes to its row groups.
  *  Matches on `id`, or on the 4-field PK for rows without one (2024+). */
 export async function fetchCrashEntity(
-    db: AsyncDuckDB,
     crash: { id: number | null; sri: string; year: number; cc: number; mc: number; case: string },
 ): Promise<number | null> {
     if (!isSri(crash.sri)) return null
-    const pk = `year = ${crash.year | 0} AND cc = ${crash.cc | 0} AND mc = ${crash.mc | 0} AND "case" = '${crash.case.replace(/'/g, "''")}'`
-    const match = crash.id !== null ? `(id = ${crash.id | 0} OR (id IS NULL AND ${pk}))` : `(${pk})`
-    const rows = await runQuery<{ entity: number }>(db, `
-        SELECT entity FROM read_parquet('${roadsUrl("crashes-by-sri")}')
-        WHERE sri = '${crash.sri}' AND ${match} LIMIT 1
-    `)
+    const pk: Filter = { year: crash.year | 0, cc: crash.cc | 0, mc: crash.mc | 0, case: crash.case }
+    const match: Filter = crash.id !== null ? { $or: [{ id: crash.id | 0 }, { id: null, ...pk }] } : pk
+    const rows = await readRows<{ entity: number }>(roadsUrl("crashes-by-sri"), {
+        columns: ["entity"],
+        filter: { sri: crash.sri, ...match },
+        limit: 1,
+    })
     return rows[0]?.entity ?? null
-}
-
-export async function fetchRoadInfo(db: AsyncDuckDB, sri: string): Promise<RoadInfo | null> {
-    if (!isSri(sri)) return null
-    const rows = await runQuery<RoadInfo>(db, `SELECT * FROM read_parquet('${roadsUrl("sris")}') WHERE sri = '${sri}'`)
-    return rows[0] ?? null
-}
-
-export function roadCrashesSql(sri: string): string {
-    return `SELECT * FROM read_parquet('${roadsUrl("crashes-by-sri")}') WHERE sri = '${sri}' ORDER BY mp, dt`
-}
-
-export function fetchRoadCrashes(db: AsyncDuckDB, sri: string): Promise<RoadCrash[]> {
-    if (!isSri(sri)) return Promise.resolve([])
-    return runQuery<RoadCrash>(db, `SELECT * EXCLUDE (dt), epoch_ms(dt) AS dt FROM (${roadCrashesSql(sri)})`)
 }
 
 /** Consecutive-MP segments of each route in `points` (same breaks as `roadPaths`). Hit-testing

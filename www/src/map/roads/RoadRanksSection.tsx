@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
-import { useDb } from "@/src/lib/DuckDbContext"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import { Radios } from "@/src/njdot/Radios"
 import { SeverityColorsDark, SeverityColorsLight } from "@/src/njdot/data"
@@ -20,14 +19,12 @@ const METRICS: { metric: RankMetric; label: string; value: (r: RoadRank) => numb
 const TOP = 15
 
 export function RoadRanksSection({ cc, mc, areaName }: { cc: number; mc: number | null; areaName: string }) {
-    const db = useDb()
     const { actualTheme: theme } = useTheme()
     const [metric, setMetric] = useState<RankMetric>("crashes")
     const [expanded, setExpanded] = useState(false)
     const ranks = useQuery({
         queryKey: ["road-ranks", cc, mc ?? 0],
-        queryFn: () => fetchRoadRanks(db!, cc, mc ?? 0),
-        enabled: !!db,
+        queryFn: () => fetchRoadRanks(cc, mc ?? 0),
     })
     const m = METRICS.find(x => x.metric === metric)!
     const rows = useMemo(() => rankedBy(ranks.data ?? [], metric), [ranks.data, metric])

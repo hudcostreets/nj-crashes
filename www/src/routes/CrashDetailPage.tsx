@@ -8,7 +8,6 @@ import { apiUrl } from "@/src/api"
 import { CC2MC2MN, normalize } from "@/src/county"
 import { loadCC2MC2MN } from "@/src/lib/data"
 import { ConditionMap } from "@/src/use-njdot-crashes"
-import { useDb } from "@/src/lib/DuckDbContext"
 import { useTheme } from "@/src/contexts/ThemeContext"
 import { mapViewHref } from "@/src/map/links"
 import { fetchCrashEntity, fetchEntityGeom, roadPaths } from "@/src/map/roads/roadsData"
@@ -181,20 +180,19 @@ export default function CrashDetailPage() {
     }, [year, cc, mc, caseStr])
 
     // The crash's matched road entity (via its SRI), for the map's road path + road-page link.
-    const db = useDb()
     const { actualTheme: theme } = useTheme()
     const c = data?.crash
     const entityQ = useQuery({
         queryKey: ["crash-entity", c?.id, c?.sri, c?.year, c?.cc, c?.mc, c?.case],
-        queryFn: () => fetchCrashEntity(db!, { id: c!.id ?? null, sri: c!.sri!, year: c!.year, cc: c!.cc, mc: c!.mc, case: c!.case }),
-        enabled: !!db && !!c?.sri,
+        queryFn: () => fetchCrashEntity({ id: c!.id ?? null, sri: c!.sri!, year: c!.year, cc: c!.cc, mc: c!.mc, case: c!.case }),
+        enabled: !!c?.sri,
     })
     const entity = entityQ.data ?? null
     const road = useRoadEntity(entity)
     const roadGeom = useQuery({
         queryKey: ["road-geom", entity],
-        queryFn: () => fetchEntityGeom(db!, entity!),
-        enabled: !!db && entity !== null,
+        queryFn: () => fetchEntityGeom(entity!),
+        enabled: entity !== null,
     })
     const paths = useMemo(() => roadGeom.data && roadPaths(roadGeom.data), [roadGeom.data])
 
