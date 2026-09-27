@@ -6,6 +6,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Map as MapGl, type MapRef } from "react-map-gl/maplibre"
+import "./maplibreWorker"
 import "maplibre-gl/dist/maplibre-gl.css"
 import DeckGL from "@deck.gl/react"
 import { GeoJsonLayer, ScatterplotLayer, BitmapLayer } from "@deck.gl/layers"
