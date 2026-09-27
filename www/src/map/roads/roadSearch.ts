@@ -1,8 +1,6 @@
 /** Road search by name (omnibar), over `road-search.parquet`: a word index of every road's name,
  *  route designations and aliases, one row per `(token, name)` (specs/road-data-v4.md § road-search). */
-import type { AsyncDuckDB } from "@duckdb/duckdb-wasm"
-import { asyncBufferFromUrl, parquetMetadataAsync } from "hyparquet"
-import { runQuery } from "@/src/lib/DuckDbContext"
+import { kvMetadata, readRows, type Filter } from "@/src/lib/pq"
 import { roadsUrl, type Bbox } from "./roadsData"
 
 /** Canonical (long) word → its abbreviations. Index tokens are canonical, and query words are
@@ -60,17 +58,17 @@ export function prefixEnd(p: string): string {
     return p.slice(0, -1) + String.fromCharCode(p.charCodeAt(p.length - 1) + 1)
 }
 
-/** `WHERE` clauses fetching `q`'s rows, one query each: its exact canonical tokens, plus a
- *  prefix range when it's being typed (tokens are `[a-z0-9]`, so they're safe to inline). Each is
- *  a single `=` or range, which DuckDB-WASM's DuckDB (v0.9) pushes into the row-group stats; it
- *  doesn't push `OR` / `IN`, and scans the whole file for them. */
-export function wordFilters(q: QueryWord): string[] {
+/** A filter fetching `q`'s rows: its exact canonical tokens, plus a prefix range when it's being
+ *  typed. One read: the `IN` / `OR` prunes to the row groups holding any of them. */
+export function wordFilter(q: QueryWord): Filter {
     const prefix = q.prefix !== null && q.prefix.length > 1 ? q.prefix : null
     const exact = q.exact.filter(t => prefix === null || !t.startsWith(prefix))
-    return [
-        ...exact.map(t => `token = '${t}'`),
-        ...(prefix !== null ? [`token >= '${prefix}' AND token < '${prefixEnd(prefix)}'`] : []),
-    ]
+    return {
+        $or: [
+            ...(exact.length ? [{ token: { $in: exact } }] : []),
+            ...(prefix !== null ? [{ token: { $gte: prefix, $lt: prefixEnd(prefix) } }] : []),
+        ],
+    }
 }
 
 /** One `road-search.parquet` row (without `token`). */
@@ -118,36 +116,24 @@ export function filterHits(rows: RoadSearchRow[], words: QueryWord[], limit: num
         .slice(0, limit)
 }
 
-const SEARCH_COLS = "entity, slug, name, matched, kind, words, subt, n_crashes, place, lon, lat, dx0, dy0, dx1, dy1"
-let cappedTokens: Promise<Set<string>> | null = null
+const SEARCH_COLS = ["entity", "slug", "name", "matched", "kind", "words", "subt", "n_crashes", "place", "lon", "lat", "dx0", "dy0", "dx1", "dy1"]
 
-/** The index's capped tokens (key-value metadata `capped_tokens`: `{token: full count}`), read once
- *  per session. Via hyparquet: DuckDB-WASM's DuckDB (v0.9) has no `parquet_kv_metadata`. The
- *  footer is ~100 KB, so one 128 KB tail read covers it. */
-function fetchCapped(): Promise<Set<string>> {
-    if (!cappedTokens) {
-        cappedTokens = asyncBufferFromUrl({ url: roadsUrl("road-search") })
-            .then(buf => parquetMetadataAsync(buf, { initialFetchSize: 1 << 17 }))
-            .then(md => {
-                const kv = md.key_value_metadata?.find(({ key }) => key === "capped_tokens")
-                return new Set(Object.keys(kv?.value ? JSON.parse(kv.value) as Record<string, number> : {}))
-            })
-        cappedTokens.catch(() => { cappedTokens = null })
-    }
-    return cappedTokens
+/** The index's capped tokens (key-value metadata `capped_tokens`: `{token: full count}`), from the
+ *  footer the index reads share (read once per session). */
+async function fetchCapped(): Promise<Set<string>> {
+    const v = (await kvMetadata(roadsUrl("road-search"))).capped_tokens
+    return new Set(Object.keys(v ? JSON.parse(v) as Record<string, number> : {}))
 }
 
 /** Roads matching `query`, most crashes first (specs/road-data-v4.md's recipe): fetch one word's
- *  rows (a token-range read of 1–2 row groups), filter the rest client-side. The one place that
- *  knows where road-search data lives. */
-export async function searchRoads(db: AsyncDuckDB, query: string, limit: number): Promise<RoadSearchRow[]> {
+ *  rows (a token read of 1–2 row groups), filter the rest client-side. The one place that knows
+ *  where road-search data lives. */
+export async function searchRoads(query: string, limit: number): Promise<RoadSearchRow[]> {
     const words = queryWords(query)
     const q = pickWord(words, await fetchCapped())
     if (!q) return []
-    const rows = await Promise.all(wordFilters(q).map(where => runQuery<RoadSearchRow>(db, `
-        SELECT ${SEARCH_COLS} FROM read_parquet('${roadsUrl("road-search")}') WHERE ${where}
-    `)))
-    return filterHits(rows.flat(), words, limit)
+    const rows = await readRows<RoadSearchRow>(roadsUrl("road-search"), { columns: SEARCH_COLS, filter: wordFilter(q) })
+    return filterHits(rows, words, limit)
 }
 
 export type RoadHitLabel = {

@@ -1,7 +1,6 @@
 /** A road's crash table + CSV export, shared by the map's `RoadPanel` and the road page. */
 import { useState, type CSSProperties, type ReactNode } from "react"
 import { Link } from "react-router-dom"
-import { useDb } from "@/src/lib/DuckDbContext"
 import { Tooltip } from "@/src/tooltip"
 import { fetchEntityCrashesFull, isUnplaced, type LocSource, type RoadCrash, type RoadCrashView } from "./roadsData"
 import { isCorridorOnly, isPinned } from "./roadScope"
@@ -35,18 +34,16 @@ export function downloadCsv(slug: string, rows: RoadCrash[]) {
 
 /** Exports every column of every crash on the road; the views only load the columns they show. */
 export function ExportCsvButton({ entity, slug, v5, disabled, style }: { entity: number; slug: string; v5: boolean; disabled?: boolean; style: CSSProperties }) {
-    const db = useDb()
     const [busy, setBusy] = useState(false)
     const onClick = async () => {
-        if (!db) return
         setBusy(true)
         try {
-            downloadCsv(slug, await fetchEntityCrashesFull(db, entity, v5))
+            downloadCsv(slug, await fetchEntityCrashesFull(entity, v5))
         } finally {
             setBusy(false)
         }
     }
-    return <button style={style} disabled={disabled || busy || !db} onClick={onClick}>{busy ? "Exporting…" : "Export CSV"}</button>
+    return <button style={style} disabled={disabled || busy} onClick={onClick}>{busy ? "Exporting…" : "Export CSV"}</button>
 }
 
 export function crashHref(r: Pick<RoadCrash, "year" | "cc" | "mc" | "case">): string {

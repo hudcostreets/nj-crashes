@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { entityXsSql, nearestRoad, roadPaths, roadSegments, spanCrashesSql, spanPredicate, type RoadPoint } from "./roadsData"
+import {
+    entityXsSql, nearestRoad, roadPaths, roadSegments, spanCrashesFilter, spanCrashesSql, spanFilter, spanPredicate, type RoadPoint,
+} from "./roadsData"
 import type { SpanSel } from "./roadScope"
 
 // ~0.00147° lat ≈ 163 m: consecutive tenth-mile MP points on a north-south route.
@@ -72,6 +74,34 @@ describe("span SQL", () => {
         expect([norm(entityXsSql(2800, blocks)), norm(entityXsSql(2800))]).toEqual([
             "SELECT * FROM <crashes-by-entity-xs> WHERE entity = 2800 AND block BETWEEN 30 AND 31 ORDER BY chain, dt",
             "SELECT * FROM <crashes-by-entity-xs> WHERE entity = 2800 ORDER BY chain, dt",
+        ])
+    })
+})
+
+describe("span filters (the `readRows` twins of the span SQL)", () => {
+    it("filters block-aligned spans by block id, exact spans by chain", () => {
+        expect([spanFilter(blocks), spanFilter(exact), spanFilter(toEnd)]).toEqual([
+            { block: { $gte: 30, $lte: 31 } },
+            { chain: { $gte: 1.4599, $lt: 1.4999 } },
+            { chain: { $gte: 2.9999, $lte: 3.4836973 } },
+        ])
+    })
+    it("ORs in pinned rows, without corridor-only ones on v5.1", () => {
+        expect([spanCrashesFilter(2800, blocks, true), spanCrashesFilter(2800, exact, false)]).toEqual([
+            {
+                entity: 2800,
+                $or: [
+                    { block: { $gte: 30, $lte: 31 } },
+                    { chain: null, chain_lo: { $lte: 1.532 }, chain_hi: { $gte: 1.46 }, $or: [{ corridor_only: null }, { corridor_only: false }] },
+                ],
+            },
+            {
+                entity: 2800,
+                $or: [
+                    { chain: { $gte: 1.4599, $lt: 1.4999 } },
+                    { chain: null, chain_lo: { $lte: 1.5 }, chain_hi: { $gte: 1.46 } },
+                ],
+            },
         ])
     })
 })

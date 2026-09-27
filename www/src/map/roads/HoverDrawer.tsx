@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { useDb } from "@/src/lib/DuckDbContext"
 import { fetchEntity, type RoadPoint } from "./roadsData"
 
 /** Wait this long on one road before fetching its summary, so sweeping the cursor across a
@@ -35,12 +34,11 @@ export type HoverDrawerProps = {
  *  independent of each other; a click goes to the road when there is one, else the area. With a
  *  scoped road selected, also the scope and how to change it. */
 export function HoverDrawer({ road, roadSelected, area, dodgePanel, scope, theme }: HoverDrawerProps) {
-    const db = useDb()
     const entity = useSettled(road?.entity ?? null, INFO_DELAY_MS)
     const info = useQuery({
         queryKey: ["road-entity", entity],
-        queryFn: () => fetchEntity(db!, entity!),
-        enabled: !!db && entity !== null,
+        queryFn: () => fetchEntity(entity!),
+        enabled: entity !== null,
     })
     if (!road && !area) return null
     const summary = road && info.data?.entity === road.entity ? info.data : null

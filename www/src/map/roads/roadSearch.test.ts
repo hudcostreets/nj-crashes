@@ -2,7 +2,7 @@ import { readFileSync } from "fs"
 import { resolve } from "path"
 import { describe, expect, it } from "vitest"
 import {
-    filterHits, formatRoadHit, hitBbox, pickWord, prefixEnd, queryTokens, queryWords, SYNONYMS, wordFilters,
+    filterHits, formatRoadHit, hitBbox, pickWord, prefixEnd, queryTokens, queryWords, SYNONYMS, wordFilter,
     type RoadSearchRow,
 } from "./roadSearch"
 
@@ -55,20 +55,20 @@ describe("pickWord", () => {
     })
 })
 
-describe("wordFilters", () => {
-    it("fetches the canonical tokens and, for the word being typed, a prefix range: one pushable filter each", () => {
+describe("wordFilter", () => {
+    it("fetches the canonical tokens and, for the word being typed, a prefix range, in one read", () => {
         const [kenn] = queryWords("kenn")
-        expect(wordFilters(kenn)).toEqual(["token >= 'kenn' AND token < 'keno'"])
+        expect(wordFilter(kenn)).toEqual({ $or: [{ token: { $gte: "kenn", $lt: "keno" } }] })
         const [, side] = queryWords("west side ")
-        expect(wordFilters(side)).toEqual(["token = 'side'"])
+        expect(wordFilter(side)).toEqual({ $or: [{ token: { $in: ["side"] } }] })
         const [st] = queryWords("st ")
-        expect(wordFilters(st)).toEqual(["token = 'street'", "token = 'saint'"])
+        expect(wordFilter(st)).toEqual({ $or: [{ token: { $in: ["street", "saint"] } }] })
         const [blvd] = queryWords("blvd")
-        expect(wordFilters(blvd)).toEqual(["token = 'boulevard'", "token >= 'blvd' AND token < 'blve'"])
+        expect(wordFilter(blvd)).toEqual({ $or: [{ token: { $in: ["boulevard"] } }, { token: { $gte: "blvd", $lt: "blve" } }] })
         const [ave] = queryWords("ave")
-        expect(wordFilters(ave)).toEqual(["token >= 'ave' AND token < 'avf'"])
+        expect(wordFilter(ave)).toEqual({ $or: [{ token: { $gte: "ave", $lt: "avf" } }] })
         const [w] = queryWords("w")
-        expect(wordFilters(w)).toEqual(["token = 'west'"])
+        expect(wordFilter(w)).toEqual({ $or: [{ token: { $in: ["west"] } }] })
     })
     it("bounds prefixes by incrementing their last character", () => {
         expect([prefixEnd("kenn"), prefixEnd("tz"), prefixEnd("a9")]).toEqual(["keno", "t{", "a:"])

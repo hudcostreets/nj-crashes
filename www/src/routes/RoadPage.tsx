@@ -7,7 +7,6 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
 import { Head } from "@/src/lib/head"
 import { url as siteUrl } from "@/src/site"
-import { useDb } from "@/src/lib/DuckDbContext"
 import { loadCC2MC2MN } from "@/src/lib/data"
 import { normalize } from "@/src/county"
 import { useTheme } from "@/src/contexts/ThemeContext"
@@ -51,7 +50,6 @@ function pathsBbox(paths: [number, number][][]): Bbox | null {
 export default function RoadPage() {
     const params = useParams()
     const ref = parseRoadRef(params["*"])
-    const db = useDb()
     const navigate = useNavigate()
     const { actualTheme: theme } = useTheme()
     const [order, setOrder] = useState<Order>("date")
@@ -60,15 +58,15 @@ export default function RoadPage() {
 
     const info = useRoadEntity(ref)
     const entity = typeof ref === "string" ? info.data?.entity ?? null : null
-    const enabled = !!db && entity !== null
+    const enabled = entity !== null
     const sris = useMemo(() => info.data?.sris.split(",") ?? [], [info.data])
     const summary = useQuery({
         queryKey: ["road-summary-monthly", entity],
-        queryFn: () => fetchEntitySummary(db!, entity!, true) as Promise<(RoadSummaryRow & { month: number })[]>,
+        queryFn: () => fetchEntitySummary(entity!, true) as Promise<(RoadSummaryRow & { month: number })[]>,
         enabled,
         staleTime: Infinity,
     })
-    const geom = useQuery({ queryKey: ["road-geom", entity], queryFn: () => fetchEntityGeom(db!, entity!), enabled, staleTime: Infinity })
+    const geom = useQuery({ queryKey: ["road-geom", entity], queryFn: () => fetchEntityGeom(entity!), enabled, staleTime: Infinity })
     const scope = useRoadScope({
         info: typeof ref === "string" ? info.data ?? null : null,
         geom: geom.data ?? null,
