@@ -28,3 +28,5 @@ meta:
       /njdot/road_model.py: a8c87e0dd62d755a2874123b38996520283204ad
       /njdot/road_overrides.py: f5f1b42b0bc78966d30a911336813ea2d30a98cd
       /njdot/data/road_overrides.yml: bdd4d8bcd2ca4afebf2025a752312dd1645072d6
+      /njdot/road_notes.py:
+      /njdot/data/road_notes.yml:

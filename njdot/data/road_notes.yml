@@ -1,0 +1,94 @@
+# Per-road data notes, emitted by `njdot roads build` as `road-notes.parquet` (`njdot/road_notes.py`;
+# schema and evidence in specs/road-anomalies.md). Each note explains a known change in how NJDOT's
+# data covers or codes the roads it selects, for road / corridor pages to show beside their per-year
+# counts. Muni-wide notes about a police department take `subt: [2, 3, 5, 6, 7]` (not interstates,
+# toll roads or ramps, which the State Police patrol). Coverage gaps (a town's reports missing for some
+# years) are also found and noted automatically (`muni_gaps`); a note here with the same scalar `cc` /
+# `mc` and overlapping years replaces the automatic one. `kind`: reporting (an agency reports differently), coverage (crashes missing from NJDOT's
+# data), coding (NJDOT codes locations differently), unexplained (a verified step with no cause found).
+
+- id: jersey-city-pdo-2020
+  kind: reporting
+  years: [2020, 2025]
+  title: Jersey City reports fewer property-damage crashes since 2020
+  text: >
+    Jersey City's property-damage-only crash reports fell 42% in 2020 (7,006 → 4,051) and stayed 24–35%
+    below 2019 through 2025, while outside Hudson County they recovered to 7% below. Its injury crashes are back at
+    2019 levels (1,532 in 2019; 1,535 in 2024). So most Jersey City roads show a step down from 2019 to
+    2020+ that is mostly in minor crashes, and not a change on the road itself.
+  where: {cc: 9, mc: 6, subt: [2, 3, 5, 6, 7]}
+
+- id: newark-2006-07-gap
+  kind: coverage
+  years: [2006, 2007]
+  title: Many Newark crash reports are missing for 2006–07
+  text: >
+    NJDOT's data has 8,660 and 6,377 Newark crashes in 2006 and 2007, vs 13,293 in 2005 and 12,304 in
+    2008; Newark Police's own reports fell to 5,900 and 3,948 (from ~10,000), evenly across all months and
+    severities. The gap is worst in the North Ward: north of about 40.755° N only ~10% of the usual
+    crashes are in the data, vs ~65–80% in the rest of the city.
+  where: {cc: 7, mc: 14, subt: [2, 3, 5, 6, 7]}
+
+- id: edgewater-2010-12-gap
+  kind: coverage
+  years: [2010, 2012]
+  title: Edgewater's crash reports are missing from May 2010 through 2012
+  text: >
+    NJDOT's data has Edgewater Police crash reports through April 2010 and again from 2013, but almost none
+    in between: 136 Edgewater crashes in 2010 (all but one in January–April), 3 in 2011 and 3 in 2012, vs
+    ~350–495 a year before and after.
+  where: {cc: 2, mc: 13, subt: [2, 3, 5, 6, 7]}
+
+- id: port-authority-2019
+  kind: coverage
+  years: [2001, 2018]
+  title: Port Authority police crashes are in NJDOT's data only from 2019
+  text: >
+    Crashes reported by the Port Authority Police (the George Washington Bridge and its approach, the
+    Lincoln and Holland Tunnels and their helix / approaches, the Goethals Bridge, Port Newark) are all but
+    absent before 2019 (at most 13 a year) and number 1,350–2,526 a year in 2019–22. On these roads the
+    jump in 2019 is that change: the George Washington Bridge had 2 crashes in 2018 and 484 in 2019, all
+    reported by the Port Authority.
+  where:
+    slug: >-
+      bergen/fort-lee/(george-washington-bridge|interstate-95|interstate-95-express)|hudson/weehawken/(lincoln-tunnel|nj-495)|hudson/state-highway-495|hudson/jersey-city/(holland-tunnel|12th-street)|essex/newark/(port-street|corbin-street)|union/interstate-278|union/elizabeth/goethals-bridge
+
+- id: express-lanes-2023
+  kind: coding
+  years: [2023, 2025]
+  title: From 2023, crashes are coded to express lanes separately
+  text: >
+    NJDOT's 2023+ crash data (the AASHTO format) codes crashes to the express-lane routes (SRIs like
+    00000095E_) of divided highways, which 2001–22 data rarely or never used: New Jersey Turnpike express
+    lanes had 0 crashes a year in 2019–22 and 732, 1,646 and 1,694 in 2023–25; Garden State Parkway express
+    lanes 0 → 111, 246, 319. The same crashes left the local lanes' roads. Compare the whole corridor, whose
+    totals are continuous (the Turnpike's main line and express lanes: 6,447 in 2022, 5,973 / 6,500 / 6,432
+    in 2023–25).
+  where:
+    sris: '(^|,)00000[0-9]{3}E'
+  corridors: true
+
+- id: turnpike-2012-13
+  kind: unexplained
+  years: [2012, 2013]
+  title: Fewer Turnpike crashes reported in 2012–13
+  text: >
+    NJDOT's data has 5,310 and 5,010 New Jersey Turnpike crashes in 2012 and 2013, vs 6,827 in 2011 and
+    5,925 in 2014 (about 22% fewer), and 34% fewer north of Newark (Bergen and Hudson: 1,205 / 1,172 vs
+    1,831 / 1,643), nearly all State Police reports from its Newark station. State Police crash reports
+    statewide fell only 11% in 2012; no cause is known.
+  where:
+    slug: '[a-z-]+/new-jersey-turnpike'
+  corridors: true
+
+- id: essex-st-rt17-2003-07
+  kind: unexplained
+  years: [2003, 2007]
+  title: A cluster of crashes at the Route 17 interchange in 2003–07
+  text: >
+    In 2003–07 NJDOT coded 80–126 crashes a year to Essex Street (CR 56) at the Route 17 interchange, all at
+    one milepost (3.48), most with cross street "RT 17"; from 2008 it's 0–11 a year there. The crashes don't
+    reappear on Route 17 or its ramps, and Maywood's and Rochelle Park's totals fell by about the same
+    amount, so it may be a real change (e.g. the interchange's layout) or a reporting one.
+  where:
+    slug: bergen/maywood/west-essex-street|bergen/essex-street|bergen/rochelle-park/essex-street

@@ -189,6 +189,17 @@ PAR_COS = 0.9
 # Sequential members: an end of one within this of a point of the other (MP points are ~80 m apart).
 SEQ_M = 100
 RAMP_SUBT = 8
+# Limited-access classes (`subt`: 1 interstate, 4 toll road): consecutive runs on one SRI are one
+# road whatever NG9-1-1 calls each stretch ("Pearl Harbor Memorial Bridge", "New Jersey Turnpike West
+# Alignment" beside "New Jersey Turnpike", "Walt Whitman Bridge" → "Interstate 76").
+FREEWAY_SUBT = (1, 4)
+# … unless one is a city street carrying the route (Jersey City's "12th Street" is I-78 eastbound to
+# the Holland Tunnel, with cross streets and pedestrians).
+STREET_NAME_RE = r'(?i)\b(?:STREET|AVENUE|ROAD|BOULEVARD|PLACE|DRIVE|LANE|TERRACE|COURT|ST|AVE|RD|BLVD)$'
+# Words that mark a road as one carriageway / lane set / branch of a bigger one: such a member names a
+# corridor only if no other NG9-1-1-named member is as long ("New Jersey Turnpike Express" is 0.05 mi
+# longer than "New Jersey Turnpike" in Middlesex).
+AUX_NAME_RE = r'(?i)\b(?:EXPRESS|SECONDARY|LOCAL|ALIGNMENT|SPUR|RAMP|TRUCK)\b'
 
 
 def _headings(geom: pd.DataFrame, X: np.ndarray, Y: np.ndarray) -> np.ndarray:
@@ -209,11 +220,14 @@ def corridor_pairs(ents: pd.DataFrame, runs: pd.DataFrame, geom: pd.DataFrame, p
     """Entity pairs that are one right-of-way, `(a, b, kind)` with `a < b`, `kind` "sequential"
     (direction variants / same name, touching end to end: an end of one within `SEQ_M` of the
     other's points, or consecutive runs on one SRI, where also an entity NG9-1-1 doesn't name continues
-    a named one) or "parallel" (see `PAR_*`; direction variants / same name, or sharing an SRI route
-    number, e.g. `00000001__` / `00000001_S`). Ramps never pair."""
+    a named one, and any two limited-access entities (`FREEWAY_SUBT`, not named as a city street)
+    continue each other) or
+    "parallel" (see `PAR_*`; direction variants / same name, or sharing an SRI route number, e.g.
+    `00000001__` / `00000001_S`). Ramps never pair."""
     e = ents.set_index('entity')
     dk = pd.Series(dir_key(e['name']).to_numpy(), index=e.index)
     ramp = e['subt'].ge(RAMP_SUBT)
+    fwy = e['subt'].isin(FREEWAY_SUBT) & ~e['name'].astype('string').str.strip().str.contains(STREET_NAME_RE, regex=True).fillna(False)
     fam = runs.assign(f=runs['sri'].str[:8]).groupby('entity')['f'].agg(lambda s: frozenset(s))
     gent = geom['entity'].to_numpy()
     X, Y = to_meters(geom['lon'].to_numpy(), geom['lat'].to_numpy())
@@ -250,7 +264,9 @@ def corridor_pairs(ents: pd.DataFrame, runs: pd.DataFrame, geom: pd.DataFrame, p
     # continues a named one on the same SRI is the same road.
     unnamed = (geom.assign(named=geom['seg'].to_numpy() >= 0).groupby('entity')['named'].mean() < 0.5) if 'seg' in geom else pd.Series(dtype=bool)
     for a, b in zip(ra, rb):
-        if a != b and not ramp.get(a, True) and not ramp.get(b, True) and (named(a, b) or unnamed.get(a, False) or unnamed.get(b, False)):
+        if a != b and not ramp.get(a, True) and not ramp.get(b, True) and (
+            named(a, b) or unnamed.get(a, False) or unnamed.get(b, False) or (fwy.get(a, False) and fwy.get(b, False))
+        ):
             pairs[(min(a, b), max(a, b))] = 'sequential'
 
     # Parallel.
@@ -298,7 +314,8 @@ def road_corridors(
     `sign`: its chain maps to the corridor's as `cchain = c0 + sign · chain`, and corridor chain
     starts at 0.
 
-    The spine is the NG9-1-1-named member with the longest chain; members are placed breadth-first
+    The spine is the NG9-1-1-named member with the longest chain, preferring one whose name isn't an
+    auxiliary carriageway's (`AUX_NAME_RE`: "… Express", "… Secondary"); members are placed breadth-first
     from it: a parallel member by its points' chains on a placed member it shares MPs with (a
     secondary carriageway beside its parent), else by the median offset to its points' nearest
     placed points' corridor chains; a sequential one end to end past whichever corridor end it
@@ -314,6 +331,7 @@ def road_corridors(
     _, comp = connected_components(adj, directed=False)
     length = pieces.groupby('entity')['chain_hi'].max()
     name = ents.set_index('entity')['name']
+    aux = name.astype('string').str.contains(AUX_NAME_RE, regex=True).fillna(False)
     # NG9-1-1-named members name the corridor (not an SLD-named continuation).
     ng_named = geom.assign(named=geom['seg'].to_numpy() >= 0).groupby('entity')['named'].mean() >= 0.5 if 'seg' in geom else pd.Series(dtype=bool)
     X, Y = to_meters(geom['lon'].to_numpy(), geom['lat'].to_numpy())
@@ -333,7 +351,7 @@ def road_corridors(
     crow, mrows = [], []
     for c in range(comp.max() + 1):
         mem = [int(e) for e in ids[comp == c]]
-        spine = max(mem, key=lambda e: (bool(ng_named.get(e, True)), length.get(e, 0), -e))
+        spine = max(mem, key=lambda e: (bool(ng_named.get(e, True)), not aux.get(e, False), length.get(e, 0), -e))
         placed = {spine: (0.0, 1, 'spine')}
         queue = [spine]
         while queue:

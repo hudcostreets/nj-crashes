@@ -33,6 +33,7 @@ in the browser by DuckDB-WASM with ranged reads, so each is sorted for row-group
 - `crashes-by-entity.parquet`: crashes on an entity's runs, sorted `(entity, sri, mp, dt, id)`.
 - `crashes-by-sri.parquet` / `sris.parquet`: the same by whole SRI route (`crashes-by-sri` also
   carries each crash's `entity`, null when on none).
+- `road-notes.parquet`: data notes per road / corridor (`njdot.road_notes`; specs/road-anomalies.md).
 """
 import json
 import os
@@ -59,7 +60,8 @@ from njdot.road_net import (
 )
 from njdot.cc2mc2mn import CC2MC2MN, cc2mc2mn
 from njdot.road_model import Steps, block_of, block_pos, block_stats, model_outputs, node_table, xs_rows
-from njdot.road_overrides import ROAD_OVERRIDES, Override, apply_overrides, load_overrides
+from njdot.road_notes import ROAD_NOTES, Note, gap_notes, load_notes, muni_gaps, road_notes
+from njdot.road_overrides import ROAD_OVERRIDES, Override, apply_overrides, apply_recodes, load_overrides
 from njdot.road_outputs import (
     UNPLACED_SOURCES, entity_lengths, entity_slugs, point_mc, road_ranks, road_search_index, road_summary, search_meta,
     slug_order, unplaced,
@@ -121,6 +123,8 @@ ROW_GROUP = {
     'road-corridors': 1_000,
     'road-corridor-summary': 10_000,
     'road-corridor-summary-monthly': 20_000,
+    # specs/road-anomalies.md § Data notes: a few hundred rows.
+    'road-notes': 10_000,
 }
 # Dictionary-encode only these columns (a small row group's dictionary of mostly-distinct strings
 # costs more than it saves); default all.
@@ -132,6 +136,7 @@ DICT = {
     'road-nodes': [],
     'road-node-entities': ['cross'],
     'road-corridors': ['kind'],
+    'road-notes': ['note', 'kind', 'title', 'text'],
     'road-entities': [],
     'road-ranks': [],
     'road-search': ['token', 'kind', 'place', 'words'],
@@ -147,6 +152,7 @@ STATS = {
     'road-corridors': ['corridor', 'slug'],
     'road-corridor-summary': ['corridor'],
     'road-corridor-summary-monthly': ['corridor'],
+    'road-notes': ['entity', 'corridor'],
     'road-entities': ['entity', 'slug', 'cc', 'mc'],
     'sri-geom': ['entity'],
     'road-runs': ['entity'],
@@ -190,8 +196,9 @@ def crashes_by_sri(crashes: pd.DataFrame, latlon: pd.DataFrame, extra: list[str]
 RECOVERY_COLS = ['road_system', 'cross_street_distance', 'Unit Of Measurement', 'Direction From Cross Street']
 # … and the intersection association (`road_model.crash_nodes`): NJDOT's intersection flag.
 XS_COLS = ['Intersection']
-# The police location fields carried through `by_sri` / `by_entity` for `crash_nodes` (not written).
-LOC_COLS = ['cross_street_distance', 'Unit Of Measurement', 'Intersection']
+# The police location fields carried through `by_sri` / `by_entity` for `crash_nodes`, and the id of
+# the `recode` override that rewrote a crash's location fields (`apply_recodes`; → `override`). Not written.
+LOC_COLS = ['cross_street_distance', 'Unit Of Measurement', 'Intersection', '_recode']
 # AASHTO (2024+) names its `road_system`s; only private property matters to recovery.
 AASHTO_ROAD_SYSTEMS = {'Private Property': PRIVATE_ROAD_SYSTEM}
 
@@ -792,10 +799,11 @@ def place_crashes(
 @option('-C', '--county', 'cc', type=int, help='Dev subset: only this county\'s crashes, NG911 segments and nearby NJDOT lines')
 @option('-g', '--ng911-dir', default=NG911_DIR, show_default=True, help='`njdot roads fetch-ng911` output dir')
 @option('-n', '--network', default=ROADWAY_NETWORK, show_default=True, help='`njdot roads fetch-network` output')
+@option('-N', '--notes', 'notes_path', default=ROAD_NOTES, show_default=True, help='Curated per-road data notes (YAML; see `njdot.road_notes`) → `road-notes.parquet`')
 @option('-o', '--out-dir', default=ROADS_DIR, show_default=True, help='Output dir')
 @option('-O', '--overrides', 'overrides_path', default=ROAD_OVERRIDES, show_default=True, help='Curated crash-assignment overrides (YAML; see `njdot.road_overrides`)')
 @option('-R', '--no-recover', is_flag=True, help='Skip crash location recovery (coded SRI / MP only)')
-def roads_build(crashes_path: str | None, cc: int | None, ng911_dir: str, network: str, out_dir: str, overrides_path: str, no_recover: bool):
+def roads_build(crashes_path: str | None, cc: int | None, ng911_dir: str, network: str, notes_path: str, out_dir: str, overrides_path: str, no_recover: bool):
     """Build the `roads/` parquets (see module docstring)."""
     os.makedirs(out_dir, exist_ok=True)
     cl_path, al_path = join(ng911_dir, 'centerlines.parquet'), join(ng911_dir, 'aliases.parquet')
@@ -811,6 +819,9 @@ def roads_build(crashes_path: str | None, cc: int | None, ng911_dir: str, networ
     b = build_geom(rn, cl, al, con)
     steps('points, runs, entities')
     del rn
+    overrides = load_overrides(overrides_path)
+    recode_counts: dict[str, int] = {}
+    muni_counts = None
     if crashes_path:
         # A previous build's `crashes-by-sri` carries its (now stale) `entity`; it has no uncoded
         # crashes to recover.
@@ -826,10 +837,18 @@ def roads_build(crashes_path: str | None, cc: int | None, ng911_dir: str, networ
         crashes = load_build_crashes(cc)
         latlon = _build_base(crashes, keep_severities=set())
         steps('load crashes')
+        # Crashes per muni-year, for `road_notes.muni_gaps` (towns whose reports are missing some years).
+        mcc = crashes.dropna(subset=['cc', 'mc'])
+        muni_counts = mcc.groupby([mcc['cc'].astype(int), mcc['mc'].astype(int), 'year']).size().rename('n').reset_index()
+        del mcc
+        crashes, recode_counts = apply_recodes(crashes, overrides)
+        for rid, n in recode_counts.items():
+            err(f'  recode override {rid}: {n:,} crashes')
         by_sri, by_entity = place_crashes(crashes, latlon, b, cl, al, con, recover=not no_recover)
         del crashes, latlon
         steps('place crashes (incl. recovery)')
-    o = road_outputs(b, by_sri, by_entity, con, cc2mc2mn, load_overrides(overrides_path))
+    o = road_outputs(b, by_sri, by_entity, con, cc2mc2mn, overrides, load_notes(notes_path), muni_counts)
+    o['override_counts'] = recode_counts | o['override_counts']
     steps('road outputs')
     n_unpl = int(unplaced(o['by_entity']).sum())
     err(f'  {len(b["runs"]):,} runs → {len(o["ents"]):,} entities; {len(o["by_entity"]):,} crashes on an entity ({n_unpl:,} without a map point), {len(by_sri):,} with an SRI')
@@ -845,11 +864,15 @@ def road_outputs(
     con: duckdb.DuckDBPyConnection,
     cc2mc2mn: CC2MC2MN,
     overrides: list[Override] | None = None,
+    notes: list[Note] | None = None,
+    muni_counts: pd.DataFrame | None = None,
 ) -> dict:
     """`build_geom` output + crashes (`by_sri` with a row index `_i`, `assign_crashes` output) → the
     output tables (keys = file names, plus `ents` / `by_entity` / `geom` / `runs` / `capped` /
     `override_counts`), with entity ids renumbered in slug order (`road_outputs.slug_order`), the
-    curated `overrides` applied (`njdot.road_overrides`), and the v5 model (`njdot.road_model`:
+    curated `overrides` applied (`njdot.road_overrides`), the curated `notes` and the coverage gaps
+    found in `muni_counts` (`cc, mc, year, n`: all crashes per muni-year) attached (`njdot.road_notes`
+    → `road-notes`), and the v5 model (`njdot.road_model`:
     chainage, corridors, intersection nodes, blocks; specs/road-model-v5.md). Updates `b`'s `geom`
     / `runs` and `by_sri` (adds `entity`, drops `_i`) in place."""
     steps = Steps()
@@ -915,14 +938,22 @@ def road_outputs(
     nodes, node_ents = node_table(m['nodes'], m['node_ents'], m['node_legs'], b['seg'] if 'seg' in b else pd.DataFrame({'name': []}), ents, by_entity)
     blocks = blocks_v5(m['blocks'], by_entity, node_ents, xs)
     corridors, cor_summary, cor_summary_m = corridors_v5(m['corridors'], m['members'], ents, by_entity, xs, geom)
-    steps('nodes, blocks, corridors')
+    notes = list(notes or [])
+    if muni_counts is not None and len(muni_counts):
+        gaps = gap_notes(muni_gaps(muni_counts), notes, {(c, mc): f'{mn}' for c, cty in cc2mc2mn.items() for mc, mn in cty.mc2mn.items()})
+        err(f'  coverage gaps: {len(gaps)} muni-year runs ({", ".join(g.id for g in gaps[:12])}{", …" if len(gaps) > 12 else ""})')
+        notes += gaps
+    ent_munis = pd.DataFrame({'entity': geom['entity'].to_numpy(), 'cc': geom['cc'].astype('Int64').fillna(-1).to_numpy(), 'mc': pt_mc})
+    ent_munis = ent_munis[(ent_munis['mc'] >= 0) & (ent_munis['cc'] >= 0)].drop_duplicates()
+    notes_df = road_notes(notes, ents, m['members'].set_index('entity')['corridor'], ent_munis)
+    steps('nodes, blocks, corridors, notes')
     return {
         'geom': geom, 'runs': runs, 'ents': ents, 'by_entity': by_entity, 'by_sri': by_sri, 'xs': xs,
         'road-summary': road_summary(by_entity, xs=xs), 'road-summary-monthly': road_summary(by_entity, monthly=True, xs=xs),
         'road-ranks': road_ranks(by_entity, ents, lengths), 'road-search': search, 'capped': capped,
         'road-pieces': m['pieces'], 'road-blocks': blocks, 'road-nodes': nodes, 'road-node-entities': node_ents,
         'road-corridors': corridors, 'road-corridor-summary': cor_summary, 'road-corridor-summary-monthly': cor_summary_m,
-        'members': m['members'], 'pairs': m['pairs'],
+        'road-notes': notes_df, 'members': m['members'], 'pairs': m['pairs'],
         'override_counts': override_counts, 'node_legs': m['node_legs'], 'seg_ent': m['seg_ent'], 'node_ents_raw': m['node_ents'],
     }
 
@@ -1023,6 +1054,8 @@ BY_ENTITY_V51_COLS = ['block', 'corridor_only']
 V5_FILES = [
     'road-pieces', 'road-blocks', 'road-nodes', 'road-node-entities', 'road-corridors', 'road-corridor-summary',
     'road-corridor-summary-monthly',
+    # specs/road-anomalies.md § Data notes.
+    'road-notes',
 ]
 
 
@@ -1105,24 +1138,37 @@ def roads_audit(crashes_path: str, cc: int, ng911_dir: str, osm_path: str | None
 @option('-o', '--out', 'csv_path', help='Write the full ranked review queue (CSV) here')
 @option('-r', '--roads-dir', default=ROADS_DIR, show_default=True, help='`njdot roads build` output dir')
 def roads_audit_anomalies(md_path: str | None, top: int, csv_path: str | None, roads_dir: str):
-    """Rank roads whose crash counts look like data quirks: year-over-year breaks, crashes without
-    a map point, and road pairs whose split of shared crashes swings by year (`njdot.road_anomalies`)."""
-    from njdot.road_anomalies import pair_swings, queue_markdown, review_queue, unplaced_share, yoy_breaks
+    """Rank roads whose crash counts look like data quirks: year-over-year breaks (of roads, and of
+    corridors), crashes without a map point, and road pairs whose split of shared crashes swings by
+    year (`njdot.road_anomalies`). Breaks a corridor absorbs or a data note (`road-notes`) explains
+    are left out."""
+    from njdot.road_anomalies import absorbed, corridor_yoy, noted, pair_swings, queue_markdown, review_queue, unplaced_share, yoy_breaks
     rd = lambda f, cols=None: pd.read_parquet(join(roads_dir, f), columns=cols)
     ents = rd('road-entities.parquet', ['entity', 'slug', 'name', 'cc', 'subt'])
     summary = rd('road-summary.parquet')
     ramps = set(ents.loc[ents['subt'] >= 8, 'entity'])
     summary = summary[~summary['entity'].isin(ramps)]
-    parts = [yoy_breaks(summary, ents), unplaced_share(summary, ents)]
-    # `pair_swing` needs v5 outputs (intersection nodes, corridors).
+    yoy = yoy_breaks(summary, ents)
+    if exists(join(roads_dir, 'road-notes.parquet')):
+        # Breaks a data note already explains (a town's missing reports, a coding change).
+        nt = noted(yoy, rd('road-notes.parquet'))
+        err(f'Data notes explain {int(nt.sum()):,} of {len(yoy):,} `yoy` findings')
+        yoy = yoy[~nt]
+    parts = [unplaced_share(summary, ents)]
+    # `pair_swing` / `corridor_yoy` need v5 outputs (intersection nodes, corridors).
     if exists(join(roads_dir, 'road-node-entities.parquet')):
         be = rd('crashes-by-entity.parquet', ['entity', 'year', 'node'])
         node_ents = rd('road-node-entities.parquet', ['entity', 'node'])
         members = rd('road-entities.parquet', ['entity', 'corridor']).dropna(subset=['corridor'])
-        parts.append(pair_swings(be, node_ents, ents, members))
+        swings = pair_swings(be, node_ents, ents, members)
+        cor = corridor_yoy(rd('road-corridor-summary.parquet'), rd('road-corridors.parquet', ['corridor', 'slug', 'name', 'cc']), summary, ents)
+        ay, ap = absorbed(yoy, cor, members), absorbed(swings, cor, members)
+        err(f'Corridors absorb {int(ay.sum()):,} of {len(yoy):,} `yoy` and {int(ap.sum()):,} of {len(swings):,} `pair_swing` findings (their corridor\'s series has no break then)')
+        yoy, swings = yoy[~ay], swings[~ap]
+        parts += [swings, cor]
     else:
-        err(f'{roads_dir} has no `road-node-entities.parquet` (pre-v5 build): skipping `pair_swing`')
-    q = review_queue(parts)
+        err(f'{roads_dir} has no `road-node-entities.parquet` (pre-v5 build): skipping `pair_swing`, `corridor_yoy`')
+    q = review_queue([yoy] + parts)
     if csv_path:
         q.to_csv(csv_path, index=False)
         err(f'Wrote {len(q):,} findings to {csv_path}')
