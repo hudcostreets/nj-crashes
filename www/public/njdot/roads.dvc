@@ -24,3 +24,4 @@ meta:
       /njdot/road_sources.py: 16f90a6b0f8f9b6e082ac31fee649c7619c6075b
       /njdot/road_outputs.py: 8041ce01e3f24c56e13777cfd6d32a6883f17136
       /njdot/cc2mc2mn.py: 100cbbb7521f7b3ae87df50088b849705a253f87
+      /njdot/loc_recovery.py:
