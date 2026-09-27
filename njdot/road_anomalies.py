@@ -10,6 +10,13 @@ ranked review queue of roads whose crash counts look like data quirks rather tha
   split of the crashes between them swings by year: police in some years putting the other street
   in `road` (the cross-street attribution convention), or NJDOT coding one street's crashes on the
   other's SRI. Score: χ² of the per-year split against the pooled one.
+- **`corridor_yoy`**: `yoy` on corridors (`road-corridor-summary`). A corridor absorbs its members'
+  swings (a carriageway's crashes recoded to its express lanes), so a member's `yoy` finding, or a
+  `pair_swing` of two members, is dropped when its corridor has no `corridor_yoy` finding in those
+  years (`absorbed`): the corridor's series is continuous.
+
+A `yoy` finding a data note explains (`noted`: `road-notes`, e.g. a town's reports missing those
+years) is dropped too.
 """
 import numpy as np
 import pandas as pd
@@ -33,9 +40,17 @@ SWING_MIN_RANGE = 0.5
 QUEUE_COLS = ['kind', 'score', 'slug', 'name', 'other_slug', 'years', 'observed', 'expected', 'detail']
 
 
-def yoy_breaks(summary: pd.DataFrame, ents: pd.DataFrame, years: tuple[int, int] | None = None) -> pd.DataFrame:
+def yoy_breaks(
+    summary: pd.DataFrame,
+    ents: pd.DataFrame,
+    years: tuple[int, int] | None = None,
+    scale_summary: pd.DataFrame | None = None,
+    scale_ents: pd.DataFrame | None = None,
+) -> pd.DataFrame:
     """`road-summary` (`entity, year, severity, n`) + `road-entities` (`entity, slug, name, cc`) →
-    one row per run of consecutive anomalous years per road (see module docstring)."""
+    one row per run of consecutive anomalous years per road (see module docstring). The county /
+    state totals that scale each road's expectation come from `scale_summary` / `scale_ents` when
+    given (corridors: the roads' totals), else from `summary` / `ents`."""
     n = summary.groupby(['entity', 'year'])['n'].sum().rename('n').reset_index()
     tot = n.groupby('entity')['n'].sum()
     big = tot[tot >= YOY_MIN_TOTAL].index
@@ -44,14 +59,18 @@ def yoy_breaks(summary: pd.DataFrame, ents: pd.DataFrame, years: tuple[int, int]
     ys = np.arange(y0, y1 + 1)
     grid = n.pivot(index='entity', columns='year', values='n').reindex(columns=ys).fillna(0)
     cc = ents.set_index('entity')['cc'].reindex(grid.index)
-    # County totals per year (all roads), to scale each road's expectation by its county's trend.
-    allc = summary.merge(ents[['entity', 'cc']], on='entity').groupby(['cc', 'year'])['n'].sum().unstack().reindex(columns=ys).fillna(0)
+    # County totals per year (all roads), to scale each road's expectation by its county's trend; a
+    # road in no one county (a statewide corridor) by the state's.
+    scale = summary if scale_summary is None else scale_summary
+    sents = ents if scale_ents is None else scale_ents
+    allc = scale.merge(sents[['entity', 'cc']], on='entity').groupby(['cc', 'year'])['n'].sum().unstack().reindex(columns=ys).fillna(0)
+    state = scale.groupby('year')['n'].sum().reindex(ys).fillna(0).to_numpy(dtype=float)
     rows = []
     vals = grid.to_numpy()
     for k, ent in enumerate(grid.index):
         v = vals[k]
         # The county's other roads (not this one: its own break would damp its expectation).
-        c = allc.loc[cc[ent]].to_numpy(dtype=float) - v if not pd.isna(cc[ent]) and cc[ent] in allc.index else np.ones(len(ys))
+        c = (allc.loc[cc[ent]].to_numpy(dtype=float) if not pd.isna(cc[ent]) and cc[ent] in allc.index else state) - v
         # Only years the road "exists" in the data: from its first to its last non-zero year.
         nz = np.flatnonzero(v > 0)
         if not len(nz):
@@ -150,6 +169,61 @@ def pair_swings(by_entity: pd.DataFrame, node_ents: pd.DataFrame, ents: pd.DataF
     return out
 
 
+def corridor_yoy(cor_summary: pd.DataFrame, corridors: pd.DataFrame, summary: pd.DataFrame, ents: pd.DataFrame) -> pd.DataFrame:
+    """`yoy_breaks` on corridors (`road-corridor-summary`, `road-corridors`: `corridor, slug, name,
+    cc`), scaled by the roads' county / state totals (`road-summary`, `road-entities`), as kind
+    `corridor_yoy` with `corridor` (the corridor's id) and its `slug` / `name`."""
+    c = corridors.rename(columns={'corridor': 'entity'})
+    out = yoy_breaks(cor_summary.rename(columns={'corridor': 'entity'}), c, scale_summary=summary, scale_ents=ents)
+    if not len(out):
+        return out
+    return out.assign(kind='corridor_yoy', corridor=out['entity']).drop(columns=['entity'])
+
+
+def _years(y: str) -> tuple[int, int]:
+    """A finding's `years` ("2011", "2011-2013", "2012 / 2010") → `(lo, hi)`."""
+    v = [int(x) for x in y.replace('/', '-').split('-') if x.strip()]
+    return min(v), max(v)
+
+
+def absorbed(findings: pd.DataFrame, cor_breaks: pd.DataFrame, members: pd.DataFrame) -> np.ndarray:
+    """Which `yoy` / `pair_swing` `findings` a corridor absorbs: the road (and, for a pair, the other
+    road too) is in a corridor (`members`: `entity, corridor`) with no `corridor_yoy` finding
+    (`cor_breaks`) overlapping the finding's years."""
+    if not len(findings):
+        return np.zeros(0, dtype=bool)
+    c_of = members.dropna(subset=['corridor']).astype({'entity': 'int64', 'corridor': 'int64'}).set_index('entity')['corridor']
+    br: dict[int, list[tuple[int, int]]] = {}
+    for c, y in zip(cor_breaks.get('corridor', []), cor_breaks.get('years', [])):
+        br.setdefault(int(c), []).append(_years(y))
+    out = []
+    for r in findings.itertuples():
+        c = c_of.get(int(r.entity))
+        other = getattr(r, 'other', None)
+        if c is None or (other is not None and not pd.isna(other) and c_of.get(int(other)) != c):
+            out.append(False)
+            continue
+        lo, hi = _years(r.years)
+        out.append(not any(a <= hi and lo <= b for a, b in br.get(int(c), [])))
+    return np.array(out, dtype=bool)
+
+
+def noted(findings: pd.DataFrame, notes: pd.DataFrame) -> np.ndarray:
+    """Which `yoy` `findings` a data note explains (`road-notes`: `entity, year_lo, year_hi`): one on
+    the road whose years (all years, when it has none) overlap the finding's."""
+    if not len(findings) or not len(notes):
+        return np.zeros(len(findings), dtype=bool)
+    n = notes.dropna(subset=['entity'])
+    by: dict[int, list[tuple[int, int]]] = {}
+    for e, lo, hi in zip(n['entity'], n['year_lo'], n['year_hi']):
+        by.setdefault(int(e), []).append((-10**4 if pd.isna(lo) else int(lo), 10**4 if pd.isna(hi) else int(hi)))
+    out = []
+    for e, y in zip(findings['entity'], findings['years']):
+        lo, hi = _years(y)
+        out.append(any(a <= hi and lo <= b for a, b in by.get(int(e), [])))
+    return np.array(out, dtype=bool)
+
+
 def _with_names(df: pd.DataFrame, ents: pd.DataFrame) -> pd.DataFrame:
     if not len(df):
         return pd.DataFrame(columns=QUEUE_COLS)
@@ -172,7 +246,10 @@ def review_queue(parts: list[pd.DataFrame]) -> pd.DataFrame:
 def queue_markdown(q: pd.DataFrame, top: int) -> str:
     """The top `top` findings of each kind as markdown tables."""
     out = ['# Road anomaly review queue', '']
-    titles = {'yoy': 'Year-over-year breaks', 'unplaced': 'Crashes without a map point', 'pair_swing': 'Attribution swings between road pairs'}
+    titles = {
+        'yoy': 'Year-over-year breaks', 'corridor_yoy': 'Year-over-year breaks of corridors',
+        'unplaced': 'Crashes without a map point', 'pair_swing': 'Attribution swings between road pairs',
+    }
     for kind, title in titles.items():
         k = q[q['kind'] == kind].head(top)
         out += [f'## {title} (`{kind}`)', '']

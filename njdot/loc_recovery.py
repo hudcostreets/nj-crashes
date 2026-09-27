@@ -574,9 +574,11 @@ def recover(
     `cands`: for `none` crashes whose name is several entities' in the muni, those entities (a sorted
     tuple; else None).
 
-    Crashes coded with an SRI + MP keep them (`sri_mp`) unless the SRI is gone from the current
-    network (`runs`: e.g. Hudson's pre-2018 county-route SRIs `09000617__` …), in which case they're
-    re-located like uncoded ones (and keep their coded SRI / MP if that fails). Crashes on private
+    Crashes coded with an SRI + MP keep them (`sri_mp`) unless no current run (`runs`) holds them: the
+    SRI is gone from the network (Hudson's pre-2018 county-route SRIs `09000617__` …) or its MPs
+    there are (the network's `09000697__` stops at MP 1.3; pre-2018 Kearny Ave was MP 1.4–3.6). Those
+    are re-located like uncoded ones, else calibrated (`calibrate_retired`), else keep their coded
+    SRI / MP (on no entity). Crashes on private
     property (`road_system` = `PRIVATE_ROAD_SYSTEM`) stay `none`.
 
     `seg` / `idx`: NG911 segments (`ng_segments`) and their `ng_name_index`; `seg_ent`: each
@@ -589,8 +591,15 @@ def recover(
     has_sri = sri_in.fillna('').ne('')
     net = set(runs['sri'])
     coded = has_sri & crashes['mp'].notna()
-    ok = coded & sri_in.isin(net).fillna(False)
+    # On a current run. A coded SRI + MP that isn't — the SRI retired, or cut back (Kearny Ave was
+    # `09000697__` MP 1.4–3.6 until 2018; today's `09000697__` ends at MP 1.3 in Harrison) — is
+    # re-located like an uncoded crash.
+    ok = coded & entity_at(sri_in, crashes['mp'], runs).notna().to_numpy()
     sri0 = sri_in.where(has_sri, route_sri(sp['road'], crashes['cc'], net))
+    # Off a current run of a *current* SRI: that SRI's lines are where its MPs are today, not where the
+    # crash is (pre-2018 CR 677 II ran on past today's end, MP 1.22, into Weehawken), so neither
+    # `route_xs` on them nor `sri_only` onto its entity. Names, or else calibration, place these.
+    sri0 = sri0.mask(coded & ~ok & sri_in.isin(net).fillna(False))
     x_sri = route_sri(sp['cross'], crashes['cc'], net)
     r_rk, x_rk = route_keys(sp['road']), route_keys(sp['cross'])
     base = pd.DataFrame({'cc': crashes['cc'].astype('Int64'), 'mc': crashes['mc'].astype('Int64')}, index=crashes.index)
@@ -655,9 +664,18 @@ def recover(
             cands[i] = tuple(sorted(e))
         elif e is not None:
             ent[i] = e
-    # (d″) Retired SRIs the strings couldn't re-locate: the SRI's MPs calibrated against its other
-    # crashes' known points (recovered or police-reported), then refined by the cross street.
-    retired = todo & coded_a & ~sri_in.isin(net).fillna(False).to_numpy()
+    # (d″) Retired SRIs / MP ranges the strings couldn't re-locate: the SRI's MPs calibrated against
+    # its other off-network crashes' known points (recovered or police-reported), then refined by the
+    # cross street.
+    retired = todo & coded_a
+    # A current SRI's off-run MPs: calibrated only near its current extent (a cut-back end, a gap). An
+    # MP miles past it is a typo (`00000509__` MP 146.7 for 14.67), not a retired stretch.
+    ext = runs.groupby('sri').agg(lo=('mp_lo', 'min'), hi=('mp_end', 'max'))
+    s_lo = sri_in.map(ext['lo']).to_numpy(dtype='float64', na_value=np.nan)
+    s_hi = sri_in.map(ext['hi']).to_numpy(dtype='float64', na_value=np.nan)
+    mp_in = crashes['mp'].to_numpy(dtype='float64', na_value=np.nan)
+    far = np.isfinite(s_lo) & ((mp_in < s_lo - CAL_EXTEND_MI) | (mp_in > s_hi + CAL_EXTEND_MI))
+    retired &= ~far
     still = retired & (src == 'sri_mp')
     if still.any():
         ax = np.where(np.isfinite(qx), qx, pts[:, 0])
@@ -725,6 +743,8 @@ CAL_OUTLIER_M = 150
 CAL_SRI_SHARE = 0.5
 # A cross-street refinement of a calibrated point is kept only this close to it.
 CAL_XS_MAX_M = 200
+# A current SRI's off-run MPs are calibrated only within this many miles of its runs' MP extent.
+CAL_EXTEND_MI = 5.0
 
 
 def calibrate_retired(
@@ -737,7 +757,8 @@ def calibrate_retired(
     snapper: 'Snapper',
 ) -> dict[int, tuple[str, float, np.ndarray]]:
     """Crashes coded with an SRI + MP that today's network lacks (retired SRIs: Hudson's pre-2019
-    county routes `09000612__` …), placed by the SRI's *other* crashes: those with a point (`ax` /
+    county routes `09000612__` …; or MPs past a cut-back SRI's current runs), placed by the SRI's
+    *other* such crashes (`anchor`): those with a point (`ax` /
     `ay`, meters: recovered from their strings, or police-reported) are anchors `(mp, point)`. Per
     SRI, anchors are binned (`CAL_BIN_MP`, median point), outliers dropped, and a `query` crash's MP
     is interpolated between the anchors around it (≤ `CAL_MAX_SPAN_MI` apart, or within
@@ -775,6 +796,9 @@ def calibrate_retired(
         near = [snapper.near(np.array([x, y])) for x, y in zip(x_, y_)]
         cnt = pd.Series([v for ss in near for v in ss], dtype=object).value_counts()
         sris = set(cnt[cnt >= CAL_SRI_SHARE * len(m_)].index)
+        if len(str(s)) <= 10:
+            # A route's crashes aren't on a ramp (ramp SRIs: the route's SRI + a ramp id, "00000444__A314670").
+            sris = {v for v in sris if len(str(v)) <= 10}
         if not sris:
             continue
         rows = q.iloc[qs_by[s]]

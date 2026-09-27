@@ -201,6 +201,11 @@ def test_recover_real(real):
         crash('WEST SIDE AVE', sri='09061575__'),
         # An SRI gone from the current network (Hudson's pre-2018 county-route SRIs): re-located.
         crash('WEST SIDE AVE', 'DUNCAN AVE', sri='09000617__', mp=1.0, dist=500, unit='FE', d='S'),
+        # A current SRI at an MP no current run holds (a cut-back SRI: pre-2018 CR 697 ran on past
+        # today's end): re-located too, by name; failing that it keeps its SRI / MP, on no road (not
+        # `sri_only` onto the SRI's current entity, which the MP says it isn't on).
+        crash('WEST SIDE AVE', 'DUNCAN AVE', sri='09061684__', mp=4.0, dist=500, unit='FE', d='S'),
+        crash('XYZ', sri='09061575__', mp=0.9),
         crash('WEST SIDE AVE', 'DUNCAN AVE', road_system=9),  # private property
         crash('DUNCAN AVE / W SIDE AVE'),  # either may be the road
         crash('WEST SIDE AVE', 'BERGEN AVE'),  # never meet: a wrong name, so no name-only guess
@@ -222,6 +227,8 @@ def test_recover_real(real):
         ('sri_mp', '09061684__', 1.2, 'West Side Avenue', None),
         ('sri_only', '09061575__', None, 'West Side Avenue', 'exact'),
         ('intersection', '09061684__', 1.86, 'West Side Avenue', 'exact'),
+        ('intersection', '09061684__', 1.86, 'West Side Avenue', 'exact'),
+        ('sri_mp', '09061575__', 0.9, None, None),
         ('none', None, None, None, 'exact'),
         ('none', None, None, None, 'exact'),
         ('none', None, None, None, 'exact'),

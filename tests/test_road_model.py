@@ -76,6 +76,44 @@ def test_direction_variants_are_separate_entities_in_one_corridor():
     ]
 
 
+def fwy_case(names: list[str], subts: list[int]) -> tuple:
+    """Entities end to end on one SRI `F` (MP 0–0.1, 0.1–0.2, …), 3 points each, along `LAT`."""
+    rows = []
+    for k, (name, subt) in enumerate(zip(names, subts)):
+        for j in range(3):
+            mp = round(0.1 * k + 0.05 * j, 2)
+            rows.append({'sri': 'F', 'mp': mp, 'sld_name': 'X', 'name': name, 'subt': np.int8(subt), 'lon': lon_at(mp * MI_M), 'lat': LAT, 'cc': 9, 'seg': 0, 'entity': k})
+    geom = pd.DataFrame(rows).astype({'cc': 'Int8'})
+    runs = pd.DataFrame([
+        {'entity': k, 'sri': 'F', 'mp_lo': round(0.1 * k, 2), 'mp_hi': round(0.1 * k + 0.1, 2), 'mp_end': round(0.1 * k + 0.1, 2),
+         'lon0': lon_at(0.1 * k * MI_M), 'lat0': LAT, 'lon1': lon_at((0.1 * k + 0.1) * MI_M), 'lat1': LAT}
+        for k in range(len(names))
+    ])
+    pieces = entity_pieces(runs, {})
+    geom['chain'] = chain_at(geom['entity'], geom['sri'], geom['mp'], pieces, {})
+    ents = pd.DataFrame({'entity': range(len(names)), 'name': names, 'subt': subts, 'cc': [9] * len(names)})
+    return ents, runs, geom, pieces
+
+
+def test_freeway_continuations_are_one_corridor():
+    """Consecutive runs of one SRI are one road when both are limited-access (`FREEWAY_SUBT`: 1
+    interstate, 4 toll road) whatever NG9-1-1 names them ("Pearl Harbor Memorial Bridge" continuing
+    the "New Jersey Turnpike Extension"), but not a city street carrying the route (JC's "12th
+    Street" on I-78), nor local roads. The spine names the corridor, and isn't an express / secondary
+    carriageway even when that's (slightly) longer."""
+    ents, runs, geom, pieces = fwy_case(['Pearl Harbor Memorial Bridge', 'New Jersey Turnpike Extension', '12th Street'], [1, 1, 1])
+    assert corridor_pairs(ents, runs, geom, pieces, {}).values.tolist() == [[0, 1, 'sequential']]
+    ents, runs, geom, pieces = fwy_case(['Walt Whitman Bridge', 'Interstate 76', 'Oak Road'], [1, 4, 7])
+    assert corridor_pairs(ents, runs, geom, pieces, {}).values.tolist() == [[0, 1, 'sequential']]
+    ents, runs, geom, pieces = fwy_case(['Elm Street', 'Maple Street', 'Oak Road'], [7, 7, 7])
+    assert corridor_pairs(ents, runs, geom, pieces, {}).values.tolist() == []
+    # Spine: "… Express" (0.1 mi longer here) loses to the main line.
+    ents, runs, geom, pieces = fwy_case(['New Jersey Turnpike', 'New Jersey Turnpike Express', 'Oak Road'], [1, 1, 7])
+    pieces.loc[pieces['entity'] == 1, 'chain_hi'] += 0.1
+    cor, mem = road_corridors(ents, corridor_pairs(ents, runs, geom, pieces, {}), geom, pieces)
+    assert cor[['name', 'spine']].values.tolist() == [['New Jersey Turnpike', 0]]
+
+
 def piece_runs() -> pd.DataFrame:
     """One entity, three pieces, in meters along `LAT`: A (MP 0–1, 0 → 1609 m), then B (MP 5–5.5)
     running *backwards* from 1629 m (its MP 5.5 end) to 2434 m, then C (MP 0–0.2) 1 km past B;
@@ -146,6 +184,24 @@ def test_calibrate_retired_sri():
     anchor = np.isfinite(ax)
     out = calibrate_retired(sri, mp, ax, ay, anchor, ~anchor, snap)
     assert {i: (s, round(m, 2)) for i, (s, m, _) in out.items()} == {4: ('NEW', 2.3), 7: ('NEW', 2.9)}
+
+
+def test_calibrate_retired_skips_ramps():
+    """A route's retired MPs aren't calibrated onto a ramp: here the only current line along the
+    anchors is a ramp SRI (`NEW` + a ramp id), so nothing is placed; a ramp's own retired SRI can be."""
+    ramp = 'NEW_______A100'
+    feats = rn_features(line_feats(ramp, 0, MI_M, 2.0, 3.0))
+    snap = Snapper(feats)
+    x0, y0 = to_meters([lon_at(0)], [LAT])
+    anchors = [0.1, 0.25, 0.4, 0.9]
+    for old, placed in (('OLD', {}), ('OLD_______A100', {4: (ramp, 2.3)})):
+        sri = np.array([old] * 5, dtype=object)
+        mp = np.array(anchors + [0.3])
+        ax = np.array([x0[0] + m * MI_M for m in anchors] + [np.nan])
+        ay = np.array([y0[0]] * 4 + [np.nan])
+        anchor = np.isfinite(ax)
+        out = calibrate_retired(sri, mp, ax, ay, anchor, ~anchor, snap)
+        assert {i: (s, round(m, 2)) for i, (s, m, _) in out.items()} == placed
 
 
 # --- Crash ↔ node -----------------------------------------------------------------------------
