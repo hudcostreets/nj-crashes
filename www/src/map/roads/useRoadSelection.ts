@@ -80,14 +80,10 @@ export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
     useEffect(() => {
         if (typeof ref === "number" && info.data) setRoadUrl(info.data.slug)
     }, [ref, info.data, setRoadUrl])
-    const road = info.data?.entity ?? null
+    // A click's (numeric) ref is the entity, so its geometry etc. load alongside the entity row.
+    const road = typeof ref === "number" ? ref : info.data?.entity ?? null
     const enabled = !!db && road !== null
-    const sris = info.data?.sris.split(",") ?? []
-    const geom = useQuery({
-        queryKey: ["road-geom", road, info.data?.sris],
-        queryFn: () => fetchEntityGeom(db!, road!, sris),
-        enabled: enabled && sris.length > 0,
-    })
+    const geom = useQuery({ queryKey: ["road-geom", road], queryFn: () => fetchEntityGeom(db!, road!), enabled })
     const summary = useQuery({ queryKey: ["road-summary", road], queryFn: () => fetchEntitySummary(db!, road!, false), enabled })
     const crashes = useQuery({ queryKey: ["road-crashes", road], queryFn: () => fetchEntityCrashes(db!, road!), enabled })
 
