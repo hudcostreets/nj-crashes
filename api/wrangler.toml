@@ -37,7 +37,7 @@ database_id = "d29fda93-ed68-4229-a2b9-da55460e80a1"
 # `migrations/`. Screenshots go to a *private* bucket (no custom domain, unlike
 # `crashes` → crashes-data.hccs.dev), served only via the worker's tokenized
 # `/v1/feedback/:id/screenshot` route. Both are declared in `infra/__main__.py`.
-# Secrets (`wrangler secret put`): FEEDBACK_SLACK_WEBHOOK, FEEDBACK_ADMIN_TOKEN,
+# Secrets (`wrangler secret put`): SLACK_FEEDBACK_WEBHOOK, FEEDBACK_ADMIN_TOKEN,
 # TURNSTILE_SECRET — each optional (unset → Slack skipped / listing disabled /
 # no bot check).
 [[d1_databases]]

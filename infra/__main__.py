@@ -125,7 +125,7 @@ feedback_turnstile = cf.TurnstileWidget(
 
 # Worker secrets for crashes-api (+ `--env dev`), set with `wrangler secret put`
 # (wrangler owns the Worker scripts, so Pulumi can't attach them):
-#   FEEDBACK_SLACK_WEBHOOK  Slack incoming-webhook URL (unset → Slack skipped)
+#   SLACK_FEEDBACK_WEBHOOK  Slack incoming-webhook URL (unset → Slack skipped)
 #   FEEDBACK_ADMIN_TOKEN    Bearer token for `GET /v1/feedback` (unset → disabled)
 #   TURNSTILE_SECRET        `pulumi stack output turnstile_secret --show-secrets`
 
