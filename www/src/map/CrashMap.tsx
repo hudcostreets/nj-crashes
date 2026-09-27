@@ -95,15 +95,12 @@ export type Props = {
      *  zoom levels + muni sizes without the user re-tuning. */
     heightScale?: number
     onHeightScaleChange?: (n: number) => void
-    /** Drill-down polygons (counties statewide, munis within a county): hovered/clicked via
-     *  `onOutlineHover` / `onOutlineClick`. */
+    /** Drill-down polygons (counties statewide, munis within a county), faintly tinted. Hover and
+     *  click are hit-tested by the caller from `onMapHover` / `onMapClick` coordinates, so they
+     *  don't depend on which layer deck.gl picks on top. */
     pickOutline?: FeatureCollection
-    /** The hovered drill-down polygon, stroked on top of everything else. */
+    /** The hovered drill-down polygon, filled + stroked above the data layers. */
     hoverOutline?: Feature | null
-    /** Click handler for `pickOutline` polygons (geo drill-down). */
-    onOutlineClick?: (feature: any) => void
-    /** Hovered `pickOutline` feature (null on leave). */
-    onOutlineHover?: (feature: any | null) => void
     /** Fired for any click on the map canvas (used for drawer close-on-click). */
     /** Map click, with the clicked `[lon, lat]` (unless a layer handled it). */
     onMapClick?: (lngLat?: [number, number]) => void
@@ -392,8 +389,6 @@ export function CrashMap({
     onHeightScaleChange,
     pickOutline,
     hoverOutline,
-    onOutlineClick,
-    onOutlineHover,
     onMapClick,
     onMapHover,
     extraLayers,
@@ -721,25 +716,18 @@ export function CrashMap({
                 },
             }))
         }
-        // Drill-down polygons: a faint tint (only while clickable) that picks hover/click. When
-        // they're the outline itself (statewide counties), don't re-stroke the borders.
-        if (pickOutline && (onOutlineClick || onOutlineHover)) {
+        // Drill-down polygons: a faint tint. When they're the outline itself (statewide counties),
+        // don't re-stroke the borders.
+        if (pickOutline) {
             layers.push(new GeoJsonLayer({
                 id: "pick-outline",
                 data: pickOutline,
-                getFillColor: onOutlineClick ? [...lineRgb, 12] as any : [0, 0, 0, 0] as any,
+                getFillColor: [...lineRgb, 12] as any,
                 getLineColor: [...lineRgb, pickOutline === outline ? 0 : 70] as any,
                 lineWidthMinPixels: 0.6,
-                pickable: true,
-                autoHighlight: !!onOutlineClick,
-                highlightColor: [...lineRgb, 50] as any,
-                onClick: onOutlineClick ? (info: any) => {
-                    if (info.object) { onOutlineClick(info.object); return true }
-                    return false
-                } : undefined,
-                onHover: onOutlineHover ? (info: any) => { onOutlineHover(info.object ?? null) } : undefined,
+                pickable: false,
                 updateTriggers: {
-                    getFillColor: [theme, !!onOutlineClick],
+                    getFillColor: [theme],
                     getLineColor: [theme, pickOutline === outline],
                 },
             }))
@@ -757,17 +745,17 @@ export function CrashMap({
             }))
         }
         return layers
-    }, [outline, muniOutline, pickOutline, theme, onOutlineClick, onOutlineHover])
+    }, [outline, muniOutline, pickOutline, theme])
     // The hovered drill-down polygon's stroke goes above the data layers (heatmap / bins would
     // otherwise bury it), below `extraLayers` (road hover/selection).
     const hoverOutlineLayer = useMemo(() => hoverOutline ? new GeoJsonLayer({
         id: "hover-outline",
         data: [hoverOutline],
-        getFillColor: [0, 0, 0, 0] as any,
+        getFillColor: (theme === "dark" ? [255, 255, 255, 28] : [0, 60, 140, 28]) as any,
         getLineColor: (theme === "dark" ? [255, 255, 255, 230] : [0, 60, 140, 240]) as any,
         lineWidthMinPixels: 2.5,
         pickable: false,
-        updateTriggers: { getLineColor: [theme] },
+        updateTriggers: { getFillColor: [theme], getLineColor: [theme] },
     }) : null, [hoverOutline, theme])
 
     // Strategy A bake: recompute the KDE image only when the cell set (or its

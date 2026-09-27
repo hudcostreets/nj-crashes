@@ -47,3 +47,38 @@ export function outlineLabel(f: Feature, withCounty: boolean): string | null {
     }
     return p.name ? `${p.name} County` : null
 }
+
+/** Even-odd ray cast over every ring of a (Multi)Polygon, so holes (e.g. a doughnut-hole muni
+ *  inside its surrounding township) are excluded. */
+function inRings(rings: number[][][], x: number, y: number): boolean {
+    let inside = false
+    for (const ring of rings) {
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const [xi, yi] = ring[i], [xj, yj] = ring[j]
+            if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside
+        }
+    }
+    return inside
+}
+
+export function featureContains(f: Feature, [x, y]: [number, number]): boolean {
+    const g = f.geometry
+    if (g?.type === "Polygon") return inRings(g.coordinates, x, y)
+    if (g?.type === "MultiPolygon") return g.coordinates.some(p => inRings(p, x, y))
+    return false
+}
+
+/** The feature containing `lngLat` (first match, bbox-prefiltered), for hover/click hit-testing
+ *  by cursor position rather than deck.gl picking, which only reports the topmost layer. */
+const bboxCache = new WeakMap<Feature, Bbox>()
+
+export function featureAt(features: Feature[], lngLat: [number, number]): Feature | null {
+    const [x, y] = lngLat
+    for (const f of features) {
+        let bbox = bboxCache.get(f)
+        if (!bbox) { bbox = featureBbox(f); bboxCache.set(f, bbox) }
+        const [w, s, e, n] = bbox
+        if (x >= w && x <= e && y >= s && y <= n && featureContains(f, lngLat)) return f
+    }
+    return null
+}
