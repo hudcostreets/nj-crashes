@@ -1,5 +1,7 @@
 # Road data v3: NJDOT Roadway Network lines + NG9-1-1 names
 
+**Superseded in part by [`road-data-v4.md`]:** `road-names` → `road-search`, entity ids renumbered in slug order, the entity merge fix, and the crash-alias rule.
+
 **Status:** implemented on branch `road-data-v3` and tested on Hudson County subsets. Ready for a Batch build (see [Build](#build)). The full statewide build has not run yet.
 
 Builds on the research in [`road-data-sources.md`] and serves Layer 1 / 4b of [`road-name-normalization-and-search.md`]:
@@ -181,6 +183,7 @@ JFK Blvd East / Boulevard East is:
 - Pre-2019 retired Hudson 6xx SRIs (~70k crashes statewide) still resolve to no line; this needs an old network vintage or crash lat/lon ([`road-data-sources.md`] §6).
 
 [`road-data-sources.md`]: road-data-sources.md
+[`road-data-v4.md`]: road-data-v4.md
 [`road-name-normalization-and-search.md`]: road-name-normalization-and-search.md
 [rn-fs]: https://services.arcgis.com/HggmsDF7UJsNN1FK/arcgis/rest/services/NJDOT_Roadway_Network/FeatureServer/0
 [ng-fs]: https://services2.arcgis.com/XVOqAjTOJ5P6ngMu/arcgis/rest/services/Tran_road/FeatureServer
