@@ -328,6 +328,24 @@ def merge_key(s: pd.Series) -> pd.Series:
     return k.str.replace(r'(.)\1+', r'\1', regex=True)
 
 
+def dir_key(s: pd.Series) -> pd.Series:
+    """`merge_key` of the name without a trailing, then a leading, direction word, each dropped only
+    when ≥ 2 words remain: "West 48th Street" / "East 48th Street" → "48THST", "North Avenue East"
+    → "NORTHAVE" (not "AVE"), "North Avenue" → "NORTHAVE". Two names with one `dir_key` but different
+    `merge_key`s are *direction variants*: one right-of-way (a corridor), not one entity."""
+    def strip(n):
+        if n is None or pd.isna(n):
+            return n
+        w = n.split()
+        if len(w) > 2 and w[-1] in DIRECTIONS:
+            w = w[:-1]
+        if len(w) > 2 and w[0] in DIRECTIONS:
+            w = w[1:]
+        return ' '.join(w)
+    n = norm_name(s)
+    return merge_key(pd.Series([strip(v) for v in n.to_numpy(dtype=object)], index=s.index, dtype='string'))
+
+
 def seg_aliases(al: pd.DataFrame) -> pd.DataFrame:
     """Alias rows → `(rcl, kind, alias, shield)`: `kind` "L" (local name) or "H" (highway / route
     name, with its `shield` designation)."""
@@ -461,8 +479,11 @@ def road_entities(runs: pd.DataFrame, geom: pd.DataFrame, point_run: np.ndarray,
         c = comp[r]
         return k in major[r] and comp_alias.get((c, k), 0) >= ALIAS_GROUP_FRAC * comp_size[c]
 
+    # Direction variants ("East 48th Street" aliased "West 48th Street" by NG911) stay separate
+    # entities: one right-of-way, grouped a level up (`road_model.road_corridors`).
+    dir_k = dir_key(runs['name']).to_numpy()
     for a, b in pairs:
-        if name_k[a] != name_k[b] and (aliased(a, name_k[b]) or aliased(b, name_k[a])):
+        if name_k[a] != name_k[b] and dir_k[a] != dir_k[b] and (aliased(a, name_k[b]) or aliased(b, name_k[a])):
             union(a, b)
     roots = np.array([find(i) for i in range(n)])
     first = pd.DataFrame({'root': roots, 'sri': runs['sri'].to_numpy(), 'mp_lo': runs['mp_lo'].to_numpy()})
