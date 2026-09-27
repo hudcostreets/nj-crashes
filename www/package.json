@@ -37,7 +37,6 @@
     "@mui/icons-material": "^5.15.10",
     "@mui/material": "^5.15.10",
     "@rdub/base": "0.3.0",
-    "@rdub/duckdb": "0.0.2",
     "@rdub/file-tree": "https://github.com/runsascoded/file-tree#0ca64f4a22f3aff962f8d64dbd2438d30277dc22",
     "@react-leaflet/core": "^2.1.0",
     "@tanstack/react-query": "^5.104.0",
