@@ -1,6 +1,6 @@
 """`njdot roads audit`: how well the road sources name crash `road` strings, for one county.
 
-Reads `njdot roads build` inputs (Roadway Network, NG911) + outputs (`road-names`,
+Reads `njdot roads build` inputs (Roadway Network, NG911) + outputs (`road-search`,
 `crashes-by-entity`) and, optionally, an OpenStreetMap Overpass JSON dump (`out tags`) of the same
 county. OSM names are **only compared, never written anywhere**: OSM is ODbL (share-alike), so
 merging its names into published outputs is a licensing decision (specs/road-data-v3.md).
@@ -65,8 +65,11 @@ def audit(
     out.append(f'NG911 (cc={cc}): {len(cl):,} segments, {cl["SRI"].notna().mean():.1%} SRI-tagged; '
                f'{len(ng_prim):,} distinct names + {len(ng_alias - ng_prim):,} more via {len(al):,} alias rows')
 
-    names = pd.read_parquet(join(roads_dir, 'road-names.parquet'))
+    # Each entity's searchable names, from the word index (a name made only of capped tokens —
+    # "North Avenue" — may be missing from it: `road_outputs.TOKEN_CAP`).
+    names = pd.read_parquet(join(roads_dir, 'road-search.parquet'), columns=['entity', 'name', 'matched', 'cc'])
     names = names[names['cc'] == cc]
+    names = names.assign(name_display=names['matched'].fillna(names['name'])).drop_duplicates(['entity', 'name_display'])
     by_ent = pd.read_parquet(join(roads_dir, 'crashes-by-entity.parquet'), columns=['entity', 'cc', 'road'])
     by_ent = by_ent[by_ent['cc'] == cc]
     crashes = pd.read_parquet(crashes_path, columns=['sri', 'cc', 'road'])

@@ -12,25 +12,30 @@ selection is a **road entity**. Sources (`njdot roads fetch-network` / `fetch-ng
   name or NG911 local alias within a county are one entity (`njdot.road_net.road_entities`).
 
 All outputs are parquet under `www/public/njdot/roads/`, synced to `$NJC_S3/njdot/roads` and read
-in the browser by DuckDB-WASM with ranged reads, so each is sorted for row-group pruning:
+in the browser by DuckDB-WASM with ranged reads, so each is sorted for row-group pruning
+(specs/road-data-v4.md has schemas, row-group sizes and bytes per lookup). Entity ids are ranks in
+`slug` order (`njdot.road_outputs`), so every entity-sorted file is also slug-sorted:
 
 - `sri-geom.parquet`: points `(sri, mp, sld_name, name, subt, entity, alias, lon, lat)`, sorted
-  `(sri, mp)`. `name` = the NG911 local street name (else the NJDOT `SLD_NAME`); `alias` = the most
-  common crash-reported `road` in the point's ½-mile bin, where it differs from `name`.
+  `(sri, mp)`. `name` = the NG911 local street name (else the NJDOT `SLD_NAME`); `alias` = the
+  dominant crash-reported `road` in the point's ½-mile stretch, where it differs from `name`.
 - `sri-hit{-5,-6,}.parquet`: the same points sorted by S2 cell (level `HIT_S2_LEVEL`) so a viewport
   bbox prunes on row-group stats; `-5` / `-6` keep only road classes `subt` ≤ 5 / ≤ 6 (interstate
   … county), for hover at wider zooms.
-- `road-entities.parquet`: one row per entity (local name, route designation, class, SRIs, bbox,
-  counts, aliases, county, munis), sorted by `entity`.
+- `road-entities.parquet`: one row per entity (`slug`, local name, route designation, class, SRIs,
+  bbox, counts, aliases, county, muni, munis, `length_mi`), sorted by `entity` (= by `slug`).
 - `road-runs.parquet`: `(entity, sri, mp_lo, mp_end)` intervals, sorted by `entity`.
-- `road-names.parquet`: the ⌘K search index, one row per searchable name of an entity (`primary` /
-  `alias` / `route`), sorted by `name_norm`.
+- `road-summary{,-monthly}.parquet`: crash counts per `(entity, year[, month], severity)`.
+- `road-ranks.parquet`: each county's / muni's top roads by crashes, fatal crashes, killed, crashes
+  per mile, sorted `(cc, mc)`.
+- `road-search.parquet`: the ⌘K word index, one row per `(token, searchable name)`, sorted by `token`.
 - `crashes-by-entity.parquet`: crashes on an entity's runs, sorted `(entity, sri, mp, dt, id)`.
-- `crashes-by-sri.parquet` / `sris.parquet`: the same by whole SRI route.
+- `crashes-by-sri.parquet` / `sris.parquet`: the same by whole SRI route (`crashes-by-sri` also
+  carries each crash's `entity`, null when on none).
 """
 import os
 import subprocess
-from os.path import dirname, join
+from os.path import dirname, exists, join
 
 import duckdb
 import numpy as np
@@ -45,8 +50,12 @@ from njdot.map_base import _build_base
 from njdot.paths import NG911_DIR, ROADS_DIR, ROADS_S3, ROADWAY_NETWORK
 from njdot.road_audit import audit
 from njdot.road_net import (
-    merge_key, name_points, ng_intervals, ng_segments, norm_name, rn_features, rn_points, road_entities,
+    M_PER_DEG_LAT, m_per_deg_lon, merge_key, name_points, ng_intervals, ng_segments, norm_name, rn_features, rn_points, road_entities,
     run_names, seg_aliases,
+)
+from njdot.cc2mc2mn import CC2MC2MN, cc2mc2mn
+from njdot.road_outputs import (
+    entity_lengths, entity_slugs, point_mc, road_ranks, road_search_index, road_summary, search_meta, slug_order,
 )
 from njdot.road_sources import HUDSON_GNIS, fetch_network, fetch_ng911, read_meta, write_parquet
 from njdot.s2 import latlng_to_id
@@ -71,6 +80,8 @@ CRASH_COLS = [
 ]
 ALIAS_MIN_N = 3
 ALIAS_MIN_FRAC = 0.02
+# A crash-reported name is a stretch's alias only if it's this share of the stretch's candidate strings.
+ALIAS_DOMINANT_FRAC = 0.5
 # Per entity: at most this many NG911 local aliases / crash-reported aliases / route designations.
 NG_ALIASES_MAX = 5
 CRASH_ALIASES_MAX = 3
@@ -79,21 +90,42 @@ ENTITY_ALIAS_FRAC = 0.1
 ROUTES_MAX = 3
 ROW_GROUP = {
     'crashes-by-sri': 25_000,
-    'crashes-by-entity': 25_000,
+    # 10k rows ≈ 210 KB per group, footer ≈ 575 KB (5k: 105 KB / 1.1 MB; see specs/road-data-v4.md).
+    'crashes-by-entity': 10_000,
     'sri-geom': 25_000,
     # Smaller groups → a click's bbox reads fewer bytes.
     'sri-hit': 8_000,
     'sris': 25_000,
-    'road-entities': 25_000,
+    'road-entities': 1_000,
     'road-runs': 25_000,
-    'road-names': 50_000,
+    'road-summary': 10_000,
+    'road-summary-monthly': 20_000,
+    'road-ranks': 2_000,
+    'road-search': 2_000,
 }
-M_PER_DEG_LAT = 110_540
-
-
-def m_per_deg_lon(lat):
-    return 111_320 * np.cos(np.radians(lat))
-
+# Dictionary-encode only these columns (a small row group's dictionary of mostly-distinct strings
+# costs more than it saves); default all.
+DICT = {
+    'crashes-by-entity': ['sri', 'severity', 'road', 'cross_street', 'route'],
+    'road-entities': [],
+    'road-ranks': [],
+    'road-search': ['token', 'kind', 'place', 'words'],
+}
+# Files with many small row groups: min/max stats only on the columns lookups filter on.
+STATS = {
+    'crashes-by-entity': ['entity'],
+    'road-entities': ['entity', 'slug', 'cc', 'mc'],
+    'road-summary': ['entity'],
+    'road-summary-monthly': ['entity'],
+    'road-ranks': ['cc', 'mc'],
+    'road-search': ['token'],
+}
+# Outputs of earlier versions, removed from `out_dir` (so `roads sync --delete` drops them from S3).
+STALE = ['road-names.parquet']
+ENTITY_COLS = [
+    'entity', 'slug', 'name', 'route', 'subt', 'sris', 'lon_min', 'lat_min', 'lon_max', 'lat_max',
+    'n_crashes', 'n_fatal', 'n_injury', 'n_killed', 'aliases', 'cc', 'mc', 'munis', 'length_mi',
+]
 
 def crashes_by_sri(crashes: pd.DataFrame, latlon: pd.DataFrame) -> pd.DataFrame:
     """Crashes with a non-empty SRI, joined to their effective `lat`/`lon` (left join on the index,
@@ -233,9 +265,9 @@ def assign_crashes(by_sri: pd.DataFrame, runs: pd.DataFrame, con: duckdb.DuckDBP
 
 # A bare route designation ("US 1", "RT 1", "NJ 440", "CR 501", "I-78") isn't a local name.
 ROUTE_RE = (
-    r'^((US|RT|NJ|SR|CR|I|ROUTE|INTERSTATE|HWY|STATE HWY|COUNTY RD|CO RD)[ -]?\d+[A-Z]?'
-    r'|[A-Z]+( [A-Z]+)? COUNTY( RD| ROUTE)? \d+[A-Z]?)'
-    r'( (N|S|E|W|NB|SB|EB|WB|RAMP|SPUR|BUS|UPPER|LOWER|EXPRESS|LOCAL|ALT|TRUCK|BYP|I|II|III|SECONDARY|WESTERN|EASTERN'
+    r'^((US|RT|NJ|SR|CR|I|ROUTE|INTERSTATE|HWY|STATE HWY|COUNTY RD|CO RD)[ -]?\d+(IV|I{1,3}|[A-Z])?'
+    r'|[A-Z]+( [A-Z]+)? COUNTY( RD| ROUTE)? \d+(IV|I{1,3}|[A-Z])?)'
+    r'( (N|S|E|W|NB|SB|EB|WB|RAMP|SPUR|BUS|UPPER|LOWER|EXPRESS|LOCAL|ALT|TRUCK|BYP|I|II|III|IV|\d|SECONDARY|WESTERN|EASTERN'
     r'|ALIGNMENT|(N J |NJ )?TPKE(-[NSEW])?))*$'
 )
 
@@ -257,21 +289,41 @@ def alias_candidates(road: pd.Series) -> pd.Series:
 
 def top_aliases(crashes: pd.DataFrame, keys: list[str], k: int, min_n: int) -> pd.DataFrame:
     """Top-`k` local-name candidates (`alias_candidates`) per `keys` group (seen ≥ `min_n` times),
-    as `keys + [alias, n]` rows, most common first (ties by name)."""
+    as `keys + [alias, n, n_cand]` rows (`n_cand`: the group's crashes with any candidate), most
+    common first (ties by name)."""
     cand = alias_candidates(crashes['road'])
     c = crashes[keys].loc[cand.index].assign(alias=cand.to_numpy())
     n = c.groupby(keys + ['alias']).size().rename('n').reset_index()
+    n['n_cand'] = n.groupby(keys)['n'].transform('sum')
     n = n[n['n'] >= min_n].sort_values(keys + ['n', 'alias'], ascending=[True] * len(keys) + [False, True])
     return n.groupby(keys, sort=False).head(k).reset_index(drop=True)
 
 
-def point_aliases(geom: pd.DataFrame, point_run: np.ndarray, by_entity: pd.DataFrame, min_n: int = 3) -> pd.Series:
-    """Per `geom` point: the most common crash-reported `road` (normalized) among its run's crashes
-    in the same ½-mile MP bin, if seen ≥ `min_n` times and not just the point's own `name`."""
+def stretch_aliases(geom: pd.DataFrame, point_run: np.ndarray, by_entity: pd.DataFrame, min_n: int = ALIAS_MIN_N) -> pd.DataFrame:
+    """Per stretch (`run`, ½-mile MP `bin`): its *dominant* crash-reported local name — the top
+    `alias_candidates` string, seen ≥ `min_n` times and ≥ `ALIAS_DOMINANT_FRAC` of the stretch's
+    candidate strings. Rows `(run, bin, alias, n, ng)`, `ng` = whether most of the stretch's points
+    are NG911-named (`seg` ≥ 0; false when `geom` has no `seg`). A cross street reported as the
+    `road` on some crashes (e.g. "PARK AVE" on Boulevard East) is a minority string on every
+    stretch, so it's never dominant."""
     c = by_entity[['run', 'mp', 'road']].assign(bin=np.floor(by_entity['mp'] * 2) / 2)
     top = top_aliases(c, ['run', 'bin'], k=1, min_n=min_n)
+    top = top[top['n'] >= ALIAS_DOMINANT_FRAC * top['n_cand']]
+    named = geom['seg'].to_numpy() >= 0 if 'seg' in geom else np.zeros(len(geom), dtype=bool)
+    ng = (
+        pd.DataFrame({'run': point_run, 'bin': np.floor(geom['mp'].to_numpy() * 2) / 2, 'named': named})
+        .groupby(['run', 'bin'])['named'].mean().ge(0.5).rename('ng').reset_index()
+    )
+    top = top.merge(ng, on=['run', 'bin'], how='left')
+    top['ng'] = top['ng'].fillna(False).astype(bool)
+    return top[['run', 'bin', 'alias', 'n', 'ng']].reset_index(drop=True)
+
+
+def point_aliases(geom: pd.DataFrame, point_run: np.ndarray, stretches: pd.DataFrame) -> pd.Series:
+    """Per `geom` point: its stretch's dominant crash-reported name (`stretch_aliases`), where
+    that isn't just the point's own `name`."""
     pts = pd.DataFrame({'run': point_run, 'bin': np.floor(geom['mp'].to_numpy() * 2) / 2, 'name': norm_name(geom['name']).to_numpy()})
-    merged = pts.merge(top[['run', 'bin', 'alias']], on=['run', 'bin'], how='left')
+    merged = pts.merge(stretches[['run', 'bin', 'alias']], on=['run', 'bin'], how='left')
     alias = merged['alias'].astype('string')
     return alias.where(alias != merged['name']).set_axis(geom.index)
 
@@ -283,14 +335,16 @@ def entity_table(
     con: duckdb.DuckDBPyConnection,
     names: pd.DataFrame | None = None,
     point_run: np.ndarray | None = None,
+    stretches: pd.DataFrame | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """One row per entity: `name` (the local name covering most of it), `route` (its route
     designations — NG911 shields, e.g. "CR 501", "US 1 / US 9" — else the SLD route name where it
     differs from `name`), min road class `subt`, `sris` (comma-joined), bbox, crash counts,
-    `aliases` (NG911 local aliases, then the top crash-reported `road` names; " · "-joined, none
+    `aliases` (NG911 local aliases, then crash-reported names of stretches NG911 doesn't name; " · "-joined, none
     equal to `name` after `name_key`), `cc` (county) and `munis` (" · "-joined, most points first).
 
-    `names` is `njdot.road_net.run_names` output (per-run NG911 aliases / shields). Also returns the
+    `names` is `njdot.road_net.run_names` output (per-run NG911 aliases / shields); `stretches` is
+    `stretch_aliases` output (computed from `geom` / `point_run` / `by_entity` if not given). Also returns the
     entity's searchable names, `(entity, kind, name_display)` with `kind` "primary" / "alias" /
     "route", for `road_names_index`."""
     con.register('r', runs.assign(n=runs['mp_hi'] - runs['mp_lo'] + 0.1))
@@ -348,9 +402,18 @@ def entity_table(
     sld_route = out['sld_name'].astype('string').where((norm_name(out['sld_name']) != norm_name(out['name'])) & (out['subt'] <= 6))
     out['route'] = out['entity'].map(routes).astype('string').fillna(sld_route)
 
-    # Crash-reported aliases: must account for ≥ `ALIAS_MIN_FRAC` of the entity's crashes (and ≥
-    # `ALIAS_MIN_N`), so one-off mentions don't show; variants of the entity's name / NG911 aliases aren't new.
-    al = top_aliases(by_entity[['entity', 'road']], ['entity'], k=CRASH_ALIASES_MAX + 1, min_n=ALIAS_MIN_N)
+    # Crash-reported aliases: only a stretch's *dominant* crash-reported name (`stretch_aliases`), and
+    # only on stretches NG911 doesn't name (where it does, crash strings add spelling variants and
+    # cross streets, not names); summed per entity, they must account for ≥ `ALIAS_MIN_FRAC` of its
+    # crashes (and ≥ `ALIAS_MIN_N`); variants of the entity's name / NG911 aliases aren't new.
+    if stretches is None:
+        stretches = stretch_aliases(geom, point_run, by_entity) if point_run is not None else pd.DataFrame(columns=['run', 'bin', 'alias', 'n', 'ng'])
+    st = stretches[~stretches['ng'].astype(bool)]
+    al = (
+        st.assign(entity=runs['entity'].to_numpy()[st['run'].to_numpy(dtype=int)])
+        .groupby(['entity', 'alias'], as_index=False)['n'].sum()
+        .sort_values(['entity', 'n', 'alias'], ascending=[True, False, True])
+    )
     al = al.merge(out[['entity', 'n_crashes']], on='entity')
     seen = set(zip(ng_l['entity'], merge_key(ng_l['value'])))
     al_k = merge_key(al['alias']).to_numpy()
@@ -375,9 +438,6 @@ def entity_table(
         al[['entity', 'alias']].rename(columns={'alias': 'name_display'}).assign(kind='alias'),
     ], ignore_index=True)
     return out[cols], searchable[['entity', 'kind', 'name_display']]
-
-
-KIND_ORDER = {'primary': 0, 'route': 1, 'alias': 2}
 
 
 def point_names(geom: pd.DataFrame, seg: pd.DataFrame, aliases: pd.DataFrame) -> pd.DataFrame:
@@ -431,7 +491,7 @@ def road_names_index(
     con: duckdb.DuckDBPyConnection,
     pt_names: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    """⌘K search index: one row per distinct `(entity, name_norm)` of non-ramp entities, `kind` by
+    """Searchable names (tokenized into `road-search` by `road_outputs.road_search_index`): one row per distinct `(entity, name_norm)` of non-ramp entities, `kind` by
     priority primary > route > alias; `name_display`, `name_norm` (`norm_name`: upper-case, abbreviated), `entity`,
     `cc`, `munis`, `subt`, `n_crashes`, a representative on-road point `lon` / `lat` (nearest the
     bbox center) and bbox. Entity-level names (`searchable`: primary, route designations,
@@ -461,18 +521,33 @@ def road_names_index(
     return df[INDEX_COLS].astype({'name_display': 'string', 'name_norm': 'string', 'kind': 'string'})
 
 
-def write(df: pd.DataFrame, path: str, row_group_size: int, meta: dict[str, str] | None = None, level: int | None = None):
+def write(
+    df: pd.DataFrame,
+    path: str,
+    row_group_size: int,
+    meta: dict[str, str] | None = None,
+    level: int | None = None,
+    stats: list[str] | None = None,
+    dict_cols: list[str] | None = None,
+):
+    """Write `df` (zstd) in row groups of `row_group_size`. `stats`: write min/max statistics only
+    for these columns (the ones queries filter on), which keeps the footer small when row groups
+    are many; `dict_cols`: dictionary-encode only these columns; defaults: all."""
     table = pa.Table.from_pandas(df, preserve_index=False)
     if meta:
         table = table.replace_schema_metadata({**(table.schema.metadata or {}), **{k.encode(): v.encode() for k, v in meta.items()}})
-    pq.write_table(table, path, row_group_size=row_group_size, compression='zstd', compression_level=level, write_statistics=True)
+    pq.write_table(
+        table, path, row_group_size=row_group_size, compression='zstd', compression_level=level,
+        write_statistics=stats if stats is not None else True,
+        use_dictionary=(dict_cols or False) if dict_cols is not None else True,
+    )
     err(f'  {path}: {len(df):,} rows, {os.path.getsize(path) / 2**20:.1f} MiB')
 
 
 def build_geom(rn: pd.DataFrame, cl: pd.DataFrame, al: pd.DataFrame, con: duckdb.DuckDBPyConnection) -> dict:
     """Sources → named MP points, runs, entities (no crashes). Returns a dict with `geom` (points,
     with `name`, `cc`, `muni`, `seg`, `entity`), `runs`, `point_run`, `names` (`run_names`),
-    `seg`, `iv` (accepted NG911 intervals)."""
+    `seg`, `iv` (accepted NG911 intervals), `aliases` (`seg_aliases`), `parent` (secondary SRI → parent SRI)."""
     feats = rn_features(rn)
     err(f'  {len(feats):,} NJDOT line features, {feats["sri"].nunique():,} SRIs')
     geom = rn_points(feats)
@@ -489,7 +564,7 @@ def build_geom(rn: pd.DataFrame, cl: pd.DataFrame, al: pd.DataFrame, con: duckdb
     parent = feats[feats['sec']].drop_duplicates('sri').set_index('sri')['parent'].to_dict()
     runs['entity'] = road_entities(runs, geom, point_run, names, parent)
     geom['entity'] = runs['entity'].to_numpy()[point_run]
-    return dict(geom=geom, runs=runs, point_run=point_run, names=names, seg=seg, iv=iv, aliases=aliases)
+    return dict(geom=geom, runs=runs, point_run=point_run, names=names, seg=seg, iv=iv, aliases=aliases, parent=parent)
 
 
 @njdot.group('roads')
@@ -506,7 +581,8 @@ def roads_build(crashes_path: str | None, ng911_dir: str, network: str, out_dir:
     """Build the `roads/` parquets (see module docstring)."""
     os.makedirs(out_dir, exist_ok=True)
     if crashes_path:
-        by_sri = pd.read_parquet(crashes_path)
+        # A previous build's `crashes-by-sri` carries its (now stale) `entity`.
+        by_sri = pd.read_parquet(crashes_path).drop(columns=['entity'], errors='ignore')
     else:
         err('Loading crashes...')
         crashes = load_crashes_with_aashto(columns=MAP_INPUT_COLS + ['id'])
@@ -521,26 +597,66 @@ def roads_build(crashes_path: str | None, ng911_dir: str, network: str, out_dir:
     err('Points, runs, entities...')
     b = build_geom(pd.read_parquet(network), pd.read_parquet(cl_path), pd.read_parquet(al_path), con)
     geom, runs, point_run = b['geom'], b['runs'], b['point_run']
+    by_sri['_i'] = np.arange(len(by_sri), dtype='int64')
     by_entity = assign_crashes(by_sri, runs, con)
-    geom['alias'] = point_aliases(geom, point_run, by_entity)
-    ents, searchable = entity_table(runs, geom, by_entity, con, b['names'], point_run)
-    names_idx = road_names_index(ents, searchable, geom, con, point_names(geom, b['seg'], b['aliases']))
-    err(f'  {len(runs):,} runs → {len(ents):,} entities; {len(by_entity):,} of {len(by_sri):,} SRI crashes on an entity')
+    o = road_outputs(b, by_sri, by_entity, con, cc2mc2mn)
+    err(f'  {len(runs):,} runs → {len(o["ents"]):,} entities; {len(o["by_entity"]):,} of {len(by_sri):,} SRI crashes on an entity')
     err('Writing...')
-    geom = geom[['sri', 'mp', 'sld_name', 'name', 'subt', 'entity', 'alias', 'lon', 'lat']]
-    write(by_sri, join(out_dir, 'crashes-by-sri.parquet'), ROW_GROUP['crashes-by-sri'])
-    write(by_entity.drop(columns=['run']), join(out_dir, 'crashes-by-entity.parquet'), ROW_GROUP['crashes-by-entity'])
+    write_outputs(o, out_dir, meta)
+
+
+def road_outputs(b: dict, by_sri: pd.DataFrame, by_entity: pd.DataFrame, con: duckdb.DuckDBPyConnection, cc2mc2mn: CC2MC2MN) -> dict:
+    """`build_geom` output + crashes (`by_sri` with a row index `_i`, `assign_crashes` output) → the
+    output tables (keys = file names, plus `ents` / `by_entity` / `geom` / `runs` / `capped`), with
+    entity ids renumbered in slug order (`road_outputs.slug_order`). Updates `b`'s `geom` / `runs`
+    and `by_sri` (adds `entity`, drops `_i`) in place."""
+    geom, runs, point_run = b['geom'], b['runs'], b['point_run']
+    stretches = stretch_aliases(geom, point_run, by_entity)
+    geom['alias'] = point_aliases(geom, point_run, stretches)
+    ents, searchable = entity_table(runs, geom, by_entity, con, b['names'], point_run, stretches)
+    pt_mc = point_mc(geom, cc2mc2mn)
+    slugs = entity_slugs(ents, runs, geom, pt_mc, cc2mc2mn)
+    new = slug_order(slugs)
+    ents = ents.merge(slugs, on='entity')
+    for df in (geom, runs, by_entity, ents, searchable):
+        df['entity'] = df['entity'].map(new).astype('int32')
+    by_entity = by_entity.sort_values(['entity', 'sri', 'mp', 'dt', 'id'], kind='stable', na_position='last').reset_index(drop=True)
+    by_sri['entity'] = pd.Series(by_entity['entity'].to_numpy(), index=by_entity['_i'].to_numpy()).reindex(np.arange(len(by_sri))).astype('Int32').array
+    by_sri.drop(columns=['_i'], inplace=True)
+    by_entity.drop(columns=['run', '_i'], inplace=True)
+    lengths = entity_lengths(geom, pt_mc, b.get('parent', {}), RUN_GAP_MP, RUN_JUMP_M)
+    ents['length_mi'] = ents['entity'].map(lengths['total']).fillna(0).astype('float32')
+    ents = ents.sort_values('entity').reset_index(drop=True)[ENTITY_COLS]
+    names_idx = road_names_index(ents, searchable, geom, con, point_names(geom, b['seg'], b['aliases']) if 'seg' in b else None)
+    search, capped = road_search_index(names_idx, ents, cc2mc2mn)
+    return {
+        'geom': geom, 'runs': runs, 'ents': ents, 'by_entity': by_entity, 'by_sri': by_sri,
+        'road-summary': road_summary(by_entity), 'road-summary-monthly': road_summary(by_entity, monthly=True),
+        'road-ranks': road_ranks(by_entity, ents, lengths), 'road-search': search, 'capped': capped,
+    }
+
+
+def write_outputs(o: dict, out_dir: str, meta: dict[str, str]):
+    """Write `road_outputs` output to `out_dir` (and remove `STALE` files there)."""
+    geom = o['geom'][['sri', 'mp', 'sld_name', 'name', 'subt', 'entity', 'alias', 'lon', 'lat']]
+    write(o['by_sri'], join(out_dir, 'crashes-by-sri.parquet'), ROW_GROUP['crashes-by-sri'])
+    write(o['by_entity'], join(out_dir, 'crashes-by-entity.parquet'), ROW_GROUP['crashes-by-entity'], stats=STATS['crashes-by-entity'], dict_cols=DICT['crashes-by-entity'])
     write(geom, join(out_dir, 'sri-geom.parquet'), ROW_GROUP['sri-geom'], meta)
     hit = sri_hit(geom)
     write(hit, join(out_dir, 'sri-hit.parquet'), ROW_GROUP['sri-hit'])
     for tier in HIT_TIERS:
         write(hit[hit['subt'] <= tier].reset_index(drop=True), join(out_dir, f'sri-hit-{tier}.parquet'), ROW_GROUP['sri-hit'])
-    write(sris(geom, by_sri), join(out_dir, 'sris.parquet'), ROW_GROUP['sris'])
-    write(ents, join(out_dir, 'road-entities.parquet'), ROW_GROUP['road-entities'], meta)
-    write(runs[['entity', 'sri', 'mp_lo', 'mp_end']].sort_values(['entity', 'sri', 'mp_lo']).reset_index(drop=True),
+    write(sris(geom, o['by_sri']), join(out_dir, 'sris.parquet'), ROW_GROUP['sris'])
+    write(o['ents'], join(out_dir, 'road-entities.parquet'), ROW_GROUP['road-entities'], meta, stats=STATS['road-entities'], dict_cols=DICT['road-entities'])
+    write(o['runs'][['entity', 'sri', 'mp_lo', 'mp_end']].sort_values(['entity', 'sri', 'mp_lo']).reset_index(drop=True),
           join(out_dir, 'road-runs.parquet'), ROW_GROUP['road-runs'])
-    # Fetched whole by the ⌘K omnibar: squeeze it.
-    write(names_idx, join(out_dir, 'road-names.parquet'), ROW_GROUP['road-names'], meta, level=19)
+    for f in ('road-summary', 'road-summary-monthly', 'road-ranks'):
+        write(o[f], join(out_dir, f'{f}.parquet'), ROW_GROUP[f], stats=STATS[f], dict_cols=DICT.get(f))
+    write(o['road-search'], join(out_dir, 'road-search.parquet'), ROW_GROUP['road-search'], meta | search_meta(o['capped']), stats=STATS['road-search'], dict_cols=DICT['road-search'])
+    for f in STALE:
+        if exists(join(out_dir, f)):
+            os.remove(join(out_dir, f))
+            err(f'  removed {join(out_dir, f)} (no longer built)')
 
 
 def parse_bbox(bbox: str | None) -> tuple[float, float, float, float] | None:

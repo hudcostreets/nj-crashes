@@ -7,9 +7,10 @@ import pandas as pd
 import pyarrow as pa
 import pytest
 
+from njdot.cc2mc2mn import cc2mc2mn
 from njdot.cli.roads import (
     alias_candidates, assign_crashes, build_geom, crashes_by_sri, entity_table, point_aliases, point_names,
-    road_names_index, road_runs, smooth_names, sri_hit, sris,
+    road_names_index, road_outputs, road_runs, smooth_names, sri_hit, sris, stretch_aliases,
 )
 from njdot.road_net import (
     merge_key, name_key, name_points, ng_intervals, ng_segments, rn_features, rn_points, road_entities, shield,
@@ -79,7 +80,8 @@ def test_alias_candidates():
     road = pd.Series([
         'US 1 (Tonnelle Avenue)', 'US 1', 'RT 1`', 'I-78 EB', 'DUNCAN AVE / W SIDE AVE', 'W SIDE AVE **',
         None, 'Kennedy Blvd & Sip Ave', 'NJ 440 (Route 440 Connector)', 'I-95 N J TPKE-W ALIGNMENT',
-        'NJ 495 SECONDARY', 'HUDSON COUNTY 677 II', 'NJ 139 LOWER',
+        'NJ 495 SECONDARY', 'HUDSON COUNTY 677 II', 'NJ 139 LOWER', 'CR 677II', 'HUDSON COUNTY 677 2',
+        'HUDSON COUNTY 677 IV',
     ])
     out = alias_candidates(road)
     assert list(zip(out.index, out)) == [
@@ -296,10 +298,44 @@ def test_point_aliases_per_run_and_bin():
         + [crash(10 + i, 'WSA1', 0.1, '2020-01-01') | {'road': 'Route 440 connector'} for i in range(4)]
         + [crash(20 + i, 'WSA1', 0.35, '2020-01-01') | {'road': 'duncan  ave.'} for i in range(3)]  # == name
     ), runs, duckdb.connect())
-    out = point_aliases(geom, point_run, by_entity)
-    # W Side Ave run (WSA1 MP 0–0.2): "RT 440 CONNECTOR" (4) beats the name itself (3); Duncan Ave's
-    # only report is its own name → none; other SRIs have no reports.
+    out = point_aliases(geom, point_run, stretch_aliases(geom, point_run, by_entity))
+    # W Side Ave run (WSA1 MP 0–0.2): "RT 440 CONNECTOR" (4 of 7: dominant) beats the name itself
+    # (3); Duncan Ave's only report is its own name → none; other SRIs have no reports.
     assert na(out) == [None, None, 'RT 440 CONNECTOR', 'RT 440 CONNECTOR', 'RT 440 CONNECTOR', None, None, None, None]
+
+
+def test_stretch_aliases_dominant_only():
+    """A stretch's alias must be its dominant crash-reported name: a cross street reported as the
+    `road` on a minority of a stretch's crashes ("PARK AVE" on Boulevard East) isn't one."""
+    geom, runs, point_run = wsa_runs()
+    geom['seg'] = [-1, -1, -1, -1, -1, 7, 7, 7, 7]  # rows: FAR ×2, WSA1 ×5, WSA2 ×2; Duncan + WSA2 NG911-named
+    by_entity = assign_crashes(pd.DataFrame(
+        [crash(i, 'WSA1', 0.1, '2020-01-01') | {'road': 'HUDSON BLVD'} for i in range(4)]
+        + [crash(10 + i, 'WSA1', 0.1, '2020-01-01') | {'road': 'PARK AVE'} for i in range(3)]
+        + [crash(20 + i, 'WSA2', 0.05, '2020-01-01') | {'road': 'PARK AVE'} for i in range(3)]
+        + [crash(30 + i, 'WSA2', 0.05, '2020-01-01') | {'road': w} for i, w in enumerate(['W SIDE AVE', 'W SIDE AVE', 'W SIDE AVE', 'SIP AVE'])]
+    ), runs, duckdb.connect())
+    out = stretch_aliases(geom, point_run, by_entity)
+    # WSA1 bin 0 (run 1): "HUDSON BLVD" 4 of 7 → dominant; its points are mostly un-named. WSA2 bin 0
+    # (run 3): "W SIDE AVE" 3 of 7 isn't a majority → no alias ("PARK AVE", 3, neither).
+    assert out.values.tolist() == [[1, 0.0, 'HUDSON BLVD', 4, False]]
+
+
+def test_entity_table_crash_aliases_only_on_unnamed_stretches():
+    geom, runs, point_run = wsa_runs()
+    geom['entity'] = runs['entity'].to_numpy()[point_run]
+    crashes = (
+        [crash(i, 'WSA1', 0.1, '2020-01-01') | {'road': 'HUDSON BLVD'} for i in range(4)]
+        + [crash(10 + i, 'FAR', 0.05, '2020-01-01') | {'road': 'OLD FAR RD'} for i in range(3)]
+    )
+    by_entity = assign_crashes(pd.DataFrame(crashes), runs, duckdb.connect())
+    aliases = lambda seg: entity_table(runs, geom.assign(seg=seg), by_entity, duckdb.connect(), point_run=point_run)[0]['aliases'].tolist()
+    # No NG911 names anywhere: both stretches' dominant crash names are aliases.
+    assert na(aliases([-1] * 9)) == ['OLD FAR RD', 'HUDSON BLVD', None]
+    # NG911 names FAR (and WSA2): FAR's crash string isn't an alias; WSA1's un-named stretch keeps its.
+    assert na(aliases([7, 7, -1, -1, -1, -1, -1, 7, 7])) == [None, 'HUDSON BLVD', None]
+    # NG911 names WSA1's W Side Ave stretch: its crash string isn't an alias; FAR's is.
+    assert na(aliases([-1, -1, 7, 7, 7, -1, -1, -1, -1])) == ['OLD FAR RD', None, None]
 
 
 def test_entity_table():
@@ -315,7 +351,7 @@ def test_entity_table():
         crash(7, 'WSA2', 0.0, '2020-01-07') | {'road': 'SIP AVE / W SIDE AVE'},  # intersection → dropped
         crash(8, 'WSA2', 0.0, '2020-01-08') | {'road': 'SIP AVE'},  # 1 of 7 < ALIAS_MIN_N
     ]), runs, duckdb.connect())
-    out, searchable = entity_table(runs, geom, by_entity, duckdb.connect())
+    out, searchable = entity_table(runs, geom, by_entity, duckdb.connect(), point_run=point_run)
     assert out.columns.tolist() == [
         'entity', 'name', 'route', 'subt', 'sris', 'lon_min', 'lat_min', 'lon_max', 'lat_max',
         'n_crashes', 'n_fatal', 'n_injury', 'n_killed', 'aliases', 'cc', 'munis',
@@ -493,6 +529,21 @@ def test_real_west_side_ave_turns_into_duncan_ave_at_mp_1_95(real):
     assert real.ents.at[duncan, 'name'] == 'Duncan Avenue'
 
 
+def test_real_park_ave_is_not_boulevard_east(real):
+    """A 2-point "Park Avenue" junction run on `09111121__` carries the NG911 alias "Boulevard
+    East"; that mustn't fuse Park Ave (Hoboken → Weehawken) into Boulevard East."""
+    be, park = entity_at(real, '09000693__', 1.0), entity_at(real, '090006772_', 0.5)
+    assert park != be
+    assert ent_runs(real, park) == [
+        ('090006772_', 'Park Avenue', 0.0, 1.32), ('090006773_', 'Park Avenue', 0.0, 0.2),
+        ('090006774_', 'Park Avenue', 0.0, 0.2), ('09111121__', 'Park Avenue', 0.0, 0.1),
+    ]
+    assert ent_runs(real, be) == [
+        ('00000505__', 'Boulevard East', 0.7, 1.95), ('09000693__', 'Boulevard East', 0.0, 2.35),
+        ('09111121__', 'Boulevard East', 0.1, 1.02),
+    ]
+
+
 def test_real_boulevard_east_is_not_jfk_blvd(real):
     jfk, be = entity_at(real, '00000501__', 30.0), entity_at(real, '09000693__', 1.0)
     assert be != jfk
@@ -500,3 +551,75 @@ def test_real_boulevard_east_is_not_jfk_blvd(real):
     assert [entity_at(real, '09111121__', mp) for mp in (0.5, 0.9)] == [be, be]
     assert entity_at(real, '00000505__', 1.0) == be
     assert real.ents.at[be, 'aliases'] == 'J F Kennedy Boulevard East · Jfk Boulevard East · Kennedy Boulevard East'
+
+
+@pytest.fixture(scope='module')
+def real_out():
+    con = duckdb.connect()
+    b = build_geom(
+        pd.read_parquet(join(FIXTURES, 'roadway_network.parquet')),
+        pd.read_parquet(join(FIXTURES, 'ng911', 'centerlines.parquet')),
+        pd.read_parquet(join(FIXTURES, 'ng911', 'aliases.parquet')),
+        con,
+    )
+    by_sri = pd.DataFrame([
+        crash(1, '00000501__', 30.0, '2020-01-01', severity='f', tk=1) | {'road': 'KENNEDY BLVD'},
+        crash(2, '09061684__', 1.0, '2021-06-01', severity='i') | {'road': 'W SIDE AVE'},
+        crash(3, '09061684__', 9.0, '2021-06-01'),  # past every run → no entity
+    ])
+    by_sri['_i'] = np.arange(len(by_sri))
+    return road_outputs(b, by_sri, assign_crashes(by_sri, b['runs'], con), con, cc2mc2mn)
+
+
+def test_real_slugs_and_renumbering(real_out):
+    ents = real_out['ents']
+    # Entity ids are slug ranks: `road-entities` is sorted by both.
+    assert ents['entity'].tolist() == list(range(len(ents)))
+    assert ents['slug'].tolist() == sorted(ents['slug'])
+    hudson = ents[ents['slug'].str.startswith('hudson/')]
+    assert [tuple(na(r)) for r in hudson[['slug', 'name', 'mc']].astype(object).values.tolist()] == [
+        ('hudson/boulevard-east', 'Boulevard East', None),
+        ('hudson/general-pulaski-skyway', 'General Pulaski Skyway', None),
+        ('hudson/j-f-kennedy-boulevard', 'J F Kennedy Boulevard', None),
+        ('hudson/jersey-city/bergen-avenue', 'Bergen Avenue', 6),
+        ('hudson/jersey-city/duncan-avenue', 'Duncan Avenue', 6),
+        ('hudson/jersey-city/sip-avenue', 'Sip Avenue', 6),
+        ('hudson/jersey-city/west-side-avenue', 'West Side Avenue', 6),
+        ('hudson/north-bergen/route-501-secondary', 'ROUTE 501 SECONDARY', 8),
+        ('hudson/north-bergen/us-1-secondary', 'US 1 SECONDARY', 8),
+        ('hudson/north-bergen/west-side-avenue', 'West Side Avenue', 8),
+        ('hudson/park-avenue', 'Park Avenue', None),
+        ('hudson/river-road', 'River Road', None),
+        ('hudson/tonnelle-avenue', 'Tonnelle Avenue', None),
+        ('hudson/union-city/38th-street', '38th Street', 10),
+        ('hudson/union-city/park-avenue', 'Park Avenue', 10),
+        ('hudson/weehawken/highwood-terrace', 'Highwood Terrace', 11),
+    ]
+    slug = ents.set_index('entity')['slug']
+    # `crashes-by-sri` carries each crash's (renumbered) entity.
+    assert str(real_out['by_sri']['entity'].dtype) == 'Int32'
+    assert [None if pd.isna(e) else slug[e] for e in real_out['by_sri']['entity']] == [
+        'hudson/j-f-kennedy-boulevard', 'hudson/jersey-city/west-side-avenue', None,
+    ]
+    assert [slug[e] for e in real_out['by_entity']['entity']] == ['hudson/j-f-kennedy-boulevard', 'hudson/jersey-city/west-side-avenue']
+    assert [(slug[e], y, s, n) for e, y, s, n in real_out['road-summary'][['entity', 'year', 'severity', 'n']].values.tolist()] == [
+        ('hudson/j-f-kennedy-boulevard', 2020, 'f', 1), ('hudson/jersey-city/west-side-avenue', 2020, 'i', 1),
+    ]
+    lengths = ents.set_index('slug')['length_mi'].astype('float64').round(2)
+    assert lengths[['hudson/j-f-kennedy-boulevard', 'hudson/jersey-city/west-side-avenue', 'hudson/tonnelle-avenue']].tolist() == [14.11, 2.94, 6.05]
+
+
+def test_real_search_tokens(real_out):
+    s = real_out['road-search']
+    k = s[s['token'] == 'kennedy']
+    assert [tuple(na(r)) for r in k[['slug', 'matched', 'kind']].values.tolist()] == [
+        ('hudson/j-f-kennedy-boulevard', None, 'primary'),
+        ('hudson/j-f-kennedy-boulevard', 'J F Kennedy Boulevard East', 'alias'),
+        ('hudson/j-f-kennedy-boulevard', 'J F Kennedy Boulevard West', 'alias'),
+        ('hudson/j-f-kennedy-boulevard', 'Kennedy Boulevard', 'alias'),
+        ('hudson/boulevard-east', 'East Kennedy Boulevard', 'alias'),
+        ('hudson/boulevard-east', 'J F Kennedy Boulevard East', 'alias'),
+        ('hudson/boulevard-east', 'Kennedy Boulevard East', 'alias'),
+        ('hudson/park-avenue', 'Kennedy Boulevard East', 'alias'),
+    ]
+    assert s['token'].tolist() == sorted(s['token'])
