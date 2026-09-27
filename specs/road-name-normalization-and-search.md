@@ -46,7 +46,7 @@ Hudson County, 2016+, every row whose `road` text mentions JFK/Kennedy:
 | `sri` | rows | distinct `road` variants |
 |-------|-----:|--------------------------|
 | *(no sri)* | 368 | 132 — mostly house-numbered: `1347 JFK BLVD`, `3080 JFK BLVD (7 ELEVEN)` |
-| `09111121__` | 196 | `JOHN F KENNEDY BLVD E / PARK AVE`, `John F Kennedy Boulevard East` |
+| `09111121__` (JFK Blvd East; see below) | 196 | `JOHN F KENNEDY BLVD E / PARK AVE`, `John F Kennedy Boulevard East` |
 | `00000501__` | 181 | `Rt 501 (Kennedy Boulevard)` |
 | `00000501_S` | 6 | `Rt 501 Secondary (Kennedy Boulevard)` |
 | `09000690__` | 6 | `Kennedy Boulevard (HUDSON COUNTY 690)` |
@@ -67,10 +67,19 @@ Three further complications the data surfaces:
    `Second_Name` NULL. Every Kennedy-named SRI in that table is in a *different*
    county (`18`=Somerset, `15`=Middlesex, `07`=Essex, `12`=Mercer…). **No
    existing table in this repo links the colloquial name to the route number.**
-2. **Near-miss roads must not merge.** `09111121__` "John F Kennedy Boulevard
-   East" is a *distinct* road (the Palisades-top boulevard through
-   Weehawken/West New York/Guttenberg), not part of JFK Blvd proper. A naive
-   `LIKE '%KENNEDY%'` silently over-counts by ~200.
+2. **Near-miss roads must not merge.** "John F Kennedy Boulevard East" (a.k.a.
+   Boulevard East) is a *distinct* road (the Palisades-top boulevard through
+   Weehawken/West New York/Guttenberg/North Bergen), not part of JFK Blvd proper.
+   A naive `LIKE '%KENNEDY%'` silently over-counts by ~200. Its SRIs (checked
+   2026-09-26 against the NJDOT Roadway Network lines and NG9-1-1, see
+   [`road-data-v3.md`]): `09111121__` MP 0.1–0.92 (Weehawken), `00000505__`
+   (CR 505) MP 0.7–1.9, and `09000693__` MP 0–2.3. `09111121__`'s SLD name is
+   `PARK AVE`, and only its first ~0.1 mi is Park Ave; past that, its line runs
+   along Boulevard East and NG9-1-1 names those segments "Boulevard East" (aliases
+   "J F Kennedy Boulevard East", "Jfk Boulevard East"). The research report's
+   correction ([`road-data-sources.md`] §3: "`09111121__` is Park Ave, not JFK
+   Blvd East") went by the SLD name and is itself wrong; so is its listing of
+   `090006772_` as JFK Blvd East, which NG9-1-1 names Park Avenue.
 3. **House-number prefixes.** 132 of the free-text variants are addresses
    (`3139 KENNEDY BLVD`), not street names. Normalization must strip leading
    house numbers before matching.
@@ -247,8 +256,9 @@ a second, source-independent check (our shares must stay within ~2pp of
 Andrew's manual extract). Plus:
 
 - Alias-miner precision: hand-audit the top ~100 Hudson roads by crash count.
-- **Negative test: `JFK Blvd East` (`09111121__`) must resolve to its own
-  entity**, never merge into Route 501.
+- **Negative test: `JFK Blvd East` (`09111121__` MP 0.1–0.92, `00000505__`
+  MP 0.7–1.9, `09000693__` MP 0–2.3) must resolve to its own entity**, never
+  merge into Route 501. (Implemented: `tests/test_roads.py::test_real_boulevard_east_is_not_jfk_blvd`.)
 - Statewide sanity: share of crashes resolving to *some* road entity, by year;
   expect ≥95% recent, lower pre-2019 where SRI is sparse.
 - Round-trip the `norm_road` fixture file in both Python and TS test suites.
@@ -256,7 +266,8 @@ Andrew's manual extract). Plus:
 ## Open questions
 
 1. **Corridor vs. SRI.** JFK Blvd is `00000501__` *plus* `00000501_S` plus
-   county SRIs `09000690__`/`09000693__`/`09011547__`. Users mean "the whole
+   county SRIs `09000690__`/`09000693__` (only its MP 2.35–2.54; the rest is
+   Boulevard East)/`09011547__`. Users mean "the whole
    corridor." Add a `corridor_id` grouping several SRIs, curated in the
    overrides YAML? Leaning yes — it's the unit people actually ask about, and
    the JFK case already needs it.
@@ -289,3 +300,6 @@ in-thread to share maintainer contacts (`DOT-BTDS.DashboardSupport@dot.nj.gov`)
 so they hear it from someone besides him. The 200-vs-5,586 discrepancy —
 where both numbers came out of the same dashboard — is a concrete, reproducible
 bug report.
+
+[`road-data-v3.md`]: road-data-v3.md
+[`road-data-sources.md`]: road-data-sources.md
