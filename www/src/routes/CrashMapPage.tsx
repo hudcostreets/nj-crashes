@@ -68,13 +68,24 @@ export default function CrashMapPage() {
     const countyUnresolved = params.county !== undefined && cc === undefined
     const muniUnresolved = cc !== undefined && params.muni !== undefined && cc2mc2mn !== null && mc === undefined
 
+    // Drill-down: a county polygon (statewide, below `MUNI_PICK_MIN_ZOOM`) → `/map/<county>`; a
+    // muni polygon (`munis/<cc>.geojson`: `{ cc, mc }`) → `/map/<county>/<muni>`.
+    // Keeps the render settings (`mode`, `hr`, `yr`, …) but not the camera (`llz`), so the new
+    // scope auto-fits.
     const onOutlineClick = useCallback((feature: any) => {
-        const name: string | undefined = feature?.properties?.name
-        if (!name) return
-        // Statewide → drill into the clicked county. (Muni-level drill
-        // needs sharded muni-boundary geojson; not wired yet.)
-        if (cc === undefined) navigate(`/map/${normalize(name)}`)
-    }, [cc, navigate])
+        const p = feature?.properties ?? {}
+        const search = new URLSearchParams(window.location.search)
+        search.delete("llz")
+        search.delete("road")
+        const qs = search.size ? `?${search}` : ""
+        if (p.mc !== undefined) {
+            const county = cc2mc2mn?.[String(p.cc)]
+            const muni = county?.mc2mn[String(p.mc)]
+            if (county && muni) navigate(`/map/${normalize(county.cn)}/${normalize(muni)}${qs}`)
+        } else if (p.name) {
+            navigate(`/map/${normalize(p.name)}${qs}`)
+        }
+    }, [cc2mc2mn, navigate])
 
     const muniName = params.muni ? titleCase(params.muni) : undefined
     const countyName = params.county ? titleCase(params.county) : undefined
@@ -133,7 +144,7 @@ export default function CrashMapPage() {
                     fullScreen
                     scopeLabel={scopeLabel}
                     detailsHref={detailsHref}
-                    onOutlineClick={cc === undefined ? onOutlineClick : undefined}
+                    onOutlineClick={mc === undefined ? onOutlineClick : undefined}
                 />
             )}
         </PageFiltersProvider>

@@ -12,19 +12,21 @@ import { usePageFilters, YEAR_RANGE_DEFAULT } from "@/src/PageFiltersContext"
 import { useCellsApi, CELLS_MAX } from "@/src/map/useCellsApi"
 import { bboxRing, clippedAreaPx } from "@/src/map/areaBudget"
 import type { CellsApiFilter } from "@/src/map/useCellsApi"
-import { MAP_BASE_URL } from "@/src/map/config"
 import type { MapMode, HeatRender, ViewState } from "@/src/map/CrashMap"
 import type { HeatTileFilter } from "@/src/map/useHeatTiles"
 import type { StackedCell } from "@/src/map/StackedCellLayer"
 import { useTheme } from "@/src/contexts/ThemeContext"
-import type { FeatureCollection } from "geojson"
+import type { Feature, FeatureCollection } from "geojson"
+import { useQueries, useQuery } from "@tanstack/react-query"
 import { FiMaximize2, FiMinimize2, FiHome } from "react-icons/fi"
 import useSessionStorageState from "use-session-storage-state"
 import { useToolboxOpen } from "@/src/map/useToolboxOpen"
 import { useMapActions } from "@/src/map/useMapActions"
 import { useRoadSelection } from "@/src/map/roads/useRoadSelection"
+import { useRoadSearch } from "@/src/map/roads/useRoadSearch"
 import { RoadPanel, RoadHoverChip } from "@/src/map/roads/RoadPanel"
 import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
+import { bboxesIntersect, featureBbox, fetchCounties, fetchCounty, fetchMunis, outlineLabel } from "@/src/map/boundaries"
 import type { Bbox, MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel, HEAT_C_SIGMA_PX, HEAT_C_PX_TARGET, HEAT_C_FLOOR, HEAT_C_OPACITY } from "@/src/map/CrashMap"
 
@@ -52,6 +54,12 @@ function planRes(result: { plan?: { kind: string; res: number } | null }): numbe
 const CrashMap = lazy(() => import("@/src/map/CrashMap").then(m => ({ default: m.CrashMap })))
 
 const STATE_BBOX: [number, number, number, number] = [-75.7, 38.9, -73.9, 41.4]
+
+/** Statewide zoom from which hover/click drill-down targets munis instead of counties. */
+const MUNI_PICK_MIN_ZOOM = 10
+
+/** Stable `useQueries` combiner (a stable reference lets TSQ memoize the combined array). */
+const combineData = <T,>(results: { data?: T }[]): (T | undefined)[] => results.map(r => r.data)
 
 /** Approximate visible-viewport pixel dims used for the shard-selection
  *  bbox + cell-level picking. Full-screen fills the window; the embed
@@ -171,7 +179,8 @@ export type Props = {
     /** Charts-page href for the full-screen minimize button. */
     detailsHref?: string
     /** Outline-polygon click handler (geo drill-down). The full-screen
-     *  `/map` route uses it to navigate statewide → county. */
+     *  `/map` route uses it to navigate statewide → county / muni, and
+     *  county → muni. Receives a county or muni GeoJSON feature. */
     onOutlineClick?: (feature: any) => void
 }
 
@@ -334,30 +343,25 @@ export function CrashMapSection({
     //
     // Density-adaptive would feedback-loop (cellPxTarget → picker res →
     // cells → cellPxTarget), so intentionally ignored here.
-    const [outline, setOutline] = useState<FeatureCollection | null>(null)
-    useEffect(() => {
-        const url = cc === null
-            ? `${MAP_BASE_URL}/counties.geojson`
-            : `${MAP_BASE_URL}/counties/${String(cc).padStart(2, "0")}.geojson`
-        fetch(url).then(r => r.ok ? r.json() : null).then(setOutline).catch(() => setOutline(null))
-    }, [cc])
-    // Muni outline: only when a muni is selected. File is ~30-130 KB/county;
-    // filter client-side to the single feature matching our mc.
-    const [muniOutline, setMuniOutline] = useState<FeatureCollection | null>(null)
-    useEffect(() => {
-        if (cc === null || mc === null) { setMuniOutline(null); return }
-        const url = `${MAP_BASE_URL}/munis/${String(cc).padStart(2, "0")}.geojson`
-        let cancelled = false
-        fetch(url)
-            .then(r => r.ok ? r.json() as Promise<FeatureCollection> : null)
-            .then(fc => {
-                if (cancelled || !fc) { if (!cancelled) setMuniOutline(null); return }
-                const feat = fc.features.find(f => f.properties?.mc === mc)
-                setMuniOutline(feat ? { type: "FeatureCollection", features: [feat] } : null)
-            })
-            .catch(() => { if (!cancelled) setMuniOutline(null) })
-        return () => { cancelled = true }
-    }, [cc, mc])
+    const outlineQ = useQuery({
+        queryKey: ["outline", cc],
+        queryFn: () => (cc === null ? fetchCounties() : fetchCounty(cc)),
+        staleTime: Infinity,
+    })
+    const outline = outlineQ.data ?? null
+    // Muni outline: only when a muni is selected. The county's muni file is ~30-130 KB; filter
+    // client-side to the single feature matching our mc.
+    const scopeMunisQ = useQuery({
+        queryKey: ["munis", cc],
+        queryFn: () => fetchMunis(cc!),
+        enabled: cc !== null,
+        staleTime: Infinity,
+    })
+    const muniOutline = useMemo((): FeatureCollection | null => {
+        if (cc === null || mc === null || !scopeMunisQ.data) return null
+        const feat = scopeMunisQ.data.features.find(f => f.properties?.mc === mc)
+        return feat ? { type: "FeatureCollection", features: [feat] } : null
+    }, [cc, mc, scopeMunisQ.data])
 
     const circleRadiusPxValue = useMemo(
         () => circleRadiusPx(effectiveView?.zoom ?? 7),
@@ -651,14 +655,43 @@ export function CrashMapSection({
         return bboxFromViewport(effectiveView.latitude, effectiveView.longitude, effectiveView.zoom, w, h, effectiveView.pitch)
     }, [effectiveView, fullScreen])
     const roadSel = useRoadSelection(effectiveView, viewBbox)
-    // County drill-in: only when no road is under the cursor, and announced on hover.
-    const [hoveredOutline, setHoveredOutline] = useState<string | null>(null)
+    // Geo drill-down targets: statewide, counties (munis of the in-view counties once zoomed to
+    // `MUNI_PICK_MIN_ZOOM`, where a county fills the screen and the muni under the cursor is the
+    // useful target); in a county view, its munis.
+    const countyBboxes = useMemo(
+        (): [number, Bbox][] | null => cc === null && outline
+            ? outline.features.map(f => [f.properties?.cc as number, featureBbox(f)])
+            : null,
+        [cc, outline],
+    )
+    const muniPick = !!onOutlineClick && (cc !== null || (effectiveView?.zoom ?? 0) >= MUNI_PICK_MIN_ZOOM)
+    const pickCcs = useMemo((): number[] => {
+        if (!muniPick) return []
+        if (cc !== null) return [cc]
+        if (!viewBbox || !countyBboxes) return []
+        return countyBboxes.filter(([, b]) => bboxesIntersect(b, viewBbox)).map(([c]) => c).sort((a, b) => a - b)
+    }, [muniPick, cc, viewBbox, countyBboxes])
+    const pickMunis = useQueries({
+        queries: pickCcs.map(c => ({ queryKey: ["munis", c], queryFn: () => fetchMunis(c), staleTime: Infinity })),
+        combine: combineData,
+    })
+    const pickOutline = useMemo((): FeatureCollection | undefined => {
+        if (!onOutlineClick) return undefined
+        if (!muniPick) return outline ?? undefined
+        const features = pickMunis.flatMap(fc => fc?.features ?? []).filter(f => f.properties?.mc !== mc)
+        return features.length ? { type: "FeatureCollection", features } : undefined
+    }, [onOutlineClick, muniPick, outline, pickMunis, mc])
+    // Drill-in: only when no road is under the cursor, and announced on hover.
+    const [hoveredOutline, setHoveredOutline] = useState<Feature | null>(null)
+    useEffect(() => setHoveredOutline(null), [pickOutline])
     const outlineClick = onOutlineClick && !roadSel.hovered ? onOutlineClick : undefined
-    const onOutlineHover = useCallback((f: any) => setHoveredOutline(f?.properties?.name ?? null), [])
+    const onOutlineHover = useCallback((f: Feature | null) => setHoveredOutline(f), [])
+    const hoveredOutlineLabel = hoveredOutline ? outlineLabel(hoveredOutline, cc === null) : null
     const zoomToRoad = (bbox: [number, number, number, number]) => {
         const [w, h] = viewportDims(fullScreen)
         setLlz(fitBoundsToView(bbox, w, h, 0))
     }
+    useRoadSearch({ setRoad: roadSel.setRoad, zoomTo: zoomToRoad })
 
     // Omnibar / `m …` hotkeys for the toolbox controls.
     useMapActions({
@@ -829,8 +862,8 @@ export function CrashMapSection({
             )}
             {roadSel.hovered && roadSel.hovered.entity !== roadSel.road ? (
                 <RoadHoverChip name={roadSel.hovered.name} alias={roadSel.hovered.alias} theme={actualTheme} />
-            ) : outlineClick && hoveredOutline ? (
-                <RoadHoverChip name={`${hoveredOutline} County`} action="click to open" theme={actualTheme} />
+            ) : outlineClick && hoveredOutlineLabel ? (
+                <RoadHoverChip name={hoveredOutlineLabel} action="click to open" theme={actualTheme} />
             ) : null}
             {result.status === "loading" && <LoadingOverlay theme={actualTheme} />}
             {result.status === "ready" && (() => {
@@ -844,6 +877,8 @@ export function CrashMapSection({
                         initialView={initialView}
                         viewState={llz ?? undefined}
                         onViewStateChange={setLlz}
+                        pickOutline={pickOutline}
+                        hoverOutline={outlineClick ? hoveredOutline : null}
                         onOutlineClick={outlineClick}
                         onOutlineHover={onOutlineClick ? onOutlineHover : undefined}
                         onMapClick={roadSel.onClick}

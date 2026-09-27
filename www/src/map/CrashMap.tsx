@@ -11,7 +11,7 @@ import DeckGL from "@deck.gl/react"
 import { GeoJsonLayer, ScatterplotLayer, BitmapLayer } from "@deck.gl/layers"
 import { HeatmapLayer } from "@deck.gl/aggregation-layers"
 import type { PickingInfo } from "@deck.gl/core"
-import type { FeatureCollection } from "geojson"
+import type { Feature, FeatureCollection } from "geojson"
 import { useTouchPitch } from "./hooks/useTouchPitch"
 import { cellsToSegments, buildStackedCellLayer, Segment, StackedCell } from "./StackedCellLayer"
 import { binIntoS2Cells, pickS2LevelForPixels, tokenBoundary, latLngToToken, S2_EDGE_METERS } from "./s2"
@@ -93,9 +93,14 @@ export type Props = {
      *  zoom levels + muni sizes without the user re-tuning. */
     heightScale?: number
     onHeightScaleChange?: (n: number) => void
-    /** Click handler for outline polygons (geo drill-down). */
+    /** Drill-down polygons (counties statewide, munis within a county): hovered/clicked via
+     *  `onOutlineHover` / `onOutlineClick`. */
+    pickOutline?: FeatureCollection
+    /** The hovered drill-down polygon, stroked on top of everything else. */
+    hoverOutline?: Feature | null
+    /** Click handler for `pickOutline` polygons (geo drill-down). */
     onOutlineClick?: (feature: any) => void
-    /** Hovered outline feature (null on leave); highlighted while `onOutlineClick` is set. */
+    /** Hovered `pickOutline` feature (null on leave). */
     onOutlineHover?: (feature: any | null) => void
     /** Fired for any click on the map canvas (used for drawer close-on-click). */
     /** Map click, with the clicked `[lon, lat]` (unless a layer handled it). */
@@ -423,6 +428,8 @@ export function CrashMap({
     onCellPxTargetChange,
     heightScale: controlledHeightScale,
     onHeightScaleChange,
+    pickOutline,
+    hoverOutline,
     onOutlineClick,
     onOutlineHover,
     onMapClick,
@@ -742,12 +749,28 @@ export function CrashMap({
             layers.push(new GeoJsonLayer({
                 id: "outline",
                 data: outline,
-                getFillColor: onOutlineClick ? [...lineRgb, 12] as any : [0, 0, 0, 0] as any,
+                getFillColor: [0, 0, 0, 0] as any,
                 getLineColor: [...lineRgb, alpha] as any,
                 lineWidthMinPixels: muniOutline ? 0.8 : 1.5,
-                pickable: !!onOutlineClick || !!onOutlineHover,
+                pickable: false,
+                updateTriggers: {
+                    getLineColor: [theme, !!muniOutline],
+                    lineWidthMinPixels: [!!muniOutline],
+                },
+            }))
+        }
+        // Drill-down polygons: a faint tint (only while clickable) that picks hover/click. When
+        // they're the outline itself (statewide counties), don't re-stroke the borders.
+        if (pickOutline && (onOutlineClick || onOutlineHover)) {
+            layers.push(new GeoJsonLayer({
+                id: "pick-outline",
+                data: pickOutline,
+                getFillColor: onOutlineClick ? [...lineRgb, 12] as any : [0, 0, 0, 0] as any,
+                getLineColor: [...lineRgb, pickOutline === outline ? 0 : 70] as any,
+                lineWidthMinPixels: 0.6,
+                pickable: true,
                 autoHighlight: !!onOutlineClick,
-                highlightColor: [...lineRgb, 60] as any,
+                highlightColor: [...lineRgb, 50] as any,
                 onClick: onOutlineClick ? (info: any) => {
                     if (info.object) { onOutlineClick(info.object); return true }
                     return false
@@ -755,8 +778,7 @@ export function CrashMap({
                 onHover: onOutlineHover ? (info: any) => { onOutlineHover(info.object ?? null) } : undefined,
                 updateTriggers: {
                     getFillColor: [theme, !!onOutlineClick],
-                    getLineColor: [theme, !!muniOutline],
-                    lineWidthMinPixels: [!!muniOutline],
+                    getLineColor: [theme, pickOutline === outline],
                 },
             }))
         }
@@ -773,7 +795,18 @@ export function CrashMap({
             }))
         }
         return layers
-    }, [outline, muniOutline, theme, onOutlineClick, onOutlineHover])
+    }, [outline, muniOutline, pickOutline, theme, onOutlineClick, onOutlineHover])
+    // The hovered drill-down polygon's stroke goes above the data layers (heatmap / bins would
+    // otherwise bury it), below `extraLayers` (road hover/selection).
+    const hoverOutlineLayer = useMemo(() => hoverOutline ? new GeoJsonLayer({
+        id: "hover-outline",
+        data: [hoverOutline],
+        getFillColor: [0, 0, 0, 0] as any,
+        getLineColor: (theme === "dark" ? [255, 255, 255, 230] : [0, 60, 140, 240]) as any,
+        lineWidthMinPixels: 2.5,
+        pickable: false,
+        updateTriggers: { getLineColor: [theme] },
+    }) : null, [hoverOutline, theme])
 
     // Strategy A bake: recompute the KDE image only when the cell set (or its
     // level) changes — never on pan/zoom/opacity. Skipped unless heatmap+A.
@@ -1001,7 +1034,10 @@ export function CrashMap({
     }, [isPitchingRef])
 
     const style = useMemo(() => rasterStyle(theme), [theme])
-    const allLayers = useMemo(() => (extraLayers?.length ? [...layers, ...extraLayers] : layers), [layers, extraLayers])
+    const allLayers = useMemo(
+        () => [...layers, ...(hoverOutlineLayer ? [hoverOutlineLayer] : []), ...(extraLayers ?? [])],
+        [layers, hoverOutlineLayer, extraLayers],
+    )
 
     return (
         <div ref={containerRef} style={{ position: "relative", height, width: "100%" }}>
