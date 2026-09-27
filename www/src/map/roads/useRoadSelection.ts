@@ -112,16 +112,23 @@ export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
             }))
         }
         if (hoveredEntity !== null) {
-            out.push(new PathLayer({
-                id: "road-hover",
-                data: roadPaths(hitPoints.filter(p => p.entity === hoveredEntity)),
-                getPath: (d: [number, number][]) => d,
-                getColor: [255, 255, 255, 170],
-                getWidth: 3,
-                widthUnits: "pixels",
-                capRounded: true,
-                jointRounded: true,
-            }))
+            // White on a dark casing, distinct from the (blue) hovered muni / county outline.
+            const paths = roadPaths(hitPoints.filter(p => p.entity === hoveredEntity))
+            for (const [id, color, width] of [
+                ["road-hover-casing", [0, 0, 0, 170], 7],
+                ["road-hover", [255, 255, 255, 240], 3],
+            ] as const) {
+                out.push(new PathLayer({
+                    id,
+                    data: paths,
+                    getPath: (d: [number, number][]) => d,
+                    getColor: [...color],
+                    getWidth: width,
+                    widthUnits: "pixels",
+                    capRounded: true,
+                    jointRounded: true,
+                }))
+            }
         }
         return out
     }, [geom.data, hoveredEntity, hitPoints])

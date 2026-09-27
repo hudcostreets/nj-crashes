@@ -751,9 +751,10 @@ export function CrashMap({
     const hoverOutlineLayer = useMemo(() => hoverOutline ? new GeoJsonLayer({
         id: "hover-outline",
         data: [hoverOutline],
-        getFillColor: (theme === "dark" ? [255, 255, 255, 28] : [0, 60, 140, 28]) as any,
-        getLineColor: (theme === "dark" ? [255, 255, 255, 230] : [0, 60, 140, 240]) as any,
-        lineWidthMinPixels: 2.5,
+        // Areas stay in the boundary lines' blue family (roads hover in white on a dark casing).
+        getFillColor: (theme === "dark" ? [109, 179, 242, 36] : [0, 102, 204, 30]) as any,
+        getLineColor: (theme === "dark" ? [140, 200, 255, 255] : [0, 102, 204, 255]) as any,
+        lineWidthMinPixels: 2,
         pickable: false,
         updateTriggers: { getFillColor: [theme], getLineColor: [theme] },
     }) : null, [hoverOutline, theme])
