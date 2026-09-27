@@ -9,6 +9,6 @@ meta:
     resources:
       mem_gb: 6
     deps:
-      crashes.parquet: 1bf28fdbdd1f5c6d8c1e2da55781bdc4
+      crashes.parquet: e8540c542106c8b09de85a04a7ba4e33
       /njdot/data/crashes.parquet: 1211e215284ecc253b64b51dd211dd2c
       /njdot/data/aashto_combined_crashes.parquet: 95ed2b9757071fb25ecdb9a46a15481a
