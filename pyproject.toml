@@ -34,6 +34,7 @@ dependencies = [
     "PyGithub>=2.6",
     "pyogrio>=0.10",
     "pyproj>=3.7",
+    "pyyaml>=6.0",
     "requests>=2.32",
     "s3fs>=2024",
     "scipy>=1.13",
