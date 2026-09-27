@@ -692,8 +692,8 @@ export function CrashMapSection({
         if (roadActive) roadHover(lngLat)
         setHoveredOutline(lngLat && pickOutline ? featureAt(pickOutline.features, lngLat) : null)
     }, [roadActive, roadHover, pickOutline])
-    const onMapClick = useCallback((lngLat?: [number, number]) => {
-        if (roadClick(lngLat)) return
+    const onMapClick = useCallback((lngLat?: [number, number], mods?: { shiftKey: boolean }) => {
+        if (roadClick(lngLat, mods)) return
         const f = lngLat && pickOutline ? featureAt(pickOutline.features, lngLat) : null
         if (f && onOutlineClick) onOutlineClick(f)
     }, [roadClick, pickOutline, onOutlineClick])
@@ -729,6 +729,20 @@ export function CrashMapSection({
     // and we leave the drawer open.
     const wrapRef = useRef<HTMLDivElement | null>(null)
     const drawerRef = useRef<HTMLDivElement | null>(null)
+    // Alt/Option+wheel over the map steps a selected road's scope instead of zooming: a capture
+    // listener, so the map's controller never sees the event.
+    const { onWheel: roadWheel } = roadSel
+    useEffect(() => {
+        const el = wrapRef.current
+        if (!el) return
+        const onWheel = (e: WheelEvent) => {
+            if (!e.altKey) return
+            if ((e.target as Element | null)?.closest?.("[data-road-panel]")) return
+            if (roadWheel(e)) { e.preventDefault(); e.stopPropagation() }
+        }
+        el.addEventListener("wheel", onWheel, { capture: true, passive: false })
+        return () => el.removeEventListener("wheel", onWheel, { capture: true })
+    }, [roadWheel])
     // Hovered res from the debug drawer's cells table; shows an
     // outline-only hex grid at that res on the map.
     const [gridOverlayRes, setGridOverlayRes] = useState<number | null>(null)
@@ -864,19 +878,25 @@ export function CrashMapSection({
                 <RoadPanel
                     info={roadSel.info}
                     notFound={roadSel.notFound}
-                    summary={roadSel.summary}
-                    crashes={roadSel.crashes}
-                    loading={roadSel.loading}
+                    roadSummary={roadSel.summary}
+                    scope={roadSel.scope}
                     onClose={() => roadSel.setRoad(null)}
                     onZoomTo={zoomToRoad}
+                    pageHref={roadSel.pageHref}
                     theme={actualTheme}
                 />
             )}
             <HoverDrawer
                 road={roadSel.hovered}
-                roadSelected={!!roadSel.hovered && roadSel.hovered.entity === roadSel.road}
+                roadSelected={!!roadSel.hovered && (
+                    roadSel.hovered.entity === roadSel.road
+                    || (roadSel.scope.state.corridor && roadSel.scope.corridorMembers.some(m => m.entity === roadSel.hovered!.entity))
+                )}
                 area={hoveredOutlineLabel}
                 dodgePanel={roadSel.selected}
+                scope={roadSel.selected && roadSel.scope.v5
+                    ? { label: roadSel.scope.label, span: !!roadSel.scope.span, corridor: roadSel.scope.state.corridor }
+                    : null}
                 theme={actualTheme}
             />
             {result.status === "loading" && <LoadingOverlay theme={actualTheme} />}
@@ -896,6 +916,7 @@ export function CrashMapSection({
                         onMapClick={onMapClick}
                         onMapHover={onMapHover}
                         extraLayers={roadSel.layers}
+                        freezePan={roadSel.freezePan}
                         mode={mode}
                         heatRender={heatRender}
                         heatTileFilter={heatTileFilter}

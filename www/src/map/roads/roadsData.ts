@@ -5,6 +5,7 @@
 import type { AsyncDuckDB } from "@duckdb/duckdb-wasm"
 import { runQuery } from "@/src/lib/DuckDbContext"
 import { MAP_BASE_URL } from "@/src/map/config"
+import { spanBounds, type Span } from "./roadScope"
 
 const { cos, PI, sqrt } = Math
 
@@ -14,7 +15,8 @@ export const ROADS_BASE_URL = MAP_BASE_URL.replace(/\/map\/?$/, "/roads")
 export type RoadsFile =
     | "crashes-by-sri" | "crashes-by-entity" | "sri-geom" | "sri-hit" | "sri-hit-5" | "sri-hit-6"
     | "sris" | "road-entities" | "road-runs" | "road-summary" | "road-summary-monthly" | "road-ranks"
-    | "road-search"
+    | "road-search" | "crashes-by-entity-xs" | "road-blocks" | "road-node-entities" | "road-corridors"
+    | "road-corridor-summary"
 
 export function roadsUrl(file: RoadsFile): string {
     return new URL(`${ROADS_BASE_URL}/${file}.parquet`, window.location.origin).href
@@ -71,6 +73,70 @@ export type RoadEntity = {
     /** " · "-joined, most-covered first. */
     munis: string | null
     length_mi: number
+    // v5 (specs/road-model-v5.md); absent in v4 builds.
+    /** Its corridor (null: none). */
+    corridor?: number | null
+    /** `cchain = corridor_c0 + corridor_sign · chain` */
+    corridor_c0?: number | null
+    corridor_sign?: number | null
+    /** Chain end (mi): ≥ `length_mi`, since it includes gaps. */
+    chain_mi?: number
+    n_nodes?: number
+    /** Other roads' crashes at its intersections; inclusive = `n_*` + `n_*_xs`. */
+    n_crashes_xs?: number
+    n_fatal_xs?: number
+    n_injury_xs?: number
+    n_killed_xs?: number
+}
+
+/** Whether a road comes from a v5 build (chainage, blocks, intersections, corridors). */
+export function isV5(e: RoadEntity | null | undefined): e is RoadEntity & { chain_mi: number } {
+    return !!e && typeof e.chain_mi === "number"
+}
+
+/** A group of entities that are one right-of-way (`road-corridors`). */
+export type RoadCorridor = {
+    corridor: number
+    slug: string
+    name: string
+    kind: "sequential" | "parallel" | "mixed"
+    spine: number
+    /** Comma-joined member entity ids. */
+    entities: string
+    n_entities: number
+    cc: number | null
+    chain_mi: number
+    length_mi: number
+    lon_min: number
+    lat_min: number
+    lon_max: number
+    lat_max: number
+    n_crashes: number
+    n_fatal: number
+    n_injury: number
+    n_killed: number
+    n_crashes_xs: number
+    n_fatal_xs: number
+    n_injury_xs: number
+    n_killed_xs: number
+}
+
+/** A road cut at its intersections (`road-blocks`); counts are this road's placed crashes with
+ *  chain in `[chain_lo, chain_hi)` (exclusive of other roads' crashes). */
+export type RoadBlock = {
+    entity: number
+    block: number
+    chain_lo: number
+    chain_hi: number
+    length_mi: number
+    node_lo: number | null
+    node_hi: number | null
+    from_name: string | null
+    to_name: string | null
+    n_crashes: number
+    n_fatal: number
+    n_injury: number
+    n_killed: number
 }
 
 /** Crash counts of one road per `(year[, month], severity)` (`road-summary[-monthly]`); only
@@ -85,6 +151,12 @@ export type RoadSummaryRow = {
     tk: number
     ti: number
     n_unplaced?: number
+    /** v5: of `n`, crashes at an intersection node. */
+    n_node?: number
+    /** v5: other roads' crashes at this road's intersections (crashes / killed / injured). */
+    n_xs?: number
+    tk_xs?: number
+    ti_xs?: number
 }
 
 /** A county's (`mc` = 0) or muni's top road (`road-ranks`): counts and miles *within that area*;
@@ -126,9 +198,11 @@ export type RoadInfo = {
 
 /** How `njdot roads build` put a crash on its road (specs/crash-location-recovery.md): its coded
  *  SRI / milepost (`sri_mp`), or, recovered from police-reported strings, the road ∩ cross street
- *  (`intersection` / `route_xs`), a reported point snapped to the road (`latlon_snap`), or, with no
- *  point, an SRI without milepost (`sri_only`) or the road name alone (`name_only`). */
-export type LocSource = "sri_mp" | "intersection" | "route_xs" | "latlon_snap" | "sri_only" | "name_only" | "none"
+ *  (`intersection` / `route_xs`), a reported point snapped to the road (`latlon_snap`), a retired
+ *  route's milepost calibrated onto today's road (`sri_calib`, v5), or, with no point, an SRI
+ *  without milepost (`sri_only`) or the road name alone (`name_only`). */
+export type LocSource =
+    | "sri_mp" | "intersection" | "route_xs" | "latlon_snap" | "sri_calib" | "sri_only" | "name_only" | "none"
 
 /** Sources that put a crash on a road without a map point (no milepost, no lat / lon). */
 export const UNPLACED_SOURCES: readonly LocSource[] = ["sri_only", "name_only"]
@@ -161,6 +235,18 @@ export type RoadCrash = {
     lon: number | null
     /** Absent in builds before location recovery (all crashes were `sri_mp`). */
     loc_source?: LocSource | null
+    // v5 (absent in v4 builds):
+    /** Chain (mi) along its road; null when unplaced. */
+    chain?: number | null
+    /** Unplaced crashes a cross street pins near an intersection: the node's chain ± the police
+     *  distance. */
+    chain_lo?: number | null
+    chain_hi?: number | null
+    /** The intersection node it's at. */
+    node?: number | null
+    /** `crashes-by-entity-xs` rows only: the road the crash is on (this row counts it at one of
+     *  that road's intersections with `entity`). */
+    own_entity?: number | null
 }
 
 export type Bbox = [number, number, number, number]
@@ -212,10 +298,10 @@ export function fetchRoadRanks(db: AsyncDuckDB, cc: number, mc: number): Promise
 }
 
 /** The entity's points: `sri-geom` is sorted by `(entity, sri, mp)`, so the `entity` filter alone
- *  prunes to its row groups (no need to wait for its SRI list). */
-export function fetchEntityGeom(db: AsyncDuckDB, entity: number): Promise<RoadPoint[]> {
-    return runQuery<RoadPoint>(db, `
-        SELECT ${POINT_COLS} FROM read_parquet('${roadsUrl("sri-geom")}')
+ *  prunes to its row groups (no need to wait for its SRI list). v5 points carry `chain`. */
+export function fetchEntityGeom(db: AsyncDuckDB, entity: number): Promise<(RoadPoint & { chain?: number })[]> {
+    return runQuery<RoadPoint & { chain?: number }>(db, `
+        SELECT ${presentCols([...POINT_COLS.split(", "), "chain"])} FROM read_parquet('${roadsUrl("sri-geom")}')
         WHERE entity = ${entity | 0}
         ORDER BY sri, mp
     `)
@@ -228,25 +314,96 @@ function presentCols(cols: readonly string[]): string {
     return `COLUMNS('^(${cols.join("|")})$')`
 }
 
-/** `crashes-by-entity` is sorted by `(entity, unplaced, sri, mp, dt, id)`, so the `entity` filter
- *  alone prunes to the road's row groups (no need to wait for its SRI list). Crashes without a
- *  milepost (located by street name / route only) sort last. */
-export function entityCrashesSql(entity: number): string {
-    return `SELECT * FROM read_parquet('${roadsUrl("crashes-by-entity")}') WHERE entity = ${entity | 0} ORDER BY mp IS NULL, sri, mp, dt`
+/** `crashes-by-entity` is sorted by `(entity, unplaced, chain, dt, id)` (v5; v4: `sri, mp` for
+ *  `chain`), so the `entity` filter alone prunes to the road's row groups (no need to wait for its
+ *  SRI list). Crashes without a map position sort last. `v5`: order by `chain` (v4 files have
+ *  none, and an `ORDER BY` of a missing column fails). */
+export function entityCrashesSql(entity: number, v5: boolean): string {
+    const order = v5 ? "chain IS NULL, chain, dt" : "mp IS NULL, sri, mp, dt"
+    return `SELECT * FROM read_parquet('${roadsUrl("crashes-by-entity")}') WHERE entity = ${entity | 0} ORDER BY ${order}`
 }
 
-/** What the road views (table, map, plots) read; Export CSV fetches every column on demand. */
+/** What the road views (table, map, plots) read; Export CSV fetches every column on demand. The
+ *  v5 columns are absent from rows of v4 builds. */
 const VIEW_COLS = [
     "sri", "mp", "id", "year", "dt", "cc", "mc", "case", "severity", "tk", "ti", "cross_street", "lat", "lon", "loc_source",
+    "chain", "chain_lo", "chain_hi", "node", "entity",
 ] as const
-export type RoadCrashView = Pick<RoadCrash, typeof VIEW_COLS[number]>
-
-export function fetchEntityCrashes(db: AsyncDuckDB, entity: number): Promise<RoadCrashView[]> {
-    return runQuery<RoadCrashView>(db, `SELECT ${presentCols(VIEW_COLS.filter(c => c !== "dt"))}, epoch_ms(dt) AS dt FROM (${entityCrashesSql(entity)})`)
+export type RoadCrashView = Pick<RoadCrash, typeof VIEW_COLS[number]> & {
+    /** `crashes-by-entity-xs` rows: the road the crash is on. */
+    own_entity?: number | null
 }
 
-export function fetchEntityCrashesFull(db: AsyncDuckDB, entity: number): Promise<RoadCrash[]> {
-    return runQuery<RoadCrash>(db, `SELECT * EXCLUDE (dt), epoch_ms(dt) AS dt FROM (${entityCrashesSql(entity)})`)
+const viewCols = (extra: string[] = []) => `${presentCols([...VIEW_COLS.filter(c => c !== "dt"), ...extra])}, epoch_ms(dt) AS dt`
+
+export function fetchEntityCrashes(db: AsyncDuckDB, entity: number, v5: boolean): Promise<RoadCrashView[]> {
+    return runQuery<RoadCrashView>(db, `SELECT ${viewCols()} FROM (${entityCrashesSql(entity, v5)})`)
+}
+
+export function fetchEntityCrashesFull(db: AsyncDuckDB, entity: number, v5: boolean): Promise<RoadCrash[]> {
+    return runQuery<RoadCrash>(db, `SELECT * EXCLUDE (dt), epoch_ms(dt) AS dt FROM (${entityCrashesSql(entity, v5)})`)
+}
+
+/** Other roads' crashes at this road's intersections (`crashes-by-entity-xs`, v5): `chain` is the
+ *  intersection's chain on this road, `own_entity` the road the crash is on. */
+/** A span's `chain` predicate (`spanBounds`: `[lo, hi)`, closed at the road's end). */
+function chainRange(span: Span, hiClosed: boolean): string {
+    const b = spanBounds(span, hiClosed)
+    return `chain >= ${b.min} AND chain ${b.maxInclusive ? "<=" : "<"} ${b.max}`
+}
+
+export function entityXsSql(entity: number, span?: Span, hiClosed = true): string {
+    const range = span ? ` AND ${chainRange(span, hiClosed)}` : ""
+    return `SELECT * FROM read_parquet('${roadsUrl("crashes-by-entity-xs")}') WHERE entity = ${entity | 0}${range} ORDER BY chain, dt`
+}
+
+export function fetchEntityXs(db: AsyncDuckDB, entity: number, span?: Span, hiClosed = true): Promise<RoadCrashView[]> {
+    return runQuery<RoadCrashView>(db, `SELECT ${viewCols(["own_entity"])} FROM (${entityXsSql(entity, span, hiClosed)})`)
+}
+
+/** A road's crashes in chain range `span`, plus its unplaced crashes pinned there (a cross street
+ *  puts them within `[chain_lo, chain_hi]`). Two `UNION ALL`ed scans, so the placed one prunes on
+ *  `chain` stats (an `OR` wouldn't). */
+export function spanCrashesSql(entity: number, span: Span, hiClosed = true): string {
+    const src = `read_parquet('${roadsUrl("crashes-by-entity")}')`
+    const e = entity | 0
+    return `SELECT * FROM (
+        SELECT * FROM ${src} WHERE entity = ${e} AND ${chainRange(span, hiClosed)}
+        UNION ALL SELECT * FROM ${src} WHERE entity = ${e} AND chain IS NULL AND chain_lo <= ${+span.hi} AND chain_hi >= ${+span.lo}
+    ) ORDER BY chain IS NULL, chain, dt`
+}
+
+export function fetchSpanCrashes(db: AsyncDuckDB, entity: number, span: Span, hiClosed: boolean): Promise<RoadCrashView[]> {
+    return runQuery<RoadCrashView>(db, `SELECT ${viewCols()} FROM (${spanCrashesSql(entity, span, hiClosed)})`)
+}
+
+/** The road's blocks, in chain order (`road-blocks`, v5). */
+export function fetchBlocks(db: AsyncDuckDB, entity: number): Promise<RoadBlock[]> {
+    return runQuery<RoadBlock>(db, `SELECT * FROM read_parquet('${roadsUrl("road-blocks")}') WHERE entity = ${entity | 0} ORDER BY block`)
+}
+
+export async function fetchCorridor(db: AsyncDuckDB, corridor: number): Promise<RoadCorridor | null> {
+    const rows = await runQuery<RoadCorridor>(db, `SELECT * FROM read_parquet('${roadsUrl("road-corridors")}') WHERE corridor = ${corridor | 0}`)
+    return rows[0] ?? null
+}
+
+/** `entity, name` of each id in `ids`: one `BETWEEN` scan per cluster of nearby ids (entities are
+ *  slug-ordered, so a road's cross streets are mostly close; DuckDB-WASM doesn't prune on `IN`). */
+export async function fetchEntityNames(db: AsyncDuckDB, ids: readonly number[]): Promise<Map<number, string>> {
+    const sorted = [...new Set(ids.map(i => i | 0))].sort((a, b) => a - b)
+    const ranges: [number, number][] = []
+    for (const id of sorted) {
+        const last = ranges[ranges.length - 1]
+        if (last && id - last[1] <= 200) last[1] = id
+        else ranges.push([id, id])
+    }
+    const results = await Promise.all(ranges.map(([a, b]) => runQuery<{ entity: number; name: string }>(db, `
+        SELECT entity, name FROM read_parquet('${roadsUrl("road-entities")}') WHERE entity BETWEEN ${a} AND ${b}
+    `)))
+    const want = new Set(sorted)
+    const out = new Map<number, string>()
+    for (const rows of results) for (const r of rows) if (want.has(r.entity)) out.set(r.entity, r.name)
+    return out
 }
 
 /** The road entity a crash was matched to (null when it has no SRI match, or its point isn't on a

@@ -25,12 +25,16 @@ export type HoverDrawerProps = {
     area: string | null
     /** Pushed right when the selected-road panel occupies the bottom-left. */
     dodgePanel: boolean
+    /** The selected road's scope, when it has scopes (v5): its label ("Block: Fulton Avenue to
+     *  Stegman Parkway, 0.07 mi"), and whether a sub-road span is active. */
+    scope?: { label: string; span: boolean; corridor: boolean } | null
     theme: "light" | "dark"
 }
 
 /** What's under the cursor: the road (with its crash summary) and the muni / county, which are
- *  independent of each other; a click goes to the road when there is one, else the area. */
-export function HoverDrawer({ road, roadSelected, area, dodgePanel, theme }: HoverDrawerProps) {
+ *  independent of each other; a click goes to the road when there is one, else the area. With a
+ *  scoped road selected, also the scope and how to change it. */
+export function HoverDrawer({ road, roadSelected, area, dodgePanel, scope, theme }: HoverDrawerProps) {
     const db = useDb()
     const entity = useSettled(road?.entity ?? null, INFO_DELAY_MS)
     const info = useQuery({
@@ -42,7 +46,9 @@ export function HoverDrawer({ road, roadSelected, area, dodgePanel, theme }: Hov
     const summary = road && info.data?.entity === road.entity ? info.data : null
     const dim = theme === "dark" ? "#999" : "#666"
     const action = road
-        ? (roadSelected ? "selected" : `click: select ${road.name}`)
+        ? (roadSelected
+            ? (scope ? "click: move the scope here · shift-click: select from the marker to here" : "selected")
+            : `click: select ${road.name}`)
         : `click: open ${area}`
     return (
         <div style={{
@@ -72,6 +78,15 @@ export function HoverDrawer({ road, roadSelected, area, dodgePanel, theme }: Hov
                 </div>
             )}
             <div style={{ color: dim, marginTop: 2 }}>{action}</div>
+            {scope && (
+                <div style={{ marginTop: 4, paddingTop: 4, borderTop: `1px solid ${dim}` }}>
+                    <div>Showing: {scope.label}</div>
+                    <div style={{ color: dim }}>
+                        Alt/⌥+scroll or [ ]: {scope.corridor ? "road → corridor" : "block ↔ stretch ↔ road ↔ corridor"}
+                        {scope.span && " · drag the white ends to adjust"}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
