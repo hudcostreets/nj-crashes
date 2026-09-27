@@ -225,19 +225,40 @@ def unplaced(by_entity: pd.DataFrame) -> pd.Series:
     return by_entity['loc_source'].isin(UNPLACED_SOURCES).fillna(False).astype(bool)
 
 
-def road_summary(by_entity: pd.DataFrame, monthly: bool = False) -> pd.DataFrame:
+def road_summary(by_entity: pd.DataFrame, monthly: bool = False, xs: pd.DataFrame | None = None, key: str = 'entity') -> pd.DataFrame:
     """Crash counts per `(entity, year, severity)` (or `(entity, year, month, severity)`): `n`
     crashes (all assigned ones, placed or not), `tk` killed, `ti` injured, `n_unplaced` of them
-    without a map point (`unplaced`). Sorted by the keys."""
-    keys = ['entity', 'year', 'month', 'severity'] if monthly else ['entity', 'year', 'severity']
-    c = by_entity[['entity', 'year', 'severity', 'tk', 'ti']].copy()
-    if monthly:
-        c['month'] = pd.to_datetime(by_entity['dt']).dt.month
-    c['n'] = 1
-    c['n_unplaced'] = unplaced(by_entity).astype('int32')
-    vals = ['n', 'tk', 'ti', 'n_unplaced']
-    out = c.groupby(keys, as_index=False, observed=True)[vals].sum()
-    out = out.astype({'entity': 'int32', 'year': 'int16', 'severity': 'string'} | {v: 'int32' for v in vals})
+    without a map point (`unplaced`); with `xs` (`road_model.xs_rows`: other roads' crashes at this
+    road's intersections), also `n_node` (of `n`, at an intersection node, when `by_entity` has
+    `node`) and `n_xs` / `tk_xs` / `ti_xs` (the `xs` crashes: the road's *inclusive* count is `n +
+    n_xs`). A cell appears when `n` or `n_xs` is non-zero. Sorted by the keys. `key`: the road
+    column (`corridor` for corridor summaries)."""
+    keys = [key, 'year', 'month', 'severity'] if monthly else [key, 'year', 'severity']
+
+    def agg(df: pd.DataFrame, sfx: str = '') -> pd.DataFrame:
+        c = df[[key, 'year', 'severity', 'tk', 'ti']].copy()
+        if monthly:
+            c['month'] = pd.to_datetime(df['dt']).dt.month
+        c['n'] = 1
+        vals = ['n', 'tk', 'ti']
+        if not sfx:
+            c['n_unplaced'] = unplaced(df).astype('int32').to_numpy()
+            vals.append('n_unplaced')
+            if xs is not None and 'node' in df:
+                c['n_node'] = df['node'].notna().astype('int32').to_numpy()
+                vals.append('n_node')
+        out = c.groupby(keys, as_index=False, observed=True)[vals].sum()
+        return out.rename(columns={v: f'{v}{sfx}' for v in vals})
+
+    out = agg(by_entity)
+    vals = [c for c in out.columns if c not in keys]
+    if xs is not None:
+        x = agg(xs, '_xs')
+        out = out.merge(x, on=keys, how='outer')
+        vals += ['n_xs', 'tk_xs', 'ti_xs']
+        for v in vals:
+            out[v] = out[v].fillna(0)
+    out = out.astype({key: 'int32', 'year': 'int16', 'severity': 'string'} | {v: 'int32' for v in vals})
     if monthly:
         out['month'] = out['month'].astype('int8')
     return out.sort_values(keys, kind='stable').reset_index(drop=True)[keys + vals]
