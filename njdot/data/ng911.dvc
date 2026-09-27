@@ -1,14 +1,18 @@
 outs:
 - hash: md5
   path: ng911
+  md5: 8fff34c5fb121af223ec7a02f8e03318.dir
+  size: 82603825
+  nfiles: 2
 meta:
   computation:
     cmd: njdot roads fetch-ng911
     fetch:
       schedule: manual
+      last_run: '2026-09-27T04:32:38.094947+00:00'
     git_deps:
-      /njdot/arcgis.py:
-      /njdot/road_sources.py:
+      /njdot/arcgis.py: 41055bcea92d5331ea9304e6ce6fcb9e8f3562c2
+      /njdot/road_sources.py: 16f90a6b0f8f9b6e082ac31fee649c7619c6075b
     note: |
       NJOGIS Road Centerlines of NJ (NG9-1-1), `Tran_road/FeatureServer`: `centerlines.parquet`
       (layer 0: local street names, route shields, county/muni, `SRI` tag, `x`/`y` vertex lists) and

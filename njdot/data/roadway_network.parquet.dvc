@@ -1,14 +1,17 @@
 outs:
 - hash: md5
   path: roadway_network.parquet
+  md5: 816986a99d836041f7ff3de4e32ed671
+  size: 42436576
 meta:
   computation:
     cmd: njdot roads fetch-network
     fetch:
       schedule: manual
+      last_run: '2026-09-27T04:30:01.214941+00:00'
     git_deps:
-      /njdot/arcgis.py:
-      /njdot/road_sources.py:
+      /njdot/arcgis.py: 41055bcea92d5331ea9304e6ce6fcb9e8f3562c2
+      /njdot/road_sources.py: 16f90a6b0f8f9b6e082ac31fee649c7619c6075b
     note: |
       NJDOT Roadway Network (the LRS: one M-aware polyline per SRI piece, milepost on every vertex),
       from the `NJDOT_Roadway_Network/FeatureServer/0` ArcGIS service. One row per feature path with
