@@ -1,6 +1,7 @@
 import { useMemo } from "react"
 import { useNavigate } from "react-router-dom"
-import { useAction, useOmnibarEndpoint } from "use-kbd"
+import { useOmnibarEndpoint } from "use-kbd"
+import { useAction } from "@/src/lib/kbd"
 import type { EndpointPagination, EndpointResponse, OmnibarEntry } from "use-kbd"
 import { useGeoFilter } from "@/src/GeoFilterContext"
 import { canonicalMuniHref, normalize } from "@/src/county"

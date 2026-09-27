@@ -5,6 +5,8 @@ Stands up the crashes public stack in the HCCS Cloudflare account:
 - `crashes.hccs.dev` custom domain + CORS + the interim r2.dev managed domain
 - All 8 D1 databases (cells-api: cells-s2, tune; crashes-api: crashes, vehicles,
   occupants, pedestrians, cmymc, njsp-crashes) — created here, data migrated in.
+- User-feedback storage (crashes-api `/v1/feedback`): D1 `crashes-feedback`, the
+  *private* R2 bucket `crashes-feedback`, and a Turnstile widget.
 
 Worker *scripts* stay wrangler-deployed; their wrangler.toml bindings reference the
 resource names/ids Pulumi provisions (exported below). Per-account resource, so the
@@ -90,11 +92,42 @@ D1 = {
     'pedestrians':  'PEDESTRIANS_DB',
     'cmymc':        'CMYMC_DB',
     'njsp-crashes': 'NJSP_CRASHES_DB',
+    # crashes-api user feedback (`api/migrations/`); never re-imported, unlike the above.
+    'crashes-feedback': 'FEEDBACK_DB',
 }
 d1_dbs = {
     name: cf.D1Database(f'd1-{name}', account_id=account_id, name=name)
     for name in D1
 }
+
+# ── User feedback (crashes-api `/v1/feedback`, `api/src/feedback/`) ──
+# Screenshots live in their own bucket with NO custom domain / r2.dev URL, so
+# nothing in it is publicly addressable (unlike `crashes`, public at
+# crashes-data.hccs.dev); the worker serves each via a per-report token.
+feedback_bucket = cf.R2Bucket(
+    'crashes-feedback',
+    account_id=account_id,
+    name='crashes-feedback',
+    location='ENAM',
+)
+
+# Bot check on the feedback form. The site key is public (the worker serves
+# it from its `TURNSTILE_SITE_KEY` var); the secret goes to the worker as the
+# `TURNSTILE_SECRET` secret (`wrangler secret put`). Covers every *.hccs.dev
+# host (prod + dev FE) and the workers.dev preview.
+feedback_turnstile = cf.TurnstileWidget(
+    'crashes-feedback',
+    account_id=account_id,
+    name='crashes-feedback',
+    mode='managed',
+    domains=['hccs.dev', 'crashes-www-dev.hccs-ctbk.workers.dev'],
+)
+
+# Worker secrets for crashes-api (+ `--env dev`), set with `wrangler secret put`
+# (wrangler owns the Worker scripts, so Pulumi can't attach them):
+#   FEEDBACK_SLACK_WEBHOOK  Slack incoming-webhook URL (unset → Slack skipped)
+#   FEEDBACK_ADMIN_TOKEN    Bearer token for `GET /v1/feedback` (unset → disabled)
+#   TURNSTILE_SECRET        `pulumi stack output turnstile_secret --show-secrets`
 
 # ── Worker custom domains (gated until Workers are deployed in this account) ──
 # First-level under hccs.dev so the `*.hccs.dev` Universal SSL cert covers them
@@ -121,7 +154,7 @@ if manage_worker_domains:
 # ── Workers (documentation; wrangler-deployed, bindings reference the above) ──
 WORKERS = {
     'crashes-cells-api': 'cells-api/',   # R2 CELLS_BUCKET=crashes + D1 cells-s2,tune; serves /v1/cells,/v1/raw
-    'crashes-api':       'api/',         # D1 crashes/vehicles/occupants/pedestrians/cmymc/njsp-crashes
+    'crashes-api':       'api/',         # D1 crashes/vehicles/occupants/pedestrians/cmymc/njsp-crashes/crashes-feedback + R2 FEEDBACK_BUCKET=crashes-feedback
     # `[env.dev]` of the above: same bindings (prod data, read-only use), new code.
     'crashes-cells-api-dev': 'cells-api/ (--env dev)',
     'crashes-api-dev':       'api/ (--env dev)',
@@ -133,3 +166,6 @@ pulumi.export('data_domain', data_domain)
 pulumi.export('d1_database_ids', {name: db.id for name, db in d1_dbs.items()})
 pulumi.export('worker_bindings', D1)
 pulumi.export('workers', WORKERS)
+pulumi.export('feedback_bucket', feedback_bucket.name)
+pulumi.export('turnstile_sitekey', feedback_turnstile.sitekey)
+pulumi.export('turnstile_secret', pulumi.Output.secret(feedback_turnstile.secret))

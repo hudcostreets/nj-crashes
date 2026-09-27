@@ -21,6 +21,7 @@ import { SoftDiscLayer } from "./SoftDiscLayer"
 import { bakeDensity } from "./bakeDensity"
 import { useHeatTiles, type HeatTileFilter } from "./useHeatTiles"
 import { AttributionPopover, rasterStyle, severityRgba } from "./basemap"
+import { useDeckMapCapture } from "@/src/feedback/glCapture"
 
 export type MapMode = "scatter" | "heatmap" | "bins"
 
@@ -519,6 +520,8 @@ export function CrashMap({
         else setLocalCellPxTarget(n)
     }, [controlledCellPxTarget, onCellPxTargetChange])
     const mapRef = React.useRef<MapRef | null>(null)
+    // Feedback screenshots: copy the GL canvases from inside their render callbacks.
+    const { deckRef, onAfterRender } = useDeckMapCapture(mapRef)
     // Session cache: max-count seen at each (scope, resolution). Grows
     // monotonically as user pans/zooms — never shrinks. Prevents the
     // height cliff that raw `max(cellsArr)` produced when a tall cell
@@ -993,6 +996,8 @@ export function CrashMap({
     return (
         <div ref={containerRef} style={{ position: "relative", height, width: "100%" }}>
             <DeckGL
+                ref={deckRef}
+                onAfterRender={onAfterRender}
                 viewState={viewState}
                 onViewStateChange={onViewStateChange}
                 controller={{ touchRotate: true, dragRotate: true, maxPitch: MAX_PITCH, maxZoom: 20, minZoom: 0 } as any}

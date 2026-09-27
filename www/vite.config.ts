@@ -4,8 +4,21 @@ import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin'
 import { pdsPlugin } from 'pnpm-dep-source/vite'
 import path from 'path'
 import fs from 'fs'
+import { execSync } from 'child_process'
 
 const allowedHosts = process.env.VITE_ALLOWED_HOSTS?.split(',') ?? []
+
+/** Commit the bundle was built from, attached to feedback reports. */
+function buildSha(): string {
+  if (process.env.VITE_BUILD_SHA) return process.env.VITE_BUILD_SHA
+  try {
+    const sha = execSync('git rev-parse --short=12 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+    const dirty = execSync('git status --porcelain --untracked-files=no', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+    return dirty ? `${sha}-dirty` : sha
+  } catch {
+    return ''
+  }
+}
 
 /** Dev-only endpoint for the `/tune` page: POST a JSON body to
  *  `/__tune/write` and it's written to `src/map/tuning.json` (indented,
@@ -46,6 +59,7 @@ export default defineConfig({
   // key); restrict it by domain in the Stadia dashboard.
   define: {
     'import.meta.env.VITE_STADIA_TOKEN': JSON.stringify(process.env.STADIA_TOKEN ?? ''),
+    'import.meta.env.VITE_BUILD_SHA': JSON.stringify(buildSha()),
   },
 
   plugins: [
