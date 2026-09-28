@@ -14,6 +14,7 @@
 import type { StackedCell } from "./StackedCellLayer"
 import { decodeTokens, HEAT_FIELDS } from "./cellsCols"
 import { tokenCenterLngLat } from "./s2"
+import type { Bbox } from "./v2"
 
 export type Severity = "f" | "i" | "p"
 
@@ -75,6 +76,30 @@ export function leanParams(
     return { ...base, years: `${yearRange[0]}-${yearRange[1]}`, severities: sevs }
 }
 
+/** Side of the lean fetch's tile grid for a viewport, in degrees: the power of two in
+ *  `(span / 2, span]` (`span` = the viewport's longer side; at most 1°). Tiles about the
+ *  viewport's size mean 2-6 per view, and a pan re-requests nothing until it reaches a new tile
+ *  column / row — then only those tiles. Grid lines are nested across zooms (powers of two) and
+ *  the same for every user, so tile URLs make good (edge and client) cache keys. */
+export function leanTileStep([w, s, e, n]: Bbox): number {
+    const span = Math.max(e - w, n - s, 1e-9)
+    return Math.pow(2, Math.min(0, Math.floor(Math.log2(span))))
+}
+
+/** The grid tiles (`[w, s, e, n]`, `leanTileStep`-aligned) that intersect `viewport`, row-major
+ *  from the south-west. */
+export function viewportTiles(viewport: Bbox): Bbox[] {
+    const step = leanTileStep(viewport)
+    const [w, s, e, n] = viewport
+    const i0 = Math.floor(w / step), i1 = Math.max(i0 + 1, Math.ceil(e / step))
+    const j0 = Math.floor(s / step), j1 = Math.max(j0 + 1, Math.ceil(n / step))
+    const out: Bbox[] = []
+    for (let j = j0; j < j1; j++) {
+        for (let i = i0; i < i1; i++) out.push([i * step, j * step, (i + 1) * step, (j + 1) * step])
+    }
+    return out
+}
+
 /** Decode any of the three lean wire shapes (see module doc). */
 export function decodeLean(body: LeanBody, centerOf: (token: string) => [number, number] = tokenCenterLngLat): LeanTable {
     let ids: string[]
@@ -125,6 +150,35 @@ export function decodeLean(body: LeanBody, centerOf: (token: string) => [number,
         otherInj: Uint32Array.from(cols.n_inj_other),
         pdo: Uint32Array.from(cols.n_pdo),
     }
+}
+
+/** Per-table memo of its last `aggregateLean` (so a new tile arriving doesn't re-aggregate the
+ *  others). */
+const aggMemo = new WeakMap<LeanTable, { key: string; cells: StackedCell[] }>()
+
+/** `aggregateLean` over the tiles of a view, concatenated. A cell is kept once (the worker
+ *  assigns cells to tiles by center, so tiles shouldn't share one; this guards a center on an
+ *  edge). */
+export function aggregateLeanTables(tables: readonly LeanTable[], yearRange: [number, number], severities: Set<Severity>): StackedCell[] {
+    const key = `${yearRange[0]}-${yearRange[1]}:${[...severities].sort().join("")}`
+    const parts = tables.map(t => {
+        const hit = aggMemo.get(t)
+        if (hit && hit.key === key) return hit.cells
+        const cells = aggregateLean(t, yearRange, severities)
+        aggMemo.set(t, { key, cells })
+        return cells
+    })
+    if (parts.length === 1) return parts[0]
+    const seen = new Set<string>()
+    const out: StackedCell[] = []
+    for (const part of parts) {
+        for (const c of part) {
+            if (seen.has(c.cellid)) continue
+            seen.add(c.cellid)
+            out.push(c)
+        }
+    }
+    return out
 }
 
 /** `LeanTable` → `StackedCell[]` for a year range + severity set. For a
