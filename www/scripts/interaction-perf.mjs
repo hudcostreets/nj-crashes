@@ -18,6 +18,7 @@
 // functions. Writes tmp/iperf-<label>.json.
 import { chromium } from "@playwright/test"
 import { mkdirSync, writeFileSync } from "node:fs"
+import { execSync } from "node:child_process"
 
 const [base, label, kind = "desktop", pathArg] = process.argv.slice(2)
 if (!base || !label) {
@@ -232,6 +233,13 @@ async function summarizeProfile(prof) {
 }
 
 let lastWeightmaps = 0
+/** macOS swap in use (MB): numbers taken while swapping are skewed, so each step records it. */
+function swapUsedMb() {
+    try {
+        const m = /used = ([\d.]+)M/.exec(execSync("sysctl vm.swapusage", { encoding: "utf8" }))
+        return m ? Math.round(+m[1]) : null
+    } catch { return null }
+}
 async function step(name, fn) {
     if (profile) await cdp.send("Profiler.start")
     const tw0 = Date.now()
@@ -272,9 +280,10 @@ async function step(name, fn) {
     r.heatWeightmaps = wm
     const reqs = {}
     for (const e of reqLog.filter(e => e.t >= tw0)) reqs[e.kind] = (reqs[e.kind] ?? 0) + 1
-    const out = { step: name, ...r, reqs, profile: prof }
+    const swapMb = swapUsedMb()
+    const out = { step: name, ...r, reqs, swapMb, profile: prof }
     const f = r.framesDuring
-    console.log(`${label} ${name.padEnd(10)} interact=${r.interactMs}ms settle=${r.settleMs}ms frames(during) n=${f.n} p50/p95/max=${f.p50}/${f.p95}/${f.max} >50=${f.over50} longTasks=${r.longTasks}/${r.longTaskMs}ms(max ${r.maxLongTaskMs}) heatWeightmaps=${r.heatWeightmaps} commits=${r.commitsDuring}/${r.commits} reqs=${JSON.stringify(reqs)}${prof ? ` busy=${prof.busyMs}ms gc=${prof.gcMs}ms` : ""}`)
+    console.log(`${label} ${name.padEnd(10)} interact=${r.interactMs}ms settle=${r.settleMs}ms frames(during) n=${f.n} p50/p95/max=${f.p50}/${f.p95}/${f.max} >50=${f.over50} longTasks=${r.longTasks}/${r.longTaskMs}ms(max ${r.maxLongTaskMs}) heatWeightmaps=${r.heatWeightmaps} commits=${r.commitsDuring}/${r.commits} reqs=${JSON.stringify(reqs)} swap=${swapMb}MB${prof ? ` busy=${prof.busyMs}ms gc=${prof.gcMs}ms` : ""}`)
     for (const c of r.cells) console.log(`    cells ${c}`)
     if (prof) console.log(`    incl: ${Object.entries(prof.incl).filter(([, v]) => v > 0).map(([k, v]) => `${k}=${v}ms`).join(" ")}`)
     if (prof) console.log(`    self by package: ${prof.buckets.map(([k, v]) => `${k}=${v}`).join(" ")}`)
