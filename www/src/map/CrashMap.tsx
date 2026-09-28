@@ -25,6 +25,14 @@ import { useHeatTiles, type HeatTileFilter } from "./useHeatTiles"
 import { AttributionPopover, BasemapNotice, useBasemap, severityRgba } from "./basemap"
 import { useDeckMapCapture } from "@/src/feedback/glCapture"
 
+/** Whether a deck.gl source event came from a finger (touch events, or pointer events with
+ *  `pointerType: "touch"`). */
+export function isTouchEvent(e: Event | undefined | null): boolean {
+    if (!e) return false
+    if (typeof TouchEvent !== "undefined" && e instanceof TouchEvent) return true
+    return (e as PointerEvent).pointerType === "touch"
+}
+
 export type MapMode = "scatter" | "heatmap" | "bins"
 
 /** Density-render strategy for `mode="heatmap"` (URL param `?hr=`). See
@@ -1029,9 +1037,16 @@ export function CrashMap({
                 layers={allLayers}
                 onClick={onMapClick ? (info: any, event: any) => {
                     const src = event?.srcEvent as MouseEvent | undefined
+                    // A tap has no hover to leave behind: clear any the tap itself synthesized.
+                    if (isTouchEvent(src)) onMapHover?.(null)
                     onMapClick(info.coordinate as [number, number] | undefined, { shiftKey: !!src?.shiftKey, altKey: !!src?.altKey })
                 } : undefined}
-                onHover={onMapHover ? (info: any) => { onMapHover((info.coordinate as [number, number] | undefined) ?? null) } : undefined}
+                onHover={onMapHover ? (info: any, event: any) => {
+                    // Touch "hovers" are synthesized from taps and never end; they'd pin a stale
+                    // highlight + drawer on whatever was tapped before.
+                    if (isTouchEvent(event?.srcEvent)) { onMapHover(null); return }
+                    onMapHover((info.coordinate as [number, number] | undefined) ?? null)
+                } : undefined}
                 style={{ position: "absolute", inset: "0" }}
             >
                 <MapGl
