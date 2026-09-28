@@ -18,6 +18,7 @@ import { cellsToSegments, buildStackedCellLayer, Segment, StackedCell } from "./
 import { binIntoS2Cells, pickS2LevelForPixels, tokenBoundary, latLngToToken, S2_EDGE_METERS } from "./s2"
 import { sampleColormap, type ColormapName } from "./colormap"
 import { SoftDiscLayer } from "./SoftDiscLayer"
+import { heatmapWeightsTextureSize } from "./picker"
 import { bakeDensity } from "./bakeDensity"
 import { useHeatTiles, type HeatTileFilter } from "./useHeatTiles"
 import { AttributionPopover, rasterStyle, severityRgba } from "./basemap"
@@ -898,6 +899,12 @@ export function CrashMap({
                     radiusPixels: 30,
                     intensity: 1,
                     threshold: 0.05,
+                    // Sized to the map, not deck's fixed 2048² (see
+                    // `heatmapWeightsTextureSize`): the per-pan re-aggregation
+                    // cost is O(texels).
+                    weightsTextureSize: heatmapWeightsTextureSize(
+                        containerRef.current?.clientWidth ?? 1024, containerRef.current?.clientHeight ?? 768,
+                    ),
                     // Fade during a level-change refetch (matches Bins/Points).
                     opacity: cellOpacity,
                 }),

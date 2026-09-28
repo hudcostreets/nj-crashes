@@ -20,8 +20,8 @@
  *  never goes coarser (equivalently, `level(z+ε) ≥ level(z)`).
  */
 import { describe, it, expect } from "vitest"
-import { pickRes, circleRadiusPx, cellPxTargetFor, autoCellPxTarget, BINS_BUDGET } from "./picker"
-import { S2_TARGET_FACTOR } from "./s2"
+import { pickRes, circleRadiusPx, cellPxTargetFor, autoCellPxTarget, BINS_BUDGET, HEAT_LEGACY_MIN_CELL_PX, heatmapWeightsTextureSize, maxCellsFor, viewportBinsBudget } from "./picker"
+import { S2_TARGET_FACTOR, pickS2LevelForPixels } from "./s2"
 
 const NJ_LAT = 40.7
 // Two canonical canvases, matching `viewportDims` in CrashMapSection:
@@ -137,4 +137,46 @@ describe("picker: cellPxTargetFor = autoCellPxTarget × S2_TARGET_FACTOR", () =>
             })
         }
     }
+})
+
+describe("picker: viewport-scaled budget (mobile)", () => {
+    it("full budget at/above the 1280×480 reference, proportional below", () => {
+        expect([
+            viewportBinsBudget(1480 * 1307),
+            viewportBinsBudget(1280 * 480),
+            viewportBinsBudget(390 * 844),
+            viewportBinsBudget(390 * 480),
+            viewportBinsBudget(844 * 390, 50_000),
+        ]).toEqual([100_000, 100_000, 53_574, 30_469, 26_787])
+    })
+
+    it("maxCellsFor: 1.5× budget, in [20k, ceiling]", () => {
+        expect([
+            maxCellsFor(100_000, 150_000),
+            maxCellsFor(53_574, 150_000),
+            maxCellsFor(5_000, 150_000),
+            maxCellsFor(100_000, 120_000),
+        ]).toEqual([150_000, 80_361, 20_000, 120_000])
+    })
+
+    it("heatmapWeightsTextureSize: next pow2 ≥ half the longer side, in [256, 2048]", () => {
+        expect([
+            heatmapWeightsTextureSize(390, 844),
+            heatmapWeightsTextureSize(844, 390),
+            heatmapWeightsTextureSize(1480, 1307),
+            heatmapWeightsTextureSize(1280, 480),
+            heatmapWeightsTextureSize(3840, 2160),
+            heatmapWeightsTextureSize(5120, 2880),
+            heatmapWeightsTextureSize(200, 100),
+        ]).toEqual([512, 512, 1024, 1024, 2048, 2048, 256])
+    })
+
+    it("heatmap floor: a phone at z14.5 in Jersey City fetches l18, not l19", () => {
+        const area = 390 * 844
+        const target = cellPxTargetFor(area, viewportBinsBudget(area))
+        expect([
+            pickS2LevelForPixels(target, 14.5, 40.72),
+            pickS2LevelForPixels(Math.max(target, HEAT_LEGACY_MIN_CELL_PX), 14.5, 40.72),
+        ]).toEqual([19, 18])
+    })
 })

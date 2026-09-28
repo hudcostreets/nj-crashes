@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import type { StackedCell } from "./StackedCellLayer"
 import { CELLS_API_BASE } from "./config"
 import type { Bbox } from "./v2"
+import { aggregateLean, decodeLean, leanParams, type LeanBody, type LeanTable } from "./leanCells"
 import {
     clampS2Level,
     pickS2LevelForPixels,
@@ -36,6 +37,10 @@ export type CellsApiFilter = {
      *  to scope to the admin boundary instead of the (pitch-inflated)
      *  viewport bbox. */
     clipPolygon?: [number, number][]
+    /** Per-request `maxCells` backstop; default `CELLS_MAX`. Callers size it
+     *  from the viewport budget (`picker.maxCellsFor`) so a phone isn't
+     *  allowed a desktop-sized response. */
+    maxCells?: number
 }
 
 type CellRow = {
@@ -88,6 +93,9 @@ type Manifest = {
     pyramid_combos?: PyramidCombo[]
     year_range: [number, number]
     shard_cells: string[]
+    /** Worker feature flags (`cells-api` `CAPABILITIES`); absent on workers
+     *  that predate them. `group_year` gates the lean per-year fetch. */
+    capabilities?: string[]
 }
 
 /** One cell of a multi-resolution cover. The pair `(shard_res, cellid)`
@@ -273,7 +281,7 @@ function buildBatchUrl(
     // coarsen was removed in h3-removal Phase 1, so nothing bounded a
     // response at all — a Hudson-fit l17 viewport measured 168k cells /
     // 30 MB. See `specs/cells-compact-wire-format.md`.
-    params.set("maxCells", String(CELLS_MAX))
+    params.set("maxCells", String(filter.maxCells ?? CELLS_MAX))
     if (res < LABELS_MIN_S2_LEVEL) params.set("labels", "nums")
     if (polygonStr) params.set("polygon", polygonStr)
     return `${CELLS_API_BASE}/v1/cells?${params}`
@@ -367,7 +375,7 @@ function prefetchNeighborLevels(
         if (cancelled) return
         for (const nr of [clampS2Level(res - 1), clampS2Level(res + 1)]) {
             if (nr === res) continue
-            const urls = cover.map(c => buildShardUrl(c.cellid, nr, filter, polygonStr, CELLS_MAX, c.shard_res))
+            const urls = cover.map(c => buildShardUrl(c.cellid, nr, filter, polygonStr, filter.maxCells ?? CELLS_MAX, c.shard_res))
             if (urls.every(u => shardCache.has(u))) continue
             ensureShardsCached(cover, urls, nr, filter, polygonStr)
         }
@@ -505,13 +513,11 @@ function buildShardUrl(
         years: `${filter.yearRange[0]}-${filter.yearRange[1]}`,
         severities: sevs,
     })
-    // Combo path skips `maxCells` for now — worker supports it (see
-    // `specs/cells-api-combo-maxcells.md`) but wiring the client to
-    // actually use it requires a per-shard render path so
-    // heterogeneously-coarsened shards don't force the whole viewport
-    // to the coarsest returned res. Deferred followup.
+    // Per-shard URLs are cache keys (the fetch goes out as the batch URL,
+    // which carries the same `maxCells`), so `maxCells` must be part of the
+    // key: a budget change must not hit an entry fetched under another cap.
     if (shardRes != null) params.set("shard_res", String(shardRes))
-    else params.set("maxCells", String(maxCells))
+    params.set("maxCells", String(maxCells))
     if (polygonStr) params.set("polygon", polygonStr)
     return `${CELLS_API_BASE}/v1/cells?${params}`
 }
@@ -574,10 +580,44 @@ function cellsToStackedHex(cells: CellRow[]): StackedCell[] {
     return out
 }
 
-export function useCellsApi(filter: CellsApiFilter | null, opts?: { prefetchAdjacentLevels?: boolean }):
+/** Lean-response cache (by URL): decoded once, shared across remounts.
+ *  Bounded like `ShardCache`; a lean table for a phone view is ~10-100 KB. */
+const LEAN_CACHE_MAX = 64
+const leanCache = new Map<string, Promise<{ table: LeanTable; bytes: number; wireBytes: number }>>()
+
+function fetchLean(url: string): Promise<{ table: LeanTable; bytes: number; wireBytes: number }> {
+    const hit = leanCache.get(url)
+    if (hit) {
+        leanCache.delete(url)
+        leanCache.set(url, hit)
+        return hit
+    }
+    const p = (async () => {
+        const r = await fetch(url)
+        if (!r.ok) throw new Error(`cells api ${r.status}: ${await r.text().catch(() => "")}`)
+        const buf = await r.arrayBuffer()
+        const entry = performance.getEntriesByName(url).at(-1) as PerformanceResourceTiming | undefined
+        const body = JSON.parse(new TextDecoder().decode(buf)) as LeanBody
+        return { table: decodeLean(body), bytes: buf.byteLength, wireBytes: entry?.encodedBodySize ?? 0 }
+    })()
+    p.catch(() => { if (leanCache.get(url) === p) leanCache.delete(url) })
+    leanCache.set(url, p)
+    while (leanCache.size > LEAN_CACHE_MAX) leanCache.delete(leanCache.keys().next().value as string)
+    return p
+}
+
+/** Cells for the current viewport.
+ *
+ *  `opts.lean` (Heatmap mode): fetch only the four severity counts — no
+ *  labels / `fatal_years` / `n_vehs` — and, when the worker advertises
+ *  `group_year`, every year + severity at once so filter changes aggregate
+ *  locally (`leanCells.ts`). Returned `StackedCell`s then carry no
+ *  tooltip fields, which Heatmap never shows. */
+export function useCellsApi(filter: CellsApiFilter | null, opts?: { prefetchAdjacentLevels?: boolean; lean?: boolean }):
     | { status: "loading"; data?: StackedCell[]; plan?: CellsApiPlan; error?: undefined }
     | { status: "ready"; data: StackedCell[]; plan: CellsApiPlan; error?: undefined; refetching?: boolean }
     | { status: "error"; error: string; data?: StackedCell[]; plan?: CellsApiPlan } {
+    const lean = !!opts?.lean
 
     const [manifest, setManifest] = useState<Manifest | null>(null)
     // Read the latest prefetch-enabled flag from a ref so toggling it (e.g. a
@@ -659,19 +699,82 @@ export function useCellsApi(filter: CellsApiFilter | null, opts?: { prefetchAdja
     }, [usingPoly, filter?.clipPolygon, bboxKey])
 
     const shardsKey = useMemo(() => {
+        // The lean path has its own URL + effect (below).
+        if (lean) return null
         if (!filter || !pick || pick.cover.length === 0) {
             return { shards: [] as string[], urls: [] as string[], polygonStr: null as string | null }
         }
         // One URL per cover cell. Each cell carries its own shard_res
         // (heterogeneous cover ⇒ different parquet subdirs per cell).
-        const urls = pick.cover.map(c => buildShardUrl(c.cellid, pick.res, filter, polygonStr, CELLS_MAX, c.shard_res))
+        const urls = pick.cover.map(c => buildShardUrl(c.cellid, pick.res, filter, polygonStr, filter.maxCells ?? CELLS_MAX, c.shard_res))
         const shards = pick.cover.map(c => c.cellid)
         return { shards, urls, polygonStr }
         // The covers themselves are stable across small pans thanks to
         // snappedBbox. Listing each primitive separately avoids drag-frame
         // churn on the array refs.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pick?.res, pick?.cover, polygonStr, filter?.yearRange, filter?.severities])
+    }, [lean, pick?.res, pick?.cover, polygonStr, filter?.yearRange, filter?.severities, filter?.maxCells])
+
+    // Lean path (Heatmap): one request per (level, snapped viewport); with
+    // the worker's `group_year` capability the URL is independent of the
+    // year / severity filter, which is applied by `aggregateLean` below.
+    const groupYear = !!manifest?.capabilities?.includes("group_year")
+    // Filter-dependent part of the lean URL, as a string so the memo below
+    // only re-runs when it actually changes (under `group_year`, not at all
+    // across year sub-ranges / severities).
+    const leanQs = lean && filter && manifest
+        ? new URLSearchParams(leanParams(groupYear, filter.yearRange, manifest.year_range, filter.severities)).toString()
+        : null
+    const leanUrl = useMemo<string | null>(() => {
+        if (!leanQs || !filter || !pick) return null
+        const params = new URLSearchParams({
+            cells: pick.cover.map(c => c.cellid).join(","),
+            res: String(pick.res),
+            shard_res: String(pick.cover[0].shard_res),
+            grid: "s2",
+            maxCells: String(filter.maxCells ?? CELLS_MAX),
+        })
+        if (polygonStr) params.set("polygon", polygonStr)
+        return `${CELLS_API_BASE}/v1/cells?${params}&${leanQs}`
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [leanQs, pick?.res, pick?.cover, polygonStr, filter?.maxCells])
+
+    const [leanState, setLeanState] = useState<{
+        url: string | null
+        table: LeanTable | null
+        status: "loading" | "ready" | "error"
+        bytes: number
+        wireBytes: number
+        error?: string
+    }>({ url: null, table: null, status: "loading", bytes: 0, wireBytes: 0 })
+
+    useEffect(() => {
+        if (!leanUrl) return
+        let cancelled = false
+        const fire = async () => {
+            try {
+                const r = await fetchLean(leanUrl)
+                if (!cancelled) setLeanState({ url: leanUrl, table: r.table, status: "ready", bytes: r.bytes, wireBytes: r.wireBytes })
+            } catch (e) {
+                if (!cancelled) setLeanState(s => ({ ...s, url: leanUrl, status: "error", error: String(e) }))
+            }
+        }
+        // Cached ⇒ resolve without the debounce (a year / severity change,
+        // or a pan back to a visited snapped viewport).
+        if (leanCache.has(leanUrl)) { fire(); return () => { cancelled = true } }
+        const t = setTimeout(() => {
+            if (cancelled) return
+            setLeanState(s => ({ ...s, status: "loading" }))
+            fire()
+        }, DEBOUNCE_MS)
+        return () => { cancelled = true; clearTimeout(t) }
+    }, [leanUrl])
+
+    const leanData = useMemo<StackedCell[]>(() => {
+        if (!leanState.table || !filter) return []
+        return aggregateLean(leanState.table, filter.yearRange, filter.severities)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [leanState.table, filter?.yearRange, filter?.severities])
 
     const [state, setState] = useState<{
         urls: string[]
@@ -780,6 +883,19 @@ export function useCellsApi(filter: CellsApiFilter | null, opts?: { prefetchAdja
         return () => { cancelled = true; clearTimeout(t); cancelPrefetch() }
     }, [shardsKey])
 
+    if (lean) {
+        const plan: CellsApiPlan | undefined = leanState.table && pick ? {
+            kind: "cell", res: leanState.table.res, source: leanState.table.source,
+            reason: `${leanState.table.source} · ${pick.reason} · lean${leanState.table.byYear ? " by-year" : ""}`,
+            cellCount: leanData.length, shardCount: pick.cover.length,
+            fetchedBytes: leanState.bytes, wireBytes: leanState.wireBytes, cover: pick.cover,
+        } : undefined
+        // A stale table (URL changed, new one in flight) keeps rendering, as
+        // the row path does.
+        if (leanState.status === "error") return { status: "error", error: leanState.error ?? "unknown", data: leanData, plan }
+        if (leanState.status === "ready" && leanState.url === leanUrl && plan) return { status: "ready", data: leanData, plan }
+        return { status: "loading", data: leanData.length > 0 ? leanData : undefined, plan }
+    }
     if (state.status === "ready") return { status: "ready", data: state.data, plan: state.plan! }
     if (state.status === "error") return { status: "error", error: state.error ?? "unknown", data: state.data, plan: state.plan }
     return { status: "loading", data: state.data.length > 0 ? state.data : undefined, plan: state.plan }

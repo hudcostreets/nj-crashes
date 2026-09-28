@@ -21,6 +21,7 @@ import { useQueries, useQuery } from "@tanstack/react-query"
 import { FiMaximize2, FiMinimize2, FiHome } from "react-icons/fi"
 import useSessionStorageState from "use-session-storage-state"
 import { useToolboxOpen } from "@/src/map/useToolboxOpen"
+import { mapChrome } from "@/src/map/mapChrome"
 import { useMapActions } from "@/src/map/useMapActions"
 import { useRoadSelection } from "@/src/map/roads/useRoadSelection"
 import { useRoadSearch } from "@/src/map/roads/useRoadSearch"
@@ -31,7 +32,7 @@ import { bboxesIntersect, featureAt, featureBbox, fetchCounties, fetchCounty, fe
 import type { Bbox, MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel, HEAT_C_SIGMA_PX, HEAT_C_PX_TARGET, HEAT_C_FLOOR, HEAT_C_OPACITY } from "@/src/map/CrashMap"
 
-import { circleRadiusPx, cellPxTargetFor, pickRes as pickerPick, BINS_BUDGET } from "@/src/map/picker"
+import { circleRadiusPx, cellPxTargetFor, pickRes as pickerPick, BINS_BUDGET, HEAT_LEGACY_MIN_CELL_PX, maxCellsFor, viewportBinsBudget } from "@/src/map/picker"
 import {
     pickS2LevelForPixels, s2PickEdgeMeters,
     S2_EDGE_METERS, S2_MAX_LEVEL, S2_MIN_LEVEL, S2_PICK_MULT,
@@ -254,6 +255,14 @@ export function CrashMapSection({
     const [heatFloorUrl, setHeatFloorUrl] = useUrlState("hfl", optFloatParam({ encoding: "string" }), { debounce: 100 })
     const binsBudget = binsUrl ?? BINS_BUDGET
     void setBinsUrl
+    // Budget scaled to the viewport's size (phones get proportionally fewer,
+    // not equally many, cells — `viewportBinsBudget`), and the per-request
+    // `maxCells` backstop derived from it.
+    const viewportBudget = useMemo(() => {
+        const [vpw, vph] = viewportDims(fullScreen)
+        return viewportBinsBudget(vpw * vph, binsBudget)
+    }, [fullScreen, binsBudget])
+    const requestMaxCells = maxCellsFor(viewportBudget, CELLS_MAX)
     // `boolParam` default is `false`; we invert to keep the URL absent
     // when the user is on the default (auto=on). `?ha=1` when disabled.
     const cellAuto = !cellAutoUrl
@@ -264,7 +273,11 @@ export function CrashMapSection({
     const setCellPxTarget = (v: number) => setCellPxTargetUrl(v === 1.7 ? null : v)
     // Drawer defaults open on the full-screen route (room to spare) and
     // closed in the embed (don't occlude the small panel on first paint).
-    const [drawerOpen, setDrawerOpen] = useToolboxOpen(fullScreen)
+    // Narrow full-screen maps (phones) start with the drawer closed — open, it
+    // covers most of the map (`mapChrome`).
+    const [drawerOpen, setDrawerOpen] = useToolboxOpen(
+        fullScreen && (typeof window === "undefined" || mapChrome(window.innerWidth, 0).drawerDefaultOpen),
+    )
     const [debugOpen, setDebugOpen] = useSessionStorageState<boolean>("hccs.crashmap.debugOpen", { defaultValue: false })
     // Picker-threshold knobs (debug section). SS-persisted so a debugging
     // session survives page reloads. Defaults match `pickFetchPlanV2`.
@@ -400,8 +413,16 @@ export function CrashMapSection({
                 ? bboxRing(STATE_BBOX)
                 : undefined
         const areaPx = clippedAreaPx(vpw * vph, clipRing, effectiveView, vpw, vph)
-        return cellPxTargetFor(areaPx, binsBudget)
-    }, [cellAuto, manualCellPx, fullScreen, binsBudget, cc, mc, outline, muniOutline, effectiveView])
+        return cellPxTargetFor(areaPx, viewportBudget)
+    }, [cellAuto, manualCellPx, fullScreen, viewportBudget, cc, mc, outline, muniOutline, effectiveView])
+
+    // The level the *fetch* asks for. Legacy Heatmap draws a 30 px kernel, so
+    // cells under `HEAT_LEGACY_MIN_CELL_PX` are invisible detail; floor them
+    // there (Bins/Points and the baked A/B/C strategies are sized to the cell
+    // and keep the budgeted target).
+    const fetchCellPxTarget = mode === "heatmap" && heatRender === "legacy"
+        ? Math.max(cellPxTarget, HEAT_LEGACY_MIN_CELL_PX)
+        : cellPxTarget
 
     // Picker-state snapshot: current S2 level + adjacent levels (one
     // coarser, one finer) as clickable jump targets. Neighbors outside
@@ -480,10 +501,11 @@ export function CrashMapSection({
             viewport: filter.viewport,
             viewportLat: filter.viewportLat,
             zoom: filter.zoom,
-            cellPxTarget: filter.cellPxTarget,
+            cellPxTarget: fetchCellPxTarget,
             clipPolygon,
+            maxCells: requestMaxCells,
         }
-    }, [filter, cc, mc, outline, muniOutline])
+    }, [filter, cc, mc, outline, muniOutline, fetchCellPxTarget, requestMaxCells])
     // Strategy C (`?hr=c`) fetches per tile from its own bbox, so it needs only
     // the year/severity filter (not the viewport — the tile hook derives that).
     // `clipPolygon` is carried for a later county/muni clip; C currently fetches
@@ -496,7 +518,10 @@ export function CrashMapSection({
     }), [yearRange, severities, cc, mc, outline, muniOutline])
     // Adjacent-level prefetch only helps Bins, where zoom crosses S2 levels.
     // Heatmap/Points don't benefit (and it wastes a level's fetch), so gate it.
-    const apiResult = useCellsApi(apiFilter, { prefetchAdjacentLevels: mode === "bins" })
+    // Heatmap never shows a cell tooltip, so it takes the lean fetch: counts
+    // only, and (worker permitting) all years + severities in one response so
+    // filter changes don't refetch. Strategy C self-fetches per tile.
+    const apiResult = useCellsApi(apiFilter, { prefetchAdjacentLevels: mode === "bins", lean: mode === "heatmap" })
     const result = useMemo(() => {
         // Adapt the cells-api result into the shape consumers below expect.
         // `manifest` is the standalone v2-manifest state (loaded above for
@@ -728,6 +753,22 @@ export function CrashMapSection({
     // threshold, treat it as a click and close. Otherwise it was a pan
     // and we leave the drawer open.
     const wrapRef = useRef<HTMLDivElement | null>(null)
+    // Map width + title-pill height drive the overlay layout (`mapChrome`).
+    const titleRef = useRef<HTMLDivElement | null>(null)
+    const [wrapWidth, setWrapWidth] = useState(() => typeof window === "undefined" ? 1280 : window.innerWidth)
+    const [titleHeight, setTitleHeight] = useState(26)
+    useEffect(() => {
+        const wrap = wrapRef.current, title = titleRef.current
+        if (!wrap) return
+        const ro = new ResizeObserver(() => {
+            setWrapWidth(wrap.clientWidth)
+            if (title) setTitleHeight(title.offsetHeight)
+        })
+        ro.observe(wrap)
+        if (title) ro.observe(title)
+        return () => ro.disconnect()
+    }, [fullScreen])
+    const chrome = fullScreen ? mapChrome(wrapWidth, titleHeight) : null
     const drawerRef = useRef<HTMLDivElement | null>(null)
     // Alt/Option+wheel over the map steps a selected road's scope instead of zooming: a capture
     // listener, so the map's controller never sees the event.
@@ -858,15 +899,17 @@ export function CrashMapSection({
                 resize: "vertical", minHeight: 240, maxHeight: 1200,
             }}
         >
-            {fullScreen && (
-                <div style={{
-                    position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)",
+            {fullScreen && chrome && (
+                <div ref={titleRef} style={{
+                    position: "absolute", top: 8,
+                    ...(chrome.title.centered
+                        ? { left: "50%", transform: "translateX(-50%)", maxWidth: "calc(100% - 16px)" }
+                        : { left: chrome.title.left, right: chrome.title.right }),
                     zIndex: 50, background: bg, color: fg,
                     padding: "3px 10px", borderRadius: 4,
                     border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
                     display: "flex", flexWrap: "wrap", alignItems: "center",
                     justifyContent: "center", gap: 6, fontSize: "0.8em",
-                    maxWidth: "calc(100% - 16px)",
                 }}>
                     {headerInner}
                 </div>
@@ -973,10 +1016,10 @@ export function CrashMapSection({
             )}
             {drawerOpen && (
             <div ref={drawerRef} style={{
-                position: "absolute", top: 8, right: 8, background: bg, color: fg,
+                position: "absolute", top: chrome?.drawerTop ?? 8, right: 8, background: bg, color: fg,
                 padding: "0.4em 0.6em", borderRadius: 4, zIndex: 50, fontSize: "0.82em",
                 display: "flex", flexDirection: "column", gap: 6, minWidth: 210, maxWidth: 260,
-                maxHeight: "calc(100% - 16px)", overflowY: "auto",
+                maxHeight: `calc(100% - ${(chrome?.drawerTop ?? 8) + 8}px)`, overflowY: "auto",
             }}>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 4, alignItems: "center", marginBottom: -4 }}>
                     {result.status === "ready" && result.refetching && (
@@ -1117,7 +1160,7 @@ export function CrashMapSection({
                             currentRes={pickerInfo?.levels.find(l => l.isCurrent)?.res ?? s2Level ?? S2_FALLBACK_LEVEL}
                             s2Level={s2Level}
                             viewportAreaPx={(() => { const [w, h] = viewportDims(fullScreen); return w * h })()}
-                            budget={binsBudget}
+                            budget={viewportBudget}
                             fetched={result.status === "ready" && result.plan?.kind === "cell" ? result.plan.cellCount : undefined}
                             fetchedBytes={result.status === "ready" && result.plan?.kind === "cell" ? result.plan.fetchedBytes : undefined}
                             inViewport={renderCells?.cells.length}
@@ -1225,7 +1268,7 @@ export function CrashMapSection({
                     }}
                 >
                     <FiHome size={13} />
-                    <span>NJ Crashes</span>
+                    {!chrome?.homeIconOnly && <span>NJ Crashes</span>}
                 </a>
             )}
             <Legend
@@ -1233,6 +1276,7 @@ export function CrashMapSection({
                 severities={severities}
                 onToggle={toggleSeverity}
                 fullScreen={fullScreen}
+                top={chrome?.legendTop}
             />
             {emptySeverities && result.status === "ready" && (
                 <div style={{
@@ -1324,7 +1368,7 @@ function RefetchSpinner({ theme }: { theme: "light" | "dark" }) {
 }
 
 function Legend({
-    theme, severities, onToggle, fullScreen = false,
+    theme, severities, onToggle, fullScreen = false, top,
 }: {
     theme: "light" | "dark"
     severities: Set<"f" | "i" | "p">
@@ -1332,6 +1376,9 @@ function Legend({
     /** In full-screen mode the brand/home link occupies top-left; drop the
      *  Legend below it so they don't overlap. */
     fullScreen?: boolean
+    /** Explicit top offset (narrow full-screen maps: below the title pill,
+     *  see `mapChrome`); overrides the `fullScreen` default. */
+    top?: number
 }) {
     const bg = theme === "dark" ? "rgba(30,30,30,0.85)" : "rgba(255,255,255,0.9)"
     const fg = theme === "dark" ? "#e0e0e0" : "#333"
@@ -1342,7 +1389,7 @@ function Legend({
     ]
     return (
         <div style={{
-            position: "absolute", top: fullScreen ? 42 : 8, left: 8, zIndex: 50,
+            position: "absolute", top: top ?? (fullScreen ? 42 : 8), left: 8, zIndex: 50,
             background: bg, color: fg, padding: "4px 8px", borderRadius: 4,
             fontSize: "0.72em", display: "flex", flexDirection: "column", gap: 2,
             border: `1px solid ${theme === "dark" ? "#444" : "#ccc"}`,
