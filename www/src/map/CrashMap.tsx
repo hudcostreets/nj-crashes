@@ -18,6 +18,7 @@ import { cellsToSegments, buildStackedCellLayer, Segment, StackedCell } from "./
 import { binIntoS2Cells, pickS2LevelForPixels, tokenBoundary, latLngToToken, S2_EDGE_METERS } from "./s2"
 import { sampleColormap, type ColormapName } from "./colormap"
 import { SoftDiscLayer } from "./SoftDiscLayer"
+import { PrimedHeatmapLayer } from "./PrimedHeatmapLayer"
 import { heatmapWeightsTextureSize } from "./picker"
 import { bakeDensity } from "./bakeDensity"
 import { useHeatTiles, type HeatTileFilter } from "./useHeatTiles"
@@ -903,7 +904,8 @@ export function CrashMap({
             // statewide, which a raw-point HeatmapLayer can't. Re-aggregates
             // per frame, so pan/zoom is sluggish (the reason B/A exist).
             return [...base,
-                new HeatmapLayer<StackedCell>({
+                // `PrimedHeatmapLayer`: deck's first weight map after init is wrong (blank).
+                new PrimedHeatmapLayer<StackedCell>({
                     id: "crashes-cell-heatmap",
                     data: cells,
                     getPosition: (c) => c.center,
