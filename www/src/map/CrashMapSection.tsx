@@ -28,7 +28,9 @@ import { useRoadSearch } from "@/src/map/roads/useRoadSearch"
 import { RoadPanel } from "@/src/map/roads/RoadPanel"
 import { HoverDrawer } from "@/src/map/roads/HoverDrawer"
 import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
-import { bboxesIntersect, featureAt, featureBbox, fetchCounties, fetchCounty, fetchMunis, outlineLabel } from "@/src/map/boundaries"
+import {
+    areaHighlightShown, bboxesIntersect, cachedFeatureBbox, featureAt, featureBbox, fetchCounties, fetchCounty, fetchMunis, outlineLabel,
+} from "@/src/map/boundaries"
 import type { Bbox, MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel, HEAT_C_SIGMA_PX, HEAT_C_PX_TARGET, HEAT_C_FLOOR, HEAT_C_OPACITY } from "@/src/map/CrashMap"
 
@@ -38,6 +40,7 @@ import {
     S2_EDGE_METERS, S2_MAX_LEVEL, S2_MIN_LEVEL, S2_PICK_MULT,
 } from "@/src/map/s2"
 import { DebugOverlay } from "@/src/map/DebugOverlay"
+import { stableClip, type Clipped } from "@/src/map/stableClip"
 import { YearSelect } from "@/src/lib/year-select"
 
 /** Level to report when a response arrives with no picker plan attached.
@@ -603,26 +606,20 @@ export function CrashMapSection({
     // viewport-clipped slice (with a small padding margin to avoid
     // edge pop-in mid-pan) to the renderer so it doesn't iterate the
     // statewide tail each frame.
+    // The clip keeps its array identity while the viewport stays inside its padded window
+    // (`stableClip`): a new array is a deck.gl data change, which re-splats the heatmap.
+    const clipRef = useRef<Clipped<StackedCell> | null>(null)
+    const readyCells = result.status === "ready" && result.dataKind === "cell" ? result.data as StackedCell[] : null
+    const readyRes = result.status === "ready" ? planRes(result) : null
     const renderCells = useMemo<{ cells: StackedCell[]; res: number; coarsenedFrom: number | null } | null>(() => {
-        if (result.status !== "ready" || result.dataKind !== "cell") return null
-        const data = result.data as StackedCell[]
-        if (data.length === 0) return { cells: data, res: planRes(result), coarsenedFrom: null }
+        if (!readyCells || readyRes === null) return null
         // The worker does `maxCells` coarsening server-side, so we trust
         // the plan's res — no client-side coarsening. Downstream render
         // uses the `dataRes` prop (from the plan).
-        const vp = filter.viewport
-        const clip = (xs: StackedCell[]) => {
-            if (!vp) return xs
-            const padLon = (vp[2] - vp[0]) * 0.25
-            const padLat = (vp[3] - vp[1]) * 0.25
-            const lo0 = vp[0] - padLon, hi0 = vp[2] + padLon
-            const lo1 = vp[1] - padLat, hi1 = vp[3] + padLat
-            return xs.filter(h => h.center[0] >= lo0 && h.center[0] <= hi0 && h.center[1] >= lo1 && h.center[1] <= hi1)
-        }
-        const inViewport = clip(data)
-        const res = planRes(result)
-        return { cells: inViewport, res, coarsenedFrom: null }
-    }, [result, filter.viewport])
+        const clipped = stableClip(clipRef.current, readyCells, filter.viewport)
+        clipRef.current = clipped
+        return { cells: clipped.cells, res: readyRes, coarsenedFrom: null }
+    }, [readyCells, readyRes, filter.viewport])
 
     const initialBounds: [number, number, number, number] = useMemo(() => {
         const m = result.manifest
@@ -723,6 +720,10 @@ export function CrashMapSection({
         if (f && onOutlineClick) onOutlineClick(f)
     }, [roadClick, pickOutline, onOutlineClick])
     const hoveredOutlineLabel = hoveredOutline ? outlineLabel(hoveredOutline, cc === null) : null
+    // Drawn only when the area is a meaningful part of the view (not when zoomed in inside it).
+    const shownHoverOutline = hoveredOutline && (!viewBbox || areaHighlightShown(cachedFeatureBbox(hoveredOutline), viewBbox))
+        ? hoveredOutline
+        : null
     const zoomToRoad = (bbox: [number, number, number, number]) => {
         const [w, h] = viewportDims(fullScreen)
         setLlz(fitBoundsToView(bbox, w, h, 0))
@@ -955,7 +956,7 @@ export function CrashMapSection({
                         viewState={llz ?? undefined}
                         onViewStateChange={setLlz}
                         pickOutline={pickOutline}
-                        hoverOutline={hoveredOutline}
+                        hoverOutline={shownHoverOutline}
                         onMapClick={onMapClick}
                         onMapHover={onMapHover}
                         extraLayers={roadSel.layers}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { aggregateLean, decodeLean, leanParams, type LeanBody } from "./leanCells"
+import { aggregateLean, aggregateLeanTables, decodeLean, leanParams, leanTileStep, viewportTiles, type LeanBody } from "./leanCells"
 
 /** Fake centers so the tests don't depend on S2 geometry. */
 const centerOf = (t: string): [number, number] => [t.length, -t.length]
@@ -108,5 +108,58 @@ describe("aggregateLean", () => {
             cols: { cellid: ENC.slice(0, 1), n_fatal: [1], n_inj_ped: [0], n_inj_other: [2], n_pdo: [4] },
         }, centerOf)
         expect(summary(aggregateLean(flat, [1990, 1991], new Set(["f"])))).toEqual([[A, 1, 0, 2, 4, 7]])
+    })
+})
+
+describe("aggregateLeanTables", () => {
+    const summary = (cells: ReturnType<typeof aggregateLean>) =>
+        cells.map(c => [c.cellid, c.fatal, c.pedInj, c.otherInj, c.pdo, c.total])
+    const tile = (ids: string[], pdo: number[]) => decodeLean({
+        format: "cols", cellid_enc: "prefix-hex1", res: 18, source: "pyramid", n: ids.length,
+        cols: { cellid: ids, n_fatal: ids.map(() => 0), n_inj_ped: ids.map(() => 0), n_inj_other: ids.map(() => 0), n_pdo: pdo },
+    }, centerOf)
+    const all = new Set<"f" | "i" | "p">(["f", "i", "p"])
+
+    it("concatenates the tiles' cells, keeping a cell shared by two tiles once", () => {
+        const t1 = tile(ENC.slice(0, 2), [4, 5])
+        const t2 = tile(["0" + C, "0" + B], [6, 7])
+        expect(summary(aggregateLeanTables([t1, t2], [2001, 2025], all))).toEqual([
+            [A, 0, 0, 0, 4, 4],
+            [B, 0, 0, 0, 5, 5],
+            [C, 0, 0, 0, 6, 6],
+        ])
+    })
+
+    it("memoizes per table and filter: an unchanged single tile returns the same array", () => {
+        const t1 = tile(ENC.slice(0, 1), [4])
+        const a = aggregateLeanTables([t1], [2001, 2025], all)
+        expect(aggregateLeanTables([t1], [2001, 2025], new Set(["p", "i", "f"]))).toBe(a)
+        expect(aggregateLeanTables([t1], [2001, 2024], all) === a).toBe(false)
+    })
+})
+
+describe("viewportTiles", () => {
+    it("tile side: the power of two in (span / 2, span], capped at 1°", () => {
+        expect([
+            leanTileStep([-74.1247, 40.7005, -74.0373, 40.7421]),  // desktop z14.5: span 0.0874
+            leanTileStep([-74.0929, 40.7018, -74.0692, 40.7409]),  // phone z14.5: span 0.0391
+            leanTileStep([-75.7, 38.9, -73.9, 41.4]),  // statewide
+            leanTileStep([0, 0, 0.0625, 0.01]),  // exactly a power of two
+        ]).toEqual([0.0625, 0.03125, 1, 0.0625])
+    })
+
+    it("grid-aligned tiles covering the viewport, row-major from the south-west", () => {
+        expect(viewportTiles([-74.1247, 40.7005, -74.0373, 40.7421])).toEqual([
+            [-74.125, 40.6875, -74.0625, 40.75],
+            [-74.0625, 40.6875, -74, 40.75],
+        ])
+        expect(viewportTiles([-74.0929, 40.7018, -74.0692, 40.7409])).toEqual([
+            [-74.09375, 40.6875, -74.0625, 40.71875],
+            [-74.09375, 40.71875, -74.0625, 40.75],
+        ])
+    })
+
+    it("a small pan inside the same tiles yields the same tiles", () => {
+        expect(viewportTiles([-74.1200, 40.7005, -74.0326, 40.7421])).toEqual(viewportTiles([-74.1247, 40.7005, -74.0373, 40.7421]))
     })
 })

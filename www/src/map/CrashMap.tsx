@@ -266,6 +266,19 @@ function perfEnabled(): boolean {
     return new URLSearchParams(window.location.search).get("perf") === "1"
 }
 
+/** `?perf=1`: count the legacy heatmap's weight-map re-renders (a splat of every cell plus a
+ *  max-reduction pass over every texel — the GPU cost of a pan / zoom) in
+ *  `window.__crashMapDebug.heatWeightmaps`, for `scripts/interaction-perf.mjs`. */
+if (perfEnabled()) {
+    const proto = HeatmapLayer.prototype as unknown as { _updateWeightmap: (...args: unknown[]) => unknown }
+    const orig = proto._updateWeightmap
+    proto._updateWeightmap = function (this: unknown, ...args: unknown[]) {
+        const w = window as unknown as { __crashMapDebug?: Record<string, number> }
+        w.__crashMapDebug = { ...(w.__crashMapDebug ?? {}), heatWeightmaps: (w.__crashMapDebug?.heatWeightmaps ?? 0) + 1 }
+        return orig.apply(this, args)
+    }
+}
+
 /** Module-scoped per-`crashes`-identity bin cache. Survives CrashMap
  *  Suspense remounts (the component can mount → unmount → remount during
  *  initial data load + URL settling, and a useRef-based cache would be

@@ -6,7 +6,7 @@ import { useUrlState, stringParam } from "use-prms"
 import { useAction } from "@/src/lib/kbd"
 import {
     fetchEntityGeom, fetchEntitySummary, fetchHitPoints, hitFileForZoom, HIT_TIERS, nearestRoad,
-    roadPaths, roadSegments, type Bbox, type RoadPoint,
+    prefetchEntities, roadPaths, roadSegments, sameRoad, type Bbox, type RoadPoint,
 } from "./roadsData"
 import { encodeSpan, spanPaths } from "./roadScope"
 import { parseRoadRef, useRoadEntity } from "./useRoadEntity"
@@ -106,10 +106,20 @@ export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
         setRoadUrl(r === null ? undefined : String(r))
     }, [setRoadUrl, clearScope])
 
+    // Warm the entity cache for the roads in view, so hover summaries show without a read.
+    useEffect(() => {
+        if (!hitPoints.length) return
+        const t = setTimeout(() => { prefetchEntities(hitPoints.map(p => p.entity)).catch(() => {}) }, 300)
+        return () => clearTimeout(t)
+    }, [hitPoints])
+
     const [hovered, setHovered] = useState<RoadPoint | null>(null)
     const hitMeters = view ? HIT_PX * metersPerPixel(view.zoom, view.latitude) : 0
+    // Keep the previous point while the cursor stays on the same road, so moving along a road
+    // doesn't re-render the map.
     const onHover = useCallback((lngLat: [number, number] | null) => {
-        setHovered(lngLat && hitSegments.length ? nearestRoad(hitSegments, lngLat, hitMeters) : null)
+        const p = lngLat && hitSegments.length ? nearestRoad(hitSegments, lngLat, hitMeters) : null
+        setHovered(prev => (sameRoad(prev, p) ? prev : p))
     }, [hitSegments, hitMeters])
     const memberIds = useMemo(() => new Set(scope.corridorMembers.map(m => m.entity)), [scope.corridorMembers])
     // A click selects what's highlighted (so a cursor twitch between hover and click can't land on a

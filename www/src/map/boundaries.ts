@@ -36,6 +36,36 @@ export function bboxesIntersect([w, s, e, n]: Bbox, [w2, s2, e2, n2]: Bbox): boo
     return w <= e2 && w2 <= e && s <= n2 && s2 <= n
 }
 
+function bboxArea([w, s, e, n]: Bbox): number {
+    return Math.max(0, e - w) * Math.max(0, n - s)
+}
+
+/** Area-hover highlight thresholds (see `areaHighlightShown`). */
+export const AREA_HL_MAX_VIEW_COVER = 0.85
+export const AREA_HL_MIN_AREA_TO_VIEW = 1.5
+
+/** Whether to draw the hovered muni / county's highlight. Zoomed in *inside* an area (at z14 in
+ *  Jersey City the whole viewport is Jersey City) its fill tints the entire view and its outline
+ *  is mostly off-screen, so the highlight says nothing and washes the map out. Suppressed when
+ *  the area's bbox covers ≥ `AREA_HL_MAX_VIEW_COVER` of the viewport *and* is ≥
+ *  `AREA_HL_MIN_AREA_TO_VIEW`× the viewport's area (a large area mostly out of view); an area that
+ *  fits the view, or only partly overlaps it, still highlights. (The hover drawer still names it.)
+ *  Ratios of degree² areas: the lon scale cancels at map scales. */
+export function areaHighlightShown(area: Bbox, view: Bbox): boolean {
+    const viewArea = bboxArea(view)
+    if (viewArea <= 0) return true
+    const [w, s, e, n] = area, [vw, vs, ve, vn] = view
+    const cover = bboxArea([Math.max(w, vw), Math.max(s, vs), Math.min(e, ve), Math.min(n, vn)]) / viewArea
+    return cover < AREA_HL_MAX_VIEW_COVER || bboxArea(area) / viewArea < AREA_HL_MIN_AREA_TO_VIEW
+}
+
+/** `featureBbox`, memoized per feature. */
+export function cachedFeatureBbox(f: Feature): Bbox {
+    let bbox = bboxCache.get(f)
+    if (!bbox) { bbox = featureBbox(f); bboxCache.set(f, bbox) }
+    return bbox
+}
+
 /** Hover-chip label for a drill-down polygon: a muni feature (`{ cc, mc, label }`, from
  *  `munis/<cc>.geojson`), with its county when `withCounty`, or a county feature (`{ name }`). */
 export function outlineLabel(f: Feature, withCounty: boolean): string | null {
@@ -75,9 +105,7 @@ const bboxCache = new WeakMap<Feature, Bbox>()
 export function featureAt(features: Feature[], lngLat: [number, number]): Feature | null {
     const [x, y] = lngLat
     for (const f of features) {
-        let bbox = bboxCache.get(f)
-        if (!bbox) { bbox = featureBbox(f); bboxCache.set(f, bbox) }
-        const [w, s, e, n] = bbox
+        const [w, s, e, n] = cachedFeatureBbox(f)
         if (x >= w && x <= e && y >= s && y <= n && featureContains(f, lngLat)) return f
     }
     return null
