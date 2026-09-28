@@ -186,6 +186,27 @@ CPU attribution, desktop 1 s pan (inclusive ms): deck frame 124 → 69, deck lay
 - Bins / Points still use the single snapped-bbox row fetch (they need labels); they'd benefit from the same tiling.
 - Cold tile latency is dominated by the worker's per-isolate footer read (200-480 ms) and R2 GETs; the edge cache makes repeats 25-60 ms.
 
+### Regression: Heatmap drew nothing (branch `heat-fix`)
+
+Round 2 was merged into `map-mode-heatmap-on-cells` (`e491b962012`) and deployed to dev; the legacy Heatmap then drew **nothing** on [the dev view][dev-view-2] (all years and `y=2011-2013`), while Points / Bins, the basemap, road hover and the area-highlight rule worked, the tile requests 200'd, and there was no console error. Dev www was rolled back.
+
+**Not minification**: a `--minify false` build of `e491b962012` is blank too, and so is the minified one; the base `df3f79791ab` paints in both. It was blank on the branch all along at desktop sizes — the Round 2 numbers above counted weight-map renders, not pixels. (Phone-sized views often painted by luck: see below.)
+
+**Root cause**: the *first* weight-splat pass a deck.gl `HeatmapLayer` runs after it initializes is wrong (deck.gl 9.3.2 / luma.gl 9.3.3). Instrumenting `_updateWeightmap` (reading back `maxWeightsTexture`) at the dev view, 1280×800, same data and bounds:
+
+| pass | max-weight texel (R … A) |
+|---|---|
+| 1st pass after init | 12707 … 63.5 |
+| any later pass | 5102 … 3.9 |
+
+The first pass piles the splats into a few texels (alpha ≈ number of overlapping points: 63 vs 4), so the whole surface normalizes under the color `threshold` and nothing draws. Re-running only the max-reduction doesn't fix it; re-running the splat does — any second pass is correct. Before Round 2 this was masked: the heatmap got a new `data` array on nearly every render (the per-render clip, root cause 1 above), and each one re-splatted. `stableClip` keeps the data's identity, so a layer's *only* pass was the broken first one, until the next data or bounds change (a year change or a pan past the texture's bounds would repaint it; a view that happened to get two data updates while loading — e.g. tiles arriving separately, common on phones — painted).
+
+**Fix**: `www/src/map/PrimedHeatmapLayer.ts` — a `HeatmapLayer` subclass that runs its first weight-map update twice (flag in the layer `state`, which deck.gl carries across re-created layer instances); `CrashMap` uses it for the legacy heatmap. Cost: one extra splat when the layer is created. `?perf=1` counts after the fix (desktop, SwiftShader): load 2 weight maps (the priming pass), 150 px pans 0, a 300 px pan 1, a 20-move hover 0 — the Round 2 wins hold.
+
+**Guards**: `www/e2e/heatmap-paints.spec.ts` (warm-pixel fraction of the page; blank 0.0003, painted ≈ 0.025, threshold 0.005): Heatmap all years / `2011-2013` × desktop / phone, Points as a control, and Points → Heatmap mode switch. On `e491b962012` the desktop Heatmap cases fail (0.0003); with the fix all pass. `PrimedHeatmapLayer.test.ts` pins the pass counts (2, then 1 per update).
+
+Verified on a minified `vite build` + `vite preview` against `crashes-cells-dev.hccs.dev`: Heatmap all years / 2011-2013, Bins, Points on desktop 1280×800 and phone 390×844 all paint; load 2 tile requests; all years → 2011-2025 2 requests (switch to the `group=year` tiles), then → 2011-2013 0; 100 / 500 px pans 0 (tiles already cover them).
+
 [dev-view-2]: https://dev.crashes.hccs.dev/map?llz=40.7213-74.0810+14.5+0+0&mode=heatmap&y=2011-2013
 [iperf]: ../www/scripts/interaction-perf.mjs
 
