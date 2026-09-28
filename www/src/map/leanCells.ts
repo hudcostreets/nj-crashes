@@ -56,8 +56,12 @@ export type LeanBody = ColsBody | RowsBody
 
 /** Query params for a lean request (everything but `cells`, `res`,
  *  `shard_res`, `polygon`, `maxCells`, which the caller already sets).
- *  With `groupYear`, the params are independent of the user's year /
- *  severity filter — that's what makes a filter change a cache hit. */
+ *
+ *  With `groupYear` and a year *sub*-range, the params are independent of
+ *  the user's year / severity filter — that's what makes a filter change a
+ *  cache hit. A filter covering every year keeps the plain all-years
+ *  request instead: the worker serves that from its D1 rollup, which is
+ *  faster than the per-year pyramid read, and it's the default view. */
 export function leanParams(
     groupYear: boolean,
     yearRange: [number, number],
@@ -65,7 +69,8 @@ export function leanParams(
     severities: Set<Severity>,
 ): Record<string, string> {
     const base = { labels: "nums", format: "cols", fields: HEAT_FIELDS.join(",") }
-    if (groupYear) return { ...base, years: `${fullYears[0]}-${fullYears[1]}`, severities: "fip", group: "year" }
+    const subRange = yearRange[0] > fullYears[0] || yearRange[1] < fullYears[1]
+    if (groupYear && subRange) return { ...base, years: `${fullYears[0]}-${fullYears[1]}`, severities: "fip", group: "year" }
     const sevs = (["f", "i", "p"] as const).filter(s => severities.has(s)).join("")
     return { ...base, years: `${yearRange[0]}-${yearRange[1]}`, severities: sevs }
 }
