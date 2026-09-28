@@ -1,27 +1,22 @@
-/** Heatmap render strategies A and C — bake a KDE density surface to an image,
- *  then render it as a `BitmapLayer` textured quad.
+/** Heatmap render strategy C — bake KDE density surfaces to images, rendered as
+ *  `BitmapLayer` textured quads (one per mercator tile, see `useHeatTiles`).
  *
  *  This is the CarbonPlan `zarr-layer` principle (decouple per-frame redraw
  *  from per-data-load work) with a CPU splat instead of a GPU render-to-texture
  *  pass: for each cell we add a Gaussian kernel, weighted by severity, into an
  *  accumulation grid; normalize; map through a 1-D colormap. The result is an
  *  image handed to `BitmapLayer` — so pan/zoom is a free textured-quad redraw
- *  (no re-aggregation), where legacy's `HeatmapLayer` re-runs its KDE per frame.
+ *  (no re-aggregation).
  *
- *  The bake is split into two passes so C (tiled) can share one normalization
- *  across many tiles:
- *    - `splatDensity` → a `DensityGrid` (raw Float32 accumulation + its bounds).
- *    - `colorizeDensity` → the RGBA `ImageData`, given a `vmax`.
- *  A (`bakeDensity`) runs both over the data's auto-bounds, self-normalized. C
- *  splats each tile over its own tile bounds, takes the max `localMax` across
- *  the visible tiles as a shared `vmax`, then colorizes each — so adjacent tiles
- *  never show a brightness seam at a density gradient.
+ *  The bake is split into two passes so the tiles can share one normalization:
+ *    - `splatDensity` → a `DensityGrid` (raw Float32 accumulation + its bounds),
+ *      over one tile's bounds.
+ *    - `colorizeDensity` → the RGBA `ImageData`, given a shared `vmax` (a high
+ *      quantile across the visible tiles), so adjacent tiles never show a
+ *      brightness seam at a density gradient.
  *
- *  vs strategy B (`SoftDiscLayer`): B splats one GPU disc per cell every frame
- *  (cheap, but the cell grid is faintly visible); A/C bake a true continuous KDE
- *  so the surface is silky. A's single image is fixed-resolution (blurs when
- *  zoomed far past the bake density) — which is exactly what C's per-tile bake
- *  at the current scale fixes.
+ *  (Strategy A baked one such image over the whole fetched cell set; dropped, see
+ *  `specs/map-mobile-perf.md` § Round 3.)
  */
 import { sampleColormap, type ColormapName } from "./colormap"
 import type { StackedCell } from "./StackedCellLayer"
@@ -48,13 +43,10 @@ export type SplatOpts = {
     sigmaMeters: number
     /** Per-cell weight (severity-weighted count). */
     weight: (c: StackedCell) => number
-    /** Explicit grid extent + dims (C, tiled). When omitted, bounds are the
-     *  cells' auto-extent padded by 3σ and the grid is sized to `maxDim` (A). */
-    bounds?: Bounds
-    width?: number
-    height?: number
-    /** Longest grid dimension in pixels when auto-sizing (A). */
-    maxDim?: number
+    /** Grid extent (a tile's bounds) and dims in pixels. */
+    bounds: Bounds
+    width: number
+    height: number
 }
 
 export type ColorizeOpts = {
@@ -64,8 +56,8 @@ export type ColorizeOpts = {
     gamma: number
     /** Alpha ramps 0→1 as `t` goes 0→alphaKnee, so sparse areas fade out. */
     alphaKnee: number
-    /** Normalization ceiling. Defaults to the grid's own `localMax` (A); C
-     *  passes the shared max across tiles so brightness is consistent. */
+    /** Normalization ceiling. Defaults to the grid's own `localMax`; C passes
+     *  a shared value across tiles so brightness is consistent. */
     vmax?: number
     /** Colormap position for the faintest density (0 = the ramp's darkest end).
      *  Only the *color* is lifted — alpha still ramps from the raw `t` — so a
@@ -73,45 +65,14 @@ export type ColorizeOpts = {
     floor?: number
 }
 
-/** Splat `cells` into a density grid. With explicit `bounds`+`width`+`height`
- *  (C), splats over exactly that extent (the caller includes margin cells whose
- *  kernel tails should bleed in). Otherwise (A) computes a 3σ-padded auto-extent
- *  sized to `maxDim`. Returns null if there's nothing to splat. */
+/** Splat `cells` into a density grid over exactly `opts.bounds` (the caller
+ *  includes margin cells whose kernel tails should bleed in). Returns null if
+ *  there's nothing to splat. */
 export function splatDensity(cells: StackedCell[], opts: SplatOpts): DensityGrid | null {
     if (!cells.length) return null
 
-    let west: number, south: number, east: number, north: number
-    let width: number, height: number
-
-    if (opts.bounds && opts.width && opts.height) {
-        [west, south, east, north] = opts.bounds
-        width = opts.width
-        height = opts.height
-    } else {
-        const maxDim = opts.maxDim ?? 1024
-        west = Infinity; south = Infinity; east = -Infinity; north = -Infinity
-        for (const c of cells) {
-            const [lng, lat] = c.center
-            if (lng < west) west = lng
-            if (lng > east) east = lng
-            if (lat < south) south = lat
-            if (lat > north) north = lat
-        }
-        if (!(east > west) || !(north > south)) return null
-        const midLat = (south + north) / 2
-        const mPerDegLng = METERS_PER_DEG_LAT * cos((midLat * PI) / 180)
-        const padLat = 3 * (opts.sigmaMeters / METERS_PER_DEG_LAT)
-        const padLng = 3 * (opts.sigmaMeters / mPerDegLng)
-        west -= padLng; east += padLng; south -= padLat; north += padLat
-        const lngSpan = east - west, latSpan = north - south
-        if (lngSpan >= latSpan) {
-            width = maxDim
-            height = max(1, round((latSpan / lngSpan) * maxDim))
-        } else {
-            height = maxDim
-            width = max(1, round((lngSpan / latSpan) * maxDim))
-        }
-    }
+    const [west, south, east, north] = opts.bounds
+    const { width, height } = opts
 
     const lngSpan = east - west
     const latSpan = north - south
@@ -194,27 +155,4 @@ export function colorizeDensity(grid: DensityGrid, opts: ColorizeOpts): ImageDat
         }
     }
     return new ImageData(rgba, width, height)
-}
-
-export type BakedDensity = {
-    /** RGBA image of the colormapped density surface. */
-    image: ImageData
-    /** [west, south, east, north] in degrees — the BitmapLayer quad bounds. */
-    bounds: Bounds
-    width: number
-    height: number
-}
-
-export type BakeOpts = SplatOpts & ColorizeOpts
-
-/** Strategy A: splat over the data's auto-extent, self-normalize, colorize. */
-export function bakeDensity(cells: StackedCell[], opts: BakeOpts): BakedDensity | null {
-    const grid = splatDensity(cells, opts)
-    if (!grid || grid.localMax <= 0) return null
-    return {
-        image: colorizeDensity(grid, opts),
-        bounds: grid.bounds,
-        width: grid.width,
-        height: grid.height,
-    }
 }

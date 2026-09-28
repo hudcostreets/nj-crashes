@@ -179,4 +179,16 @@ describe("picker: viewport-scaled budget (mobile)", () => {
             pickS2LevelForPixels(Math.max(target, HEAT_LEGACY_MIN_CELL_PX), 14.5, 40.72),
         ]).toEqual([19, 18])
     })
+
+    it("heatmap floor: keeps desktop cells near the kernel σ (no lattice at z12-13.5)", () => {
+        // 1440×900 full-screen desktop, Jersey City: the floor must not coarsen the budgeted
+        // pick (a 5 px floor moved z13.25 to l16, ~10 px cells, 2× the kernel's 5 px σ).
+        const area = 1440 * 900
+        const target = cellPxTargetFor(area, viewportBinsBudget(area))
+        const levels = (zoom: number) => [
+            pickS2LevelForPixels(target, zoom, 40.72),
+            pickS2LevelForPixels(Math.max(target, HEAT_LEGACY_MIN_CELL_PX), zoom, 40.72),
+        ]
+        expect([levels(12), levels(13.25), levels(14.5)]).toEqual([[16, 16], [17, 17], [18, 18]])
+    })
 })

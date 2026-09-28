@@ -51,12 +51,18 @@ export function maxCellsFor(budget: number, ceiling: number): number {
     return Math.min(ceiling, Math.max(20_000, Math.round(1.5 * budget)))
 }
 
-/** Heatmap (legacy `HeatmapLayer`) minimum cell size in CSS px. Its kernel
- *  is `radiusPixels = 30`, so cells finer than ~1/6 of that are smoothed
- *  away — they cost fetch, decode, and GPU splats without changing the
- *  image. At z14.5 this moves a phone from l19 (~3 px) to l18 (~6 px): 4×
- *  fewer cells. */
-export const HEAT_LEGACY_MIN_CELL_PX = 5
+/** Heatmap (legacy `HeatmapLayer`) minimum cell size in CSS px: finer cells
+ *  cost fetch, decode, and GPU splats without changing the image. At z14.5 it
+ *  moves a phone from l19 (~3 px) to l18 (~6 px): 4× fewer cells.
+ *
+ *  The picker takes the finest level whose cell is ≥ the target, so a floor of
+ *  `f` px yields cells of `f`–`2f` px. The kernel's Gaussian σ is only
+ *  `radiusPixels / 6` = 5 px, and cells much wider than σ render as a lattice of
+ *  blobs at S2 cell centers: the original floor of 5 px pushed desktop z12-13.5
+ *  to ~10 px cells (l16 at z13.25 in Jersey City), which is what made the legacy
+ *  heatmap look "griddy" (specs/map-mobile-perf.md § Round 3). At 3 px cells
+ *  stay ≤ 6 px, and the phone z14.5 win above still holds. */
+export const HEAT_LEGACY_MIN_CELL_PX = 3
 
 /** `HeatmapLayer.weightsTextureSize` for a `width × height` CSS-px map.
  *

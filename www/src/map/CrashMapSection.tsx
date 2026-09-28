@@ -12,7 +12,7 @@ import { usePageFilters, YEAR_RANGE_DEFAULT } from "@/src/PageFiltersContext"
 import { useCellsApi, CELLS_MAX } from "@/src/map/useCellsApi"
 import { bboxRing, clippedAreaPx } from "@/src/map/areaBudget"
 import type { CellsApiFilter } from "@/src/map/useCellsApi"
-import type { MapMode, HeatRender, ViewState } from "@/src/map/CrashMap"
+import { HEAT_RENDER_DEFAULT, type MapMode, type HeatRender, type ViewState } from "@/src/map/CrashMap"
 import type { HeatTileFilter } from "@/src/map/useHeatTiles"
 import type { StackedCell } from "@/src/map/StackedCellLayer"
 import { useTheme } from "@/src/contexts/ThemeContext"
@@ -211,10 +211,12 @@ export function CrashMapSection({
     // and is shareable; default `bins` is omitted from the URL. `scatter`
     // is the "Points" button's value.
     const [mode, setMode] = useUrlState<MapMode>("mode", enumParam<MapMode>("bins", ["scatter", "heatmap", "bins"]))
-    // Density-render strategy within Heatmap mode (`?hr=`); default `legacy`
-    // (the deck-native HeatmapLayer) is omitted from the URL. See
-    // `specs/map-heatmap-render-strategies.md`.
-    const [heatRender, setHeatRender] = useUrlState<HeatRender>("hr", enumParam<HeatRender>("legacy", ["legacy", "b", "a", "c"]))
+    // Density-render strategy within Heatmap mode (`?hr=`); the default (`c`, tiled baked KDE)
+    // is omitted from the URL. See `specs/map-heatmap-render-strategies.md`,
+    // `specs/map-mobile-perf.md` § Round 3.
+    const [heatRender, setHeatRender] = useUrlState<HeatRender>("hr", enumParam<HeatRender>(HEAT_RENDER_DEFAULT, ["c", "legacy", "b"]))
+    // Strategy C fetches its own tiles (`useHeatTiles`); the section's cells fetch is skipped.
+    const heatTiles = mode === "heatmap" && heatRender === "c"
     // Year range comes from the page-level filter provider — same `yr`
     // URL param that drives the NJSP/NJDOT plots + tables below. Fallback
     // to a static default lets the map still render if someone drops the
@@ -481,6 +483,7 @@ export function CrashMapSection({
     // `v2Manifest` (loaded separately above) carries the county/muni
     // bboxes the rest of the section needs.
     const apiFilter: CellsApiFilter | null = useMemo(() => {
+        if (heatTiles) return null
         if (!filter?.viewport || filter.viewportLat == null || filter.zoom == null) return null
         // Pull a polygon for clipping when on county/muni scope. Prefer
         // the muni outline (tightest), then the county outline. Skip
@@ -508,11 +511,10 @@ export function CrashMapSection({
             clipPolygon,
             maxCells: requestMaxCells,
         }
-    }, [filter, cc, mc, outline, muniOutline, fetchCellPxTarget, requestMaxCells])
+    }, [heatTiles, filter, cc, mc, outline, muniOutline, fetchCellPxTarget, requestMaxCells])
     // Strategy C (`?hr=c`) fetches per tile from its own bbox, so it needs only
     // the year/severity filter (not the viewport — the tile hook derives that).
-    // `clipPolygon` is carried for a later county/muni clip; C currently fetches
-    // by tile bbox only.
+    // `clipPolygon` (county / muni scope) clips each tile's request worker-side.
     const heatTileFilter: HeatTileFilter = useMemo(() => ({
         yearRange,
         severities,
@@ -534,6 +536,10 @@ export function CrashMapSection({
         // (avoids the mismatch where renderRes picked finer than what the
         // API delivered under the cells cap).
         const manifest = v2Manifest
+        // Heatmap C draws from its own tile fetches: nothing to wait for here.
+        if (heatTiles) {
+            return { status: "ready" as const, data: [] as StackedCell[], dataKind: "cell" as const, manifest: manifest!, refetching: false, plan: null }
+        }
         const apiPlan = apiResult.plan
             ? ({
                 kind: "cell" as const,
@@ -571,7 +577,7 @@ export function CrashMapSection({
             refetching: false,
             plan: apiPlan,
         }
-    }, [apiResult, v2Manifest])
+    }, [apiResult, v2Manifest, heatTiles])
 
     // Level-change detection for the loading fade. Fade/desaturate the prior
     // bins only when the picker's *target* res actually changed (a zoom that
@@ -677,7 +683,10 @@ export function CrashMapSection({
         const [w, h] = viewportDims(fullScreen)
         return bboxFromViewport(effectiveView.latitude, effectiveView.longitude, effectiveView.zoom, w, h, effectiveView.pitch)
     }, [effectiveView, fullScreen])
-    const roadSel = useRoadSelection(effectiveView, viewBbox)
+    // Hoverable roads drawn faintly under the data (`?rd=off` hides them).
+    const [roadNet, setRoadNet] = useUrlState<"on" | "off">("rd", enumParam<"on" | "off">("on", ["on", "off"]))
+    const roadNetwork = useMemo(() => ({ show: roadNet === "on", theme: actualTheme }), [roadNet, actualTheme])
+    const roadSel = useRoadSelection(effectiveView, viewBbox, roadNetwork)
     // Geo drill-down targets: statewide, counties (munis of the in-view counties once zoomed to
     // `MUNI_PICK_MIN_ZOOM`, where a county fills the screen and the muni under the cursor is the
     // useful target); in a county view, its munis.
@@ -962,6 +971,7 @@ export function CrashMapSection({
                         onMapClick={onMapClick}
                         onMapHover={onMapHover}
                         extraLayers={roadSel.layers}
+                        underLayers={roadSel.networkLayers}
                         freezePan={roadSel.freezePan}
                         mode={mode}
                         heatRender={heatRender}
@@ -1073,29 +1083,22 @@ export function CrashMapSection({
                 {mode === "heatmap" && (
                     <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                         <span style={{ fontSize: "0.72em", opacity: 0.75, whiteSpace: "nowrap" }}>render</span>
-                        {(["legacy", "b", "a", "c"] as HeatRender[]).map(hr => {
-                            const impl = hr === "legacy" || hr === "b" || hr === "a" || hr === "c"
-                            const label = hr === "legacy" ? "Legacy" : hr.toUpperCase()
-                            return (
-                                <button
-                                    key={hr}
-                                    onClick={() => impl && setHeatRender(hr)}
-                                    disabled={!impl}
-                                    title={impl ? undefined : "not yet implemented"}
-                                    style={{
-                                        padding: "0.2em 0.5em",
-                                        cursor: impl ? "pointer" : "not-allowed",
-                                        background: heatRender === hr ? activeBg : "transparent",
-                                        color: heatRender === hr ? "#fff" : fg,
-                                        border: `1px solid ${heatRender === hr ? activeBg : fg}`,
-                                        borderRadius: 3,
-                                        fontSize: "0.85em",
-                                        opacity: impl ? 1 : 0.4,
-                                        flex: 1,
-                                    }}
-                                >{label}</button>
-                            )
-                        })}
+                        {(["c", "legacy", "b"] as HeatRender[]).map(hr => (
+                            <button
+                                key={hr}
+                                onClick={() => setHeatRender(hr)}
+                                style={{
+                                    padding: "0.2em 0.5em",
+                                    cursor: "pointer",
+                                    background: heatRender === hr ? activeBg : "transparent",
+                                    color: heatRender === hr ? "#fff" : fg,
+                                    border: `1px solid ${heatRender === hr ? activeBg : fg}`,
+                                    borderRadius: 3,
+                                    fontSize: "0.85em",
+                                    flex: 1,
+                                }}
+                            >{hr === "legacy" ? "Legacy" : hr.toUpperCase()}</button>
+                        ))}
                     </div>
                 )}
                 {mode === "heatmap" && heatRender === "c" && (
@@ -1173,6 +1176,18 @@ export function CrashMapSection({
                         />
                     </>
                 )}
+                <label
+                    title="Faintly draw the roads you can hover / tap to select (from zoom 9: major roads, more as you zoom in)"
+                    style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.85em", margin: "4px 0", cursor: "pointer" }}
+                >
+                    <input
+                        type="checkbox"
+                        checked={roadNet === "on"}
+                        onChange={e => setRoadNet(e.target.checked ? "on" : "off")}
+                        style={{ margin: 0 }}
+                    />
+                    Show selectable roads
+                </label>
                 <DebugSection
                     open={debugOpen}
                     onToggle={() => setDebugOpen(!debugOpen)}

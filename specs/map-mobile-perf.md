@@ -1,6 +1,6 @@
 # Map mobile performance (heatmap / points / bins) + narrow-layout overlap
 
-Status: **implemented on branch `map-mobile-perf`, not deployed** (2026-09-28).
+Status: **implemented on branch `map-mobile-perf`, not deployed** (2026-09-28). Rounds 2-3 below.
 
 ## Report
 
@@ -206,6 +206,105 @@ The first pass piles the splats into a few texels (alpha ≈ number of overlappi
 **Guards**: `www/e2e/heatmap-paints.spec.ts` (warm-pixel fraction of the page; blank 0.0003, painted ≈ 0.025, threshold 0.005): Heatmap all years / `2011-2013` × desktop / phone, Points as a control, and Points → Heatmap mode switch. On `e491b962012` the desktop Heatmap cases fail (0.0003); with the fix all pass. `PrimedHeatmapLayer.test.ts` pins the pass counts (2, then 1 per update).
 
 Verified on a minified `vite build` + `vite preview` against `crashes-cells-dev.hccs.dev`: Heatmap all years / 2011-2013, Bins, Points on desktop 1280×800 and phone 390×844 all paint; load 2 tile requests; all years → 2011-2025 2 requests (switch to the `group=year` tiles), then → 2011-2013 0; 100 / 500 px pans 0 (tiles already cover them).
+
+## Round 3: heatmap quality, default render, selectable-road overlay (2026-09-28)
+
+Status: **implemented on branch `heat-default-roads`, not deployed.** FE-only (no worker change).
+
+### Report
+
+At [`/map?llz=40.7184-74.0736+13.25+0+0&mode=heatmap&y=2011-2013`][dev-view-3] (desktop, default `hr=legacy`) the heatmap was a lattice of discrete round blobs at S2 cell centers ("griddy"). Of the other renders: `hr=b` dim and blocky; `hr=a` smooth but with a grey rectangle over the basemap; `hr=c` best-looking (follows streets). Separately: draw the roads that are available for hover / pin.
+
+### Method
+
+Builds of the base (`dca29a31663`) and the branch (`vite build`, `VITE_CELLS_API_BASE=https://crashes-cells-dev.hccs.dev`) served with `vite preview`. Screenshots: headless Chromium on the M4 GPU, desktop 1440×900 @2 and phone 390×844 @2, dark theme, z12 / z13.25 / z14.5 at the view above (`www/tmp/shots.mjs`-style harness; images under the worktree's `tmp/shots/`). For the knob A/B, a throwaway build read `?abfloor=` / `?abwts=` / `?abclip=` overrides (not committed). Perf: [`interaction-perf.mjs`][iperf] headless (`HEADLESS=1`), desktop 1× and phone 4× CPU, on the Round 2 view (z14.5, `y=2011-2013`). System swap was 4.7-5.0 GB *resident* (other apps) but flat through every run (±30 MB, recorded per step), i.e. not actively swapping; free disk ≥ 37 GB throughout.
+
+### Griddiness: the legacy cell floor (Round 1), not the texture or the clip
+
+deck's `HeatmapLayer` kernel is a Gaussian with σ = `radiusPixels / 6` = **5 CSS px** (`weights-fs`: `exp(-u²/0.0556)` over the 30 px radius). The layer splats one kernel per *cell center*, so wherever cells are much wider than σ each cell shows as its own blob, and the blobs sit on the S2 grid.
+
+Round 1's `HEAT_LEGACY_MIN_CELL_PX = 5` floored the legacy fetch at 5 px cells — but the picker takes the finest level whose cell is ≥ the target, so a 5 px floor gives **5-10 px** cells. On a 1440×900 desktop the budgeted target is ~3 px, so the floor coarsened z12 and z13.25 by a level each:
+
+| desktop 1440×900 | budgeted pick | floor 5 px (HEAD) | floor 3 px (fix) |
+|---|---|---|---|
+| z12 | l16 (~5 px) | **l15** (~10 px) | l16 |
+| z13.25 | l17 (~5 px) | **l16** (~10 px) | l17 |
+| z14.5 | l18 | l18 | l18 |
+| phone 390×844, z13.25 | l18 | l16 | l17 |
+| phone 390×844, z14.5 | l19 | l18 | l18 (Round 1's win kept) |
+
+Knob A/B (each reverted alone, same views; mean absolute luma difference vs HEAD over the screenshot):
+
+| knob | z12 | z13.25 | z14.5 | visual |
+|---|---|---|---|---|
+| floor 5 → 0 | 12.0 | 14.7 | 0 | lattice gone at z12-13.25 |
+| `weightsTextureSize` auto → 2048 | 0.02 | 5.4 | 0 | same lattice (the texel is always 2 CSS px: deck sizes the texture's world bounds as `textureSize × 2 / scale` around the *viewport*, so a smaller texture only means less pan slack) |
+| `stableClip` off | 0 | 0 | 0 | identical (the clip only drops off-screen cells; the texture's bounds don't depend on the data) |
+
+**Fix:** `HEAT_LEGACY_MIN_CELL_PX = 3` — cells stay ≤ ~6 px (≈ σ) at every desktop zoom, phone z14.5 stays at l18. Pinned in `picker.test.ts` (desktop z12 / z13.25 / z14.5 picks unchanged by the floor; phone z14.5 still l18). Pan / zoom / year cost unchanged (table below). Residual "blobbiness" at street zoom (z14.5+) is inherent: 3 years of crashes on a residential grid are sparse points, each drawn as a 5 px-σ kernel.
+
+No lattice check in `e2e/heatmap-paints.spec.ts`: two pixel metrics on these screenshots — fraction of warm 5×5 blocks with no warm neighbor, and local-maxima density per warm pixel — gave 0.002 vs 0.001 and 16 vs 12 per 1k (HEAD vs fixed, z13.25), and z14.5 (sparse data, no lattice) scored as high as the lattice. Too weak to guard with; the unit test pins the cause instead.
+
+### `hr=a` grey rectangle: dropped
+
+A baked *one* image over the fetched (clipped) cell set, self-normalized, and drew it as a single `BitmapLayer` quad. Two properties make the rectangle:
+- the image's extent is the data's extent (clip window + 3σ), so wherever the fetched set ends — the `stableClip` window's edge after a pan, a tile not yet loaded, or the old window during a zoom-out — the surface stops at a hard straight edge (reproduced: a 300 px pan shows a vertical cut through Newport; a wheel zoom-out shows the old window as a small rectangle);
+- its σ = 0.9 × cell edge kernel tails cover most of that extent at low density, where the colormap is inferno's near-black at 10-30% alpha: a dark / grey veil over the basemap across the whole populated rectangle (most visible in light theme).
+
+Plus the bake mapped latitude linearly into a quad that deck draws linearly in Web-Mercator (a small N-S misregistration). C is A done right (per-tile bakes at screen resolution, shared normalization, margins for kernel bleed), so A was removed rather than patched: `?hr=a` now falls back to the default. `bakeDensity.ts` keeps only the splat / colorize passes C uses.
+
+### Default: C
+
+Visual (montages `tmp/shots/cmp-{desktop,phone}-z{12,13.25,14.5}.jpg`): C follows streets at every zoom with the finest detail (S2 l19-l20 cells at 1 px, σ 1 px); legacy (3 px floor) is smooth but coarse, glowing blobs; B is dim / blocky.
+
+C before this round was not a viable default on cost: 15-22 `/v1/cells` requests per load (one per z15 tile), a full refetch of every tile on each year change (the tile cache was keyed by the year range), a re-bake of every visible tile on every pan settle (7 long tasks / 537 ms on a desktop pan), no scope-polygon clip (county / muni maps would show neighbors' crashes), and the section's own lean fetch still ran underneath it. Changes (`useHeatTiles.ts`):
+- **Fetch unit = the parent tile** (`tileZ − 1`, padded 15%, which covers each child's 30% bleed margin): ¼ the requests, and cacheable across users.
+- **Lean wire format + `group_year`** (`leanParams` / `fetchLean` / `aggregateLeanTables`, shared with legacy): a year sub-range fetches the per-(cell, year) table over all years and severities once, and year / severity changes re-aggregate locally — **0 requests**.
+- **Bake caches**: density grids memoized per (tile, table, filter, σ, size) — σ computed at the tile's own latitude and the bake size rounded to a half power of two, so pans / small zooms keep keys — and colorized images per (grid, `vmax`); `vmax` is sticky within ±25% (`stickyVmax`), so a pan colorizes only the tiles it newly reached.
+- **Scope clip**: each tile's polygon is `clipPolygonToBbox(scope, padded tile)`; tiles outside the scope aren't requested.
+- `CrashMapSection` skips its cells fetch in C mode (C doesn't render it) and doesn't gate the map on it.
+
+Perf (`before` = HEAD `dca29a31663`, `after` = branch; frames = rAF p50 / p95 / max during the interaction, ms; `req` = `/v1/cells` requests; `lt` = long tasks count / total ms):
+
+| step | legacy before | legacy after | C before | C after |
+|---|---|---|---|---|
+| desktop load | 2 req · lt 2/155 · settle 1.7 s | 2 req · lt 2/295 · 1.6 s | **22 req** · lt 0 · 1.3 s (warm edge cache) | **9 req** · lt 0 · 1.5 s |
+| desktop pan-x (1 s drag) | 17/18/34 · 0 req | 17/18/34 · 0 req | 17/18/18 · 8 req | 17/18/18 · 3 req |
+| desktop pan-y | 17/18/18 · 0 req | 17/18/18 · 0 req | 17/18/67 · **lt 7/537** · bake 516 ms | 17/18/18 · lt 0 · bake 35 ms |
+| desktop zoom-in (wheel) | 4 req | 4 req | 19 req | 6 req |
+| desktop zoom-out | 0 req | 0 req | 0 req | 0 req |
+| desktop hover sweep | 17/18/18 | 17/18/18 | 17/18/18 | 17/18/18 |
+| desktop year change | 0 req · 14 ms | 0 req · 16 ms | **15 req** · 290 ms | **0 req** · 249 ms (one 59 ms re-bake) |
+| phone load (4× CPU) | 2 req · lt 5/399 | 2 req · lt 5/440 | 10 req · lt 6/394 | 3 req · lt 5/402 |
+| phone pan-x | 17/18/50 · 2 req | 17/18/51 · 2 req | 17/18/51 · 6 req | 17/18/49 · 3 req |
+| phone pan-y | 17/18/18 | 17/18/18 | 17/34/117 · **lt 7/746** | 17/18/18 · lt 0 |
+| phone zoom-in | 6 req | 6 req | 6 req | 0 req · lt 1/80 |
+| phone year change | 0 req · 45 ms | 0 req · 47 ms | 6 req · 368 ms | **0 req** · 345 ms (one 141 ms re-bake at 4×) |
+
+Swap during these runs: 4696-4720 MB, flat. C after is at parity with legacy on frames and requests (fewer on zoom), and its year change costs one re-bake of the visible tiles (59 ms desktop, 141 ms phone at 4× CPU) instead of a GPU re-splat. Cold tiles are the worker's cost (a cold l18-l20 `group=year` read measured 1-4.5 s of R2 time on the dev worker; edge-cache hits 11-160 ms).
+
+`?hr=` default is now `c` (omitted from the URL); `legacy` and `b` stay selectable (drawer order C / Legacy / B; omnibar actions).
+
+### Selectable-road overlay
+
+When road selection is active (z ≥ 9, the `HIT_TIERS` range), the hit-test points already loaded for hover / tap (`sri-hit-5` major roads from z9, `sri-hit-6` from z11, `sri-hit` from z13) are drawn as a thin (1.5 px) non-pickable `PathLayer` **under** the data layers (`CrashMap` `underLayers`), theme-aware (dark: pale blue α 70; light: navy α 60), fading in from 35% opacity at z9 to full at z13. No extra fetches (reuses `hitPoints`; paths rebuild only when those change, zoom only moves the layer opacity). Toggle "Show selectable roads" in the settings drawer, default on, persisted as `?rd=off` (absent = on, like other map params). Screenshots: `tmp/shots/roads-{dark,light}/{desktop,phone}-z{13,14.5,16}-{on,off}.jpg`, crops `tmp/shots/roads-{dark,light}-crops.jpg`.
+
+Cost (desktop, C, same steps, `rd` on vs off): pan-x frames 17/18/34 vs 17/18/34, deck draw 159 vs 149 ms per 1 s pan, hover sweep deck draw 180 vs 183 ms — within run-to-run noise.
+
+### Tests
+
+- `picker.test.ts`: the floor keeps desktop z12 / z13.25 / z14.5 at the budgeted level.
+- `useHeatTiles.test.ts`: `parentTile`, `fetchTiles`, `stickyVmax`, `tileUrl` (per-year vs filtered params, scope clip that misses → no request), all exact-equality.
+- `e2e/heatmap-paints.spec.ts`: default (C) and legacy × desktop / phone × all years / 2011-2013, Points control, Points → Heatmap switch.
+
+### Not done / follow-ups
+
+- **Cold worker reads** dominate first paint for C's fine levels (l19-l20 `group=year` parent tiles: 1-4.5 s R2 time cold). Pre-warming the edge cache for common views, or a coarser-level `group=year` first paint, would help.
+- C's bakes run on the main thread (one 59-141 ms task per year change / new tile set); a worker (`OffscreenCanvas` / transferable `ImageData`) would take them off.
+- In light theme at z12-13, C's floor-lifted purple reads heavier than on dark; the colormap floor / alpha knee could be theme-specific.
+- Separately observed while benchmarking: the dev worker's `/v1/manifest` occasionally took 5-30 s cold, leaving the map on "Loading map…" until it returned.
+
+[dev-view-3]: https://dev.crashes.hccs.dev/map?llz=40.7184-74.0736+13.25+0+0&mode=heatmap&y=2011-2013
 
 [dev-view-2]: https://dev.crashes.hccs.dev/map?llz=40.7213-74.0810+14.5+0+0&mode=heatmap&y=2011-2013
 [iperf]: ../www/scripts/interaction-perf.mjs
