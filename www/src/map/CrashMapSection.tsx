@@ -29,7 +29,7 @@ import { RoadPanel } from "@/src/map/roads/RoadPanel"
 import { HoverDrawer } from "@/src/map/roads/HoverDrawer"
 import { bboxFromViewport, loadManifestV2 } from "@/src/map/v2"
 import {
-    areaHighlightShown, bboxesIntersect, cachedFeatureBbox, featureAt, featureBbox, fetchCounties, fetchCounty, fetchMunis, outlineLabel,
+    areaFillScale, bboxesIntersect, featureAt, featureBbox, fetchCounties, fetchCounty, fetchMunis, outlineLabel, viewCoverage,
 } from "@/src/map/boundaries"
 import type { Bbox, MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel, HEAT_C_SIGMA_PX, HEAT_C_PX_TARGET, HEAT_C_FLOOR, HEAT_C_OPACITY } from "@/src/map/CrashMap"
@@ -714,16 +714,17 @@ export function CrashMapSection({
         if (roadActive) roadHover(lngLat)
         setHoveredOutline(lngLat && pickOutline ? featureAt(pickOutline.features, lngLat) : null)
     }, [roadActive, roadHover, pickOutline])
-    const onMapClick = useCallback((lngLat?: [number, number], mods?: { shiftKey: boolean }) => {
+    const onMapClick = useCallback((lngLat?: [number, number], mods?: { shiftKey: boolean; touch?: boolean }) => {
         if (roadClick(lngLat, mods)) return
         const f = lngLat && pickOutline ? featureAt(pickOutline.features, lngLat) : null
         if (f && onOutlineClick) onOutlineClick(f)
     }, [roadClick, pickOutline, onOutlineClick])
     const hoveredOutlineLabel = hoveredOutline ? outlineLabel(hoveredOutline, cc === null) : null
     // Drawn only when the area is a meaningful part of the view (not when zoomed in inside it).
-    const shownHoverOutline = hoveredOutline && (!viewBbox || areaHighlightShown(cachedFeatureBbox(hoveredOutline), viewBbox))
-        ? hoveredOutline
-        : null
+    const hoverFill = useMemo(
+        () => hoveredOutline && viewBbox ? areaFillScale(viewCoverage(hoveredOutline, viewBbox)) : 1,
+        [hoveredOutline, viewBbox],
+    )
     const zoomToRoad = (bbox: [number, number, number, number]) => {
         const [w, h] = viewportDims(fullScreen)
         setLlz(fitBoundsToView(bbox, w, h, 0))
@@ -956,7 +957,8 @@ export function CrashMapSection({
                         viewState={llz ?? undefined}
                         onViewStateChange={setLlz}
                         pickOutline={pickOutline}
-                        hoverOutline={shownHoverOutline}
+                        hoverOutline={hoveredOutline}
+                        hoverOutlineFill={hoverFill}
                         onMapClick={onMapClick}
                         onMapHover={onMapHover}
                         extraLayers={roadSel.layers}

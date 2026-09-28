@@ -112,9 +112,12 @@ export type Props = {
     pickOutline?: FeatureCollection
     /** The hovered drill-down polygon, filled + stroked above the data layers. */
     hoverOutline?: Feature | null
+    /** Multiplier (0–1) on the hover outline's fill alpha; the stroke is unaffected. */
+    hoverOutlineFill?: number
     /** Fired for any click on the map canvas (used for drawer close-on-click). */
     /** Map click, with the clicked `[lon, lat]` (unless a layer handled it) and modifier keys. */
-    onMapClick?: (lngLat?: [number, number], mods?: { shiftKey: boolean; altKey: boolean }) => void
+    /** `touch`: the click was a tap (select by hit-testing the tap point; there's no real hover). */
+    onMapClick?: (lngLat?: [number, number], mods?: { shiftKey: boolean; altKey: boolean; touch: boolean }) => void
     /** Pointer hover `[lon, lat]` (null when the pointer leaves the map). */
     onMapHover?: (lngLat: [number, number] | null) => void
     /** Layers drawn on top of the map's own (e.g. road highlight/selection). */
@@ -415,6 +418,7 @@ export function CrashMap({
     onHeightScaleChange,
     pickOutline,
     hoverOutline,
+    hoverOutlineFill = 1,
     onMapClick,
     onMapHover,
     extraLayers,
@@ -781,12 +785,12 @@ export function CrashMap({
         id: "hover-outline",
         data: [hoverOutline],
         // Areas stay in the boundary lines' blue family (roads hover in white on a dark casing).
-        getFillColor: (theme === "dark" ? [109, 179, 242, 36] : [0, 102, 204, 30]) as any,
+        getFillColor: (theme === "dark" ? [109, 179, 242, Math.round(36 * hoverOutlineFill)] : [0, 102, 204, Math.round(30 * hoverOutlineFill)]) as any,
         getLineColor: (theme === "dark" ? [140, 200, 255, 255] : [0, 102, 204, 255]) as any,
         lineWidthMinPixels: 2,
         pickable: false,
-        updateTriggers: { getFillColor: [theme], getLineColor: [theme] },
-    }) : null, [hoverOutline, theme])
+        updateTriggers: { getFillColor: [theme, hoverOutlineFill], getLineColor: [theme] },
+    }) : null, [hoverOutline, hoverOutlineFill, theme])
 
     // Strategy A bake: recompute the KDE image only when the cell set (or its
     // level) changes — never on pan/zoom/opacity. Skipped unless heatmap+A.
@@ -1037,9 +1041,8 @@ export function CrashMap({
                 layers={allLayers}
                 onClick={onMapClick ? (info: any, event: any) => {
                     const src = event?.srcEvent as MouseEvent | undefined
-                    // A tap has no hover to leave behind: clear any the tap itself synthesized.
-                    if (isTouchEvent(src)) onMapHover?.(null)
-                    onMapClick(info.coordinate as [number, number] | undefined, { shiftKey: !!src?.shiftKey, altKey: !!src?.altKey })
+                    const touch = isTouchEvent(src)
+                    onMapClick(info.coordinate as [number, number] | undefined, { shiftKey: !!src?.shiftKey, altKey: !!src?.altKey, touch })
                 } : undefined}
                 onHover={onMapHover ? (info: any, event: any) => {
                     // Touch "hovers" are synthesized from taps and never end; they'd pin a stale

@@ -36,27 +36,38 @@ export function bboxesIntersect([w, s, e, n]: Bbox, [w2, s2, e2, n2]: Bbox): boo
     return w <= e2 && w2 <= e && s <= n2 && s2 <= n
 }
 
-function bboxArea([w, s, e, n]: Bbox): number {
-    return Math.max(0, e - w) * Math.max(0, n - s)
+/** Area-hover fill fades from full (area covers ≤ `AREA_FILL_FULL_BELOW` of the view) to none
+ *  (≥ `AREA_FILL_NONE_ABOVE`); see `areaFillScale`. */
+export const AREA_FILL_FULL_BELOW = 0.25
+export const AREA_FILL_NONE_ABOVE = 0.75
+/** Samples per side of the grid `viewCoverage` tests against the polygon. */
+export const COVER_GRID = 12
+
+/** Fraction of `view` inside `f` (polygon, not bbox: a muni's bbox takes in rivers and neighbors),
+ *  from a `COVER_GRID`² grid of cell-center samples. */
+export function viewCoverage(f: Feature, view: Bbox, grid = COVER_GRID): number {
+    const [w, s, e, n] = view
+    if (e <= w || n <= s) return 0
+    const bbox = cachedFeatureBbox(f)
+    if (!bboxesIntersect(bbox, view)) return 0
+    let hits = 0
+    for (let i = 0; i < grid; i++) {
+        const x = w + (e - w) * (i + 0.5) / grid
+        for (let j = 0; j < grid; j++) {
+            const y = s + (n - s) * (j + 0.5) / grid
+            if (featureContains(f, [x, y])) hits++
+        }
+    }
+    return hits / (grid * grid)
 }
 
-/** Area-hover highlight thresholds (see `areaHighlightShown`). */
-export const AREA_HL_MAX_VIEW_COVER = 0.85
-export const AREA_HL_MIN_AREA_TO_VIEW = 1.5
-
-/** Whether to draw the hovered muni / county's highlight. Zoomed in *inside* an area (at z14 in
- *  Jersey City the whole viewport is Jersey City) its fill tints the entire view and its outline
- *  is mostly off-screen, so the highlight says nothing and washes the map out. Suppressed when
- *  the area's bbox covers ≥ `AREA_HL_MAX_VIEW_COVER` of the viewport *and* is ≥
- *  `AREA_HL_MIN_AREA_TO_VIEW`× the viewport's area (a large area mostly out of view); an area that
- *  fits the view, or only partly overlaps it, still highlights. (The hover drawer still names it.)
- *  Ratios of degree² areas: the lon scale cancels at map scales. */
-export function areaHighlightShown(area: Bbox, view: Bbox): boolean {
-    const viewArea = bboxArea(view)
-    if (viewArea <= 0) return true
-    const [w, s, e, n] = area, [vw, vs, ve, vn] = view
-    const cover = bboxArea([Math.max(w, vw), Math.max(s, vs), Math.min(e, ve), Math.min(n, vn)]) / viewArea
-    return cover < AREA_HL_MAX_VIEW_COVER || bboxArea(area) / viewArea < AREA_HL_MIN_AREA_TO_VIEW
+/** Multiplier on the hovered area's fill alpha. Zoomed in inside an area (at z14.5 all of Jersey
+ *  City's part of the view is Jersey City) a full-strength fill tints the whole map and says
+ *  nothing, so the fill fades out as the area covers more of the view; the outline always stays.
+ *  (The hover drawer still names the area.) */
+export function areaFillScale(coverage: number): number {
+    const t = (AREA_FILL_NONE_ABOVE - coverage) / (AREA_FILL_NONE_ABOVE - AREA_FILL_FULL_BELOW)
+    return Math.min(1, Math.max(0, t))
 }
 
 /** `featureBbox`, memoized per feature. */
