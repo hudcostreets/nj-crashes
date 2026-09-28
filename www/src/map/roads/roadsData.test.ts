@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
-    entityXsSql, nearestRoad, roadPaths, roadSegments, spanCrashesFilter, spanCrashesSql, spanFilter, spanPredicate, type RoadPoint,
+    entityXsSql, nearestRoad, roadPaths, roadSegments, sameRoad, spanCrashesFilter, spanCrashesSql, spanFilter, spanPredicate,
+    type RoadPoint,
 } from "./roadsData"
 import type { SpanSel } from "./roadScope"
 
@@ -14,6 +15,19 @@ const pt = (sri: string, mp: number, name: string, lon: number, lat: number, ent
 const longRoad: RoadPoint[] = [0, 1, 2].map(i => pt("LONG", i / 10, "US 1", LON, lat0 + i * DLAT))
 // A short side street whose only point sits 30 m east of the long road's midpoint between MP 0.0 and 0.1.
 const side: RoadPoint = pt("SIDE", 0, "WALLER ST", LON + 30 / (111_320 * Math.cos(lat0 * Math.PI / 180)), lat0 + DLAT / 2, 1)
+
+describe("sameRoad", () => {
+    it("compares what the hover shows (entity, name, alias), not the point", () => {
+        const a = longRoad[0], b = longRoad[1]
+        expect([
+            sameRoad(null, null),
+            sameRoad(a, null),
+            sameRoad(a, b),
+            sameRoad(a, { ...b, alias: "LINCOLN HWY" }),
+            sameRoad(a, side),
+        ]).toEqual([true, false, true, false, false])
+    })
+})
 
 describe("nearestRoad", () => {
     it("picks the road whose segment passes under the cursor, not the nearest MP point", () => {

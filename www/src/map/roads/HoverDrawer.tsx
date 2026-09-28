@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { fetchEntity, type RoadPoint } from "./roadsData"
+import { fetchEntity, peekEntity, type RoadPoint } from "./roadsData"
 
 /** Wait this long on one road before fetching its summary, so sweeping the cursor across a
  *  street grid doesn't fire a ranged read per road crossed. */
@@ -34,14 +34,17 @@ export type HoverDrawerProps = {
  *  independent of each other; a click goes to the road when there is one, else the area. With a
  *  scoped road selected, also the scope and how to change it. */
 export function HoverDrawer({ road, roadSelected, area, dodgePanel, scope, theme }: HoverDrawerProps) {
-    const entity = useSettled(road?.entity ?? null, INFO_DELAY_MS)
+    // A road whose row group is already in memory shows its summary at once; others wait for
+    // the cursor to settle before reading (which caches the road's whole group).
+    const cached = road ? peekEntity(road.entity) : undefined
+    const entity = useSettled(road && !cached ? road.entity : null, INFO_DELAY_MS)
     const info = useQuery({
         queryKey: ["road-entity", entity],
         queryFn: () => fetchEntity(entity!),
         enabled: entity !== null,
     })
     if (!road && !area) return null
-    const summary = road && info.data?.entity === road.entity ? info.data : null
+    const summary = cached ?? (road && info.data?.entity === road.entity ? info.data : null)
     const dim = theme === "dark" ? "#999" : "#666"
     const action = road
         ? (roadSelected

@@ -19,6 +19,10 @@ export type ReadOpts<T> = {
     /** Nulls last (DuckDB's default). May use columns outside `columns`. */
     orderBy?: readonly SortKey<T>[]
     limit?: number
+    /** Return every row of the row groups the filter admits (the filter prunes groups by their
+     *  stats, but isn't applied per row): for callers that cache a group's rows by key, so later
+     *  lookups of its neighbors need no read. */
+    wholeGroups?: boolean
 }
 
 /** A read's plan: which row groups, and the byte ranges of the column chunks it needs. */
@@ -78,7 +82,7 @@ export async function readRows<T = Record<string, unknown>>(src: string | Parque
     for (const group of decoded) {
         for (const raw of group) {
             for (const k in raw) raw[k] = normalizeValue(raw[k])
-            if (opts.filter && !matchFilter(raw, opts.filter)) continue
+            if (opts.filter && !opts.wholeGroups && !matchFilter(raw, opts.filter)) continue
             rows.push(raw)
         }
     }

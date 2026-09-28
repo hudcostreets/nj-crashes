@@ -131,6 +131,17 @@ describe("readRows", () => {
         ])
     })
 
+    it("wholeGroups: every row of the groups the filter admits", async () => {
+        // `entity = 5` prunes to group 2 (rows 9-12), whose rows aren't all entity 5.
+        const rows = await readRows<Row>(await open(), { columns: ["entity", "name"], filter: { entity: 5 }, wholeGroups: true })
+        expect(rows).toEqual([
+            { entity: 5, name: "echo" },
+            { entity: 5, name: "echo" },
+            { entity: 6, name: "foxtrot" },
+            { entity: 6, name: "foxtrot" },
+        ])
+    })
+
     it("limit", async () => {
         const rows = await readRows<Row>(await open(), { columns: ["entity"], filter: { flag: true }, limit: 2 })
         expect(rows).toEqual([{ entity: 1 }, { entity: 2 }])

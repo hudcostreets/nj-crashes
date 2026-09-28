@@ -2,7 +2,7 @@
  *  reads (`@/src/lib/pq`, specs/off-duckdb-wasm.md). Each file is sorted for row-group pruning: `sri-hit` spatially (a viewport bbox
  *  reads a few groups), `crashes-by-sri` / `sris` by `sri`, the rest (incl. `sri-geom`) by `entity`
  *  (= `slug` order, so a county's / muni's roads are contiguous). */
-import { readRows, type Filter, type SortKey } from "@/src/lib/pq"
+import { openParquet, planRead, readRows, type Filter, type SortKey } from "@/src/lib/pq"
 import { MAP_BASE_URL } from "@/src/map/config"
 import { noteFilter, type NoteTarget, type RoadNoteRow } from "./roadNotes"
 import { spanBounds, type BlockCounts, type SpanSel } from "./roadScope"
@@ -276,15 +276,62 @@ export function fetchHitPoints(file: RoadsFile, [w, s, e, n]: Bbox): Promise<Roa
     })
 }
 
+/** `road-entities` rows by id, filled a whole row group (1000 slug-ordered roads, ~65 KB) per read:
+ *  hovering across a street grid touches a handful of groups, so after the first read of each,
+ *  lookups are synchronous (`peekEntity`) and issue no request. */
+const entityRows = new Map<number, RoadEntity>()
+const entitySlugs = new Map<string, RoadEntity>()
+/** The in-flight group read, so concurrent lookups in one group share it. */
+let entityRead: Promise<unknown> = Promise.resolve()
+
+function readEntityGroups(filter: Filter): Promise<void> {
+    const p = entityRead.catch(() => {}).then(() => readRows<RoadEntity>(roadsUrl("road-entities"), { filter, wholeGroups: true }))
+        .then(rows => {
+            for (const r of rows) {
+                entityRows.set(r.entity, r)
+                entitySlugs.set(r.slug, r)
+            }
+        })
+    entityRead = p
+    return p
+}
+
+/** A road entity, if its row group has been read (no I/O). */
+export function peekEntity(entity: number): RoadEntity | undefined {
+    return entityRows.get(entity | 0)
+}
+
 export async function fetchEntity(entity: number): Promise<RoadEntity | null> {
-    const rows = await readRows<RoadEntity>(roadsUrl("road-entities"), { filter: { entity: entity | 0 } })
-    return rows[0] ?? null
+    const id = entity | 0
+    if (!entityRows.has(id)) {
+        // Another lookup's read may be loading this group already.
+        await entityRead.catch(() => {})
+        if (!entityRows.has(id)) await readEntityGroups({ entity: id })
+    }
+    return entityRows.get(id) ?? null
+}
+
+/** Row groups `prefetchEntities` reads at most (~65 KB each); a wider view skips the warm-up. */
+export const ENTITY_PREFETCH_MAX_GROUPS = 4
+
+/** Warm `fetchEntity` / `peekEntity` for `ids` (e.g. the roads in view): one read of the groups
+ *  holding the not-yet-cached ones, unless that's more than `maxGroups` groups. */
+export async function prefetchEntities(ids: Iterable<number>, maxGroups = ENTITY_PREFETCH_MAX_GROUPS): Promise<void> {
+    const want = [...new Set([...ids].map(i => i | 0))].filter(i => !entityRows.has(i)).sort((a, b) => a - b)
+    if (!want.length) return
+    const filter: Filter = { entity: { $in: want } }
+    const { groups } = planRead(await openParquet(roadsUrl("road-entities")), { columns: ["entity"], filter })
+    if (groups.length > maxGroups) return
+    await readEntityGroups(filter)
 }
 
 export async function fetchEntityBySlug(slug: string): Promise<RoadEntity | null> {
     if (!isRoadSlug(slug)) return null
-    const rows = await readRows<RoadEntity>(roadsUrl("road-entities"), { filter: { slug } })
-    return rows[0] ?? null
+    if (!entitySlugs.has(slug)) {
+        await entityRead.catch(() => {})
+        if (!entitySlugs.has(slug)) await readEntityGroups({ slug })
+    }
+    return entitySlugs.get(slug) ?? null
 }
 
 const SUMMARY_COLS = ["severity", "n", "tk", "ti", "n_unplaced", "n_node", "n_xs", "tk_xs", "ti_xs", "n_corridor_only"]
@@ -515,6 +562,14 @@ export function nearestRoad(segments: RoadSegment[], [lon, lat]: [number, number
         if (d2 <= bestD2) { bestD2 = d2; best = t < 0.5 ? a : b }
     }
     return best
+}
+
+/** Same road as far as the hover UI shows it (entity, name, alias); a hover that stays on it keeps
+ *  the previous point, so moving along a road doesn't re-render the map. */
+export function sameRoad(a: RoadPoint | null, b: RoadPoint | null): boolean {
+    if (a === b) return true
+    if (!a || !b) return false
+    return a.entity === b.entity && a.name === b.name && a.alias === b.alias
 }
 
 /** Split a route's points (sorted by MP) into drawable paths, breaking at MP gaps or long jumps

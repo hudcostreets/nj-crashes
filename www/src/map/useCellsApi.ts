@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import type { StackedCell } from "./StackedCellLayer"
 import { CELLS_API_BASE } from "./config"
 import type { Bbox } from "./v2"
-import { aggregateLean, decodeLean, leanParams, type LeanBody, type LeanTable } from "./leanCells"
+import { aggregateLeanTables, decodeLean, leanParams, viewportTiles, type LeanBody, type LeanTable } from "./leanCells"
 import {
     clampS2Level,
     pickS2LevelForPixels,
@@ -580,9 +580,13 @@ function cellsToStackedHex(cells: CellRow[]): StackedCell[] {
     return out
 }
 
-/** Lean-response cache (by URL): decoded once, shared across remounts.
- *  Bounded like `ShardCache`; a lean table for a phone view is ~10-100 KB. */
-const LEAN_CACHE_MAX = 64
+/** Lean-response cache (by tile URL): decoded once, shared across remounts.
+ *  Bounded like `ShardCache`; a tile's table is ~5-100 KB. */
+const LEAN_CACHE_MAX = 256
+/** How long the view must hold still before requesting tiles that aren't
+ *  cached (cached tiles resolve without waiting): shorter than the row path's
+ *  `DEBOUNCE_MS`, since a pan only misses the few tiles it newly reached. */
+const LEAN_DEBOUNCE_MS = 250
 const leanCache = new Map<string, Promise<{ table: LeanTable; bytes: number; wireBytes: number }>>()
 
 function fetchLean(url: string): Promise<{ table: LeanTable; bytes: number; wireBytes: number }> {
@@ -725,56 +729,89 @@ export function useCellsApi(filter: CellsApiFilter | null, opts?: { prefetchAdja
     const leanQs = lean && filter && manifest
         ? new URLSearchParams(leanParams(groupYear, filter.yearRange, manifest.year_range, filter.severities)).toString()
         : null
-    const leanUrl = useMemo<string | null>(() => {
-        if (!leanQs || !filter || !pick) return null
-        const params = new URLSearchParams({
-            cells: pick.cover.map(c => c.cellid).join(","),
-            res: String(pick.res),
-            shard_res: String(pick.cover[0].shard_res),
-            grid: "s2",
-            maxCells: String(filter.maxCells ?? CELLS_MAX),
-        })
-        if (polygonStr) params.set("polygon", polygonStr)
-        return `${CELLS_API_BASE}/v1/cells?${params}&${leanQs}`
+    // One request per grid tile of the viewport (`viewportTiles`), each clipped to the scope
+    // polygon: a pan only requests the tiles it newly reaches, and tile URLs are shared across
+    // pans, sessions and users (worker edge cache). The tile set is keyed by string so drag frames
+    // within it don't re-run anything.
+    const tilesKey = lean && filter ? viewportTiles(filter.viewport).map(t => t.join(",")).join(";") : null
+    const leanUrls = useMemo<string[] | null>(() => {
+        if (!leanQs || !filter || !pick || tilesKey === null) return null
+        const urls: string[] = []
+        for (const tile of viewportTiles(filter.viewport)) {
+            let poly: [number, number][]
+            if (usingPoly) {
+                poly = clipPolygonToBbox(filter.clipPolygon!, tile)
+                if (poly.length < 3) continue
+            } else {
+                const [w, s, e, n] = tile
+                poly = [[w, n], [e, n], [e, s], [w, s], [w, n]]
+            }
+            const params = new URLSearchParams({
+                cells: pick.cover.map(c => c.cellid).join(","),
+                res: String(pick.res),
+                shard_res: String(pick.cover[0].shard_res),
+                grid: "s2",
+                maxCells: String(filter.maxCells ?? CELLS_MAX),
+                polygon: encodePolygon(poly),
+            })
+            urls.push(`${CELLS_API_BASE}/v1/cells?${params}&${leanQs}`)
+        }
+        return urls
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [leanQs, pick?.res, pick?.cover, polygonStr, filter?.maxCells])
+    }, [leanQs, pick?.res, pick?.cover, tilesKey, usingPoly, filter?.clipPolygon, filter?.maxCells])
+    const leanKey = leanUrls ? leanUrls.join("\n") : null
+    // When the viewport last moved (drag / zoom frames), for the fetch's settle debounce.
+    const lastMoveRef = useRef(0)
+    useEffect(() => { lastMoveRef.current = performance.now() }, [filter?.viewport])
 
     const [leanState, setLeanState] = useState<{
-        url: string | null
-        table: LeanTable | null
+        key: string | null
+        tables: LeanTable[] | null
         status: "loading" | "ready" | "error"
         bytes: number
         wireBytes: number
         error?: string
-    }>({ url: null, table: null, status: "loading", bytes: 0, wireBytes: 0 })
+    }>({ key: null, tables: null, status: "loading", bytes: 0, wireBytes: 0 })
 
     useEffect(() => {
-        if (!leanUrl) return
+        if (leanKey === null || !leanUrls) return
         let cancelled = false
         const fire = async () => {
             try {
-                const r = await fetchLean(leanUrl)
-                if (!cancelled) setLeanState({ url: leanUrl, table: r.table, status: "ready", bytes: r.bytes, wireBytes: r.wireBytes })
+                const rs = await Promise.all(leanUrls.map(fetchLean))
+                if (cancelled) return
+                setLeanState({
+                    key: leanKey, tables: rs.map(r => r.table), status: "ready",
+                    bytes: rs.reduce((a, r) => a + r.bytes, 0), wireBytes: rs.reduce((a, r) => a + r.wireBytes, 0),
+                })
             } catch (e) {
-                if (!cancelled) setLeanState(s => ({ ...s, url: leanUrl, status: "error", error: String(e) }))
+                if (!cancelled) setLeanState(s => ({ ...s, key: leanKey, status: "error", error: String(e) }))
             }
         }
-        // Cached ⇒ resolve without the debounce (a year / severity change,
-        // or a pan back to a visited snapped viewport).
-        if (leanCache.has(leanUrl)) { fire(); return () => { cancelled = true } }
-        const t = setTimeout(() => {
+        // All tiles cached ⇒ resolve without the debounce (a year / severity change, or a pan
+        // within / back to fetched tiles). Otherwise the previous tiles keep rendering until the
+        // whole new set is in (an atomic swap: no half-filled view).
+        if (leanUrls.every(u => leanCache.has(u))) { fire(); return () => { cancelled = true } }
+        // Wait for the view to hold still (not just this tile set): a wheel zoom passes through
+        // intermediate tile sets / levels that would otherwise each fire a round of requests.
+        let t: ReturnType<typeof setTimeout>
+        const wait = () => {
             if (cancelled) return
+            const still = performance.now() - lastMoveRef.current
+            if (still < LEAN_DEBOUNCE_MS) { t = setTimeout(wait, LEAN_DEBOUNCE_MS - still); return }
             setLeanState(s => ({ ...s, status: "loading" }))
             fire()
-        }, DEBOUNCE_MS)
+        }
+        t = setTimeout(wait, LEAN_DEBOUNCE_MS)
         return () => { cancelled = true; clearTimeout(t) }
-    }, [leanUrl])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [leanKey])
 
     const leanData = useMemo<StackedCell[]>(() => {
-        if (!leanState.table || !filter) return []
-        return aggregateLean(leanState.table, filter.yearRange, filter.severities)
+        if (!leanState.tables || !filter) return []
+        return aggregateLeanTables(leanState.tables, filter.yearRange, filter.severities)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [leanState.table, filter?.yearRange, filter?.severities])
+    }, [leanState.tables, filter?.yearRange, filter?.severities])
 
     const [state, setState] = useState<{
         urls: string[]
@@ -884,16 +921,23 @@ export function useCellsApi(filter: CellsApiFilter | null, opts?: { prefetchAdja
     }, [shardsKey])
 
     if (lean) {
-        const plan: CellsApiPlan | undefined = leanState.table && pick ? {
-            kind: "cell", res: leanState.table.res, source: leanState.table.source,
-            reason: `${leanState.table.source} · ${pick.reason} · lean${leanState.table.byYear ? " by-year" : ""}`,
-            cellCount: leanData.length, shardCount: pick.cover.length,
-            fetchedBytes: leanState.bytes, wireBytes: leanState.wireBytes, cover: pick.cover,
-        } : undefined
-        // A stale table (URL changed, new one in flight) keeps rendering, as
+        const tables = leanState.tables
+        const plan: CellsApiPlan | undefined = tables && pick ? (() => {
+            // Tiles coarsened by `maxCells` come back coarser; report the coarsest.
+            const res = tables.length ? Math.min(...tables.map(t => t.res)) : pick.res
+            const source = tables.some(t => t.source === "pyramid") ? "pyramid" : "d1"
+            const byYear = tables.some(t => t.byYear)
+            return {
+                kind: "cell", res, source,
+                reason: `${source} · ${pick.reason} · lean${byYear ? " by-year" : ""} · ${tables.length} tile${tables.length === 1 ? "" : "s"}`,
+                cellCount: leanData.length, shardCount: pick.cover.length,
+                fetchedBytes: leanState.bytes, wireBytes: leanState.wireBytes, cover: pick.cover,
+            } as const
+        })() : undefined
+        // Stale tiles (the set changed, new ones in flight) keep rendering, as
         // the row path does.
         if (leanState.status === "error") return { status: "error", error: leanState.error ?? "unknown", data: leanData, plan }
-        if (leanState.status === "ready" && leanState.url === leanUrl && plan) return { status: "ready", data: leanData, plan }
+        if (leanState.status === "ready" && leanState.key === leanKey && plan) return { status: "ready", data: leanData, plan }
         return { status: "loading", data: leanData.length > 0 ? leanData : undefined, plan }
     }
     if (state.status === "ready") return { status: "ready", data: state.data, plan: state.plan! }
