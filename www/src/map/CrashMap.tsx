@@ -21,7 +21,7 @@ import { SoftDiscLayer } from "./SoftDiscLayer"
 import { heatmapWeightsTextureSize } from "./picker"
 import { bakeDensity } from "./bakeDensity"
 import { useHeatTiles, type HeatTileFilter } from "./useHeatTiles"
-import { AttributionPopover, rasterStyle, severityRgba } from "./basemap"
+import { AttributionPopover, BasemapNotice, useBasemap, severityRgba } from "./basemap"
 import { useDeckMapCapture } from "@/src/feedback/glCapture"
 
 export type MapMode = "scatter" | "heatmap" | "bins"
@@ -997,7 +997,7 @@ export function CrashMap({
         setViewState({ longitude, latitude, zoom, pitch, bearing })
     }, [isPitchingRef])
 
-    const style = useMemo(() => rasterStyle(theme), [theme])
+    const { style, onError: onBasemapError, refused: basemapRefused } = useBasemap(theme)
     const allLayers = useMemo(
         () => [...layers, ...(hoverOutlineLayer ? [hoverOutlineLayer] : []), ...(extraLayers ?? [])],
         [layers, hoverOutlineLayer, extraLayers],
@@ -1022,6 +1022,7 @@ export function CrashMap({
                 <MapGl
                     ref={mapRef}
                     mapStyle={style}
+                    onError={onBasemapError}
                     maxPitch={MAX_PITCH}
                     minZoom={0}
                     maxZoom={20}
@@ -1041,6 +1042,7 @@ export function CrashMap({
             )}
             {hoverInfo?.object && mode !== "heatmap" && <CrashTooltip info={hoverInfo} />}
             <AttributionPopover theme={theme} />
+            <BasemapNotice refused={basemapRefused} theme={theme} />
         </div>
     )
 }

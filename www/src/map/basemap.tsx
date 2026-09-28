@@ -1,6 +1,6 @@
 /** Basemap style + severity palette shared by the full crash map (`CrashMap`) and the small
  *  embedded maps (`MiniMap`: crash detail page, road page). */
-import React, { useState } from "react"
+import React, { useCallback, useMemo, useRef, useState } from "react"
 
 export type Severity = "f" | "i" | "p"
 export type Rgb = [number, number, number]
@@ -18,21 +18,74 @@ const STADIA_TOKEN = import.meta.env.DEV
     ? ((import.meta.env.VITE_STADIA_TOKEN as string | undefined) || "")
     : ""
 
+export const BASEMAP_SOURCE = "stadia"
+
 export function rasterStyle(theme: "light" | "dark"): any {
     const slug = theme === "dark" ? "alidade_smooth_dark" : "alidade_smooth"
     const key = STADIA_TOKEN ? `?api_key=${STADIA_TOKEN}` : ""
     return {
         version: 8,
         sources: {
-            stadia: {
+            [BASEMAP_SOURCE]: {
                 type: "raster",
                 tiles: [`https://tiles.stadiamaps.com/tiles/${slug}/{z}/{x}/{y}@2x.png${key}`],
                 tileSize: 256,
                 attribution: STADIA_ATTRIBUTION,
             },
         },
-        layers: [{ id: "stadia", type: "raster", source: "stadia" }],
+        layers: [{ id: BASEMAP_SOURCE, type: "raster", source: BASEMAP_SOURCE }],
     }
+}
+
+/** The HTTP status of a MapLibre `error` event if it's a basemap tile the server *refused*
+ *  (401/403), else `null`. Stadia's browser domain auth answers an unregistered host (e.g. a
+ *  `*.workers.dev` preview) with 401 on every tile; MapLibre just logs each one, leaving a blank
+ *  map under the deck.gl layers. */
+export function basemapAuthStatus(e: { error?: unknown; sourceId?: string }): number | null {
+    if (e.sourceId !== undefined && e.sourceId !== BASEMAP_SOURCE) return null
+    const status = (e.error as { status?: unknown } | undefined)?.status
+    return status === 401 || status === 403 ? status : null
+}
+
+/** Basemap style for `theme`, plus an `onError` for `<Map>` that records a refused basemap
+ *  (see `basemapAuthStatus`) so the map can say so instead of silently rendering blank. */
+export function useBasemap(theme: "light" | "dark") {
+    const style = useMemo(() => rasterStyle(theme), [theme])
+    const [refused, setRefused] = useState<number | null>(null)
+    const warned = useRef(false)
+    const onError = useCallback((e: { error?: unknown; sourceId?: string }) => {
+        const status = basemapAuthStatus(e)
+        if (status === null) return
+        if (!warned.current) {
+            warned.current = true
+            console.warn(
+                `Basemap tiles refused (HTTP ${status}): Stadia doesn't authorize "${location.hostname}". ` +
+                `Add it to the property's domains in the Stadia dashboard (client.stadiamaps.com).`,
+            )
+        }
+        setRefused(status)
+    }, [])
+    return { style, onError, refused }
+}
+
+/** Visible notice for a refused basemap (see `useBasemap`), bottom-left beside the ⓘ badge. */
+export function BasemapNotice({ refused, theme }: { refused: number | null; theme: "light" | "dark" }) {
+    if (refused === null) return null
+    return (
+        <div
+            role="status"
+            style={{
+                position: "absolute", bottom: 8, left: 34, zIndex: 50,
+                background: theme === "dark" ? "rgba(30,30,30,0.9)" : "rgba(255,255,255,0.9)",
+                color: theme === "dark" ? "#f0b0a0" : "#a03020",
+                border: `1px solid ${theme === "dark" ? "#444" : "#ccc"}`, borderRadius: 4,
+                padding: "1px 6px", fontSize: "0.72em", lineHeight: "18px", whiteSpace: "nowrap",
+                pointerEvents: "none",
+            }}
+        >
+            Basemap unavailable: tile server refused this site ({refused})
+        </div>
+    )
 }
 
 export const SEVERITY_COLOR: Record<Severity, Rgb> = {
