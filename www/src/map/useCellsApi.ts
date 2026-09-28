@@ -719,22 +719,25 @@ export function useCellsApi(filter: CellsApiFilter | null, opts?: { prefetchAdja
     // the worker's `group_year` capability the URL is independent of the
     // year / severity filter, which is applied by `aggregateLean` below.
     const groupYear = !!manifest?.capabilities?.includes("group_year")
+    // Filter-dependent part of the lean URL, as a string so the memo below
+    // only re-runs when it actually changes (under `group_year`, not at all
+    // across year sub-ranges / severities).
+    const leanQs = lean && filter && manifest
+        ? new URLSearchParams(leanParams(groupYear, filter.yearRange, manifest.year_range, filter.severities)).toString()
+        : null
     const leanUrl = useMemo<string | null>(() => {
-        if (!lean || !filter || !pick || !manifest) return null
+        if (!leanQs || !filter || !pick) return null
         const params = new URLSearchParams({
             cells: pick.cover.map(c => c.cellid).join(","),
             res: String(pick.res),
             shard_res: String(pick.cover[0].shard_res),
             grid: "s2",
             maxCells: String(filter.maxCells ?? CELLS_MAX),
-            ...leanParams(groupYear, filter.yearRange, manifest.year_range, filter.severities),
         })
         if (polygonStr) params.set("polygon", polygonStr)
-        return `${CELLS_API_BASE}/v1/cells?${params}`
+        return `${CELLS_API_BASE}/v1/cells?${params}&${leanQs}`
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [lean, pick?.res, pick?.cover, polygonStr, manifest, groupYear, filter?.maxCells,
-        // Only part of the URL without `group_year`.
-        groupYear ? null : filter?.yearRange, groupYear ? null : filter?.severities])
+    }, [leanQs, pick?.res, pick?.cover, polygonStr, filter?.maxCells])
 
     const [leanState, setLeanState] = useState<{
         url: string | null

@@ -21,6 +21,13 @@ describe("leanParams", () => {
         expect(leanParams(true, [2020, 2020], full, new Set(["p", "i"]))).toEqual(p)
     })
 
+    it("group_year but a full-range filter: the plain (D1-servable) request", () => {
+        expect(leanParams(true, [2001, 2026], full, new Set(["i", "f", "p"]))).toEqual({
+            labels: "nums", format: "cols", fields: "n_fatal,n_inj_ped,n_inj_other,n_pdo",
+            years: "2001-2026", severities: "fip",
+        })
+    })
+
     it("without group_year: the filter's years + severities (canonical order)", () => {
         expect(leanParams(false, years, full, new Set(["p", "f"]))).toEqual({
             labels: "nums", format: "cols", fields: "n_fatal,n_inj_ped,n_inj_other,n_pdo",
