@@ -216,6 +216,7 @@ async function summarizeProfile(prof) {
         "parquet reads": ["readRows", "parquetReadObjects"],
         "lean decode/aggregate": ["decodeLean", "aggregateLean", "aggregateLeanTables"],
         "JSON.parse": ["parse"],
+        "heat C bake": ["splatDensity", "colorizeDensity", "densityQuantile"],
     }
     const incl = Object.fromEntries(Object.keys(INCL).map(k => [k, 0]))
     for (let i = 0; i < prof.samples.length; i++) {

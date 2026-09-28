@@ -9,7 +9,7 @@ import { Map as MapGl, type MapRef } from "react-map-gl/maplibre"
 import "./maplibreWorker"
 import "maplibre-gl/dist/maplibre-gl.css"
 import DeckGL from "@deck.gl/react"
-import { GeoJsonLayer, ScatterplotLayer, BitmapLayer } from "@deck.gl/layers"
+import { GeoJsonLayer, ScatterplotLayer } from "@deck.gl/layers"
 import { HeatmapLayer } from "@deck.gl/aggregation-layers"
 import type { PickingInfo } from "@deck.gl/core"
 import type { Feature, FeatureCollection } from "geojson"
@@ -20,7 +20,6 @@ import { sampleColormap, type ColormapName } from "./colormap"
 import { SoftDiscLayer } from "./SoftDiscLayer"
 import { PrimedHeatmapLayer } from "./PrimedHeatmapLayer"
 import { heatmapWeightsTextureSize } from "./picker"
-import { bakeDensity } from "./bakeDensity"
 import { useHeatTiles, type HeatTileFilter } from "./useHeatTiles"
 import { AttributionPopover, BasemapNotice, useBasemap, severityRgba } from "./basemap"
 import { useDeckMapCapture } from "@/src/feedback/glCapture"
@@ -36,11 +35,13 @@ export function isTouchEvent(e: Event | undefined | null): boolean {
 export type MapMode = "scatter" | "heatmap" | "bins"
 
 /** Density-render strategy for `mode="heatmap"` (URL param `?hr=`). See
- *  `specs/map-heatmap-render-strategies.md`.
- *  - `legacy`: deck.gl `HeatmapLayer` (per-frame KDE; the slow baseline).
- *  - `b`: direct cell geometry — colormapped filled discs, no per-frame
- *    aggregation. (A/C not yet implemented; they fall through to legacy.) */
-export type HeatRender = "legacy" | "b" | "a" | "c"
+ *  `specs/map-heatmap-render-strategies.md` and `specs/map-mobile-perf.md` § Round 3.
+ *  - `c` (default): mercator tiles of baked KDE surfaces over fine cells (`useHeatTiles`).
+ *  - `legacy`: deck.gl `HeatmapLayer` over cell centers.
+ *  - `b`: direct cell geometry — colormapped soft discs, no per-frame aggregation.
+ *  (`a`, one KDE image baked over the fetched cells, was dropped: C is its tiled successor.) */
+export type HeatRender = "legacy" | "b" | "c"
+export const HEAT_RENDER_DEFAULT: HeatRender = "c"
 
 export type Crash = {
     dt: Date | number
@@ -122,6 +123,8 @@ export type Props = {
     onMapHover?: (lngLat: [number, number] | null) => void
     /** Layers drawn on top of the map's own (e.g. road highlight/selection). */
     extraLayers?: any[]
+    /** Layers drawn under the map's own, just above the basemap (e.g. the hoverable roads). */
+    underLayers?: any[]
     /** Pause drag-panning (e.g. while the pointer is on a draggable handle in `extraLayers`). */
     freezePan?: boolean
     /** Render the internal PitchSlider / CellControls corner widgets.
@@ -129,7 +132,7 @@ export type Props = {
     showInternalControls?: boolean
     mode?: MapMode
     /** Density-render strategy within `mode="heatmap"` (URL `?hr=`). Ignored
-     *  in other modes. Defaults to `"legacy"`. */
+     *  in other modes. Defaults to `HEAT_RENDER_DEFAULT`. */
     heatRender?: HeatRender
     /** Filter (years/severities/geo) for strategy C's per-tile fetches, which
      *  bypass `prebinnedCells` and query `/v1/cells` per tile. Only needed when
@@ -191,7 +194,7 @@ const HEAT_W_PDO = 1
 const POINT_MIN_PX = 2
 const POINT_MAX_PX = 22
 
-/** Colormap + tone curve shared by heatmap strategies B and A. */
+/** Colormap + tone curve shared by heatmap strategies B and C. */
 const HEAT_COLORMAP: ColormapName = "inferno"
 /** Density → colormap position uses a power scaling (t = (w/wmax)^γ, γ<1) so
  *  the heavy-tailed count distribution doesn't collapse everything but the
@@ -209,11 +212,6 @@ const HEAT_ALPHA_KNEE = 0.12
  *  the field reads continuous rather than as discrete circles. */
 const HEAT_B_RADIUS_FRAC = 1.3
 const HEAT_B_MIN_PX = 4
-
-/** Strategy A: KDE kernel σ as a fraction of the S2 cell edge (world meters),
- *  and the baked image's longest side in pixels. */
-const HEAT_A_SIGMA_FRAC = 0.9
-const HEAT_A_MAX_DIM = 1024
 
 /** Strategy C: target cell size (px) fed to the per-tile S2-level picker (C
  *  bakes each tile at device resolution, so ~1px cells give continuous
@@ -422,10 +420,11 @@ export function CrashMap({
     onMapClick,
     onMapHover,
     extraLayers,
+    underLayers,
     freezePan = false,
     showInternalControls = true,
     mode = "scatter",
-    heatRender = "legacy",
+    heatRender = HEAT_RENDER_DEFAULT,
     heatTileFilter,
     heatSigmaPx,
     heatCellPx,
@@ -792,28 +791,6 @@ export function CrashMap({
         updateTriggers: { getFillColor: [theme, hoverOutlineFill], getLineColor: [theme] },
     }) : null, [hoverOutline, hoverOutlineFill, theme])
 
-    // Strategy A bake: recompute the KDE image only when the cell set (or its
-    // level) changes — never on pan/zoom/opacity. Skipped unless heatmap+A.
-    const bakedDensity = useMemo(() => {
-        if (mode !== "heatmap" || heatRender !== "a" || !cells || cells.length === 0) return null
-        const res = dataRes ?? effectiveS2Level
-        const edge = S2_EDGE_METERS[res] ?? S2_EDGE_METERS[13]
-        const t0 = perfEnabled() ? performance.now() : 0
-        const baked = bakeDensity(cells, {
-            colormap: HEAT_COLORMAP,
-            sigmaMeters: edge * HEAT_A_SIGMA_FRAC,
-            gamma: HEAT_GAMMA,
-            alphaKnee: HEAT_ALPHA_KNEE,
-            weight: cellHeatWeight,
-            maxDim: HEAT_A_MAX_DIM,
-        })
-        if (perfEnabled() && baked) {
-            console.log(`[perf] bakeDensity: ${(performance.now() - t0).toFixed(1)}ms `
-                + `(${cells.length} cells → ${baked.width}×${baked.height})`)
-        }
-        return baked
-    }, [mode, heatRender, cells, dataRes, effectiveS2Level])
-
     const layers = useMemo(() => {
         const t0 = perfEnabled() ? performance.now() : 0
         const base: any[] = [...outlineLayers]
@@ -892,29 +869,13 @@ export function CrashMap({
                     }),
                 ]
             }
-            // Strategy A (`?hr=a`): a true continuous KDE baked to an image once
-            // per data-load (see `bakedDensity` memo + `bakeDensity.ts`), drawn
-            // as a `BitmapLayer` textured quad — so pan/zoom is a free redraw
-            // and the surface is silky with no cell grid. Re-bakes only when the
-            // cell set changes.
-            if (heatRender === "a") {
-                if (!bakedDensity) return base
-                return [...base,
-                    new BitmapLayer({
-                        id: "crashes-cell-heat-a",
-                        image: bakedDensity.image,
-                        bounds: bakedDensity.bounds,
-                        opacity: cellOpacity,
-                        pickable: false,
-                    }),
-                ]
-            }
-            // Legacy (`?hr` unset): continuous KDE surface over cell centroids,
+            // Legacy (`?hr=legacy`): continuous KDE surface over cell centroids,
             // weighted by severity. Summing pre-aggregated cell weights ==
             // summing the underlying points' weights, so SUM-over-centroids
             // reproduces the raw-point density up to the cell grid — and scales
-            // statewide, which a raw-point HeatmapLayer can't. Re-aggregates
-            // per frame, so pan/zoom is sluggish (the reason B/A exist).
+            // statewide, which a raw-point HeatmapLayer can't. Its Gaussian σ is
+            // `radiusPixels / 6` = 5 px, so cells much coarser than that show as a
+            // lattice of blobs at S2 cell centers (`HEAT_LEGACY_MIN_CELL_PX`).
             return [...base,
                 // `PrimedHeatmapLayer`: deck's first weight map after init is wrong (blank).
                 new PrimedHeatmapLayer<StackedCell>({
@@ -1003,7 +964,7 @@ export function CrashMap({
             console.log(`[perf] layers: ${ms.toFixed(1)}ms (mode=${mode}, segments=${segments.length})`)
         }
         return result
-    }, [cells, mode, heatRender, bakedDensity, heatTileLayers, effectiveS2Level, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, circleRadiusPx, cellOpacity, cellDesaturate, dataRes])
+    }, [cells, mode, heatRender, heatTileLayers, effectiveS2Level, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, circleRadiusPx, cellOpacity, cellDesaturate, dataRes])
 
     // Only bubble user-driven changes. DeckGL also echoes back programmatic
     // viewState updates (from the fit effect, mode-switch tilt, etc.) via
@@ -1026,8 +987,8 @@ export function CrashMap({
 
     const { style, onError: onBasemapError, refused: basemapRefused } = useBasemap(theme)
     const allLayers = useMemo(
-        () => [...layers, ...(hoverOutlineLayer ? [hoverOutlineLayer] : []), ...(extraLayers ?? [])],
-        [layers, hoverOutlineLayer, extraLayers],
+        () => [...(underLayers ?? []), ...layers, ...(hoverOutlineLayer ? [hoverOutlineLayer] : []), ...(extraLayers ?? [])],
+        [underLayers, layers, hoverOutlineLayer, extraLayers],
     )
 
     return (
