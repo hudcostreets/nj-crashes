@@ -114,9 +114,15 @@ describe("parseCellsRequest group", () => {
         expect(parse("format=cols&group=year").group).toBe("year")
     })
 
+    it("accepts max_rows with group=year", () => {
+        expect(parse("format=cols&group=year&max_rows=1000").maxRows).toBe(1000)
+    })
+
     it.each([
         ["group=year", "group requires format=cols"],
         ["format=cols&group=month", "group must be 'year'"],
+        ["format=cols&max_rows=10", "max_rows requires group=year"],
+        ["format=cols&group=year&max_rows=0", "max_rows must be a positive integer"],
     ])("rejects %s", (qs, msg) => {
         let err: HttpError | undefined
         try { parse(qs) } catch (e) { err = e as HttpError }

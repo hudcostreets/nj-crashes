@@ -31,7 +31,7 @@ import { bboxesIntersect, featureAt, featureBbox, fetchCounties, fetchCounty, fe
 import type { Bbox, MapManifestV2 } from "@/src/map/v2"
 import { fitBoundsToView, lerpView, metersPerPixel, HEAT_C_SIGMA_PX, HEAT_C_PX_TARGET, HEAT_C_FLOOR, HEAT_C_OPACITY } from "@/src/map/CrashMap"
 
-import { circleRadiusPx, cellPxTargetFor, pickRes as pickerPick, BINS_BUDGET } from "@/src/map/picker"
+import { circleRadiusPx, cellPxTargetFor, pickRes as pickerPick, BINS_BUDGET, HEAT_LEGACY_MIN_CELL_PX, maxCellsFor, viewportBinsBudget } from "@/src/map/picker"
 import {
     pickS2LevelForPixels, s2PickEdgeMeters,
     S2_EDGE_METERS, S2_MAX_LEVEL, S2_MIN_LEVEL, S2_PICK_MULT,
@@ -254,6 +254,14 @@ export function CrashMapSection({
     const [heatFloorUrl, setHeatFloorUrl] = useUrlState("hfl", optFloatParam({ encoding: "string" }), { debounce: 100 })
     const binsBudget = binsUrl ?? BINS_BUDGET
     void setBinsUrl
+    // Budget scaled to the viewport's size (phones get proportionally fewer,
+    // not equally many, cells — `viewportBinsBudget`), and the per-request
+    // `maxCells` backstop derived from it.
+    const viewportBudget = useMemo(() => {
+        const [vpw, vph] = viewportDims(fullScreen)
+        return viewportBinsBudget(vpw * vph, binsBudget)
+    }, [fullScreen, binsBudget])
+    const requestMaxCells = maxCellsFor(viewportBudget, CELLS_MAX)
     // `boolParam` default is `false`; we invert to keep the URL absent
     // when the user is on the default (auto=on). `?ha=1` when disabled.
     const cellAuto = !cellAutoUrl
@@ -400,8 +408,16 @@ export function CrashMapSection({
                 ? bboxRing(STATE_BBOX)
                 : undefined
         const areaPx = clippedAreaPx(vpw * vph, clipRing, effectiveView, vpw, vph)
-        return cellPxTargetFor(areaPx, binsBudget)
-    }, [cellAuto, manualCellPx, fullScreen, binsBudget, cc, mc, outline, muniOutline, effectiveView])
+        return cellPxTargetFor(areaPx, viewportBudget)
+    }, [cellAuto, manualCellPx, fullScreen, viewportBudget, cc, mc, outline, muniOutline, effectiveView])
+
+    // The level the *fetch* asks for. Legacy Heatmap draws a 30 px kernel, so
+    // cells under `HEAT_LEGACY_MIN_CELL_PX` are invisible detail; floor them
+    // there (Bins/Points and the baked A/B/C strategies are sized to the cell
+    // and keep the budgeted target).
+    const fetchCellPxTarget = mode === "heatmap" && heatRender === "legacy"
+        ? Math.max(cellPxTarget, HEAT_LEGACY_MIN_CELL_PX)
+        : cellPxTarget
 
     // Picker-state snapshot: current S2 level + adjacent levels (one
     // coarser, one finer) as clickable jump targets. Neighbors outside
@@ -480,10 +496,11 @@ export function CrashMapSection({
             viewport: filter.viewport,
             viewportLat: filter.viewportLat,
             zoom: filter.zoom,
-            cellPxTarget: filter.cellPxTarget,
+            cellPxTarget: fetchCellPxTarget,
             clipPolygon,
+            maxCells: requestMaxCells,
         }
-    }, [filter, cc, mc, outline, muniOutline])
+    }, [filter, cc, mc, outline, muniOutline, fetchCellPxTarget, requestMaxCells])
     // Strategy C (`?hr=c`) fetches per tile from its own bbox, so it needs only
     // the year/severity filter (not the viewport — the tile hook derives that).
     // `clipPolygon` is carried for a later county/muni clip; C currently fetches
@@ -496,7 +513,10 @@ export function CrashMapSection({
     }), [yearRange, severities, cc, mc, outline, muniOutline])
     // Adjacent-level prefetch only helps Bins, where zoom crosses S2 levels.
     // Heatmap/Points don't benefit (and it wastes a level's fetch), so gate it.
-    const apiResult = useCellsApi(apiFilter, { prefetchAdjacentLevels: mode === "bins" })
+    // Heatmap never shows a cell tooltip, so it takes the lean fetch: counts
+    // only, and (worker permitting) all years + severities in one response so
+    // filter changes don't refetch. Strategy C self-fetches per tile.
+    const apiResult = useCellsApi(apiFilter, { prefetchAdjacentLevels: mode === "bins", lean: mode === "heatmap" })
     const result = useMemo(() => {
         // Adapt the cells-api result into the shape consumers below expect.
         // `manifest` is the standalone v2-manifest state (loaded above for
@@ -1117,7 +1137,7 @@ export function CrashMapSection({
                             currentRes={pickerInfo?.levels.find(l => l.isCurrent)?.res ?? s2Level ?? S2_FALLBACK_LEVEL}
                             s2Level={s2Level}
                             viewportAreaPx={(() => { const [w, h] = viewportDims(fullScreen); return w * h })()}
-                            budget={binsBudget}
+                            budget={viewportBudget}
                             fetched={result.status === "ready" && result.plan?.kind === "cell" ? result.plan.cellCount : undefined}
                             fetchedBytes={result.status === "ready" && result.plan?.kind === "cell" ? result.plan.fetchedBytes : undefined}
                             inViewport={renderCells?.cells.length}

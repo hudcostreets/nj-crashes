@@ -228,6 +228,9 @@ export type CellsRequest = {
     /** `format=cols` only: `year` ⇒ `CellsColsYearResponse` (per-year rows,
      *  always served from the parquet pyramid, which has them). */
     group?: "year"
+    /** `group=year` only: ceiling on (cell, year) rows; the worker coarsens
+     *  (like `maxCells`) until the response fits. */
+    maxRows?: number
 }
 
 /** Capabilities this worker advertises on `/v1/manifest` (`capabilities`),
@@ -248,6 +251,10 @@ export function cellsCacheKey(url: URL, dataVersion: string): string {
     params.push(["__dv", dataVersion])
     return `${url.origin}${url.pathname}?${new URLSearchParams(params)}`
 }
+
+/** Default `group=year` row ceiling: ~12 B/row of JSON ⇒ ~3 MB decoded
+ *  (~0.4 MB brotli) worst case. */
+export const DEFAULT_MAX_YEAR_ROWS = 250_000
 
 /** Default `labelMaxCells`. ~20k cells × ~90 B/cell ≈ 1.8 MB of labels
  *  worst case, and it lands above the muni/street views (0.5-10k cells)
@@ -502,7 +509,14 @@ async function queryCellsByYear(
     }
     let level = req.res
     const t0 = Date.now()
-    while (req.maxCells != null && cells.size > req.maxCells && level > S2_MIN_LEVEL) {
+    const rowCount = (m: Map<string, YearCounts>) => { let n = 0; for (const ys of m.values()) n += ys.size; return n }
+    // Coarsen on distinct cells (as `queryCells`) *and* on (cell, year) rows:
+    // a wide dense view is up to ~25 rows per cell, so `maxCells` alone
+    // doesn't bound the payload.
+    while (level > S2_MIN_LEVEL && (
+        (req.maxCells != null && cells.size > req.maxCells)
+        || rowCount(cells) > (req.maxRows ?? DEFAULT_MAX_YEAR_ROWS)
+    )) {
         level--
         cells = coarsenYearCells(cells, level)
     }
@@ -1078,5 +1092,14 @@ export function parseCellsRequest(url: URL): CellsRequest {
         if (format !== "cols") throw new HttpError(400, "group requires format=cols")
         group = gp
     }
-    return { cells, res, yearRange, severities, clipPolygon, maxCells, shardRes, labels, labelMaxCells, format, fields, group }
+
+    let maxRows: number | undefined
+    const mr = url.searchParams.get("max_rows")
+    if (mr != null) {
+        const n = parseInt(mr, 10)
+        if (!Number.isFinite(n) || n <= 0) throw new HttpError(400, "max_rows must be a positive integer")
+        if (group !== "year") throw new HttpError(400, "max_rows requires group=year")
+        maxRows = n
+    }
+    return { cells, res, yearRange, severities, clipPolygon, maxCells, shardRes, labels, labelMaxCells, format, fields, group, maxRows }
 }
