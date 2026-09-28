@@ -133,5 +133,61 @@ Recommended: **worker first** (`cells-api` `--env dev`, then prod), then the FE 
 - Numbers are M4-GPU / CPU-throttled emulation; confirm on a real mid-range Android (the texture cut is 16× in the GPU-bound path regardless).
 - Basemap on `*.hccs-ctbk.workers.dev`: add the host in the Stadia dashboard (see 6).
 
+## Round 2: interaction lag (pan / zoom / hover), 2026-09-28
+
+Status: **implemented on branch `map-interaction-perf`, not deployed.** FE-only (no worker change), so no deploy-order constraint.
+
+### Report
+
+On [`dev.crashes.hccs.dev/map?llz=40.7213-74.0810+14.5+0+0&mode=heatmap&y=2011-2013`][dev-view-2], desktop Chrome and an Android phone: panning / zooming "still very slow"; road hover highlights laggy; hovering washed the whole view out with the Jersey City highlight; DevTools showed repeated `road-entities.parquet` reads and a 1.8 s, 137 KB `/v1/cells` request; console `luma.gl: Binding weightsTexture not set: Not found in shader layout.`
+
+### Method
+
+[`www/scripts/interaction-perf.mjs`][iperf]: headful Playwright Chromium on the real GPU (M4, ANGLE/Metal), against unminified `--sourcemap` builds of the base commit and the branch (`vite preview`, `VITE_CELLS_API_BASE=https://crashes-cells-dev.hccs.dev`). Desktop 1440×900 @2, phone 390×844 @2.75 with 4× CPU throttle. Steps: load; a 1 s drag (60 moves at 16 ms) horizontally and vertically; a trackpad-like wheel zoom in and out (20 deltas at 16 ms); a 240-move road-hover sweep across the street grid (desktop); a year change. Per step: rAF frame intervals *during* the interaction, long tasks, React commits (a minimal `__REACT_DEVTOOLS_GLOBAL_HOOK__`), heatmap weight-map re-renders (new `?perf=1` counter on `HeatmapLayer._updateWeightmap`), requests by kind, `/v1/cells` Server-Timing, and a CDP CPU profile summarized as inclusive time under named functions + self time per npm package (via the source maps). macOS swap was 0 MB for every reported step.
+
+### Root causes
+
+1. **The heatmap re-aggregated on every rendered frame** (the dominant cost). `CrashMapSection` re-clipped the fetched cells to the viewport in a memo keyed on the per-frame viewport (and on the per-render `result` object), so every pan frame — and every hover, which re-renders the section — gave deck.gl a new `data` array. deck.gl treats that as a data change: all attributes recomputed on the CPU, and the legacy `HeatmapLayer` re-splats its weights texture and re-runs the max-reduction pass (one point per texel: 1M points at 1024²) — i.e. the per-pan GPU cost round 1 tried to bound by texture size was paid on *every frame*, not just when the pan left the texture's bounds. Counted: **62-67 weight-map renders per 1 s pan, 24-33 per wheel zoom, 170 per hover sweep**. On the M4 desktop that pinned pan frames at **p50 60 ms** (points / `hr=b` over the same data: 20 ms), and delayed input so much that the 1 s drag took 5 s to replay; on a phone GPU it's worse. (Phone emulation on the M4 GPU shows smooth frames even before — the 512² texture is cheap there — but the CPU side still shows it: `deck layer updates` 274 ms → 74 ms per pan.)
+2. **Hover did a parquet read per road.** `HoverDrawer` → `fetchEntity` read `road-entities` per entity (a ~65 KB, 1000-row group, zstd-decoded each time: `fzstd` + `hyparquet` 100+ ms of a sweep), i.e. the repeated disk-cache hits in the user's DevTools. Each hover also re-rendered the whole section (→ cause 1).
+3. **Pans refetched the whole snapped viewport** (one `/v1/cells` for a 1.5-2× bbox; the user's 1.8 s / 137 KB request was a cold edge-cache miss) after a 500 ms debounce.
+4. **Area highlight**: the hovered muni is drawn whenever the cursor is inside it; at street zoom that's the whole viewport.
+5. `luma.gl: Binding weightsTexture not set` is **benign**: deck.gl 9.3's `HeatmapLayer` sets a `weightsTexture` binding on the weights-pass shader's uniform module, but that pass *renders into* `weightsTexture` (its shader only has a varying of that name), so luma finds no sampler to bind. No extra pass; it logs once. Upstream quirk, not fixable here.
+
+### Fixes
+
+- `stableClip.ts`: the clip is cut to the viewport padded by ½ on each side and **keeps its array identity** until the viewport leaves that window or the data changes. Weight-map renders: 62-170 → **0-3 per interaction**.
+- **Tiled lean fetch** (`leanCells.viewportTiles`, `useCellsApi`): Heatmap requests one `/v1/cells` per power-of-two grid tile (side ∈ (span/2, span], ≤ 1°: 1-4 tiles per view), each clipped to the scope polygon. A pan only fetches tiles it newly reaches (the test pans: 0-2 requests, often 0), tile URLs are identical for every user (edge-cache friendly), tiles are cached per URL (LRU 256) with a per-table aggregation memo (`aggregateLeanTables`), and the swap to a new tile set is atomic (stale tiles render meanwhile). The fetch fires once the view has held still 250 ms (was: 500 ms after each URL change, so a wheel zoom's intermediate levels each fired a round). Cold tiles: 0.3-1.5 s each, in parallel (cold union bbox: 1.7 s); warm: 25-60 ms.
+- **Road hover**: `road-entities` rows are cached per row group (`readRows(..., { wholeGroups: true })`, `peekEntity`), and the groups for the roads in view are prefetched (`prefetchEntities`, ≤ 4 groups). Hover summaries then render synchronously (no 150 ms wait, no read): road-entities requests per sweep **25-30 → 0**. `sameRoad` keeps the previous hovered point while the cursor stays on one road, so moving along it doesn't re-render.
+- **Area highlight rule** (`boundaries.areaHighlightShown`): the hovered muni / county is not drawn when its bbox covers ≥ 85% of the viewport *and* is ≥ 1.5× the viewport's area — i.e. zoomed in inside it. An area that fits the view or only partly overlaps it still highlights; the hover drawer still names it. Jersey City at z14.5: hidden on desktop and phone; at z12.5, and Hoboken at z14.5: shown.
+
+### Before / after
+
+`before` = base `df3f79791ab`, `after` = this branch; same dev worker. Frames = rAF interval during the interaction (20 ms ≈ idle vsync here), `wm` = heatmap weight-map renders.
+
+| step | before: frames p50/p95/max · wm · replay time | after: frames p50/p95/max · wm · replay time |
+|---|---|---|
+| desktop pan-x (1 s drag) | **60/100/181** · 62 · 5.1 s | **20/21/21** · 1 · 2.4 s |
+| desktop pan-y | 61/100/140 · 63 · 5.0 s | 20/21/21 · 0 · 2.4 s |
+| desktop zoom-in (wheel) | 21/81/100 · 33 · 2.4 s | 20/21/21 · 1 · 0.8 s |
+| desktop zoom-out | 21/81/101 · 28 · 2.1 s | 20/21/60 · 3 · 0.9 s |
+| desktop hover sweep | **39/120/161** · 170 · 14.3 s · 30 road-entities reads | **20/21/21** · 0 · 4.9 s · 0 reads |
+| phone pan-x (4× CPU) | 20/21/60 · 67 · CPU busy 2.0 s | 20/21/40 · 3 · CPU busy 1.6 s |
+| phone pan-y | 20/21/21 · 63 · busy 1.5 s | 20/21/21 · 3 · busy 1.3 s |
+| phone zoom-in | 20/21/21 · 24 · settle 1.4 s | 20/21/21 · 1 · settle 1.1 s |
+| year change (both) | 0 requests | 0 requests |
+
+CPU attribution, desktop 1 s pan (inclusive ms): deck frame 124 → 69, deck layer updates 86 → 29, heatmap weight-map 16 → 1; maplibre render ~180-200 both (now the largest main-thread item). Hover sweep: deck frame 314 → 150, layer updates 192 → 45, parquet reads 35 → 0, `nearestRoad` 23-33 (≈0.1 ms per move). Phone pan: deck frame 418 → 212, layer updates 274 → 74, weight-map 65 → 4. No long tasks during any interaction, before or after.
+
+### What's left
+
+- Real-device GPU numbers: the M4 hides GPU cost (SwiftShader at DPR 2 was too slow overall to separate layers). The remaining per-frame GPU work is maplibre's raster basemap (`@2x` tiles) + deck's draw; the heatmap now re-aggregates only when a pan leaves the texture's bounds (texture covers 2× its size in CSS px: phone 512² → 1024 px, so ~90 px of vertical slack on a 844 px-tall phone — a larger texture trades rarer re-aggregations for costlier ones).
+- Each hover still re-renders `CrashMapSection` (~0.3 ms/move on desktop); hover state could move into a small store so only the drawer and road layers re-render.
+- `maplibre` is now the top main-thread cost during pans (~180 ms/s desktop, ~500 ms/s phone @4×).
+- Bins / Points still use the single snapped-bbox row fetch (they need labels); they'd benefit from the same tiling.
+- Cold tile latency is dominated by the worker's per-isolate footer read (200-480 ms) and R2 GETs; the edge cache makes repeats 25-60 ms.
+
+[dev-view-2]: https://dev.crashes.hccs.dev/map?llz=40.7213-74.0810+14.5+0+0&mode=heatmap&y=2011-2013
+[iperf]: ../www/scripts/interaction-perf.mjs
+
 [dev-view]: https://crashes-www-dev.hccs-ctbk.workers.dev/map?llz=40.7213-74.0810+14.5+0+0&mode=heatmap&y=2011-2013
 [perf-script]: ../www/scripts/mobile-perf.mjs
