@@ -24,6 +24,56 @@ import { pickS2LevelForPixels, S2_MIN_TARGET_PX, S2_TARGET_FACTOR } from "./s2"
  *  param overrides for A/B eval. See `specs/autores-bins-budget.md`. */
 export const BINS_BUDGET = 100000
 
+/** Viewport area (CSS px²) at or above which the full `BINS_BUDGET` applies:
+ *  the 1280×480 embed the budget was tuned on, so every desktop view (embed
+ *  or full-screen) keeps its current pick. Smaller viewports — phones — get
+ *  a proportionally smaller budget (see `viewportBinsBudget`). */
+export const BUDGET_REF_AREA_PX = 1280 * 480
+
+/** Bins budget for a viewport of `viewportAreaPx` CSS px².
+ *
+ *  `autoCellPxTarget` sizes cells as `√(area / budget)`, so a *fixed* budget
+ *  means a fixed cell *count*: a 390×844 phone was asked for the same ~100k
+ *  cells as a desktop, i.e. ~1.4 px cells (l19 at z14.5 in Jersey City,
+ *  ~450 KB of JSON per view) — finer than a finger, a column, or a heatmap
+ *  kernel can show. Scaling the budget with area below `BUDGET_REF_AREA_PX`
+ *  holds on-screen cell *size* at the reference embed's instead; views at
+ *  or above the reference are unchanged. */
+export function viewportBinsBudget(viewportAreaPx: number, budget: number = BINS_BUDGET): number {
+    return Math.round(budget * Math.min(1, viewportAreaPx / BUDGET_REF_AREA_PX))
+}
+
+/** Per-request `maxCells` backstop for a bins budget: 1.5× the target (the
+ *  picker aims *at* `budget`; this only trips when reality overshoots it),
+ *  floored so tiny viewports keep headroom, capped at the global ceiling
+ *  (`useCellsApi.CELLS_MAX`). */
+export function maxCellsFor(budget: number, ceiling: number): number {
+    return Math.min(ceiling, Math.max(20_000, Math.round(1.5 * budget)))
+}
+
+/** Heatmap (legacy `HeatmapLayer`) minimum cell size in CSS px. Its kernel
+ *  is `radiusPixels = 30`, so cells finer than ~1/6 of that are smoothed
+ *  away — they cost fetch, decode, and GPU splats without changing the
+ *  image. At z14.5 this moves a phone from l19 (~3 px) to l18 (~6 px): 4×
+ *  fewer cells. */
+export const HEAT_LEGACY_MIN_CELL_PX = 5
+
+/** `HeatmapLayer.weightsTextureSize` for a `width × height` CSS-px map.
+ *
+ *  deck.gl's default is a fixed 2048² float texture, re-rendered (every point
+ *  splatted with additive blending, then a max-reduction pass that treats
+ *  each of the 4M texels as a point) whenever a pan leaves its bounds or the
+ *  zoom changes. That was 330-670 ms per pan on an M4 GPU in the phone
+ *  harness — seconds on a mid-range Android GPU. The surface is a 30 px
+ *  kernel, so ~½ texel per CSS px is visually lossless: next power of two ≥
+ *  half the longer side, in [256, 2048]. Phone (844 px) → 512 (16× fewer
+ *  texels); 1480 px desktop → 1024. */
+export function heatmapWeightsTextureSize(width: number, height: number): number {
+    const target = Math.max(width, height) / 2
+    const p = 2 ** Math.ceil(Math.log2(Math.max(1, target)))
+    return Math.min(2048, Math.max(256, p))
+}
+
 /** Target dot-radius (px) — smooth monotone curve in zoom.
  *  At z=7 (whole-NJ): ~1.2px dots (dense field). At z=17 (street-level):
  *  ~5px (hoverable). Exponent chosen so this grows slower than a cell's
