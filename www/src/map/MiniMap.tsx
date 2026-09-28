@@ -1,13 +1,13 @@
 /** Small embedded map (crash detail page, road page): the same MapLibre + Stadia basemap and
  *  deck.gl overlay as `CrashMap`, minus its modes/controls. Top-down; scroll-wheel zoom is off so
  *  the page still scrolls over it (drag / pinch / double-click / the ± buttons zoom). */
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react"
+import React, { useCallback, useLayoutEffect, useRef, useState } from "react"
 import { Map as MapGl, type MapRef } from "react-map-gl/maplibre"
 import "./maplibreWorker"
 import "maplibre-gl/dist/maplibre-gl.css"
 import DeckGL from "@deck.gl/react"
 import { WebMercatorViewport, type PickingInfo } from "@deck.gl/core"
-import { AttributionPopover, rasterStyle } from "./basemap"
+import { AttributionPopover, BasemapNotice, useBasemap } from "./basemap"
 import { useDeckMapCapture } from "@/src/feedback/glCapture"
 
 export type MiniView = { longitude: number; latitude: number; zoom: number }
@@ -55,7 +55,7 @@ export default function MiniMap({ height, theme, center, bounds, layers, onHover
         setView(v)
     }, [boundsKey, center?.latitude, center?.longitude, center?.zoom, height])
 
-    const style = useMemo(() => rasterStyle(theme), [theme])
+    const { style, onError: onBasemapError, refused: basemapRefused } = useBasemap(theme)
     const zoomBy = useCallback((dz: number) => setView(v => v && { ...v, zoom: Math.max(0, Math.min(MAX_ZOOM, v.zoom + dz)) }), [])
     const border = theme === "dark" ? "#444" : "#ccc"
     const btn: React.CSSProperties = {
@@ -78,7 +78,7 @@ export default function MiniMap({ height, theme, center, bounds, layers, onHover
                     getCursor={({ isDragging }) => (isDragging ? "grabbing" : hovering ? "pointer" : "grab")}
                     style={{ position: "absolute", inset: "0" }}
                 >
-                    <MapGl ref={mapRef} mapStyle={style} maxZoom={MAX_ZOOM} attributionControl={false} />
+                    <MapGl ref={mapRef} mapStyle={style} onError={onBasemapError} maxZoom={MAX_ZOOM} attributionControl={false} />
                 </DeckGL>
             )}
             <div style={{ position: "absolute", top: 8, right: 8, zIndex: 5, display: "flex", flexDirection: "column", gap: 4 }}>
@@ -88,6 +88,7 @@ export default function MiniMap({ height, theme, center, bounds, layers, onHover
             </div>
             {children}
             <AttributionPopover theme={theme} />
+            <BasemapNotice refused={basemapRefused} theme={theme} />
         </div>
     )
 }
