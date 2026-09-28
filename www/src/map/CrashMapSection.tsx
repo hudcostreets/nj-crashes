@@ -21,6 +21,7 @@ import { useQueries, useQuery } from "@tanstack/react-query"
 import { FiMaximize2, FiMinimize2, FiHome } from "react-icons/fi"
 import useSessionStorageState from "use-session-storage-state"
 import { useToolboxOpen } from "@/src/map/useToolboxOpen"
+import { mapChrome } from "@/src/map/mapChrome"
 import { useMapActions } from "@/src/map/useMapActions"
 import { useRoadSelection } from "@/src/map/roads/useRoadSelection"
 import { useRoadSearch } from "@/src/map/roads/useRoadSearch"
@@ -272,7 +273,11 @@ export function CrashMapSection({
     const setCellPxTarget = (v: number) => setCellPxTargetUrl(v === 1.7 ? null : v)
     // Drawer defaults open on the full-screen route (room to spare) and
     // closed in the embed (don't occlude the small panel on first paint).
-    const [drawerOpen, setDrawerOpen] = useToolboxOpen(fullScreen)
+    // Narrow full-screen maps (phones) start with the drawer closed — open, it
+    // covers most of the map (`mapChrome`).
+    const [drawerOpen, setDrawerOpen] = useToolboxOpen(
+        fullScreen && (typeof window === "undefined" || mapChrome(window.innerWidth, 0).drawerDefaultOpen),
+    )
     const [debugOpen, setDebugOpen] = useSessionStorageState<boolean>("hccs.crashmap.debugOpen", { defaultValue: false })
     // Picker-threshold knobs (debug section). SS-persisted so a debugging
     // session survives page reloads. Defaults match `pickFetchPlanV2`.
@@ -748,6 +753,22 @@ export function CrashMapSection({
     // threshold, treat it as a click and close. Otherwise it was a pan
     // and we leave the drawer open.
     const wrapRef = useRef<HTMLDivElement | null>(null)
+    // Map width + title-pill height drive the overlay layout (`mapChrome`).
+    const titleRef = useRef<HTMLDivElement | null>(null)
+    const [wrapWidth, setWrapWidth] = useState(() => typeof window === "undefined" ? 1280 : window.innerWidth)
+    const [titleHeight, setTitleHeight] = useState(26)
+    useEffect(() => {
+        const wrap = wrapRef.current, title = titleRef.current
+        if (!wrap) return
+        const ro = new ResizeObserver(() => {
+            setWrapWidth(wrap.clientWidth)
+            if (title) setTitleHeight(title.offsetHeight)
+        })
+        ro.observe(wrap)
+        if (title) ro.observe(title)
+        return () => ro.disconnect()
+    }, [fullScreen])
+    const chrome = fullScreen ? mapChrome(wrapWidth, titleHeight) : null
     const drawerRef = useRef<HTMLDivElement | null>(null)
     // Alt/Option+wheel over the map steps a selected road's scope instead of zooming: a capture
     // listener, so the map's controller never sees the event.
@@ -878,15 +899,17 @@ export function CrashMapSection({
                 resize: "vertical", minHeight: 240, maxHeight: 1200,
             }}
         >
-            {fullScreen && (
-                <div style={{
-                    position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)",
+            {fullScreen && chrome && (
+                <div ref={titleRef} style={{
+                    position: "absolute", top: 8,
+                    ...(chrome.title.centered
+                        ? { left: "50%", transform: "translateX(-50%)", maxWidth: "calc(100% - 16px)" }
+                        : { left: chrome.title.left, right: chrome.title.right }),
                     zIndex: 50, background: bg, color: fg,
                     padding: "3px 10px", borderRadius: 4,
                     border: `1px solid ${actualTheme === "dark" ? "#444" : "#ccc"}`,
                     display: "flex", flexWrap: "wrap", alignItems: "center",
                     justifyContent: "center", gap: 6, fontSize: "0.8em",
-                    maxWidth: "calc(100% - 16px)",
                 }}>
                     {headerInner}
                 </div>
@@ -993,10 +1016,10 @@ export function CrashMapSection({
             )}
             {drawerOpen && (
             <div ref={drawerRef} style={{
-                position: "absolute", top: 8, right: 8, background: bg, color: fg,
+                position: "absolute", top: chrome?.drawerTop ?? 8, right: 8, background: bg, color: fg,
                 padding: "0.4em 0.6em", borderRadius: 4, zIndex: 50, fontSize: "0.82em",
                 display: "flex", flexDirection: "column", gap: 6, minWidth: 210, maxWidth: 260,
-                maxHeight: "calc(100% - 16px)", overflowY: "auto",
+                maxHeight: `calc(100% - ${(chrome?.drawerTop ?? 8) + 8}px)`, overflowY: "auto",
             }}>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 4, alignItems: "center", marginBottom: -4 }}>
                     {result.status === "ready" && result.refetching && (
@@ -1245,7 +1268,7 @@ export function CrashMapSection({
                     }}
                 >
                     <FiHome size={13} />
-                    <span>NJ Crashes</span>
+                    {!chrome?.homeIconOnly && <span>NJ Crashes</span>}
                 </a>
             )}
             <Legend
@@ -1253,6 +1276,7 @@ export function CrashMapSection({
                 severities={severities}
                 onToggle={toggleSeverity}
                 fullScreen={fullScreen}
+                top={chrome?.legendTop}
             />
             {emptySeverities && result.status === "ready" && (
                 <div style={{
@@ -1344,7 +1368,7 @@ function RefetchSpinner({ theme }: { theme: "light" | "dark" }) {
 }
 
 function Legend({
-    theme, severities, onToggle, fullScreen = false,
+    theme, severities, onToggle, fullScreen = false, top,
 }: {
     theme: "light" | "dark"
     severities: Set<"f" | "i" | "p">
@@ -1352,6 +1376,9 @@ function Legend({
     /** In full-screen mode the brand/home link occupies top-left; drop the
      *  Legend below it so they don't overlap. */
     fullScreen?: boolean
+    /** Explicit top offset (narrow full-screen maps: below the title pill,
+     *  see `mapChrome`); overrides the `fullScreen` default. */
+    top?: number
 }) {
     const bg = theme === "dark" ? "rgba(30,30,30,0.85)" : "rgba(255,255,255,0.9)"
     const fg = theme === "dark" ? "#e0e0e0" : "#333"
@@ -1362,7 +1389,7 @@ function Legend({
     ]
     return (
         <div style={{
-            position: "absolute", top: fullScreen ? 42 : 8, left: 8, zIndex: 50,
+            position: "absolute", top: top ?? (fullScreen ? 42 : 8), left: 8, zIndex: 50,
             background: bg, color: fg, padding: "4px 8px", borderRadius: 4,
             fontSize: "0.72em", display: "flex", flexDirection: "column", gap: 2,
             border: `1px solid ${theme === "dark" ? "#444" : "#ccc"}`,
