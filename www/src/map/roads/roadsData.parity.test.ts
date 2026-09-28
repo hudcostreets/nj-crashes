@@ -53,8 +53,11 @@ const VIEW = "COLUMNS('^(sri|mp|id|year|cc|mc|case|severity|tk|ti|cross_street|l
 const SUMMARY = "severity|n|tk|ti|n_unplaced|n_node|n_xs|tk_xs|ti_xs|n_corridor_only"
 
 describe.skipIf(!enabled)("road reads: pq vs DuckDB", () => {
-    const JFK = 42039
-    const CORRIDOR = 1810
+    // Ids renumber with each roads rebuild; resolve them from stable slugs.
+    const idOf = (file: RoadsFile, col: string, slug: string) =>
+        Number(duck(`SELECT ${col} FROM read_parquet('${roadsUrl(file)}') WHERE slug = '${slug}'`)[0][col])
+    const JFK = enabled ? idOf("road-entities", "entity", "hudson/j-f-kennedy-boulevard") : 0
+    const CORRIDOR = enabled ? idOf("road-corridors", "corridor", "hudson/tonnelle-avenue") : 0
     beforeAll(async () => {
         for (const f of FILES) await openParquet(roadsUrl(f), { fetch: fileRangeFetch(join(ROADS, `${f}.parquet`)) })
     })

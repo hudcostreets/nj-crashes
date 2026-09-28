@@ -239,35 +239,190 @@ describe.skipIf(!HAVE_PYRAMID)("pyramid path (year-filtered)", () => {
     const REQ: CellsRequest = { cells: ["89b", "89d"], res: 15, yearRange: [2015, 2022], clipPolygon: JSQ, labels: "nums" }
 
     it("default (rows) output is unchanged", async () => {
-        // Golden produced by the pre-`format=cols` handler on the same query.
-        expect(await handleCellsRequest(bucket(), "cells", REQ)).toEqual({
-            res: 15, year_range: [2015, 2022], data_version: "test", source: "pyramid", labels: "nums",
-            cells: [
-                { cellid: "89c2572dc", n_fatal: 0, n_inj_ped: 28, n_inj_other: 45, n_pdo: 382, n_vehs: 868, n_killed: 0, n_killed_ped: 0 },
-                { cellid: "89c2572e4", n_fatal: 0, n_inj_ped: 5, n_inj_other: 19, n_pdo: 59, n_vehs: 151, n_killed: 0, n_killed_ped: 0 },
-                { cellid: "89c2572fc", n_fatal: 0, n_inj_ped: 4, n_inj_other: 19, n_pdo: 65, n_vehs: 160, n_killed: 0, n_killed_ped: 0 },
-                { cellid: "89c257304", n_fatal: 1, n_inj_ped: 20, n_inj_other: 45, n_pdo: 272, n_vehs: 624, n_killed: 1, n_killed_ped: 0, fatal_years: [2015] },
-                { cellid: "89c25730c", n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 9, n_vehs: 17, n_killed: 0, n_killed_ped: 0 },
-                { cellid: "89c257314", n_fatal: 0, n_inj_ped: 11, n_inj_other: 22, n_pdo: 91, n_vehs: 223, n_killed: 0, n_killed_ped: 0 },
-                { cellid: "89c25731c", n_fatal: 0, n_inj_ped: 6, n_inj_other: 15, n_pdo: 189, n_vehs: 409, n_killed: 0, n_killed_ped: 0 },
-                { cellid: "89c257324", n_fatal: 0, n_inj_ped: 10, n_inj_other: 19, n_pdo: 129, n_vehs: 295, n_killed: 0, n_killed_ped: 0 },
-                { cellid: "89c25733c", n_fatal: 0, n_inj_ped: 5, n_inj_other: 5, n_pdo: 34, n_vehs: 80, n_killed: 0, n_killed_ped: 0 },
+        // Golden over the local `data/cells/s2_pyramid` (its `.dvc` md5): regenerate with
+        // `vitest -u` after a cells rebuild.
+        expect(await handleCellsRequest(bucket(), "cells", REQ)).toMatchInlineSnapshot(`
+          {
+            "cells": [
+              {
+                "cellid": "89c2572dc",
+                "n_fatal": 0,
+                "n_inj_other": 57,
+                "n_inj_ped": 31,
+                "n_killed": 0,
+                "n_killed_ped": 0,
+                "n_pdo": 434,
+                "n_vehs": 988,
+              },
+              {
+                "cellid": "89c2572e4",
+                "n_fatal": 0,
+                "n_inj_other": 24,
+                "n_inj_ped": 8,
+                "n_killed": 0,
+                "n_killed_ped": 0,
+                "n_pdo": 94,
+                "n_vehs": 232,
+              },
+              {
+                "cellid": "89c2572fc",
+                "n_fatal": 0,
+                "n_inj_other": 41,
+                "n_inj_ped": 9,
+                "n_killed": 0,
+                "n_killed_ped": 0,
+                "n_pdo": 190,
+                "n_vehs": 450,
+              },
+              {
+                "cellid": "89c257304",
+                "fatal_years": [
+                  2015,
+                ],
+                "n_fatal": 1,
+                "n_inj_other": 57,
+                "n_inj_ped": 29,
+                "n_killed": 1,
+                "n_killed_ped": 0,
+                "n_pdo": 446,
+                "n_vehs": 1000,
+              },
+              {
+                "cellid": "89c25730c",
+                "n_fatal": 0,
+                "n_inj_other": 3,
+                "n_inj_ped": 1,
+                "n_killed": 0,
+                "n_killed_ped": 0,
+                "n_pdo": 20,
+                "n_vehs": 44,
+              },
+              {
+                "cellid": "89c257314",
+                "n_fatal": 0,
+                "n_inj_other": 34,
+                "n_inj_ped": 23,
+                "n_killed": 0,
+                "n_killed_ped": 0,
+                "n_pdo": 159,
+                "n_vehs": 388,
+              },
+              {
+                "cellid": "89c25731c",
+                "n_fatal": 0,
+                "n_inj_other": 17,
+                "n_inj_ped": 6,
+                "n_killed": 0,
+                "n_killed_ped": 0,
+                "n_pdo": 202,
+                "n_vehs": 438,
+              },
+              {
+                "cellid": "89c257324",
+                "n_fatal": 0,
+                "n_inj_other": 36,
+                "n_inj_ped": 25,
+                "n_killed": 0,
+                "n_killed_ped": 0,
+                "n_pdo": 267,
+                "n_vehs": 613,
+              },
+              {
+                "cellid": "89c25733c",
+                "n_fatal": 0,
+                "n_inj_other": 18,
+                "n_inj_ped": 12,
+                "n_killed": 0,
+                "n_killed_ped": 0,
+                "n_pdo": 114,
+                "n_vehs": 270,
+              },
             ],
-        })
+            "data_version": "test",
+            "labels": "nums",
+            "res": 15,
+            "source": "pyramid",
+            "year_range": [
+              2015,
+              2022,
+            ],
+          }
+        `)
     })
 
     it("format=cols serves the same cells as parallel arrays", async () => {
-        expect(await handleCellsRequest(bucket(), "cells", { ...REQ, format: "cols", fields: [...HEAT_FIELDS] })).toEqual({
-            res: 15, year_range: [2015, 2022], data_version: "test", source: "pyramid", labels: "nums",
-            format: "cols", cellid_enc: "prefix-hex1", n: 9,
-            cols: {
-                cellid: ["089c2572dc", "7e4", "7fc", "6304", "8c", "714", "8c", "724", "73c"],
-                n_fatal: [0, 0, 0, 1, 0, 0, 0, 0, 0],
-                n_inj_ped: [28, 5, 4, 20, 0, 11, 6, 10, 5],
-                n_inj_other: [45, 19, 19, 45, 0, 22, 15, 19, 5],
-                n_pdo: [382, 59, 65, 272, 9, 91, 189, 129, 34],
+        expect(await handleCellsRequest(bucket(), "cells", { ...REQ, format: "cols", fields: [...HEAT_FIELDS] })).toMatchInlineSnapshot(`
+          {
+            "cellid_enc": "prefix-hex1",
+            "cols": {
+              "cellid": [
+                "089c2572dc",
+                "7e4",
+                "7fc",
+                "6304",
+                "8c",
+                "714",
+                "8c",
+                "724",
+                "73c",
+              ],
+              "n_fatal": [
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+              ],
+              "n_inj_other": [
+                57,
+                24,
+                41,
+                57,
+                3,
+                34,
+                17,
+                36,
+                18,
+              ],
+              "n_inj_ped": [
+                31,
+                8,
+                9,
+                29,
+                1,
+                23,
+                6,
+                25,
+                12,
+              ],
+              "n_pdo": [
+                434,
+                94,
+                190,
+                446,
+                20,
+                159,
+                202,
+                267,
+                114,
+              ],
             },
-        })
+            "data_version": "test",
+            "format": "cols",
+            "labels": "nums",
+            "n": 9,
+            "res": 15,
+            "source": "pyramid",
+            "year_range": [
+              2015,
+              2022,
+            ],
+          }
+        `)
     })
 
     it("format=cols decodes to exactly the row response's cells (l17, a whole z13 tile)", async () => {
