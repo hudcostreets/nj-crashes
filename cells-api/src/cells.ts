@@ -40,6 +40,7 @@
 import { S2CellId, S2LatLng, S2LatLngRect, S2RegionCoverer } from "nodes2ts"
 import { loadManifest } from "./manifest"
 import { readParquetFromR2 } from "./parquet"
+import type { Timing } from "./timing"
 import {
     type S2CellRange,
     intersectRanges,
@@ -148,6 +149,26 @@ export type CellsColsResponse = Omit<CellsResponse, "cells"> & {
     cols: { cellid: string[] } & Partial<Record<CountField, number[]>>
 }
 
+/** `format=cols&group=year` response: per-(cell, year) counts, so a client
+ *  can re-aggregate any year sub-range locally instead of re-fetching on
+ *  every year-filter change (see `specs/map-mobile-perf.md`).
+ *
+ *  `cols.cellid` holds the *distinct* cells (sorted, prefix-delta encoded as
+ *  in `CellsColsResponse`); `cols.nyears[i]` is how many year-rows cell `i`
+ *  owns. `cols.year` and the count columns are flat, `sum(nyears)` long,
+ *  grouped by cell in `cellid` order, years ascending within a cell. Only
+ *  (cell, year) rows with ≥1 crash of a requested severity are present. */
+export type CellsColsYearResponse = Omit<CellsResponse, "cells"> & {
+    format: "cols"
+    group: "year"
+    cellid_enc: "prefix-hex1"
+    /** Distinct cells. */
+    n: number
+    /** (cell, year) rows. */
+    n_rows: number
+    cols: { cellid: string[]; nyears: number[]; year: number[] } & Partial<Record<CountField, number[]>>
+}
+
 export type CellsRequest = {
     /** Parent S2 cells (tokens) the client wants data for; the worker
      *  reads one pyramid file per shard, in order. Unknown shards (no
@@ -204,6 +225,28 @@ export type CellsRequest = {
      *  the four severity counts) rather than the worker computing a
      *  derived weight, so weighting logic lives in exactly one place. */
     fields?: CountField[]
+    /** `format=cols` only: `year` ⇒ `CellsColsYearResponse` (per-year rows,
+     *  always served from the parquet pyramid, which has them). */
+    group?: "year"
+}
+
+/** Capabilities this worker advertises on `/v1/manifest` (`capabilities`),
+ *  so a client can feature-detect rather than infer from a response shape.
+ *  A worker predating a capability omits it (and the whole field). */
+export const CAPABILITIES = ["format_cols", "group_year", "server_timing", "edge_cache"] as const
+
+/** Edge-cache key for a `/v1/cells` request: the URL with its query params
+ *  sorted (so param order doesn't split entries), `severity` folded into
+ *  `severities` with its chars sorted, and the manifest's `data_version`
+ *  appended (so a pipeline push invalidates every entry). */
+export function cellsCacheKey(url: URL, dataVersion: string): string {
+    const params = [...url.searchParams.entries()]
+        .filter(([k]) => k !== "severity" && k !== "severities" && k !== "__dv")
+    const sev = url.searchParams.get("severity") ?? url.searchParams.get("severities")
+    if (sev != null) params.push(["severities", [...sev].sort().join("")])
+    params.sort(([a, av], [b, bv]) => a < b ? -1 : a > b ? 1 : av < bv ? -1 : av > bv ? 1 : 0)
+    params.push(["__dv", dataVersion])
+    return `${url.origin}${url.pathname}?${new URLSearchParams(params)}`
 }
 
 /** Default `labelMaxCells`. ~20k cells × ~90 B/cell ≈ 1.8 MB of labels
@@ -305,6 +348,22 @@ function cellInPolygonS2(token: string, poly: LonLatPolygon | null): boolean {
     return pointInPolygon([ll.lngDegrees, ll.latDegrees], poly)
 }
 
+/** `cellInPolygonS2`, memoized per token for one request. The pyramid has one
+ *  row per (cell, year), so an all-years read would otherwise redo the
+ *  token → point → lat/lng projection once per year-row. */
+function polygonTester(poly: LonLatPolygon | null): (token: string) => boolean {
+    if (!poly) return () => true
+    const memo = new Map<string, boolean>()
+    return token => {
+        let v = memo.get(token)
+        if (v === undefined) {
+            v = cellInPolygonS2(token, poly)
+            memo.set(token, v)
+        }
+        return v
+    }
+}
+
 /** Cell-id ranges at `level` covering a clip polygon.
  *
  *  Covers the polygon's bounding rect, not the polygon itself — the
@@ -344,39 +403,32 @@ export async function handleCellsRequest(
     prefix: string,
     req: CellsRequest,
     db?: D1Database,
-): Promise<CellsResponse | CellsColsResponse> {
+    timing?: Timing,
+): Promise<CellsResponse | CellsColsResponse | CellsColsYearResponse> {
     if (req.format === "cols") {
         if (req.labels && req.labels !== "nums") {
             throw new HttpError(400, "format=cols serves counts only (labels must be unset or nums)")
         }
-        const r = await queryCells(bucket, prefix, { ...req, labels: "nums" }, db, false)
+        if (req.group === "year") {
+            return queryCellsByYear(bucket, prefix, req, req.fields ?? COUNT_FIELDS, timing)
+        }
+        const r = await queryCells(bucket, prefix, { ...req, labels: "nums" }, db, false, timing)
         return toColumnar(r, req.fields ?? COUNT_FIELDS)
     }
-    return queryCells(bucket, prefix, req, db, true)
+    return queryCells(bucket, prefix, req, db, true, timing)
 }
 
-async function queryCells(
-    bucket: R2Bucket,
-    prefix: string,
-    req: CellsRequest,
-    db: D1Database | undefined,
-    fatalYears: boolean,
-): Promise<CellsResponse> {
-    const manifest = await loadManifest(bucket, prefix)
-    const { cells: requestedShards, res: requestedLevel, maxCells } = req
+/** Validate the requested level and build the cellid token ranges (shards ∩
+ *  clip-polygon cover) at it. Shared by `queryCells` / `queryCellsByYear`. */
+function requestRanges(req: CellsRequest): { clipPoly: LonLatPolygon | null; ranges: Array<{ lo: string; hi: string }> } {
+    const { cells: requestedShards, res: requestedLevel } = req
     if (requestedShards.length === 0) {
         throw new HttpError(400, "cells must list ≥1 shard")
     }
     if (requestedLevel < S2_MIN_LEVEL || requestedLevel > S2_MAX_LEVEL) {
         throw new HttpError(400, `s2 level ${requestedLevel} out of range [${S2_MIN_LEVEL}, ${S2_MAX_LEVEL}]`)
     }
-    const yearRange = req.yearRange ?? manifest.year_range
-    const sevSet = req.severities
-    // Clip polygon plumbing — currently disabled for S2 (see
-    // `cellInPolygonS2`); passes through so phase 4e can turn it on.
     const clipPoly = req.clipPolygon && req.clipPolygon.length >= 3 ? req.clipPolygon : null
-    const labels = req.labels ?? "full"
-    const labelMaxCells = req.labelMaxCells ?? DEFAULT_LABEL_MAX_CELLS
 
     // Build cellid ranges at the target level. These drive both the D1
     // `cellid BETWEEN` scan and the parquet row-group pruning, so they
@@ -405,16 +457,6 @@ async function queryCells(
     const polyRanges = clipPoly ? s2RangesForPolygon(clipPoly, requestedLevel) : null
     const idRanges = mergeRanges(polyRanges ? intersectRanges(shardRanges, polyRanges) : shardRanges)
 
-    // Viewport disjoint from the requested shards ⇒ nothing to return. Bail
-    // before the queries: an empty range list means "no filter" to both of
-    // them, which would scan the whole shard instead of none of it.
-    if (!idRanges.length) {
-        return {
-            res: requestedLevel, year_range: yearRange,
-            data_version: manifest.data_version, source: "d1", cells: [],
-        }
-    }
-
     // Tokens, not zero-padded hex. The stored `cellid` (D1 column and parquet
     // value alike) is the S2 token — 16 hex chars with *trailing zeros
     // stripped* — and lex order over stripped tokens is isomorphic to numeric
@@ -423,7 +465,122 @@ async function queryCells(
     // `range_min` (token `89c04532`) sorts *below* the padded bound
     // (`89c0453200000000`) and gets dropped. Invisible while the range covered
     // the whole shard; every tight range above has such a boundary.
-    const ranges = idRanges.map(r => ({ lo: s2IdToToken(r.lo), hi: s2IdToToken(r.hi) }))
+    return { clipPoly, ranges: idRanges.map(r => ({ lo: s2IdToToken(r.lo), hi: s2IdToToken(r.hi) })) }
+}
+
+/** Per-year counts for one cell. */
+type YearCounts = Map<number, Record<CountField, number>>
+
+const zeroCounts = (): Record<CountField, number> => ({
+    n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0, n_killed: 0, n_killed_ped: 0,
+})
+
+/** `format=cols&group=year`: per-(cell, year) counts from the pyramid over
+ *  the request's year range, coarsened on *distinct-cell* count against
+ *  `maxCells` (the same walk `queryCells` does), as `CellsColsYearResponse`.
+ *  Always the parquet path — the D1 rollup has no year axis. The pyramid's
+ *  row groups are cellid-sorted with every year inside, so the year filter
+ *  never pruned I/O anyway: an all-years read costs the same R2 bytes as a
+ *  3-year one. */
+async function queryCellsByYear(
+    bucket: R2Bucket,
+    prefix: string,
+    req: CellsRequest,
+    fields: readonly CountField[],
+    timing?: Timing,
+): Promise<CellsColsYearResponse> {
+    const manifest = await loadManifest(bucket, prefix)
+    const yearRange = req.yearRange ?? manifest.year_range
+    const { clipPoly, ranges } = requestRanges(req)
+    timing?.note("src", "pyramid")
+    let cells = new Map<string, YearCounts>()
+    // Empty ranges ⇒ viewport disjoint from the shards (see `queryCells`).
+    if (ranges.length) {
+        cells = await queryPyramidS2ByYear(
+            bucket, prefix, req.res, req.cells, yearRange, req.severities, clipPoly, ranges, timing,
+        )
+    }
+    let level = req.res
+    const t0 = Date.now()
+    while (req.maxCells != null && cells.size > req.maxCells && level > S2_MIN_LEVEL) {
+        level--
+        cells = coarsenYearCells(cells, level)
+    }
+    timing?.add("coarsen", Date.now() - t0)
+    return toColumnarByYear(
+        { res: level, year_range: yearRange, data_version: manifest.data_version, source: "pyramid", labels: "nums" },
+        cells, fields,
+    )
+}
+
+/** Roll per-(cell, year) counts up to their `toLevel` parents. */
+export function coarsenYearCells(cells: Map<string, YearCounts>, toLevel: number): Map<string, YearCounts> {
+    const out = new Map<string, YearCounts>()
+    for (const [token, years] of cells) {
+        const parent = s2IdToToken(s2Parent(s2TokenToId(token), toLevel))
+        let py = out.get(parent)
+        if (!py) { py = new Map(); out.set(parent, py) }
+        for (const [year, c] of years) {
+            let pc = py.get(year)
+            if (!pc) { pc = zeroCounts(); py.set(year, pc) }
+            for (const f of COUNT_FIELDS) pc[f] += c[f]
+        }
+    }
+    return out
+}
+
+/** Per-(cell, year) map → `CellsColsYearResponse`. */
+export function toColumnarByYear(
+    envelope: Omit<CellsResponse, "cells">,
+    cells: Map<string, YearCounts>,
+    fields: readonly CountField[] = COUNT_FIELDS,
+): CellsColsYearResponse {
+    const tokens = [...cells.keys()].sort((a, b) => a < b ? -1 : a > b ? 1 : 0)
+    const nyears: number[] = []
+    const year: number[] = []
+    const cols: CellsColsYearResponse["cols"] = { cellid: encodeTokens(tokens), nyears, year }
+    const out = fields.map(f => { const a: number[] = []; cols[f] = a; return [f, a] as const })
+    for (const t of tokens) {
+        const ys = cells.get(t)!
+        const sorted = [...ys.keys()].sort((a, b) => a - b)
+        nyears.push(sorted.length)
+        for (const y of sorted) {
+            year.push(y)
+            const c = ys.get(y)!
+            for (const [f, a] of out) a.push(c[f])
+        }
+    }
+    return {
+        ...envelope, format: "cols", group: "year", cellid_enc: "prefix-hex1",
+        n: tokens.length, n_rows: year.length, cols,
+    }
+}
+
+async function queryCells(
+    bucket: R2Bucket,
+    prefix: string,
+    req: CellsRequest,
+    db: D1Database | undefined,
+    fatalYears: boolean,
+    timing?: Timing,
+): Promise<CellsResponse> {
+    const manifest = await loadManifest(bucket, prefix)
+    const { cells: requestedShards, res: requestedLevel, maxCells } = req
+    const yearRange = req.yearRange ?? manifest.year_range
+    const sevSet = req.severities
+    const labels = req.labels ?? "full"
+    const labelMaxCells = req.labelMaxCells ?? DEFAULT_LABEL_MAX_CELLS
+    const { clipPoly, ranges } = requestRanges(req)
+
+    // Viewport disjoint from the requested shards ⇒ nothing to return. Bail
+    // before the queries: an empty range list means "no filter" to both of
+    // them, which would scan the whole shard instead of none of it.
+    if (!ranges.length) {
+        return {
+            res: requestedLevel, year_range: yearRange,
+            data_version: manifest.data_version, source: "d1", cells: [],
+        }
+    }
 
     // D1 fast path: default (all-years, all-severity, full-labels)
     // query hits `cells_s2_l{level}` — one indexed lex-range scan.
@@ -455,6 +612,10 @@ async function queryCells(
             }
             const served = servedLabels(labels, cells, labelMaxCells)
             const t2 = Date.now()
+            timing?.note("src", "d1")
+            timing?.add("d1", t1 - t0)
+            timing?.add("coarsen", t2 - t1)
+            timing?.count("cells", cells.length)
             console.log(`[timing] s2 l${requestedLevel} D1 labels=${labels}→${served} ranges=${ranges.length} cells=${cells.length}: d1=${t1 - t0}ms, coarsen=${t2 - t1}ms, total=${t2 - t0}ms`)
             return { res: level, year_range: yearRange, data_version: manifest.data_version, source: "d1", labels: served, cells }
         } catch (e) {
@@ -465,7 +626,7 @@ async function queryCells(
     const t0 = Date.now()
     let cells = await queryPyramidS2(
         bucket, prefix, requestedLevel, requestedShards, yearRange, sevSet,
-        clipPoly, ranges, labels,
+        clipPoly, ranges, labels, timing,
     )
     const t1 = Date.now()
     let level = requestedLevel
@@ -478,6 +639,9 @@ async function queryCells(
     }
     const served = servedLabels(labels, cells, labelMaxCells)
     const t2 = Date.now()
+    timing?.note("src", "pyramid")
+    timing?.add("coarsen", t2 - t1)
+    timing?.count("cells", cells.length)
     console.log(`[timing] s2 l${requestedLevel} labels=${labels}→${served} shards=${requestedShards.length} ranges=${ranges.length} cells=${cells.length}: pyramid=${t1 - t0}ms, coarsen=${t2 - t1}ms, total=${t2 - t0}ms`)
     return {
         res: level,
@@ -487,6 +651,60 @@ async function queryCells(
         labels: served,
         cells,
     }
+}
+
+/** Per-(cell, year) pyramid read for `queryCellsByYear`: same shards, ranges,
+ *  clip, and severity gating as `queryPyramidS2`, but keeps the year axis
+ *  (and only the requested severities' counters). */
+async function queryPyramidS2ByYear(
+    bucket: R2Bucket,
+    prefix: string,
+    level: number,
+    shards: string[],
+    yearRange: [number, number],
+    severities: Set<"f" | "i" | "p"> | undefined,
+    clipPoly: LonLatPolygon | null,
+    tokenRanges: Array<{ lo: string; hi: string }>,
+    timing?: Timing,
+): Promise<Map<string, YearCounts>> {
+    const wantF = !severities || severities.has("f")
+    const wantI = !severities || severities.has("i")
+    const wantP = !severities || severities.has("p")
+    const inPoly = polygonTester(clipPoly)
+    const cellidRangeOr = { $or: tokenRanges.map(r => ({ cellid: { $gte: r.lo, $lte: r.hi } })) }
+    const filter = { $and: [{ year: { $gte: yearRange[0], $lte: yearRange[1] } }, cellidRangeOr] }
+    const cols = ["cellid", "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "n_killed", "n_killed_ped"]
+    const subdir = `s2_pyramid/s2_l${level}`
+    const results = await Promise.all(shards.map(s =>
+        readParquetFromR2<PyramidRowS2>(bucket, `${prefix}/${subdir}/${s}.parquet`, { columns: cols, filter, missingOk: true, timing })
+            .catch(e => { console.error(`s2 pyramid ${subdir}/${s} read failed:`, e); return null }),
+    ))
+    const out = new Map<string, YearCounts>()
+    for (const rows of results) {
+        if (!rows) continue
+        for (const row of rows) {
+            const n_fatal = wantF ? row.n_fatal ?? 0 : 0
+            const n_inj_ped = wantI ? row.n_inj_ped ?? 0 : 0
+            const n_inj_other = wantI ? row.n_inj_other ?? 0 : 0
+            const n_pdo = wantP ? row.n_pdo ?? 0 : 0
+            if (!(n_fatal > 0 || n_inj_ped > 0 || n_inj_other > 0 || n_pdo > 0)) continue
+            const token = row.cellid
+            if (!inPoly(token)) continue
+            let ys = out.get(token)
+            if (!ys) { ys = new Map(); out.set(token, ys) }
+            let c = ys.get(row.year)
+            if (!c) { c = zeroCounts(); ys.set(row.year, c) }
+            c.n_fatal += n_fatal
+            c.n_inj_ped += n_inj_ped
+            c.n_inj_other += n_inj_other
+            c.n_pdo += n_pdo
+            c.n_vehs += row.n_vehs ?? 0
+            c.n_killed += row.n_killed ?? 0
+            c.n_killed_ped += row.n_killed_ped ?? 0
+        }
+    }
+    timing?.count("cells", out.size)
+    return out
 }
 
 /** S2 analog of `queryPyramid`. Reads `s2_pyramid/s2_l{level}/{token}.parquet`
@@ -507,11 +725,13 @@ async function queryPyramidS2(
     clipPoly: LonLatPolygon | null,
     tokenRanges: Array<{ lo: string; hi: string }>,
     labels: "full" | "nums" | "only" = "full",
+    timing?: Timing,
 ): Promise<CellOut[]> {
     const wantF = !severities || severities.has("f")
     const wantI = !severities || severities.has("i")
     const wantP = !severities || severities.has("p")
     const out = new Map<string, CellOut>()
+    const inPoly = polygonTester(clipPoly)
 
     // Parquet column names (from `njdot/cli/cells.py` `_build_pyramid_level_s2`):
     // cellid TEXT (S2 token), year INT, count cols INT, sld_name TEXT, ...
@@ -527,7 +747,7 @@ async function queryPyramidS2(
             try {
                 return await readParquetFromR2<PyramidRowS2>(
                     bucket, `${prefix}/${subdir}/${s}.parquet`,
-                    { columns: cols, filter: cellidRangeOr ?? undefined, missingOk: true },
+                    { columns: cols, filter: cellidRangeOr ?? undefined, missingOk: true, timing },
                 )
             } catch (e) {
                 console.error(`s2 pyramid ${subdir}/${s} labels read failed:`, e)
@@ -540,7 +760,7 @@ async function queryPyramidS2(
                 const token = row.cellid as string
                 if (out.has(token)) continue
                 if (!row.sld_name && !row.cross_sld_name && !row.mun && !row.county) continue
-                if (!cellInPolygonS2(token, clipPoly)) continue
+                if (!inPoly(token)) continue
                 const c: CellOut = { cellid: token, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0, n_killed: 0, n_killed_ped: 0 }
                 if (row.sld_name) c.sld_name = row.sld_name
                 if (row.cross_sld_name) c.cross_sld_name = row.cross_sld_name
@@ -563,7 +783,7 @@ async function queryPyramidS2(
         try {
             return await readParquetFromR2<PyramidRowS2>(
                 bucket, `${prefix}/${subdir}/${s}.parquet`,
-                { columns: cols, filter, missingOk: true },
+                { columns: cols, filter, missingOk: true, timing },
             )
         } catch (e) {
             console.error(`s2 pyramid ${subdir}/${s} read failed:`, e)
@@ -574,7 +794,7 @@ async function queryPyramidS2(
         if (!rows) continue
         for (const row of rows) {
             const token = row.cellid as string
-            if (!cellInPolygonS2(token, clipPoly)) continue
+            if (!inPoly(token)) continue
             let c = out.get(token)
             if (!c) {
                 c = { cellid: token, n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0, n_killed: 0, n_killed_ped: 0 }
@@ -850,5 +1070,13 @@ export function parseCellsRequest(url: URL): CellsRequest {
         if (new Set(names).size !== names.length) throw new HttpError(400, "fields must not repeat")
         fields = names as CountField[]
     }
-    return { cells, res, yearRange, severities, clipPolygon, maxCells, shardRes, labels, labelMaxCells, format, fields }
+
+    let group: "year" | undefined
+    const gp = url.searchParams.get("group")
+    if (gp != null) {
+        if (gp !== "year") throw new HttpError(400, "group must be 'year'")
+        if (format !== "cols") throw new HttpError(400, "group requires format=cols")
+        group = gp
+    }
+    return { cells, res, yearRange, severities, clipPolygon, maxCells, shardRes, labels, labelMaxCells, format, fields, group }
 }

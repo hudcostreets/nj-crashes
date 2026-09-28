@@ -16,7 +16,8 @@
  */
 import { R2Store } from "@rdub/file-tree/stores/r2"
 import { createHandlers } from "@rdub/file-tree/server"
-import { handleCellsRequest, HttpError, parseCellsRequest } from "./cells"
+import { CAPABILITIES, cellsCacheKey, handleCellsRequest, HttpError, parseCellsRequest } from "./cells"
+import { Timing } from "./timing"
 import { loadManifest } from "./manifest"
 import { handleGet, handleList, handleZipEntries, handleZipEntry } from "./raw"
 import { insertVote, listVotes, requireWriteAuth, updateVote } from "./tune"
@@ -46,7 +47,7 @@ function corsHeaders(env: Env, extra: HeadersInit = {}): HeadersInit {
         // unless explicitly exposed. The text/CSV viewers parse
         // `Content-Range` to learn total file size from a 1-byte
         // range probe; without this, `fetchSize` throws.
-        "Access-Control-Expose-Headers": "Content-Range, Content-Length, ETag, Content-Disposition",
+        "Access-Control-Expose-Headers": "Content-Range, Content-Length, ETag, Content-Disposition, Server-Timing",
         // Without this, cross-origin Resource Timing entries report 0
         // for `encodedBodySize`/`transferSize` — `/tune/ab` records
         // wire bytes per fetch (see `useCellsApi.getWireBytes`).
@@ -73,12 +74,17 @@ async function etagFor(req: Request, dataVersion: string): Promise<string> {
     return `"${hex.slice(0, 16)}"`
 }
 
+/** Browser-facing `Cache-Control` for `/v1/cells` (unchanged). */
+const CELLS_BROWSER_CACHE_CONTROL = "public, max-age=3600, stale-while-revalidate=86400"
+/** Edge-cache copy's TTL: a week. Safe because the key embeds `data_version`. */
+const CELLS_EDGE_CACHE_CONTROL = "public, max-age=604800"
+
 function jsonReplacer(_key: string, value: unknown): unknown {
     return typeof value === "bigint" ? value.toString() : value
 }
 
 export default {
-    async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
+    async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
         const url = new URL(request.url)
         const { pathname } = url
 
@@ -146,6 +152,7 @@ export default {
                 // stays — the client uses it to NJ-clip `polygonToCells`.
                 const out = {
                     ...m,
+                    capabilities: CAPABILITIES,
                     pyramid_combos: (m.pyramid_combos ?? []).map(c => ({
                         shard_res: c.shard_res,
                         data_res: c.data_res,
@@ -157,18 +164,55 @@ export default {
                 return new Response(JSON.stringify(out, jsonReplacer), { headers: corsHeaders(env) })
             }
             if (pathname === "/v1/cells") {
+                const t0 = Date.now()
+                const timing = new Timing()
                 const cellsReq = parseCellsRequest(url)
-                const manifest = await loadManifest(env.CELLS_BUCKET, prefix)
+                const manifest = await timing.time("manifest", () => loadManifest(env.CELLS_BUCKET, prefix))
                 const tag = await etagFor(request, manifest.data_version)
                 if (request.headers.get("If-None-Match") === tag) {
                     return new Response(null, { status: 304, headers: corsHeaders(env, { ETag: tag }) })
                 }
+                // Edge cache (`caches.default`, per colo). A Worker's own
+                // responses never enter CF's CDN cache — `Cache-Control` on
+                // them only reaches the browser — so before this, every pan,
+                // year toggle, or second visitor to the same snapped viewport
+                // re-ran the full R2 read (measured 2026-09-28: the same URL
+                // 3× in a row = 1.6-1.8 s each). Keyed on the canonical
+                // (param-sorted) URL + `data_version`, so a pipeline push
+                // invalidates by construction. `caches` is absent under
+                // `wrangler dev --local` / vitest; skip there.
+                const cache = typeof caches !== "undefined" ? (caches as unknown as { default?: Cache }).default : undefined
+                const cacheKey = new Request(cellsCacheKey(url, manifest.data_version), { method: "GET" })
+                if (cache) {
+                    const hit = await timing.time("cache_lookup", () => cache.match(cacheKey))
+                    if (hit) {
+                        timing.note("cache", "hit")
+                        timing.add("total", Date.now() - t0)
+                        const headers = new Headers(hit.headers)
+                        headers.set("Server-Timing", timing.header())
+                        headers.set("Cache-Control", CELLS_BROWSER_CACHE_CONTROL)
+                        return new Response(hit.body, { status: hit.status, headers })
+                    }
+                    timing.note("cache", "miss")
+                }
                 const db = env.CELLS_S2_DB
-                const body = await handleCellsRequest(env.CELLS_BUCKET, prefix, cellsReq, db)
-                return new Response(JSON.stringify(body, jsonReplacer), {
+                const body = await handleCellsRequest(env.CELLS_BUCKET, prefix, cellsReq, db, timing)
+                const ts = Date.now()
+                const json = JSON.stringify(body, jsonReplacer)
+                timing.add("serialize", Date.now() - ts)
+                timing.count("json_bytes", json.length)
+                if (cache) {
+                    // Stored copy: long TTL (the key embeds `data_version`).
+                    ctx.waitUntil(cache.put(cacheKey, new Response(json, {
+                        headers: corsHeaders(env, { ETag: tag, "Cache-Control": CELLS_EDGE_CACHE_CONTROL }),
+                    })))
+                }
+                timing.add("total", Date.now() - t0)
+                return new Response(json, {
                     headers: corsHeaders(env, {
                         ETag: tag,
-                        "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+                        "Cache-Control": CELLS_BROWSER_CACHE_CONTROL,
+                        "Server-Timing": timing.header(),
                     }),
                 })
             }
