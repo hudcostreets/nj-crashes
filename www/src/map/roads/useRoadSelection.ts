@@ -18,6 +18,8 @@ const { cos, PI, pow } = Math
 export const ROAD_HIT_MIN_ZOOM = Math.min(...HIT_TIERS.map(t => t.minZoom))
 /** Hit radius in CSS px. */
 const HIT_PX = 10
+/** Tap hit radius vs. the mouse `HIT_PX`: fingers are less precise than a cursor. */
+const TOUCH_HIT_SCALE = 2
 /** Fetch hit points for a bbox this much larger than the viewport, so small pans reuse them. */
 const HIT_PAD = 0.3
 /** Alt+wheel: one scope step per this much accumulated `deltaY` (a mouse notch is ~100; a
@@ -126,10 +128,14 @@ export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
     // neighbor); only without a hover does it hit-test the click point itself. A click on the
     // selected road (or its corridor, in corridor scope) moves the scope's anchor; shift-click
     // selects the span from the anchor to it (shift-click wins over a cross street under the cursor).
-    const onClick = useCallback((lngLat?: [number, number], mods?: { shiftKey?: boolean }) => {
+    const onClick = useCallback((lngLat?: [number, number], mods?: { shiftKey?: boolean; touch?: boolean }) => {
         if (!active) return false
         const shift = !!mods?.shiftKey
-        const p = hovered ?? (lngLat ? nearestRoad(hitSegments, lngLat, hitMeters) : null)
+        // A tap has no hover of its own (any `hovered` is left from an earlier tap), and a finger
+        // is less precise: hit-test the tap point with a wider radius.
+        const p = mods?.touch
+            ? (lngLat ? nearestRoad(hitSegments, lngLat, hitMeters * TOUCH_HIT_SCALE) : null)
+            : hovered ?? (lngLat ? nearestRoad(hitSegments, lngLat, hitMeters) : null)
         const onSelected = !!p && (p.entity === road || (scope.state.corridor && memberIds.has(p.entity)))
         if (lngLat && road !== null && (onSelected || shift || !p)) {
             if (scope.onRoadClick(lngLat, shift, hitMeters * 1.5)) return true

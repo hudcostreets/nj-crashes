@@ -1,34 +1,35 @@
 import { describe, expect, it } from "vitest"
 import type { Feature } from "geojson"
-import { areaHighlightShown, bboxesIntersect, featureAt, featureBbox, outlineLabel } from "./boundaries"
+import { areaFillScale, bboxesIntersect, viewCoverage, featureAt, featureBbox, outlineLabel } from "./boundaries"
 import type { Bbox } from "./v2"
 
-describe("areaHighlightShown", () => {
-    // Real bboxes (`munis/09.geojson`) and the viewports of `/map?llz=40.7213-74.0810+14.5+0+0`.
-    const jerseyCity: Bbox = [-74.1164, 40.667, -74.0265, 40.769]
-    const hoboken: Bbox = [-74.0439, 40.7336, -74.0204, 40.7587]
-    const desktopZ145: Bbox = [-74.1247, 40.7005, -74.0373, 40.7421]  // 1440×900
-    const phoneZ145: Bbox = [-74.0929, 40.7018, -74.0692, 40.7409]  // 390×844
-    const desktopZ12: Bbox = [-74.2558, 40.6380, -73.9062, 40.8045]  // 1440×900 at z12.5
+describe("viewCoverage", () => {
+    const square = (w: number, s: number, e: number, n: number): Feature => ({
+        type: "Feature", properties: {},
+        geometry: { type: "Polygon", coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] },
+    })
+    const view: Bbox = [0, 0, 1, 1]
+    it("is the fraction of the view inside the polygon, not its bbox", () => {
+        // An L-shaped polygon whose bbox covers the whole view but which covers 3/4 of it.
+        const ell: Feature = {
+            type: "Feature", properties: {},
+            geometry: { type: "Polygon", coordinates: [[[-1, -1], [2, -1], [2, 0.5], [0.5, 0.5], [0.5, 2], [-1, 2], [-1, -1]]] },
+        }
+        expect([
+            viewCoverage(square(-1, -1, 2, 2), view),
+            viewCoverage(square(0, 0, 0.5, 1), view),
+            viewCoverage(square(5, 5, 6, 6), view),
+            viewCoverage(ell, view),
+        ]).toEqual([1, 0.5, 0, 0.75])
+    })
+    it("degenerate view: 0", () => {
+        expect(viewCoverage(square(-1, -1, 2, 2), [0, 0, 0, 0])).toBe(0)
+    })
+})
 
-    it("hides an area the view is zoomed in inside of", () => {
-        expect([
-            areaHighlightShown(jerseyCity, desktopZ145),
-            areaHighlightShown(jerseyCity, phoneZ145),
-        ]).toEqual([false, false])
-    })
-    it("shows an area that fits in the view, or only partly overlaps it", () => {
-        expect([
-            areaHighlightShown(jerseyCity, desktopZ12),
-            areaHighlightShown(hoboken, desktopZ145),
-            areaHighlightShown(hoboken, desktopZ12),
-        ]).toEqual([true, true, true])
-    })
-    it("shows an area whose bbox is about the view's size (a muni fit to the view)", () => {
-        expect(areaHighlightShown([0, 0, 1.1, 1.1], [0.05, 0.05, 1.05, 1.05])).toBe(true)
-    })
-    it("degenerate view: shown", () => {
-        expect(areaHighlightShown(jerseyCity, [0, 0, 0, 0])).toBe(true)
+describe("areaFillScale", () => {
+    it("is full up to 25% coverage, none from 75%, linear between", () => {
+        expect([0, 0.25, 0.5, 0.75, 1].map(areaFillScale)).toEqual([1, 1, 0.5, 0, 0])
     })
 })
 
