@@ -3,7 +3,7 @@ meta:
     cmd: bash scripts/d1-import.sh --inplace njsp-crashes cmymc cells-s2
     side_effect: true
     deps:
-      /www/public/njsp/crashes.db: 1fe1d4ad0015b5ef0097f6dc53e82333
+      /www/public/njsp/crashes.db: 9b716765e9103e9c99cd5478e62b5dec
       /www/public/njdot/cmymc.db: 37fd6c10b4df3c895e07df4fc7e07b4b
       /data/cells/cells-s2.db: 4846c69a84ea363f6c5a481447967a09
     git_deps:
