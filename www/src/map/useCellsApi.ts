@@ -209,7 +209,7 @@ export function getWireBytes(shardUrls: string[]): number {
 /** Manifest is fetched once (cells-api version is stable across a
  *  page lifetime; redeploys flip `data_version` but not `shard_*`). */
 let manifestPromise: Promise<Manifest> | null = null
-function loadManifest(): Promise<Manifest> {
+export function loadManifest(): Promise<Manifest> {
     if (manifestPromise) return manifestPromise
     manifestPromise = fetch(`${CELLS_API_BASE}/v1/manifest`).then(async r => {
         if (!r.ok) throw new Error(`manifest fetch ${r.status}`)
@@ -498,7 +498,7 @@ function intersectAt(
 
 /** Encode a polygon (`[lon, lat][]`) as flat `lon,lat,...` rounded to
  *  4 decimals (~10m). County outlines are 50–500 verts → 1–5KB. */
-function encodePolygon(poly: [number, number][]): string {
+export function encodePolygon(poly: [number, number][]): string {
     return poly.flatMap(([lon, lat]) => [lon.toFixed(4), lat.toFixed(4)]).join(",")
 }
 
@@ -589,7 +589,7 @@ const LEAN_CACHE_MAX = 256
 const LEAN_DEBOUNCE_MS = 250
 const leanCache = new Map<string, Promise<{ table: LeanTable; bytes: number; wireBytes: number }>>()
 
-function fetchLean(url: string): Promise<{ table: LeanTable; bytes: number; wireBytes: number }> {
+export function fetchLean(url: string): Promise<{ table: LeanTable; bytes: number; wireBytes: number }> {
     const hit = leanCache.get(url)
     if (hit) {
         leanCache.delete(url)

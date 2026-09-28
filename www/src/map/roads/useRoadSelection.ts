@@ -22,6 +22,19 @@ const HIT_PX = 10
 const TOUCH_HIT_SCALE = 2
 /** Fetch hit points for a bbox this much larger than the viewport, so small pans reuse them. */
 const HIT_PAD = 0.3
+/** The hoverable-road overlay (`networkLayers`) fades in over this many zoom levels above
+ *  `ROAD_HIT_MIN_ZOOM` (the widest tier only has major roads, drawn faintest), from
+ *  `NETWORK_MIN_OPACITY` to 1. */
+const NETWORK_FADE_ZOOMS = 4
+const NETWORK_MIN_OPACITY = 0.35
+
+/** Opacity of the hoverable-road overlay at `zoom` (0 below the hit tiers). */
+export function roadNetworkOpacity(zoom: number): number {
+    if (zoom < ROAD_HIT_MIN_ZOOM) return 0
+    const t = Math.min(1, (zoom - ROAD_HIT_MIN_ZOOM) / NETWORK_FADE_ZOOMS)
+    return NETWORK_MIN_OPACITY + (1 - NETWORK_MIN_OPACITY) * t
+}
+
 /** Alt+wheel: one scope step per this much accumulated `deltaY` (a mouse notch is ~100; a
  *  trackpad sends many small deltas), and at most one step per `WHEEL_STEP_MS`. */
 const WHEEL_STEP_DELTA = 60
@@ -66,7 +79,11 @@ type Handle = { end: 0 | 1; lngLat: [number, number] }
  *  once the entity loads. On v5 data, a selected road has a scope (`useRoadScope`): click it to
  *  move the anchor, shift-click to select a span, Alt+wheel / `[` `]` to step the scope ladder,
  *  and drag the span's end handles. */
-export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
+export function useRoadSelection(
+    view: View | null,
+    viewBbox: Bbox | null,
+    network: { show: boolean; theme: "light" | "dark" } = { show: false, theme: "dark" },
+) {
     const [roadUrl, setRoadUrl] = useUrlState("road", stringParam())
     const ref = parseRoadRef(roadUrl)
     const hitFile = view ? hitFileForZoom(view.zoom) : null
@@ -87,6 +104,26 @@ export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
     })
     const hitPoints = useMemo(() => (active && hitKey?.file === hitFile ? (hit.data ?? []) : []), [active, hitKey, hitFile, hit.data])
     const hitSegments = useMemo(() => roadSegments(hitPoints), [hitPoints])
+
+    // The hover / tap targets, drawn faintly under the data layers so it's visible what can be
+    // selected (touch has no hover to discover them). Reuses the loaded hit points (no fetch);
+    // the paths only rebuild when those change, and zoom only moves the layer's opacity.
+    const networkPaths = useMemo(() => (network.show ? roadPaths(hitPoints) : []), [network.show, hitPoints])
+    const networkOpacity = view ? roadNetworkOpacity(view.zoom) : 0
+    const networkLayers = useMemo((): Layer[] => {
+        if (!networkPaths.length || networkOpacity <= 0) return []
+        return [new PathLayer({
+            id: "road-network",
+            data: networkPaths,
+            getPath: (d: [number, number][]) => d,
+            getColor: network.theme === "dark" ? [190, 215, 255, 70] : [20, 60, 140, 60],
+            getWidth: 1.5,
+            widthUnits: "pixels",
+            opacity: networkOpacity,
+            pickable: false,
+            updateTriggers: { getColor: [network.theme] },
+        })]
+    }, [networkPaths, networkOpacity, network.theme])
 
     const info = useRoadEntity(ref)
     useEffect(() => {
@@ -279,6 +316,8 @@ export function useRoadSelection(view: View | null, viewBbox: Bbox | null) {
         /** Whether `?road=` names a road (it may still be loading, or not exist). */
         selected: ref !== null,
         road, setRoad, active, hovered, onHover, onClick, onWheel, layers,
+        /** The hoverable roads, to draw under the data layers (`network.show`). */
+        networkLayers,
         info: info.data ?? null,
         notFound: info.isSuccess && !info.data,
         summary: summary.data ?? null,

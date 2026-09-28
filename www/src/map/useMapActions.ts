@@ -35,9 +35,8 @@ const MODE_LABELS: Record<MapMode, string> = { bins: "Bins", scatter: "Points", 
 const MODE_KEYS: Record<MapMode, string> = { bins: "m b", scatter: "m p", heatmap: "m h" }
 const HEAT_LABELS: Record<HeatRender, string> = {
     legacy: "Legacy (deck.gl HeatmapLayer)",
-    a: "A (baked KDE surface)",
     b: "B (soft-kernel discs)",
-    c: "C (tiled baked KDE)",
+    c: "C (tiled baked KDE; default)",
 }
 const SEV_LABELS: Record<Severity, string> = { f: "fatal", i: "injury", p: "property-damage" }
 const SEV_KEYS: Record<Severity, string> = { f: "m f", i: "m i", p: "m o" }

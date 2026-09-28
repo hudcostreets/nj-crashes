@@ -33,14 +33,14 @@ Render cells as GPU geometry with no per-frame aggregation. As shipped:
 - **Smooth:** ✅ (same layer family as Points; verified instant pan/zoom + level-change at statewide and city zoom, no per-frame re-aggregation). **Look:** continuous soft KDE-like surface; faint S2 texture only in mid-density areas at some zooms. **Verdict:** strong — may be *enough*; de-risks A.
 - Colormap is CPU-sampled for B (fine, since it's per-data-load only); A/C upload the same `colormap.ts` stops as a **GPU 1-D texture** so clim/ramp/opacity become free uniforms.
 
-### A — bake density to an image, pan a `BitmapLayer` (recommended headline) — ✅ BUILT (`?hr=a`)
+### A — bake density to an image, pan a `BitmapLayer` — built, then **dropped** (2026-09-28, see `map-mobile-perf.md` § Round 3: its single image over the fetched cells showed hard rectangular edges + a dark veil; C supersedes it)
 The CarbonPlan playbook minus zarr — implemented with a **CPU splat** rather than a GPU render-to-texture pass (`www/src/map/bakeDensity.ts`):
 - On each **data-load event** (cell set changes — level/filter/geo), splat each cell's severity-weighted count as a **Gaussian kernel** into an accumulation grid over the cells' world bounds (σ = `0.9×` the S2 cell edge, padded 3σ), normalize, and map through the shared `colormap.ts` ramp → an `ImageData`. Memoized on `[cells, dataRes]`, so it runs **once per data-load**, never on pan/zoom/opacity.
 - Hand that image to a stock **`BitmapLayer`** with the bake's lng/lat `bounds`. Pan/zoom = free textured-quad redraw.
 - **Smooth:** ✅ (BitmapLayer redraw only; verified statewide + city). **Look:** silky continuous KDE — smoother than B (no cell grid) while keeping corridor/intersection structure; the best-looking of the three. **Bake cost:** tens of ms per data-load (TTFR sits between B and legacy). **Resolution:** the image is fixed-res (`maxDim=1024`), but bounds shrink with the viewport's data so deep zoom stays crisp; extreme over-zoom past the bake density would soften.
 - **Why CPU not GPU-framebuffer:** doing render-to-texture *inside* deck.gl (vs CarbonPlan's standalone MapLibre CustomLayer) needs an awkward multi-pass; the CPU splat is fully in-hand, fast enough at these cell counts, and renders identically. **Deferred refinement:** move the colormap to a GPU 1-D texture via a `BitmapLayer` subclass (reusing `colormap.ts` stops), making clim/ramp/opacity free uniforms — worthwhile only if we expose those controls.
 
-### C — multiscale mercator-tile pyramid of baked KDE surfaces — ✅ BUILT (`?hr=c`)
+### C — multiscale mercator-tile pyramid of baked KDE surfaces — ✅ BUILT, **default since 2026-09-28** (`map-mobile-perf.md` § Round 3)
 The fix for A's blur: bake **per tile at the tile's own zoom** so the raster is always ~screen-resolution. `www/src/map/useHeatTiles.ts` + `tileMath.ts`:
 - **Own tiling, not `@deck.gl/geo-layers`.** Adding geo-layers dragged in a luma.gl peer range that conflicts with our pinned deck 9.3 stack (and silently bumped `use-prms`), so the tile grid (mercator z/x/y ↔ lng/lat, visible-tiles) + per-(tile,level,filter) fetch cache are hand-rolled (~120 lines) instead.
 - `getTileData` per tile: pick the S2 level from the tile z, fetch `/v1/cells?polygon=<tile bbox + margin>&res=<L>` (A-per-tile). `renderSubLayers` = a baked-KDE `BitmapLayer` per tile.
