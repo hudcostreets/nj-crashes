@@ -13,10 +13,18 @@
 #              to force DROP+CREATE+INSERT (escape hatch for schema
 #              changes or recovery).
 #
+# `--tables-prefix P` (cells-s2 only, with --inplace or --local): import a
+# fresh, *versioned* table set — `cells_s2_l{N}` is renamed `P{N}` in the
+# dump stream — alongside the live one, which isn't touched. No drop, no diff;
+# `CREATE TABLE` fails if the set already exists. The worker switches to it
+# when a manifest names it (`njdot compute cells push -d P`). See
+# specs/cells-immutable-keys.md § D1, specs/cells-d1-years.md.
+#
 # Usage:
 #   bash scripts/d1-import.sh --local            [db_name ...]
 #   bash scripts/d1-import.sh --inplace          [db_name ...]   # exact diff
 #   bash scripts/d1-import.sh --inplace --full   [db_name ...]   # full re-import
+#   bash scripts/d1-import.sh --inplace --tables-prefix cells_s2_<v>_l cells-s2
 #   bash scripts/d1-import.sh                    [db_name ...]   # remote, staging
 set -euo pipefail
 # Absolute path to this script's dir, resolved BEFORE the cd below — later
@@ -27,11 +35,13 @@ cd "$SCRIPT_DIR/.."
 
 MODE="remote"
 FULL=0
+TABLES_PREFIX=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --local)   MODE="local";   shift ;;
         --inplace) MODE="inplace"; shift ;;
         --full)    FULL=1;         shift ;;
+        --tables-prefix) TABLES_PREFIX="$2"; shift 2 ;;
         --) shift; break ;;
         -*)
             echo "Unknown flag: $1" >&2
@@ -75,6 +85,46 @@ declare -A BINDING_MAP=(
 
 requested=("$@")
 
+# The fixed table-name prefix in `cells-s2.db` that `--tables-prefix` renames.
+CELLS_TABLE_PREFIX="cells_s2_l"
+if [[ -n "$TABLES_PREFIX" ]]; then
+    if [[ "$MODE" == "remote" || "$FULL" -eq 1 ]]; then
+        echo "--tables-prefix needs --inplace or --local (and not --full)" >&2
+        exit 2
+    fi
+    if [[ "${requested[*]:-}" != "cells-s2" ]]; then
+        echo "--tables-prefix only applies to cells-s2 (got: ${requested[*]:-<all>})" >&2
+        exit 2
+    fi
+    if [[ ! "$TABLES_PREFIX" =~ ^[A-Za-z_][A-Za-z0-9_]*$ || "$TABLES_PREFIX" == "$CELLS_TABLE_PREFIX" ]]; then
+        echo "--tables-prefix must be an SQL identifier other than $CELLS_TABLE_PREFIX (got: $TABLES_PREFIX)" >&2
+        exit 2
+    fi
+fi
+
+# Rename `cells_s2_l{N}` → `$TABLES_PREFIX{N}` in a .schema / INSERT stream
+# (identity without --tables-prefix). Anchored at line start, so it can only
+# touch the statement's table name, never data.
+rewrite_tables() {
+    if [[ -z "$TABLES_PREFIX" ]]; then
+        cat
+    else
+        sed -E "s/^(CREATE TABLE|INSERT INTO) \"?${CELLS_TABLE_PREFIX}([0-9]+)\"?/\1 ${TABLES_PREFIX}\2/"
+    fi
+}
+
+# The name a local table has in D1 (see `rewrite_tables`).
+target_table() {
+    echo "$1" | rewrite_tables_name
+}
+rewrite_tables_name() {
+    if [[ -z "$TABLES_PREFIX" ]]; then
+        cat
+    else
+        sed -E "s/^${CELLS_TABLE_PREFIX}([0-9]+)$/${TABLES_PREFIX}\1/"
+    fi
+}
+
 wrangler_exec() {
     local db_name="$1" file="$2"
     if [[ "$MODE" == "local" ]]; then
@@ -106,7 +156,7 @@ import_data() {
 
     # Schema first (handles multi-line CREATE statements)
     local schema_file="$CHUNK_DIR/${db_name}_schema.sql"
-    sqlite3 "$local_path" .schema > "$schema_file"
+    sqlite3 "$local_path" .schema | rewrite_tables > "$schema_file"
     echo "  Importing schema..."
     wrangler_exec "$db_name" "$schema_file"
     rm -f "$schema_file"
@@ -114,7 +164,7 @@ import_data() {
     # Dump INSERT statements
     local inserts_file="$CHUNK_DIR/${db_name}_inserts.sql"
     echo "  Dumping INSERT statements..."
-    sqlite3 "$local_path" .dump | python3 "$SCRIPT_DIR/dump-compat.py" | grep '^INSERT ' > "$inserts_file"
+    sqlite3 "$local_path" .dump | python3 "$SCRIPT_DIR/dump-compat.py" | grep '^INSERT ' | rewrite_tables > "$inserts_file"
 
     local insert_lines
     insert_lines=$(wc -l < "$inserts_file")
@@ -183,12 +233,12 @@ verify_import() {
     for t in $tables; do
         local expected actual
         expected=$(local_row_count "$local_path" "$t")
-        actual=$(d1_row_count "$db_name" "$t")
+        actual=$(d1_row_count "$db_name" "$(target_table "$t")")
         if [[ "$expected" != "$actual" ]]; then
-            echo "  MISMATCH $t: expected $expected, got $actual"
+            echo "  MISMATCH $(target_table "$t"): expected $expected, got $actual"
             ok=false
         else
-            echo "  $t: $actual rows ✓"
+            echo "  $(target_table "$t"): $actual rows ✓"
         fi
     done
     if ! $ok; then
@@ -383,7 +433,9 @@ if [[ ${#import_dbs[@]} -eq 0 ]]; then
 fi
 
 if [[ "$MODE" == "local" || "$MODE" == "inplace" ]]; then
-    if [[ "$MODE" == "local" ]]; then
+    if [[ -n "$TABLES_PREFIX" ]]; then
+        echo "Importing into $MODE D1 as a new table set: ${CELLS_TABLE_PREFIX}{N} → ${TABLES_PREFIX}{N}"
+    elif [[ "$MODE" == "local" ]]; then
         echo "Importing into LOCAL D1 databases"
     elif [[ "$FULL" -eq 1 ]]; then
         echo "Importing into REMOTE D1 databases (in-place, full DROP+CREATE+INSERT)"
@@ -395,7 +447,10 @@ if [[ "$MODE" == "local" || "$MODE" == "inplace" ]]; then
         local_path="${DB_MAP[$db_name]}"
         size_human=$(du -h "$local_path" | cut -f1)
         echo "Importing $db_name ($size_human)..."
-        if [[ "$MODE" == "inplace" && "$FULL" -eq 0 ]]; then
+        if [[ -n "$TABLES_PREFIX" ]]; then
+            import_data "$db_name" "$local_path"
+            write_metadata "$db_name" "$local_path"
+        elif [[ "$MODE" == "inplace" && "$FULL" -eq 0 ]]; then
             import_db_diff "$db_name" "$local_path"
         else
             drop_tables "$db_name" "$local_path"

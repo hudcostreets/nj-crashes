@@ -13,11 +13,15 @@
  *  street-zoom request from decoding an entire 63 MB level file.
  *
  *  Two query paths:
- *  - **D1** (`cells_s2_l{level}`, all-years requests): one indexed
- *    `cellid BETWEEN` lex-range scan returning counts (+ labels).
+ *  - **D1** (`cells_s2_l{level}`): one indexed `cellid BETWEEN` lex-range
+ *    scan returning counts (+ labels). All-years requests read the rollup's
+ *    count columns; a year sub-range (and `group=year`) reads its `by_year`
+ *    column — per-year counts packed as TEXT, summed here (`by-year.ts`,
+ *    `specs/cells-d1-years.md`).
  *  - **Parquet pyramid** (`s2_pyramid/s2_l{level}/{token}.parquet`):
- *    year-filterable, row-group-pruned by the same ranges. Also the
- *    fallback whenever the D1 path errors.
+ *    year-filterable, row-group-pruned by the same ranges. The fallback
+ *    whenever the D1 path errors — including D1 tables that predate
+ *    `by_year` — and the only path for `labels=only`.
  *
  *  Response shape:
  *
@@ -38,7 +42,8 @@
  *  (`CellsColsResponse`, `toColumnar`); see `specs/cells-compact-wire-format.md`.
  */
 import { S2CellId, S2LatLng, S2LatLngRect, S2RegionCoverer } from "nodes2ts"
-import { type Manifest, d1Table, loadManifest, pyramidShardKey } from "./manifest"
+import { BY_YEAR_IDX, N_BY_YEAR, forEachYear, sumByYear } from "./by-year"
+import { type Manifest, MANIFEST_TTL_MS, d1Table, loadManifest, pyramidShardKey } from "./manifest"
 import { readParquetFromR2 } from "./parquet"
 import type { Timing } from "./timing"
 import {
@@ -226,7 +231,7 @@ export type CellsRequest = {
      *  derived weight, so weighting logic lives in exactly one place. */
     fields?: CountField[]
     /** `format=cols` only: `year` ⇒ `CellsColsYearResponse` (per-year rows,
-     *  always served from the parquet pyramid, which has them). */
+     *  from D1's `by_year` column, else the parquet pyramid). */
     group?: "year"
     /** `group=year` only: ceiling on (cell, year) rows; the worker coarsens
      *  (like `maxCells`) until the response fits. */
@@ -422,7 +427,7 @@ export async function handleCellsRequest(
             throw new HttpError(400, "format=cols serves counts only (labels must be unset or nums)")
         }
         if (req.group === "year") {
-            return queryCellsByYear(bucket, prefix, manifest, req, req.fields ?? COUNT_FIELDS, timing)
+            return queryCellsByYear(bucket, prefix, manifest, req, req.fields ?? COUNT_FIELDS, db, timing)
         }
         const r = await queryCells(bucket, prefix, manifest, { ...req, labels: "nums" }, db, false, timing)
         return toColumnar(r, req.fields ?? COUNT_FIELDS)
@@ -487,31 +492,49 @@ const zeroCounts = (): Record<CountField, number> => ({
     n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 0, n_killed: 0, n_killed_ped: 0,
 })
 
-/** `format=cols&group=year`: per-(cell, year) counts from the pyramid over
- *  the request's year range, coarsened on *distinct-cell* count against
- *  `maxCells` (the same walk `queryCells` does), as `CellsColsYearResponse`.
- *  Always the parquet path — the D1 rollup has no year axis. The pyramid's
- *  row groups are cellid-sorted with every year inside, so the year filter
- *  never pruned I/O anyway: an all-years read costs the same R2 bytes as a
- *  3-year one. */
+/** `format=cols&group=year`: per-(cell, year) counts over the request's year
+ *  range, coarsened on *distinct-cell* count against `maxCells` (the same
+ *  walk `queryCells` does), as `CellsColsYearResponse`. From D1's `by_year`
+ *  column when the tables have it, else (or on any D1 error) the pyramid.
+ *  The pyramid's row groups are cellid-sorted with every year inside, so
+ *  the year filter never pruned I/O there: an all-years read costs the same
+ *  R2 bytes as a 3-year one. */
 async function queryCellsByYear(
     bucket: R2Bucket,
     prefix: string,
     manifest: Manifest,
     req: CellsRequest,
     fields: readonly CountField[],
+    db: D1Database | undefined,
     timing?: Timing,
 ): Promise<CellsColsYearResponse> {
     const yearRange = req.yearRange ?? manifest.year_range
     const { clipPoly, ranges } = requestRanges(req)
-    timing?.note("src", "pyramid")
     let cells = new Map<string, YearCounts>()
+    let source: "d1" | "pyramid" = "pyramid"
     // Empty ranges ⇒ viewport disjoint from the shards (see `queryCells`).
     if (ranges.length) {
-        cells = await queryPyramidS2ByYear(
-            bucket, prefix, manifest, req.res, req.cells, yearRange, req.severities, clipPoly, ranges, timing,
-        )
+        const table = d1Table(manifest, req.res)
+        let fromD1: Map<string, YearCounts> | null = null
+        if (db && byYearAvailable(table)) {
+            try {
+                const t0 = Date.now()
+                fromD1 = await queryCellsS2D1ByYear(db, table, ranges, clipPoly, yearRange, req.severities)
+                timing?.add("d1", Date.now() - t0)
+            } catch (e) {
+                noteByYearFailure(table, e)
+            }
+        }
+        if (fromD1) {
+            cells = fromD1
+            source = "d1"
+        } else {
+            cells = await queryPyramidS2ByYear(
+                bucket, prefix, manifest, req.res, req.cells, yearRange, req.severities, clipPoly, ranges, timing,
+            )
+        }
     }
+    timing?.note("src", source)
     let level = req.res
     const t0 = Date.now()
     const rowCount = (m: Map<string, YearCounts>) => { let n = 0; for (const ys of m.values()) n += ys.size; return n }
@@ -527,7 +550,7 @@ async function queryCellsByYear(
     }
     timing?.add("coarsen", Date.now() - t0)
     return toColumnarByYear(
-        { res: level, year_range: yearRange, data_version: manifest.data_version, source: "pyramid", labels: "nums" },
+        { res: level, year_range: yearRange, data_version: manifest.data_version, source, labels: "nums" },
         cells, fields,
     )
 }
@@ -601,28 +624,30 @@ async function queryCells(
         }
     }
 
-    // D1 fast path: default (all-years, all-severity, full-labels)
-    // query hits `cells_s2_l{level}` — one indexed lex-range scan.
+    // D1 fast path: `cells_s2_l{level}` — one indexed lex-range scan.
     // Falls through to the parquet path on any failure (binding
-    // absent, table missing, oversized result).
+    // absent, table missing, `by_year` missing, oversized result).
     // A *severity* filter does not need the parquet: severity is pure
     // column-selection (the rollup stores `n_fatal` / `n_inj_ped` /
     // `n_inj_other` / `n_pdo` separately, and both query paths just gate
     // which counters accumulate), so D1 can serve it. Only a *year*
-    // sub-range genuinely needs the per-year rows the pyramid has and the
-    // rollup doesn't.
+    // sub-range needs per-year counts: the rollup's `by_year` column (when
+    // this table set has it — see `byYearAvailable`), else the pyramid.
     const coversAllYears = req.yearRange == null
         || (req.yearRange[0] <= manifest.year_range[0] && req.yearRange[1] >= manifest.year_range[1])
+    const table = d1Table(manifest, requestedLevel)
     //
     // `labels=nums` used to *disqualify* this path, which made the one
     // existing byte-saving lever cost 3-20× in latency (measured
     // 2026-08-22: statewide-mid l14 945ms full → 10.5s nums; Hudson l17
     // 3.0s → 21.9s). Nothing about dropping four columns needs the
     // parquet, so `nums` rides the same scan and just selects less.
-    if (db && coversAllYears && labels !== "only") {
+    if (db && labels !== "only" && (coversAllYears || byYearAvailable(table))) {
         try {
             const t0 = Date.now()
-            let cells = await queryCellsS2D1(db, d1Table(manifest, requestedLevel), ranges, clipPoly, sevSet, labels, fatalYears)
+            let cells = await queryCellsS2D1(
+                db, table, ranges, clipPoly, sevSet, labels, fatalYears, coversAllYears ? undefined : yearRange,
+            )
             const t1 = Date.now()
             let level = requestedLevel
             while (maxCells != null && cells.length > maxCells && level > S2_MIN_LEVEL) {
@@ -635,10 +660,11 @@ async function queryCells(
             timing?.add("d1", t1 - t0)
             timing?.add("coarsen", t2 - t1)
             timing?.count("cells", cells.length)
-            console.log(`[timing] s2 l${requestedLevel} D1 labels=${labels}→${served} ranges=${ranges.length} cells=${cells.length}: d1=${t1 - t0}ms, coarsen=${t2 - t1}ms, total=${t2 - t0}ms`)
+            console.log(`[timing] s2 l${requestedLevel} D1${coversAllYears ? "" : ` years=${yearRange.join("-")}`} labels=${labels}→${served} ranges=${ranges.length} cells=${cells.length}: d1=${t1 - t0}ms, coarsen=${t2 - t1}ms, total=${t2 - t0}ms`)
             return { res: level, year_range: yearRange, data_version: manifest.data_version, source: "d1", labels: served, cells }
         } catch (e) {
-            console.error(`S2 D1 path failed (level ${requestedLevel}), falling back to parquet:`, e)
+            if (coversAllYears) console.error(`S2 D1 path failed (level ${requestedLevel}), falling back to parquet:`, e)
+            else noteByYearFailure(table, e)
         }
     }
 
@@ -875,6 +901,9 @@ async function queryCellsS2D1(
     /** Select + parse `fatal_years`. Off for `format=cols`, which never
      *  ships it. */
     fatalYears = true,
+    /** Year sub-range: sum the `by_year` entries in it instead of reading
+     *  the all-years columns. */
+    yearRange?: [number, number],
 ): Promise<CellOut[]> {
     // Severity gating mirrors `queryPyramidS2` exactly — same counters, same
     // "drop cells with no hit in a requested severity" rule — so the two
@@ -885,8 +914,10 @@ async function queryCellsS2D1(
     const where = tokenRanges.length
         ? tokenRanges.map(r => `(cellid BETWEEN '${r.lo}' AND '${r.hi}')`).join(" OR ")
         : "1=1"
-    const cols = ["cellid", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "n_killed", "n_killed_ped"]
-    if (fatalYears) cols.push("fatal_years")
+    const cols = yearRange
+        ? ["cellid", "by_year"]
+        : ["cellid", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "n_killed", "n_killed_ped"]
+    if (fatalYears && !yearRange) cols.push("fatal_years")
     if (labels === "full") cols.push(...LABEL_KEYS)
     const sql = `SELECT ${cols.join(", ")} FROM ${table} WHERE ${where}`
     const { results } = await db.prepare(sql).all<{
@@ -894,10 +925,27 @@ async function queryCellsS2D1(
         n_fatal: number; n_inj_ped: number; n_inj_other: number; n_pdo: number; n_vehs: number
         n_killed: number; n_killed_ped: number
         fatal_years: string | null
+        by_year?: string | null
         sld_name?: string | null; cross_sld_name?: string | null; mun?: string | null; county?: string | null
     }>()
+    const sums = new Int32Array(N_BY_YEAR)
     const cells: CellOut[] = []
     for (const row of results) {
+        let rangeFatalYears: number[] | null = null
+        if (yearRange) {
+            // Rows mid-migration (or a bad build) have no per-year counts;
+            // fail the whole request over to the pyramid rather than serve a
+            // partial answer.
+            if (row.by_year == null) throw new Error(`${table}: NULL by_year for cell ${row.cellid}`)
+            rangeFatalYears = sumByYear(row.by_year, yearRange[0], yearRange[1], sums)
+            row.n_fatal = sums[BY_YEAR_IDX.n_fatal]
+            row.n_inj_ped = sums[BY_YEAR_IDX.n_inj_ped]
+            row.n_inj_other = sums[BY_YEAR_IDX.n_inj_other]
+            row.n_pdo = sums[BY_YEAR_IDX.n_pdo]
+            row.n_vehs = sums[BY_YEAR_IDX.n_vehs]
+            row.n_killed = sums[BY_YEAR_IDX.n_killed]
+            row.n_killed_ped = sums[BY_YEAR_IDX.n_killed_ped]
+        }
         const n_fatal = wantF ? row.n_fatal : 0
         const n_inj_ped = wantI ? row.n_inj_ped : 0
         const n_inj_other = wantI ? row.n_inj_other : 0
@@ -914,7 +962,9 @@ async function queryCellsS2D1(
             n_killed: row.n_killed ?? 0,
             n_killed_ped: row.n_killed_ped ?? 0,
         }
-        if (wantF && row.fatal_years) {
+        if (rangeFatalYears) {
+            if (fatalYears && wantF && rangeFatalYears.length) c.fatal_years = rangeFatalYears
+        } else if (wantF && row.fatal_years) {
             try {
                 const parsed = JSON.parse(row.fatal_years)
                 if (Array.isArray(parsed) && parsed.length) c.fatal_years = parsed as number[]
@@ -927,6 +977,81 @@ async function queryCellsS2D1(
         cells.push(c)
     }
     return cells
+}
+
+/** D1 read for `format=cols&group=year`: each cell's in-range `by_year`
+ *  entries become its per-year rows, with the pyramid path's rules — only
+ *  the requested severities' counters, and only years with ≥1 crash of a
+ *  requested severity (`queryPyramidS2ByYear`). */
+async function queryCellsS2D1ByYear(
+    db: D1Database,
+    table: string,
+    tokenRanges: Array<{ lo: string; hi: string }>,
+    clipPoly: LonLatPolygon | null,
+    yearRange: [number, number],
+    severities?: Set<"f" | "i" | "p">,
+): Promise<Map<string, YearCounts>> {
+    const wantF = !severities || severities.has("f")
+    const wantI = !severities || severities.has("i")
+    const wantP = !severities || severities.has("p")
+    const where = tokenRanges.map(r => `(cellid BETWEEN '${r.lo}' AND '${r.hi}')`).join(" OR ")
+    const { results } = await db.prepare(`SELECT cellid, by_year FROM ${table} WHERE ${where}`)
+        .all<{ cellid: string; by_year: string | null }>()
+    const [y0, y1] = yearRange
+    const out = new Map<string, YearCounts>()
+    for (const { cellid, by_year } of results) {
+        if (by_year == null) throw new Error(`${table}: NULL by_year for cell ${cellid}`)
+        let ys: YearCounts | null = null
+        forEachYear(by_year, (year, c) => {
+            if (year < y0 || year > y1) return
+            const n_fatal = wantF ? c[BY_YEAR_IDX.n_fatal] : 0
+            const n_inj_ped = wantI ? c[BY_YEAR_IDX.n_inj_ped] : 0
+            const n_inj_other = wantI ? c[BY_YEAR_IDX.n_inj_other] : 0
+            const n_pdo = wantP ? c[BY_YEAR_IDX.n_pdo] : 0
+            if (!(n_fatal > 0 || n_inj_ped > 0 || n_inj_other > 0 || n_pdo > 0)) return
+            ys ??= new Map()
+            ys.set(year, {
+                n_fatal, n_inj_ped, n_inj_other, n_pdo,
+                n_vehs: c[BY_YEAR_IDX.n_vehs],
+                n_killed: c[BY_YEAR_IDX.n_killed],
+                n_killed_ped: c[BY_YEAR_IDX.n_killed_ped],
+            })
+        })
+        // Clip after the (cheap) year/severity filter: most rows of a narrow
+        // range drop there, before the token → lat/lng projection.
+        if (ys && cellInPolygonS2(cellid, clipPoly)) out.set(cellid, ys)
+    }
+    return out
+}
+
+/** D1 tables known to lack `by_year` (→ `now + MANIFEST_TTL_MS`). A table
+ *  set imported before `specs/cells-d1-years.md` has no such column; rather
+ *  than fail a D1 round trip per year-filtered request until the new set is
+ *  activated, skip D1 for that table for a minute (the manifest's re-read
+ *  interval, which is also how fast a new table set goes live). */
+const noByYear = new Map<string, number>()
+
+function byYearAvailable(table: string, now: number = Date.now()): boolean {
+    const until = noByYear.get(table)
+    if (until == null) return true
+    if (now < until) return false
+    noByYear.delete(table)
+    return true
+}
+
+/** Log a failed `by_year` read; remember a missing column (see `noByYear`). */
+function noteByYearFailure(table: string, e: unknown, now: number = Date.now()): void {
+    if (/no such column: by_year/.test(String(e))) {
+        noByYear.set(table, now + MANIFEST_TTL_MS)
+        console.log(`${table} has no by_year column; serving year ranges from the pyramid`)
+    } else {
+        console.error(`S2 D1 by_year read failed (${table}), falling back to parquet:`, e)
+    }
+}
+
+/** Test-only: forget which tables lack `by_year`. */
+export function _resetByYearCache(): void {
+    noByYear.clear()
 }
 
 /** S2 analog of `coarsenCells` — rolls fine-level cells up to a coarser

@@ -11,4 +11,5 @@ meta:
       s2-sld.parquet: 32021afc286441ae90b60236d98c7016
     git_deps:
       /njdot/cli/cells.py: 5ec1f922e2b3e61fa72e462d663892e7764dd82c
+      /njdot/cells_years.py: 4503e2dcba8a769a6a62e260e273ca7b331207b2
       /njdot/s2.py: 18b3290b93befcb93f8edcffeb141a8782ccfe7d

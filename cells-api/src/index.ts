@@ -27,9 +27,10 @@ interface Env {
     CELLS_BUCKET: R2Bucket
     CORS_ORIGIN: string
     CELLS_PREFIX: string
-    /** Per-cell all-years rollup (counts + labels), `cells_s2_l{level}`.
-     *  Serves any all-years request directly; a year sub-range, a missing
-     *  binding, or any D1 error falls through to the R2 parquet pyramid. */
+    /** Per-cell rollup (counts + labels + packed per-year counts `by_year`),
+     *  `cells_s2_l{level}`. Serves any year range (tables without `by_year`:
+     *  all-years only); a missing binding or any D1 error falls through to
+     *  the R2 parquet pyramid. See specs/cells-d1-years.md. */
     CELLS_S2_DB?: D1Database
     /** Picker-tuning preference votes (`/v1/tune/votes`, see `tune.ts`).
      *  Optional so a deploy without the binding still serves cells. */

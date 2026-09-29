@@ -1,6 +1,6 @@
 # Year-filtered `/v1/cells` from D1
 
-Status: **proposed** (spec first; implementation follows on this branch).
+Status: **implemented, not rolled out** — build, worker, `d1-import.sh --tables-prefix` and tests are on this branch; nothing is deployed, imported or pushed. Rollout steps at the end.
 
 ## Problem
 
@@ -97,6 +97,8 @@ So the `.db` grows ~0.50 → ~0.63 GB (plus SQLite record overhead, a few bytes 
 
 The encoder is a single SQL expression built by `njdot.cells_years.entry_sql()` (unit-tested against the Python reference `encode_entry`, plus a round trip through `_cells_db_s2` on a synthetic raw shard).
 
+Checked on a real sample (2 row groups = 40 k crashes of `raw/s2_l21/89d.parquet`, all 18 levels, no labels): every row's `by_year` decodes to sums equal to its all-years columns and `fatal_years`; 149 k `(cell, year)` entries cost 1.06 MB of text (7.1 B/entry incl. `;`) and ~5.9 B/entry on disk — consistent with the ~128 MB estimate above.
+
 ## Worker
 
 `cells-api/src/by-year.ts`: `BY_YEAR_FIELDS`, `sumByYear(enc, y0, y1, out)` (sums the entries in range into a 7-slot array, returns the fatal years in range) and `forEachYear(enc, cb)`. Both parse char codes directly — no `split`, no per-entry allocation.
@@ -114,6 +116,15 @@ Routing in `queryCells` (rows / `format=cols`):
 
 **Caching**: unchanged. The edge-cache key already includes D1's `_metadata.source_md5`, so the import invalidates every year-filtered answer that was served from the pyramid.
 
+## Files
+
+- `njdot/cells_years.py`: grammar, `FIELDS`, reference `encode_entry` / `encode` / `decode`, the duckdb `entry_sql()`.
+- `njdot/cli/cells.py` (`_cells_db_s2`): two-stage aggregation, `by_year TEXT NOT NULL` last column, bounded duckdb. `data/cells/cells-s2.db.dvc` gains a `/njdot/cells_years.py` `git_deps` entry (existing hashes untouched).
+- `cells-api/src/by-year.ts`: `forEachYear`, `sumByYear`, `BY_YEAR_FIELDS`.
+- `cells-api/src/cells.ts`: `queryCellsS2D1(…, yearRange)`, `queryCellsS2D1ByYear`, the `noByYear` memo; `queryCells` / `queryCellsByYear` routing.
+- `api/scripts/d1-import.sh`: `--tables-prefix P` (below).
+- Tests: `tests/test_cells_years.py` (encode/decode, `entry_sql` ≡ reference, `_cells_db_s2` exact rows + sums), `cells-api/src/by-year.test.ts` (decoder, shared literal with the Python test), `cells-api/src/d1-years.test.ts` (D1 years path: SQL + exact responses for rows / severities + labels / `group=year`; fallback on missing column with the 60 s memo; fallback on NULL; and — with the local pyramid — D1 ≡ pyramid cell-for-cell over 3 year ranges × 3 severity sets and for `group=year` at l17 around Journal Square).
+
 ## Out of scope
 
 - **topK / crash lists**: `/v1/cells` never serves them (the pyramid's `topK` column is unused by the worker); crash lists come from `crashes-api`'s D1. Nothing changes.
@@ -128,7 +139,7 @@ The exact-diff `--inplace` import can't carry a schema change (`d1-diff.py`'s `E
 
 Steps (none run from this branch):
 
-1. **Rebuild `cells-s2.db` on Batch**: push the branch, bump `nj-crashes-reproc`'s `ref` in `batch/infra/Pulumi.hccs.yaml`, `AWS_PROFILE=h pulumi up --stack hccs` (in `batch/infra`), then `AWS_PROFILE=h batch/submit -b reproc-results/cells-d1-years run -r r2 --no-commit --push each data/cells/cells-s2.db.dvc` (no `-f`; first check `dvx status data/cells/cells-s2.db.dvc` shows it stale from the `njdot/cli/cells.py` change and nothing upstream). Take `cells-s2.db.dvc` from the `reproc-results/*` branch; sanity: `sqlite3 cells-s2.db 'SELECT count(*) FROM cells_s2_l21'` equals today's, and the `.db` is ~0.6–0.7 GB.
+1. **Rebuild `cells-s2.db` on Batch**: push the branch, bump `nj-crashes-reproc`'s `ref` in `batch/infra/Pulumi.hccs.yaml`, `AWS_PROFILE=h pulumi up --stack hccs` (in `batch/infra`), then `AWS_PROFILE=h batch/submit -b reproc-results/cells-d1-years run -r r2 --no-commit --push each data/cells/cells-s2.db.dvc` (no `-f`). Expect the upstream `raw/s2_l21.dvc` and `s2-sld.parquet.dvc` to re-run too: their `git_deps` pin `/njdot/cli/cells.py` at `5ec1f922…`, which HEAD had already moved past before this branch (the immutable-keys commits). Both are deterministic, so their outputs must come back **byte-identical** (same md5s in the `reproc-results/*` `.dvc`s) — if either changed, the R2 pyramid no longer matches the new D1 rows and `s2_pyramid` has to be rebuilt + pushed too before step 4. Take `cells-s2.db.dvc` (and the refreshed `git_deps` in the two upstream `.dvc`s) from the `reproc-results/*` branch; sanity: `sqlite3 cells-s2.db 'SELECT count(*) FROM cells_s2_l21'` equals today's, `SELECT by_year FROM cells_s2_l4` looks like `1:…;2:…;…;25:…`, and the `.db` is ~0.6–0.7 GB.
 2. **Deploy the dev worker**: `cd cells-api && pnpm exec wrangler deploy --env dev`. No behavior change yet (the live tables have no `by_year` → pyramid).
 3. **Import the new table set** (laptop is fine for this): `dvx pull data/cells/cells-s2.db.dvc`, then `bash api/scripts/d1-import.sh --inplace --tables-prefix cells_s2_<v>_l cells-s2`, `<v>` = the new `.db` md5's first 8 hex chars (use `infra/hccs-run` for the CF token). Old worker + old manifest keep reading `cells_s2_l*`.
 4. **Activate**: `infra/r2-run njdot compute cells push -d cells_s2_<v>_l` (pyramid unchanged ⇒ 0 uploads; writes a new manifest naming the new tables; activates). Within 60 s both workers read `cells_s2_<v>_l*`: prod (old code) serves all-years from it as before; dev serves year ranges from it too.
