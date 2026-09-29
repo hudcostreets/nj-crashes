@@ -12,5 +12,5 @@ meta:
       /njdot/data/nj_mp_tenths.parquet: 7f409f4625279b8ce87791748d28017c
       /www/public/Municipal_Boundaries_of_NJ.geojson: 54a252d859eea2207da0fb933661dca0
     git_deps:
-      /njdot/cli/cells.py: 5ec1f922e2b3e61fa72e462d663892e7764dd82c
+      /njdot/cli/cells.py: 4642e91adefe12ff2381dce6ab53481fa3998e5f
       /njdot/sld.py: 344bd7be2965e150f2b47a7cfc28f55ae587d971
