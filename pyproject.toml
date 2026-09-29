@@ -33,6 +33,10 @@ dependencies = [
     "pyarrow==21.0.0",
     "PyGithub>=2.6",
     "pyogrio>=0.10",
+    # Content-hashed shard-key grammar + write protocol (`pyrmts.keys`) for
+    # `njdot compute cells push`/`gc` (specs/cells-immutable-keys.md). Core
+    # package only; its `pyarrow==22` pin is overridden below.
+    "pyrmts @ git+https://github.com/runsascoded/pyrmts@0e3a23088209e400a2347a023f674d00d6eb723e#subdirectory=python/pyrmts",
     "pyproj>=3.7",
     "pyyaml>=6.0",
     "requests>=2.32",
@@ -75,6 +79,14 @@ build-backend = "hatchling.build"
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[tool.uv]
+# `pyrmts` (core) pins `pyarrow==22.0.0` to match ctbk's byte-reproducible
+# parquet writer; this repo's parquets (and their DVX md5s) are pinned to 21.
+# `pyrmts.keys` doesn't touch pyarrow, and the rest of the core imports fine on
+# 21. Drop once pyrmts relaxes the core pin (pyrmts
+# `specs/core-gc-and-pyarrow-range.md`).
+override-dependencies = ["pyarrow==21.0.0"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["nj_crashes", "njsp", "njdot"]

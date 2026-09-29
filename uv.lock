@@ -9,6 +9,9 @@ resolution-markers = [
     "python_full_version < '3.12'",
 ]
 
+[manifest]
+overrides = [{ name = "pyarrow", specifier = "==21.0.0" }]
+
 [[package]]
 name = "aiobotocore"
 version = "2.24.3"
@@ -2616,6 +2619,7 @@ dependencies = [
     { name = "pygithub" },
     { name = "pyogrio" },
     { name = "pyproj" },
+    { name = "pyrmts" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "s2sphere" },
@@ -2675,6 +2679,7 @@ requires-dist = [
     { name = "pygithub", specifier = ">=2.6" },
     { name = "pyogrio", specifier = ">=0.10" },
     { name = "pyproj", specifier = ">=3.7" },
+    { name = "pyrmts", git = "https://github.com/runsascoded/pyrmts?subdirectory=python%2Fpyrmts&rev=0e3a23088209e400a2347a023f674d00d6eb723e" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8" },
     { name = "python-dotenv", marker = "extra == 'bsky'", specifier = ">=1.0" },
     { name = "python-dotenv", marker = "extra == 'slack'", specifier = ">=1.0" },
@@ -3616,6 +3621,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/e8/8b/a3f0618b03957de9db5489a04558a8826f43906628bb0b766033aa3b5548/pyproj-3.7.2-cp314-cp314t-win32.whl", hash = "sha256:c9b6f1d8ad3e80a0ee0903a778b6ece7dca1d1d40f6d114ae01bc8ddbad971aa", size = 6056848, upload-time = "2025-08-14T12:05:37.553Z" },
     { url = "https://files.pythonhosted.org/packages/bc/56/413240dd5149dd3291eda55aa55a659da4431244a2fd1319d0ae89407cfb/pyproj-3.7.2-cp314-cp314t-win_amd64.whl", hash = "sha256:1914e29e27933ba6f9822663ee0600f169014a2859f851c054c88cf5ea8a333c", size = 6517676, upload-time = "2025-08-14T12:05:39.126Z" },
     { url = "https://files.pythonhosted.org/packages/15/73/a7141a1a0559bf1a7aa42a11c879ceb19f02f5c6c371c6d57fd86cefd4d1/pyproj-3.7.2-cp314-cp314t-win_arm64.whl", hash = "sha256:d9d25bae416a24397e0d85739f84d323b55f6511e45a522dd7d7eae70d10c7e4", size = 6391844, upload-time = "2025-08-14T12:05:40.745Z" },
+]
+
+[[package]]
+name = "pyrmts"
+version = "0.0.0"
+source = { git = "https://github.com/runsascoded/pyrmts?subdirectory=python%2Fpyrmts&rev=0e3a23088209e400a2347a023f674d00d6eb723e#0e3a23088209e400a2347a023f674d00d6eb723e" }
+dependencies = [
+    { name = "pyarrow" },
+    { name = "pyyaml" },
 ]
 
 [[package]]

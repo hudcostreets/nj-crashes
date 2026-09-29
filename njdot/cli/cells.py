@@ -6,7 +6,12 @@ Phases produce, under {out_dir} (default `data/cells/`):
     s2-sld.parquet                                # Phase 2: per-cell road/muni labels
     s2_pyramid/s2_l{N}/{shard_token}.parquet      # Phase 3: per-level rollups (N in S2_LEVELS)
     cells-s2.db                                   # Phase 4: all-years rollup → D1
-    manifest.json
+    manifest.json                                 # content-hashed R2 keys (`cells manifest`)
+
+Local names are fixed (DVX-tracked); `cells push` publishes the pyramid to R2
+under immutable content-hashed keys and cuts over by writing `manifest.json`
+last (`cells activate` / `cells gc` for rollback and cleanup) — see
+`njdot/cells_publish.py` and specs/cells-immutable-keys.md.
 
 `shard_token` is the S2 cell's token at `shard_level` (default l4 — NJ is two
 of them). Within each raw shard, rows are sorted by `s2_l{base_level}`
@@ -19,9 +24,7 @@ S2 replaced H3 here — see specs/s2-pyramid.md and specs/h3-removal.md. Also
 specs/cfw-cells-pipeline.md and specs/cfw-cells-api.md.
 """
 import json
-import os
-import subprocess
-from datetime import datetime, timezone
+from datetime import timedelta
 from pathlib import Path
 from time import time
 
@@ -32,7 +35,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from nj_crashes.utils.log import err
-from njdot import s2
+from njdot import cells_publish, s2
 from njdot.cli.base import compute
 from njdot.map_base import _build_base, read_recovered_points
 from njdot.load import load_crashes_with_aashto
@@ -51,7 +54,6 @@ MAP_INPUT_COLS = [
 
 
 TOPK_DEFAULT = 10
-SCHEMA_VERSION = 5
 
 SLD_COLS = ('sld_name', 'cross_sld_name', 'mun', 'county')
 
@@ -78,17 +80,9 @@ S2_SHARD_LEVEL_DEFAULT = 4       # NJ is two level-4 cells (`89b`, `89d`)
 S2_LEVELS_DEFAULT = tuple(range(4, 22))
 R2_BUCKET_DEFAULT = 'crashes'
 R2_PREFIX_DEFAULT = 'cells'
+# Anonymous read of the DVX remote (`public` in .dvc/config).
+DVX_PUBLIC_URL = 'https://crashes-data.hccs.dev/.dvc'
 
-
-
-def _git_sha() -> str:
-    try:
-        return subprocess.check_output(
-            ['git', 'rev-parse', '--short', 'HEAD'],
-            stderr=subprocess.DEVNULL,
-        ).decode().strip()
-    except Exception:
-        return 'unknown'
 
 
 @compute.group('cells')
@@ -386,86 +380,51 @@ def cells_pyramid(base_level: int | None, force: bool, topk: int, levels: str | 
     return _cells_pyramid_s2(base_level, force, topk, levels, out_dir, row_group_size, shard_level, sld_path)
 
 
+def _detect_base_level(out_dir: Path) -> int:
+    raw_root = out_dir / 'raw'
+    cand = sorted(
+        int(p.name[len('s2_l'):]) for p in raw_root.glob('s2_l*')
+        if p.is_dir() and any(p.glob('*.parquet'))
+    )
+    if not cand:
+        err(f'No raw S2 index under {raw_root}; run `compute cells raw` first')
+        raise SystemExit(1)
+    return cand[-1]
+
+
+def _write_manifest(out_dir: Path, base_level: int | None, levels: str | None, shard_level: int, d1_table_prefix: str) -> dict:
+    """Build the local build's manifest (`njdot.cells_publish.build_manifest`)
+    and write it to `{out_dir}/manifest.json`."""
+    if base_level is None:
+        base_level = _detect_base_level(out_dir)
+    level_ints = sorted(int(x) for x in (levels or ','.join(map(str, S2_LEVELS_DEFAULT))).split(',') if x.strip())
+    manifest = cells_publish.build_manifest(out_dir, base_level, level_ints, shard_level, d1_table_prefix)
+    out_path = out_dir / 'manifest.json'
+    out_path.write_bytes(cells_publish.dumps(manifest))
+    err(f'Wrote {out_path}: data_version {manifest["data_version"]}')
+    err(f'  raw rows: {manifest["row_counts"]["raw"]:,}, year_range: {manifest["year_range"]}')
+    err(f'  pyramid: {len(manifest["shards"])} shards over levels {manifest["pyramid_levels"]}')
+    return manifest
+
+
 @cells.command('manifest')
 @click.option('-b', '--base-level', type=int, default=None, help='Raw S2 base level (default: auto-detect from raw/s2_l* dirs)')
+@click.option('-d', '--d1-table-prefix', default=cells_publish.D1_TABLE_PREFIX_DEFAULT, show_default=True, help='D1 table-name prefix the worker queries (`{prefix}{level}`) for this build')
 @click.option('-l', '--levels', default=None, help=f'Comma-separated pyramid levels (default: {",".join(map(str, S2_LEVELS_DEFAULT))})')
 @click.option('-o', '--out-dir', type=click.Path(path_type=Path), default=OUT_DIR_DEFAULT)
 @click.option('-s', '--shard-level', type=int, default=S2_SHARD_LEVEL_DEFAULT, show_default=True, help='S2 level the raw/pyramid files are sharded by')
-def cells_manifest(base_level: int | None, levels: str | None, out_dir: Path, shard_level: int):
-    """Walk on-disk shards and emit `manifest.json`.
+def cells_manifest(base_level: int | None, d1_table_prefix: str, levels: str | None, out_dir: Path, shard_level: int):
+    """Walk on-disk shards and emit `manifest.json` (schema 6).
 
-    The worker reads two fields from this: `data_version` (its ETag salt, so a
-    fresh push invalidates client + edge caches) and `year_range` (the default
-    when a request omits `years`, and the "covers all years" test that routes a
-    request to the D1 rollup instead of the parquet pyramid). Everything else is
-    for humans and for `/v1/manifest` debugging.
+    Besides `year_range` (the default request range, and the "covers all
+    years" test that routes to D1) and `data_version` (the worker's ETag /
+    edge-cache salt), it carries `shards`: each pyramid slot's content-hashed
+    R2 key (`s2_pyramid/s2_l{L}/{shard}.{hash:12}.parquet`), md5 and size —
+    the registry the worker resolves reads through — and `d1.table_prefix`.
+    Deterministic: `data_version` hashes everything else, so the same build
+    always yields the same manifest. See specs/cells-immutable-keys.md.
     """
-    raw_root = out_dir / 'raw'
-    if base_level is None:
-        cand = sorted(
-            int(p.name[len('s2_l'):]) for p in raw_root.glob('s2_l*')
-            if p.is_dir() and any(p.glob('*.parquet'))
-        )
-        if not cand:
-            err(f'No raw S2 index under {raw_root}; run `compute cells raw` first')
-            raise SystemExit(1)
-        base_level = cand[-1]
-    level_ints = sorted(int(x) for x in (levels or ','.join(map(str, S2_LEVELS_DEFAULT))).split(',') if x.strip())
-    raw_dir = raw_root / f's2_l{base_level}'
-    if not raw_dir.exists():
-        err(f'{raw_dir} does not exist; run `compute cells raw` first')
-        raise SystemExit(1)
-
-    raw_shards = sorted(p.stem for p in raw_dir.glob('*.parquet'))
-    if not raw_shards:
-        err(f'No raw shards found in {raw_dir}')
-        raise SystemExit(1)
-
-    row_counts: dict[str, int] = {}
-    raw_total = 0
-    years_seen: set[int] = set()
-    for shard in raw_shards:
-        f = pq.ParquetFile(raw_dir / f'{shard}.parquet')
-        raw_total += f.metadata.num_rows
-        # Pull year range cheaply from RG stats.
-        idx = f.schema_arrow.get_field_index('year')
-        if idx >= 0:
-            for rg_i in range(f.metadata.num_row_groups):
-                stats = f.metadata.row_group(rg_i).column(idx).statistics
-                if stats and stats.has_min_max:
-                    years_seen.add(int(stats.min))
-                    years_seen.add(int(stats.max))
-    row_counts['raw'] = raw_total
-
-    built_levels: list[int] = []
-    for level in level_ints:
-        pdir = out_dir / 's2_pyramid' / f's2_l{level}'
-        if not pdir.exists():
-            continue
-        paths = sorted(pdir.glob('*.parquet'))
-        if not paths:
-            continue
-        built_levels.append(level)
-        row_counts[f's2_l{level}'] = sum(pq.ParquetFile(p).metadata.num_rows for p in paths)
-
-    sha = _git_sha()
-    ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
-    manifest = {
-        'schema_version': SCHEMA_VERSION,
-        'data_version': f'{ts}-{sha}',
-        'grid': 's2',
-        'base_level': base_level,
-        'shard_level': shard_level,
-        'pyramid_levels': built_levels,
-        'year_range': [min(years_seen), max(years_seen)] if years_seen else None,
-        'shard_cells': raw_shards,
-        'row_counts': row_counts,
-    }
-    out_path = out_dir / 'manifest.json'
-    out_path.write_text(json.dumps(manifest, indent=2) + '\n')
-    err(f'Wrote {out_path}')
-    err(f'  raw rows: {raw_total:,}, shards: {len(raw_shards)}, year_range: {manifest["year_range"]}')
-    err(f'  pyramid levels built: {built_levels}')
+    _write_manifest(out_dir, base_level, levels, shard_level, d1_table_prefix)
 
 
 @cells.command('db')
@@ -672,35 +631,106 @@ def cells_sld(base_level: int | None, levels: str | None, mp_path: str, muni_pat
     err(f'Wrote {out_path} ({len(enriched):,} cells, {n_mun:,} with muni)')
 
 
+def _committed_pyramid_dir(out_dir: Path) -> list[dict] | None:
+    """The `.dir` listing (`[{relpath, md5}]`) that `s2_pyramid.dvc` records,
+    from the local DVX cache or the public remote; None if unavailable."""
+    import yaml
+    dvc_path = out_dir / 's2_pyramid.dvc'
+    if not dvc_path.exists():
+        return None
+    md5 = yaml.safe_load(dvc_path.read_text())['outs'][0]['md5']
+    rel = f'{md5[:2]}/{md5[2:]}'
+    cached = Path(ROOT_DIR) / '.dvc' / 'cache' / 'files' / 'md5' / rel
+    if cached.exists():
+        return json.loads(cached.read_text())
+    import requests
+    r = requests.get(f'{DVX_PUBLIC_URL}/files/md5/{rel}', timeout=30)
+    if r.status_code != 200:
+        return None
+    return r.json()
+
+
 @cells.command('push')
-@click.option('-b', '--bucket', default=R2_BUCKET_DEFAULT, help=f'R2 bucket (default: {R2_BUCKET_DEFAULT})')
-@click.option('-D', '--no-delete', is_flag=True, help='Additive push (skip `--delete`). Use when local lacks legacy data still needed in R2.')
-@click.option('-n', '--dry-run', is_flag=True, help='Show what would be uploaded without uploading')
+@click.option('-A', '--no-activate', is_flag=True, help="Stage only: push blobs + `manifests/<data_version>.json`, leave `manifest.json` (the live build) alone; cut over later with `cells activate`")
+@click.option('-b', '--bucket', default=R2_BUCKET_DEFAULT, show_default=True, help='R2 bucket')
+@click.option('-C', '--no-copy', is_flag=True, help='Always upload local bytes (skip the server-side copy from the DVX remote\'s blobs)')
+@click.option('-d', '--d1-table-prefix', default=cells_publish.D1_TABLE_PREFIX_DEFAULT, show_default=True, help='D1 table-name prefix recorded in the manifest')
+@click.option('-n', '--dry-run', is_flag=True, help='Report what would be uploaded / written, without writing')
 @click.option('-o', '--out-dir', type=click.Path(path_type=Path), default=OUT_DIR_DEFAULT)
-@click.option('-p', '--prefix', default=R2_PREFIX_DEFAULT, help=f'Bucket prefix (default: {R2_PREFIX_DEFAULT})')
-@click.option('-q', '--quiet', is_flag=True, help='`--only-show-errors` (suppress per-file progress; huge with 100k+ shards)')
-@click.option('--profile', default=None, help='AWS profile for R2 (default: ambient creds, e.g. from `infra/r2-run`)')
-def cells_push(bucket: str, no_delete: bool, dry_run: bool, out_dir: Path, prefix: str, quiet: bool, profile: str | None):
-    """Mirror `out_dir` to s3://{bucket}/{prefix}/ for the worker (excludes .dvc artifacts)."""
-    s3_uri = f's3://{bucket}/{prefix}/'
-    cmd = [
-        'aws', 's3', 'sync', f'{out_dir}/', s3_uri,
-        '--exclude', '*.dvc',
-        # Both the top-level ignore and the per-dir ones DVX generates
-        # alongside each tracked out (e.g. `raw/.gitignore`); `--exclude
-        # .gitignore` alone only matches the former.
-        '--exclude', '.gitignore',
-        '--exclude', '*/.gitignore',
-        # cells.db is a D1 import source (loaded via `d1-import.sh`), not
-        # worker-served from R2 — keep it out of the bucket mirror.
-        '--exclude', '*.db',
-    ]
-    if not no_delete:
-        cmd.append('--delete')
-    if dry_run:
-        cmd.append('--dryrun')
-    if quiet:
-        cmd.append('--only-show-errors')
-    env = {**os.environ, **({'AWS_PROFILE': profile} if profile else {})}
-    err(f'$ {f"AWS_PROFILE={profile} " if profile else ""}{" ".join(cmd)}')
-    subprocess.run(cmd, env=env, check=True)
+@click.option('-p', '--prefix', default=R2_PREFIX_DEFAULT, show_default=True, help='Cells root prefix in the bucket (the worker\'s `CELLS_PREFIX`)')
+@click.option('-u', '--uncommitted', is_flag=True, help='Allow pushing local pyramid bytes that differ from the md5s `s2_pyramid.dvc` records')
+def cells_push(no_activate: bool, bucket: str, no_copy: bool, d1_table_prefix: str, dry_run: bool, out_dir: Path, prefix: str, uncommitted: bool):
+    """Publish the local build to s3://{bucket}/{prefix}/ with immutable keys.
+
+    1. Build `manifest.json` from the local files (content-hashed keys).
+    2. Put each pyramid shard at `s2_pyramid/s2_l{L}/{shard}.{hash:12}.parquet`
+       if absent (server-side copy from the DVX remote's blob when it has it;
+       never overwrites, never deletes).
+    3. Put `manifests/{data_version}.json` (immutable).
+    4. Unless `-A`: put `manifest.json` — the atomic cutover (the worker
+       re-reads it within a minute).
+
+    `raw/` and `s2-sld.parquet` are no longer mirrored (the worker reads
+    neither; both live in the DVX remote). Old blobs go via `cells gc`.
+    See specs/cells-immutable-keys.md.
+    """
+    manifest = _write_manifest(out_dir, None, None, S2_SHARD_LEVEL_DEFAULT, d1_table_prefix)
+    committed = _committed_pyramid_dir(out_dir)
+    if committed is None:
+        err('WARNING: could not read the `s2_pyramid.dvc` `.dir` listing; skipping the committed-bytes check')
+    else:
+        diff = cells_publish.check_against_dvx(manifest, committed)
+        if diff:
+            msg = f'{len(diff)} pyramid slot(s) differ from `s2_pyramid.dvc` (e.g. {diff[0]}): the build is not committed'
+            if not uncommitted:
+                err(f'{msg}; `dvx add`/commit it first, or pass -u/--uncommitted')
+                raise SystemExit(1)
+            err(f'WARNING: {msg}')
+    storage = cells_publish.r2_storage(bucket, prefix)
+    dvx = None if no_copy else cells_publish.R2DvxBlobs(bucket, prefix)
+    res = cells_publish.push(storage, manifest, out_dir, activate=not no_activate, dvx=dvx, dry_run=dry_run)
+    verb = 'would' if dry_run else 'did'
+    err(f'{res.data_version}: {len(res.present)} shard(s) already present; {verb} write {len(res.uploaded) + len(res.copied)} '
+        f'({len(res.copied)} server-side copies from the DVX remote, {len(res.uploaded)} uploads)')
+    if res.manifest_written:
+        err(f'  {verb} write {cells_publish.manifest_key(res.data_version)}')
+    if res.activated:
+        err(f'  {verb} activate: s3://{bucket}/{prefix}/{cells_publish.MANIFEST_KEY} → {res.data_version}')
+    else:
+        err(f'  staged; cut over with: njdot compute cells activate -p {prefix} {res.data_version}')
+    print(res.data_version)
+
+
+@cells.command('activate')
+@click.option('-b', '--bucket', default=R2_BUCKET_DEFAULT, show_default=True, help='R2 bucket')
+@click.option('-n', '--dry-run', is_flag=True, help='Verify the build is complete in R2, without switching')
+@click.option('-p', '--prefix', default=R2_PREFIX_DEFAULT, show_default=True, help='Cells root prefix in the bucket')
+@click.argument('data_version')
+def cells_activate(bucket: str, dry_run: bool, prefix: str, data_version: str):
+    """Make an already-pushed build live (cutover, or rollback to an older one):
+    copy `manifests/{DATA_VERSION}.json` over `manifest.json`, after checking
+    every shard blob it references exists."""
+    m = cells_publish.activate(cells_publish.r2_storage(bucket, prefix), data_version, dry_run=dry_run)
+    err(f'{"would activate" if dry_run else "activated"} {data_version} ({len(m["shards"])} shards) at s3://{bucket}/{prefix}/')
+
+
+@cells.command('gc')
+@click.option('-a', '--apply', is_flag=True, help='Actually delete (default: dry run)')
+@click.option('-b', '--bucket', default=R2_BUCKET_DEFAULT, show_default=True, help='R2 bucket')
+@click.option('-g', '--grace-hours', type=float, default=cells_publish.GC_GRACE_DEFAULT.total_seconds() / 3600, show_default=True, help='Keep anything younger than this (and every build pushed within it)')
+@click.option('-k', '--keep', type=int, default=cells_publish.GC_KEEP_DEFAULT, show_default=True, help='Also retain the newest N pushed builds (rollback targets)')
+@click.option('-l', '--legacy', is_flag=True, help='Also delete the pre-hash fixed-name layout (`s2_pyramid/s2_l{L}/{shard}.parquet`, `raw/`, `s2-sld.parquet`)')
+@click.option('-p', '--prefix', default=R2_PREFIX_DEFAULT, show_default=True, help='Cells root prefix in the bucket')
+def cells_gc(apply: bool, bucket: str, grace_hours: float, keep: int, legacy: bool, prefix: str):
+    """Delete shard blobs and manifests no retained build references.
+
+    Retained: the active build, the newest `-k` pushed builds, and anything
+    pushed within the grace period. Dry run by default; prints the keys it
+    would delete (or deleted) to stdout."""
+    plan = cells_publish.gc(
+        cells_publish.r2_storage(bucket, prefix),
+        grace=timedelta(hours=grace_hours), keep=keep, legacy=legacy, apply=apply,
+    )
+    for key in plan.deletions:
+        print(key)
+    cells_publish.summarize_gc(plan, apply)

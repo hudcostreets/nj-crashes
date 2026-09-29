@@ -38,7 +38,7 @@
  *  (`CellsColsResponse`, `toColumnar`); see `specs/cells-compact-wire-format.md`.
  */
 import { S2CellId, S2LatLng, S2LatLngRect, S2RegionCoverer } from "nodes2ts"
-import { loadManifest } from "./manifest"
+import { type Manifest, d1Table, loadManifest, pyramidShardKey } from "./manifest"
 import { readParquetFromR2 } from "./parquet"
 import type { Timing } from "./timing"
 import {
@@ -411,18 +411,23 @@ export async function handleCellsRequest(
     req: CellsRequest,
     db?: D1Database,
     timing?: Timing,
+    /** The manifest the caller derived its ETag / cache key from; loaded
+     *  here when absent. One snapshot per request, so a cutover mid-request
+     *  can't mix two builds. */
+    manifest?: Manifest,
 ): Promise<CellsResponse | CellsColsResponse | CellsColsYearResponse> {
+    manifest ??= await loadManifest(bucket, prefix)
     if (req.format === "cols") {
         if (req.labels && req.labels !== "nums") {
             throw new HttpError(400, "format=cols serves counts only (labels must be unset or nums)")
         }
         if (req.group === "year") {
-            return queryCellsByYear(bucket, prefix, req, req.fields ?? COUNT_FIELDS, timing)
+            return queryCellsByYear(bucket, prefix, manifest, req, req.fields ?? COUNT_FIELDS, timing)
         }
-        const r = await queryCells(bucket, prefix, { ...req, labels: "nums" }, db, false, timing)
+        const r = await queryCells(bucket, prefix, manifest, { ...req, labels: "nums" }, db, false, timing)
         return toColumnar(r, req.fields ?? COUNT_FIELDS)
     }
-    return queryCells(bucket, prefix, req, db, true, timing)
+    return queryCells(bucket, prefix, manifest, req, db, true, timing)
 }
 
 /** Validate the requested level and build the cellid token ranges (shards ∩
@@ -492,11 +497,11 @@ const zeroCounts = (): Record<CountField, number> => ({
 async function queryCellsByYear(
     bucket: R2Bucket,
     prefix: string,
+    manifest: Manifest,
     req: CellsRequest,
     fields: readonly CountField[],
     timing?: Timing,
 ): Promise<CellsColsYearResponse> {
-    const manifest = await loadManifest(bucket, prefix)
     const yearRange = req.yearRange ?? manifest.year_range
     const { clipPoly, ranges } = requestRanges(req)
     timing?.note("src", "pyramid")
@@ -504,7 +509,7 @@ async function queryCellsByYear(
     // Empty ranges ⇒ viewport disjoint from the shards (see `queryCells`).
     if (ranges.length) {
         cells = await queryPyramidS2ByYear(
-            bucket, prefix, req.res, req.cells, yearRange, req.severities, clipPoly, ranges, timing,
+            bucket, prefix, manifest, req.res, req.cells, yearRange, req.severities, clipPoly, ranges, timing,
         )
     }
     let level = req.res
@@ -573,12 +578,12 @@ export function toColumnarByYear(
 async function queryCells(
     bucket: R2Bucket,
     prefix: string,
+    manifest: Manifest,
     req: CellsRequest,
     db: D1Database | undefined,
     fatalYears: boolean,
     timing?: Timing,
 ): Promise<CellsResponse> {
-    const manifest = await loadManifest(bucket, prefix)
     const { cells: requestedShards, res: requestedLevel, maxCells } = req
     const yearRange = req.yearRange ?? manifest.year_range
     const sevSet = req.severities
@@ -617,7 +622,7 @@ async function queryCells(
     if (db && coversAllYears && labels !== "only") {
         try {
             const t0 = Date.now()
-            let cells = await queryCellsS2D1(db, requestedLevel, ranges, clipPoly, sevSet, labels, fatalYears)
+            let cells = await queryCellsS2D1(db, d1Table(manifest, requestedLevel), ranges, clipPoly, sevSet, labels, fatalYears)
             const t1 = Date.now()
             let level = requestedLevel
             while (maxCells != null && cells.length > maxCells && level > S2_MIN_LEVEL) {
@@ -639,7 +644,7 @@ async function queryCells(
 
     const t0 = Date.now()
     let cells = await queryPyramidS2(
-        bucket, prefix, requestedLevel, requestedShards, yearRange, sevSet,
+        bucket, prefix, manifest, requestedLevel, requestedShards, yearRange, sevSet,
         clipPoly, ranges, labels, timing,
     )
     const t1 = Date.now()
@@ -673,6 +678,7 @@ async function queryCells(
 async function queryPyramidS2ByYear(
     bucket: R2Bucket,
     prefix: string,
+    manifest: Manifest,
     level: number,
     shards: string[],
     yearRange: [number, number],
@@ -688,11 +694,12 @@ async function queryPyramidS2ByYear(
     const cellidRangeOr = { $or: tokenRanges.map(r => ({ cellid: { $gte: r.lo, $lte: r.hi } })) }
     const filter = { $and: [{ year: { $gte: yearRange[0], $lte: yearRange[1] } }, cellidRangeOr] }
     const cols = ["cellid", "year", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "n_killed", "n_killed_ped"]
-    const subdir = `s2_pyramid/s2_l${level}`
-    const results = await Promise.all(shards.map(s =>
-        readParquetFromR2<PyramidRowS2>(bucket, `${prefix}/${subdir}/${s}.parquet`, { columns: cols, filter, missingOk: true, timing })
-            .catch(e => { console.error(`s2 pyramid ${subdir}/${s} read failed:`, e); return null }),
-    ))
+    const results = await Promise.all(shards.map(s => {
+        const key = pyramidShardKey(manifest, prefix, level, s)
+        if (!key) return null
+        return readParquetFromR2<PyramidRowS2>(bucket, key, { columns: cols, filter, missingOk: true, timing })
+            .catch(e => { console.error(`s2 pyramid ${key} read failed:`, e); return null })
+    }))
     const out = new Map<string, YearCounts>()
     for (const rows of results) {
         if (!rows) continue
@@ -732,6 +739,7 @@ async function queryPyramidS2ByYear(
 async function queryPyramidS2(
     bucket: R2Bucket,
     prefix: string,
+    manifest: Manifest,
     level: number,
     shards: string[],
     yearRange: [number, number],
@@ -753,18 +761,19 @@ async function queryPyramidS2(
     const cellidRangeOr = tokenRanges.length
         ? { $or: tokenRanges.map(r => ({ cellid: { $gte: r.lo, $lte: r.hi } })) }
         : null
-    const subdir = `s2_pyramid/s2_l${level}`
 
     if (labels === "only") {
         const cols = ["cellid", "sld_name", "cross_sld_name", "mun", "county"]
         const results = await Promise.all(shards.map(async s => {
+            const key = pyramidShardKey(manifest, prefix, level, s)
+            if (!key) return null
             try {
                 return await readParquetFromR2<PyramidRowS2>(
-                    bucket, `${prefix}/${subdir}/${s}.parquet`,
+                    bucket, key,
                     { columns: cols, filter: cellidRangeOr ?? undefined, missingOk: true, timing },
                 )
             } catch (e) {
-                console.error(`s2 pyramid ${subdir}/${s} labels read failed:`, e)
+                console.error(`s2 pyramid ${key} labels read failed:`, e)
                 return null
             }
         }))
@@ -794,13 +803,15 @@ async function queryPyramidS2(
     const filter = cellidRangeOr ? { $and: [yearFilter, cellidRangeOr] } : yearFilter
 
     const results = await Promise.all(shards.map(async s => {
+        const key = pyramidShardKey(manifest, prefix, level, s)
+        if (!key) return null
         try {
             return await readParquetFromR2<PyramidRowS2>(
-                bucket, `${prefix}/${subdir}/${s}.parquet`,
+                bucket, key,
                 { columns: cols, filter, missingOk: true, timing },
             )
         } catch (e) {
-            console.error(`s2 pyramid ${subdir}/${s} read failed:`, e)
+            console.error(`s2 pyramid ${key} read failed:`, e)
             return null
         }
     }))
@@ -855,7 +866,8 @@ async function queryPyramidS2(
  *  matching the ranges produced by `s2-range.ts`. */
 async function queryCellsS2D1(
     db: D1Database,
-    level: number,
+    /** `cells_s2_l{level}`, or this build's versioned equivalent (`d1Table`). */
+    table: string,
     tokenRanges: Array<{ lo: string; hi: string }>,
     clipPoly: LonLatPolygon | null,
     severities?: Set<"f" | "i" | "p">,
@@ -876,7 +888,7 @@ async function queryCellsS2D1(
     const cols = ["cellid", "n_fatal", "n_inj_ped", "n_inj_other", "n_pdo", "n_vehs", "n_killed", "n_killed_ped"]
     if (fatalYears) cols.push("fatal_years")
     if (labels === "full") cols.push(...LABEL_KEYS)
-    const sql = `SELECT ${cols.join(", ")} FROM cells_s2_l${level} WHERE ${where}`
+    const sql = `SELECT ${cols.join(", ")} FROM ${table} WHERE ${where}`
     const { results } = await db.prepare(sql).all<{
         cellid: string
         n_fatal: number; n_inj_ped: number; n_inj_other: number; n_pdo: number; n_vehs: number

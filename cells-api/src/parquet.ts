@@ -10,8 +10,11 @@ import { decompress as zstdDecompress } from "fzstd"
 import type { Timing } from "./timing"
 
 /** Per-isolate cache of parsed parquet footers (`FileMetaData` + byteLength),
- *  keyed by R2 key. The pyramid is immutable (content-addressed rebuilds), so
- *  a footer never goes stale within an isolate's life. Caching it means a
+ *  keyed by R2 key. Schema-6 pyramid keys are content-hashed and never
+ *  rewritten (specs/cells-immutable-keys.md), so a footer never goes stale
+ *  within an isolate's life. (The legacy fixed-name layout was overwritten in
+ *  place by `aws s3 sync`, which is why promotions moved to fresh prefixes
+ *  before this.) Caching it means a
  *  pan/zoom that re-hits the same r4 shard skips both the footer range-fetch
  *  (up to ~264 KB for the deep r13-r15 files) and its parse — the dominant
  *  fixed per-request cost at deep zoom. LRU-capped so a broad session can't

@@ -34,13 +34,25 @@ port = 51895
 
 [vars]
 CORS_ORIGIN = "*"
-# Subpath within the project-wide R2 bucket for cells-API artifacts. The
-# pipeline writes manifest/raw/pyramid under this prefix; the worker
-# reads under it. Other crashes-project data (parquets/, csvs/, geo/...)
-# can share the bucket at sibling prefixes. Versioned per cells build
-# (`cells-<data_version sha>`, pushed with `njdot compute cells push -p …`):
-# promoting a build = pointing this at its prefix; rollback = pointing back.
-# (`cells/` holds the pre-2026-09-28 build.)
+# Cells root within the project-wide R2 bucket. The worker reads
+# `{CELLS_PREFIX}/manifest.json` (re-read each minute) and the shards it
+# names. Schema-6 manifests (`njdot compute cells push`,
+# specs/cells-immutable-keys.md) name immutable content-hashed keys
+# (`s2_pyramid/s2_l{L}/{shard}.{hash:12}.parquet`); older ones mean the
+# fixed-name layout (`s2_pyramid/s2_l{L}/{shard}.parquet`), which is what
+# `cells-e710a3c/` (the 2026-09-28 promotion, pushed by the old
+# `aws s3 sync`) holds.
+#
+# Promotion runbook (no deploy once CELLS_PREFIX is "cells"):
+#   dvx pull data/cells/s2_pyramid.dvc data/cells/raw/s2_l21.dvc
+#   infra/r2-run njdot compute cells push -n     # dry run: copies/uploads
+#   infra/r2-run njdot compute cells push -A     # stage; prints <v>
+#   infra/r2-run njdot compute cells activate <v>   # cutover (≤60 s)
+#   infra/r2-run njdot compute cells activate <prev v>   # rollback
+#   infra/r2-run njdot compute cells gc [-a]     # after ≥48 h
+# One-time migration: deploy this code (still on cells-e710a3c), run
+# `cells push` (→ `cells/`, not yet live), then set both CELLS_PREFIXes
+# to "cells" and deploy dev, then prod.
 CELLS_PREFIX = "cells-e710a3c"
 
 # Dev tier: `wrangler deploy --env dev` → `crashes-cells-api-dev`, served at
