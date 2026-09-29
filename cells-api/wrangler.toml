@@ -53,7 +53,7 @@ CORS_ORIGIN = "*"
 # One-time migration: deploy this code (still on cells-e710a3c), run
 # `cells push` (→ `cells/`, not yet live), then set both CELLS_PREFIXes
 # to "cells" and deploy dev, then prod.
-CELLS_PREFIX = "cells-e710a3c"
+CELLS_PREFIX = "cells"
 
 # Dev tier: `wrangler deploy --env dev` → `crashes-cells-api-dev`, served at
 # `crashes-cells-dev.hccs.dev` (domain via `infra/`) for `dev.crashes.hccs.dev`.
@@ -80,4 +80,4 @@ database_id = "b9eea284-d436-4045-bb3b-c30ebf53f9b7"
 
 [env.dev.vars]
 CORS_ORIGIN = "*"
-CELLS_PREFIX = "cells-e710a3c"
+CELLS_PREFIX = "cells"
