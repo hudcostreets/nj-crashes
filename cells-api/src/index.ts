@@ -10,15 +10,16 @@
  *  response to the viewport. Responses are cached on the client by URL —
  *  pan within already-fetched shards = no worker calls.
  *  Caching: the response carries an ETag derived from the request params
- *  + the manifest's `data_version`. Pipeline pushes new data → bumps
- *  `data_version` → invalidates. Edge cache TTL = 1h unconditional, 24h
- *  conditional revalidation.
+ *  + the manifest's `data_version` (+ D1's `_metadata.source_md5`). A push
+ *  that activates a new build (`manifest.json`, re-read each minute) or a
+ *  D1 import changes it → invalidates. Browser TTL 1h + 24h
+ *  stale-while-revalidate; edge copy a week (its key embeds the version).
  */
 import { R2Store } from "@rdub/file-tree/stores/r2"
 import { createHandlers } from "@rdub/file-tree/server"
 import { CAPABILITIES, cellsCacheKey, handleCellsRequest, HttpError, parseCellsRequest } from "./cells"
 import { Timing } from "./timing"
-import { loadManifest } from "./manifest"
+import { loadD1Version, loadManifest, servingVersion } from "./manifest"
 import { handleGet, handleList, handleZipEntries, handleZipEntry } from "./raw"
 import { insertVote, listVotes, requireWriteAuth, updateVote } from "./tune"
 
@@ -167,8 +168,13 @@ export default {
                 const t0 = Date.now()
                 const timing = new Timing()
                 const cellsReq = parseCellsRequest(url)
-                const manifest = await timing.time("manifest", () => loadManifest(env.CELLS_BUCKET, prefix))
-                const tag = await etagFor(request, manifest.data_version)
+                const db = env.CELLS_S2_DB
+                const [manifest, d1v] = await timing.time("manifest", () => Promise.all([
+                    loadManifest(env.CELLS_BUCKET, prefix),
+                    loadD1Version(db),
+                ]))
+                const version = servingVersion(manifest, d1v)
+                const tag = await etagFor(request, version)
                 if (request.headers.get("If-None-Match") === tag) {
                     return new Response(null, { status: 304, headers: corsHeaders(env, { ETag: tag }) })
                 }
@@ -178,11 +184,11 @@ export default {
                 // year toggle, or second visitor to the same snapped viewport
                 // re-ran the full R2 read (measured 2026-09-28: the same URL
                 // 3× in a row = 1.6-1.8 s each). Keyed on the canonical
-                // (param-sorted) URL + `data_version`, so a pipeline push
-                // invalidates by construction. `caches` is absent under
+                // (param-sorted) URL + `data_version` (+ D1 stamp), so a
+                // cutover or D1 import invalidates by construction. `caches` is absent under
                 // `wrangler dev --local` / vitest; skip there.
                 const cache = typeof caches !== "undefined" ? (caches as unknown as { default?: Cache }).default : undefined
-                const cacheKey = new Request(cellsCacheKey(url, manifest.data_version), { method: "GET" })
+                const cacheKey = new Request(cellsCacheKey(url, version), { method: "GET" })
                 if (cache) {
                     const hit = await timing.time("cache_lookup", () => cache.match(cacheKey))
                     if (hit) {
@@ -195,8 +201,7 @@ export default {
                     }
                     timing.note("cache", "miss")
                 }
-                const db = env.CELLS_S2_DB
-                const body = await handleCellsRequest(env.CELLS_BUCKET, prefix, cellsReq, db, timing)
+                const body = await handleCellsRequest(env.CELLS_BUCKET, prefix, cellsReq, db, timing, manifest)
                 const ts = Date.now()
                 const json = JSON.stringify(body, jsonReplacer)
                 timing.add("serialize", Date.now() - ts)
