@@ -35,7 +35,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from nj_crashes.utils.log import err
-from njdot import cells_publish, s2
+from njdot import cells_publish, cells_years, s2
 from njdot.cli.base import compute
 from njdot.map_base import _build_base, read_recovered_points
 from njdot.load import load_crashes_with_aashto
@@ -449,7 +449,10 @@ def _cells_db_s2(base_level: int | None, force: bool, levels: str | None, out_di
     Aggregates `raw/s2_l{base}/*.parquet` (each
     crash's uint64 S2 cell id at the base level) into
     `cells_s2_l{level}(cellid TEXT PRIMARY KEY, n_fatal, n_inj_ped, n_inj_other,
-    n_pdo, n_vehs, fatal_years, sld_name, cross_sld_name, mun, county)`. Parent
+    n_pdo, n_vehs, n_killed, n_killed_ped, fatal_years, sld_name, cross_sld_name,
+    mun, county, by_year)`. `by_year` packs the same counts per year
+    (`njdot.cells_years`) so the worker can serve any year range from D1
+    (specs/cells-d1-years.md); the all-years columns are its sums. Parent
     ids + tokens are derived in-SQL via `njdot.s2.parent_sql`/`token_sql`
     (UBIGINT bit-math validated == s2sphere == nodes2ts, tests/test_s2.py), so
     the group-by streams and stays memory-bounded. `cellid` is a TEXT PK
@@ -492,7 +495,7 @@ def _cells_db_s2(base_level: int | None, force: bool, levels: str | None, out_di
     counts_ddl = ', '.join(f'{c} INTEGER NOT NULL' for c in CELLS_DB_COUNT_COLS)
     labels_ddl = ', '.join(f'{c} TEXT' for c in SLD_COLS)
     for lv in level_ints:
-        s.execute(f'CREATE TABLE cells_s2_l{lv} (cellid TEXT PRIMARY KEY, {counts_ddl}, fatal_years TEXT, {labels_ddl})')
+        s.execute(f'CREATE TABLE cells_s2_l{lv} (cellid TEXT PRIMARY KEY, {counts_ddl}, fatal_years TEXT, {labels_ddl}, by_year TEXT NOT NULL)')
     s.commit()
     s.close()
 
@@ -505,15 +508,24 @@ def _cells_db_s2(base_level: int | None, force: bool, levels: str | None, out_di
     #    so insertion order becomes the physical rowid layout — and VACUUM
     #    (step 3) copies rows in rowid order, preserving it. Ordering the insert
     #    by the PK pins that layout, making the file byte-identical run-to-run.
+    #    Two-stage: (cell, year) first, then per cell — the all-years columns
+    #    are sums of the per-year ones, and `by_year` is their `string_agg`.
+    #    Bounded explicitly (Batch has 64 GB; the laptop must never be the
+    #    one to find out what "uncapped" means).
+    import tempfile
+    tmp_dir = tempfile.TemporaryDirectory(prefix='cells-db-duckdb-')
     con = duckdb.connect()
+    con.execute(f"SET memory_limit='8GB'; SET threads=4; SET temp_directory='{tmp_dir.name}'")
     con.execute(f"ATTACH '{out}' AS d (TYPE SQLITE)")
     if have_sld:
         con.execute(f"CREATE TEMP TABLE sld AS SELECT cellid, {', '.join(SLD_COLS)} FROM read_parquet('{sld_path}')")
         err(f'  sld: {con.execute("SELECT count(*) FROM sld").fetchone()[0]:,} labelled cells from {sld_path}')
     else:
         err(f'  no s2-sld at {sld_path}; label columns will be NULL')
-    insert_cols = ', '.join(['cellid', *CELLS_DB_COUNT_COLS, 'fatal_years', *SLD_COLS])
+    insert_cols = ', '.join(['cellid', *CELLS_DB_COUNT_COLS, 'fatal_years', *SLD_COLS, 'by_year'])
     agg_cols = ', '.join(f't.{c}' for c in CELLS_DB_COUNT_COLS)
+    sum_cols = ',\n              '.join(f'CAST(sum({c}) AS BIGINT) AS {c}' for c in CELLS_DB_COUNT_COLS)
+    assert set(cells_years.FIELDS) == set(CELLS_DB_COUNT_COLS)
     if have_sld:
         sld_sel = ', '.join(f's.{c}' for c in SLD_COLS)
         join = 'LEFT JOIN sld s ON s.cellid = t.cellid'
@@ -525,23 +537,31 @@ def _cells_db_s2(base_level: int | None, force: bool, levels: str | None, out_di
         parent = s2.parent_sql(f'CAST({s2col} AS UBIGINT)', lv)
         con.execute(f"""
           INSERT INTO d.cells_s2_l{lv} ({insert_cols})
-          WITH agg AS (
+          WITH cy AS (
             SELECT
               {parent} AS pid,
+              year,
               count(*) FILTER (WHERE severity = 'f') AS n_fatal,
-              coalesce(sum(pi), 0) AS n_inj_ped,
-              coalesce(sum(greatest(coalesce(ti, 0) - coalesce(pi, 0), 0)), 0) AS n_inj_other,
+              CAST(coalesce(sum(pi), 0) AS BIGINT) AS n_inj_ped,
+              CAST(coalesce(sum(greatest(coalesce(ti, 0) - coalesce(pi, 0), 0)), 0) AS BIGINT) AS n_inj_other,
               count(*) FILTER (WHERE severity = 'p') AS n_pdo,
-              coalesce(sum(tv), 0) AS n_vehs,
-              coalesce(sum(tk), 0) AS n_killed,
-              coalesce(sum(pk), 0) AS n_killed_ped,
-              nullif(array_to_string(list_sort(list_distinct(list(year) FILTER (WHERE severity = 'f'))), ','), '') AS fatal_years
+              CAST(coalesce(sum(tv), 0) AS BIGINT) AS n_vehs,
+              CAST(coalesce(sum(tk), 0) AS BIGINT) AS n_killed,
+              CAST(coalesce(sum(pk), 0) AS BIGINT) AS n_killed_ped
             FROM read_parquet('{raw_glob}')
+            GROUP BY 1, 2
+          ), agg AS (
+            SELECT
+              pid,
+              {sum_cols},
+              nullif(array_to_string(list_sort(list(year) FILTER (WHERE n_fatal > 0)), ','), '') AS fatal_years,
+              string_agg({cells_years.entry_sql()}, ';' ORDER BY year) AS by_year
+            FROM cy
             GROUP BY 1
           ), t AS (
             SELECT {s2.token_sql('pid')} AS cellid, * EXCLUDE (pid) FROM agg
           )
-          SELECT t.cellid, {agg_cols}, t.fatal_years, {sld_sel}
+          SELECT t.cellid, {agg_cols}, t.fatal_years, {sld_sel}, t.by_year
           FROM t
           {join}
           ORDER BY t.cellid
@@ -549,6 +569,7 @@ def _cells_db_s2(base_level: int | None, force: bool, levels: str | None, out_di
         n = con.execute(f'SELECT count(*) FROM d.cells_s2_l{lv}').fetchone()[0]
         err(f'  l{lv}: {n:,} cells ({time() - t0:.1f}s)')
     con.close()
+    tmp_dir.cleanup()
 
     # 3. Compact so the on-disk size is minimal (VACUUM alone does NOT make the
     #    md5 stable — it preserves rowid order; the step-2 `ORDER BY` does that).
