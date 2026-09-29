@@ -624,6 +624,25 @@ export function CrashMap({
         return layers
     }, [outline, muniOutline, theme, onOutlineClick])
 
+    // Bin heights are baked into the stacked segments from the viewport's size in meters, so the
+    // layer memo must rebuild when that changes: the container size (tracked here; `clientWidth`
+    // read inside the memo was stale — the first build used the pre-fit zoom / fallback size and
+    // bars only snapped to the right height when an unrelated prop (e.g. a hover outline) forced a
+    // rebuild) and the zoom / latitude, quantized so a pan or zoom animation doesn't rebuild per frame.
+    const [vpSize, setVpSize] = useState<[number, number] | null>(null)
+    useEffect(() => {
+        const el = containerRef.current
+        if (!el) return
+        const update = () => setVpSize(prev =>
+            prev && prev[0] === el.clientWidth && prev[1] === el.clientHeight ? prev : [el.clientWidth, el.clientHeight])
+        update()
+        const ro = new ResizeObserver(update)
+        ro.observe(el)
+        return () => ro.disconnect()
+    }, [])
+    const heightZoom = Math.round(viewState.zoom * 4) / 4
+    const heightLat = Math.round(viewState.latitude * 10) / 10
+
     const layers = useMemo(() => {
         const t0 = perfEnabled() ? performance.now() : 0
         const base: any[] = [...outlineLayers]
@@ -694,9 +713,8 @@ export function CrashMap({
         // shorter viewport dimension in meters. Bars scale down as the
         // camera zooms in — a muni-wide scaling made bars grow linearly
         // with zoom, dwarfing the street-level view.
-        const cw = containerRef.current?.clientWidth ?? 800
-        const ch = containerRef.current?.clientHeight ?? 600
-        const vpMinDimMeters = Math.min(cw, ch) * metersPerPixel(viewState.zoom, viewState.latitude)
+        const [cw, ch] = vpSize ?? [800, 600]
+        const vpMinDimMeters = Math.min(cw, ch) * metersPerPixel(heightZoom, heightLat)
         const effectiveElevation = (heightScale * vpMinDimMeters) / stableMax
         const segments = cellsToSegments(cellsArr, effectiveElevation)
         // Render columns sized to the data's actual level, not the picker's
@@ -727,7 +745,7 @@ export function CrashMap({
             console.log(`[perf] layers: ${ms.toFixed(1)}ms (mode=${mode}, segments=${segments.length})`)
         }
         return result
-    }, [cells, effectiveCrashes, mode, effectiveS2Level, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, circleRadiusPx, cellOpacity, cellDesaturate, dataRes])
+    }, [cells, effectiveCrashes, mode, effectiveS2Level, heightScale, initialBounds, outlineLayers, gridOverlayLayer, coverOverlayLayer, circleRadiusPx, cellOpacity, cellDesaturate, dataRes, vpSize, heightZoom, heightLat])
 
     // Only bubble user-driven changes. DeckGL also echoes back programmatic
     // viewState updates (from the fit effect, mode-switch tilt, etc.) via
