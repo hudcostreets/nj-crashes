@@ -18,7 +18,7 @@ meta:
       # remove crash points (`geocode_src` `recovered` / `corrected`).
       /njdot/data/crash_recovered_points.parquet: ea22b94c6b3bcead04d2e7f8639b7a5d
     git_deps:
-      /njdot/cli/cells.py: 5ec1f922e2b3e61fa72e462d663892e7764dd82c
+      /njdot/cli/cells.py: 4642e91adefe12ff2381dce6ab53481fa3998e5f
       /njdot/s2.py: 18b3290b93befcb93f8edcffeb141a8782ccfe7d
       /njdot/load.py: c07ec1c009aeb3be394fd4ca235860a05bcf8f35
       /njdot/map_base.py: 371e69ed2263c20baf6615d8463e4075c562e683
