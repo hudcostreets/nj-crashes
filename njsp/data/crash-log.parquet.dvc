@@ -1,13 +1,13 @@
 outs:
-- md5: 2260bd2a4914c0c3e9b9554ce323a5f1
-  size: 521893
+- md5: 2602d3206d61bae8b9a07d84b1b1833d
+  size: 522036
   hash: md5
   path: crash-log.parquet
 meta:
   computation:
     cmd: njsp crash_log compute -a njsp/data/crash-log.parquet -i -v
     deps:
-      crashes.parquet: ed58aa087169e35022161c674b0452db
+      crashes.parquet: 3c61ad8c6dc242718396c9d6d572ce24
     # This stage consumes the FAUQStats XMLs' *history*, not their content at HEAD:
     # it walks every commit that ever touched them. `git_log_deps` records the tip
     # commit touching the pathspec, so the stage is stale iff a new commit did — and
@@ -15,4 +15,4 @@ meta:
     # self-referential input (its own output was its only record of where it left
     # off), which is what made it unbuildable on a fresh checkout in reproc round 5.
     git_log_deps:
-      /data/FAUQStats*.xml: 7761e132f86b3f8cb1b0592fc7f706fd8aefd9a2
+      /data/FAUQStats*.xml: 80f2d2182f5e9951b9026a801b70ff3b5ae2538a
