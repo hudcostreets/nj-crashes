@@ -179,13 +179,13 @@ Each promotion (`AWS_PROFILE=h`, from the repo root):
 
 ```bash
 # Dry run: no D1/R2 writes, no push-back of the stage's .dvc
-batch/submit -j cells-promote-dry -e CELLS_PROMOTE_DRY_RUN=1 -e PUSH_BACK=0 \
+batch/submit -j cells-promote-dry -e SHOW_LOGS=promote -e CELLS_PROMOTE_DRY_RUN=1 -e PUSH_BACK=0 \
   run -r r2 --no-commit \
   --cached data/cells/cells-s2.db --cached data/cells/s2_pyramid --cached data/cells/raw/s2_l21 \
   data/cells/promote.dvc
 
 # Real run (add `-e CELLS_PROMOTE_REQUIRE_PARITY=1` when the crash data is unchanged)
-batch/submit -j cells-promote -b reproc-results/cells-promote-<v> \
+batch/submit -j cells-promote -e SHOW_LOGS=promote -b reproc-results/cells-promote-<v> \
   run -r r2 --no-commit \
   --cached data/cells/cells-s2.db --cached data/cells/s2_pyramid --cached data/cells/raw/s2_l21 \
   data/cells/promote.dvc

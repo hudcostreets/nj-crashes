@@ -77,6 +77,17 @@ dvx "$@"
 rc=$?
 set -e
 
+# dvx keeps each stage's stdout/stderr only in `tmp/dvx-run-<stage>.log`, which
+# dies with the container. `SHOW_LOGS="promote …"` (stage basenames) prints
+# those logs to the job's log stream, e.g. `cells promote`'s parity report.
+for s in ${SHOW_LOGS:-}; do
+    for f in /app/tmp/dvx-run-"$s".log; do
+        [ -f "$f" ] || { echo "entrypoint: no log for stage '$s'" >&2; continue; }
+        echo "entrypoint: ---- $f ----" >&2
+        cat "$f" >&2
+    done
+done
+
 if [ "$push_back" = yes ]; then
     cd /app
     git add -u
