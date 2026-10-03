@@ -10,7 +10,7 @@
 # never fire on semantic grounds:
 #
 #   - publishers / deploys: `www/deploy`, `cells-api/deploy`, `api/d1-import`,
-#     `www/public/njdot/map_sync`, `www/og-image`
+#     `www/public/njdot/map_sync`, `www/og-image`, `data/cells/promote`
 #   - notifications:        `njsp/data/slack_post`
 #   - upstream fetches:     `njsp/data/{refresh,summaries}` (sources, not
 #     computations — a reproc pins them; the daily refreshes them)

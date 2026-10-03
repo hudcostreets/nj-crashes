@@ -9,6 +9,9 @@ config:
   nj-crashes-batch:env:
     AWS_ENDPOINT_URL_S3: https://2363642879f18d37d52dca114059937e.r2.cloudflarestorage.com
     NJC_S3: s3://crashes/.batch-scratch
+    # HCCS Cloudflare account, for wrangler (`data/cells/promote.dvc`'s D1
+    # import + queries; token: `CLOUDFLARE_API_TOKEN` below).
+    CLOUDFLARE_ACCOUNT_ID: 2363642879f18d37d52dca114059937e
   # Pulumi creates these empty; values are set out of band (never in state):
   #   batch/infra/put-secrets
   nj-crashes-batch:secrets:
@@ -18,6 +21,8 @@ config:
       name: nj-crashes/r2-access-key-id
     AWS_SECRET_ACCESS_KEY:
       name: nj-crashes/r2-secret-access-key
+    CLOUDFLARE_API_TOKEN:
+      name: nj-crashes/cf-api-token
   # One Batch job definition per entry (`batch/submit -d <name>`). This file is
   # the live state: to run at a new commit, push it to GitHub, bump `ref` here,
   # commit, and `pulumi up --stack hccs` (which builds + pushes the image).
