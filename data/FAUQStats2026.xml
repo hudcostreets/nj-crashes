@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Oct 02 10:00:02 EDT 2026</RUNDATE>
+  <RUNDATE>Sat Oct 03 10:00:03 EDT 2026</RUNDATE>
   <STATSYEAR>2026</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -49,16 +49,55 @@
   </COUNTY>
   <COUNTY CCODE="21" CNAME="Warren">
   </COUNTY>
+  <COUNTY CCODE="01" CNAME="Atlantic">
+    <MUNICIPALITY MCODE="0108" MNAME="Egg Harbor Twsp">
+      <ACCIDENT ACCID="14837" DATE="10/02/2026" TIME="1924">
+        <HIGHWAY>40</HIGHWAY>
+        <LOCATION>State Highway 40 MP 61.35</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="16" CNAME="Passaic">
+    <MUNICIPALITY MCODE="1608" MNAME="Paterson City">
+      <ACCIDENT ACCID="14836" DATE="10/02/2026" TIME="1902">
+        <HIGHWAY>649</HIGHWAY>
+        <LOCATION>County 649</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>1</FATAL_T>
+        <FATAL_B>0</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
   <COUNTY CCODE="06" CNAME="Cumberland">
     <MUNICIPALITY MCODE="0614" MNAME="Vineland City">
       <ACCIDENT ACCID="14834" DATE="10/01/2026" TIME="2311">
-        <STREET>e chestnut ave</STREET>
-        <LOCATION>e chestnut ave</LOCATION>
+        <STREET>East Chestnut Ave</STREET>
+        <LOCATION>East Chestnut Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>1</FATAL_B>
+      </ACCIDENT>
+    </MUNICIPALITY>
+  </COUNTY>
+  <COUNTY CCODE="05" CNAME="Cape May">
+    <MUNICIPALITY MCODE="0505" MNAME="Lower Twsp">
+      <ACCIDENT ACCID="14835" DATE="10/01/2026" TIME="2249">
+        <HIGHWAY>9</HIGHWAY>
+        <LOCATION>State Highway 9</LOCATION>
+        <FATALITIES>1</FATALITIES>
+        <FATAL_D>1</FATAL_D>
+        <FATAL_P>0</FATAL_P>
+        <FATAL_T>0</FATAL_T>
+        <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -173,19 +212,6 @@
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
-        <FATAL_B>0</FATAL_B>
-      </ACCIDENT>
-    </MUNICIPALITY>
-  </COUNTY>
-  <COUNTY CCODE="08" CNAME="Gloucester">
-    <MUNICIPALITY MCODE="0802" MNAME="Deptford Twsp">
-      <ACCIDENT ACCID="14831" DATE="09/20/2026" TIME="2203">
-        <HIGHWAY>553</HIGHWAY>
-        <LOCATION>County 553</LOCATION>
-        <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
-        <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
       </ACCIDENT>
     </MUNICIPALITY>
@@ -5013,7 +5039,7 @@
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
-  <TOTACCIDENTS>382</TOTACCIDENTS>
-  <TOTFATALITIES>397</TOTFATALITIES>
+  <TOTACCIDENTS>384</TOTACCIDENTS>
+  <TOTFATALITIES>399</TOTFATALITIES>
   <TOTINJURIES>38</TOTINJURIES>
 </FAUQSTATS>
