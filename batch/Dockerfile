@@ -20,8 +20,19 @@
 #     --build-arg REF=$(git rev-parse HEAD) batch/
 FROM python:3.13-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
+# `sqlite3` + node/wrangler: `api/scripts/d1-import.sh` (`.schema`/`.dump`,
+# `npx wrangler d1 execute`), run by side-effect stages like
+# `data/cells/promote.dvc`. wrangler 4 needs node ≥ 22; the node binary + npm
+# are copied from the official image (not `/usr/local` wholesale, which would
+# clobber this image's python).
+RUN apt-get update && apt-get install -y --no-install-recommends git sqlite3 libstdc++6 && rm -rf /var/lib/apt/lists/*
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:22-bookworm-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
+    ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx && \
+    npm install -g pnpm@10 && node --version && pnpm --version
+ENV WRANGLER_SEND_METRICS=false
 
 ARG REPO=https://github.com/hudcostreets/nj-crashes
 ARG REF=main
@@ -31,6 +42,8 @@ WORKDIR /app
 # Flat venv (the multi-version `.venv/<ver>/` layout is a direnv-ism;
 # containers want the plain shape).
 RUN uv sync --frozen --no-dev
+# wrangler (+ the rest of `api/`'s lockfile), for `d1-import.sh`'s `npx wrangler`.
+RUN pnpm -C api install --frozen-lockfile && pnpm -C api exec wrangler --version
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONFAULTHANDLER=1
 

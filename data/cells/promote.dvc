@@ -1,0 +1,20 @@
+meta:
+  computation:
+    # Publish a rebuilt `cells-s2.db` + pyramid: versioned D1 import
+    # (`cells_s2_<md5[:8]>_l*`) → per-level parity report vs. the active set →
+    # push + activate the R2 manifest naming it. Idempotent; run on Batch only
+    # (specs/cells-d1-years.md § "Promotion on Batch"). `side_effect` keeps it
+    # out of `batch/reproc-targets`. `CELLS_PROMOTE_{DRY_RUN,NO_ACTIVATE,REQUIRE_PARITY}=1`
+    # (`batch/submit -e`) map to the cmd's `-n` / `-A` / `-r`. Dep hashes are
+    # those of the last promotion (a new `.db` makes this stale).
+    cmd: cd ../.. && njdot compute cells promote
+    side_effect: true
+    deps:
+      cells-s2.db: b703518dd85c79fcb52ab040aeebb8cc
+      s2_pyramid: 74ad88f111c86a4a76abb0702c22c804
+      raw/s2_l21: bec807610c05b029a06e0f28c82ec243
+    git_deps:
+      /njdot/cells_promote.py: 24822e1cbd8769ac407c8bbcda8d9e3ca8ad656d
+      /njdot/cli/cells_promote.py: 91c5a3f9b05a6a3e03cef6ff0f01944d053b0d2b
+      /njdot/cells_publish.py: 5216963f5df2f9ccffd8f56eb092e25d5ade95a8
+      /api/scripts/d1-import.sh: a5d551777547d3e1b5018501914b2c924c0dfcfc

@@ -12,13 +12,17 @@
 # and the whole regenerated `.dvc` set lands as a single reviewable commit.
 #
 # Token arrives as $FARGATE_GITHUB_RW_TOKEN (AWS Batch injects it from Secrets
-# Manager); absent it, we run read-only. Targets: Batch caps containerOverrides
+# Manager); absent it (or with PUSH_BACK=0), we run read-only. Targets: Batch caps containerOverrides
 # at 8192 bytes and the ~160-path list nears that, so the submit command is
 # flags-only and we append `batch/reproc-targets` here.
 set -e
 
 push_back=no
-if [ -n "${FARGATE_GITHUB_RW_TOKEN:-}" ]; then
+if [ "${PUSH_BACK:-1}" = 0 ]; then
+    # Read-only / dry runs (e.g. `CELLS_PROMOTE_DRY_RUN=1`): dvx still records
+    # the stage's dep hashes as if it had run, which mustn't land on a branch.
+    echo "entrypoint: PUSH_BACK=0; no git push-back" >&2
+elif [ -n "${FARGATE_GITHUB_RW_TOKEN:-}" ]; then
     git -C /app remote set-url --push origin \
         "https://x-access-token:${FARGATE_GITHUB_RW_TOKEN}@github.com/hudcostreets/nj-crashes.git"
     branch="${RESULTS_BRANCH:-reproc-results/$(date -u +%Y%m%d-%H%M%S)}"
