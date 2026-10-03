@@ -1,30 +1,30 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_365,trailing_365_driver,trailing_365_passenger,trailing_365_pedestrian,trailing_365_cyclist
-,,Atlantic,,30,1,16,5,10,30,16,5,10,1
+,,Atlantic,,32,1,16,5,12,31,16,5,11,1
 ,,Bergen,,23,0,11,0,13,25,14,1,10,0
-,,Burlington,,37,0,28,8,3,36,27,7,4,1
+,,Burlington,,36,0,28,8,3,36,27,7,4,1
 ,,Camden,,28,1,10,3,15,30,11,3,16,1
-,,Cape May,,5,0,5,0,0,5,5,1,0,0
-,,Cumberland,,20,2,9,2,6,19,9,2,6,2
+,,Cape May,,6,0,7,0,0,6,6,1,0,0
+,,Cumberland,,18,2,9,2,5,19,9,2,6,2
 ,,Essex,,33,0,12,5,20,36,13,4,22,0
-,,Gloucester,,26,1,17,7,2,26,17,7,2,2
+,,Gloucester,,25,1,15,7,2,25,16,7,2,2
 ,,Hudson,,33,0,8,2,27,28,8,2,18,0
 ,,Hunterdon,,9,0,5,1,2,9,5,2,2,0
 ,,Mercer,,25,1,15,6,7,25,14,6,7,1
-,,Middlesex,,48,1,32,5,10,49,32,5,11,2
+,,Middlesex,,47,1,32,4,10,49,32,5,11,2
 ,,Monmouth,,45,3,21,3,35,38,20,3,12,3
 ,,Morris,,20,0,12,0,11,20,12,1,7,0
 ,,Ocean,,42,0,25,6,12,40,24,6,11,2
-,,Passaic,,21,0,12,3,9,21,12,3,8,0
+,,Passaic,,22,0,12,3,10,22,12,3,9,0
 ,,Salem,,11,0,10,1,0,12,11,3,1,0
 ,,Somerset,,22,0,19,0,5,19,14,0,5,0
 ,,Sussex,,10,0,8,1,1,9,7,1,1,0
-,,Union,,40,1,17,5,21,36,17,3,16,1
+,,Union,,38,1,17,5,16,36,17,3,16,1
 ,,Warren,,8,0,5,1,2,8,5,1,2,0
 1,1,Atlantic,Absecon City,0,0,0,0,0,1,0,0,1,0
 1,2,Atlantic,Atlantic City,9,1,3,1,1,5,3,1,1,1
 1,5,Atlantic,Buena Vista Twsp,2,0,0,1,0,2,0,2,0,0
 1,7,Atlantic,Egg Harbor City,1,0,1,0,0,1,1,0,0,0
-1,8,Atlantic,Egg Harbor Twsp,1,0,1,0,0,2,1,0,1,0
+1,8,Atlantic,Egg Harbor Twsp,3,0,1,0,2,3,1,0,2,0
 1,9,Atlantic,Estell Manor City,0,0,0,0,0,0,0,0,0,0
 1,10,Atlantic,Folsom Boro,0,0,0,0,0,1,1,0,0,0
 1,11,Atlantic,Galloway Twsp,2,0,1,0,0,3,2,0,1,0
@@ -110,12 +110,12 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 4,35,Camden,Waterford Twsp,1,0,0,0,1,1,0,0,1,0
 4,36,Camden,Winslow Twsp,3,0,0,0,4,3,0,0,3,0
 5,4,Cape May,Dennis Twsp,0,0,0,0,0,0,0,0,0,0
-5,5,Cape May,Lower Twsp,1,0,1,0,0,1,1,0,0,0
+5,5,Cape May,Lower Twsp,2,0,2,0,0,2,2,0,0,0
 5,6,Cape May,Middle Twsp,1,0,2,0,0,2,2,1,0,0
 5,7,Cape May,North Wildwood City,0,0,0,0,0,0,0,0,0,0
 5,11,Cape May,Upper Twsp,2,0,2,0,0,2,2,0,0,0
 5,16,Cape May,Woodbine Boro,0,0,0,0,0,0,0,0,0,0
-6,1,Cumberland,Bridgeton City,7,1,1,0,1,4,1,0,2,1
+6,1,Cumberland,Bridgeton City,4,1,1,0,0,4,1,0,2,1
 6,3,Cumberland,Deerfield Twsp,0,0,0,0,0,1,0,1,0,0
 6,5,Cumberland,Fairfield Twsp,4,0,2,0,1,3,2,0,1,0
 6,7,Cumberland,Hopewell Twsp,0,0,0,0,0,0,0,0,0,0
@@ -137,7 +137,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 7,20,Essex,Verona Boro,0,0,0,0,0,0,0,0,0,0
 7,22,Essex,West Orange Town,0,0,0,0,0,0,0,0,0,0
 8,1,Gloucester,Clayton Boro,1,0,0,1,0,1,0,1,0,0
-8,2,Gloucester,Deptford Twsp,5,1,4,1,0,5,4,1,0,1
+8,2,Gloucester,Deptford Twsp,4,1,3,1,0,4,3,1,0,1
 8,4,Gloucester,Elk Twsp,4,0,4,0,0,3,3,0,0,0
 8,5,Gloucester,Franklin Twsp,0,0,0,0,0,0,0,0,0,0
 8,6,Gloucester,Glassboro Boro,0,0,0,0,0,0,0,0,0,0
@@ -183,7 +183,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 12,1,Middlesex,Carteret Boro,2,0,2,0,0,2,2,0,0,0
 12,2,Middlesex,Cranbury Twsp,1,0,1,0,0,1,1,0,0,0
 12,4,Middlesex,East Brunswick Twsp,0,0,0,0,0,0,0,0,0,0
-12,5,Middlesex,Edison Twsp,4,0,2,0,1,6,3,1,2,0
+12,5,Middlesex,Edison Twsp,3,0,2,0,1,6,3,1,2,0
 12,8,Middlesex,Jamesburg Boro,1,0,1,0,0,2,1,0,0,1
 12,9,Middlesex,Metuchen Boro,1,0,1,1,0,1,1,1,0,0
 12,12,Middlesex,Monroe Twsp,2,0,2,0,0,2,2,0,0,0
@@ -262,7 +262,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 16,3,Passaic,Haledon Boro,1,0,0,1,0,1,0,1,0,0
 16,4,Passaic,Hawthorne Boro,0,0,0,0,0,0,0,0,0,0
 16,7,Passaic,Passaic City,3,0,2,0,1,3,2,0,1,0
-16,8,Passaic,Paterson City,5,0,1,0,3,5,1,1,3,0
+16,8,Passaic,Paterson City,6,0,1,0,5,6,1,1,4,0
 16,11,Passaic,Ringwood Boro,0,0,0,0,0,0,0,0,0,0
 16,12,Passaic,Totowa Boro,1,0,1,1,0,1,1,1,0,0
 16,13,Passaic,Wanaque Boro,1,0,0,0,1,2,2,0,1,0
@@ -302,7 +302,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 19,18,Sussex,Sparta Twsp,2,0,1,0,1,2,1,0,1,0
 19,24,Sussex,Wantage Twsp,1,0,1,0,0,1,1,0,0,0
 20,1,Union,Berkeley Heights Tw,0,0,0,0,0,1,0,0,1,0
-20,3,Union,Cranford Twsp,1,0,0,1,0,1,0,1,0,0
+20,3,Union,Cranford Twsp,0,0,0,1,0,1,0,1,0,0
 20,4,Union,Elizabeth City,9,0,1,0,10,9,2,0,7,0
 20,7,Union,Hillside Twsp,2,0,2,0,0,2,2,0,0,0
 20,9,Union,Linden City,6,0,3,0,2,5,3,0,2,0
