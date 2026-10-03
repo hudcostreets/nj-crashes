@@ -183,7 +183,7 @@ describe("D1 path", () => {
     // Unsorted, one all-zero-severity row (dropped by both modes).
     const ROWS: D1Row[] = [
         { cellid: "89c25734", n_fatal: 0, n_inj_ped: 1, n_inj_other: 2, n_pdo: 3, n_vehs: 4, n_killed: 0, n_killed_ped: 0, fatal_years: null },
-        { cellid: "89c2572c", n_fatal: 1, n_inj_ped: 0, n_inj_other: 0, n_pdo: 5, n_vehs: 9, n_killed: 2, n_killed_ped: 1, fatal_years: "[2019]" },
+        { cellid: "89c2572c", n_fatal: 1, n_inj_ped: 0, n_inj_other: 0, n_pdo: 5, n_vehs: 9, n_killed: 2, n_killed_ped: 1, fatal_years: "2019" },
         { cellid: "89c2573c", n_fatal: 0, n_inj_ped: 0, n_inj_other: 0, n_pdo: 0, n_vehs: 1, n_killed: 0, n_killed_ped: 0, fatal_years: null },
     ]
     const REQ: CellsRequest = { cells: ["89d"], res: 15, labels: "nums" }

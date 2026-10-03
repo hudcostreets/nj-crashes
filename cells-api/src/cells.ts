@@ -965,10 +965,8 @@ async function queryCellsS2D1(
         if (rangeFatalYears) {
             if (fatalYears && wantF && rangeFatalYears.length) c.fatal_years = rangeFatalYears
         } else if (wantF && row.fatal_years) {
-            try {
-                const parsed = JSON.parse(row.fatal_years)
-                if (Array.isArray(parsed) && parsed.length) c.fatal_years = parsed as number[]
-            } catch { /* ignore — malformed rollup */ }
+            // `cells-s2.db` stores the sorted years comma-separated ("2008,2017").
+            c.fatal_years = row.fatal_years.split(",").map(Number)
         }
         if (row.sld_name) c.sld_name = row.sld_name
         if (row.cross_sld_name) c.cross_sld_name = row.cross_sld_name
