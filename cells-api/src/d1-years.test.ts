@@ -128,6 +128,22 @@ describe("D1 path, year sub-range", () => {
         ])
     })
 
+    it("all-years: parses the DB's comma-separated `fatal_years`", async () => {
+        // `cells-s2.db` stores `fatal_years` as `array_to_string(…, ',')`: "2008", "2008,2017".
+        const counts = { n_inj_ped: 0, n_inj_other: 0, n_pdo: 1, n_vehs: 2, n_killed_ped: 0 }
+        const { db } = d1([
+            { cellid: "89c25734", n_fatal: 1, n_killed: 1, ...counts, fatal_years: "2008" },
+            { cellid: "89c2572c", n_fatal: 2, n_killed: 2, ...counts, fatal_years: "2008,2017" },
+            { cellid: "89c2573c", n_fatal: 0, n_killed: 0, ...counts, fatal_years: null },
+        ])
+        const r = await handleCellsRequest(bucket(), "cells", { ...REQ, yearRange: [2001, 2025] }, db) as CellsResponse
+        expect(r.cells.map(c => [c.cellid, c.fatal_years])).toEqual([
+            ["89c25734", [2008]],
+            ["89c2572c", [2008, 2017]],
+            ["89c2573c", undefined],
+        ])
+    })
+
     it("falls back to the pyramid on a table without `by_year`, and stops asking for a minute", async () => {
         const { db, sqls } = d1([], "D1_ERROR: no such column: by_year: SQLITE_ERROR")
         const pyramidReq: CellsRequest = { ...REQ, cells: ["89f"] }  // no such shard ⇒ empty pyramid read
