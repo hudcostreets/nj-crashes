@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Sun Oct 04 10:00:02 EDT 2026</RUNDATE>
+  <RUNDATE>Mon Oct 05 10:00:02 EDT 2026</RUNDATE>
   <STATSYEAR>2026</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -52,8 +52,8 @@
   <COUNTY CCODE="01" CNAME="Atlantic">
     <MUNICIPALITY MCODE="0102" MNAME="Atlantic City">
       <ACCIDENT ACCID="14838" DATE="10/03/2026" TIME="1200">
-        <STREET>Pacific Avenue</STREET>
-        <LOCATION>Pacific Avenue</LOCATION>
+        <STREET>Pacific Ave</STREET>
+        <LOCATION>Pacific Ave</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
