@@ -3,6 +3,6 @@ meta:
     cmd: ./slack_post.sh
     side_effect: true
     deps:
-      crash-log.parquet: a09c0d9a18b4ea4b5db6562945c01632
+      crash-log.parquet: b3774a38f8815bd61f2de5e29429cecc
     git_deps:
       slack_post.sh: 12d70b48c5fb83110444b3837ed6ab43613966da
