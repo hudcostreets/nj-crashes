@@ -3,7 +3,7 @@ meta:
     cmd: ./og-image.sh
     side_effect: true
     deps:
-      /njsp/data/crash-log.parquet: b3774a38f8815bd61f2de5e29429cecc
+      /njsp/data/crash-log.parquet: 192cf4f71b44b0603075ea3f45f9b398
     git_deps:
       og-image.sh: fb42e004b20a0f0e13d3adf61165ca30dc61b4e9
       e2e/og-screenshot.spec.ts: 22b45497b0b2bba89d7e14655dc2bc9ec07bc478
