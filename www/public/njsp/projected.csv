@@ -1,6 +1,6 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_365,trailing_365_driver,trailing_365_passenger,trailing_365_pedestrian,trailing_365_cyclist
 ,,Atlantic,,32,1,16,5,12,31,16,5,11,1
-,,Bergen,,22,0,10,0,13,23,12,1,10,0
+,,Bergen,,21,0,10,0,13,23,12,1,10,0
 ,,Burlington,,34,0,25,8,3,34,25,7,4,1
 ,,Camden,,28,1,9,3,16,30,10,3,17,1
 ,,Cape May,,6,0,7,0,0,6,6,1,0,0
@@ -10,10 +10,10 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Hudson,,33,0,8,2,27,28,8,2,18,0
 ,,Hunterdon,,9,0,5,1,2,9,5,2,2,0
 ,,Mercer,,25,1,14,8,7,25,13,7,7,1
-,,Middlesex,,46,1,32,4,10,48,32,4,11,2
+,,Middlesex,,48,1,34,4,10,49,33,4,11,2
 ,,Monmouth,,42,2,21,3,35,37,20,3,11,3
 ,,Morris,,20,0,12,0,11,20,12,1,7,0
-,,Ocean,,39,0,23,6,11,39,23,6,11,2
+,,Ocean,,38,0,22,6,11,39,23,6,11,2
 ,,Passaic,,19,0,11,3,8,20,11,3,8,0
 ,,Salem,,10,0,10,1,0,12,11,3,1,0
 ,,Somerset,,22,0,19,0,5,19,14,0,5,0
@@ -182,7 +182,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 11,14,Mercer,Princeton,1,1,0,0,0,1,0,0,0,1
 12,1,Middlesex,Carteret Boro,2,0,2,0,0,2,2,0,0,0
 12,2,Middlesex,Cranbury Twsp,1,0,1,0,0,1,1,0,0,0
-12,4,Middlesex,East Brunswick Twsp,0,0,0,0,0,0,0,0,0,0
+12,4,Middlesex,East Brunswick Twsp,1,0,1,0,0,1,1,0,0,0
 12,5,Middlesex,Edison Twsp,3,0,2,0,1,5,3,0,2,0
 12,8,Middlesex,Jamesburg Boro,1,0,1,0,0,2,1,0,0,1
 12,9,Middlesex,Metuchen Boro,1,0,1,1,0,1,1,1,0,0
@@ -245,7 +245,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 15,6,Ocean,Berkeley Twsp,2,0,0,2,0,2,1,2,0,0
 15,7,Ocean,Brick Twsp,4,1,2,0,1,5,3,0,1,1
 15,8,Ocean,Toms River,7,0,6,0,2,8,6,0,3,0
-15,12,Ocean,Jackson Twsp,8,0,7,1,1,6,5,1,1,0
+15,12,Ocean,Jackson Twsp,6,0,5,1,1,6,5,1,1,0
 15,13,Ocean,Lacey Twsp,6,0,0,2,1,4,1,2,1,0
 15,14,Ocean,Lakehurst Boro,0,0,0,0,0,0,0,0,0,0
 15,15,Ocean,Lakewood Twsp,4,1,1,0,2,4,1,0,2,1
