@@ -1,22 +1,22 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_365,trailing_365_driver,trailing_365_passenger,trailing_365_pedestrian,trailing_365_cyclist
-,,Atlantic,,32,1,16,5,12,31,16,5,11,1
+,,Atlantic,,31,1,15,5,12,30,15,5,11,1
 ,,Bergen,,21,0,10,0,13,23,12,1,10,0
-,,Burlington,,34,0,25,8,3,34,25,7,4,1
-,,Camden,,28,1,9,3,16,30,10,3,17,1
+,,Burlington,,32,0,24,8,3,33,24,7,4,1
+,,Camden,,27,1,9,3,16,29,9,3,17,1
 ,,Cape May,,6,0,7,0,0,6,6,1,0,0
 ,,Cumberland,,20,2,10,2,5,20,10,2,6,2
-,,Essex,,32,0,11,5,19,34,12,4,21,0
-,,Gloucester,,26,1,17,7,2,26,17,7,2,2
-,,Hudson,,33,0,8,2,27,28,8,2,18,0
+,,Essex,,34,1,11,5,20,36,12,4,22,1
+,,Gloucester,,26,1,17,7,2,25,16,7,2,2
+,,Hudson,,33,0,8,2,28,28,8,2,18,0
 ,,Hunterdon,,9,0,5,1,2,9,5,2,2,0
 ,,Mercer,,25,1,14,8,7,25,13,7,7,1
-,,Middlesex,,48,1,34,4,10,49,33,4,11,2
-,,Monmouth,,42,2,21,3,35,37,20,3,11,3
+,,Middlesex,,49,1,34,6,10,50,33,6,11,2
+,,Monmouth,,40,2,21,3,19,35,20,3,9,3
 ,,Morris,,20,0,12,0,11,20,12,1,7,0
 ,,Ocean,,38,0,22,6,11,39,23,6,11,2
 ,,Passaic,,19,0,11,3,8,20,11,3,8,0
 ,,Salem,,10,0,10,1,0,12,11,3,1,0
-,,Somerset,,22,0,19,0,5,19,14,0,5,0
+,,Somerset,,22,0,19,0,5,18,13,0,5,0
 ,,Sussex,,9,0,7,1,1,9,7,1,1,0
 ,,Union,,35,1,14,5,16,34,15,3,16,1
 ,,Warren,,8,0,5,1,2,8,5,1,2,0
@@ -27,7 +27,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 1,8,Atlantic,Egg Harbor Twsp,3,0,1,0,2,3,1,0,2,0
 1,9,Atlantic,Estell Manor City,0,0,0,0,0,0,0,0,0,0
 1,10,Atlantic,Folsom Boro,0,0,0,0,0,1,1,0,0,0
-1,11,Atlantic,Galloway Twsp,2,0,1,0,0,3,2,0,1,0
+1,11,Atlantic,Galloway Twsp,1,0,1,0,0,2,1,0,1,0
 1,12,Atlantic,Hamilton Twsp,9,0,6,2,2,9,6,2,2,0
 1,13,Atlantic,Hammonton Town,1,0,1,0,0,1,1,0,0,0
 1,14,Atlantic,Linwood City,0,0,0,0,0,1,0,0,1,0
@@ -80,8 +80,8 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 3,21,Burlington,Medford Lakes Boro,0,0,0,0,0,1,1,0,0,0
 3,22,Burlington,Moorestown Twsp,1,0,0,0,1,1,0,0,1,0
 3,23,Burlington,Mount Holly Twsp,0,0,0,0,0,0,0,0,0,0
-3,24,Burlington,Mount Laurel Twsp,25,0,5,2,1,9,6,3,1,0
-3,26,Burlington,North Hanover Twsp,0,0,0,0,0,1,1,0,0,0
+3,24,Burlington,Mount Laurel Twsp,26,0,5,2,1,9,6,3,1,0
+3,26,Burlington,North Hanover Twsp,0,0,0,0,0,0,0,0,0,0
 3,27,Burlington,Palmyra Boro,0,0,0,0,0,0,0,0,0,0
 3,29,Burlington,Pemberton Twsp,0,0,0,0,0,0,0,0,0,0
 3,32,Burlington,Shamong Twsp,0,0,0,0,0,0,0,0,0,0
@@ -98,7 +98,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 4,9,Camden,Cherry Hill Twsp,4,0,1,0,4,4,1,0,3,0
 4,12,Camden,Collingswood Boro,0,0,0,0,0,0,0,0,0,0
 4,14,Camden,Gloucester City,4,0,3,1,1,4,3,1,1,0
-4,15,Camden,Gloucester Twsp,2,0,3,0,0,2,2,0,0,0
+4,15,Camden,Gloucester Twsp,1,0,2,0,0,1,1,0,0,0
 4,16,Camden,Haddon Twsp,1,1,0,0,0,1,0,0,0,1
 4,18,Camden,Haddon Heights Boro,0,0,0,0,0,0,0,0,0,0
 4,21,Camden,Lawnside Boro,1,0,0,1,0,1,0,1,0,0
@@ -131,7 +131,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 7,11,Essex,Maplewood Twsp,0,0,0,0,0,0,0,0,0,0
 7,12,Essex,Millburn Twsp,2,0,0,0,2,2,0,0,2,0
 7,13,Essex,Montclair Town,0,0,0,0,0,0,0,0,0,0
-7,14,Essex,Newark City,23,0,8,8,14,24,9,4,14,0
+7,14,Essex,Newark City,26,1,8,8,15,26,9,4,15,1
 7,16,Essex,Nutley Town,1,0,0,0,1,1,0,0,1,0
 7,17,Essex,Orange City,0,0,0,0,0,1,0,0,1,0
 7,20,Essex,Verona Boro,0,0,0,0,0,0,0,0,0,0
@@ -143,7 +143,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 8,6,Gloucester,Glassboro Boro,0,0,0,0,0,0,0,0,0,0
 8,7,Gloucester,Greenwich Twsp,1,0,0,0,1,1,0,0,1,0
 8,8,Gloucester,Harrison Twsp,1,0,1,2,0,2,1,2,0,0
-8,9,Gloucester,Logan Twsp,1,0,1,0,0,2,2,0,0,0
+8,9,Gloucester,Logan Twsp,1,0,1,0,0,1,1,0,0,0
 8,10,Gloucester,Mantua Twsp,2,0,2,0,0,2,2,0,0,0
 8,11,Gloucester,Monroe Twsp,7,0,3,1,1,6,3,1,1,1
 8,13,Gloucester,Newfield Boro,0,0,0,0,0,0,0,0,0,0
@@ -181,7 +181,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 11,13,Mercer,West Windsor Twp,2,0,2,0,0,2,2,0,0,0
 11,14,Mercer,Princeton,1,1,0,0,0,1,0,0,0,1
 12,1,Middlesex,Carteret Boro,2,0,2,0,0,2,2,0,0,0
-12,2,Middlesex,Cranbury Twsp,1,0,1,0,0,1,1,0,0,0
+12,2,Middlesex,Cranbury Twsp,2,0,1,2,0,2,1,2,0,0
 12,4,Middlesex,East Brunswick Twsp,1,0,1,0,0,1,1,0,0,0
 12,5,Middlesex,Edison Twsp,3,0,2,0,1,5,3,0,2,0
 12,8,Middlesex,Jamesburg Boro,1,0,1,0,0,2,1,0,0,1
@@ -211,7 +211,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 13,24,Monmouth,Keyport Boro,0,0,0,0,0,0,0,0,0,0
 13,27,Monmouth,Long Branch City,2,0,0,0,1,2,0,0,2,0
 13,28,Monmouth,Manalapan Twsp,2,0,1,0,1,2,1,0,1,0
-13,30,Monmouth,Marlboro Twsp,6,0,3,0,0,4,3,0,1,0
+13,30,Monmouth,Marlboro Twsp,3,0,3,0,0,3,3,0,0,0
 13,31,Monmouth,Matawan Boro,1,0,0,0,1,1,0,0,1,0
 13,32,Monmouth,Middletown Twsp,3,0,3,0,0,3,3,0,0,0
 13,33,Monmouth,Millstone Twsp,1,0,1,0,0,1,1,0,0,0
@@ -221,7 +221,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 13,41,Monmouth,Rumson Boro,1,1,0,0,0,1,0,0,0,1
 13,49,Monmouth,Tinton Falls Boro,2,0,1,1,0,2,1,1,0,0
 13,51,Monmouth,Upper Freehold Twsp,1,0,1,0,0,1,1,0,0,0
-13,52,Monmouth,Wall Twsp,9,0,5,0,0,6,5,0,1,0
+13,52,Monmouth,Wall Twsp,9,0,5,0,0,5,5,0,0,0
 14,4,Morris,Chatham Boro,1,0,0,0,1,1,0,0,1,0
 14,7,Morris,Chester Twsp,0,0,0,0,0,0,0,0,0,0
 14,8,Morris,Denville Twsp,0,0,0,0,0,1,0,0,1,0
@@ -282,7 +282,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 17,14,Salem,Upper Pittsgrove Tw,0,0,0,0,0,0,0,0,0,0
 18,1,Somerset,Bedminster Twsp,1,0,1,0,0,1,1,0,0,0
 18,2,Somerset,Bernards Twsp,0,0,0,0,0,2,1,0,1,0
-18,5,Somerset,Branchburg Twsp,0,0,0,0,0,1,1,0,0,0
+18,5,Somerset,Branchburg Twsp,0,0,0,0,0,0,0,0,0,0
 18,6,Somerset,Bridgewater Twsp,5,0,5,0,1,5,4,0,1,0
 18,8,Somerset,Franklin Twsp,11,0,6,0,2,6,4,0,2,0
 18,10,Somerset,Hillsborough Twsp,0,0,0,0,0,0,0,0,0,0
