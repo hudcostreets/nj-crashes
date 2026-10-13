@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Mon Oct 12 10:00:05 EDT 2026</RUNDATE>
+  <RUNDATE>Tue Oct 13 10:00:08 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -952,12 +952,13 @@
     <MUNICIPALITY MCODE="1102" MNAME="Ewing Twsp">
       <ACCIDENT ACCID="14321" DATE="11/16/2025" TIME="1743">
         <HIGHWAY>634</HIGHWAY>
-        <LOCATION>County 634 MP 1.87</LOCATION>
+        <LOCATION>County 634 MP 1.72</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1187,7 +1188,7 @@
     <MUNICIPALITY MCODE="1208" MNAME="Jamesburg Boro">
       <ACCIDENT ACCID="14319" DATE="11/08/2025" TIME="1236">
         <HIGHWAY>615</HIGHWAY>
-        <LOCATION>County 615 MP 13.6</LOCATION>
+        <LOCATION>County 615 MP 13.58</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -1417,6 +1418,7 @@
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -1676,12 +1678,13 @@
     <MUNICIPALITY MCODE="1352" MNAME="Wall Twsp">
       <ACCIDENT ACCID="14224" DATE="10/11/2025" TIME="1308">
         <HIGHWAY>36</HIGHWAY>
-        <LOCATION>State Highway 36</LOCATION>
+        <LOCATION>State Highway 36 MP 13.14</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>1</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
     <MUNICIPALITY MCODE="1328" MNAME="Marlboro Twsp">
