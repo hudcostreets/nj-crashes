@@ -64,55 +64,11 @@ jobs:
         run: |
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'ryan-williams@users.noreply.github.com'
-      - name: Pull DVC-tracked deps from S3
-        run: |
-          dvx pull njdot/data/crashes.parquet
-          dvx pull njdot/data/vehicles.parquet.dvc
-          dvx pull njdot/data/occupants.parquet.dvc
-          dvx pull njdot/data/pedestrians.parquet.dvc
-          dvx pull njdot/data/*/NewJersey*Accidents.pqt.dvc
-          dvx pull njdot/data/aashto_combined_crashes.parquet.dvc
-          dvx pull njdot/data/aashto_supplemented_occupants.parquet.dvc
-          dvx pull njdot/data/aashto_supplemented_pedestrians.parquet.dvc
-          dvx pull njdot/data/aashto_supplemented_vehicles.parquet.dvc
-          # Per-year AASHTO `persons.parquet` + `vehicles.parquet` are
-          # referenced as file deps in the person / vehicle supplements;
-          # without them on disk, DVX reports "dep missing" and `dvx run`
-          # re-tries the (uncrunched) cmd. `vehicles.parquet` is a side-
-          # output of the same `normalize.py` invocation that produces
-          # `crashes.parquet` for these years.
-          dvx pull njdot/data/2023/persons.parquet.dvc
-          dvx pull njdot/data/2024/persons.parquet.dvc
-          dvx pull njdot/data/2025/persons.parquet.dvc
-          dvx pull njdot/data/2023/vehicles.parquet.dvc
-          dvx pull njdot/data/2024/vehicles.parquet.dvc
-          dvx pull njdot/data/2025/vehicles.parquet.dvc
-          # Per-year AASHTO `crashes.parquet` (produced by `normalize.py` from
-          # the corresponding `Crash.csv`). Same rationale as the persons /
-          # vehicles pulls above — the outputs on disk let DVX report
-          # up-to-date without traversing into the per-year stage. And
-          # `Crash.csv` itself must be pulled too, otherwise the stage's dep
-          # is missing → DVX still tries to re-run.
-          dvx pull njdot/data/2023/crashes.parquet.dvc
-          dvx pull njdot/data/2024/crashes.parquet.dvc
-          dvx pull njdot/data/2025/crashes.parquet.dvc
-          dvx pull njdot/data/2023/Crash.csv.dvc
-          dvx pull njdot/data/2024/Crash.csv.dvc
-          dvx pull njdot/data/2025/Crash.csv.dvc
-          dvx pull njsp/data/crash-log.parquet.dvc
-          # NJSP outputs of `njsp update_pqts` (consumed by harmonize, csvs,
-          # projections, match, three-way-match, d1-import).
-          dvx pull njsp/data/crashes.parquet.dvc
-          dvx pull www/public/njsp/crashes.db.dvc
-          # Side-effect output of `njsp match_njdot`; needed by supplement_with_sp
-          dvx pull njsp/data/njsp_njdot_residuals.parquet.dvc
-          # Downstream parquets/dbs — pre-stage so `is_output_fresh` sees them on
-          # disk and reports `up-to-date` instead of "output missing" → re-execute.
-          dvx pull njdot/data/aashto_supplemented_crashes.parquet.dvc
-          dvx pull www/public/njdot/cmymc.db.dvc
-          dvx pull www/public/data/njdot/ymccmc.dvc
-          dvx pull www/public/data/njdot/ymccmcs.dvc
-          dvx pull www/public/Municipal_Boundaries_of_NJ.geojson
+      # The crash log appends to its previous output. Restore that checkpoint
+      # even when stale; DVX otherwise fetches only inputs needed for rebuilds.
+      - name: Restore crash-log checkpoint
+        if: ${{ !inputs.targets }}
+        run: dvx pull -r r2 njsp/data/crash-log.parquet.dvc
       - name: DVX status
         run: dvx status
       # === Pipeline stages (sequential, matching old daily.yml order) ===
@@ -150,11 +106,8 @@ jobs:
       - name: Supplement AASHTO with NJSP-only residuals
         if: ${{ !inputs.targets }}
         run: $DVX njdot/data/aashto_supplemented_crashes.parquet.dvc
-      # Person supplements (occupants/pedestrians) are NOT rebuilt in CI:
-      # their deps are per-year `persons.parquet` side-effects of
-      # `normalize.py`, which only runs locally after a manual `Crash.csv`
-      # download. CI pulls these from S3 above (`dvx pull`) and feeds
-      # them to the VTC enrichment + cmymc stages.
+      # DVX restores current person supplements without fetching their
+      # per-year normalization inputs; stale stages resolve inputs on demand.
       - name: Rebuild cmymc.db (year-stats, victim-severity)
         if: ${{ !inputs.targets }}
         run: $DVX www/public/njdot/cmymc.db.dvc
@@ -199,6 +152,9 @@ jobs:
       - name: Run custom targets
         if: ${{ inputs.targets }}
         run: $DVX ${{ inputs.targets }}
+      - name: Report materialized NJDOT data
+        if: always()
+        run: find njdot/data -type f ! -name '*.dvc' ! -name '.gitignore' -printf '%s %p\n' | sort -nr
       - name: "Notify #crash-bot-ci on failure"
         if: failure()
         env:
