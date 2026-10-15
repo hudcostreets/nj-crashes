@@ -16,9 +16,9 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Ocean,,38,0,22,6,11,39,23,6,11,2
 ,,Passaic,,19,0,11,3,8,20,11,3,8,0
 ,,Salem,,10,0,10,1,0,12,11,3,1,0
-,,Somerset,,22,0,19,0,5,18,13,0,5,0
+,,Somerset,,23,0,19,0,6,19,13,0,6,0
 ,,Sussex,,9,0,7,1,1,9,7,1,1,0
-,,Union,,35,1,14,5,16,34,15,3,16,1
+,,Union,,36,1,14,5,17,35,15,3,17,1
 ,,Warren,,8,0,5,1,2,8,5,1,2,0
 1,1,Atlantic,Absecon City,0,0,0,0,0,1,0,0,1,0
 1,2,Atlantic,Atlantic City,11,1,3,1,3,6,3,1,2,1
@@ -285,6 +285,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 18,5,Somerset,Branchburg Twsp,0,0,0,0,0,0,0,0,0,0
 18,6,Somerset,Bridgewater Twsp,5,0,5,0,1,5,4,0,1,0
 18,8,Somerset,Franklin Twsp,11,0,6,0,2,6,4,0,2,0
+18,9,Somerset,Green Brook Twsp,1,0,0,0,1,1,0,0,1,0
 18,10,Somerset,Hillsborough Twsp,0,0,0,0,0,0,0,0,0,0
 18,13,Somerset,Montgomery Twsp,1,0,1,0,0,1,1,0,0,0
 18,14,Somerset,North Plainfield Bo,0,0,0,0,0,0,0,0,0,0
@@ -303,7 +304,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 19,24,Sussex,Wantage Twsp,1,0,1,0,0,1,1,0,0,0
 20,1,Union,Berkeley Heights Tw,0,0,0,0,0,1,0,0,1,0
 20,3,Union,Cranford Twsp,0,0,0,1,0,1,0,1,0,0
-20,4,Union,Elizabeth City,9,0,1,0,10,9,2,0,7,0
+20,4,Union,Elizabeth City,11,0,1,0,11,10,2,0,8,0
 20,7,Union,Hillside Twsp,2,0,2,0,0,2,2,0,0,0
 20,9,Union,Linden City,4,0,2,0,2,4,2,0,2,0
 20,10,Union,Mountainside Boro,1,1,0,0,0,1,0,0,0,1
