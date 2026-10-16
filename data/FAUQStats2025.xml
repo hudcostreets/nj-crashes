@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Oct 15 10:00:05 EDT 2026</RUNDATE>
+  <RUNDATE>Fri Oct 16 10:00:04 EDT 2026</RUNDATE>
   <STATSYEAR>2025</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -508,8 +508,8 @@
   <COUNTY CCODE="12" CNAME="Middlesex">
     <MUNICIPALITY MCODE="1201" MNAME="Carteret Boro">
       <ACCIDENT ACCID="14305" DATE="12/09/2025" TIME="2209">
-        <STREET>Industrial Rd</STREET>
-        <LOCATION>Industrial Rd</LOCATION>
+        <STREET>Peter J. Sica Memorial Industrial Hwy</STREET>
+        <LOCATION>Peter J. Sica Memorial Industrial Hwy</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -3156,12 +3156,13 @@
     <MUNICIPALITY MCODE="0811" MNAME="Monroe Twsp">
       <ACCIDENT ACCID="14073" DATE="08/09/2025" TIME="2204">
         <HIGHWAY>655</HIGHWAY>
-        <LOCATION>County 655</LOCATION>
+        <LOCATION>County 655 MP 5.85</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>2</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
@@ -3195,10 +3196,10 @@
     <MUNICIPALITY MCODE="1218" MNAME="Plainsboro Twsp">
       <ACCIDENT ACCID="14074" DATE="08/08/2025" TIME="0104">
         <HIGHWAY>1</HIGHWAY>
-        <LOCATION>State Highway 1</LOCATION>
+        <LOCATION>State Highway 1 MP 13.5</LOCATION>
         <FATALITIES>1</FATALITIES>
-        <FATAL_D>1</FATAL_D>
-        <FATAL_P>0</FATAL_P>
+        <FATAL_D>0</FATAL_D>
+        <FATAL_P>1</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
         <INJURIES>2</INJURIES>
@@ -7636,5 +7637,5 @@
   </COUNTY>
   <TOTACCIDENTS>547</TOTACCIDENTS>
   <TOTFATALITIES>582</TOTFATALITIES>
-  <TOTINJURIES>425</TOTINJURIES>
+  <TOTINJURIES>427</TOTINJURIES>
 </FAUQSTATS>
