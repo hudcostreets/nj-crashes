@@ -3,4 +3,4 @@ meta:
     cmd: njsp refresh_summaries
     fetch:
       schedule: 30 15 * * *
-      last_run: '2026-10-16T18:56:42.700950+00:00'
+      last_run: '2026-10-17T17:56:16.558543+00:00'
