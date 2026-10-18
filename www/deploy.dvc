@@ -11,6 +11,6 @@ meta:
       worker: db9cc02954cba1516ba97276ccf7d134199e0b71
       deploy.sh: ac36bd7084941cf7db0b57772dc6524aa40173ae
       src: ef3691c888fe3957f5b1614e774f361b25eb937f
-      public: 39c6f1d7d0d1592b7f8bd1c1426902081871a202
+      public: 0be71773c0e43c3292e704f697604ed1b5919678
       package.json: 27bb0375bb163ff2eabffec233ce3240d1a59b41
       functions: 48171a2aa21c60fcf33347a3e0b7c04a798e8f4d
