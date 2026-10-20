@@ -178,4 +178,3 @@ export function crashHomicideAt(rows: readonly CrashHomicideFileRow[], county: s
         ["year"],
     ).map(({ year, traffic_deaths, homicides, ratio }) => ({ year, traffic_deaths, homicides, ratio }))
 }
-
