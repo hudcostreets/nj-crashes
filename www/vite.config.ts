@@ -6,8 +6,6 @@ import path from 'path'
 import fs from 'fs'
 import { execSync } from 'child_process'
 
-const allowedHosts = process.env.VITE_ALLOWED_HOSTS?.split(',') ?? []
-
 /** Commit the bundle was built from, attached to feedback reports. */
 function buildSha(): string {
   if (process.env.VITE_BUILD_SHA) return process.env.VITE_BUILD_SHA
@@ -88,7 +86,7 @@ export default defineConfig({
   server: {
     port: 4006,
     host: true,
-    allowedHosts,
+    allowedHosts: true,
     proxy: {
       '/api': {
         target: 'http://localhost:51894',
