@@ -2572,7 +2572,7 @@ packages:
     resolution: {integrity: sha512-ol6UPyBWqsrO6EJySPz2O7ZSr856WDrEzM5zMqp+FJJLGMW35cLYmmZnl0vztAZxRUoNZJFTCohfjuIJ8I4QBQ==}
 
   hyparquet@https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz:
-    resolution: {tarball: https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz}
+    resolution: {integrity: sha512-/xPyOMC4XKvVJLld6Tko01f9Galwu/7/VJHH3ZTPe3dXqzcYkaOXfbYSLUDr7Ye2TPQpInu6TlDWRyBa4+MgVQ==, tarball: https://github.com/runsascoded/hyparquet/archive/6d0c51c.tar.gz}
     version: 1.22.1
 
   iconv-lite@0.4.24:
@@ -3148,7 +3148,7 @@ packages:
     engines: {node: '>=18.0.0'}
 
   pltly@https://gitlab.com/runsascoded/js/pltly/-/archive/0edf371f940ae549a6511d74b98b96d96048cdd8/pltly-0edf371f940ae549a6511d74b98b96d96048cdd8.tar.gz:
-    resolution: {tarball: https://gitlab.com/runsascoded/js/pltly/-/archive/0edf371f940ae549a6511d74b98b96d96048cdd8/pltly-0edf371f940ae549a6511d74b98b96d96048cdd8.tar.gz}
+    resolution: {integrity: sha512-xuEdj7H9qZXxoephDi0Jp5l9HgGsNalb4C8nWpjTbBxNHhyB6iUgKhhkfJfB1gxrztI2MmRx1tzbmEnX2rQO1Q==, tarball: https://gitlab.com/runsascoded/js/pltly/-/archive/0edf371f940ae549a6511d74b98b96d96048cdd8/pltly-0edf371f940ae549a6511d74b98b96d96048cdd8.tar.gz}
     version: 0.1.0-dist.47af36b
     peerDependencies:
       plotly.js: '>=2'

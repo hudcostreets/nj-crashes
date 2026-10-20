@@ -26,3 +26,7 @@ Before a future infrastructure update, reconcile the existing feedback R2, D1, a
 4. Fast-forward main only after release gates pass; re-fetch first because the daily workflow advances it. Watch CI and any dispatched deployment with `ghws` / `ghwr -W`.
 
 Local verification: Python 212 passed / 1 skipped; frontend unit tests 324 passed / 18 skipped; cells worker 107 passed / 10 skipped; API 36 passed. Frontend typecheck/build passes. Feedback body-limit regressions failed against the old implementation and pass with bounded actual-body reads, including absent or misleading Content-Length headers.
+
+Dev rollout completed for API, cells API, and frontend. Read-only endpoint checks pass. Automated browser checks pass: 15 homepage legend/plot tests locally, 2 local map render checks, and 3 deployed-dev plot/map smoke tests at [the dev site]. CIC in the intended signed-in Chrome profile remains outstanding. Initial branch CI passed Python and both API jobs, but frontend installation exposed missing integrity hashes for directly pinned archives under pnpm 10.34.7; the hashes were calculated from the exact pinned downloads and added without changing package versions or disabling integrity checks.
+
+[the dev site]: https://dev.crashes.hccs.dev/
