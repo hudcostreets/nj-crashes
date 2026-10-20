@@ -96,16 +96,46 @@ async function postSlack(webhook: string, body: unknown): Promise<string> {
 	return `error ${res.status}`
 }
 
+async function boundedBody(request: Request): Promise<Uint8Array | null> {
+	const reader = request.body?.getReader()
+	if (!reader) return new Uint8Array()
+	const chunks: Uint8Array[] = []
+	let size = 0
+	try {
+		while (true) {
+			const { done, value } = await reader.read()
+			if (done) break
+			size += value.byteLength
+			if (size > LIMITS.body) {
+				await reader.cancel("feedback body too large")
+				return null
+			}
+			chunks.push(value)
+		}
+	} finally {
+		reader.releaseLock()
+	}
+	const body = new Uint8Array(size)
+	let offset = 0
+	for (const chunk of chunks) {
+		body.set(chunk, offset)
+		offset += chunk.byteLength
+	}
+	return body
+}
+
 async function handlePost(request: Request, env: FeedbackEnv, ctx: ExecutionContext, headers: Headers): Promise<Response> {
 	const db = env.FEEDBACK_DB
 	if (!db) return json({ error: "feedback storage not configured" }, 503, headers)
 
 	const len = Number(request.headers.get("Content-Length") ?? "0")
 	if (len > LIMITS.body) return json({ error: "request too large" }, 413, headers)
+	const body = await boundedBody(request)
+	if (body === null) return json({ error: "request too large" }, 413, headers)
 
 	let form: FormData
 	try {
-		form = await request.formData()
+		form = await new Response(body, { headers: request.headers }).formData()
 	} catch {
 		return json({ error: "expected multipart/form-data" }, 400, headers)
 	}
