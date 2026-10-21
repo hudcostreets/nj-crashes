@@ -1,9 +1,9 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_365,trailing_365_driver,trailing_365_passenger,trailing_365_pedestrian,trailing_365_cyclist
 ,,Atlantic,,34,1,18,5,12,33,18,5,11,1
-,,Bergen,,21,0,10,0,13,23,12,1,10,0
-,,Burlington,,34,0,24,8,4,33,24,7,4,1
+,,Bergen,,22,0,10,0,15,24,12,1,11,0
+,,Burlington,,34,0,24,8,4,32,23,7,4,1
 ,,Camden,,26,1,9,3,15,28,9,3,16,1
-,,Cape May,,6,0,7,0,0,6,6,1,0,0
+,,Cape May,,6,0,6,0,0,6,6,1,0,0
 ,,Cumberland,,18,2,10,2,4,19,10,2,5,2
 ,,Essex,,35,1,11,5,21,37,12,4,23,1
 ,,Gloucester,,26,1,16,7,3,26,16,7,3,2
@@ -53,7 +53,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 2,38,Bergen,New Milford Boro,0,0,0,0,0,1,0,0,1,0
 2,40,Bergen,Northvale Boro,1,0,0,0,1,1,0,0,1,0
 2,42,Bergen,Oakland Boro,0,0,0,0,0,1,0,1,0,0
-2,46,Bergen,Paramus Boro,0,0,0,0,0,0,0,0,0,0
+2,46,Bergen,Paramus Boro,1,0,0,0,1,1,0,0,1,0
 2,48,Bergen,Ramsey Boro,0,0,0,0,0,0,0,0,0,0
 2,49,Bergen,Ridgefield Boro,1,0,0,0,1,1,0,0,1,0
 2,50,Bergen,Ridgefield Park Tws,2,0,2,0,0,2,2,0,0,0
@@ -80,7 +80,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 3,21,Burlington,Medford Lakes Boro,0,0,0,0,0,1,1,0,0,0
 3,22,Burlington,Moorestown Twsp,1,0,0,0,1,1,0,0,1,0
 3,23,Burlington,Mount Holly Twsp,0,0,0,0,0,0,0,0,0,0
-3,24,Burlington,Mount Laurel Twsp,26,0,5,2,1,9,6,3,1,0
+3,24,Burlington,Mount Laurel Twsp,26,0,5,2,1,8,5,3,1,0
 3,26,Burlington,North Hanover Twsp,0,0,0,0,0,0,0,0,0,0
 3,27,Burlington,Palmyra Boro,0,0,0,0,0,0,0,0,0,0
 3,29,Burlington,Pemberton Twsp,0,0,0,0,0,0,0,0,0,0
@@ -111,7 +111,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 4,36,Camden,Winslow Twsp,2,0,0,0,2,2,0,0,2,0
 5,4,Cape May,Dennis Twsp,0,0,0,0,0,0,0,0,0,0
 5,5,Cape May,Lower Twsp,2,0,2,0,0,2,2,0,0,0
-5,6,Cape May,Middle Twsp,1,0,2,0,0,2,2,1,0,0
+5,6,Cape May,Middle Twsp,1,0,1,0,0,2,2,1,0,0
 5,7,Cape May,North Wildwood City,0,0,0,0,0,0,0,0,0,0
 5,11,Cape May,Upper Twsp,2,0,2,0,0,2,2,0,0,0
 5,16,Cape May,Woodbine Boro,0,0,0,0,0,0,0,0,0,0
