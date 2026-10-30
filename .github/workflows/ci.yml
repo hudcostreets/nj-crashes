@@ -42,6 +42,8 @@ jobs:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
         with:
+          # Match Batch (`python:3.13-slim`) + local; the runner's system Python moved to 3.14, which some deps (`pyogrio`, `pygit2`, `pyarrow`) have no wheels for.
+          python-version: "3.13"
           enable-cache: true
       - name: pytest
         # `nj_crashes/tests/test_crash_lls.py` calls `Crashes.load()` — needs the
