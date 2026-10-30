@@ -45,6 +45,8 @@ jobs:
           token: ${{ secrets.GH_TOKEN }}
       - uses: astral-sh/setup-uv@v7
         with:
+          # Match Batch (`python:3.13-slim`) + local; the runner's system Python moved to 3.14, which some deps (`pyogrio`, `pygit2`, `pyarrow`) have no wheels for.
+          python-version: "3.13"
           enable-cache: true
       - name: Install Python dependencies
         run: |
