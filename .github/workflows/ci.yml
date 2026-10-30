@@ -35,7 +35,7 @@ concurrency:
 jobs:
   python:
     name: Python tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
@@ -52,7 +52,7 @@ jobs:
 
   www:
     name: Typecheck, build, unit tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v5
@@ -72,7 +72,7 @@ jobs:
 
   e2e:
     name: e2e (legend-ux)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v5
@@ -110,7 +110,7 @@ jobs:
     name: notify
     needs: [python, www, e2e]
     if: failure()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
       - name: "Notify #crash-bot-ci on failure"
