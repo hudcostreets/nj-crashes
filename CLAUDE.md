@@ -135,6 +135,8 @@ exclusion list from that flag, so mark the stage rather than editing a list.
 ### Daily pipeline
 GHA workflow at `.github/workflows/daily.yml` runs at 11:10 AM EDT daily. Stages (in order): `refresh.dvc` → `update_pqts.dvc` → `harmonize.dvc` → `crash-log.parquet.dvc` → `summaries.dvc` → `projections.dvc` → `njsp_njdot_match.parquet.dvc` → `aashto_supplemented_crashes.parquet.dvc` → `ymccmc.dvc` + `ymccmcs.dvc` → `csvs.dvc` → `slack_post.dvc` → `api/d1-import.dvc` → `deploy.dvc`. Each stage uses `dvx run --commit --push each` so commits and pushes incrementally. The matcher + supplement + agg trio runs daily so NJSP-only-2025 fatals (the AASHTO fatal-reclassification lag concentrated in Middlesex/Hudson/Essex) flow into the homepage NJDOT plot as NJSP receives them. `api/d1-import.dvc` runs `bash api/scripts/d1-import.sh --inplace njsp-crashes` to drop+create+insert the `NJSP_CRASHES_DB` D1 binding inplace (no staging-swap, brief inconsistency window). Full re-import of all DBs (njdot/* + njsp) uses the staging-swap workflow: `bash api/scripts/d1-import.sh` (no flags), run manually after annual NJDOT updates.
 
+The `njsp-snapshot` CF Worker (`njsp-snapshot/`, hourly cron) captures changed NJSP XMLs into `main` itself (same files, `.dvc` bytes, and `Refresh NJSP data (M/D)` message as `refresh.dvc`), then `workflow_dispatch`es the daily; the daily's own cron stays as a backstop. See `specs/njsp-snapshot-worker.md`.
+
 ## Useful Commands
 
 ```bash

@@ -154,6 +154,21 @@ jobs:
       - name: Run custom targets
         if: ${{ inputs.targets }}
         run: $DVX ${{ inputs.targets }}
+      # `dvx run --push each` only *warns* when a `git push` is rejected (non-FF),
+      # so a commit landing on the branch mid-run (e.g. from the `njsp-snapshot`
+      # Worker, which skips while a daily is queued/running but can't fully close
+      # that race) would otherwise leave this run's commits unpushed under a green
+      # run. Fail loudly instead (→ the Slack notify below).
+      - name: Check all commits were pushed
+        if: ${{ !cancelled() }}
+        run: |
+          git fetch origin ${{ github.ref_name }}
+          unpushed="$(git log --oneline origin/${{ github.ref_name }}..HEAD)"
+          if [ -n "$unpushed" ]; then
+            echo "::error::Commits not pushed to ${{ github.ref_name }} (a concurrent push landed mid-run?):"
+            echo "$unpushed"
+            exit 1
+          fi
       - name: Report materialized NJDOT data
         if: always()
         run: find njdot/data -type f ! -name '*.dvc' ! -name '.gitignore' -printf '%s %p\n' | sort -nr
