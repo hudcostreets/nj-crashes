@@ -1,10 +1,14 @@
-"""Unit tests for `njsp.cli.refresh_data.update_xml_dvc`.
+"""Unit tests for `njsp.cli.refresh_data` (`.dvc` rendering, fetch-log records).
 
 Guards the code path that keeps `data/FAUQStats*.xml.dvc` in sync with
 each daily fetch's response headers (ETag, Last-Modified). A regression
 here would desync the `.dvc` deps section from the git-tracked XML,
 breaking `dvx update` as a fallback fetcher.
 """
+import hashlib
+import json
+import os
+from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
@@ -124,3 +128,184 @@ def test_update_xml_dvc_preserves_user_agent(tmp_path):
 
     data = yaml.safe_load(dvc.read_text())
     assert data['deps'][0]['user_agent'] == ua
+
+
+# ── `render_xml_dvc` goldens, shared with the `njsp-snapshot` Worker's TS port ──
+
+UA_LINE = (
+    '  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,\n'
+    '    like Gecko) Chrome/120.0.0.0 Safari/537.36\n'
+)
+URL = 'https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml'
+# `data/FAUQStats2026.xml.dvc` as of 2026-10-31 (current shape: imported via `dvx import-url --git`).
+DVC_FULL = (
+    'deps:\n'
+    f'- path: {URL}\n'
+    "  checksum: '\"2f375-65f239beeffed\"'\n"
+    '  size: 193397\n'
+    "  mtime: '2026-10-31T14:20:04+00:00'\n"
+    f'{UA_LINE}'
+    'outs:\n'
+    '- md5: aedd16377beb2b1a8a766809c8951415\n'
+    '  size: 193397\n'
+    '  hash: md5\n'
+    '  path: FAUQStats2026.xml\n'
+    'meta:\n'
+    '  git_tracked: true\n'
+    '  import:\n'
+    "    fetched: '2026-10-31'\n"
+)
+# Older-year shape (`data/FAUQStats2008.xml.dvc`): no deps details, no `meta.import`.
+DVC_BARE = (
+    'deps:\n'
+    f'- path: {URL}\n'
+    'outs:\n'
+    '- md5: 017b63c673518b66eff6dcabf5af4778\n'
+    '  size: 198875\n'
+    '  hash: md5\n'
+    '  path: FAUQStats2026.xml\n'
+    'meta:\n'
+    '  git_tracked: true\n'
+)
+XML = '<FAUQSTATS>\n  <RUNDATE>Sun Nov 01 10:00:04 EST 2026</RUNDATE>\n</FAUQSTATS>\n'
+LM = 'Sun, 01 Nov 2026 15:20:05 GMT'
+# name → (dvc, content, headers, fetched)
+GOLDEN_CASES = {
+    'full': (DVC_FULL, XML, {'ETag': '"2f4a1-65f3a0c1d2e3f"', 'Last-Modified': LM}, '2026-11-01'),
+    'full-weak-etag': (DVC_FULL, XML, {'ETag': 'W/"2f4a1-65f3a0c1d2e3f"', 'Last-Modified': LM}, '2026-11-01'),
+    'full-etag-only': (DVC_FULL, XML, {'ETag': '"abc"'}, '2026-11-01'),
+    'full-lm-only': (DVC_FULL, XML, {'Last-Modified': 'Mon, 02 Nov 2026 09:05:00 GMT'}, '2026-11-02'),
+    'full-no-headers': (DVC_FULL, XML, {}, '2026-11-01'),
+    'full-no-response': (DVC_FULL, XML, None, '2026-11-01'),
+    'bare': (DVC_BARE, XML, {'ETag': '"4bc21-65f239bead584"', 'Last-Modified': LM}, '2026-11-01'),
+    'bare-no-response': (DVC_BARE, XML, None, '2026-11-01'),
+    'bare-unquoted-etag': (DVC_BARE, XML, {'ETag': 'abc-123', 'Last-Modified': LM}, '2026-11-01'),
+    'bare-numeric-etag': (DVC_BARE, XML, {'ETag': '12345', 'Last-Modified': LM}, '2026-11-01'),
+}
+GOLDEN_PATH = Path(__file__).parents[2] / 'njsp-snapshot' / 'test' / 'fixtures' / 'dvc-golden.json'
+
+
+def _golden_cases() -> list[dict]:
+    from njsp.cli.refresh_data import render_xml_dvc
+    out = []
+    for name, (dvc, content, headers, fetched) in GOLDEN_CASES.items():
+        out.append({
+            'name': name,
+            'dvc': dvc,
+            'content': content,
+            'headers': headers,
+            'fetched': fetched,
+            'expected': render_xml_dvc(dvc, content.encode(), headers, date.fromisoformat(fetched)),
+        })
+    return out
+
+
+def test_snapshot_worker_goldens():
+    """`njsp-snapshot/test/fixtures/dvc-golden.json` == what `render_xml_dvc` writes.
+
+    The Worker's vitest suite asserts its TS renderer reproduces each
+    `expected` byte-for-byte; this side pins the goldens to the Python
+    writer. Regenerate with `UPDATE_GOLDEN=1 pytest njsp/tests/test_refresh_data.py`.
+    """
+    actual = json.dumps(_golden_cases(), indent=2) + '\n'
+    if os.environ.get('UPDATE_GOLDEN'):
+        GOLDEN_PATH.write_text(actual)
+    assert GOLDEN_PATH.read_text() == actual
+
+
+def test_committed_xml_dvcs_are_pyyaml_canonical():
+    """Every committed `data/FAUQStats*.xml.dvc` round-trips through PyYAML
+    unchanged — the precondition for the Worker's line-wise `.dvc` edits
+    matching `render_xml_dvc`'s full re-dump."""
+    root = Path(__file__).parents[2]
+    paths = sorted((root / 'data').glob('FAUQStats*.xml.dvc'))
+    assert len(paths) >= 19
+    noncanonical = [
+        p.name for p in paths
+        if yaml.dump(yaml.safe_load(p.read_text()), sort_keys=False, default_flow_style=False) != p.read_text()
+    ]
+    assert noncanonical == []
+
+
+def test_render_xml_dvc_full():
+    from njsp.cli.refresh_data import render_xml_dvc
+    dvc, content, headers, fetched = GOLDEN_CASES['full']
+    assert render_xml_dvc(dvc, content.encode(), headers, date.fromisoformat(fetched)) == (
+        'deps:\n'
+        f'- path: {URL}\n'
+        "  checksum: '\"2f4a1-65f3a0c1d2e3f\"'\n"
+        f'  size: {len(content)}\n'
+        "  mtime: '2026-11-01T15:20:05+00:00'\n"
+        f'{UA_LINE}'
+        'outs:\n'
+        f'- md5: {hashlib.md5(content.encode()).hexdigest()}\n'
+        f'  size: {len(content)}\n'
+        '  hash: md5\n'
+        '  path: FAUQStats2026.xml\n'
+        'meta:\n'
+        '  git_tracked: true\n'
+        '  import:\n'
+        "    fetched: '2026-11-01'\n"
+    )
+
+
+# ── fetch-log: versions committed by the Worker (never logged by a fetch) ──
+
+PRIOR = {'checksum': '"x"', 'size': 193397, 'mtime': '2026-10-31T14:20:04+00:00'}
+RUNDATE = 'Sat Oct 31 10:00:04 EDT 2026'
+
+
+def test_unlogged_capture_record_none_when_logged():
+    from njsp.cli.refresh_data import unlogged_capture_record
+    last = {'last_modified': 'Sat, 31 Oct 2026 14:20:04 GMT', 'md5': 'aaa'}
+    assert unlogged_capture_record(2026, PRIOR, 'bbb', RUNDATE, last) is None
+
+
+def test_unlogged_capture_record_for_worker_capture():
+    from njsp.cli.refresh_data import unlogged_capture_record
+    last = {'last_modified': 'Fri, 30 Oct 2026 14:20:05 GMT', 'md5': 'aaa'}
+    assert unlogged_capture_record(2026, PRIOR, 'bbb', RUNDATE, last) == {
+        'fetch_time': None,
+        'year': 2026,
+        'last_modified': 'Sat, 31 Oct 2026 14:20:04 GMT',
+        'rundate': RUNDATE,
+        'content_length': 193397,
+        'changed': True,
+        'md5': 'bbb',
+        'logged_from': 'git',
+    }
+
+
+def test_unlogged_capture_record_metadata_only():
+    """NJSP re-publishes prior years daily (new ETag/LM, same bytes) → `changed=False`."""
+    from njsp.cli.refresh_data import unlogged_capture_record
+    last = {'last_modified': 'Fri, 30 Oct 2026 14:20:05 GMT', 'md5': 'aaa'}
+    rec = unlogged_capture_record(2024, PRIOR, 'aaa', RUNDATE, last)
+    assert (rec['logged_from'], rec['changed']) == ('git', False)
+
+
+def test_unlogged_capture_record_legacy_row_without_md5():
+    from njsp.cli.refresh_data import unlogged_capture_record
+    last = {'last_modified': 'Fri, 30 Oct 2026 14:20:05 GMT', 'md5': float('nan')}
+    rec = unlogged_capture_record(2026, PRIOR, 'bbb', RUNDATE, last)
+    assert (rec['logged_from'], rec['changed']) == ('git', None)
+
+
+def test_unlogged_capture_record_no_mtime():
+    from njsp.cli.refresh_data import unlogged_capture_record
+    assert unlogged_capture_record(2008, {}, 'aaa', None, None) is None
+
+
+def test_last_logged_by_year():
+    import pandas as pd
+    from njsp.cli.refresh_data import last_logged_by_year
+    log = pd.DataFrame([
+        {'year': 2025, 'last_modified': 'a', 'md5': '1'},
+        {'year': 2026, 'last_modified': 'b', 'md5': '2'},
+        {'year': 2025, 'last_modified': 'c', 'md5': '3'},
+    ])
+    assert last_logged_by_year(log) == {
+        2025: {'year': 2025, 'last_modified': 'c', 'md5': '3'},
+        2026: {'year': 2026, 'last_modified': 'b', 'md5': '2'},
+    }
+    assert last_logged_by_year(None) == {}

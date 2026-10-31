@@ -1,0 +1,101 @@
+[
+  {
+    "name": "full",
+    "dvc": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\n  checksum: '\"2f375-65f239beeffed\"'\n  size: 193397\n  mtime: '2026-10-31T14:20:04+00:00'\n  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,\n    like Gecko) Chrome/120.0.0.0 Safari/537.36\nouts:\n- md5: aedd16377beb2b1a8a766809c8951415\n  size: 193397\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n  import:\n    fetched: '2026-10-31'\n",
+    "content": "<FAUQSTATS>\n  <RUNDATE>Sun Nov 01 10:00:04 EST 2026</RUNDATE>\n</FAUQSTATS>\n",
+    "headers": {
+      "ETag": "\"2f4a1-65f3a0c1d2e3f\"",
+      "Last-Modified": "Sun, 01 Nov 2026 15:20:05 GMT"
+    },
+    "fetched": "2026-11-01",
+    "expected": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\n  checksum: '\"2f4a1-65f3a0c1d2e3f\"'\n  size: 75\n  mtime: '2026-11-01T15:20:05+00:00'\n  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,\n    like Gecko) Chrome/120.0.0.0 Safari/537.36\nouts:\n- md5: a05ff2240db180c3429ec2a091332a00\n  size: 75\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n  import:\n    fetched: '2026-11-01'\n"
+  },
+  {
+    "name": "full-weak-etag",
+    "dvc": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\n  checksum: '\"2f375-65f239beeffed\"'\n  size: 193397\n  mtime: '2026-10-31T14:20:04+00:00'\n  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,\n    like Gecko) Chrome/120.0.0.0 Safari/537.36\nouts:\n- md5: aedd16377beb2b1a8a766809c8951415\n  size: 193397\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n  import:\n    fetched: '2026-10-31'\n",
+    "content": "<FAUQSTATS>\n  <RUNDATE>Sun Nov 01 10:00:04 EST 2026</RUNDATE>\n</FAUQSTATS>\n",
+    "headers": {
+      "ETag": "W/\"2f4a1-65f3a0c1d2e3f\"",
+      "Last-Modified": "Sun, 01 Nov 2026 15:20:05 GMT"
+    },
+    "fetched": "2026-11-01",
+    "expected": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\n  checksum: W/\"2f4a1-65f3a0c1d2e3f\"\n  size: 75\n  mtime: '2026-11-01T15:20:05+00:00'\n  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,\n    like Gecko) Chrome/120.0.0.0 Safari/537.36\nouts:\n- md5: a05ff2240db180c3429ec2a091332a00\n  size: 75\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n  import:\n    fetched: '2026-11-01'\n"
+  },
+  {
+    "name": "full-etag-only",
+    "dvc": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\n  checksum: '\"2f375-65f239beeffed\"'\n  size: 193397\n  mtime: '2026-10-31T14:20:04+00:00'\n  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,\n    like Gecko) Chrome/120.0.0.0 Safari/537.36\nouts:\n- md5: aedd16377beb2b1a8a766809c8951415\n  size: 193397\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n  import:\n    fetched: '2026-10-31'\n",
+    "content": "<FAUQSTATS>\n  <RUNDATE>Sun Nov 01 10:00:04 EST 2026</RUNDATE>\n</FAUQSTATS>\n",
+    "headers": {
+      "ETag": "\"abc\""
+    },
+    "fetched": "2026-11-01",
+    "expected": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\n  checksum: '\"abc\"'\n  size: 75\n  mtime: '2026-10-31T14:20:04+00:00'\n  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,\n    like Gecko) Chrome/120.0.0.0 Safari/537.36\nouts:\n- md5: a05ff2240db180c3429ec2a091332a00\n  size: 75\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n  import:\n    fetched: '2026-11-01'\n"
+  },
+  {
+    "name": "full-lm-only",
+    "dvc": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\n  checksum: '\"2f375-65f239beeffed\"'\n  size: 193397\n  mtime: '2026-10-31T14:20:04+00:00'\n  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,\n    like Gecko) Chrome/120.0.0.0 Safari/537.36\nouts:\n- md5: aedd16377beb2b1a8a766809c8951415\n  size: 193397\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n  import:\n    fetched: '2026-10-31'\n",
+    "content": "<FAUQSTATS>\n  <RUNDATE>Sun Nov 01 10:00:04 EST 2026</RUNDATE>\n</FAUQSTATS>\n",
+    "headers": {
+      "Last-Modified": "Mon, 02 Nov 2026 09:05:00 GMT"
+    },
+    "fetched": "2026-11-02",
+    "expected": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\n  checksum: '\"2f375-65f239beeffed\"'\n  size: 75\n  mtime: '2026-11-02T09:05:00+00:00'\n  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,\n    like Gecko) Chrome/120.0.0.0 Safari/537.36\nouts:\n- md5: a05ff2240db180c3429ec2a091332a00\n  size: 75\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n  import:\n    fetched: '2026-11-02'\n"
+  },
+  {
+    "name": "full-no-headers",
+    "dvc": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\n  checksum: '\"2f375-65f239beeffed\"'\n  size: 193397\n  mtime: '2026-10-31T14:20:04+00:00'\n  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,\n    like Gecko) Chrome/120.0.0.0 Safari/537.36\nouts:\n- md5: aedd16377beb2b1a8a766809c8951415\n  size: 193397\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n  import:\n    fetched: '2026-10-31'\n",
+    "content": "<FAUQSTATS>\n  <RUNDATE>Sun Nov 01 10:00:04 EST 2026</RUNDATE>\n</FAUQSTATS>\n",
+    "headers": {},
+    "fetched": "2026-11-01",
+    "expected": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\n  checksum: '\"2f375-65f239beeffed\"'\n  size: 75\n  mtime: '2026-10-31T14:20:04+00:00'\n  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,\n    like Gecko) Chrome/120.0.0.0 Safari/537.36\nouts:\n- md5: a05ff2240db180c3429ec2a091332a00\n  size: 75\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n  import:\n    fetched: '2026-11-01'\n"
+  },
+  {
+    "name": "full-no-response",
+    "dvc": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\n  checksum: '\"2f375-65f239beeffed\"'\n  size: 193397\n  mtime: '2026-10-31T14:20:04+00:00'\n  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,\n    like Gecko) Chrome/120.0.0.0 Safari/537.36\nouts:\n- md5: aedd16377beb2b1a8a766809c8951415\n  size: 193397\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n  import:\n    fetched: '2026-10-31'\n",
+    "content": "<FAUQSTATS>\n  <RUNDATE>Sun Nov 01 10:00:04 EST 2026</RUNDATE>\n</FAUQSTATS>\n",
+    "headers": null,
+    "fetched": "2026-11-01",
+    "expected": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\n  checksum: '\"2f375-65f239beeffed\"'\n  size: 193397\n  mtime: '2026-10-31T14:20:04+00:00'\n  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,\n    like Gecko) Chrome/120.0.0.0 Safari/537.36\nouts:\n- md5: a05ff2240db180c3429ec2a091332a00\n  size: 75\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n  import:\n    fetched: '2026-11-01'\n"
+  },
+  {
+    "name": "bare",
+    "dvc": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\nouts:\n- md5: 017b63c673518b66eff6dcabf5af4778\n  size: 198875\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n",
+    "content": "<FAUQSTATS>\n  <RUNDATE>Sun Nov 01 10:00:04 EST 2026</RUNDATE>\n</FAUQSTATS>\n",
+    "headers": {
+      "ETag": "\"4bc21-65f239bead584\"",
+      "Last-Modified": "Sun, 01 Nov 2026 15:20:05 GMT"
+    },
+    "fetched": "2026-11-01",
+    "expected": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\n  size: 75\n  checksum: '\"4bc21-65f239bead584\"'\n  mtime: '2026-11-01T15:20:05+00:00'\nouts:\n- md5: a05ff2240db180c3429ec2a091332a00\n  size: 75\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n  import:\n    fetched: '2026-11-01'\n"
+  },
+  {
+    "name": "bare-no-response",
+    "dvc": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\nouts:\n- md5: 017b63c673518b66eff6dcabf5af4778\n  size: 198875\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n",
+    "content": "<FAUQSTATS>\n  <RUNDATE>Sun Nov 01 10:00:04 EST 2026</RUNDATE>\n</FAUQSTATS>\n",
+    "headers": null,
+    "fetched": "2026-11-01",
+    "expected": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\nouts:\n- md5: a05ff2240db180c3429ec2a091332a00\n  size: 75\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n  import:\n    fetched: '2026-11-01'\n"
+  },
+  {
+    "name": "bare-unquoted-etag",
+    "dvc": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\nouts:\n- md5: 017b63c673518b66eff6dcabf5af4778\n  size: 198875\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n",
+    "content": "<FAUQSTATS>\n  <RUNDATE>Sun Nov 01 10:00:04 EST 2026</RUNDATE>\n</FAUQSTATS>\n",
+    "headers": {
+      "ETag": "abc-123",
+      "Last-Modified": "Sun, 01 Nov 2026 15:20:05 GMT"
+    },
+    "fetched": "2026-11-01",
+    "expected": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\n  size: 75\n  checksum: abc-123\n  mtime: '2026-11-01T15:20:05+00:00'\nouts:\n- md5: a05ff2240db180c3429ec2a091332a00\n  size: 75\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n  import:\n    fetched: '2026-11-01'\n"
+  },
+  {
+    "name": "bare-numeric-etag",
+    "dvc": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\nouts:\n- md5: 017b63c673518b66eff6dcabf5af4778\n  size: 198875\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n",
+    "content": "<FAUQSTATS>\n  <RUNDATE>Sun Nov 01 10:00:04 EST 2026</RUNDATE>\n</FAUQSTATS>\n",
+    "headers": {
+      "ETag": "12345",
+      "Last-Modified": "Sun, 01 Nov 2026 15:20:05 GMT"
+    },
+    "fetched": "2026-11-01",
+    "expected": "deps:\n- path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml\n  size: 75\n  checksum: '12345'\n  mtime: '2026-11-01T15:20:05+00:00'\nouts:\n- md5: a05ff2240db180c3429ec2a091332a00\n  size: 75\n  hash: md5\n  path: FAUQStats2026.xml\nmeta:\n  git_tracked: true\n  import:\n    fetched: '2026-11-01'\n"
+  }
+]
