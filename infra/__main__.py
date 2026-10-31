@@ -96,6 +96,16 @@ d1_dbs = {
     for name in D1
 }
 
+# ── Workers KV namespaces ──
+# title → the wrangler binding that references it (documentation).
+KV = {
+    'njsp-snapshot-state': 'STATE',  # njsp-snapshot/: tick state + alert dedupe
+}
+kv_namespaces = {
+    title: cf.WorkersKvNamespace(f'kv-{title}', account_id=account_id, title=title)
+    for title in KV
+}
+
 # ── Worker custom domains (gated until Workers are deployed in this account) ──
 # First-level under hccs.dev so the `*.hccs.dev` Universal SSL cert covers them
 # (a two-deep `*.crashes.hccs.dev` would need paid Advanced Cert Manager).
@@ -175,6 +185,7 @@ if SAAS_HOSTNAMES:
 WORKERS = {
     'crashes-cells-api': 'cells-api/',   # R2 CELLS_BUCKET=crashes + D1 cells-s2,tune; serves /v1/cells,/v1/raw
     'crashes-api':       'api/',         # D1 crashes/vehicles/occupants/pedestrians/cmymc/njsp-crashes
+    'njsp-snapshot':     'njsp-snapshot/',  # KV njsp-snapshot-state; cron: NJSP XML → Git, dispatch daily
     # `[env.dev]` of the above: same bindings (prod data, read-only use), new code.
     'crashes-cells-api-dev': 'cells-api/ (--env dev)',
     'crashes-api-dev':       'api/ (--env dev)',
@@ -184,6 +195,7 @@ WORKERS = {
 pulumi.export('r2_bucket', bucket.name)
 pulumi.export('data_domain', data_domain)
 pulumi.export('d1_database_ids', {name: db.id for name, db in d1_dbs.items()})
+pulumi.export('kv_namespace_ids', {title: ns.id for title, ns in kv_namespaces.items()})
 pulumi.export('worker_bindings', D1)
 pulumi.export('workers', WORKERS)
 pulumi.export('saas_validation', saas_validation)

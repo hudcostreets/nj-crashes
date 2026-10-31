@@ -1,0 +1,34 @@
+# NJSP FAUQStats snapshot Worker: captures NJSP's fatal-crash XMLs into Git on a
+# CF cron, dispatches the `daily` workflow, and posts dead-man alerts to Slack.
+# See `specs/njsp-snapshot-worker.md` (incl. deploy + secret commands).
+name = "njsp-snapshot"
+main = "src/index.ts"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+# Status endpoint only (`GET /` → state JSON); no custom domain.
+workers_dev = true
+
+[triggers]
+# Hourly, a few minutes past (NJSP's RUNDATE is ~10:00 ET, file mtime ~10:20 ET).
+crons = ["7 * * * *"]
+
+# Tick state (last result, observed upstream headers, pending dispatch, alert dedupe).
+# Namespace is Pulumi-owned (`infra/__main__.py` → `kv_namespace_ids`).
+[[kv_namespaces]]
+binding = "STATE"
+id = "REPLACE_WITH_PULUMI_OUTPUT"
+
+[dev]
+port = 51947
+
+[vars]
+GH_REPO = "hudcostreets/nj-crashes"
+GH_BRANCH = "main"
+GH_WORKFLOW = "daily.yml"
+# Same identity as the daily's `Configure Git author` step, so XML history
+# looks the same to `git log` walkers whichever fetcher captured a version.
+COMMIT_AUTHOR_NAME = "GitHub Actions"
+COMMIT_AUTHOR_EMAIL = "ryan-williams@users.noreply.github.com"
+# `vars.SLACK_CI_CHANNEL_ID` (#crash-bot-ci), where the daily's failure alerts go.
+SLACK_CI_CHANNEL_ID = "C0BCYGVL9FD"
+DRY_RUN = "0"
