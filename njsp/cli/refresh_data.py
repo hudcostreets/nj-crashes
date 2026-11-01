@@ -33,6 +33,37 @@ def rundate_short(rundate_str: str) -> str:
         return rundate_str
 
 
+RUNDATE_TZ_OFFSETS = {'EDT': '-0400', 'EST': '-0500'}
+
+
+def rundate_dt(rundate: str | None) -> datetime | None:
+    """Parse a RUNDATE ('Wed Oct 28 10:00:01 EDT 2026') to an aware datetime; None if unparseable."""
+    if not rundate:
+        return None
+    parts = rundate.split()
+    if len(parts) != 6 or parts[4] not in RUNDATE_TZ_OFFSETS:
+        return None
+    try:
+        return datetime.strptime(
+            ' '.join(parts[:4] + [parts[5], RUNDATE_TZ_OFFSETS[parts[4]]]),
+            '%a %b %d %H:%M:%S %Y %z',
+        )
+    except ValueError:
+        return None
+
+
+def is_rollback(new_rundate: str | None, committed_rundate: str | None) -> bool:
+    """Whether a fetched XML's RUNDATE is older than the committed one's.
+
+    NJSP occasionally re-publishes an older version (e.g. 2026-11-01 06:00 UTC:
+    2026's RUNDATE went 10/31 → 10/28, dropping 8 crashes). Such versions aren't
+    committed here; the `njsp-snapshot` Worker records them on a side branch.
+    Unparseable RUNDATEs → False (treated as an ordinary update).
+    """
+    new, committed = rundate_dt(new_rundate), rundate_dt(committed_rundate)
+    return new is not None and committed is not None and new < committed
+
+
 def render_xml_dvc(
     dvc_text: str,
     content: bytes,
@@ -298,6 +329,27 @@ def update_years(*years, current_year: int = None, log_s3: bool = False):
         # Compare new content md5 to prior — only treat as changed if different.
         new_md5 = hashlib.md5(content).hexdigest()
         prior_md5 = _load_prior_md5(dvc_path) if prior is not None else None
+
+        try:
+            with open(out_path, 'rb') as f:
+                committed_rundate = parse_rundate(f.read())
+        except OSError:
+            committed_rundate = None
+        if new_md5 != prior_md5 and is_rollback(rundate, committed_rundate):
+            err(f"{name}: upstream RUNDATE {rundate!r} is older than committed {committed_rundate!r}; not committing (rollback)")
+            fetch_records.append({
+                'fetch_time': fetch_time,
+                'year': year,
+                'last_modified': res.headers.get('Last-Modified'),
+                'rundate': rundate,
+                'content_length': len(content),
+                'changed': True,
+                'md5': new_md5,
+                'logged_from': 'fetch',
+            })
+            if year == current_year:
+                latest_rundate = committed_rundate
+            continue
 
         with open(out_path, 'wb') as f:
             f.write(content)

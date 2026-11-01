@@ -15,7 +15,7 @@ from unittest.mock import patch
 import pytest
 import yaml
 
-from njsp.cli.refresh_data import update_xml_dvc
+from njsp.cli.refresh_data import is_rollback, rundate_dt, update_xml_dvc
 
 
 class _FakeResponse:
@@ -309,3 +309,21 @@ def test_last_logged_by_year():
         2026: {'year': 2026, 'last_modified': 'b', 'md5': '2'},
     }
     assert last_logged_by_year(None) == {}
+
+
+def test_rundate_dt():
+    assert rundate_dt('Wed Oct 28 10:00:01 EDT 2026').isoformat() == '2026-10-28T10:00:01-04:00'
+    assert rundate_dt('Sun Nov 01 10:00:04 EST 2026').isoformat() == '2026-11-01T10:00:04-05:00'
+    assert rundate_dt('garbage') is None
+    assert rundate_dt(None) is None
+
+
+def test_is_rollback():
+    """2026-11-01: NJSP re-published 10/28's 2026 XML over 10/31's."""
+    assert is_rollback('Wed Oct 28 10:00:01 EDT 2026', 'Sat Oct 31 10:00:03 EDT 2026') is True
+    assert is_rollback('Sun Nov 01 10:00:04 EST 2026', 'Sat Oct 31 10:00:03 EDT 2026') is False
+    # 10:00 EST is an hour after 10:00 EDT on the same wall-clock date
+    assert is_rollback('Sat Oct 31 10:00:03 EDT 2026', 'Sat Oct 31 09:30:00 EST 2026') is True
+    assert is_rollback('Sat Oct 31 10:00:03 EDT 2026', 'Sat Oct 31 10:00:03 EDT 2026') is False
+    assert is_rollback(None, 'Sat Oct 31 10:00:03 EDT 2026') is False
+    assert is_rollback('Wed Oct 28 10:00:01 EDT 2026', None) is False
