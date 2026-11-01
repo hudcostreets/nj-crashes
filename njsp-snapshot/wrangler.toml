@@ -16,7 +16,7 @@ crons = ["7 * * * *"]
 # Namespace is Pulumi-owned (`infra/__main__.py` → `kv_namespace_ids`).
 [[kv_namespaces]]
 binding = "STATE"
-id = "REPLACE_WITH_PULUMI_OUTPUT"
+id = "d0868e985b704ca99ef9bc2009927144"
 
 [dev]
 port = 51947
@@ -42,7 +42,7 @@ name = "njsp-snapshot-staging"
 
 [[env.staging.kv_namespaces]]
 binding = "STATE"
-id = "REPLACE_WITH_PULUMI_OUTPUT"
+id = "6db37001691a45de8be8e617f06ffda8"
 
 [env.staging.vars]
 GH_REPO = "hudcostreets/nj-crashes"
