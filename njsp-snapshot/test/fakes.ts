@@ -58,7 +58,8 @@ export class FakeRepo implements Repo {
   }
 }
 
-export type UpstreamFile = { etag: string, lastModified: string, content: string, contentType?: string }
+/** `weakGetEtag`: GET returns `W/<etag>`, as NJSP's responses do when fetched through CF's network (compressed). */
+export type UpstreamFile = { etag: string, lastModified: string, content: string, contentType?: string, weakGetEtag?: boolean }
 
 /** NJSP feed: `FAUQStats{year}.xml` → file (absent → 404). Records requests. */
 export class FakeUpstream {
@@ -72,7 +73,8 @@ export class FakeUpstream {
     this.calls.push(`${method} ${year}`)
     const f = this.files[year]
     if (!f) return new Response(null, { status: 404 })
-    const headers = { ETag: f.etag, 'Last-Modified': f.lastModified, 'Content-Type': f.contentType ?? 'text/xml' }
+    const etag = method === 'GET' && f.weakGetEtag ? `W/${f.etag}` : f.etag
+    const headers = { ETag: etag, 'Last-Modified': f.lastModified, 'Content-Type': f.contentType ?? 'text/xml' }
     return new Response(method === 'HEAD' ? null : f.content, { status: 200, headers })
   }
 }

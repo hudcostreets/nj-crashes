@@ -67,15 +67,19 @@ So the Worker commits every content change it sees.
 From `git log` on `data/FAUQStats*.xml` since 2025-01-01 (current-year XML's RUNDATE per commit): 647 distinct RUNDATE days of 669; 99% of RUNDATEs are `10:00` ET (rest 10:15–11:15). Of the 22 missing days, some are capture failures (e.g. 10/29), and the rest NJSP skips — visible as `Run refresh` commits (new ETag/LM, identical bytes: 7/1, 9/19, 9/20, 10/27) or HEAD-match no-ops (6/24). Runs of missing days: 11×1, 3×2, 1×5 (2025-12-31…2026-01-04, the new-year 404 window). Alerting only on ≥2-day staleness → 3 alerts in those 22 months (plus New Year, which is real staleness of the new feed). Single-day skips (~1/month) aren't alerted; a failing Worker is caught by `errors`.
 
 ## Known risks / follow-ups
-- **NJSP's WAF (Imperva) vs CF egress.** Local `wrangler dev` (laptop egress) HEADs all three files fine; whether Imperva serves CF Workers' egress IPs is only testable after deploy. Deploy with `DRY_RUN=1` first and check the status endpoint: `no-change` with all years `unchanged` = HEADs work; an `Unexpected content type … text/html` error = challenged.
+- **NJSP's WAF (Imperva) vs CF egress: verified OK (2026-10-31).** A probe Worker run on CF's edge (`wrangler dev --remote`, colo IAD) got `200 text/xml` for HEAD + GET, and the GET's bytes hashed to `main`'s committed md5 (`aedd1637…`, 193397 B). One wrinkle it surfaced: through CF's network the GET's body arrives compressed, so its ETag comes back weak (`W/"2f375-…"`) while HEAD's is strong; the Worker normalizes to the strong form (`strongEtag`), else its `.dvc`s would diverge from `refresh_data`'s.
 - The Worker can't detect its own cron not running. Possible follow-up: a daily step that reads `GET /` and warns if `lastTick.at` is >2h old.
 - Commits via the API are unsigned/"Unverified" (same as the daily's).
 
 ## Deploy
+Two Workers from one codebase (`wrangler.toml` top level + `[env.staging]`):
+- **`njsp-snapshot-staging`**: commits to branch `njsp-snapshot-staging` (forked from `main`), `DISPATCH=0` (the daily on that branch would build + deploy prod), own KV namespace, alerts prefixed `[staging] `. Run it alongside the GHA daily for a few days, then check each of its captures against `main`'s: same XML bytes, and `.dvc` identical except `meta.import.fetched` (ET date vs runner's UTC date).
+- **`njsp-snapshot`** (prod): commits to `main` and dispatches the daily.
+
 Run from the **main checkout** after merging (`infra/hccs-run` / `infra/pul` read the repo-root `.envrc`; `put-secrets` reads `NJSP_SNAPSHOT_GH_TOKEN` + `SLACK_BOT_TOKEN` from the direnv-loaded env and pipes them to `wrangler secret put` on stdin):
 
 ```bash
-# 1. KV namespace (Pulumi), then paste its id into njsp-snapshot/wrangler.toml (`[[kv_namespaces]] id`) and commit
+# 1. KV namespaces (Pulumi); paste the ids into njsp-snapshot/wrangler.toml (top-level + `env.staging`) and commit
 infra/pul preview
 infra/pul up
 infra/pul stack output kv_namespace_ids
@@ -84,12 +88,14 @@ infra/pul stack output kv_namespace_ids
 pnpm --dir njsp-snapshot install
 pnpm --dir njsp-snapshot test
 
-# 3. Deploy in DRY_RUN, set secrets
-infra/hccs-run pnpm --dir njsp-snapshot exec wrangler deploy --var DRY_RUN:1
-njsp-snapshot/scripts/put-secrets -n                # checks both env vars are set, puts nothing
-infra/hccs-run njsp-snapshot/scripts/put-secrets
+# 3. Staging: branch, secrets, deploy
+git push h main:refs/heads/njsp-snapshot-staging
+infra/hccs-run njsp-snapshot/scripts/put-secrets -e staging
+infra/hccs-run pnpm --dir njsp-snapshot exec wrangler deploy --env staging
+curl https://njsp-snapshot-staging.<workers-subdomain>.workers.dev/
 
-# 4. After a few ticks look right (`curl https://njsp-snapshot.<workers-subdomain>.workers.dev/`), go live
+# 4. After staging's captures match `main`'s: prod
+infra/hccs-run njsp-snapshot/scripts/put-secrets
 infra/hccs-run pnpm --dir njsp-snapshot exec wrangler deploy
 ```
 

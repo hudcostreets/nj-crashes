@@ -175,6 +175,32 @@ describe('capture', () => {
     expect(repo.commits.length).toBe(1)
   })
 
+  it('records the strong ETag when the GET comes back weak (CF egress)', async () => {
+    const repo = mainAt11_1()
+    const up = upstream11_2(repo)
+    for (const f of Object.values(up.files)) f.weakGetEtag = true
+    const c = ctx(repo, up)
+    await tick(c)
+    const content = xml(2026, NEW_RUNDATE)
+    expect(repo.text('data/FAUQStats2026.xml.dvc')).toBe(
+      dvc(2026, { etag: '"new-2026"', mtime: '2026-11-02T15:20:05+00:00', content, fetched: '2026-11-02' }),
+    )
+    c.up.calls = []
+    const next = await tick(c, new Date('2026-11-02T16:07:00Z'))
+    expect(next.lastTick?.outcome).toBe('no-change')
+    expect(c.up.calls).toEqual(HEADS)
+  })
+
+  it('`dispatch: false` (staging): commits without dispatching the daily', async () => {
+    const repo = mainAt11_1()
+    const c = ctx(repo, upstream11_2(repo), { ...CONFIG, dispatch: false })
+    const state = await tick(c)
+    expect(repo.commits.map(c => c.message)).toEqual(['Refresh NJSP data (11/2)'])
+    expect(repo.dispatches).toBe(0)
+    expect(state.lastTick?.outcome).toBe('committed')
+    expect(state.dispatch).toBeUndefined()
+  })
+
   it("doesn't race an in-progress daily; retries next tick", async () => {
     const repo = mainAt11_1()
     repo.runsList = [{ id: 1, status: 'in_progress', conclusion: null, event: 'schedule', createdAt: '2026-11-02T15:00:00Z', headSha: 'base', url: 'u' }]

@@ -100,6 +100,7 @@ d1_dbs = {
 # title → the wrangler binding that references it (documentation).
 KV = {
     'njsp-snapshot-state': 'STATE',  # njsp-snapshot/: tick state + alert dedupe
+    'njsp-snapshot-staging-state': 'STATE',  # njsp-snapshot/ `--env staging`
 }
 kv_namespaces = {
     title: cf.WorkersKvNamespace(f'kv-{title}', account_id=account_id, title=title)

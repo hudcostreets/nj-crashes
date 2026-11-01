@@ -35,6 +35,8 @@ export type Alerter = (text: string) => Promise<void>
 export type Config = {
   author: Person
   dryRun: boolean
+  /** Dispatch the daily after a commit (off for the staging env, whose branch the daily mustn't build/deploy). */
+  dispatch: boolean
   /** ET hour from which a missing same-day capture alerts (default 13). */
   alertHour: number
   /** Minutes a dispatched daily may take to conclude `success` before alerting. */
@@ -44,6 +46,7 @@ export type Config = {
 }
 
 export const DEFAULT_CONFIG: Omit<Config, 'author' | 'dryRun'> = {
+  dispatch: true,
   alertHour: 13,
   dailyTimeoutMin: 120,
   errorThreshold: 3,
@@ -103,6 +106,12 @@ export function md5Hex(bytes: Uint8Array): string {
 }
 
 /** refresh_data's HEAD-skip rule: ETag equal, or Last-Modified equal as instants. */
+/** Strong form of an ETag. Responses fetched through CF's network arrive compressed, so a GET's
+ *  ETag comes back weakened (`W/"…"`) while HEAD's (and `refresh_data`'s, from the runner) don't. */
+export function strongEtag(etag: string | null): string | null {
+  return etag?.replace(/^W\//, '') ?? null
+}
+
 export function headMatches(prior: { etag?: string, mtime?: string }, etag: string | null, lastModified: string | null): boolean {
   if (etag && prior.etag && etag === prior.etag) return true
   const head = httpDateToEpoch(lastModified)
@@ -153,7 +162,7 @@ async function planYear(year: number, isCurrent: boolean, head: Head, state: Sta
   const url = xmlUrl(year)
   const headRes = await upstream(url, { method: 'HEAD', headers: REQUEST_HEADERS, redirect: 'follow' })
   if (headRes.status === 404 && isCurrent) return { year, status: 'absent', files: [] }
-  const etag = headRes.headers.get('ETag')
+  const etag = strongEtag(headRes.headers.get('ETag'))
   const lastModified = headRes.headers.get('Last-Modified')
   if (headRes.status === 200 && dvcBytes && headMatches(prior, etag, lastModified)) {
     return { year, status: 'unchanged', files: [] }
@@ -174,7 +183,7 @@ async function planYear(year: number, isCurrent: boolean, head: Head, state: Sta
   const content = new Uint8Array(await res.arrayBuffer())
   const md5 = md5Hex(content)
   const rundate = parseRundate(content)
-  const getEtag = res.headers.get('ETag')
+  const getEtag = strongEtag(res.headers.get('ETag'))
   const getLm = res.headers.get('Last-Modified')
   state.observed[year] = {
     ...(getEtag ? { etag: getEtag } : {}),
@@ -301,8 +310,10 @@ async function capture(state: State, d: Deps): Promise<{ head: Head, result: Tic
       d.log?.(`commit: non-fast-forward (attempt ${attempt}); retrying from new head`)
       continue
     }
-    await repo.dispatch()
-    state.dispatch = { at: now.toISOString(), sha }
+    if (config.dispatch) {
+      await repo.dispatch()
+      state.dispatch = { at: now.toISOString(), sha }
+    }
     return { head, result: { ...base, outcome: 'committed', message, sha, files: paths } }
   }
 }

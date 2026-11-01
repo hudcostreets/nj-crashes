@@ -16,6 +16,10 @@ export interface Env {
   COMMIT_AUTHOR_EMAIL: string
   /** "1" → do everything except write to GitHub / Slack. */
   DRY_RUN?: string
+  /** "0" → commit but don't dispatch the daily (staging). */
+  DISPATCH?: string
+  /** Prefixed to Slack alerts (e.g. "[staging] "). */
+  ALERT_PREFIX?: string
 }
 
 function config(env: Env): Config {
@@ -23,6 +27,7 @@ function config(env: Env): Config {
     ...DEFAULT_CONFIG,
     author: { name: env.COMMIT_AUTHOR_NAME, email: env.COMMIT_AUTHOR_EMAIL },
     dryRun: env.DRY_RUN === '1' || env.DRY_RUN === 'true',
+    dispatch: env.DISPATCH !== '0' && env.DISPATCH !== 'false',
   }
 }
 
@@ -35,7 +40,7 @@ export default {
       kv: env.STATE,
       alert: async text => {
         if (!env.SLACK_BOT_TOKEN) throw new Error(`SLACK_BOT_TOKEN unset; alert: ${text}`)
-        await postSlack(env.SLACK_BOT_TOKEN, env.SLACK_CI_CHANNEL_ID, text)
+        await postSlack(env.SLACK_BOT_TOKEN, env.SLACK_CI_CHANNEL_ID, `${env.ALERT_PREFIX ?? ''}${text}`)
       },
       now: new Date(controller.scheduledTime),
       config: cfg,

@@ -32,3 +32,25 @@ COMMIT_AUTHOR_EMAIL = "ryan-williams@users.noreply.github.com"
 # `vars.SLACK_CI_CHANNEL_ID` (#crash-bot-ci), where the daily's failure alerts go.
 SLACK_CI_CHANNEL_ID = "C0BCYGVL9FD"
 DRY_RUN = "0"
+
+# Non-prod: commits to its own branch (fork of `main`), never dispatches the daily
+# (which would build + deploy that branch), own KV state, alerts tagged. Run it
+# alongside the GHA daily and compare its captures to `main`'s (same XML bytes +
+# `.dvc` headers per RUNDATE) before going live. `wrangler deploy --env staging`.
+[env.staging]
+name = "njsp-snapshot-staging"
+
+[[env.staging.kv_namespaces]]
+binding = "STATE"
+id = "REPLACE_WITH_PULUMI_OUTPUT"
+
+[env.staging.vars]
+GH_REPO = "hudcostreets/nj-crashes"
+GH_BRANCH = "njsp-snapshot-staging"
+GH_WORKFLOW = "daily.yml"
+COMMIT_AUTHOR_NAME = "GitHub Actions"
+COMMIT_AUTHOR_EMAIL = "ryan-williams@users.noreply.github.com"
+SLACK_CI_CHANNEL_ID = "C0BCYGVL9FD"
+ALERT_PREFIX = "[staging] "
+DISPATCH = "0"
+DRY_RUN = "0"
