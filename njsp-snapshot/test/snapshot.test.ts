@@ -79,11 +79,12 @@ function upstream11_2(repo: FakeRepo): FakeUpstream {
   })
 }
 
-type Ctx = { repo: FakeRepo, up: FakeUpstream, kv: FakeKv, alerts: string[], config?: Config }
+type Ctx = { repo: FakeRepo, side: FakeRepo, up: FakeUpstream, kv: FakeKv, alerts: string[], config?: Config }
 
 function tick(ctx: Ctx, now: Date = TICK): Promise<State> {
   return runTick({
     repo: ctx.repo,
+    rollbackRepo: ctx.side,
     upstream: ctx.up.fetch,
     kv: ctx.kv,
     alert: async text => { ctx.alerts.push(text) },
@@ -93,7 +94,9 @@ function tick(ctx: Ctx, now: Date = TICK): Promise<State> {
 }
 
 function ctx(repo: FakeRepo, up: FakeUpstream, config?: Config): Ctx {
-  return { repo, up, kv: new FakeKv(), alerts: [], config }
+  const side = new FakeRepo({})
+  side.missing = true
+  return { repo, side, up, kv: new FakeKv(), alerts: [], config }
 }
 
 const HEADS = ['HEAD 2024', 'HEAD 2025', 'HEAD 2026']
@@ -240,6 +243,56 @@ describe('capture', () => {
     c.up.calls = []
     await tick(c, new Date('2026-11-02T16:07:00Z'))
     expect(c.up.calls).toEqual(HEADS)
+  })
+
+  it('rollback (older RUNDATE than `main`): captured once to the side branch, `main` untouched', async () => {
+    const repo = mainAt11_1()
+    const OLDER = 'Wed Oct 28 10:00:01 EDT 2026'
+    const older = xml(2026, OLDER)
+    const c = ctx(repo, upstreamFrom(repo, { 2026: { etag: '"rb-2026"', lastModified: NEW_LM, content: older } }))
+    const state = await tick(c)
+    expect(repo.commits).toEqual([])
+    expect(repo.dispatches).toBe(0)
+    expect(c.side.created).toBe('base')
+    expect(c.side.commits).toEqual([{
+      sha: 'c1',
+      parent: 'base',
+      message: 'NJSP rollback (2026: 11/1 → 10/28)',
+      author: AUTHOR,
+      paths: ['data/FAUQStats2026.xml', 'data/FAUQStats2026.xml.dvc'],
+    }])
+    expect(c.side.text('data/FAUQStats2026.xml')).toBe(older)
+    expect(c.side.text('data/FAUQStats2026.xml.dvc')).toBe(
+      dvc(2026, { etag: '"rb-2026"', mtime: '2026-11-02T15:20:05+00:00', content: older, fetched: '2026-11-02' }),
+    )
+    expect(state.lastTick).toEqual({
+      at: TICK.toISOString(),
+      outcome: 'no-change',
+      years: [
+        { year: 2024, status: 'unchanged' },
+        { year: 2025, status: 'unchanged' },
+        { year: 2026, status: 'rollback', rundate: OLDER },
+      ],
+      rollback: { sha: 'c1', message: 'NJSP rollback (2026: 11/1 → 10/28)', files: c.side.commits[0].paths },
+    })
+    expect(c.alerts).toEqual([
+      ':rewind: *njsp-snapshot*: NJSP re-published an older FAUQStats2026.xml (RUNDATE `Wed Oct 28 10:00:01 EDT 2026`; `main` has `Sun Nov 01 10:00:04 EST 2026`). Captured to `njsp-rollbacks` (`c1`); `main` untouched.',
+    ])
+
+    // Still served next tick: HEAD-only, no re-capture / re-alert.
+    c.up.calls = []
+    const next = await tick(c, new Date('2026-11-02T16:07:00Z'))
+    expect(c.up.calls).toEqual(HEADS)
+    expect(next.lastTick?.years[2]).toEqual({ year: 2026, status: 'rollback', rundate: OLDER })
+    expect(c.side.commits.length).toBe(1)
+    expect(c.alerts.length).toBe(1)
+
+    // NJSP moves forward again: normal capture to `main`.
+    c.up.files[2026] = { etag: '"new-2026"', lastModified: 'Mon, 02 Nov 2026 16:20:05 GMT', content: xml(2026, NEW_RUNDATE) }
+    const fwd = await tick(c, new Date('2026-11-02T17:07:00Z'))
+    expect(fwd.lastTick?.outcome).toBe('committed')
+    expect(repo.commits.map(c => c.message)).toEqual(['Refresh NJSP data (11/2)'])
+    expect(c.side.commits.length).toBe(1)
   })
 
   it('DRY_RUN: plans the commit but writes nothing to GitHub', async () => {

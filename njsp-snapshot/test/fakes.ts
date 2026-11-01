@@ -14,6 +14,9 @@ export class FakeRepo implements Repo {
   dispatches = 0
   /** Simulate N pushes landing between `head()` and `commit()` (→ non-FF). */
   racers = 0
+  /** Branch doesn't exist yet (`head(create)` creates it). */
+  missing = false
+  created?: string
 
   constructor(files: Record<string, string | Uint8Array>) {
     for (const [path, content] of Object.entries(files)) {
@@ -21,7 +24,13 @@ export class FakeRepo implements Repo {
     }
   }
 
-  async head(): Promise<Head> {
+  async head(create?: Head): Promise<Head> {
+    if (this.missing) {
+      if (!create) throw new Error('branch missing')
+      this.missing = false
+      this.created = create.sha
+      this.sha = create.sha
+    }
     return { sha: this.sha, treeSha: `tree-${this.sha}` }
   }
 
@@ -37,6 +46,8 @@ export class FakeRepo implements Repo {
       return null
     }
     if (parent.sha !== this.sha) return null
+    const eq = (a: Uint8Array, b?: Uint8Array) => !!b && a.length === b.length && a.every((x, i) => x === b[i])
+    if (files.every(({ path, content }) => eq(content, this.files.get(path)))) return parent.sha
     for (const { path, content } of files) this.files.set(path, content)
     const sha = `c${this.commits.length + 1}`
     this.commits.push({ sha, parent: parent.sha, message, author, paths: files.map(f => f.path) })

@@ -24,6 +24,7 @@ port = 51947
 [vars]
 GH_REPO = "hudcostreets/nj-crashes"
 GH_BRANCH = "main"
+GH_ROLLBACK_BRANCH = "njsp-rollbacks"
 GH_WORKFLOW = "daily.yml"
 # Same identity as the daily's `Configure Git author` step, so XML history
 # looks the same to `git log` walkers whichever fetcher captured a version.
@@ -47,6 +48,7 @@ id = "6db37001691a45de8be8e617f06ffda8"
 [env.staging.vars]
 GH_REPO = "hudcostreets/nj-crashes"
 GH_BRANCH = "njsp-snapshot-staging"
+GH_ROLLBACK_BRANCH = "njsp-snapshot-staging-rollbacks"
 GH_WORKFLOW = "daily.yml"
 COMMIT_AUTHOR_NAME = "GitHub Actions"
 COMMIT_AUTHOR_EMAIL = "ryan-williams@users.noreply.github.com"

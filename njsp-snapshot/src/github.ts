@@ -15,10 +15,14 @@ export type Run = {
 
 /** What `runTick` needs from GitHub; `GitHub` implements it over REST, tests fake it. */
 export interface Repo {
-  head(): Promise<Head>
+  /** Branch head; if the branch doesn't exist and `create` is given, creates it there first. */
+  head(create?: Head): Promise<Head>
   /** File bytes at `ref`, or null if absent. */
   readFile(path: string, ref: string): Promise<Uint8Array | null>
-  /** One commit on top of `parent`, fast-forwarding the branch; `null` if the branch moved (non-FF). */
+  /**
+   * One commit on top of `parent`, fast-forwarding the branch; `null` if the branch moved (non-FF).
+   * Files identical to `parent`'s → no commit, returns `parent.sha`.
+   */
   commit(parent: Head, files: FileChange[], message: string, author: Person): Promise<string | null>
   /** The workflow's most recent runs (newest first). */
   runs(): Promise<Run[]>
@@ -73,9 +77,14 @@ export class GitHub implements Repo {
     return await res.json() as T
   }
 
-  async head(): Promise<Head> {
-    const ref = await this.json<{ object: { sha: string } }>('GET', `/repos/${this.repo}/git/ref/heads/${this.branch}`)
-    const sha = ref.object.sha
+  async head(create?: Head): Promise<Head> {
+    const res = await this.req('GET', `/repos/${this.repo}/git/ref/heads/${this.branch}`)
+    if (res.status === 404 && create) {
+      await this.json('POST', `/repos/${this.repo}/git/refs`, { ref: `refs/heads/${this.branch}`, sha: create.sha })
+      return create
+    }
+    if (!res.ok) throw new GitHubError(res.status, `GET ref ${this.branch}: ${res.status} ${(await res.text()).slice(0, 300)}`)
+    const sha = (await res.json() as { object: { sha: string } }).object.sha
     const commit = await this.json<{ tree: { sha: string } }>('GET', `/repos/${this.repo}/git/commits/${sha}`)
     return { sha, treeSha: commit.tree.sha }
   }
@@ -94,6 +103,7 @@ export class GitHub implements Repo {
       tree.push({ path, mode: '100644', type: 'blob', sha: blob.sha })
     }
     const newTree = await this.json<{ sha: string }>('POST', `/repos/${this.repo}/git/trees`, { base_tree: parent.treeSha, tree })
+    if (newTree.sha === parent.treeSha) return parent.sha
     const commit = await this.json<{ sha: string }>('POST', `/repos/${this.repo}/git/commits`, {
       message,
       tree: newTree.sha,

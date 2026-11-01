@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto'
 
 import { httpDateToEpoch, isoToEpoch, parseXmlDvc, renderXmlDvc, type XmlDvc } from './dvc'
 import type { FileChange, Head, Person, Repo } from './github'
-import { addDays, commitMessage, etParts, parseRundate, rundateDate } from './rundate'
+import { addDays, commitMessage, etParts, isRollback, parseRundate, rundateDate, rundateShort } from './rundate'
 
 /** `refresh_data.UA` + request headers, so NJSP's WAF sees the same client as the daily. */
 export const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
@@ -43,6 +43,8 @@ export type Config = {
   dailyTimeoutMin: number
   /** Consecutive failed ticks before alerting. */
   errorThreshold: number
+  /** Side branch for NJSP rollbacks (versions older than the main branch's); see `Deps.rollbackRepo`. */
+  rollbackBranch: string
 }
 
 export const DEFAULT_CONFIG: Omit<Config, 'author' | 'dryRun'> = {
@@ -50,6 +52,7 @@ export const DEFAULT_CONFIG: Omit<Config, 'author' | 'dryRun'> = {
   alertHour: 13,
   dailyTimeoutMin: 120,
   errorThreshold: 3,
+  rollbackBranch: 'njsp-rollbacks',
 }
 
 /** Upstream version last seen per year (from a GET), so metadata-only bumps don't re-GET hourly. */
@@ -62,8 +65,10 @@ export type YearResult = {
    * - `unchanged`: HEAD ETag/LM match `main`'s `.dvc` (refresh_data's skip rule)
    * - `meta`: ETag/LM moved but content identical (NJSP re-publishes all files daily)
    * - `content`: new XML content
+   * - `rollback`: new content whose RUNDATE is older than `main`'s (NJSP re-published an old
+   *   version): committed to `config.rollbackBranch` instead, `main` untouched
    */
-  status: 'absent' | 'unchanged' | 'meta' | 'content'
+  status: 'absent' | 'unchanged' | 'meta' | 'content' | 'rollback'
   rundate?: string
 }
 
@@ -80,6 +85,8 @@ export type TickResult = {
   message?: string
   sha?: string
   files?: string[]
+  /** Rollback versions captured this tick, on `config.rollbackBranch`. */
+  rollback?: { sha?: string, message: string, files: string[] }
 }
 
 export type State = {
@@ -91,13 +98,15 @@ export type State = {
   mainRundates: Record<string, { md5: string, rundate?: string }>
   dispatch?: { at: string, sha: string }
   alerts: string[]
+  /** Last rollback captured per year: its md5, and `main`'s md5 at the time (re-capture if either moves). */
+  rollbacks: Record<string, { md5: string, mainMd5: string }>
 }
 
 export const STATE_KEY = 'state'
 
 export async function loadState(kv: Kv): Promise<State> {
   const raw = await kv.get(STATE_KEY)
-  const init: State = { consecutiveErrors: 0, observed: {}, mainRundates: {}, alerts: [] }
+  const init: State = { consecutiveErrors: 0, observed: {}, mainRundates: {}, alerts: [], rollbacks: {} }
   return raw ? { ...init, ...JSON.parse(raw) } : init
 }
 
@@ -129,10 +138,16 @@ type Plan = {
   status: YearResult['status']
   rundate?: string
   files: FileChange[]
+  /** `rollback` not yet captured: files for the rollback branch. */
+  rollbackFiles?: FileChange[]
+  md5?: string
+  mainMd5?: string
 }
 
 type Deps = {
   repo: Repo
+  /** `config.rollbackBranch` (created from `repo`'s head on first use). */
+  rollbackRepo: Repo
   upstream: typeof fetch
   kv: Kv
   alert: Alerter
@@ -169,6 +184,13 @@ async function planYear(year: number, isCurrent: boolean, head: Head, state: Sta
   }
 
   const obs = state.observed[year]
+  const captured = (md5: string) => {
+    const rb = state.rollbacks[year]
+    return !!rb && rb.md5 === md5 && rb.mainMd5 === prior.md5
+  }
+  if (headRes.status === 200 && obs && captured(obs.md5) && observedMatches(obs, etag, lastModified)) {
+    return { year, status: 'rollback', rundate: obs.rundate, files: [] }
+  }
   if (headRes.status === 200 && obs && prior.md5 === obs.md5 && observedMatches(obs, etag, lastModified)) {
     // Already GET'd this upstream version: same bytes as `main`, only the headers moved.
     const dvc = renderXmlDvc(dvcText, { md5: prior.md5!, size: prior.size! }, { etag, lastModified }, fetched)
@@ -194,6 +216,10 @@ async function planYear(year: number, isCurrent: boolean, head: Head, state: Sta
   const dvc = renderXmlDvc(dvcText, { md5, size: content.length }, { etag: getEtag, lastModified: getLm }, fetched)
   const files: FileChange[] = [{ path: dvcPath(year), content: enc.encode(dvc) }]
   if (md5 === prior.md5) return { year, status: 'meta', rundate, files }
+  if (dvcBytes && isRollback(rundate, await mainRundate(year, head, state, repo))) {
+    if (captured(md5)) return { year, status: 'rollback', rundate, files: [] }
+    return { year, status: 'rollback', rundate, files: [], rollbackFiles: [{ path: xmlPath(year), content }, ...files], md5, mainMd5: prior.md5 }
+  }
   return { year, status: 'content', rundate, files: [{ path: xmlPath(year), content }, ...files] }
 }
 
@@ -245,7 +271,7 @@ async function checkAlerts(head: Head, tick: TickResult, state: State, d: Deps):
   if (et.hour >= config.alertHour && outcome !== 'daily-running') {
     const cur = years.find(y => y.year === et.year && y.status !== 'absent') ?? years.find(y => y.year === et.year - 1)
     if (cur) {
-      const rundate = cur.status === 'unchanged' ? await mainRundate(cur.year, head, state, repo) : cur.rundate
+      const rundate = cur.status === 'unchanged' || cur.status === 'rollback' ? await mainRundate(cur.year, head, state, repo) : cur.rundate
       const date = rundate && rundateDate(rundate)
       if (!date || date < addDays(et.date, -1)) {
         await alertOnce(
@@ -274,6 +300,31 @@ async function checkAlerts(head: Head, tick: TickResult, state: State, d: Deps):
   }
 }
 
+/** Commit not-yet-captured rollback versions to `config.rollbackBranch` (one commit), alerting once per version. */
+async function captureRollbacks(plans: Plan[], head: Head, state: State, d: Deps): Promise<TickResult['rollback']> {
+  const { config, rollbackRepo } = d
+  const rbs = plans.filter(p => p.rollbackFiles)
+  if (!rbs.length) return undefined
+  const mainRds = await Promise.all(rbs.map(p => mainRundate(p.year, head, state, d.repo)))
+  const desc = rbs.map((p, i) => `${p.year}: ${rundateShort(mainRds[i] ?? '?')} → ${rundateShort(p.rundate ?? '?')}`)
+  const message = `NJSP rollback (${desc.join(', ')})`
+  const files = rbs.flatMap(p => p.rollbackFiles!)
+  const paths = files.map(f => f.path)
+  if (config.dryRun) return { message, files: paths }
+  const side = await rollbackRepo.head(head)
+  const sha = await rollbackRepo.commit(side, files, message, config.author)
+  if (sha === null) throw new Error(`rollback commit to ${config.rollbackBranch}: non-fast-forward`)
+  for (const [i, p] of rbs.entries()) {
+    state.rollbacks = { ...state.rollbacks, [p.year]: { md5: p.md5!, mainMd5: p.mainMd5! } }
+    await alertOnce(
+      `rollback:${p.year}:${p.md5}`,
+      `:rewind: *njsp-snapshot*: NJSP re-published an older FAUQStats${p.year}.xml (RUNDATE \`${p.rundate}\`; \`main\` has \`${mainRds[i]}\`). Captured to \`${config.rollbackBranch}\` (\`${sha.slice(0, 7)}\`); \`main\` untouched.`,
+      state, d,
+    )
+  }
+  return { sha, message, files: paths }
+}
+
 async function capture(state: State, d: Deps): Promise<{ head: Head, result: TickResult }> {
   const { repo, now, config } = d
   const et = etParts(now)
@@ -286,7 +337,8 @@ async function capture(state: State, d: Deps): Promise<{ head: Head, result: Tic
       if (plan) plans.push(plan)
     }
     const yearResults: YearResult[] = plans.map(({ year, status, rundate }) => ({ year, status, ...(rundate ? { rundate } : {}) }))
-    const base = { at: now.toISOString(), years: yearResults }
+    const rollback = await captureRollbacks(plans, head, state, d)
+    const base = { at: now.toISOString(), years: yearResults, ...(rollback ? { rollback } : {}) }
     if (!plans.some(p => p.status === 'content')) {
       return { head, result: { ...base, outcome: 'no-change' } }
     }
@@ -297,7 +349,7 @@ async function capture(state: State, d: Deps): Promise<{ head: Head, result: Tic
     const curPlan = plans.find(p => p.year === et.year)
     const curRundate = curPlan?.status === 'content' || curPlan?.status === 'meta'
       ? curPlan.rundate
-      : curPlan?.status === 'unchanged' ? await mainRundate(et.year, head, state, repo) : undefined
+      : curPlan ? await mainRundate(et.year, head, state, repo) : undefined
     const message = commitMessage(curRundate)
     const files = plans.flatMap(p => p.files)
     const paths = files.map(f => f.path)

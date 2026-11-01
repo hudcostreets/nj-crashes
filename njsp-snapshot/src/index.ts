@@ -12,6 +12,8 @@ export interface Env {
   GH_REPO: string
   GH_BRANCH: string
   GH_WORKFLOW: string
+  /** Side branch for NJSP rollbacks (default `njsp-rollbacks`). */
+  GH_ROLLBACK_BRANCH?: string
   COMMIT_AUTHOR_NAME: string
   COMMIT_AUTHOR_EMAIL: string
   /** "1" → do everything except write to GitHub / Slack. */
@@ -28,6 +30,7 @@ function config(env: Env): Config {
     author: { name: env.COMMIT_AUTHOR_NAME, email: env.COMMIT_AUTHOR_EMAIL },
     dryRun: env.DRY_RUN === '1' || env.DRY_RUN === 'true',
     dispatch: env.DISPATCH !== '0' && env.DISPATCH !== 'false',
+    ...(env.GH_ROLLBACK_BRANCH ? { rollbackBranch: env.GH_ROLLBACK_BRANCH } : {}),
   }
 }
 
@@ -36,6 +39,7 @@ export default {
     const cfg = config(env)
     const state = await runTick({
       repo: new GitHub(env.GH_TOKEN ?? '', env.GH_REPO, env.GH_BRANCH, env.GH_WORKFLOW),
+      rollbackRepo: new GitHub(env.GH_TOKEN ?? '', env.GH_REPO, cfg.rollbackBranch, env.GH_WORKFLOW),
       upstream: (input, init) => fetch(input, init),
       kv: env.STATE,
       alert: async text => {

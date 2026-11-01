@@ -17,6 +17,26 @@ function rundateParts(rundate: string): { year: number, month: number, day: numb
   return { year: Number(m[6]), month, day: Number(m[2]) }
 }
 
+const TZ_OFFSETS: Record<string, string> = { EDT: '-04:00', EST: '-05:00' }
+
+/** RUNDATE as epoch ms (`refresh_data.rundate_dt`); undefined if unparseable (incl. a missing EDT/EST). */
+export function rundateEpoch(rundate: string): number | undefined {
+  const m = rundate.match(/^(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat) (\w{3}) +(\d{1,2}) (\d{2}):(\d{2}):(\d{2}) (EDT|EST) (\d{4})$/)
+  if (!m) return undefined
+  const month = MONTHS.indexOf(m[1]) + 1
+  if (!month) return undefined
+  const p2 = (s: string | number) => String(s).padStart(2, '0')
+  const t = Date.parse(`${m[7]}-${p2(month)}-${p2(m[2])}T${m[3]}:${m[4]}:${m[5]}${TZ_OFFSETS[m[6]]}`)
+  return Number.isNaN(t) ? undefined : t
+}
+
+/** `refresh_data.is_rollback`: `rundate` older than `committed` (unparseable → false). */
+export function isRollback(rundate: string | undefined, committed: string | undefined): boolean {
+  const a = rundate && rundateEpoch(rundate)
+  const b = committed && rundateEpoch(committed)
+  return typeof a === 'number' && typeof b === 'number' && a < b
+}
+
 /** `refresh_data.rundate_short`: 'Thu Apr 09 10:00:01 EDT 2026' → '4/9' (input unchanged if unparseable). */
 export function rundateShort(rundate: string): string {
   const p = rundateParts(rundate)

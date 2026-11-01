@@ -63,6 +63,13 @@ Hourly polling can capture >1 NJSP update per day (historically NJSP re-runs lat
 
 So the Worker commits every content change it sees.
 
+### Rollbacks: side branch, not `main`
+2026-11-01 06:00:50 UTC (right at the DST fallback), NJSP re-published older XMLs: 2026's RUNDATE went `Sat Oct 31` → `Wed Oct 28` (429 → 421 crashes), 2025's `Sat Oct 31` → `Tue Oct 27`. The staging Worker faithfully committed it (`9ab94c1d7c7`); in prod that would have hit `main` and dispatched the daily.
+
+Now a fetched version whose RUNDATE is older than the branch's (`isRollback`, comparing instants; EDT/EST-aware) is a `rollback`:
+- Worker: committed to `GH_ROLLBACK_BRANCH` (`njsp-rollbacks`; staging: `njsp-snapshot-staging-rollbacks`), created from `main`'s head on first use; one Slack alert per version; `main` untouched, no dispatch. `state.rollbacks[year]` (`md5` + `main`'s md5) stops hourly re-GETs / re-commits while NJSP keeps serving it. The side branch keeps every rolled-back version, so NJSP's versions can be interleaved after the fact.
+- `refresh_data` (`is_rollback`): skips the year (no write / `git add`), still logs the fetch to the R2 fetch log.
+
 ### NJSP skip-day history (for the `stale` rule)
 From `git log` on `data/FAUQStats*.xml` since 2025-01-01 (current-year XML's RUNDATE per commit): 647 distinct RUNDATE days of 669; 99% of RUNDATEs are `10:00` ET (rest 10:15–11:15). Of the 22 missing days, some are capture failures (e.g. 10/29), and the rest NJSP skips — visible as `Run refresh` commits (new ETag/LM, identical bytes: 7/1, 9/19, 9/20, 10/27) or HEAD-match no-ops (6/24). Runs of missing days: 11×1, 3×2, 1×5 (2025-12-31…2026-01-04, the new-year 404 window). Alerting only on ≥2-day staleness → 3 alerts in those 22 months (plus New Year, which is real staleness of the new feed). Single-day skips (~1/month) aren't alerted; a failing Worker is caught by `errors`.
 
