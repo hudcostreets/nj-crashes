@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 import re
 from dataclasses import dataclass
@@ -146,9 +147,12 @@ class FAUQStats:
             # inferred format — NJSP's `DATE`/`TIME` strings vary enough across years
             # (e.g. `10/27/2023 0114`) that a single inferred format misparses others
             # into `OutOfBoundsDatetime`.
+            #
+            # DST: `TIME`s in fall-back's repeated hour are assumed to be the first (EDT) pass, as
+            # NJSP doesn't say which; `TIME`s in spring-forward's skipped hour move to its end.
             crashes['dt'] = (
                 pd.to_datetime(crashes['DATE'] + ' ' + crashes['TIME'], format='mixed')
-                .dt.tz_localize(TZ)
+                .dt.tz_localize(TZ, ambiguous=np.ones(len(crashes), dtype=bool), nonexistent='shift_forward')
             )
             float_cols = [
                 'FATALITIES',
