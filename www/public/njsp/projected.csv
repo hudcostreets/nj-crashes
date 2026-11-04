@@ -1,6 +1,6 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_365,trailing_365_driver,trailing_365_passenger,trailing_365_pedestrian,trailing_365_cyclist
 ,,Atlantic,,38,1,19,5,15,36,19,5,13,1
-,,Bergen,,22,0,10,0,15,24,12,1,11,0
+,,Bergen,,23,0,10,0,17,25,12,1,12,0
 ,,Burlington,,35,0,25,8,5,34,25,7,5,0
 ,,Camden,,30,1,12,3,15,31,12,3,16,1
 ,,Cape May,,6,0,6,0,0,6,6,1,0,0
@@ -15,11 +15,11 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Morris,,22,0,14,0,8,22,14,1,7,0
 ,,Ocean,,43,0,23,7,13,43,24,7,12,2
 ,,Passaic,,19,0,12,3,7,20,10,3,8,0
-,,Salem,,11,0,11,0,0,12,11,0,1,0
+,,Salem,,11,0,11,0,0,11,10,0,1,0
 ,,Somerset,,23,0,16,0,7,20,14,0,6,0
-,,Sussex,,9,0,7,1,1,8,6,1,1,0
+,,Sussex,,8,0,6,1,1,8,6,1,1,0
 ,,Union,,36,1,14,4,18,35,15,3,17,1
-,,Warren,,8,0,6,1,1,8,6,1,1,0
+,,Warren,,9,0,7,1,1,9,7,1,1,0
 1,1,Atlantic,Absecon City,0,0,0,0,0,1,0,0,1,0
 1,2,Atlantic,Atlantic City,13,1,4,1,2,7,4,1,2,1
 1,5,Atlantic,Buena Vista Twsp,2,0,0,1,0,2,0,2,0,0
@@ -40,7 +40,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 2,13,Bergen,Edgewater Boro,0,0,0,0,0,0,0,0,0,0
 2,15,Bergen,Englewood City,0,0,0,0,0,0,0,0,0,0
 2,16,Bergen,Englewood Cliffs Bo,0,0,0,0,0,0,0,0,0,0
-2,17,Bergen,Fair Lawn Boro,0,0,0,0,0,1,1,0,0,0
+2,17,Bergen,Fair Lawn Boro,1,0,0,0,1,2,1,0,1,0
 2,19,Bergen,Fort Lee Boro,2,0,0,0,2,2,0,0,2,0
 2,21,Bergen,Garfield City,1,0,0,0,1,1,0,0,1,0
 2,23,Bergen,Hackensack City,2,0,0,0,2,3,1,0,2,0
@@ -276,7 +276,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 17,2,Salem,Carneys Point Twsp,0,0,0,0,0,0,0,0,0,0
 17,5,Salem,Lower Alloways Cree,1,0,1,0,0,1,1,0,0,0
 17,6,Salem,Mannington Twsp,2,0,2,0,0,2,2,0,0,0
-17,7,Salem,Oldmans Twsp,2,0,1,0,0,2,2,0,0,0
+17,7,Salem,Oldmans Twsp,2,0,1,0,0,1,1,0,0,0
 17,8,Salem,Penns Grove Bor,0,0,0,0,0,1,0,0,1,0
 17,9,Salem,Pennsville Twsp,0,0,0,0,0,0,0,0,0,0
 17,10,Salem,Pilesgrove Twsp,2,0,1,0,0,1,1,0,0,0
@@ -326,6 +326,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 21,12,Warren,Independence Twsp,1,0,1,0,0,1,1,0,0,0
 21,13,Warren,Knowlton Twsp,1,0,1,0,0,1,1,0,0,0
 21,16,Warren,Mansfield Twsp,1,0,1,0,0,1,1,0,0,0
+21,17,Warren,Oxford Twsp,1,0,1,0,0,1,1,0,0,0
 21,19,Warren,Phillipsburg To,1,0,0,0,1,1,0,0,1,0
 21,22,Warren,Washington Twsp,1,0,1,0,0,1,1,0,0,0
 21,23,Warren,White Twsp,0,0,0,0,0,0,0,0,0,0
