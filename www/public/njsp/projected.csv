@@ -1,19 +1,19 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_365,trailing_365_driver,trailing_365_passenger,trailing_365_pedestrian,trailing_365_cyclist
 ,,Atlantic,,38,1,19,5,15,36,19,5,13,1
-,,Bergen,,23,0,10,0,17,25,12,1,12,0
+,,Bergen,,22,0,9,0,17,24,11,1,12,0
 ,,Burlington,,35,0,25,8,5,34,25,7,5,0
 ,,Camden,,30,1,12,3,15,31,12,3,16,1
 ,,Cape May,,6,0,6,0,0,6,6,1,0,0
 ,,Cumberland,,20,2,10,2,5,19,10,2,5,2
 ,,Essex,,36,1,12,4,22,37,12,4,23,1
-,,Gloucester,,26,1,16,7,3,26,16,7,3,2
+,,Gloucester,,27,1,17,7,3,26,17,6,3,2
 ,,Hudson,,31,0,8,2,28,28,8,2,18,0
 ,,Hunterdon,,12,0,7,1,2,11,7,2,2,0
 ,,Mercer,,25,1,15,8,6,24,13,7,6,1
-,,Middlesex,,53,1,36,6,13,51,32,6,13,2
-,,Monmouth,,36,2,20,4,10,35,21,4,8,3
+,,Middlesex,,53,1,35,6,13,52,33,6,13,2
+,,Monmouth,,36,2,20,4,10,34,21,4,7,3
 ,,Morris,,22,0,14,0,8,22,14,1,7,0
-,,Ocean,,43,0,23,7,13,43,24,7,12,2
+,,Ocean,,43,0,23,7,13,42,24,7,11,2
 ,,Passaic,,19,0,12,3,7,20,10,3,8,0
 ,,Salem,,11,0,11,0,0,11,10,0,1,0
 ,,Somerset,,23,0,16,0,7,20,14,0,6,0
@@ -43,7 +43,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 2,17,Bergen,Fair Lawn Boro,1,0,0,0,1,2,1,0,1,0
 2,19,Bergen,Fort Lee Boro,2,0,0,0,2,2,0,0,2,0
 2,21,Bergen,Garfield City,1,0,0,0,1,1,0,0,1,0
-2,23,Bergen,Hackensack City,2,0,0,0,2,3,1,0,2,0
+2,23,Bergen,Hackensack City,2,0,0,0,2,2,0,0,2,0
 2,25,Bergen,Hasbrouck Heights B,0,0,0,0,0,0,0,0,0,0
 2,29,Bergen,Leonia Boro,0,0,0,0,0,0,0,0,0,0
 2,30,Bergen,Little Ferry Boro,0,0,0,0,0,0,0,0,0,0
@@ -144,10 +144,10 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 8,5,Gloucester,Franklin Twsp,0,0,0,0,0,0,0,0,0,0
 8,6,Gloucester,Glassboro Boro,0,0,0,0,0,0,0,0,0,0
 8,7,Gloucester,Greenwich Twsp,1,0,0,0,1,1,0,0,1,0
-8,8,Gloucester,Harrison Twsp,1,0,1,2,0,2,1,2,0,0
+8,8,Gloucester,Harrison Twsp,1,0,1,2,0,1,1,1,0,0
 8,9,Gloucester,Logan Twsp,1,0,1,0,0,1,1,0,0,0
 8,10,Gloucester,Mantua Twsp,2,0,2,0,0,2,2,0,0,0
-8,11,Gloucester,Monroe Twsp,7,0,3,1,1,6,3,1,1,1
+8,11,Gloucester,Monroe Twsp,8,0,4,1,1,7,4,1,1,1
 8,13,Gloucester,Newfield Boro,0,0,0,0,0,0,0,0,0,0
 8,18,Gloucester,Washington Twsp,0,0,0,0,0,1,0,1,0,0
 8,20,Gloucester,West Deptford Twsp,4,0,4,0,0,3,3,0,0,0
@@ -185,11 +185,11 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 12,1,Middlesex,Carteret Boro,2,0,2,0,0,2,2,0,0,0
 12,2,Middlesex,Cranbury Twsp,2,0,1,2,0,2,1,2,0,0
 12,4,Middlesex,East Brunswick Twsp,2,0,1,0,1,2,1,0,1,0
-12,5,Middlesex,Edison Twsp,4,0,3,0,2,5,3,0,2,0
+12,5,Middlesex,Edison Twsp,6,0,4,0,2,6,4,0,2,0
 12,8,Middlesex,Jamesburg Boro,1,0,1,0,0,2,1,0,0,1
 12,9,Middlesex,Metuchen Boro,1,0,1,1,0,1,1,1,0,0
 12,12,Middlesex,Monroe Twsp,2,0,2,0,0,2,2,0,0,0
-12,13,Middlesex,New Brunswick City,7,1,4,0,1,5,3,0,1,1
+12,13,Middlesex,New Brunswick City,5,1,3,0,1,5,3,0,1,1
 12,14,Middlesex,North Brunswick Tws,1,0,0,1,0,1,0,1,0,0
 12,15,Middlesex,Old Bridge Twsp,3,0,0,0,2,3,1,0,2,0
 12,16,Middlesex,Perth Amboy City,3,0,2,0,1,3,2,0,1,0
@@ -219,7 +219,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 13,33,Monmouth,Millstone Twsp,1,0,1,0,0,1,1,0,0,0
 13,35,Monmouth,Neptune Twsp,2,0,1,0,1,2,1,0,1,0
 13,36,Monmouth,Neptune City Boro,1,1,0,0,0,1,0,0,0,1
-13,37,Monmouth,Ocean Twsp,2,0,1,0,0,2,1,0,1,0
+13,37,Monmouth,Ocean Twsp,2,0,1,0,0,1,1,0,0,0
 13,41,Monmouth,Rumson Boro,1,1,0,0,0,1,0,0,0,1
 13,49,Monmouth,Tinton Falls Boro,2,0,1,1,0,2,1,1,0,0
 13,51,Monmouth,Upper Freehold Twsp,1,0,1,0,0,1,1,0,0,0
@@ -247,13 +247,13 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 15,2,Ocean,Barnegat Light Boro,0,0,0,0,0,0,0,0,0,0
 15,6,Ocean,Berkeley Twsp,2,0,0,2,0,2,1,2,0,0
 15,7,Ocean,Brick Twsp,5,1,2,0,2,6,3,0,2,1
-15,8,Ocean,Toms River,9,0,6,1,2,9,6,1,2,0
+15,8,Ocean,Toms River,9,0,6,1,1,9,6,1,2,0
 15,12,Ocean,Jackson Twsp,6,0,5,1,1,6,5,1,1,0
 15,13,Ocean,Lacey Twsp,8,0,1,2,1,5,2,2,1,0
 15,14,Ocean,Lakehurst Boro,0,0,0,0,0,0,0,0,0,0
 15,15,Ocean,Lakewood Twsp,5,1,1,0,4,5,1,0,3,1
 15,16,Ocean,Lavallette Boro,1,0,0,0,1,1,0,0,1,0
-15,17,Ocean,Little Egg Harbor T,1,0,1,0,0,2,1,0,1,0
+15,17,Ocean,Little Egg Harbor T,1,0,1,0,0,1,1,0,0,0
 15,18,Ocean,Long Beach Twsp,1,0,1,0,0,1,1,0,0,0
 15,19,Ocean,Manchester Twsp,4,0,3,0,1,4,3,0,1,0
 15,24,Ocean,Plumsted Twsp,0,0,0,0,0,0,0,0,0,0
