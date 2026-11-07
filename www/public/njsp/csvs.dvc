@@ -23,6 +23,6 @@ meta:
   computation:
     cmd: njsp update_www_data -f
     deps:
-      /njsp/data/crashes.parquet: d18f8611b9de5fec72562e2f5e21eac9
+      /njsp/data/crashes.parquet: b17bd5a9ca40c010a8da45cf4878a583
     git_deps:
       /njsp/cli/update_www_data.py: 150b52689e45b5e2f4af5e1f7b60399ddb0a111a
