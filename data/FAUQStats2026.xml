@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Fri Nov 06 10:00:02 EST 2026</RUNDATE>
+  <RUNDATE>Sat Nov 07 10:00:04 EST 2026</RUNDATE>
   <STATSYEAR>2026</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -5305,9 +5305,9 @@
   </COUNTY>
   <COUNTY CCODE="07" CNAME="Essex">
     <MUNICIPALITY MCODE="0714" MNAME="Newark City">
-      <ACCIDENT ACCID="14406" DATE="02/07/2026" TIME="0202">
+      <ACCIDENT ACCID="14406" DATE="02/07/2026" TIME="0158">
         <HIGHWAY>21</HIGHWAY>
-        <LOCATION>State Highway 21</LOCATION>
+        <LOCATION>State Highway 21 MP 5</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -5666,7 +5666,7 @@
     <MUNICIPALITY MCODE="0716" MNAME="Nutley Town">
       <ACCIDENT ACCID="14382" DATE="01/10/2026" TIME="0843">
         <HIGHWAY>645</HIGHWAY>
-        <LOCATION>County 645</LOCATION>
+        <LOCATION>County 645 MP 3.12</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>0</FATAL_D>
         <FATAL_P>0</FATAL_P>
