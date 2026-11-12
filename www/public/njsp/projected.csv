@@ -1,5 +1,5 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_365,trailing_365_driver,trailing_365_passenger,trailing_365_pedestrian,trailing_365_cyclist
-,,Atlantic,,38,1,20,5,13,36,20,5,12,1
+,,Atlantic,,38,1,20,5,13,35,20,5,11,1
 ,,Bergen,,22,0,8,0,19,23,10,1,12,0
 ,,Burlington,,38,0,25,8,8,36,25,7,7,0
 ,,Camden,,29,1,12,2,15,30,12,2,16,1
@@ -7,10 +7,10 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Cumberland,,21,3,10,2,5,20,10,2,5,3
 ,,Essex,,39,1,12,4,26,40,12,4,26,1
 ,,Gloucester,,26,1,16,7,4,25,16,6,4,1
-,,Hudson,,31,0,8,2,29,28,8,2,18,0
-,,Hunterdon,,12,0,7,1,2,11,7,2,2,0
+,,Hudson,,31,0,8,2,29,27,8,2,17,0
+,,Hunterdon,,14,0,9,1,2,13,9,2,2,0
 ,,Mercer,,24,1,15,8,5,23,13,7,5,1
-,,Middlesex,,54,1,34,8,14,52,32,8,14,1
+,,Middlesex,,55,1,35,8,14,53,33,8,14,1
 ,,Monmouth,,34,2,20,4,8,32,21,3,6,3
 ,,Morris,,22,0,14,0,8,22,14,1,7,0
 ,,Ocean,,41,0,23,7,11,42,24,7,11,2
@@ -20,7 +20,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Sussex,,8,0,6,1,1,8,6,1,1,0
 ,,Union,,32,1,14,4,13,33,15,3,15,1
 ,,Warren,,9,0,7,1,1,9,7,1,1,0
-1,1,Atlantic,Absecon City,0,0,0,0,0,1,0,0,1,0
+1,1,Atlantic,Absecon City,0,0,0,0,0,0,0,0,0,0
 1,2,Atlantic,Atlantic City,13,1,4,1,2,7,4,1,2,1
 1,5,Atlantic,Buena Vista Twsp,2,0,0,1,0,2,0,2,0,0
 1,7,Atlantic,Egg Harbor City,1,0,1,0,0,1,1,0,0,0
@@ -159,18 +159,18 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 9,4,Hudson,Harrison Town,2,0,0,1,1,2,0,1,1,0
 9,6,Hudson,Jersey City,7,0,2,1,8,8,2,1,5,0
 9,7,Hudson,Kearny Town,2,0,1,0,1,2,1,0,1,0
-9,8,Hudson,North Bergen Twsp,6,0,2,0,3,6,2,0,4,0
+9,8,Hudson,North Bergen Twsp,6,0,2,0,3,5,2,0,3,0
 9,9,Hudson,Secaucus Town,3,0,2,0,1,3,2,0,1,0
 9,10,Hudson,Union City,3,0,0,0,4,3,0,0,3,0
 9,11,Hudson,Weehawken Twsp,0,0,0,0,0,0,0,0,0,0
 9,12,Hudson,West New York Town,1,0,0,0,1,1,0,0,1,0
 10,2,Hunterdon,Bethlehem Twsp,1,0,0,1,0,1,0,1,0,0
 10,3,Hunterdon,Bloomsbury Boro,1,0,1,0,0,1,1,0,0,0
-10,6,Hunterdon,Clinton Twsp,0,0,0,0,0,0,0,0,0,0
+10,6,Hunterdon,Clinton Twsp,1,0,1,0,0,1,1,0,0,0
 10,7,Hunterdon,Delaware Twsp,0,0,0,0,0,0,0,0,0,0
 10,8,Hunterdon,East Amwell Tws,0,0,0,0,0,0,0,0,0,0
 10,9,Hunterdon,Flemington Boro,1,0,0,0,1,1,0,0,1,0
-10,16,Hunterdon,Kingwood Twsp,1,0,1,0,0,1,1,0,0,0
+10,16,Hunterdon,Kingwood Twsp,2,0,2,0,0,2,2,0,0,0
 10,19,Hunterdon,Lebanon Twsp,1,0,1,0,0,1,1,0,0,0
 10,21,Hunterdon,Raritan Twsp,2,0,1,0,1,3,1,1,1,0
 10,22,Hunterdon,Readington Twsp,2,0,2,0,0,2,2,0,0,0
@@ -185,7 +185,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 11,13,Mercer,West Windsor Twp,2,0,2,0,0,2,2,0,0,0
 11,14,Mercer,Princeton,1,1,0,0,0,1,0,0,0,1
 12,1,Middlesex,Carteret Boro,2,0,2,0,0,2,2,0,0,0
-12,2,Middlesex,Cranbury Twsp,2,0,1,2,0,2,1,2,0,0
+12,2,Middlesex,Cranbury Twsp,3,0,2,2,0,3,2,2,0,0
 12,4,Middlesex,East Brunswick Twsp,1,0,0,0,1,1,0,0,1,0
 12,5,Middlesex,Edison Twsp,6,0,4,0,2,6,4,0,2,0
 12,8,Middlesex,Jamesburg Boro,1,0,1,0,0,1,1,0,0,0
