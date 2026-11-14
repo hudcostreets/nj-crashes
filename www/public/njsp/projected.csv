@@ -1,13 +1,13 @@
 cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_365,trailing_365_driver,trailing_365_passenger,trailing_365_pedestrian,trailing_365_cyclist
-,,Atlantic,,36,1,20,5,12,35,20,5,11,1
+,,Atlantic,,36,1,20,5,12,34,20,4,11,1
 ,,Bergen,,22,0,8,0,19,23,10,1,12,0
-,,Burlington,,38,0,25,8,8,35,24,7,7,0
+,,Burlington,,36,0,24,8,8,35,24,7,7,0
 ,,Camden,,29,1,12,2,15,30,12,2,16,1
-,,Cape May,,6,0,6,0,0,6,6,1,0,0
+,,Cape May,,7,1,6,0,0,7,6,1,0,1
 ,,Cumberland,,21,3,10,2,5,20,10,2,5,3
-,,Essex,,39,1,12,4,26,40,12,4,26,1
-,,Gloucester,,26,1,16,7,4,25,16,6,4,1
-,,Hudson,,31,0,8,2,29,27,8,2,17,0
+,,Essex,,38,1,12,4,25,40,12,4,26,1
+,,Gloucester,,27,1,16,7,5,26,16,6,5,1
+,,Hudson,,29,0,8,2,23,25,7,2,16,0
 ,,Hunterdon,,14,0,9,1,2,13,9,2,2,0
 ,,Mercer,,24,1,15,8,5,23,13,7,5,1
 ,,Middlesex,,56,2,35,8,14,54,33,8,14,2
@@ -15,14 +15,14 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Morris,,22,0,14,0,8,22,14,1,7,0
 ,,Ocean,,41,0,23,7,11,42,24,7,11,2
 ,,Passaic,,19,0,11,3,7,20,10,3,8,0
-,,Salem,,10,0,10,0,0,10,9,0,1,0
+,,Salem,,10,0,9,0,0,10,9,0,1,0
 ,,Somerset,,23,0,15,0,8,21,14,0,7,0
 ,,Sussex,,8,0,6,1,1,8,6,1,1,0
 ,,Union,,32,1,14,4,13,33,15,3,15,1
 ,,Warren,,9,0,7,1,1,9,7,1,1,0
 1,1,Atlantic,Absecon City,0,0,0,0,0,0,0,0,0,0
 1,2,Atlantic,Atlantic City,13,1,4,1,2,7,4,1,2,1
-1,5,Atlantic,Buena Vista Twsp,2,0,0,1,0,2,0,2,0,0
+1,5,Atlantic,Buena Vista Twsp,2,0,0,1,0,1,0,1,0,0
 1,7,Atlantic,Egg Harbor City,1,0,1,0,0,1,1,0,0,0
 1,8,Atlantic,Egg Harbor Twsp,2,0,1,0,1,2,1,0,1,0
 1,9,Atlantic,Estell Manor City,1,0,0,0,1,1,0,0,1,0
@@ -88,7 +88,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 3,27,Burlington,Palmyra Boro,0,0,0,0,0,0,0,0,0,0
 3,29,Burlington,Pemberton Twsp,0,0,0,0,0,0,0,0,0,0
 3,32,Burlington,Shamong Twsp,0,0,0,0,0,0,0,0,0,0
-3,33,Burlington,Southampton Twsp,2,0,2,0,0,1,1,0,0,0
+3,33,Burlington,Southampton Twsp,1,0,1,0,0,1,1,0,0,0
 3,34,Burlington,Springfield Twsp,1,0,1,0,0,1,1,0,0,0
 3,35,Burlington,Tabernacle Twsp,0,0,0,0,0,0,0,0,0,0
 3,36,Burlington,Washington Twsp,3,0,3,0,0,3,3,0,0,0
@@ -114,7 +114,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 4,36,Camden,Winslow Twsp,2,0,0,0,2,2,0,0,2,0
 5,4,Cape May,Dennis Twsp,0,0,0,0,0,0,0,0,0,0
 5,5,Cape May,Lower Twsp,2,0,2,0,0,2,2,0,0,0
-5,6,Cape May,Middle Twsp,1,0,1,0,0,2,2,1,0,0
+5,6,Cape May,Middle Twsp,3,1,1,0,0,3,2,1,0,1
 5,7,Cape May,North Wildwood City,0,0,0,0,0,0,0,0,0,0
 5,11,Cape May,Upper Twsp,2,0,2,0,0,2,2,0,0,0
 5,16,Cape May,Woodbine Boro,0,0,0,0,0,0,0,0,0,0
@@ -134,14 +134,14 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 7,11,Essex,Maplewood Twsp,0,0,0,0,0,0,0,0,0,0
 7,12,Essex,Millburn Twsp,2,0,0,0,2,2,0,0,2,0
 7,13,Essex,Montclair Town,0,0,0,0,0,0,0,0,0,0
-7,14,Essex,Newark City,30,1,9,4,20,29,9,4,18,1
+7,14,Essex,Newark City,29,1,9,4,18,29,9,4,18,1
 7,16,Essex,Nutley Town,1,0,0,0,1,1,0,0,1,0
 7,17,Essex,Orange City,0,0,0,0,0,1,0,0,1,0
 7,20,Essex,Verona Boro,0,0,0,0,0,0,0,0,0,0
 7,22,Essex,West Orange Town,0,0,0,0,0,0,0,0,0,0
 8,1,Gloucester,Clayton Boro,1,0,0,1,0,1,0,1,0,0
 8,2,Gloucester,Deptford Twsp,4,1,3,1,0,4,3,1,0,1
-8,3,Gloucester,East Greenwich Twsp,1,0,1,0,0,1,1,0,0,0
+8,3,Gloucester,East Greenwich Twsp,2,0,1,0,1,2,1,0,1,0
 8,4,Gloucester,Elk Twsp,3,0,2,0,1,3,2,0,1,0
 8,5,Gloucester,Franklin Twsp,0,0,0,0,0,0,0,0,0,0
 8,6,Gloucester,Glassboro Boro,0,0,0,0,0,0,0,0,0,0
@@ -157,9 +157,9 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 9,1,Hudson,Bayonne City,2,0,1,0,1,2,1,0,1,0
 9,3,Hudson,Guttenberg Town,0,0,0,0,0,1,0,0,1,0
 9,4,Hudson,Harrison Town,2,0,0,1,1,2,0,1,1,0
-9,6,Hudson,Jersey City,7,0,2,1,8,8,2,1,5,0
+9,6,Hudson,Jersey City,7,0,2,1,8,7,1,1,5,0
 9,7,Hudson,Kearny Town,2,0,1,0,1,2,1,0,1,0
-9,8,Hudson,North Bergen Twsp,6,0,2,0,3,5,2,0,3,0
+9,8,Hudson,North Bergen Twsp,5,0,2,0,2,4,2,0,2,0
 9,9,Hudson,Secaucus Town,3,0,2,0,1,3,2,0,1,0
 9,10,Hudson,Union City,3,0,0,0,4,3,0,0,3,0
 9,11,Hudson,Weehawken Twsp,0,0,0,0,0,0,0,0,0,0
@@ -278,7 +278,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 17,2,Salem,Carneys Point Twsp,0,0,0,0,0,0,0,0,0,0
 17,5,Salem,Lower Alloways Cree,1,0,1,0,0,1,1,0,0,0
 17,6,Salem,Mannington Twsp,1,0,1,0,0,1,1,0,0,0
-17,7,Salem,Oldmans Twsp,2,0,1,0,0,1,1,0,0,0
+17,7,Salem,Oldmans Twsp,1,0,1,0,0,1,1,0,0,0
 17,8,Salem,Penns Grove Bor,0,0,0,0,0,1,0,0,1,0
 17,9,Salem,Pennsville Twsp,0,0,0,0,0,0,0,0,0,0
 17,10,Salem,Pilesgrove Twsp,2,0,1,0,0,1,1,0,0,0
