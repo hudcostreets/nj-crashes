@@ -1,16 +1,16 @@
 deps:
 - path: https://njsp.njoag.gov/wp/wp-content/plugins/fatal-crash-data/xml/FAUQStats2026.xml
-  checksum: '"32c4c-660664ff929b2"'
-  size: 207948
-  mtime: '2026-11-16T15:20:04+00:00'
+  checksum: '"32e2c-6607a6dd191df"'
+  size: 208428
+  mtime: '2026-11-17T15:20:04+00:00'
   user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,
     like Gecko) Chrome/120.0.0.0 Safari/537.36
 outs:
-- md5: 6f87a5204542ae0d00c40f35bdf20780
-  size: 207948
+- md5: c4eb228c93fdfaefa8e5595be8b9d7c5
+  size: 208428
   hash: md5
   path: FAUQStats2026.xml
 meta:
   git_tracked: true
   import:
-    fetched: '2026-11-16'
+    fetched: '2026-11-17'
