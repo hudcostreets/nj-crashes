@@ -2,14 +2,14 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 ,,Atlantic,,35,1,20,4,12,34,20,4,11,1
 ,,Bergen,,22,0,8,0,19,23,10,1,12,0
 ,,Burlington,,36,0,24,8,8,35,24,7,7,0
-,,Camden,,29,1,12,2,15,30,12,2,16,1
-,,Cape May,,7,1,6,0,0,7,6,1,0,1
+,,Camden,,30,1,12,2,16,31,12,2,17,1
+,,Cape May,,6,1,5,0,0,7,6,1,0,1
 ,,Cumberland,,21,3,10,2,5,20,10,2,5,3
-,,Essex,,38,1,12,4,25,39,12,3,26,1
+,,Essex,,37,1,12,3,25,39,12,3,26,1
 ,,Gloucester,,26,1,16,7,4,25,16,6,4,1
 ,,Hudson,,27,0,8,2,20,25,7,2,16,0
 ,,Hunterdon,,14,0,9,1,2,13,9,2,2,0
-,,Mercer,,24,1,15,8,5,23,13,7,5,1
+,,Mercer,,24,1,15,8,5,22,12,7,5,1
 ,,Middlesex,,56,2,35,8,14,54,33,8,14,2
 ,,Monmouth,,33,2,20,3,8,32,21,3,6,3
 ,,Morris,,24,0,15,0,8,23,15,1,7,0
@@ -104,7 +104,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 4,15,Camden,Gloucester Twsp,2,0,3,0,0,2,2,0,0,0
 4,16,Camden,Haddon Twsp,1,1,0,0,0,1,0,0,0,1
 4,18,Camden,Haddon Heights Boro,0,0,0,0,0,0,0,0,0,0
-4,21,Camden,Lawnside Boro,1,0,0,1,0,1,0,1,0,0
+4,21,Camden,Lawnside Boro,2,0,0,1,1,2,0,1,1,0
 4,22,Camden,Lindenwold Boro,1,0,0,0,1,1,0,0,1,0
 4,27,Camden,Pennsauken Twsp,1,0,0,0,1,1,0,0,1,0
 4,28,Camden,Pine Hill Boro,1,0,1,0,0,1,1,0,0,0
@@ -134,7 +134,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 7,11,Essex,Maplewood Twsp,0,0,0,0,0,0,0,0,0,0
 7,12,Essex,Millburn Twsp,2,0,0,0,2,2,0,0,2,0
 7,13,Essex,Montclair Town,0,0,0,0,0,0,0,0,0,0
-7,14,Essex,Newark City,29,1,9,4,18,28,9,3,18,1
+7,14,Essex,Newark City,28,1,9,3,18,28,9,3,18,1
 7,16,Essex,Nutley Town,1,0,0,0,1,1,0,0,1,0
 7,17,Essex,Orange City,0,0,0,0,0,1,0,0,1,0
 7,20,Essex,Verona Boro,0,0,0,0,0,0,0,0,0,0
@@ -176,7 +176,7 @@ cc,mc,county,municipality,crashes,cyclist,driver,passenger,pedestrian,trailing_3
 10,22,Hunterdon,Readington Twsp,2,0,2,0,0,2,2,0,0,0
 10,25,Hunterdon,Union Twsp,1,0,1,0,0,1,1,0,0,0
 11,1,Mercer,East Windsor Twsp,3,0,0,1,1,3,1,3,1,0
-11,2,Mercer,Ewing Twsp,11,0,5,0,1,6,5,1,1,0
+11,2,Mercer,Ewing Twsp,11,0,5,0,1,5,4,1,1,0
 11,3,Mercer,Hamilton Twsp,4,0,1,2,1,4,1,2,1,0
 11,6,Mercer,Hopewell Twsp,0,0,0,0,0,0,0,0,0,0
 11,7,Mercer,Lawrence Twsp,1,0,1,0,0,1,1,0,0,0
