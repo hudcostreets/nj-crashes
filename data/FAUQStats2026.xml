@@ -5,7 +5,7 @@
  associated case is completed by the NJSP Fatal Accident
  Investigation Unit.-->
 <FAUQSTATS>
-  <RUNDATE>Thu Nov 19 10:00:04 EST 2026</RUNDATE>
+  <RUNDATE>Fri Nov 20 10:00:01 EST 2026</RUNDATE>
   <STATSYEAR>2026</STATSYEAR>
   <COUNTY CCODE="01" CNAME="Atlantic">
   </COUNTY>
@@ -1624,7 +1624,7 @@
     <MUNICIPALITY MCODE="0339" MNAME="Woodland Twsp">
       <ACCIDENT ACCID="14781" DATE="08/29/2026" TIME="0631">
         <HIGHWAY>70</HIGHWAY>
-        <LOCATION>State Highway 70</LOCATION>
+        <LOCATION>State Highway 70 MP 26.38</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
@@ -6106,12 +6106,13 @@
     <MUNICIPALITY MCODE="1225" MNAME="Woodbridge Twsp">
       <ACCIDENT ACCID="14350" DATE="01/01/2026" TIME="0336">
         <HIGHWAY>444</HIGHWAY>
-        <LOCATION>Garden State Parkway</LOCATION>
+        <LOCATION>Garden State Parkway MP 127.9</LOCATION>
         <FATALITIES>1</FATALITIES>
         <FATAL_D>1</FATAL_D>
         <FATAL_P>0</FATAL_P>
         <FATAL_T>0</FATAL_T>
         <FATAL_B>0</FATAL_B>
+        <INJURIES>0</INJURIES>
       </ACCIDENT>
     </MUNICIPALITY>
   </COUNTY>
